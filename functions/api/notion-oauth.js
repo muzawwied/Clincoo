@@ -58,14 +58,13 @@ export async function onRequestPost({ request, env }) {
   // ---- Alur 1: refresh access token (access token OAuth Notion berumur pendek) ----
   if (body.refresh_token && !body.code) {
     try {
+      const basic = btoa(clientId + ':' + clientSecret);
       const tokenRes = await fetch('https://api.notion.com/v1/oauth/token', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + basic },
         body: JSON.stringify({
           grant_type: 'refresh_token',
-          refresh_token: String(body.refresh_token),
-          client_id: clientId,
-          client_secret: clientSecret
+          refresh_token: String(body.refresh_token)
         })
       });
       const tokenData = await tokenRes.json().catch(() => ({}));
@@ -81,15 +80,14 @@ export async function onRequestPost({ request, env }) {
   // ---- Alur 2: tukar authorization code jadi access token ----
   if (!body.code) return jsonResponse({ error: 'Kode otorisasi tidak ditemukan.' }, 400);
   try {
+    const basic = btoa(clientId + ':' + clientSecret);
     const tokenRes = await fetch('https://api.notion.com/v1/oauth/token', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + basic },
       body: JSON.stringify({
         grant_type: 'authorization_code',
         code: String(body.code),
-        redirect_uri: REDIRECT_URI,
-        client_id: clientId,
-        client_secret: clientSecret
+        redirect_uri: REDIRECT_URI
       })
     });
     const tokenData = await tokenRes.json().catch(() => ({}));
