@@ -1438,6 +1438,24 @@
             });
         }
 
+        // Jawaban AI SELESAI -> kolaps spacer pin. Tanpa ini, spacer setinggi viewport
+        // yang dipasang saat pesan user di-pin tetap ada setelah jawaban selesai, jadi
+        // di bawah pesan AI terakhir tampak ruang kosong besar sampai ke kolom input.
+        // Kolaps spacer membuat ujung jawaban "menempel" ke input tanpa jarak.
+        function settleAfterAnswer() {
+            if (!pinSpacerPx) return; // tidak sedang di-pin -> tidak ada jarak buatan
+            pinSpacerPx = 0;
+            const spacer = document.getElementById('scroll-top-spacer');
+            if (spacer) spacer.style.height = '0px';
+            requestAnimationFrame(function () {
+                const max = Math.max(0, chatContainer.scrollHeight - chatContainer.clientHeight);
+                // Dekat ekor jawaban -> scroll halus menempel ke input.
+                // Sedang membaca pesan lama di atas -> TIDAK digeser (clamp alami saja).
+                if (max - chatContainer.scrollTop < 600) chatContainer.scrollTo({ top: max, behavior: 'smooth' });
+                autoScrollActive = true;
+            });
+        }
+
         function scrollToBottom(forceSmooth = false) {
             if (forceSmooth) {
                 autoScrollActive = true;
@@ -2536,6 +2554,7 @@
                 currentAiMessageId = null;
             }
             renderMessages();
+            settleAfterAnswer(); // jawaban selesai -> hapus jarak buatan ke kolom input
         }
 
         // ===== MODE TIM AI: beberapa model AI berdiskusi lalu membangun web (kuota 5x) =====
@@ -4052,6 +4071,7 @@
                     if (done) messages[idx].isTyping = false;
                     renderMessages();
                     try { saveChatLog(); } catch (e) {}
+                    if (done) settleAfterAnswer();
                 }
                 scrollToBottom(false);
             };
