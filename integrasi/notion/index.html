@@ -1,0 +1,42 @@
+<!DOCTYPE html><html lang="id"><head>
+<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clincoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Kelola Notion · Clincoo</title>
+<script src="../../js/auth-client.js?v=4"></script>
+<script src="https://cdn.tailwindcss.com"></script><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css"><link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<style>html,body{min-height:100%;margin:0}body{font-family:Inter,sans-serif;background:#fff;color:#111}.mont{font-family:Montserrat,sans-serif}.dark{background:#000;color:#fff}.dark .muted{color:#888}.dark .line{border-color:#222}.dark .surface{background:#0a0a0a}.dark .primary{background:#fff;color:#000}.dark .danger:hover{background:#1a0a0a}@media(max-width:640px){.page{padding-left:20px;padding-right:20px}}</style></head>
+<body><script>(function(){var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=t==='Gelap'||((!t||t==='Sistem (Default)')&&matchMedia('(prefers-color-scheme:dark)').matches);if(d)document.body.classList.add('dark')})();</script>
+<header class="fixed inset-x-0 top-0 z-20 px-5 py-4 pointer-events-none"><a href="/integrasi/" class="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-full surface bg-white border line border-gray-200 shadow-sm" aria-label="Kembali"><i class="ph ph-arrow-left text-lg"></i></a></header>
+<main class="page mx-auto w-full max-w-2xl px-6 pt-24 pb-12">
+<div class="mb-10"><p class="muted text-xs font-semibold uppercase tracking-[.14em] text-gray-400 mb-3">Konektor</p><h1 class="mont text-2xl font-bold">Notion</h1><p class="muted mt-1 text-sm text-gray-500">Kelola koneksi Notion Anda</p></div>
+<section id="connected-view" class="hidden"><div class="border-y line border-gray-100 py-5"><div class="flex items-center gap-3"><div class="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 dark:bg-[#0a0a0a]"><i class="ph-fill ph-neighborhood text-xl"></i></div><div class="min-w-0"><p id="name" class="font-semibold truncate"></p><p id="meta" class="muted text-sm text-gray-500 truncate"></p></div><span class="ml-auto text-xs font-semibold text-emerald-600">Terhubung</span></div></div>
+<div class="py-6 border-b line border-gray-100"><h2 class="text-sm font-semibold mb-2">Halaman tujuan</h2><p class="muted text-sm leading-6 text-gray-500">Jawaban AI Clincoo dikirim ke halaman ini. <span id="pagename" class="font-semibold text-gray-700 dark:text-white">Memuat…</span></p><p class="muted mt-1 text-xs text-gray-400">Ubah dari modal "Notion Terhubung" di daftar plugin.</p></div>
+<div class="py-6 border-b line border-gray-100"><h2 class="text-sm font-semibold mb-2">Akses konektor</h2><p class="muted text-sm leading-6 text-gray-500">Clincoo AI dapat melihat daftar halaman Notion Anda, membaca halaman yang dibagikan, serta membuat halaman baru berisi jawaban atau catatan atas permintaan Anda.</p></div>
+<div class="pt-7"><button id="disconnect" class="danger w-full rounded-xl border border-red-200 px-4 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50">Putuskan koneksi</button></div></section>
+<section id="empty-view" class="hidden border-y line border-gray-100 py-8 text-center"><p class="font-semibold">Notion belum terhubung</p><p class="muted mt-2 text-sm text-gray-500">Hubungkan akun dari halaman daftar konektor.</p><a href="/integrasi/" class="primary mt-5 inline-flex rounded-xl bg-black px-5 py-3 text-sm font-semibold text-white">Kembali ke konektor</a></section>
+</main>
+<script>
+const token = localStorage.getItem('clincoo_notion_token');
+const connected = document.getElementById('connected-view'), empty = document.getElementById('empty-view');
+function authToken() { try { return localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) { return ''; } }
+if (!token) { empty.classList.remove('hidden'); }
+else {
+  connected.classList.remove('hidden');
+  let u = {}; try { u = JSON.parse(localStorage.getItem('clincoo_notion_user') || '{}'); } catch (e) {}
+  document.getElementById('name').textContent = u.owner_name || u.workspace_name || 'Notion';
+  document.getElementById('meta').textContent = (u.workspace_name || 'Workspace') + ' · Notion';
+  (async () => {
+    const pid = localStorage.getItem('clincoo_notion_page');
+    const el = document.getElementById('pagename');
+    if (!pid) { el.textContent = 'Belum dipilih.'; return; }
+    try {
+      const res = await fetch('/api/notion-proxy', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Notion-Token': token, 'Authorization': 'Bearer ' + authToken() }, body: JSON.stringify({ action: 'page', page_id: pid }) });
+      const d = await res.json().catch(() => ({}));
+      if (d && d.ok && d.title) el.textContent = '"' + d.title + '"'; else el.textContent = 'tidak terbaca (halaman mungkin belum di-share).';
+    } catch (e) { el.textContent = 'tidak terbaca.'; }
+  })();
+}
+document.getElementById('disconnect').addEventListener('click', async () => {
+  if (!confirm('Putuskan koneksi Notion?')) return;
+  ['clincoo_notion_token', 'clincoo_notion_refresh', 'clincoo_notion_user', 'clincoo_notion_page'].forEach(k => localStorage.removeItem(k));
+  location.href = '/integrasi/';
+});
+</script></body></html>

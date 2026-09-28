@@ -247,7 +247,7 @@
                 <div id="notion-integration-card" class="integration-card group bg-white border border-gray-100 rounded-2xl p-4 sm:p-4.5 hover:border-gray-200 hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)] transition-all duration-300 w-full cursor-pointer" data-title="notion" data-category="produktivitas" role="button" tabindex="0">
                     <div class="flex items-center gap-3">
                         <div class="w-11 h-11 flex items-center justify-center flex-shrink-0">
-                            <svg viewBox="0 0 52 52" aria-hidden="true" class="w-8 h-8"><rect x="5" y="5" width="42" height="42" rx="7" fill="#ffffff" stroke="#37352f" stroke-width="2"/><text x="26" y="37" font-family="Georgia, serif" font-size="27" font-weight="700" fill="#37352f" text-anchor="middle">N</text></svg>
+                            <svg viewBox="0 0 52 52" aria-hidden="true" class="w-8 h-8"><rect x="4.5" y="4.5" width="43" height="43" rx="8" fill="#ffffff" stroke="#37352f" stroke-width="3"/><path fill="#37352f" d="M17.5 16h5.6l10.2 13.4V16h5.6v20h-5.6L23.1 22.6V36h-5.6z"/></svg>
                         </div>
                         <div class="flex-1 min-w-0">
                             <h3 class="text-[15px] font-bold text-gray-900 font-montserrat tracking-tight leading-tight">Notion</h3>
@@ -1666,14 +1666,11 @@
             if (!badge || !btn) return;
             if (connected) {
                 badge.classList.remove('hidden'); badge.classList.add('flex');
-                btn.textContent = 'Kelola';
-                btn.classList.add('border', 'border-gray-200', 'text-gray-700');
-                btn.classList.remove('bg-[#0f1115]', 'text-white', 'hover:bg-[#1a1d24]');
+                btn.classList.add('hidden');
             } else {
                 badge.classList.add('hidden'); badge.classList.remove('flex');
+                btn.classList.remove('hidden');
                 btn.textContent = 'Hubungkan';
-                btn.classList.remove('border', 'border-gray-200', 'text-gray-700');
-                btn.classList.add('bg-[#0f1115]', 'text-white', 'hover:bg-[#1a1d24]');
             }
         }
 
@@ -1874,6 +1871,15 @@
                 };
                 githubCard.addEventListener('click', openGitHub);
                 githubCard.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openGitHub(); } });
+            }
+            const notionCard = document.getElementById('notion-integration-card');
+            if (notionCard) {
+                const openNotion = () => {
+                    if (localStorage.getItem('clincoo_notion_token')) window.location.href = '/integrasi/notion/';
+                    else openNotionModal();
+                };
+                notionCard.addEventListener('click', openNotion);
+                notionCard.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openNotion(); } });
             }
             const driveCard = document.getElementById('drive-integration-card');
             if (driveCard) {
