@@ -96,6 +96,30 @@ export async function onRequestPost({ request }) {
       return json(out, res.ok ? 200 : res.status);
     }
 
+    // ---- aksi: baca isi halaman (blok anak, disederhanakan jadi baris teks) ----
+    if (body.action === 'blocks') {
+      const pid = String(body.page_id || '').replace(/-/g, '');
+      if (!/^[0-9a-f]{32}$/i.test(pid)) return json({ error: 'ID halaman tidak valid.' }, 400);
+      const res = await fetch('https://api.notion.com/v1/blocks/' + pid + '/children?page_size=100', { headers: notionHeaders });
+      if (!res.ok) {
+        const errText = await res.text();
+        let msg = 'Gagal membaca halaman Notion (HTTP ' + res.status + ').';
+        try { const e = JSON.parse(errText); if (e.message) msg = e.message; } catch (eE) {}
+        return json({ ok: false, status: res.status, error: msg }, res.status);
+      }
+      const data = await res.json().catch(() => ({}));
+      const blocks = (data.results || []).map(b => {
+        const t = b.type || 'unknown';
+        const inner = b[t] || {};
+        let text = '';
+        if (Array.isArray(inner.rich_text)) text = inner.rich_text.map(x => (x.plain_text || '')).join('');
+        else if (typeof inner.title === 'string') text = inner.title;
+        else if (Array.isArray(inner.children)) text = '';
+        return { type: t, text: text };
+      }).filter(x => x.type !== 'unsupported');
+      return json({ ok: true, blocks: blocks, has_more: !!data.has_more });
+    }
+
     // ---- default: buat halaman baru (body = objek page Notion utuh) ----
     const res = await fetch('https://api.notion.com/v1/pages', {
       method: 'POST',
