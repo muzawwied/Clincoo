@@ -1973,6 +1973,12 @@
                                     <button onclick="shareText('${msg.id}')" class="text-gray-400 hover:text-black transition p-1" title="Bagikan">
                                         <i class="ph ph-arrow-bend-up-right text-lg"></i>
                                     </button>
+                                    <button onclick="exportMsgDocs('${msg.id}', this)" class="text-gray-400 hover:text-black transition p-1" title="Kirim ke Google Docs">
+                                        <i class="ph ph-google-logo text-lg"></i>
+                                    </button>
+                                    <button onclick="exportMsgNotion('${msg.id}', this)" class="text-gray-400 hover:text-black transition p-1" title="Kirim ke Notion">
+                                        <i class="ph ph-notebook text-lg"></i>
+                                    </button>
                                     ${isLastAi ? `
                                         <button onclick="handleThumbs('${msg.id}', 'up', this)" class="text-gray-400 hover:text-black transition p-1" title="Suka">
                                             <i class="ph ph-thumbs-up text-lg"></i>
@@ -2082,6 +2088,210 @@
                 });
             }
         });
+
+        // ===== EKSPOR KE APLIKASI KERJA: Google Docs & Notion =====
+        // Masukan beta tester: jawaban AI harus bisa langsung dipakai di aplikasi kerja
+        // (Docs/Notion) — tanpa copy-paste manual. Token Drive dipakai dari konektor
+        // Integrasi (clincoo_drive_token); token Notion disimpan lokal per perangkat.
+        function msgPlainText(id) {
+            const m = messages.find(x => x.id === id || x.id.toString() === id);
+            return m ? (m.text || '') : '';
+        }
+        function exportDocTitle(text) {
+            const firstLine = (text || '').split('\n').map(t => t.trim()).filter(Boolean)[0] || 'Jawaban Clincoo';
+            return firstLine.replace(/^#+\s*/, '').replace(/[*_`~>#]/g, '').slice(0, 60) || 'Jawaban Clincoo';
+        }
+        function escHtml(x) { return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+        function mdInlineHtml(x) {
+            return escHtml(x)
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+                .replace(/(^|\s)\*([^*]+)\*/g, '$1<i>$2</i>')
+                .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2">$1</a>');
+        }
+        function mdToHtml(md) {
+            const lines = (md || '').split('\n');
+            let html = '', inCode = false, codeBuf = [], listType = null;
+            const closeList = () => { if (listType) { html += (listType === 'ul' ? '</ul>' : '</ol>'); listType = null; } };
+            for (const raw of lines) {
+                const line = raw;
+                if (line.trim().startsWith('```')) {
+                    if (inCode) { html += '<pre>' + escHtml(codeBuf.join('\n')) + '</pre>'; codeBuf = []; inCode = false; }
+                    else { closeList(); inCode = true; }
+                    continue;
+                }
+                if (inCode) { codeBuf.push(line); continue; }
+                const t = line.trim();
+                if (!t) { closeList(); continue; }
+                let m;
+                if ((m = t.match(/^(#{1,3})\s+(.*)$/))) {
+                    closeList();
+                    const h = m[1].length + 1;
+                    html += '<h' + h + '>' + mdInlineHtml(m[2]) + '</h' + h + '>';
+                } else if (/^([-*])\s+/.test(t)) {
+                    if (listType !== 'ul') { closeList(); html += '<ul>'; listType = 'ul'; }
+                    html += '<li>' + mdInlineHtml(t.replace(/^([-*])\s+/, '')) + '</li>';
+                } else if (/^\d+\.\s+/.test(t)) {
+                    if (listType !== 'ol') { closeList(); html += '<ol>'; listType = 'ol'; }
+                    html += '<li>' + mdInlineHtml(t.replace(/^\d+\.\s+/, '')) + '</li>';
+                } else {
+                    closeList();
+                    html += '<p>' + mdInlineHtml(t) + '</p>';
+                }
+            }
+            if (inCode && codeBuf.length) html += '<pre>' + escHtml(codeBuf.join('\n')) + '</pre>';
+            closeList();
+            return '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>' + html + '</body></html>';
+        }
+        async function driveUploadHtml(token, title, html) {
+            const meta = JSON.stringify({ name: title, mimeType: 'application/vnd.google-apps.document' });
+            const body = '--CLINCOOBOUND\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + meta +
+                '\r\n--CLINCOOBOUND\r\nContent-Type: text/html\r\n\r\n' + html + '\r\n--CLINCOOBOUND--';
+            return fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'multipart/related; boundary=CLINCOOBOUND' },
+                body
+            });
+        }
+        async function exportMsgDocs(id, btnElement) {
+            const text = msgPlainText(id);
+            if (!text) return;
+            let token = localStorage.getItem('clincoo_drive_token') || '';
+            if (!token) {
+                showGlobalTooltip(btnElement, 'Hubungkan Google Drive di Integrasi dulu');
+                return;
+            }
+            showGlobalTooltip(btnElement, 'Mengirim ke Docs…');
+            let res = await driveUploadHtml(token, exportDocTitle(text), mdToHtml(text));
+            if (res.status === 401) {
+                const refresh = localStorage.getItem('clincoo_drive_refresh');
+                if (refresh) {
+                    try {
+                        const r2 = await fetch(TOOL_API_BASE + '/api/drive-oauth', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ refresh_token: refresh })
+                        });
+                        const j = await r2.json();
+                        if (j.access_token) {
+                            localStorage.setItem('clincoo_drive_token', j.access_token);
+                            res = await driveUploadHtml(j.access_token, exportDocTitle(text), mdToHtml(text));
+                        }
+                    } catch (e) {}
+                }
+            }
+            if (res.ok) {
+                const f = await res.json().catch(() => ({}));
+                showGlobalTooltip(btnElement, 'Terkirim ke Google Docs');
+                if (f.webViewLink) window.open(f.webViewLink, '_blank');
+            } else if (res.status === 401) {
+                showGlobalTooltip(btnElement, 'Sesi Drive habis — hubungkan ulang di Integrasi');
+            } else {
+                showGlobalTooltip(btnElement, 'Gagal kirim ke Docs (' + res.status + ')');
+            }
+        }
+        function notionInlineRich(text) {
+            // jadikan 1 rich_text dengan penandaan **bold**/*italic*`code` sederhana
+            const out = [];
+            const re = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g;
+            let last = 0, m;
+            const push = (t, ann) => { if (t) out.push({ type: 'text', text: { content: t }, annotations: ann || {} }); };
+            while ((m = re.exec(text)) !== null) {
+                push(text.slice(last, m.index));
+                const tok = m[0];
+                if (tok.startsWith('**')) push(tok.slice(2, -2), { bold: true });
+                else if (tok.startsWith('`')) push(tok.slice(1, -1), { code: true });
+                else push(tok.slice(1, -1), { italic: true });
+                last = m.index + tok.length;
+            }
+            push(text.slice(last));
+            if (!out.length) out.push({ type: 'text', text: { content: text || ' ' } });
+            return out;
+        }
+        function notionBlocks(md) {
+            const blocks = [];
+            const lines = (md || '').split('\n');
+            let i = 0;
+            while (i < lines.length && blocks.length < 95) {
+                const t = lines[i].trim();
+                if (t.startsWith('```')) {
+                    const buf = [];
+                    i++;
+                    while (i < lines.length && !lines[i].trim().startsWith('```')) { buf.push(lines[i]); i++; }
+                    i++;
+                    blocks.push({ object: 'block', type: 'code', code: { rich_text: [{ type: 'text', text: { content: buf.join('\n').slice(0, 1900) } }], language: 'plain text' } });
+                    continue;
+                }
+                let m;
+                if ((m = t.match(/^(#{1,3})\s+(.*)$/))) {
+                    const lvl = 'heading_' + m[1].length;
+                    const o = { object: 'block', type: lvl };
+                    o[lvl] = { rich_text: notionInlineRich(m[2]) };
+                    blocks.push(o);
+                } else if (/^[-*]\s+/.test(t)) {
+                    blocks.push({ object: 'block', type: 'bulleted_list_item', bulleted_list_item: { rich_text: notionInlineRich(t.replace(/^[-*]\s+/, '')) } });
+                } else if (/^\d+\.\s+/.test(t)) {
+                    blocks.push({ object: 'block', type: 'numbered_list_item', numbered_list_item: { rich_text: notionInlineRich(t.replace(/^\d+\.\s+/, '')) } });
+                } else if (t) {
+                    blocks.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: notionInlineRich(t) } });
+                }
+                i++;
+            }
+            if (!blocks.length) blocks.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: (md || '').slice(0, 1900) } }] } });
+            return blocks;
+        }
+        function openNotionModal(hint) {
+            const m = document.createElement('div');
+            m.id = 'notion-export-modal';
+            m.innerHTML =
+              '<div class="fixed inset-0 z-[95] overflow-y-auto p-3 sm:p-4" style="background:rgba(0,0,0,0.45)">' +
+              '<div class="min-h-full flex items-center justify-center">' +
+              '<div class="bg-white rounded-2xl w-full max-w-sm relative px-4 sm:px-5 pt-9 pb-5 my-2">' +
+              '<button id="notion-x" class="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-black flex items-center justify-center transition-colors z-10" aria-label="Tutup"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6 6 18M6 6l12 12"></path></svg></button>' +
+              '<h3 class="text-base font-semibold text-gray-900 text-center pr-6">Kirim ke Notion</h3>' +
+              '<p class="text-[13px] text-gray-500 mt-1 text-center leading-snug px-1">Masukkan <b>Internal Integration Token</b> Notion (dari notion.so/my-integrations) dan <b>ID halaman</b> tujuan. Halaman harus di-share ke integration tersebut.</p>' +
+              (hint ? '<p class="text-[12px] text-red-500 mt-2 text-center">' + hint + '</p>' : '') +
+              '<input id="notion-token" type="password" placeholder="secret_..." class="w-full mt-3 px-3 py-2 rounded-xl border border-gray-200 text-[14px] text-gray-900 focus:outline-none focus:border-gray-400">' +
+              '<input id="notion-page" type="text" placeholder="ID halaman Notion (URL halaman)" class="w-full mt-2 px-3 py-2 rounded-xl border border-gray-200 text-[14px] text-gray-900 focus:outline-none focus:border-gray-400">' +
+              '<button id="notion-save" class="w-full mt-3 py-2 rounded-xl bg-black text-white text-[14px] font-semibold hover:bg-gray-800 transition-colors">Simpan</button>' +
+              '</div></div>';
+            document.body.appendChild(m);
+            m.querySelector('#notion-x').onclick = () => m.remove();
+            m.querySelector('#notion-save').onclick = () => {
+                const tok = m.querySelector('#notion-token').value.trim();
+                let pg = m.querySelector('#notion-page').value.trim();
+                const mm = pg.match(/([0-9a-f]{32})/i);
+                if (mm) pg = mm[1];
+                if (!tok || !pg) return;
+                localStorage.setItem('clincoo_notion_token', tok);
+                localStorage.setItem('clincoo_notion_page', pg);
+                m.remove();
+            };
+        }
+        async function exportMsgNotion(id, btnElement) {
+            const text = msgPlainText(id);
+            if (!text) return;
+            let token = localStorage.getItem('clincoo_notion_token') || '';
+            let page = localStorage.getItem('clincoo_notion_page') || '';
+            if (!token || !page) { openNotionModal(); return; }
+            showGlobalTooltip(btnElement, 'Mengirim ke Notion…');
+            let ok = false, status = 0;
+            try {
+                // lewat proxy Clincoo: menghindari pembatasan CORS browser ke api.notion.com.
+                // Token TIDAK disimpan server — hanya diteruskan per-request dari header ini.
+                const res = await fetch(TOOL_API_BASE + '/api/notion-proxy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Notion-Token': token },
+                    body: JSON.stringify({ parent: { page_id: page }, properties: { title: { title: [{ text: { content: exportDocTitle(text) } }] } }, children: notionBlocks(text) })
+                });
+                status = res.status; ok = res.ok;
+            } catch (e) { ok = false; }
+            if (ok) showGlobalTooltip(btnElement, 'Terkirim ke Notion');
+            else if (status === 401 || status === 403) {
+                localStorage.removeItem('clincoo_notion_token');
+                openNotionModal('Token Notion tidak valid / halaman belum di-share ke integration. Masukkan ulang.');
+            } else showGlobalTooltip(btnElement, 'Gagal kirim ke Notion (' + status + ')');
+        }
 
         function copyText(id, btnElement) {
             const msg = messages.find(m => m.id === id || m.id.toString() === id);
@@ -2681,7 +2891,7 @@
                     buf = buf.slice(idx + 1);
                     if (!line) continue;
                     let evt; try { evt = JSON.parse(line); } catch (e) { continue; }
-                    if (evt.t === 'progress' || evt.t === 'thinking') onProgress(evt);
+                    if (evt.t === 'progress' || evt.t === 'thinking' || evt.t === 'delta') onProgress(evt);
                     else if (evt.t === 'final') finalObj = evt;
                     else if (evt.t === 'error') errObj = evt;
                 }
@@ -3215,6 +3425,7 @@
             };
 
             let streamingBuffer = "";
+            let deltaStreamed = "";
             let isFetchComplete = false;
             let charIndex = 0;
             let hasReceivedData = false;
@@ -3478,7 +3689,17 @@
                         const ctype = (response.headers.get('content-type') || '');
                         if (ctype.indexOf('x-ndjson') !== -1) {
                             // Stream progres real-time: thinking -> progress -> final
-                            resultJson = await readNdjsonStream(response, (evt) => { if (evt.t === 'progress') hasReceivedData = true; setAiStatus(evt.text || 'Thinking...'); });
+                            resultJson = await readNdjsonStream(response, (evt) => {
+                                if (evt.t === 'delta') {
+                                    // Jawaban streaming live: teks tumbuh di bubble begitu keluar dari model
+                                    hasReceivedData = true;
+                                    deltaStreamed += evt.text || '';
+                                    streamingBuffer = deltaStreamed;
+                                    return;
+                                }
+                                if (evt.t === 'progress') hasReceivedData = true;
+                                setAiStatus(evt.text || 'Thinking...');
+                            });
                         } else {
                             resultJson = await response.json();
                         }
@@ -3583,7 +3804,19 @@
                             messages[fIdx].pollState = { current: 0, answers: [] };
                         }
                     }
-                    streamingBuffer += parsedFinal.clean;
+                    if (deltaStreamed) {
+                        if (parsedFinal.clean !== deltaStreamed) {
+                            // final beda dari teks terstream (mis. ada catatan tool di tengah) -> render otentik
+                            streamingBuffer = parsedFinal.clean;
+                            charIndex = parsedFinal.clean.length;
+                            const dfIdx = messages.findIndex(m => m.id === aiMsgObj.id);
+                            if (dfIdx !== -1) messages[dfIdx].text = parsedFinal.clean;
+                            const dfEl = document.getElementById('msg-text-' + aiMsgObj.id);
+                            if (dfEl) dfEl.innerHTML = formatMarkdown(parsedFinal.clean);
+                        }
+                    } else {
+                        streamingBuffer += parsedFinal.clean;
+                    }
                     isFetchComplete = true;
                 } catch (e) {
                     if (e.name !== 'AbortError') {
