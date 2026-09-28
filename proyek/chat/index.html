@@ -1888,7 +1888,7 @@
                                 return `
                                 <div class="toolcalls-item">
                                     <button type="button" class="toolcalls-item-header${itemOpen ? ' open' : ''}${tc.ok === false ? ' err' : ''}" onclick="toggleToolCallItem('${msg.id}', ${idx})">
-                                        <i class="ph-bold ${toolCallIcon(tc.name)} text-[14px]" style="flex-shrink:0"></i>
+                                        ${tc.name === 'notion_request' ? `<span class="inline-flex w-[14px] h-[14px]" style="flex-shrink:0">${SVG}</span>` : `<i class="ph-bold ${toolCallIcon(tc.name)} text-[14px]" style="flex-shrink:0"></i>`}
                                         <span class="toolcalls-item-label">${tc.ok === false ? '✗ ' : ''}${escText(toolCallLabel(tc))}</span>
                                         ${(argsText || resultText) ? `<i class="ph-bold ph-caret-down tc-chevron text-[12px]"></i>` : ''}
                                     </button>
