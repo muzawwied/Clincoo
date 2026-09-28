@@ -2279,9 +2279,10 @@
             try {
                 // lewat proxy Clincoo: menghindari pembatasan CORS browser ke api.notion.com.
                 // Token TIDAK disimpan server — hanya diteruskan per-request dari header ini.
+                const nTok = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || '';
                 const res = await fetch(TOOL_API_BASE + '/api/notion-proxy', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Notion-Token': token },
+                    headers: { 'Content-Type': 'application/json', 'X-Notion-Token': token, ...(nTok ? { 'Authorization': 'Bearer ' + nTok } : {}) },
                     body: JSON.stringify({ parent: { page_id: page }, properties: { title: { title: [{ text: { content: exportDocTitle(text) } }] } }, children: notionBlocks(text) })
                 });
                 status = res.status; ok = res.ok;
