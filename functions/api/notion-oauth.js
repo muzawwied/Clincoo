@@ -69,7 +69,10 @@ export async function onRequestPost({ request, env }) {
       });
       const tokenData = await tokenRes.json().catch(() => ({}));
       if (!tokenData.access_token) {
-        return jsonResponse({ error: (tokenData.error && tokenData.message) ? (tokenData.error + ': ' + tokenData.message) : 'Refresh token Notion tidak valid.' }, 401);
+        // JANGAN outer 401: auth-client.js melempar SELURUH tab ke halaman login Clincoo
+        // begitu ada respons 401 dari path /api/* apa pun — refresh token Notion yang
+        // kedaluwarsa/dicabut bukan berarti sesi Clincoo mati.
+        return jsonResponse({ error: (tokenData.error && tokenData.message) ? (tokenData.error + ': ' + tokenData.message) : 'Refresh token Notion tidak valid.' }, 200);
       }
       return jsonResponse({ access_token: tokenData.access_token });
     } catch (e) {

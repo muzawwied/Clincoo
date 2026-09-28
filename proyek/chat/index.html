@@ -670,6 +670,14 @@
         let autoScrollActive = true;
         let isUserInteracting = false;
         let lastScrollTop = 0;
+        // Ruang kosong buatan di bawah daftar pesan — TANPA ini, saat pesan baru mau
+        // di-pin ke atas (pinMessageToTop) browser sering meng-CLAMP posisi scroll ke
+        // scrollHeight-clientHeight kalau konten di bawah pesan itu belum cukup tinggi
+        // (baru saja dikirim, indikator "mengetik" masih pendek) — hasilnya pesan baru
+        // "nyangkut" di bawah dan pesan lama tetap kelihatan penuh di atas, bukannya
+        // pesan baru naik ke atas dan pesan lama tertutup. Diisi = clientHeight saat
+        // pin, di-reset 0 lagi sebelum pin pesan berikutnya (lewat renderMessages).
+        let pinSpacerPx = 0;
         let imageGenerationTimeout = null;
         
         let messages = [];
@@ -1416,6 +1424,12 @@
             // streaming) TIDAK menarik scroll balik ke bawah — posisi pin ini yang jadi acuan,
             // persis seperti "pesan lama di-atasin sampai pesan baru saya".
             autoScrollActive = false;
+            // Sediakan ruang scroll DI BAWAH pesan baru sebesar tinggi viewport supaya
+            // scrollTo() di bawah tidak di-clamp browser ke posisi lebih rendah dari
+            // target (yang membuat pesan lama tetap terlihat penuh di atas).
+            pinSpacerPx = chatContainer.clientHeight;
+            const spacerNow = document.getElementById('scroll-top-spacer');
+            if (spacerNow) spacerNow.style.height = pinSpacerPx + 'px';
             requestAnimationFrame(() => {
                 const el = document.getElementById('msg-row-' + msgId);
                 if (!el) return;
@@ -2041,6 +2055,13 @@
                 }
                 chatContainer.appendChild(messageEl);
             });
+            const scrollSpacer = document.createElement('div');
+            scrollSpacer.id = 'scroll-top-spacer';
+            scrollSpacer.style.flexShrink = '0';
+            scrollSpacer.style.width = '100%';
+            scrollSpacer.style.height = pinSpacerPx + 'px';
+            scrollSpacer.setAttribute('aria-hidden', 'true');
+            chatContainer.appendChild(scrollSpacer);
             attachBubbleClickListeners();
             scrollToBottom(false);
         
@@ -2304,17 +2325,26 @@
             let ok = false, status = 0;
             try {
                 let res = await notionSendPage(token, page, text, nTok);
-                if (res.status === 401 && localStorage.getItem('clincoo_notion_refresh')) {
+                let d = await res.json().catch(function () { return {}; });
+                // proxy tidak pernah mengirim outer 401 (mencegah redirect global ke login) —
+                // status asli Notion ada di field _notion_status bila token ditolak.
+                status = d._notion_status || res.status;
+                if (status === 401 && localStorage.getItem('clincoo_notion_refresh')) {
                     // token OAuth kedaluwarsa -> refresh sekali lalu ulangi
                     const fresh = await notionRefreshToken();
-                    if (fresh) { token = fresh; res = await notionSendPage(token, page, text, nTok); }
+                    if (fresh) {
+                        token = fresh;
+                        res = await notionSendPage(token, page, text, nTok);
+                        d = await res.json().catch(function () { return {}; });
+                        status = d._notion_status || res.status;
+                    }
                 }
-                status = res.status; ok = res.ok;
+                ok = res.ok && status !== 401 && status !== 403 && !d.message && !d.code;
             } catch (e) { ok = false; }
             if (ok) showGlobalTooltip(btnElement, 'Terkirim ke Notion');
             else if (status === 401 || status === 403) {
                 if (!localStorage.getItem('clincoo_notion_refresh')) localStorage.removeItem('clincoo_notion_token');
-                openNotionModal(status === 400 ? 'Halaman belum di-share ke integration Notion Clincoo. Periksa halaman tujuan.' : 'Token Notion tidak valid / halaman belum di-share ke integration. Periksa ulang.');
+                openNotionModal(status === 403 ? 'Halaman belum di-share ke integration Notion Clincoo. Periksa halaman tujuan.' : 'Token Notion tidak valid / halaman belum di-share ke integration. Periksa ulang.');
             } else showGlobalTooltip(btnElement, 'Gagal kirim ke Notion (' + status + ')');
         }
 
@@ -3306,7 +3336,10 @@
                     if (!/^[0-9a-f]{32}$/i.test(parent)) return { success: false, error: 'Halaman tujuan belum dipilih. Minta user memilihnya di halaman Plugin, atau kirim page_id dari action search.' };
                     const res = await fetch(TOOL_API_BASE + '/api/notion-proxy', { method: 'POST', headers: hdrs, body: JSON.stringify({ parent: { page_id: parent }, properties: { title: { title: [{ text: { content: title } }] } }, children: notionBlocks(md) }) });
                     const d = await res.json().catch(function () { return {}; });
-                    if (!res.ok) return { success: false, error: d.message || d.code || ('Gagal membuat halaman Notion (HTTP ' + res.status + ').') };
+                    // proxy tidak pernah mengirim outer 401 (mencegah redirect global ke login) —
+                    // status asli Notion ada di field _notion_status bila token/halaman ditolak.
+                    const realStatus = d._notion_status || res.status;
+                    if (!res.ok || realStatus >= 400 || !d.id) return { success: false, error: d.message || d.code || ('Gagal membuat halaman Notion (HTTP ' + realStatus + ').') };
                     return { success: true, page_id: d.id || '', page_url: d.url || '' };
                 }
                 return { success: false, error: 'Action tidak dikenal. Yang tersedia: search (daftar halaman), read (baca isi halaman), create (buat halaman baru).' };

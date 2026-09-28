@@ -23,7 +23,7 @@ export async function onRequestOptions() {
 
 export async function onRequestPost({ request }) {
   const token = request.headers.get('X-Notion-Token') || '';
-  if (!token) return json({ error: 'Token Notion tidak ditemukan (X-Notion-Token).' }, 401);
+  if (!token) return json({ error: 'Token Notion tidak ditemukan (X-Notion-Token).' }, 400);
   let body;
   try { body = await request.json(); } catch (e) { return json({ error: 'Body JSON tidak valid.' }, 400); }
   if (!body || typeof body !== 'object') return json({ error: 'Body harus objek JSON.' }, 400);
@@ -62,11 +62,14 @@ export async function onRequestPost({ request }) {
           return { id: p.id, title: title || 'Tanpa judul', parent_type: (p.parent && p.parent.type) || '' };
         });
         return new Response(JSON.stringify({ ok: res.ok, status: res.status, pages }), {
-          status: res.ok ? 200 : res.status,
+          status: 200,
           headers: { 'Content-Type': 'application/json', ...CORS }
         });
       } catch (eP) {
-        return new Response(text, { status: res.status, headers: { 'Content-Type': 'application/json', ...CORS } });
+        // upstream Notion mengirim status non-401 (mis. 400/403/5xx) — teruskan APA ADANYA,
+        // KECUALI 401 (redirect global auth-client mendeteksi 401 dari /api/* apa pun sebagai
+        // "sesi Clincoo mati" dan melempar seluruh tab ke halaman login).
+        return new Response(text, { status: res.status === 401 ? 200 : res.status, headers: { 'Content-Type': 'application/json', ...CORS } });
       }
     }
 
@@ -93,7 +96,7 @@ export async function onRequestPost({ request }) {
           out = { ok: false, status: res.status, error: (data.message || data.code || 'gagal') };
         }
       } catch (eJ) {}
-      return json(out, res.ok ? 200 : res.status);
+      return json(out, 200);
     }
 
     // ---- aksi: baca isi halaman (blok anak, disederhanakan jadi baris teks) ----
@@ -105,7 +108,7 @@ export async function onRequestPost({ request }) {
         const errText = await res.text();
         let msg = 'Gagal membaca halaman Notion (HTTP ' + res.status + ').';
         try { const e = JSON.parse(errText); if (e.message) msg = e.message; } catch (eE) {}
-        return json({ ok: false, status: res.status, error: msg }, res.status);
+        return json({ ok: false, status: res.status, error: msg }, 200);
       }
       const data = await res.json().catch(() => ({}));
       const blocks = (data.results || []).map(b => {
@@ -127,7 +130,17 @@ export async function onRequestPost({ request }) {
       body: JSON.stringify(body)
     });
     const text = await res.text();
-    return new Response(text, { status: res.status, headers: { 'Content-Type': 'application/json', ...CORS } });
+    // status asli Notion tetap dikirim (klien pakai untuk deteksi 401 -> refresh token &
+    // 403 -> minta share ulang halaman) TAPI JANGAN pernah 401 sebagai outer HTTP status:
+    // auth-client.js melempar SELURUH tab ke halaman login begitu ada respons 401 dari
+    // path /api/* apa pun, tanpa peduli itu Clincoo atau Notion yang menolak.
+    let withStatus = text;
+    try {
+      const parsed = JSON.parse(text);
+      parsed._notion_status = res.status;
+      withStatus = JSON.stringify(parsed);
+    } catch (eC) {}
+    return new Response(withStatus, { status: res.status === 401 ? 200 : res.status, headers: { 'Content-Type': 'application/json', ...CORS } });
   } catch (e) {
     return json({ error: 'Gagal menghubungi Notion: ' + (e && e.message || e) }, 502);
   }
