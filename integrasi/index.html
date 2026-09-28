@@ -200,6 +200,7 @@
                     <button data-filter="developer" class="filter-inline-btn px-4 py-1.5 rounded-full bg-gray-100 text-gray-500 hover:text-gray-800 text-[13px] font-semibold whitespace-nowrap transition-all">Developer</button>
                     <button data-filter="komunikasi" class="filter-inline-btn px-4 py-1.5 rounded-full bg-gray-100 text-gray-500 hover:text-gray-800 text-[13px] font-semibold whitespace-nowrap transition-all">Komunikasi</button>
                     <button data-filter="cloud" class="filter-inline-btn px-4 py-1.5 rounded-full bg-gray-100 text-gray-500 hover:text-gray-800 text-[13px] font-semibold whitespace-nowrap transition-all">Cloud</button>
+                    <button data-filter="produktivitas" class="filter-inline-btn px-4 py-1.5 rounded-full bg-gray-100 text-gray-500 hover:text-gray-800 text-[13px] font-semibold whitespace-nowrap transition-all">Produktivitas</button>
                     <button data-filter="email" class="filter-inline-btn px-4 py-1.5 rounded-full bg-gray-100 text-gray-500 hover:text-gray-800 text-[13px] font-semibold whitespace-nowrap transition-all">Email</button>
                 </div>
             </div>
@@ -241,6 +242,23 @@
                     </div>
                     <p class="text-[12.5px] text-gray-500 leading-relaxed mt-3">Cari, baca, dan kelola file Google Drive Anda langsung dari chat.</p>
                 </div>
+                </div>
+
+                <div id="notion-integration-card" class="integration-card group bg-white border border-gray-100 rounded-2xl p-4 sm:p-4.5 hover:border-gray-200 hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)] transition-all duration-300 w-full cursor-pointer" data-title="notion" data-category="produktivitas" role="button" tabindex="0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 flex items-center justify-center flex-shrink-0">
+                            <svg viewBox="0 0 52 52" aria-hidden="true" class="w-8 h-8"><rect x="5" y="5" width="42" height="42" rx="7" fill="#ffffff" stroke="#37352f" stroke-width="2"/><text x="26" y="37" font-family="Georgia, serif" font-size="27" font-weight="700" fill="#37352f" text-anchor="middle">N</text></svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-[15px] font-bold text-gray-900 font-montserrat tracking-tight leading-tight">Notion</h3>
+                            <p class="text-[11.5px] text-gray-400 font-medium mt-0.5">Produktivitas &middot; Resmi</p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <span id="notion-status-badge" class="hidden items-center text-[12px] font-semibold text-emerald-600 whitespace-nowrap">Terhubung</span>
+                            <button onclick="event.stopPropagation(); openNotionModal()" id="notion-connect-btn" class="px-4 py-2 bg-[#0f1115] text-white rounded-xl text-[12.5px] font-semibold hover:bg-[#1a1d24] transition-all duration-300 active:scale-[0.97] whitespace-nowrap">Hubungkan</button>
+                        </div>
+                    </div>
+                    <p class="text-[12.5px] text-gray-500 leading-relaxed mt-3">Kirim jawaban AI Clincoo langsung ke halaman Notion Anda.</p>
                 </div>
 
                 <!-- Plugin Calendar disembunyikan sementara (belum diverifikasi Google): hapus wrapper display:none untuk mengaktifkan kembali. -->
@@ -664,6 +682,83 @@
         </div>
     </div>
 
+    <!-- ===== MODAL NOTION ===== -->
+    <div id="notion-connect-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl w-full max-w-sm shadow-2xl px-6 pt-6 pb-6 relative">
+            <button onclick="closeNotionModal()" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors absolute top-4 right-4">
+                <i class="ph ph-x text-lg"></i>
+            </button>
+            <h3 class="text-lg font-bold text-gray-900 font-montserrat mb-1.5">Hubungkan Notion</h3>
+            <p class="text-[13px] text-gray-500 leading-relaxed mb-4">Clincoo akan terhubung ke workspace Notion Anda melalui OAuth resmi Notion. Anda memilih halaman tujuan, koneksi dapat diputuskan kapan saja.</p>
+            <div class="bg-gray-50 rounded-2xl p-4">
+                <p class="text-[12px] font-semibold text-gray-700 mb-3">Clincoo AI akan bisa:</p>
+                <div class="flex flex-col gap-2.5">
+                    <div class="flex items-start gap-2.5">
+                        <i class="ph ph-file-text text-lg text-gray-700 flex-shrink-0"></i>
+                        <p class="text-[12.5px] text-gray-600 leading-snug">Membaca daftar halaman Notion yang Anda beri akses</p>
+                    </div>
+                    <div class="flex items-start gap-2.5">
+                        <i class="ph ph-notebook-plus text-lg text-gray-700 flex-shrink-0"></i>
+                        <p class="text-[12.5px] text-gray-600 leading-snug">Membuat halaman baru berisi jawaban AI atas perintah Anda</p>
+                    </div>
+                </div>
+                <label class="flex items-start gap-2.5 mt-4 cursor-pointer select-none">
+                    <input type="checkbox" id="notion-permission-check" class="mt-0.5 w-4 h-4 accent-black flex-shrink-0">
+                    <span class="text-[11.5px] text-gray-500 leading-relaxed">Saya menyetujui pemberian akses di atas dan Kebijakan Privasi Clincoo.</span>
+                </label>
+            </div>
+            <div id="notion-oauth-error" class="hidden mt-3 text-[12px] text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2 leading-relaxed"></div>
+            <div class="px-6 pt-5 pb-6 flex items-center gap-2.5 -mx-6">
+                <button onclick="closeNotionModal()" class="flex-1 py-3 rounded-full border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition active:scale-[0.98]">Batal</button>
+                <button onclick="startNotionOAuth()" id="notion-connect-cta" disabled class="flex-1 py-3 cta-capsule rounded-full font-semibold text-sm active:scale-95 transition-all opacity-40 pointer-events-none">Hubungkan</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="notion-loading" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl p-8 w-[90%] max-w-sm shadow-2xl text-center">
+            <div class="w-12 h-12 mx-auto mb-4 rounded-full border-4 border-gray-100 border-t-black animate-spin"></div>
+            <p class="text-sm font-medium text-gray-700">Menghubungkan ke Notion...</p>
+        </div>
+    </div>
+
+    <div id="notion-connected-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl w-full max-w-sm shadow-2xl px-6 pt-6 pb-6 text-center relative">
+            <button onclick="closeNotionConnectedModal()" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors absolute top-4 right-4">
+                <i class="ph ph-x text-lg"></i>
+            </button>
+            <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-emerald-50 flex items-center justify-center">
+                <i class="ph ph-check-circle text-3xl text-emerald-500"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 font-montserrat mb-1.5">Notion Terhubung</h3>
+            <p class="text-[12.5px] text-gray-500 mb-3">Pilih halaman tujuan untuk jawaban AI Clincoo.</p>
+            <div id="notion-workspace-info" class="mb-4"></div>
+            <div class="text-left mb-2">
+                <label class="text-[12px] font-semibold text-gray-700">Halaman tujuan</label>
+                <select id="notion-page-select" class="w-full mt-1.5 px-3 py-2.5 rounded-xl border border-gray-200 text-[13.5px] text-gray-800 bg-white focus:outline-none focus:border-gray-400">
+                    <option value="">Memuat daftar halaman...</option>
+                </select>
+                <button onclick="loadNotionPages(true)" class="text-[12px] font-semibold text-gray-400 hover:text-black transition-colors mt-2">Muat ulang daftar halaman</button>
+            </div>
+            <button onclick="closeNotionConnectedModal()" class="w-full py-3 cta-capsule rounded-full font-semibold text-sm active:scale-95 transition-all">Selesai</button>
+            <button onclick="confirmDisconnectNotion()" class="text-[12.5px] font-semibold text-gray-400 hover:text-red-500 transition-colors mt-3">Putuskan koneksi</button>
+        </div>
+    </div>
+
+    <div id="notion-disconnect-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl w-full max-w-sm shadow-2xl px-6 pt-6 pb-6 text-center">
+            <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-red-50 flex items-center justify-center">
+                <i class="ph ph-warning-circle text-3xl text-red-500"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 font-montserrat mb-1">Putuskan Notion?</h3>
+            <p class="text-[12.5px] text-gray-500 mb-6 leading-relaxed">Clincoo AI tidak akan bisa lagi mengirim halaman ke Notion Anda. Anda dapat menghubungkan ulang kapan saja.</p>
+            <div class="flex items-center gap-2.5">
+                <button onclick="closeNotionDisconnectModal()" class="flex-1 py-3 rounded-full border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition active:scale-[0.98]">Batal</button>
+                <button onclick="disconnectNotion()" class="flex-1 py-3 rounded-full bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition active:scale-[0.98]">Putuskan</button>
+            </div>
+        </div>
+    </div>
+
     <div id="drive-loading" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm">
         <div class="bg-white rounded-3xl p-8 w-[90%] max-w-sm shadow-2xl text-center">
             <div class="w-12 h-12 mx-auto mb-4 rounded-full border-4 border-gray-100 border-t-black animate-spin"></div>
@@ -884,7 +979,7 @@
 
             // ALUR BARU: GitHub balik ke halaman ini dengan ?code=... — tukar via backend Clincoo.
             const codeParam = urlParams.get('code');
-            if (!ghToken && codeParam) {
+            if (!ghToken && codeParam && !notionStateMatches(urlParams.get('state'))) {
                 window.history.replaceState({}, document.title, getRedirectUri());
                 document.getElementById('github-loading').classList.remove('hidden');
                 try {
@@ -909,7 +1004,7 @@
                 return;
             }
 
-            if (errParam) {
+            if (errParam && !notionStateMatches(urlParams.get('state'))) {
                 window.history.replaceState({}, document.title, getRedirectUri());
                 const errEl = document.getElementById('gh-oauth-error');
                 if (errEl) {
@@ -1529,7 +1624,189 @@
         }
 
 
+        // ===== PLUGIN NOTION (OAuth resmi, token hanya di perangkat user) =====
+        function notionStateMatches(st) {
+            if (!st) return false;
+            try {
+                const m = document.cookie.match(/clinqoo_notion_state=([^;]+)/);
+                if (!m) return false;
+                const v = decodeURIComponent(m[1]);
+                return v === st;
+            } catch (e) { return false; }
+        }
+
+        function openNotionModal() {
+            const chk = document.getElementById('notion-permission-check');
+            if (chk) { chk.checked = false; }
+            const cta = document.getElementById('notion-connect-cta');
+            if (cta) { cta.disabled = true; cta.classList.add('opacity-40', 'pointer-events-none'); }
+            const errEl = document.getElementById('notion-oauth-error');
+            if (errEl) { errEl.classList.add('hidden'); errEl.textContent = ''; }
+            document.getElementById('notion-connect-modal').classList.remove('hidden');
+        }
+        function closeNotionModal() { document.getElementById('notion-connect-modal').classList.add('hidden'); }
+        function closeNotionConnectedModal() { document.getElementById('notion-connected-modal').classList.add('hidden'); }
+        function closeNotionDisconnectModal() { document.getElementById('notion-disconnect-modal').classList.add('hidden'); }
+        function confirmDisconnectNotion() {
+            closeNotionConnectedModal();
+            document.getElementById('notion-disconnect-modal').classList.remove('hidden');
+        }
+        function setNotionConnectedUI(connected) {
+            const badge = document.getElementById('notion-status-badge');
+            const btn = document.getElementById('notion-connect-btn');
+            if (!badge || !btn) return;
+            if (connected) {
+                badge.classList.remove('hidden'); badge.classList.add('flex');
+                btn.textContent = 'Kelola';
+                btn.classList.add('border', 'border-gray-200', 'text-gray-700');
+                btn.classList.remove('bg-[#0f1115]', 'text-white', 'hover:bg-[#1a1d24]');
+            } else {
+                badge.classList.add('hidden'); badge.classList.remove('flex');
+                btn.textContent = 'Hubungkan';
+                btn.classList.remove('border', 'border-gray-200', 'text-gray-700');
+                btn.classList.add('bg-[#0f1115]', 'text-white', 'hover:bg-[#1a1d24]');
+            }
+        }
+
+        async function startNotionOAuth() {
+            const chk = document.getElementById('notion-permission-check');
+            if (chk && !chk.checked) return;
+            if (location.hostname.indexOf('clincoo') === -1 && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+                window.location.href = 'https://app.clincoo.buzz/integrasi/';
+                return;
+            }
+            document.getElementById('notion-connect-modal').classList.add('hidden');
+            document.getElementById('notion-loading').classList.remove('hidden');
+            let clientId = null, redirectUri = null;
+            try {
+                const r = await fetch('/api/notion-oauth', { headers: { 'Authorization': 'Bearer ' + clinqooAuthToken() } });
+                const d = await r.json();
+                clientId = d.client_id; redirectUri = d.redirect_uri;
+            } catch (e) {}
+            if (!clientId) {
+                document.getElementById('notion-loading').classList.add('hidden');
+                const errEl = document.getElementById('notion-oauth-error');
+                if (errEl) { errEl.textContent = 'Konektor Notion belum dikonfigurasi di server Clincoo. Coba lagi sebentar.'; errEl.classList.remove('hidden'); }
+                document.getElementById('notion-connect-modal').classList.remove('hidden');
+                return;
+            }
+            const st = 'n' + (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()).replace(/-/g, '');
+            document.cookie = 'clinqoo_notion_state=' + encodeURIComponent(st) + '; Max-Age=900; Path=/; SameSite=Lax; Secure';
+            window.location.href = 'https://api.notion.com/v1/oauth/authorize?client_id=' + encodeURIComponent(clientId) +
+                '&redirect_uri=' + encodeURIComponent(redirectUri || (window.location.origin + '/integrasi/')) +
+                '&response_type=code&owner=user&state=' + encodeURIComponent(st);
+        }
+
+        function handleNotionCancel() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (!urlParams.get('error') || !notionStateMatches(urlParams.get('state'))) return;
+            window.history.replaceState({}, document.title, '/integrasi/');
+            document.cookie = 'clinqoo_notion_state=; Max-Age=0; Path=/; SameSite=Lax; Secure';
+            const errEl = document.getElementById('notion-oauth-error');
+            if (errEl) { errEl.textContent = 'Gagal menghubungkan: ' + (urlParams.get('description') || 'dibatalkan'); errEl.classList.remove('hidden'); }
+            document.getElementById('notion-connect-modal').classList.remove('hidden');
+        }
+
+        async function handleNotionCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const codeParam = urlParams.get('code');
+            const st = urlParams.get('state');
+            if (!codeParam || !notionStateMatches(st)) return; // bukan callback Notion -> abaikan
+            window.history.replaceState({}, document.title, '/integrasi/');
+            document.cookie = 'clinqoo_notion_state=; Max-Age=0; Path=/; SameSite=Lax; Secure';
+            document.getElementById('notion-loading').classList.remove('hidden');
+            const errEl = document.getElementById('notion-oauth-error');
+            try {
+                const res = await fetch('/api/notion-oauth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clinqooAuthToken() },
+                    body: JSON.stringify({ code: codeParam })
+                });
+                const data = await res.json().catch(function () { return {}; });
+                if (res.status === 401) throw new Error('Silakan login Clincoo dulu, lalu hubungkan Notion lagi.');
+                if (!res.ok || !data.access_token) throw new Error(data.error || 'Gagal menghubungkan Notion (HTTP ' + res.status + ').');
+                localStorage.setItem('clincoo_notion_token', data.access_token);
+                if (data.refresh_token) localStorage.setItem('clincoo_notion_refresh', data.refresh_token);
+                const user = { workspace_name: data.workspace_name || '', owner_name: data.owner_name || '' };
+                localStorage.setItem('clincoo_notion_user', JSON.stringify(user));
+                setNotionConnectedUI(true);
+                showNotionConnected(user);
+            } catch (ex) {
+                document.getElementById('notion-loading').classList.add('hidden');
+                if (errEl) { errEl.textContent = 'Gagal menghubungkan: ' + (ex && ex.message ? ex.message : String(ex)); errEl.classList.remove('hidden'); }
+                document.getElementById('notion-connect-modal').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('notion-loading').classList.add('hidden');
+        }
+
+        async function notionRefreshAccessToken() {
+            const refresh = localStorage.getItem('clincoo_notion_refresh');
+            if (!refresh) return localStorage.getItem('clincoo_notion_token') || '';
+            try {
+                const res = await fetch('/api/notion-oauth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clinqooAuthToken() },
+                    body: JSON.stringify({ refresh_token: refresh })
+                });
+                const data = await res.json().catch(function () { return {}; });
+                if (res.ok && data.access_token) {
+                    localStorage.setItem('clincoo_notion_token', data.access_token);
+                    return data.access_token;
+                }
+            } catch (e) {}
+            return localStorage.getItem('clincoo_notion_token') || '';
+        }
+
+        function showNotionConnected(user) {
+            const infoEl = document.getElementById('notion-workspace-info');
+            if (infoEl && user) {
+                infoEl.innerHTML = '<div class="inline-flex items-center gap-1.5 bg-gray-50 rounded-full px-3 py-1.5 text-[12px] text-gray-600 font-medium">' +
+                    '<i class="ph ph-neighborhood"></i> ' + (user.workspace_name || user.owner_name || 'Workspace') + '</div>';
+            }
+            document.getElementById('notion-connected-modal').classList.remove('hidden');
+            loadNotionPages(false);
+        }
+
+        async function loadNotionPages(force) {
+            const sel = document.getElementById('notion-page-select');
+            if (!sel) return;
+            const token = await notionRefreshAccessToken();
+            if (!token) return;
+            sel.innerHTML = '<option value="">Memuat daftar halaman...</option>';
+            try {
+                const res = await fetch('/api/notion-proxy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Notion-Token': token, 'Authorization': 'Bearer ' + clinqooAuthToken() },
+                    body: JSON.stringify({ action: 'search' })
+                });
+                const data = await res.json().catch(function () { return {}; });
+                const pages = (data && data.pages) || [];
+                const saved = localStorage.getItem('clincoo_notion_page') || '';
+                sel.innerHTML = pages.length
+                    ? pages.map(function (pg) { return '<option value="' + pg.id + '"' + (pg.id === saved ? ' selected' : '') + '>' + (pg.title || 'Tanpa judul') + '</option>'; }).join('')
+                    : '<option value="">Tidak ada halaman — share halaman Notion ke Clincoo dulu</option>';
+                sel.onchange = function () {
+                    if (sel.value) localStorage.setItem('clincoo_notion_page', sel.value);
+                };
+            } catch (e) {
+                sel.innerHTML = '<option value="">Gagal memuat daftar halaman</option>';
+            }
+        }
+
+        function disconnectNotion() {
+            ['clincoo_notion_token', 'clincoo_notion_refresh', 'clincoo_notion_user', 'clincoo_notion_page'].forEach(k => localStorage.removeItem(k));
+            closeNotionDisconnectModal();
+            closeNotionConnectedModal();
+            setNotionConnectedUI(false);
+        }
+
+        function validateSavedNotionConnection() {
+            if (localStorage.getItem('clincoo_notion_token')) setNotionConnectedUI(true);
+        }
+
         window.addEventListener('load', () => {
+            handleNotionCancel();
             handleOAuthCallback();
             syncGitHubFromDB();
             validateSavedGitHubConnection();
@@ -1537,6 +1814,18 @@
             validateSavedDriveConnection();
             handleCalendarCallback();
             validateSavedCalendarConnection();
+            handleNotionCallback();
+            validateSavedNotionConnection();
+
+            const nPermCheck = document.getElementById('notion-permission-check');
+            const nCta = document.getElementById('notion-connect-cta');
+            if (nPermCheck && nCta) {
+                nPermCheck.addEventListener('change', () => {
+                    nCta.disabled = !nPermCheck.checked;
+                    if (nPermCheck.checked) { nCta.classList.remove('opacity-40', 'pointer-events-none'); }
+                    else { nCta.classList.add('opacity-40', 'pointer-events-none'); }
+                });
+            }
 
             const permCheck = document.getElementById('gh-permission-check');
             const ghCta = document.getElementById('gh-connect-cta');
