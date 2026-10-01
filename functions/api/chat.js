@@ -46,32 +46,73 @@ function clientIp(request) {
 
 const PREFERRED_MODELS = ['gemini-3.6-flash', 'gemini-3-flash-preview'];
 
-// ===== FALLBACK TERAKHIR: Workers AI (binding, tanpa API key, teks saja) =====
-// Dipakai saat Gemini gagal/limit/tanpa kunci — chat tetap jalan.
-const WORKERS_AI_MODELS = ['@cf/zai-org/glm-5.2', '@cf/deepseek-ai/deepseek-v4-flash-0731', '@cf/zai-org/glm-4.7-flash'];
+// ===== AI UTAMA: GLM 5.3 Flash (Workers AI, binding internal) =====
+// Model lama tetap di daftar sebagai cadangan bila GLM 5.3 Flash gagal.
+const WORKERS_AI_MODELS = ['@cf/zai-org/glm-5.3-flash', '@cf/zai-org/glm-5.2', '@cf/deepseek-ai/deepseek-v4-flash-0731', '@cf/zai-org/glm-4.7-flash'];
 function textOf(m) {
   if (typeof m.content === 'string') return m.content;
   if (Array.isArray(m.content)) return m.content.filter(b => b && b.type === 'text').map(b => b.text).join('\n');
   return '';
 }
-async function tryWorkersAIText(env, messages) {
+async function tryWorkersAIText(env, messages, gDecls) {
   if (!env || !env.AI) return null;
   const system = messages.some(m => m.role === 'system') ? messages.filter(m => m.role === 'system').map(textOf).join('\n\n') : '';
+  // Blok tools Clincoo (function_call/function_response) -> format tool OpenAI,
+  // supaya percakapan multi-hop (AI memakai tool lalu lanjut) tetap utuh di GLM.
   const chatMsgs = [];
+  let lastCallIds = [];
   for (const m of messages) {
     if (m.role === 'system') continue;
+    const blocks = Array.isArray(m.content) ? m.content : null;
     const t = textOf(m);
+    if (blocks && blocks.some(b => b && b.type === 'function_call')) {
+      const calls = blocks.filter(b => b && b.type === 'function_call');
+      lastCallIds = calls.map((b, i) => 'call_' + chatMsgs.length + '_' + i);
+      chatMsgs.push({ role: 'assistant', content: t || '', tool_calls: calls.map((b, i) => ({ id: lastCallIds[i], type: 'function', function: { name: b.name, arguments: JSON.stringify(b.args || {}) } })) });
+      continue;
+    }
+    if (blocks && blocks.some(b => b && b.type === 'function_response')) {
+      for (const b of blocks.filter(b => b && b.type === 'function_response')) {
+        let rs = ''; try { rs = (typeof b.result === 'string') ? b.result : JSON.stringify(b.result); } catch (e) { rs = ''; }
+        chatMsgs.push({ role: 'tool', tool_call_id: lastCallIds.shift() || ('call_orphan_' + chatMsgs.length), content: rs || ' ' });
+      }
+      if (t) chatMsgs.push({ role: 'user', content: t });
+      continue;
+    }
     if (t) chatMsgs.push({ role: m.role, content: t });
   }
+  const oaiTools = (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
   for (const model of WORKERS_AI_MODELS) {
+    let result = null;
     try {
       const payload = { messages: chatMsgs };
       if (system) payload.system = system;
-      const result = await env.AI.run(model, payload);
-      const raw = (result && (result.response || (typeof result === 'string' ? result : ''))) || '';
-      const text = raw || ((result && Array.isArray(result.choices) && result.choices[0] && result.choices[0].message && result.choices[0].message.content) || '');
-      if (text) return { text, model: model.split('/').pop() + ' (Workers AI)' };
-    } catch (e) { /* coba model berikutnya */ }
+      if (oaiTools) payload.tools = oaiTools;
+      result = await env.AI.run(model, payload);
+    } catch (e) { result = null; }
+    // Gagal saat membawa tools (model belum support param tools) -> coba sekali tanpa tools
+    if (!result && oaiTools) {
+      try {
+        const p2 = { messages: chatMsgs };
+        if (system) p2.system = system;
+        result = await env.AI.run(model, p2);
+      } catch (e2) { result = null; }
+    }
+    if (!result) continue; // coba model berikutnya
+    const raw = (result && (result.response || (typeof result === 'string' ? result : ''))) || '';
+    const text = raw || ((result && Array.isArray(result.choices) && result.choices[0] && result.choices[0].message && result.choices[0].message.content) || '');
+    // tool_calls gaya OpenAI (model Workers AI yang support function calling)
+    let tcs = (result && Array.isArray(result.tool_calls)) ? result.tool_calls : null;
+    if (!tcs && result && Array.isArray(result.choices) && result.choices[0] && result.choices[0].message && Array.isArray(result.choices[0].message.tool_calls)) tcs = result.choices[0].message.tool_calls;
+    if (tcs && tcs.length) {
+      const norm = [];
+      for (const c of tcs) {
+        let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
+        if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
+      }
+      if (norm.length) return { tool_calls: norm, text, model: model.split('/').pop() + ' (Workers AI)' };
+    }
+    if (text) return { text, model: model.split('/').pop() + ' (Workers AI)' };
   }
   return null;
 }
@@ -636,22 +677,29 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // Payload bergambar -> hanya Gemini (Workers AI tidak support vision).
     const hasImages = messages.some(m => Array.isArray(m?.content) && m.content.some(b => b && b.type === 'image_url' && b.image_url?.url));
 
-    // PROVIDER UTAMA: Gemini (kualitas jawaban & function calling paling benar).
-    // Gagal/limit/tanpa kunci -> cadangan Workers AI (teks saja, tanpa kunci).
+    // AI UTAMA: GLM 5.3 Flash (Workers AI, binding internal — tanpa kunci/kuota Google).
+    // Gemini menjadi CADANGAN (jalur vision + fallback klasik). Chat bergambar tetap
+    // langsung Gemini karena Workers AI tidak support vision.
     // TOOLS SERVER (backend function & screenshot) dieksekusi di sini: hasil
     // ditempel ke pesan lalu provider dipanggil lagi (max 4 hop server) —
     // jalur klien (frontend) tidak berubah sama sekali.
     let r = null;
     const workMessages = messages; // array sama — kita append blok function_call/response
+    const aiMain = !!(env.AI && !hasImages);
+    const toolDecls = (gTools && gTools[0] && gTools[0].functionDeclarations) || null;
     for (let sHop = 0; sHop <= 4; sHop++) {
       r = null;
-      if (apiKey.length) {
+      if (aiMain) {
+        const w = await tryWorkersAIText(env, workMessages, toolDecls);
+        if (w) r = w;
+      }
+      if ((!r || r.error) && apiKey.length) {
         const { systemInstruction, contents } = toGeminiPayload(workMessages);
         r = await tryModels(apiKey, systemInstruction, contents, gTools, streamSend ? (chunkText) => streamSend({ t: 'delta', text: chunkText }) : null);
       }
-      // Fallback terakhir: Workers AI (teks saja, tanpa kunci) — chat gak mati total
-      if ((!r || r.error) && env.AI && !hasImages) {
-        const w = await tryWorkersAIText(env, workMessages);
+      // Fallback terakhir (dipakai bila GLM utama dilewati, mis. chat bergambar): teks saja
+      if ((!r || r.error) && env.AI && !hasImages && !aiMain) {
+        const w = await tryWorkersAIText(env, workMessages, toolDecls);
         if (w) r = w;
       }
       if (!r || r.error) break; // error/kutipan ditangani di bawah seperti biasa

@@ -137,7 +137,7 @@ function normalizeMessages(messages) {
 //   glm-5.2      : flagship agentic coding (Z.ai) — reasoning, function calling, ctx 262K
 //   deepseek-v4  : agentic cepat, reasoning, ctx 1.3M token
 //   glm-4.7-flash: cepat & multilingual (100+ bahasa — ramah Bahasa Indonesia)
-const WORKERS_AI_MODELS = ['@cf/zai-org/glm-5.2', '@cf/deepseek-ai/deepseek-v4-flash-0731', '@cf/zai-org/glm-4.7-flash'];
+const WORKERS_AI_MODELS = ['@cf/zai-org/glm-5.3-flash', '@cf/zai-org/glm-5.2', '@cf/deepseek-ai/deepseek-v4-flash-0731', '@cf/zai-org/glm-4.7-flash'];
 
 async function tryWorkersAI(env, messages, stream) {
   if (!env.AI) return { error: 'Workers AI binding tidak tersedia' };
