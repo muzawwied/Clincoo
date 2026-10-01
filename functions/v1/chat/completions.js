@@ -59,14 +59,14 @@ const AI_MODELS = {
   'clincoo/deepseek-v4-flash': { provider: 'cf', internal: '@cf/deepseek-ai/deepseek-v4-flash-0731', note: 'Cepat — konteks besar', free: true },
   'clincoo/glm-4.7-flash': { provider: 'cf', internal: '@cf/zai-org/glm-4.7-flash', note: 'Multilingual — ramah Bahasa Indonesia', free: true },
   // --- jaringan mitra model gratis Clincoo ---
-  'clincoo/nemotron-super': { provider: 'ext', internal: 'nvidia/nemotron-3-super-120b-a12b:free', note: 'Model besar — reasoning umum', free: true },
-  'clincoo/nemotron-ultra': { provider: 'ext', internal: 'nvidia/nemotron-3-ultra-550b-a55b:free', note: 'Model terbesar — konteks 1M token', free: true },
-  'clincoo/nemotron-lightning': { provider: 'ext', internal: 'nvidia/nemotron-3.5-lightning:free', note: 'Ringan & cepat — konteks 1M token', free: true },
-  'clincoo/nemotron-nano-omni': { provider: 'ext', internal: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', note: 'Multimodal — teks, gambar, audio', free: true },
-  'clincoo/gemma-31b': { provider: 'ext', internal: 'google/gemma-4-31b-it:free', note: 'Serba guna — teks & gambar', free: true },
-  'clincoo/gemma-26b': { provider: 'ext', internal: 'google/gemma-4-26b-a4b-it:free', note: 'Ringan — teks & gambar', free: true },
-  'clincoo/qwen-27b': { provider: 'ext', internal: 'qwen/qwen3.8-27b:free', note: 'Multimodal — teks, gambar, video', free: true },
-  'clincoo/apodex-mini': { provider: 'ext', internal: 'apodex/apodex-1.1-mini:free', note: 'Reasoning — riset & analisis panjang', free: true },
+  'clincoo/reasoning-120b': { provider: 'ext', internal: 'nvidia/nemotron-3-super-120b-a12b:free', note: 'Model besar — reasoning umum', free: true },
+  'clincoo/reasoning-550b': { provider: 'ext', internal: 'nvidia/nemotron-3-ultra-550b-a55b:free', note: 'Model terbesar — konteks 1M token', free: true },
+  'clincoo/lightning': { provider: 'ext', internal: 'nvidia/nemotron-3.5-lightning:free', note: 'Ringan & cepat — konteks 1M token', free: true },
+  'clincoo/omni-nano': { provider: 'ext', internal: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', note: 'Multimodal — teks, gambar, audio', free: true },
+  'clincoo/vision-31b': { provider: 'ext', internal: 'google/gemma-4-31b-it:free', note: 'Serba guna — teks & gambar', free: true },
+  'clincoo/vision-26b': { provider: 'ext', internal: 'google/gemma-4-26b-a4b-it:free', note: 'Ringan — teks & gambar', free: true },
+  'clincoo/multimodal-27b': { provider: 'ext', internal: 'qwen/qwen3.8-27b:free', note: 'Multimodal — teks, gambar, video', free: true },
+  'clincoo/reasoning-mini': { provider: 'ext', internal: 'apodex/apodex-1.1-mini:free', note: 'Reasoning — riset & analisis panjang', free: true },
   'clincoo/ling-flash': { provider: 'ext', internal: 'inclusionai/ling-3.0-flash-sante:free', note: 'Cepat & ringan', free: true },
   'clincoo/dots-note': { provider: 'ext', internal: 'dots-studio/dots-3-note-preview:free', note: 'Multimodal — teks & gambar', free: true },
   'clincoo/lfm-mini': { provider: 'ext', internal: 'liquid/lfm-2.5-2.6b:free', note: 'Mini — super ringan & cepat', free: true },
@@ -82,7 +82,7 @@ const AI_MODELS = {
 // paling stabil sebagai cadangan.
 const AUTO_CHAIN = [
   'clincoo/glm-5.2', 'clincoo/deepseek-v4-flash', 'clincoo/glm-4.7-flash',
-  'clincoo/nemotron-ultra', 'clincoo/gemma-31b', 'clincoo/acak'
+  'clincoo/reasoning-550b', 'clincoo/vision-31b', 'clincoo/acak'
 ];
 const ALL_MODELS = [...Object.keys(AI_MODELS), 'clincoo/auto'];
 
