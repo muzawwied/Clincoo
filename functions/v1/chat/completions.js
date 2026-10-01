@@ -256,7 +256,9 @@ export async function onRequestPost({ request, env }) {
 
   if (!result || !result.text) {
     await logCall(db, projectId, model, 0, ms, 0, 0, src, 'semua model pada rantai gagal merespons');
-    return json({ error: { message: 'Semua model gagal merespons. Coba lagi nanti.', type: 'server', code: 502 } }, 502);
+    // Catatan: pakai 503 (bukan 502) — Cloudflare mengganti body setiap respons
+    // berstatus 502/504/52x dengan halaman generik, menutupi pesan JSON ini.
+    return json({ error: { message: 'Model sedang penuh/tidak tersedia sementara. Coba model lain atau ulangi beberapa saat lagi.', type: 'server', code: 503 } }, 503);
   }
 
   const cost = estimateCost(result.model, result.tokens);
