@@ -132,60 +132,12 @@ function normalizeMessages(messages) {
   return out;
 }
 
-// ===== Kunci OpenRouter (utama + cadangan) =====
-async function getOpenRouterKeys(env) {
-  const keys = [];
-  const seen = new Set();
-  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
-  add(env.OPENROUTER_API_KEY);
-  add(env.OPENROUTER_API_KEY_4); add(env.OPENROUTER_API_KEY_5); add(env.OPENROUTER_API_KEY_6);
-  if (!env.DB) return keys;
-  try {
-    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('OPENROUTER_API_KEY','OPENROUTER_API_KEY_2','OPENROUTER_API_KEY_3','OPENROUTER_API_KEY_4','OPENROUTER_API_KEY_5','OPENROUTER_API_KEY_6')").all();
-    for (const r of rows.results || []) add(r.value);
-  } catch {}
-  return keys;
-}
-
-// ===== Provider 0: GLM 5.3 Flash via OpenRouter (UTAMA) =====
-const OPENROUTER_MODELS = ['z-ai/glm-5.3-flash'];
-async function tryOpenRouter(keys, messages, stream) {
-  const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
-  const sys = messages.filter(m => m.role === 'system').map(m => m.content).join('\n');
-  const chatMsgs = messages.filter(m => m.role !== 'system').map(m => ({ role: m.role, content: m.content }));
-  let lastErr = null;
-  for (const key of keyList) {
-  for (const model of OPENROUTER_MODELS) {
-    try {
-      const payload = { model, messages: sys ? [{ role: 'system', content: sys }, ...chatMsgs] : chatMsgs, max_tokens: 4096 };
-      if (stream) payload.stream = true;
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.pages.dev', 'X-Title': 'Clincoo' },
-        body: JSON.stringify(payload)
-      });
-      if (stream && res.ok && res.body) {
-        // Proxy stream SSE mentah ke klien
-        return { stream: res.body, model };
-      }
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) { lastErr = `OpenRouter ${model}: HTTP ${res.status}`; continue; }
-      const text = ((data?.choices?.[0]?.message?.content) || '');
-      if (text) return { text, model };
-      lastErr = `OpenRouter ${model}: respons kosong`;
-    } catch (e) { lastErr = `OpenRouter ${model}: ${e && e.message}`; }
-  }
-  }
-  return { error: lastErr || 'OpenRouter gagal' };
-}
-
 // ===== Provider 1: Workers AI (binding "AI") =====
 // Rantai model 2026 (NON-Llama, agentic + jago kode + paham bahasa manusia):
 //   glm-5.2      : flagship agentic coding (Z.ai) — reasoning, function calling, ctx 262K
 //   deepseek-v4  : agentic cepat, reasoning, ctx 1.3M token
 //   glm-4.7-flash: cepat & multilingual (100+ bahasa — ramah Bahasa Indonesia)
-// GLM 5.x & deepseek-v4 di Workers AI hanya untuk plan berbayar (diuji 2026-10-01) — fallback saja.
-const WORKERS_AI_MODELS = ['@cf/zai-org/glm-4.7-flash'];
+const WORKERS_AI_MODELS = ['@cf/zai-org/glm-5.3-flash', '@cf/zai-org/glm-5.2', '@cf/deepseek-ai/deepseek-v4-flash-0731', '@cf/zai-org/glm-4.7-flash'];
 
 async function tryWorkersAI(env, messages, stream) {
   if (!env.AI) return { error: 'Workers AI binding tidak tersedia' };
@@ -254,17 +206,14 @@ export async function onRequestGet({ request, env }) {
   const user = await resolveUser(env, request);
   if (!user) return json({ error: 'Login diperlukan', need_login: true }, 401);
   const gemKey = await getGeminiKeys(env); // array kunci (utama + cadangan)
-  const orKey = await getOpenRouterKeys(env);
   return json({
     ok: true,
     persona: 'Clincoo AI',
     providers: {
-      openrouter: !!(orKey && orKey.length),
       workers_ai: !!env.AI,
       gemini: !!(gemKey && gemKey.length)
     },
     models: {
-      openrouter: OPENROUTER_MODELS,
       workers_ai: WORKERS_AI_MODELS,
       gemini: GEMINI_MODELS
     }
@@ -301,16 +250,14 @@ export async function onRequestPost({ request, env }) {
 
   const stream = body?.stream === true;
   const gemKey = await getGeminiKeys(env); // array kunci (utama + cadangan)
-  const orKey = await getOpenRouterKeys(env);
 
-  // Urutan provider: OpenRouter (GLM 5.3 — utama) -> Workers AI -> Gemini
+  // Provider utama: Workers AI (binding, tanpa API key)
   let r = null;
-  if (orKey.length) r = await tryOpenRouter(orKey, finalMessages, stream);
-  if ((!r || r.error) && env.AI) r = await tryWorkersAI(env, finalMessages, stream);
+  if (env.AI) r = await tryWorkersAI(env, finalMessages, stream);
   if ((!r || r.error) && gemKey.length) r = await tryGemini(gemKey, finalMessages);
 
   if (!r || r.error) {
-    return json({ error: 'Tidak ada provider AI tersedia. Set kunci OpenRouter (utama), aktifkan binding Workers AI, atau set kunci Gemini di Pengaturan → Environment.' }, 502);
+    return json({ error: 'Tidak ada provider AI tersedia. Aktifkan binding Workers AI atau set kunci Gemini di Pengaturan → Environment.' }, 502);
   }
 
   if (r.stream) {
@@ -318,5 +265,5 @@ export async function onRequestPost({ request, env }) {
     return new Response(r.stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', ...CORS } });
   }
 
-  return json({ text: r.text, model: r.model, provider: r.model && !r.model.startsWith('@cf') && orKey.length && OPENROUTER_MODELS.some(m => r.model.includes(m.split('/').pop())) ? 'openrouter' : (env.AI && r.model.startsWith('@cf') ? 'workers_ai' : 'fallback'), session_id: body?.session_id || ('ai_' + Date.now()) });
+  return json({ text: r.text, model: r.model, provider: env.AI && r.model.startsWith('@cf') ? 'workers_ai' : 'fallback', session_id: body?.session_id || ('ai_' + Date.now()) });
 }

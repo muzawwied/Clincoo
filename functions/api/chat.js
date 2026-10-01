@@ -48,19 +48,17 @@ const PREFERRED_MODELS = ['gemini-3.6-flash', 'gemini-3-flash-preview'];
 
 // ===== AI UTAMA: GLM 5.3 Flash (Workers AI, binding internal) =====
 // Model lama tetap di daftar sebagai cadangan bila GLM 5.3 Flash gagal.
-// GLM 5.x & deepseek-v4 di Workers AI hanya tersedia di plan berbayar (diuji 2026-10-01) —
-// kini GLM 5.3 Flash utama lewat OpenRouter, Workers AI hanya fallback gratis.
-const WORKERS_AI_MODELS = ['@cf/zai-org/glm-4.7-flash'];
+const WORKERS_AI_MODELS = ['@cf/zai-org/glm-5.3-flash', '@cf/zai-org/glm-5.2', '@cf/deepseek-ai/deepseek-v4-flash-0731', '@cf/zai-org/glm-4.7-flash'];
 function textOf(m) {
   if (typeof m.content === 'string') return m.content;
   if (Array.isArray(m.content)) return m.content.filter(b => b && b.type === 'text').map(b => b.text).join('\n');
   return '';
 }
-// Konversi pesan Clincoo -> format chat OpenAI (dipakai Workers AI & OpenRouter).
-// Blok tools Clincoo (function_call/function_response) -> format tool OpenAI,
-// supaya percakapan multi-hop (AI memakai tool lalu lanjut) tetap utuh.
-function toOAIChat(messages) {
+async function tryWorkersAIText(env, messages, gDecls) {
+  if (!env || !env.AI) return null;
   const system = messages.some(m => m.role === 'system') ? messages.filter(m => m.role === 'system').map(textOf).join('\n\n') : '';
+  // Blok tools Clincoo (function_call/function_response) -> format tool OpenAI,
+  // supaya percakapan multi-hop (AI memakai tool lalu lanjut) tetap utuh di GLM.
   const chatMsgs = [];
   let lastCallIds = [];
   for (const m of messages) {
@@ -83,98 +81,6 @@ function toOAIChat(messages) {
     }
     if (t) chatMsgs.push({ role: m.role, content: t });
   }
-  return { system, chatMsgs };
-}
-
-// ===== Kunci OpenRouter (utama + cadangan) =====
-async function getOpenRouterKeys(env) {
-  const keys = [];
-  const seen = new Set();
-  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
-  add(env.OPENROUTER_API_KEY);
-  add(env.OPENROUTER_API_KEY_4); add(env.OPENROUTER_API_KEY_5); add(env.OPENROUTER_API_KEY_6);
-  if (!env.DB) return keys;
-  try {
-    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('OPENROUTER_API_KEY','OPENROUTER_API_KEY_2','OPENROUTER_API_KEY_3','OPENROUTER_API_KEY_4','OPENROUTER_API_KEY_5','OPENROUTER_API_KEY_6')").all();
-    for (const r of rows.results || []) add(r.value);
-  } catch {}
-  return keys;
-}
-
-// ===== Provider utama: GLM 5.3 Flash via OpenRouter =====
-// (GLM 5.x di Workers AI hanya tersedia di plan berbayar; OpenRouter jalan di akun mana pun.)
-const OPENROUTER_MODELS = ['z-ai/glm-5.3-flash'];
-const oaiToolsOf = (gDecls) => (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
-
-async function tryOpenRouterText(keys, messages, gDecls) {
-  const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
-  if (!keyList.length) return null;
-  const { system, chatMsgs } = toOAIChat(messages);
-  const oaiTools = oaiToolsOf(gDecls);
-  let lastErr = null;
-  for (const key of keyList) {
-  for (const model of OPENROUTER_MODELS) {
-    const baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
-    let data = null;
-    try {
-      const payload = { model, messages: baseMsgs, max_tokens: 4096 };
-      if (oaiTools) payload.tools = oaiTools;
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.pages.dev', 'X-Title': 'Clincoo' },
-        body: JSON.stringify(payload)
-      });
-      data = await res.json().catch(() => ({}));
-      if (!res.ok) { lastErr = `OpenRouter ${model}: HTTP ${res.status}`; continue; }
-    } catch (e) { lastErr = `OpenRouter ${model}: ${e && e.message}`; continue; }
-    const msg = data && data.choices && data.choices[0] && data.choices[0].message;
-    const text = (msg && msg.content) || '';
-    const finish = data && data.choices && data.choices[0] && data.choices[0].finish_reason;
-    // tool_calls gaya OpenAI
-    const tcs = msg && Array.isArray(msg.tool_calls) ? msg.tool_calls : null;
-    if (tcs && tcs.length) {
-      const norm = [];
-      for (const c of tcs) {
-        let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
-        if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
-      }
-      if (norm.length) return { tool_calls: norm, text, model: model.split('/').pop() + ' (OpenRouter)' };
-    }
-    if (text) {
-      // AUTO-CONTINUE: sambung jawaban terpotong (finish_reason "length")
-      let full = text, seg = text, fin = finish;
-      const contMsgs = baseMsgs.slice();
-      for (let ac = 0; ac < 3 && fin === 'length'; ac++) {
-        contMsgs.push({ role: 'assistant', content: seg });
-        contMsgs.push({ role: 'user', content: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' });
-        let dc = null;
-        try {
-          const p3 = { model, messages: contMsgs, max_tokens: 4096 };
-          if (oaiTools) p3.tools = oaiTools;
-          const rc = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.pages.dev', 'X-Title': 'Clincoo' },
-            body: JSON.stringify(p3)
-          });
-          dc = await rc.json().catch(() => ({}));
-        } catch (e2) { dc = null; }
-        const dm = dc && dc.choices && dc.choices[0] && dc.choices[0].message;
-        const dseg = (dm && dm.content) || '';
-        fin = dc && dc.choices && dc.choices[0] && dc.choices[0].finish_reason;
-        if (!dseg) break;
-        full += dseg; seg = dseg;
-      }
-      return { text: full, model: model.split('/').pop() + ' (OpenRouter)' };
-    }
-    lastErr = `OpenRouter ${model}: respons kosong`;
-  }
-  }
-  return lastErr ? { error: lastErr } : null;
-}
-
-async function tryWorkersAIText(env, messages, gDecls) {
-  if (!env || !env.AI) return null;
-  const { system, chatMsgs } = toOAIChat(messages);
   const oaiTools = (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
   for (const model of WORKERS_AI_MODELS) {
     let result = null;
@@ -819,11 +725,10 @@ export async function onRequestPost({ request, env, waitUntil }) {
       }
     }
 
-    const apiKey = await getGeminiKeys(env); // array kunci Gemini (cadangan + jalur vision)
-    const orKeysEarly = await getOpenRouterKeys(env); // kunci OpenRouter (GLM 5.3 — utama)
+    const apiKey = await getGeminiKeys(env); // array kunci Gemini (utama + cadangan)
 
-    if (!orKeysEarly.length && !apiKey.length && !env.AI) {
-      return new Response(JSON.stringify({ error: 'Kunci AI belum dikonfigurasi. Tambahkan lewat Pengaturan → Environment (global).' }), {
+    if (!apiKey.length && !env.AI) {
+      return new Response(JSON.stringify({ error: 'Kunci AI (Gemini) belum dikonfigurasi. Tambahkan lewat Pengaturan → Environment (global).' }), {
         status: 500, headers: { 'Content-Type': 'application/json', ...CORS }
       });
     }
@@ -865,16 +770,11 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // jalur klien (frontend) tidak berubah sama sekali.
     let r = null;
     const workMessages = messages; // array sama — kita append blok function_call/response
-    const orKeys = orKeysEarly; // GLM 5.3 Flash (OpenRouter) — UTAMA
     const aiMain = !!(env.AI && !hasImages);
     const toolDecls = (gTools && gTools[0] && gTools[0].functionDeclarations) || null;
     for (let sHop = 0; sHop <= 4; sHop++) {
       r = null;
-      if (orKeys.length && !hasImages) {
-        const o = await tryOpenRouterText(orKeys, workMessages, toolDecls);
-        if (o) r = o;
-      }
-      if ((!r || r.error) && aiMain) {
+      if (aiMain) {
         const w = await tryWorkersAIText(env, workMessages, toolDecls);
         if (w) r = w;
       }
