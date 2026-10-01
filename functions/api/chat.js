@@ -13,6 +13,7 @@
 
 import { PLAN_AI_LIMITS, ADMIN_EMAILS, getEffectivePlanByUserKey } from './plan-helpers.js';
 import { searchClincooBlog } from './blogsearch.js';
+import { paymentDocsFor } from './payment-kb-data.js';
 import { consumePackCredit, getActivePacks } from './ai-packs.js';
 import { initTables as initAuthTables, getUserByToken, getToken } from './auth/shared.js';
 
@@ -60,7 +61,15 @@ function textOf(m) {
 // Blok tools Clincoo (function_call/function_response) -> format tool OpenAI,
 // supaya percakapan multi-hop (AI memakai tool lalu lanjut) tetap utuh.
 function toOAIChat(messages) {
-  const system = messages.some(m => m.role === 'system') ? messages.filter(m => m.role === 'system').map(textOf).join('\n\n') : '';
+  let system = messages.some(m => m.role === 'system') ? messages.filter(m => m.role === 'system').map(textOf).join('\n\n') : '';
+  // SUNTIK PENGETAHUAN PAYMENT GATEWAY: pesan user terakhir menyebut payment/
+  // gateway tertentu -> docs Xendit/Midtrans/DOKU/Pakasir menempel ke system prompt,
+  // jadi AI tidak perlu web_search lagi untuk integrasi payment.
+  try {
+    const lastUser = [...messages].reverse().find(m => m && m.role === 'user');
+    const pay = paymentDocsFor(lastUser ? textOf(lastUser) : '');
+    if (pay) system = (system ? system + '\n\n' : '') + pay;
+  } catch (e) {}
   const chatMsgs = [];
   let lastCallIds = [];
   for (const m of messages) {
