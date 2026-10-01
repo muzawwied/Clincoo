@@ -2,6 +2,7 @@
 <html lang="id">
 <head>
 <script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../../js/auth-client.js?v=4"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="description" content="Clincoo Code — editor kode full-stack untuk bangun dan publikasikan situs langsung dari browser. Lengkap, rapi & modern.">
@@ -2541,5 +2542,36 @@ outPrint('Monaco engine dimuat. Semua perubahan tersimpan otomatis di browser.')
 })();
 </script>
 <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});}</script>
+<script>
+/* clinqoo-editor-plan-gate — Editor adalah fitur paket Pro.
+   Keputusan sama dengan menu sidebar (chat/code): Starter -> arahkan upgrade.
+   Kebijakan fail-open: paket tak diketahui (API gagal) -> biarkan masuk,
+   konsisten dengan gate lain di aplikasi ini. Login ditangani auth-client.js. */
+(function () {
+  function apiBase() { return (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : ''; }
+  function token() { try { return localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) { return ''; } }
+  function subCache() { try { return JSON.parse(localStorage.getItem('TM_SUB_CACHE_KEY') || 'null'); } catch (e) { return null; } }
+  var done = false;
+  function blocked() {
+    if (done) return; done = true;
+    var css=document.createElement('style');
+    css.textContent='#clinqoo-editor-gate{position:fixed;inset:0;z-index:2147483000;background:#fff;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Inter,system-ui,sans-serif;text-align:center}#clinqoo-editor-gate .card{max-width:420px}#clinqoo-editor-gate h2{font-size:20px;font-weight:800;color:#111;margin:12px 0 6px}#clinqoo-editor-gate p{font-size:14px;color:#6b7280;margin:0 0 18px}#clinqoo-editor-gate a{display:inline-block;background:#111;color:#fff;font-size:14px;font-weight:600;padding:11px 22px;border-radius:999px;text-decoration:none}body.dark-mode #clinqoo-editor-gate{background:#0a0a0a}body.dark-mode #clinqoo-editor-gate h2{color:#f3f4f6}body.dark-mode #clinqoo-editor-gate p{color:#9ca3af}body.dark-mode #clinqoo-editor-gate a{background:#f3f4f6;color:#111}@media(prefers-color-scheme:dark){body:not(.dark-mode) #clinqoo-editor-gate{background:#0a0a0a}body:not(.dark-mode) #clinqoo-editor-gate h2{color:#f3f4f6}body:not(.dark-mode) #clinqoo-editor-gate p{color:#9ca3af}body:not(.dark-mode) #clinqoo-editor-gate a{background:#f3f4f6;color:#111}}';
+    document.head.appendChild(css);
+    var ov=document.createElement('div'); ov.id='clinqoo-editor-gate';
+    ov.innerHTML='<div class="card"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/></svg><h2>Editor adalah fitur paket Pro</h2><p>Editor penuh Clincoo terbuka untuk paket Pro dan Bisnis. Upgrade sekarang untuk membukanya.</p><a href="/akun/langganan/upgrade/">Lihat Paket</a></div>';
+    (document.body||document.documentElement).appendChild(ov);
+  }
+  function decide(plan) { if (plan === 'Starter') blocked(); }
+  var c = subCache(); if (c && c.plan) decide(c.plan);
+  fetch(apiBase() + '/api/subscription', { cache: 'no-store', headers: token() ? { Authorization: 'Bearer ' + token() } : {} })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      if (d && d.plan) {
+        try { localStorage.setItem('TM_SUB_CACHE_KEY', JSON.stringify({ plan: d.plan, billingCycle: d.billingCycle || 'Bulanan', ts: Date.now() })); } catch (e) {}
+        decide(d.plan);
+      }
+    }).catch(function () {});
+})();
+</script>
 </body>
 </html>
