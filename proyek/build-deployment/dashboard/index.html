@@ -239,36 +239,6 @@
                 </div>
             </section>
 
-            <hr class="border-gray-200">
-
-            <!-- Bagian: Custom Domain (Flat) -->
-            <section class="space-y-5">
-                <div>
-                    <h2 class="text-xl font-bold text-gray-900">Domain kustom</h2>
-                    <p class="text-sm text-gray-500 mt-1">Gunakan domain kustom untuk mengakses situs Anda selain dari URL default yang kami sediakan. <a href="../domain-kustom/" class="text-blue-600 hover:underline">Kelola domain kustom Anda di sini.</a></p>
-                </div>
-                
-                <!-- Input domain kustom dipindah ke halaman Domain Kustom (build-deployment/domain-kustom) -->
-                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                    <a href="../domain-kustom/" class="custom-domain-btn inline-flex items-center gap-2 px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-md text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm">Kelola Domain Kustom <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
-                </div>
-
-                <p class="pt-2"><span id="cf-domain-status" class="text-xs mt-1.5 font-medium hidden"></span></p>
-
-                <div class="pt-4 flex items-start gap-3">
-                    <div class="mt-0.5">
-<input type="checkbox" id="check-https" onchange="toggleHttps()" checked disabled class="w-4 h-4 rounded border-gray-300 text-black focus:ring-black opacity-50 cursor-not-allowed">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-900">Wajibkan HTTPS</label>
-                        <p class="text-sm text-gray-500 mt-0.5">Diperlukan karena Anda menggunakan domain default Clincoo</p>
-                        <p class="text-sm text-gray-500 mt-4 leading-relaxed max-w-3xl">
-                            HTTPS menyediakan lapisan enkripsi yang mencegah pihak lain mengintip atau merusak lalu lintas ke situs Anda. Saat HTTPS diwajibkan, situs Anda hanya akan disajikan melalui HTTPS. <a href="#" class="text-blue-600 hover:underline">Pelajari lebih lanjut tentang mengamankan situs Anda dengan HTTPS.</a>
-                        </p>
-                    </div>
-                </div>
-            </section>
-
         </div>
     </main>
 
@@ -550,6 +520,29 @@
                 writeDeploySession({ status: 'done', pages_url: (res && res.pages_url) || deployState.pages_url || '', public_url: (res && res.public_url) || '', done_at: Date.now() });
             } catch (err) {
                 deployState.deploying = false;
+                // FIX "Failed to fetch": koneksi bisa putus saat deploy panjang
+                // padahal server menyelesaikannya. Cek status dulu — kalau ada
+                // log sukses baru sejak deploy ini dimulai, tampilkan dashboard
+                // sukses, jangan modal error.
+                let okState = null;
+                const startedAt = (readDeploySession() || {}).started_at || (Date.now() - 60000);
+                for (let i = 0; i < 3; i++) {
+                    try {
+                        const st = await fetchStatus();
+                        const okLog = (Array.isArray(st.logs) ? st.logs : []).find(l => l && l.status === 'success');
+                        if (okLog && okLog.created_at) {
+                            const t = new Date(String(okLog.created_at).replace(' ', 'T') + 'Z').getTime();
+                            if (!isNaN(t) && t >= startedAt - 90000) { okState = st; break; }
+                        }
+                    } catch (e) {}
+                    await new Promise(r => setTimeout(r, 2500));
+                }
+                if (okState) {
+                    writeDeploySession({ status: 'done', pages_url: (okState.pages_url || deployState.pages_url || ''), public_url: (okState.public_url || ''), done_at: Date.now() });
+                    if (deployState.pollTimer) clearInterval(deployState.pollTimer);
+                    showDeployedState(okState);
+                    return;
+                }
                 writeDeploySession({ status: 'failed' });
                 showDeployErrorModal(err);
             }

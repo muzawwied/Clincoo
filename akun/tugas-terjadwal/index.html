@@ -268,6 +268,17 @@
         }
 
         loadTasks();
+
+        // Real-time: tugas bisa dipasang AI lewat chat (tool create_automation)
+        // atau dibuat di tab lain — daftar memperbarui diri tanpa reload.
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) loadTasks(); });
+        window.addEventListener('focus', function () { loadTasks(); });
+        window.addEventListener('storage', function (e) { if (e.key === 'clinqoo_automations_updated') loadTasks(); });
+        try {
+            var _bcAuto = new BroadcastChannel('clinqoo_automations');
+            _bcAuto.onmessage = function () { loadTasks(); };
+        } catch (e) {}
+        setInterval(function () { if (!document.hidden) loadTasks(); }, 10000);
     </script>
 
     <script>/* clinqoo-sw-register */

@@ -471,7 +471,7 @@
 <script>
 // ===== Security Feed Real-time (situs proyek yang dideploy lewat Clincoo) =====
 (function(){
-  var SEC_API = 'https://clincoo-be2.pages.dev/api/security-events';
+  var SEC_API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev/api/security-events' : '/api/security-events';
   var POLL_MS = 10000;
   var pid = new URLSearchParams(window.location.search).get('id') || localStorage.getItem('clinqoo_current_project_id') || '';
   var seenKey = 'clinqoo_sec_seen_' + pid;
@@ -516,8 +516,14 @@
 
   function load(){
     if (!pid) { render({ events: [] }); return; }
-    fetch(SEC_API + '?project_id=' + encodeURIComponent(pid))
-      .then(function(r){ return r.json(); })
+    var tok = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || '';
+    fetch(SEC_API + '?project_id=' + encodeURIComponent(pid), {
+      headers: tok ? { 'Authorization': 'Bearer ' + tok } : {}
+    })
+      .then(function(r){
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
       .then(function(data){
         var li = document.getElementById('sec-loading');
         if (li) li.remove();

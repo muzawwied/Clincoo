@@ -182,6 +182,7 @@
               <input type="text" value="" id="custom-domain-input" class="flex-1 min-w-0 px-3.5 py-2 text-sm rounded-lg border border-gray-300 dark:border-slate-600 focus:outline-none domain-shimmer" placeholder="contohdomain.com" disabled>
             </div>
             <p id="cf-domain-status" class="text-xs mt-1.5 hidden"></p>
+            <p id="public-subdomain-info" class="text-xs mt-1.5 text-gray-500 dark:text-gray-400 hidden">URL default Clincoo: <a id="public-subdomain-url" href="#" target="_blank" rel="noreferrer" class="font-mono text-blue-600 dark:text-blue-400 hover:underline break-all"></a></p>
           </div>
         </div>
 
@@ -377,6 +378,18 @@
             localStorage.setItem(domainCacheKey(), JSON.stringify(Object.assign({}, cur, patch, { ts: Date.now() })));
         } catch (e) {}
     }
+    // URL default (subdomain publik) tampil instan dari cache/sesi deploy —
+    // tanpa menunggu status API Cloudflare yang lambat.
+    function paintPublicSubdomain(url) {
+        const p = document.getElementById('public-subdomain-info');
+        const a = document.getElementById('public-subdomain-url');
+        if (!p || !a) return;
+        const u = String(url || '').replace(/\/$/, '');
+        if (!u || !/^https?:\/\//.test(u)) return;
+        a.textContent = u;
+        a.href = u;
+        p.classList.remove('hidden');
+    }
     function paintDomainLabel(text, ok) {
         const lbl = document.getElementById('cf-domain-status');
         if (!lbl) return;
@@ -559,6 +572,9 @@
             if (!res.ok || st.error) throw new Error(st.error || ('HTTP ' + res.status));
             window.__statusRetries = 0;
             if (st.pages_url) { lastPagesUrl = st.pages_url; updateDNSRecords('', st.pages_url); writeDomainCache({ pagesUrl: st.pages_url }); }
+            // URL default (subdomain publik clinqoo.biz.id bila aktif) disimpan ke
+            // cache supaya tampil instan pada kunjungan berikutnya.
+            if (st.public_url || st.pages_url) { writeDomainCache({ publicUrl: st.public_url || st.pages_url }); paintPublicSubdomain(st.public_url || st.pages_url); }
             // Simpan status "pernah deploy" ke cache: kalau nanti API status gagal
             // (rate limit/jaringan), section DNS tetap tampil dari cache — tidak menghilang.
             writeDomainCache({ deployed: !!(st.deployed || st.last_deployment) });
@@ -615,13 +631,29 @@
             if (cached.pagesUrl) { lastPagesUrl = cached.pagesUrl; updateDNSRecords(cached.domain || '', cached.pagesUrl); }
             if (cached.deployed) { var _dnsC = document.getElementById('dns-section'); if (_dnsC) _dnsC.classList.remove('hidden'); }
             if (cached.label) paintDomainLabel(cached.label, !!cached.active);
-            if (cached.domain && domainInput) {
-                domainInput.value = cached.domain;
+            if (domainInput) {
+                if (cached.domain) domainInput.value = cached.domain;
+                // Ada cache = pernah buka halaman ini: jangan biarkan input
+                // terkunci shimmer walau belum mengisi domain kustom.
                 domainInput.classList.remove('domain-shimmer');
                 domainInput.disabled = false;
                 var _sb2 = document.getElementById('btn-save-domain'); if (_sb2) _sb2.disabled = false;
             }
             syncDeleteBtn();
+        }
+        // 1a) URL default Clincoo (subdomain publik) siap tampil INSTAN:
+        // cache domain dulu, lalu sesi deploy dashboard (public_url/pages_url).
+        {
+            const pidNow = localStorage.getItem('clinqoo_current_project_id') || '';
+            let ses = null;
+            try { ses = JSON.parse(localStorage.getItem('clinqoo_deploy_session') || 'null') || null; } catch (e) {}
+            if (ses && ses.project_id && ses.project_id !== pidNow) ses = null;
+            const pubUrl = (cached && (cached.publicUrl || cached.pagesUrl)) || (ses && (ses.public_url || ses.pages_url)) || '';
+            if (pubUrl) paintPublicSubdomain(pubUrl);
+            if (!lastPagesUrl) {
+                const pUrl = (cached && cached.pagesUrl) || (ses && ses.pages_url) || (ses && ses.public_url) || '';
+                if (pUrl) { lastPagesUrl = pUrl; updateDNSRecords((cached && cached.domain) || '', pUrl); }
+            }
         }
         // 1b) Nilai record DNS instan: fast mode hanya baca D1 (nama project Pages),
         // tanpa menunggu status deployment dari API Cloudflare. Sekali termuat, disimpan ke cache.
@@ -634,7 +666,7 @@
                     const res = await fetchTimeout(DEPLOY_API_BASE + '/deploy?project_id=' + encodeURIComponent(pid) + '&fast=1',
                         { headers: tok ? { Authorization: 'Bearer ' + tok } : {} });
                     const st = await res.json().catch(() => ({}));
-                    if (st.pages_url) { lastPagesUrl = st.pages_url; updateDNSRecords('', st.pages_url); writeDomainCache({ pagesUrl: st.pages_url }); }
+                    if (st.pages_url) { lastPagesUrl = st.pages_url; updateDNSRecords('', st.pages_url); writeDomainCache({ pagesUrl: st.pages_url }); paintPublicSubdomain(st.pages_url); }
                     // Flag 'deployed' dari log D1: section DNS tampil pasti setelah deploy pertama,
                     // tanpa bergantung pada status API Cloudflare (yang bisa gagal/rate-limit).
                     if (st.deployed) { var _dns = document.getElementById('dns-section'); if (_dns) _dns.classList.remove('hidden'); }
