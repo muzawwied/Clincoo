@@ -172,6 +172,27 @@
     <main class="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 py-4 pb-20 relative">
         <div class="w-full flex flex-col divide-y divide-gray-200 dark:divide-gray-800">
             
+            <!-- 0. Identitas Aplikasi (profil) -->
+            <div class="pt-2 pb-5 flex items-center gap-4">
+                <div class="relative shrink-0">
+                    <div id="logo-preview" class="w-20 h-20 rounded-full border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-[#111] flex items-center justify-center overflow-hidden cursor-pointer transition-colors hover:border-gray-300 dark:hover:border-gray-700" onclick="document.getElementById('input-logo').click()" title="Klik untuk unggah logo">
+                        <i data-lucide="image" class="w-7 h-7 text-gray-300"></i>
+                    </div>
+                    <div class="absolute -bottom-0.5 -right-0.5 w-7 h-7 rounded-full bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 flex items-center justify-center cursor-pointer shadow-sm transition-transform hover:scale-110" onclick="event.stopPropagation(); document.getElementById('input-logo').click()" title="Unggah logo">
+                        <i data-lucide="camera" class="w-3.5 h-3.5 text-gray-600 dark:text-gray-300"></i>
+                    </div>
+                    <button type="button" id="btn-remove-logo" class="hidden absolute -top-0.5 -right-0.5 w-6 h-6 rounded-full bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 items-center justify-center shadow-sm hover:border-red-200 transition-colors" title="Hapus logo">
+                        <i data-lucide="trash-2" class="w-3 h-3 text-gray-400"></i>
+                    </button>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <h3 id="identity-name" class="text-lg font-extrabold tracking-tight truncate text-gray-900">Nama aplikasi…</h3>
+                    <p id="identity-desc" class="text-sm text-gray-500 mt-0.5 break-words">Tambahkan deskripsi singkat…</p>
+                </div>
+                <button type="button" id="btn-upload-logo" class="hidden"></button>
+                <input type="file" id="input-logo" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="hidden">
+            </div>
+
             <!-- 1. Nama Aplikasi -->
             <div class="py-4 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div class="min-w-0 flex-1">
@@ -226,27 +247,6 @@
                     <div id="maintenance-knob" class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out"></div>
                 </button>
                 <div id="skel-maintenance" class="skel hidden w-11 h-6 rounded-full"></div>
-            </div>
-
-            <!-- 5. Logo Aplikasi -->
-            <div class="py-4 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div class="min-w-0 flex-1">
-                    <h4 class="text-base font-bold text-gray-900 tracking-tight">Logo Aplikasi</h4>
-                    <p class="text-sm text-gray-500 mt-1">Logo otomatis dipasang sebagai favicon situs saat deploy</p>
-                </div>
-                <div class="w-full sm:w-80">
-                    <div class="flex items-center gap-3">
-                        <div id="logo-preview" class="w-12 h-12 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-[#111] flex items-center justify-center overflow-hidden shrink-0">
-                            <i data-lucide="image" class="w-5 h-5 text-gray-300"></i>
-                        </div>
-                        <button type="button" id="btn-upload-logo" class="flex-1 px-4 py-2.5 text-sm rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-colors font-semibold">Unggah Logo</button>
-                        <button type="button" id="btn-remove-logo" class="hidden px-3 py-2.5 text-sm rounded-xl border border-red-100 bg-red-50 text-red-600 hover:bg-red-100 transition-colors" title="Hapus logo">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                    <input type="file" id="input-logo" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="hidden">
-                    <p class="text-xs text-gray-400 mt-1.5">PNG/JPG/WebP/SVG, maks 200KB</p>
-                </div>
             </div>
 
             <!-- 6. Unduh Aplikasi (APK) -->
@@ -382,7 +382,10 @@
                 const el = document.getElementById(id);
                 if (el) el.classList.toggle('hidden', !on);
             });
-            ['input-app-name', 'input-app-desc', 'runtime-trigger', 'maintenance-toggle-btn'].forEach(function (id) {
+            ['input-app-name', 'input-app-desc'].forEach(function (id) {
+            document.getElementById(id).addEventListener('input', updateIdentityPreview);
+        });
+        ['input-app-name', 'input-app-desc', 'runtime-trigger', 'maintenance-toggle-btn'].forEach(function (id) {
                 const el = document.getElementById(id);
                 if (el) el.classList.toggle('hidden', on);
             });
@@ -416,6 +419,7 @@
                 }
             } catch (e) {}
             updateNamePreview();
+            updateIdentityPreview();
             showSkeletons(false);
         }
 
@@ -467,7 +471,7 @@
             const rm = document.getElementById('btn-remove-logo');
             if (!pv) return;
             const has = !!(path && dataUrl);
-            pv.innerHTML = has ? '<img src="' + dataUrl + '" alt="Logo" class="w-full h-full object-contain">' : '<i data-lucide="image" class="w-5 h-5 text-gray-300"></i>';
+            pv.innerHTML = has ? '<img src="' + dataUrl + '" alt="Logo" class="w-full h-full object-contain">' : '<i data-lucide="image" class="w-7 h-7 text-gray-300"></i>';
             if (rm) rm.classList.toggle('hidden', !has);
             try { lucide.createIcons(); } catch (e) {}
             if (animate && has) { pv.classList.add('fade-in'); setTimeout(function () { pv.classList.remove('fade-in'); }, 400); }
@@ -538,6 +542,13 @@
         let _apkTimer = null;
 
         function apkBuildId() { var s = ''; for (var i = 0; i < 8; i++) s += 'abcdefghijklmnopqrstuvwxyz0123456789'.charAt(Math.floor(Math.random() * 36)); return s; }
+        // Preview identitas (profil): nama & desc mengikuti input secara live
+        function updateIdentityPreview() {
+            const n = (document.getElementById('input-app-name').value || '').trim();
+            const d = (document.getElementById('input-app-desc').value || '').trim();
+            document.getElementById('identity-name').textContent = n || 'Nama aplikasi…';
+            document.getElementById('identity-desc').textContent = d || 'Tambahkan deskripsi singkat…';
+        }
         function pkgFromName(name) {
             var s = String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 20) || 'clincoo';
             return 'id.' + s + '.app';

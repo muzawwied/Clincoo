@@ -932,10 +932,16 @@ function linkedCloudPush(){
   Object.keys(project).forEach(p=>files.push({path:p,content:project[p]}));
   linkedEmptyFolders.forEach(f=>files.push({path:f+'/',content:''}));
   const H=Object.assign({'Content-Type':'application/json'},ccAuthHeaders());
-  fetch(WS_API+'?project_id='+encodeURIComponent(LINK_PID),{method:'DELETE',headers:H})
-    .then(r=>r.ok?fetch(WS_API,{method:'POST',headers:H,body:JSON.stringify({project_id:LINK_PID,files})}):Promise.reject())
-    .then(()=>setCloudDot(true))
+  // Push atomik: satu POST mode replace — tidak ada jendela cloud kosong lagi
+  // (pola lama DELETE dulu lalu POST bikin semua berkas hilang bila POST gagal).
+  fetch(WS_API,{method:'POST',headers:H,body:JSON.stringify({project_id:LINK_PID,files,replace:true})})
+    .then(r=>r.ok?setCloudDot(true):Promise.reject())
     .catch(()=>setCloudDot(false));
+}
+function userIsEditing(){
+  // true bila user sudah menyentuh editor (ada model dengan perubahan belum tersimpan)
+  try{for(const p of Object.keys(models)){const m=models[p];if(m&&m.getValue&&project[p]!==undefined&&m.getValue()!==project[p])return true;}}catch(e){}
+  return false;
 }
 function linkedCloudPull(){
   if(!LINK_PID)return;
@@ -973,6 +979,41 @@ window.addEventListener('message',function(e){
   try{if(e.source)e.source.postMessage({type:'clinqoo-editor-ack'},'*');}catch(err){}
 });
 function askOpenerForProject(){if(window.opener){try{window.opener.postMessage({type:'clinqoo-editor-ready'},'*');}catch(e){}}}
+/* CLOUD-FIRST: setelah render awal dari cache lokal, tarik versi terbaru dari cloud.
+   Cloud menang SELALU (mencegah cache lokal basi/korak menimpa data baru), kecuali
+   user sudah mulai mengetik (userIsEditing) — perubahan user tetap di atas. */
+function cloudFirstSync(){
+  if(!LINK_PID)return;
+  fetch(WS_API+'?project_id='+encodeURIComponent(LINK_PID),{headers:ccAuthHeaders()})
+    .then(r=>r.ok?r.json():Promise.reject())
+    .then(d=>{
+      const files=(d&&d.files)||[];
+      if(!files.length){ // cloud kosong tapi lokal ada isi -> dorong lokal ke cloud
+        if(Object.keys(project).length)linkedCloudPushSchedule();
+        return;
+      }
+      if(userIsEditing())return;
+      const r=wsToFlat((function(){
+        const ws={};
+        files.forEach(f=>{
+          const path=String(f.path);
+          if(path.slice(-1)==='/'){const folder=path.slice(0,-1);let k='root';const parts=folder.split('/');while(parts.length){k=parts.join('/');ws[k]=ws[k]||[];ws[k].push({type:'folder',name:parts.pop(),path:folder,content:'',size:'-',previewText:''});parts=folder.split('/').slice(0,parts.length);}return;}
+          const parts=path.split('/');const nm=parts.pop();const fk=parts.length?parts.join('/'):'root';
+          ws[fk]=ws[fk]||[];ws[fk].push({type:'file',name:nm,path:path,content:f.content||'',size:ccSizeLabel(f.content||''),previewText:(f.content||'').slice(0,60)});
+        });
+        return ws;
+      })());
+      // bandingkan: kalau identik, tidak perlu re-render
+      let same=Object.keys(project).length===Object.keys(r.files).length&&linkedEmptyFolders.length===r.emptyFolders.length;
+      if(same)for(const k of Object.keys(project)){if(project[k]!==r.files[k]){same=false;break;}}
+      if(same){setCloudDot(true);return;}
+      Object.keys(project).forEach(p=>{if(models[p]){models[p].dispose();delete models[p];}if(tabs.includes(p))closeTab(p);delete project[p];});
+      linkedEmptyFolders=r.emptyFolders;
+      Object.keys(r.files).forEach(p=>{project[p]=r.files[p];});
+      try{localStorage.setItem(wsFilesKey(),JSON.stringify(flatToWs()));}catch(e){}
+      renderAll();openDefaultTabs();setCloudDot(true);
+    }).catch(()=>{});
+}
 function linkedCloudPullForce(){
   if(!LINK_PID)return;
   fetch(WS_API+'?project_id='+encodeURIComponent(LINK_PID),{headers:ccAuthHeaders()})
@@ -2484,7 +2525,7 @@ project=loadProject();
 if(LINK_PID){
   document.title=LINK_NAME+' — Clincoo Code';
   setCloudDot(false);
-  linkedCloudPull();
+  cloudFirstSync(); // cloud = sumber utama; cache lokal hanya untuk render cepat
   askOpenerForProject();
   window.addEventListener('beforeunload',()=>{clearTimeout(cloudTimer);linkedCloudPush();});
 }
