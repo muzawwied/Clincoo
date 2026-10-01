@@ -484,6 +484,28 @@ const WORKSPACE_FUNCTION_DECLARATIONS = [
       action: { type: 'STRING', description: 'Salah satu: status, add, remove.' },
       domain: { type: 'STRING', description: 'Nama domain untuk add/remove, contoh "tokosaya.com".' }
     }, required: ['action'] } },
+  { name: 'write_files',
+    description: 'Tulis BANYAK file sekaligus ke workspace proyek aktif (bulk write) — WAJIB dipakai saat membuat/mengubah/salin 2+ file dalam satu giliran: satu panggilan berisi array files [{path, content}] jauh lebih cepat & hemat daripada write_file satu-satu. Maks 60 file per panggilan. File tersimpan permanen (cloud) dan langsung bisa di-deploy.',
+    parameters: { type: 'OBJECT', properties: {
+      files: { type: 'ARRAY', description: 'Array file yang mau ditulis/salin.', items: { type: 'OBJECT', properties: {
+        path: { type: 'STRING', description: 'Path file di workspace, contoh "assets/style.css".' },
+        content: { type: 'STRING', description: 'Isi lengkap file siap jalan.' }
+      }, required: ['path', 'content'] } } }
+    }, required: ['files'] } },
+  { name: 'clone_repo',
+    description: 'Salin (clone) seluruh isi repo GitHub ke folder workspace proyek aktif — data tersimpan permanen di workspace, lalu bisa diubah, dicari, di-deploy, atau di-push. Mendukung repo publik (tanpa perlu login GitHub) dan repo privat milik user (lewat konektor GitHub yang sudah terhubung di menu Integrasi). Batas: ±300 file teks per clone, file ≤256KB, binary besar dilewati otomatis. Pakai saat user minta "ambil/clone/copy repo X" atau "masukin kode dari repo X".',
+    parameters: { type: 'OBJECT', properties: {
+      repo: { type: 'STRING', description: 'Repo dalam bentuk "owner/nama" atau URL GitHub lengkap, contoh "tailwindlabs/heroicons".' },
+      folder: { type: 'STRING', description: 'Folder tujuan di workspace (opsional, default: nama repo).' },
+      ref: { type: 'STRING', description: 'Branch/tag/commit (opsional, default: branch utama repo).' }
+    }, required: ['repo'] } },
+  { name: 'push_to_github',
+    description: 'Push SEMUA file workspace proyek aktif ke repo GitHub user lewat konektor GitHub (commit file demi file via contents API, update otomatis bila file sudah ada). Repo bisa dibuat dulu lewat github_request (POST /user/repos body {name}) bila belum ada. Gunakan saat user minta "push/simpan/kirim kode ke GitHub saya".',
+    parameters: { type: 'OBJECT', properties: {
+      repo: { type: 'STRING', description: 'Repo tujuan "owner/nama" atau URL GitHub lengkap.' },
+      branch: { type: 'STRING', description: 'Branch tujuan (opsional, default "main"). Repo harus sudah punya branch ini.' },
+      commit_message: { type: 'STRING', description: 'Pesan commit (opsional).' }
+    }, required: ['repo'] } },
   // ===== TOOLS BACKEND FUNCTION (dieksekusi otomatis di server) =====
   { name: 'create_backend_function',
     description: 'Buat backend function baru milik user (ala platform builder): tulis kode -> terpasang -> bisa dipanggil via URL /api/fn/<nama>. Kode adalah badan fungsi async dengan parameter `args` (objek), boleh pakai `fetch`, `JSON`, dan `db` (DATABASE BAWAAN: await db.get(k), db.set(k,v), db.del(k), db.list(prefix), db.count() — data bertahan permanen, kuota mengikuti paket langganan). WAJIB return nilai. Contoh kode: "await db.set(args.id, args); return { ok: true }". Untuk WEBHOOK PUBLIK (callback payment gateway Midtrans/Xendit/Tripay, layanan eksternal): set is_public true — respons berisi webhook_url berisi key rahasia yang WAJIB diberikan ke user untuk dipasang di dashboard gateway. Gunakan saat user minta API endpoint, webhook, payment backend, integrasi data, atau logika backend.',
@@ -699,6 +721,7 @@ function orParam(schema) {
     for (const [k, v] of Object.entries(schema.properties)) out.properties[k] = orParam(v);
   }
   if (schema && Array.isArray(schema.required)) out.required = schema.required;
+  if (schema && schema.items) out.items = orParam(schema.items); // ARRAY of objects (write_files)
   return out;
 }
 // Tools tahap membangun: menulis + MEMBACA workspace (list/read dijalankan server-side
@@ -774,6 +797,9 @@ function serverProgressText(tc) {
   if (tc.name === 'search_clinqoo_kb') return 'Searching Clincoo knowledge base: ' + String(a.query || '').slice(0, 60) + '…';
   if (tc.name === 'install_automation') return 'Memasang otomatisasi: ' + String(a.name || '') + '…';
   if (tc.name === 'manage_domain') return 'Mengatur domain: ' + String(a.action || '') + (a.domain ? ' ' + a.domain : '') + '…';
+  if (tc.name === 'write_files') return 'Menulis ' + (Array.isArray(a.files) ? a.files.length : '?') + ' file sekaligus…';
+  if (tc.name === 'clone_repo') return 'Menyalin repo: ' + String(a.repo || '') + '…';
+  if (tc.name === 'push_to_github') return 'Push ke GitHub: ' + String(a.repo || '') + '…';
   if (tc.name === 'take_screenshot') return 'Taking a screenshot of the site…';
   if (tc.name === 'create_backend_function') return 'Creating backend function: ' + String(a.name || '') + '…';
   if (tc.name === 'call_backend_function') return 'Running backend function: ' + String(a.name || '') + '…';
