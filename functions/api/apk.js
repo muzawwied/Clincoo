@@ -279,7 +279,7 @@ export async function onRequestGet({ request, env }) {
   const T = getProjectTables(db, projectId);
 
   if (action === 'download') {
-    const runId = (url.searchParams.get('run_id') || '').replace(/\\D/g, '');
+    const runId = (url.searchParams.get('run_id') || '').replace(/\D/g, '');
     const name = (url.searchParams.get('name') || 'app').replace(/[^a-zA-Z0-9._-]/g, '');
     if (!runId) return json({ error: 'run_id required' }, 400);
     try {
@@ -361,15 +361,15 @@ export async function onRequestPost({ request, env }) {
     let packageId = String(body.package_id || '').trim();
     const orientation = body.orientation === 'landscape' ? 'landscape' : 'portrait';
     const fullscreen = body.fullscreen === true || body.fullscreen === 'true';
-    const iconBase64 = String(body.icon_base64 || '').replace(/^data:image\\/png;base64,/, '');
+    const iconBase64 = String(body.icon_base64 || '').replace(/^data:image\/png;base64,/, '');
 
     if (!/^[a-z0-9]{6,16}$/.test(buildId)) return json({ error: 'build_id tidak valid (6-16 huruf kecil/angka)' }, 400);
-    if (!/^https?:\\/\\/.+\\..+/.test(url)) return json({ error: 'URL situs tidak valid' }, 400);
+    if (!/^https?:\/\/.+\..+/.test(url)) return json({ error: 'URL situs tidak valid' }, 400);
     if (!appName || appName.length > 40) return json({ error: 'Nama aplikasi 1-40 karakter' }, 400);
     if (!packageId) {
-      packageId = 'id.' + String(url.replace(/^https?:\\/\\//, '').replace(/[^a-z0-9]+/g, '').slice(0, 20)) + '.app';
+      packageId = 'id.' + String(url.replace(/^https?:\/\//, '').replace(/[^a-z0-9]+/g, '').slice(0, 20)) + '.app';
     }
-    if (!/^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$/.test(packageId)) return json({ error: 'Package id tidak valid' }, 400);
+    if (!/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/.test(packageId)) return json({ error: 'Package id tidak valid' }, 400);
     if (iconBase64.length < 10 || iconBase64.length > 3_000_000) return json({ error: 'Ikon tidak valid (maks ~2MB)' }, 400);
 
     const repo = await ensureRepo(env);
