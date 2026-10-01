@@ -161,6 +161,11 @@
             </h4>
             
             <!-- CTA Undangan Kapsul dengan Dropdown Instant -->
+            <div class="flex items-center gap-2">
+                <span id="premium-invite-chip" class="hidden items-center gap-1 px-2.5 py-1 rounded-full border border-amber-200/70 dark:border-amber-500/20 bg-amber-50/80 dark:bg-amber-500/10" title="Kuota kolaborator Starter: 1 — kolaborator berikutnya bagian paket Premium" aria-label="Fitur Premium">
+                    <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"></path></svg>
+                    <span class="text-[11px] font-semibold text-amber-600 dark:text-amber-400">Premium</span>
+                </span>
             <div class="relative" id="share-dropdown-container">
                 <button type="button" onclick="toggleShareDropdown()" class="px-4 py-1.5 text-sm font-medium text-gray-900 dark:text-white bg-transparent border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#111] rounded-full transition-all cursor-pointer flex items-center gap-1.5 focus:outline-none">
                   <span>Tambah anggota</span>
@@ -187,6 +192,7 @@
                         <span>Salin Tautan Link</span>
                     </button>
                 </div>
+            </div>
             </div>
         </div>
 
@@ -692,6 +698,13 @@
                 psec.classList.add('hidden');
                 plist.innerHTML = '';
             }
+        }
+
+        var inviteChip = document.getElementById('premium-invite-chip');
+        if (inviteChip) {
+            var collabCount = collabData.members.filter(function(m) { return m.role !== 'Owner'; }).length + collabData.pending.length;
+            inviteChip.classList.toggle('hidden', collabCount < 1);
+            inviteChip.classList.toggle('inline-flex', collabCount >= 1);
         }
 
         var total = collabData.members.length;
