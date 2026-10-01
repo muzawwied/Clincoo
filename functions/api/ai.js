@@ -171,7 +171,31 @@ async function tryOpenRouter(keys, messages, stream) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { lastErr = `OpenRouter ${model}: HTTP ${res.status}`; continue; }
       const text = ((data?.choices?.[0]?.message?.content) || '');
-      if (text) return { text, model };
+      const finish = data?.choices?.[0]?.finish_reason;
+      if (text) {
+        // AUTO-CONTINUE: finish_reason "length" (batas token) -> sistem kirim
+        // "lanjutkan" + state terakhir; sambungan menyatu, tanpa sesi baru.
+        let full = text, seg = text, fin = finish;
+        const contMsgs = (sys ? [{ role: 'system', content: sys }, ...chatMsgs] : chatMsgs.slice()).concat([{ role: 'assistant', content: text }]);
+        for (let ac = 0; ac < 3 && fin === 'length'; ac++) {
+          contMsgs.push({ role: 'user', content: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' });
+          let dc = null;
+          try {
+            const rc = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.pages.dev', 'X-Title': 'Clincoo' },
+              body: JSON.stringify({ model, messages: contMsgs, max_tokens: 4096 })
+            });
+            dc = await rc.json().catch(() => ({}));
+          } catch (e2) { dc = null; }
+          const dseg = dc?.choices?.[0]?.message?.content || '';
+          fin = dc?.choices?.[0]?.finish_reason;
+          if (!dseg) break;
+          full += dseg; seg = dseg;
+          contMsgs.push({ role: 'assistant', content: dseg });
+        }
+        return { text: full, model };
+      }
       lastErr = `OpenRouter ${model}: respons kosong`;
     } catch (e) { lastErr = `OpenRouter ${model}: ${e && e.message}`; }
   }
