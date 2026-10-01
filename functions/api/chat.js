@@ -456,12 +456,34 @@ async function tryModels(apiKeys, systemInstruction, contents, tools, onDelta) {
   return { error: lastError || 'All models failed', quotaExhausted, contextOverflow, statuses };
 }
 
+// --- Kuota guest (tanpa login): per-IP per-hari, tabel sama dengan kuota user ---
+const GUEST_DAILY_LIMIT = 25;
+async function guestQuotaCheck(env, guestKey) {
+  const day = new Date().toISOString().slice(0, 10);
+  try {
+    await env.DB.prepare('CREATE TABLE IF NOT EXISTS ai_quota (user_key TEXT, day TEXT, count INTEGER, PRIMARY KEY (user_key, day))').run();
+    const r = await env.DB.prepare('SELECT count FROM ai_quota WHERE user_key = ? AND day = ?').bind(guestKey, day).first();
+    const used = (r && r.count) || 0;
+    if (used + 1 > GUEST_DAILY_LIMIT) {
+      return { exceeded: true, count: used, message: 'Kuota AI Clincoo tanpa login untuk hari ini sudah habis. Masuk atau daftar gratis untuk kuota penuh — atau coba lagi besok.' };
+    }
+    await env.DB.prepare('INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, 1) ON CONFLICT(user_key, day) DO UPDATE SET count = count + 1').bind(guestKey, day).run();
+    return { exceeded: false, count: used + 1 };
+  } catch (e) {
+    return { exceeded: false, count: 0 }; // DB gangguan -> jangan blokir chat
+  }
+}
+
 // ===== TOOLS SERVER-SIDE (backend function & screenshot) =====
 // Tool ini dieksekusi DI SERVER (bukan di browser user): hasil langsung
 // ditempel ke percakapan dan provider dipanggil lagi — user/frontend tidak berubah.
 const SERVER_TOOLS = new Set(['create_backend_function', 'list_backend_functions', 'delete_backend_function', 'call_backend_function', 'take_screenshot', 'search_clinqoo_kb']);
 async function executeServerTool(env, user, tc, origin) {
   const a = tc.args || {};
+  // Tool yang menempel ke akun: guest (tanpa login) tidak bisa memakainya.
+  if (!user && ['create_backend_function', 'list_backend_functions', 'delete_backend_function', 'call_backend_function'].indexOf(tc.name) !== -1) {
+    return { error: 'Fitur ini memerlukan login Clincoo (gratis).' };
+  }
   try {
     if (tc.name === 'search_clinqoo_kb') {
       return await searchClincooBlog(env, a.query || '');
@@ -602,12 +624,12 @@ export async function onRequestPost({ request, env, waitUntil }) {
     }
 
     // --- Auth per-user ---
+    // MODE TANPA LOGIN (guest): chat tetap jalan tanpa akun (auth frontend memang
+    // sudah dilepas). Identitas guest = IP; kuota harian per-IP (tabel ai_quota,
+    // kunci 'g:'+IP, sama seperti kuota user). Login tetap dapat kuota paket penuh.
     const user = await resolveUser(env, request);
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Login diperlukan', need_login: true }), {
-        status: 401, headers: { 'Content-Type': 'application/json', ...CORS }
-      });
-    }
+    const isGuest = !user;
+    const guestKey = 'g:' + clientIp(request);
 
     let messages = Array.isArray(body.messages) ? body.messages : [];
     // Mode biasa: pastikan selalu ada system prompt (klien biasanya mengirim sendiri)
@@ -632,7 +654,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // Hop tool lanjutan tidak dihitung.
     const isFirstHop = body.save_user_message !== false;
     if (isFirstHop) {
-      const q = await quotaCheck(env, user, 1);
+      const q = isGuest ? await guestQuotaCheck(env, guestKey) : await quotaCheck(env, user, 1);
       if (q.exceeded) {
         return new Response(JSON.stringify({ quota_exhausted: true, error: q.message || QUOTA_MSG_MONTHLY, scope: q.scope, limit: q.limit, used: q.count }), {
           status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': '3600', ...CORS }
