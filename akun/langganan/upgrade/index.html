@@ -328,12 +328,14 @@
         const SUB_API_LIGHT = SUB_API + '?fields=plan';
         const PROMO_API = 'https://clincoo-be2.pages.dev/api/promo';
         // PROMO 100 User Pertama: utk user yang eligible, kartu Pro tampil Rp5.000 (coret 49.000)
+        let promoProActive = false;
         (function(){
           fetch(PROMO_API, { cache: 'no-store' }).then(function(r){ return r.json(); }).then(function(p){
             if (!p || p.active !== true || p.remaining <= 0) return;
             var card = document.getElementById('btn-pro');
             if (!card) return;
             if (p.eligible) {
+              promoProActive = true;
               var priceBlock = document.getElementById('pro-price-block');
               if (priceBlock) {
                 priceBlock.outerHTML =
@@ -408,11 +410,19 @@
             } catch (e) { return {}; }
         }
 
-        function openModal(plan, price) {
-            selectedPlan = plan;
-            // Redirect to confirmation page
+        // Checkout paket: halaman /checkout/ (alur: pilih metode -> konfirmasi -> QRIS -> aktif)
+        const PLAN_PRICES = { Starter: 0, Pro: 49000, Bisnis: 129000 };
+        function openModal(plan) {
             const billing = (subData && subData.billingCycle) ? subData.billingCycle : 'Bulanan';
-            window.location.href = '../../konfirmasi-langganan/?plan=' + encodeURIComponent(plan) + '&billing=' + encodeURIComponent(billing);
+            let amount = PLAN_PRICES[plan] || 0;
+            if (plan === 'Pro' && promoProActive) amount = 5000; // promo 100 user pertama
+            selectedPlan = plan;
+            if (amount === 0) {
+                // Starter / program gratis: halaman konfirmasi yang mengaktivasi (Rp0).
+                window.location.href = 'konfirmasi/?plan=' + encodeURIComponent(plan) + '&billing=' + encodeURIComponent(billing);
+                return;
+            }
+            window.location.href = '../checkout/?plan=' + encodeURIComponent(plan) + '&billing=' + encodeURIComponent(billing) + '&amount=' + amount;
         }
 
         function closeModal() {}
