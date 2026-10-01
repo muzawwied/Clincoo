@@ -112,7 +112,45 @@ async function tryWorkersAIText(env, messages, gDecls) {
       }
       if (norm.length) return { tool_calls: norm, text, model: model.split('/').pop() + ' (Workers AI)' };
     }
-    if (text) return { text, model: model.split('/').pop() + ' (Workers AI)' };
+    if (text) {
+      // ===== AUTO-CONTINUE (finish_reason "length") =====
+      // Output terpotong karena batas token -> SISTEM (bukan user) otomatis
+      // mengirim "lanjutkan" + state terakhir: teks parsial menempel sebagai
+      // pesan assistant di percakapan, jadi model tahu persis titik henti.
+      // Tanpa sesi baru — sambungan menyatu jadi satu jawaban utuh.
+      // Maksimal 3 sambungan per jawaban.
+      const finishOf = (rr) => (rr && rr.finish_reason) || (rr && Array.isArray(rr.choices) && rr.choices[0] && rr.choices[0].finish_reason) || '';
+      let full = text, seg = text, finish = finishOf(result);
+      const contMsgs = chatMsgs.slice();
+      for (let ac = 0; ac < 3 && finish === 'length'; ac++) {
+        contMsgs.push({ role: 'assistant', content: seg });
+        contMsgs.push({ role: 'user', content: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' });
+        let rc = null;
+        try {
+          const p3 = { messages: contMsgs };
+          if (system) p3.system = system;
+          if (oaiTools) p3.tools = oaiTools;
+          rc = await env.AI.run(model, p3);
+        } catch (e3) { rc = null; }
+        if (!rc) break;
+        const tcsC = (rc && Array.isArray(rc.tool_calls)) ? rc.tool_calls
+          : (rc && Array.isArray(rc.choices) && rc.choices[0] && rc.choices[0].message && Array.isArray(rc.choices[0].message.tool_calls) ? rc.choices[0].message.tool_calls : null);
+        if (tcsC && tcsC.length) {
+          // Sambungan ternyata minta tool: serahkan ke alur hop biasa (tool_calls + teks parsial).
+          const norm = [];
+          for (const c of tcsC) {
+            let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
+            if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
+          }
+          if (norm.length) return { tool_calls: norm, text: full, model: model.split('/').pop() + ' (Workers AI)' };
+          break;
+        }
+        const t2 = (rc && (rc.response || (typeof rc === 'string' ? rc : ''))) || ((rc && Array.isArray(rc.choices) && rc.choices[0] && rc.choices[0].message && rc.choices[0].message.content) || '');
+        if (!t2) break;
+        seg = t2; full += t2; finish = finishOf(rc);
+      }
+      return { text: full, model: model.split('/').pop() + ' (Workers AI)' };
+    }
   }
   return null;
 }
@@ -399,6 +437,7 @@ async function fetchGeminiStream(apiKey, model, systemInstruction, contents, too
   const dec = new TextDecoder();
   let buf = '';
   const parts = [];
+  let finishReason = '';
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -409,6 +448,7 @@ async function fetchGeminiStream(apiKey, model, systemInstruction, contents, too
       buf = buf.slice(nl + 1);
       if (!line.startsWith('data:')) continue;
       let j; try { j = JSON.parse(line.slice(5).trim()); } catch (e) { continue; }
+      if (j.candidates && j.candidates[0] && j.candidates[0].finishReason) finishReason = j.candidates[0].finishReason;
       const cps = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
       for (const pt of cps) {
         parts.push(pt);
@@ -416,7 +456,7 @@ async function fetchGeminiStream(apiKey, model, systemInstruction, contents, too
       }
     }
   }
-  return { data: { candidates: [{ content: { parts } }] } };
+  return { data: { candidates: [{ content: { parts }, finishReason }] } };
 }
 
 async function tryModels(apiKeys, systemInstruction, contents, tools, onDelta) {
@@ -433,10 +473,33 @@ async function tryModels(apiKeys, systemInstruction, contents, tools, onDelta) {
         continue;
       }
       const parts = r.data?.candidates?.[0]?.content?.parts || [];
-      const text = parts.map(p => p.text || '').join('');
+      let text = parts.map(p => p.text || '').join('');
       const toolCalls = parts
         .filter(p => p.functionCall)
         .map(p => ({ name: p.functionCall.name, args: p.functionCall.args || {}, thought_signature: p.thoughtSignature || undefined }));
+      // ===== AUTO-CONTINUE (finishReason MAX_TOKENS / LENGTH) =====
+      // Konsep sama dengan jalur GLM: output terpotong batas token -> sistem
+      // otomatis kirim "lanjutkan" + state terakhir (teks parsial menempel
+      // sebagai pesan model), tanpa sesi baru, model menyambung dari titik henti.
+      // Maksimal 3 sambungan per jawaban. Delta sambungan ikut ter-stream.
+      if (!toolCalls.length && text) {
+        let finish = r.data?.candidates?.[0]?.finishReason || '';
+        let seg = text;
+        const contContents = contents.slice();
+        for (let ac = 0; ac < 3 && (finish === 'MAX_TOKENS' || finish === 'LENGTH'); ac++) {
+          contContents.push({ role: 'model', parts: [{ text: seg }] });
+          contContents.push({ role: 'user', parts: [{ text: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' }] });
+          const rc = onDelta ? await fetchGeminiStream(apiKey, model, systemInstruction, contContents, tools, onDelta) : await fetchGemini(apiKey, model, systemInstruction, contContents, tools);
+          if (rc.error) break;
+          const pc = rc.data?.candidates?.[0]?.content?.parts || [];
+          const tc2 = pc.filter(p => p.functionCall).map(p => ({ name: p.functionCall.name, args: p.functionCall.args || {}, thought_signature: p.thoughtSignature || undefined }));
+          if (tc2.length) break; // sambungan minta tool -> serahkan ke alur hop biasa
+          const t2 = pc.map(p => p.text || '').join('');
+          if (!t2) break;
+          seg = t2; text += t2;
+          finish = rc.data?.candidates?.[0]?.finishReason || '';
+        }
+      }
       if (toolCalls.length > 0) return { tool_calls: toolCalls, text, model };
       if (text) return { text, model };
       lastError = `Model ${model} returned empty response`;
