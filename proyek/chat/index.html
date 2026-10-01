@@ -560,8 +560,6 @@
             </div>
             <div id="file-preview-container" class="hidden flex-nowrap overflow-x-auto hide-scrollbar gap-2 mb-2 w-full"></div>
             
-            <div id="prompt-suggest-row" class="hidden flex-nowrap overflow-x-auto hide-scrollbar gap-2 mb-2.5 w-full"></div>
-            
             <textarea
                 id="main-prompt-input"
                 rows="1"
@@ -748,7 +746,6 @@
             try { localStorage.removeItem(lsChatKey()); } catch(e) {}
             currentGreeting = welcomeGreetings[Math.floor(Math.random() * welcomeGreetings.length)];
             renderMessages();
-            try { renderPromptSuggestions([]); } catch (e) {}
             
             sidebarPopup.classList.add('-translate-x-full');
             sidebarOverlay.classList.remove('opacity-100');
@@ -2479,57 +2476,12 @@
         }
         function toggleActionState(isGen) {
             isGenerating = isGen;
-            if (!isGen) { try { refreshPromptSuggestions(); } catch (e) {} }
             if (quotaLocked) { btnAction.innerHTML = LOCK_SVG; return; }
             if (isGenerating) {
                 btnAction.innerHTML = `<svg class="w-[18px] h-[18px]" fill="currentColor" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"></rect><rect x="56" y="56" width="144" height="144" rx="16"></rect></svg>`; 
             } else {
                 btnAction.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>`;
             }
-        }
-
-        // ===== Kapsul Template Prompt (isi dibuat AI sesuai pembahasan) =====
-        let promptSuggestTimer = null;
-        let promptSuggestSeq = 0;
-        function refreshPromptSuggestions() {
-            clearTimeout(promptSuggestTimer);
-            promptSuggestTimer = setTimeout(async function() {
-                try {
-                    const visible = messages.filter(function(m) {
-                        return !m.isHidden && (m.role === 'user' || m.role === 'ai') && m.text && String(m.text).trim();
-                    }).slice(-6).map(function(m) {
-                        return { role: m.role === 'ai' ? 'assistant' : 'user', content: String(m.text) };
-                    });
-                    if (!visible.length) { renderPromptSuggestions([]); return; }
-                    const seq = ++promptSuggestSeq;
-                    const res = await fetch(TOOL_API_BASE + '/api/prompt-templates', {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ messages: visible })
-                    });
-                    if (!res.ok) return;
-                    const d = await res.json();
-                    if (seq !== promptSuggestSeq) return; // refresh lebih baru sudah lewat
-                    renderPromptSuggestions(d && d.templates ? d.templates : []);
-                } catch (e) {}
-            }, 600);
-        }
-        function renderPromptSuggestions(templates) {
-            const row = document.getElementById('prompt-suggest-row');
-            if (!row) return;
-            row.innerHTML = '';
-            if (!templates || !templates.length) { row.classList.add('hidden'); return; }
-            templates.slice(0, 6).forEach(function(t) {
-                const b = document.createElement('button');
-                b.type = 'button';
-                b.className = 'shrink-0 whitespace-nowrap text-[11px] sm:text-xs text-gray-600 hover:text-black bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg px-3 py-1.5 transition-colors cursor-pointer';
-                b.textContent = t;
-                b.addEventListener('click', function() {
-                    const ta = document.getElementById('main-prompt-input');
-                    if (ta) { ta.value = t; ta.focus(); ta.dispatchEvent(new Event('input', { bubbles: true })); }
-                });
-                row.appendChild(b);
-            });
-            row.classList.remove('hidden');
         }
 
         function stopGeneration() {
@@ -4318,7 +4270,6 @@ if (loadChatLog()) {
     renderMessages();
     autoScrollActive = true;
     scrollToBottom(true);
-    try { refreshPromptSuggestions(); } catch (e) {}
     // FIX: jika pesan terakhir masih pertanyaan user tanpa jawaban AI (misalnya karena
     // pindah halaman saat AI masih menjawab) — lanjutkan jawaban secara otomatis.
     setTimeout(function() {
