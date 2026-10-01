@@ -302,11 +302,7 @@
         }
 
         /* Banner kuota AI habis */
-        #quota-banner { background: #f9fafb; border: 1px solid #e5e7eb; }
-        #quota-banner p { color: #4b5563; }
         #quota-retry-btn { background: #ffffff; border: 1px solid #d1d5db; color: #111827; }
-        body.dark-mode #quota-banner { background: #0a0a0a; border-color: #262626; }
-        body.dark-mode #quota-banner p { color: #9ca3af; }
         body.dark-mode #quota-retry-btn { background: #000000; border-color: #444444; color: #ffffff; }
         body.dark-mode #quota-retry-btn:hover { background: #1a1a1a; }
         /* Dark mode */
@@ -554,10 +550,6 @@
 
     <footer class="fixed bottom-0 left-0 right-0 w-full bg-transparent px-4 py-4 z-20 pointer-events-none flex flex-col justify-end">
         <div class="w-full bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] p-4 sm:p-5 transition-all text-left border border-gray-100 pointer-events-auto max-w-4xl mx-auto">
-            <div id="quota-banner" class="hidden items-center justify-between gap-3 mb-2 rounded-xl bg-gray-50 px-3 py-2">
-                <p id="quota-banner-text" class="text-[11px] sm:text-xs text-gray-500 leading-snug flex-1">Kredit habis — upgrade untuk lanjut.</p>
-                <a href="#" id="quota-retry-btn" class="text-[11px] sm:text-xs font-semibold text-gray-900 shrink-0 cursor-pointer whitespace-nowrap inline-flex items-center gap-0.5 hover:opacity-60 transition-opacity">Pilih Paket<svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg></a>
-            </div>
             <div id="file-preview-container" class="hidden flex-nowrap overflow-x-auto hide-scrollbar gap-2 mb-2 w-full"></div>
             
             <div id="prompt-suggest-row" class="hidden flex-nowrap overflow-x-auto hide-scrollbar gap-2 mb-2.5 w-full"></div>
@@ -672,14 +664,6 @@
         let autoScrollActive = true;
         let isUserInteracting = false;
         let lastScrollTop = 0;
-        // Ruang kosong buatan di bawah daftar pesan — TANPA ini, saat pesan baru mau
-        // di-pin ke atas (pinMessageToTop) browser sering meng-CLAMP posisi scroll ke
-        // scrollHeight-clientHeight kalau konten di bawah pesan itu belum cukup tinggi
-        // (baru saja dikirim, indikator "mengetik" masih pendek) — hasilnya pesan baru
-        // "nyangkut" di bawah dan pesan lama tetap kelihatan penuh di atas, bukannya
-        // pesan baru naik ke atas dan pesan lama tertutup. Diisi = clientHeight saat
-        // pin, di-reset 0 lagi sebelum pin pesan berikutnya (lewat renderMessages).
-        let pinSpacerPx = 0;
         let imageGenerationTimeout = null;
         
         let messages = [];
@@ -1422,34 +1406,16 @@
 
         fileUpload.addEventListener('change', handleFileUpload);
 
-        function pinMessageToTop(msgId) {
-            // autoScrollActive dimatikan: render berikutnya (jawaban AI yang sedang
-            // streaming) TIDAK menarik scroll balik ke bawah — posisi pin ini yang jadi acuan,
-            // persis seperti "pesan lama di-atasin sampai pesan baru saya".
-            autoScrollActive = false;
-            // Sediakan ruang scroll DI BAWAH pesan baru sebesar tinggi viewport supaya
-            // scrollTo() di bawah tidak di-clamp browser ke posisi lebih rendah dari
-            // target (yang membuat pesan lama tetap terlihat penuh di atas).
-            pinSpacerPx = chatContainer.clientHeight;
-            const spacerNow = document.getElementById('scroll-top-spacer');
-            if (spacerNow) spacerNow.style.height = pinSpacerPx + 'px';
-            requestAnimationFrame(() => {
-                const el = document.getElementById('msg-row-' + msgId);
-                if (!el) return;
-                const target = Math.max(0, el.offsetTop - 10);
-                chatContainer.scrollTo({ top: target, behavior: 'smooth' });
-            });
+        // Pesan baru tampil di BAWAH (dekat kolom input) — perilaku chat normal.
+        // (Dulu pesan baru di-pin ke atas viewport; selain sering tertutup header,
+        // posisinya tidak konsisten dengan tampilan setelah refresh.)
+        function revealNewMessage() {
+            scrollToBottom(true);
         }
 
-        // Jawaban AI SELESAI -> kolaps spacer pin. Tanpa ini, spacer setinggi viewport
-        // yang dipasang saat pesan user di-pin tetap ada setelah jawaban selesai, jadi
-        // di bawah pesan AI terakhir tampak ruang kosong besar sampai ke kolom input.
-        // Kolaps spacer membuat ujung jawaban "menempel" ke input tanpa jarak.
+        // Jawaban AI selesai: kalau user memang sedang di ekor chat, tempelkan
+        // ujung jawaban ke kolom input dengan scroll halus.
         function settleAfterAnswer() {
-            if (!pinSpacerPx) return; // tidak sedang di-pin -> tidak ada jarak buatan
-            pinSpacerPx = 0;
-            const spacer = document.getElementById('scroll-top-spacer');
-            if (spacer) spacer.style.height = '0px';
             requestAnimationFrame(function () {
                 const max = Math.max(0, chatContainer.scrollHeight - chatContainer.clientHeight);
                 // Dekat ekor jawaban -> scroll halus menempel ke input.
@@ -1760,7 +1726,7 @@
                 if (isGenerating) { setTimeout(send, 400); return; }
                 messages.push({ id: generateId(), role: 'user', text: qaText, time: Date.now() });
                 renderMessages();
-                pinMessageToTop(messages[messages.length - 1].id);
+                revealNewMessage();
                 fetchAIResponse();
             };
             renderMessages();
@@ -2073,13 +2039,6 @@
                 }
                 chatContainer.appendChild(messageEl);
             });
-            const scrollSpacer = document.createElement('div');
-            scrollSpacer.id = 'scroll-top-spacer';
-            scrollSpacer.style.flexShrink = '0';
-            scrollSpacer.style.width = '100%';
-            scrollSpacer.style.height = pinSpacerPx + 'px';
-            scrollSpacer.setAttribute('aria-hidden', 'true');
-            chatContainer.appendChild(scrollSpacer);
             attachBubbleClickListeners();
             scrollToBottom(false);
         
@@ -2438,10 +2397,6 @@
             }
         }
 
-        const LOCK_SVG = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path stroke-linecap="round" d="M8 10V7a4 4 0 018 0v3"></path></svg>`;
-        const quotaBanner = document.getElementById('quota-banner');
-        const quotaBannerText = document.getElementById('quota-banner-text');
-        const quotaRetryBtn = document.getElementById('quota-retry-btn');
         function upgradeUrl() {
             var base = (location.pathname.indexOf('/Clincoo') !== -1) ? '/Clincoo.' : '';
             return base + '/akun/langganan/';
@@ -2449,23 +2404,22 @@
         let quotaLocked = false;
         // Kuota/limit AI habis: KUNCI komposer, tidak ada jalur "coba kirim ulang" diam-diam —
         // satu-satunya CTA adalah upgrade paket (lewat banner atau tombol kirim yg terkunci).
-        function setQuotaLock(locked, bannerMsg) {
+        // Penanda "kredit user habis" — TANPA mengunci komposer. Tombol kirim & kolom
+        // ketik tetap aktif; saat user mengirim pesan dalam kondisi ini, sistem membalas
+        // dengan pesan kuota (pushQuotaNotice) alih-alih memanggil AI.
+        function setQuotaLock(locked) {
             quotaLocked = locked;
-            if (quotaLocked) {
-                btnAction.innerHTML = LOCK_SVG;
-                btnAction.title = 'Kuota/limit AI penuh — upgrade paket untuk lanjut';
-                if (quotaBannerText) quotaBannerText.textContent = bannerMsg || 'Kuota AI sedang habis — pesanmu aman di kolom ketik.';
-                if (quotaRetryBtn) quotaRetryBtn.href = upgradeUrl();
-                if (quotaBanner) { quotaBanner.classList.remove('hidden'); quotaBanner.classList.add('flex'); }
-            } else {
-                btnAction.title = '';
-                if (quotaBanner) { quotaBanner.classList.add('hidden'); quotaBanner.classList.remove('flex'); }
-                toggleActionState(false);
-            }
+        }
+        const QUOTA_EXHAUSTED_MSG = '⚡ Kuota pesan bulananmu sudah habis.\n\nIngin tetap menggunakan Clincoo? Upgrade langgananmu di sini:\nhttps://app.clincoo.buzz/akun/langganan/upgrade/';
+        function pushQuotaNotice() {
+            messages.push({ id: generateId(), role: 'ai', text: QUOTA_EXHAUSTED_MSG, completed: true });
+            renderMessages();
+            scrollToBottom(false);
+            try { saveChatLog(); } catch (e) {}
         }
         // Cek status kredit AI secara proaktif (tanpa perlu kirim pesan dulu) — dipanggil saat
-        // halaman dibuka & berkala, supaya banner "kredit habis" selalu tampil selama kredit
-        // memang habis, dan otomatis lepas begitu kredit/kuota pulih (tanpa perlu refresh manual).
+        // halaman dibuka & berkala: penanda "kredit habis" selalu akurat dan otomatis pulih
+        // begitu kredit/kuota kembali (tanpa perlu refresh manual).
         async function clinqooCheckQuotaBanner() {
             try {
                 var tok = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || '';
@@ -2473,14 +2427,13 @@
                 var res = await fetch(TOOL_API_BASE + '/api/chat', { cache: 'no-store', headers: { Authorization: 'Bearer ' + tok } });
                 if (!res.ok) return;
                 var d = await res.json();
-                if (d && d.exhausted) setQuotaLock(true, d.message || 'Kredit habis — upgrade untuk lanjut.');
+                if (d && d.exhausted) setQuotaLock(true);
                 else if (quotaLocked) setQuotaLock(false);
             } catch (e) {}
         }
         function toggleActionState(isGen) {
             isGenerating = isGen;
             if (!isGen) { try { refreshPromptSuggestions(); } catch (e) {} }
-            if (quotaLocked) { btnAction.innerHTML = LOCK_SVG; return; }
             if (isGenerating) {
                 btnAction.innerHTML = `<svg class="w-[18px] h-[18px]" fill="currentColor" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"></rect><rect x="56" y="56" width="144" height="144" rx="16"></rect></svg>`; 
             } else {
@@ -3716,11 +3669,6 @@
 
         async function fetchAIResponse() {
             toggleActionState(true);
-            // JANGAN reset autoScrollActive di sini: kalau pesan user barusan di-pin
-            // ke atas (pinMessageToTop), force-true membuat scrollToBottom(false) di
-            // bawah menarik view balik ke dasar — pesan lama kelihatan lagi ("belum
-            // tertutup"). Pin dipertahankan; auto-follow jalan lagi saat user scroll
-            // manual atau input difokuskan ulang.
             
             const lastUserMsgObj = [...messages].reverse().find(m => m.role === 'user');
             const route = detectRequestRoute(lastUserMsgObj);
@@ -3738,10 +3686,6 @@
             };
             messages.push(aiMsgObj);
             renderMessages();
-            // Tidak lagi force-scroll ke bawah di sini: kalau pesan user baru saja
-            // di-pin ke atas (pinMessageToTop), indikator "mengetik" ini muncul tepat
-            // di bawahnya secara alami — memaksa scroll ke bawah akan membatalkan pin itu.
-            // scrollToBottom(false) tetap menghormati autoScrollActive (mis. saat user scroll manual).
             scrollToBottom(false);
             
             currentAiMessageId = aiMsgObj.id;
@@ -4014,35 +3958,26 @@
                 } catch (e) {
                     if (e.name !== 'AbortError') {
                         if (e.message === '__QUOTA__') {
-                            const qMsg = e.quotaMsg || 'Kuota/limit AI sedang penuh.';
-                            const doneTools = (aiMsgObj.toolCalls || []);
-                            if (doneTools.length > 0) {
-                                // Kehabisan token di TENGAH tugas (limit provider, sementara):
-                                // jangan gagalkan seluruh proses — tampilkan checkpoint ringkas
-                                // (sudah dikerjakan / sisa) lalu minta konfirmasi "lanjut" dari user.
+                            if (e.ctxOverflow) {
+                                // Konteks percakapan penuh (BUKAN kredit habis): jangan
+                                // gagalkan proses — checkpoint ringkas (sudah dikerjakan/sisa),
+                                // riwayat lama dipangkas otomatis, lanjut dengan balas "lanjut".
                                 streamingBuffer = buildCheckpointText(
-                                    doneTools,
-                                    e.ctxOverflow ? 'Konteks percakapan penuh — kodenya sudah aman tersimpan.' : qMsg,
-                                    e.ctxOverflow ? ' Riwayat lama dipangkas otomatis supaya lanjutan tetap masuk konteks — balas "lanjut" untuk meneruskan sisa tugas.' : undefined
+                                    (aiMsgObj.toolCalls || []),
+                                    'Konteks percakapan penuh — kodenya sudah aman tersimpan.',
+                                    ' Riwayat lama dipangkas otomatis supaya lanjutan tetap masuk konteks — balas "lanjut" untuk meneruskan sisa tugas.'
                                 );
                                 const cpIdx = messages.findIndex(m => m.id === aiMsgObj.id);
                                 if (cpIdx !== -1) messages[cpIdx].checkpoint = true;
-                                hasReceivedData = true;
-                                isFetchComplete = true;
-                                // Pesan user TIDAK dikembalikan ke kolom ketik & komposer TIDAK
-                                // dikunci — user harus bisa membalas "lanjut" untuk meneruskan.
                             } else {
-                                streamingBuffer = qMsg + " Pesanmu aman di kolom ketik — upgrade paket untuk kuota & prioritas lebih besar.";
-                                const lastUserIdx = messages.map(m => m.role).lastIndexOf('user');
-                                if (lastUserIdx !== -1 && !chatInput.value.trim()) {
-                                    chatInput.value = messages[lastUserIdx].text || '';
-                                    messages.splice(lastUserIdx, 1);
-                                    renderMessages();
-                                    adjustInputHeight();
-                                }
-                                setQuotaLock(true, qMsg + ' Pesanmu aman di kolom ketik.');
+                                // Kredit habis: pesan user TETAP terkirim & tersimpan —
+                                // sistem membalas dengan pesan kuota + link upgrade.
+                                // Komposer tidak dikunci; tidak ada kartu di atas input.
+                                quotaLocked = true;
+                                streamingBuffer = QUOTA_EXHAUSTED_MSG;
                             }
-                            if (e.ctxOverflow && doneTools.length === 0) setQuotaLock(false);
+                            hasReceivedData = true;
+                            isFetchComplete = true;
                         } else {
                         // FALLBACK: /api/chat gagal karena provider (bukan kuota) -> coba /api/ai
                         // (Clincoo AI: Workers AI di backend, tanpa API key). Kuota habis TIDAK
@@ -4226,8 +4161,12 @@
             adjustInputHeight();
             
             renderMessages();
-            pinMessageToTop(userMsg.id);
+            revealNewMessage();
             
+            // Kredit habis: user TETAP bisa kirim — sistem membalas dengan pesan
+            // kuota + link upgrade (tanpa kunci komposer, tanpa kartu di atas input).
+            if (quotaLocked) { pushQuotaNotice(); return; }
+
             if (agentModeOn && val) { runAgentTask(val); return; }
             fetchAIResponse();
         }
@@ -4240,11 +4179,6 @@
 
         btnAction.addEventListener('click', (e) => {
             e.preventDefault();
-            if (quotaLocked && !isGenerating) {
-                // Terkunci: satu-satunya jalan keluar adalah upgrade paket, bukan kirim ulang diam-diam
-                window.location.href = upgradeUrl();
-                return;
-            }
             if (isGenerating) {
                 stopGeneration();
                 const currentMsg = messages.find(m => m.id === currentAiMessageId);
@@ -4264,7 +4198,6 @@
         chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                if (quotaLocked) return;
                 handleSubmit();
             }
         });
