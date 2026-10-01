@@ -4547,7 +4547,11 @@
         });
         
         chatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            // ENTER UNTUK KIRIM HANYA DI DESKTOP (pointer mouse/trackpad).
+            // Di mobile Enter = baris baru; kirim lewat tombol kirim saja —
+            // mencegah pesan terkirim tak sengaja saat mengetik di keyboard virtual.
+            const isDesktop = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+            if (e.key === 'Enter' && !e.shiftKey && isDesktop) {
                 e.preventDefault();
                 handleSubmit();
             }
