@@ -36,6 +36,12 @@ export async function onRequestGet({ request, env }) {
     if (!projectId) return new Response(JSON.stringify({ error: 'project_id required' }), { status: 400, headers: { 'Content-Type': 'application/json', ...CORS } });
 
     const T = await getProjectTables(db, projectId);
+    // ?meta=1 -> hanya path (ringan, untuk deteksi struktur workspace tanpa transfer seluruh konten)
+    const meta = url.searchParams.get('meta');
+    if (meta) {
+      const rows = await db.prepare(`SELECT path FROM ${T.files} WHERE project_id = ? ORDER BY path ASC`).bind(projectId).all();
+      return new Response(JSON.stringify({ files: (rows.results || []).map(function (r) { return { path: r.path }; }) }), { headers: { 'Content-Type': 'application/json', ...CORS } });
+    }
     const rows = await db.prepare(`SELECT path, content, updated_at FROM ${T.files} WHERE project_id = ? ORDER BY path ASC`).bind(projectId).all();
     return new Response(JSON.stringify({ files: rows.results || [] }), { headers: { 'Content-Type': 'application/json', ...CORS } });
   } catch (err) {
