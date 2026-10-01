@@ -95,6 +95,13 @@ Log lebih lama dipotong agar wiki ringan.
 - Fix (commit e638daf): resolveOwner fail-closed; kredit 'in' tanpa callback token WAJIB ClincooPay; clear/DELETE admin-only.
 
 ## Log Interaksi Agent
+### 2026-10-02 04:5x WIB — Superagent (Base44): 6 perbaikan Clincoo (disetujui owner)
+- `functions/api/security-events.js` BARU: endpoint yang hilang (akar error "Gagal memuat notifikasi keamanan"); `proyek/pengaturan/keamanan/index.html` kini pakai base URL dinamis + header Bearer. Live: `/api/security-events` balas 401 JSON, bukan 404 HTML.
+- FIX "failed to fetch" pasca-deploy di `proyek/build-deployment/{config,dashboard}/index.html`: koneksi putus saat deploy panjang tidak lagi langsung dianggap gagal — halaman cek log sukses baru di status deploy; bila deploy ternyata sukses, user diarahkan ke dashboard link.
+- Bagian "Domain kustom" + "Wajibkan HTTPS" dihapus dari `proyek/build-deployment/dashboard/index.html` (JS lama null-guarded, aman).
+- `proyek/build-deployment/domain-kustom/index.html`: hidrasi instan — input tidak terkunci walau belum ada domain, URL default (subdomain publik) tampil instan dari cache/sesi deploy, `publicUrl` di-cache sehingga section DNS tidak menunggu API Cloudflare tiap buka.
+- Tool AI baru `create_automation` (`functions/api/chat.js` + `proyek/chat/index.html`): AI bisa memasang tugas terjadwal (daily/interval) dari chat; `akun/tugas-terjadwal/index.html` refresh real-time (focus/visibility/storage/BroadcastChannel/poll 10 dtk).
+- Commit `153a7ac` + follow-up `851409a` (fix config sempat hilang saat baseline pull, dipasang ulang); deploy GitHub Actions keduanya `success`. Verifikasi live: semua perubahan terkonfirmasi di app.clincoo.buzz (grep live masing-masing ketemu, "Domain kustom" 0 kemunculan).
 ### 2026-09-23 08:xx WIB — Superagent (Base44): audit ringan GitHub (read-only)
 - `integrasi/index.html:584` menetapkan `WORKER_URL = ""`; token OAuth hanya disimpan sebagai `clincoo_gh_token` di localStorage origin saat itu (`:693`, `:729`). `proyek/chat/index.html:2992` membaca key yang sama tetapi hanya dari origin tempat chat dibuka. Pada dua host berbeda (`app.clincoo.buzz` vs `clinqoo.pages.dev`), localStorage tidak dibagi; status terhubung di A tidak membuktikan token tersedia di B.
 - `proyek/chat/index.html:2318` mengarahkan proxy ke `clincoo-be2.pages.dev`; `functions/api/ai-tools.js:173-182` membaca bearer Clincoo tetapi tidak memvalidasinya sebelum `github_request` memakai token dari body. Perlu audit keamanan/auth dan pengujian E2E dengan akun user sebelum mengklaim akar masalah pasti. Tidak ada perubahan kode GitHub kali ini.
