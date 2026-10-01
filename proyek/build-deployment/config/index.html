@@ -350,8 +350,34 @@
             } catch (err) {
                 clearInterval(phaseTimer);
                 deployState.deploying = false;
-                writeDeploySession({ status: 'failed' });
                 console.warn('Deploy gagal: ' + err.message);
+                // FIX "Failed to fetch": deploy panjang bisa kehilangan koneksi di
+                // tengah jalan padahal server menyelesaikannya. Jangan langsung
+                // bilang gagal — cek status deploy dulu: kalau ada log sukses baru
+                // sejak deploy ini dimulai, anggap BERHASIL dan lanjut ke dashboard.
+                btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> <span class="inline-block">Memeriksa hasil deploy...</span>`;
+                lucide.createIcons();
+                let okState = null;
+                const startedAt = (readDeploySession() || {}).started_at || (Date.now() - 60000);
+                for (let i = 0; i < 3; i++) {
+                    try {
+                        const st = await apiFetch('/deploy?project_id=' + encodeURIComponent(pid()));
+                        const okLog = (Array.isArray(st.logs) ? st.logs : []).find(l => l && l.status === 'success');
+                        if (okLog && okLog.created_at) {
+                            const t = new Date(String(okLog.created_at).replace(' ', 'T') + 'Z').getTime();
+                            if (!isNaN(t) && t >= startedAt - 90000) { okState = st; break; }
+                        }
+                    } catch (e) {}
+                    await new Promise(r => setTimeout(r, 2500));
+                }
+                if (okState) {
+                    writeDeploySession({ status: 'done', pages_url: (okState.pages_url || ''), public_url: (okState.public_url || ''), done_at: Date.now() });
+                    btn.innerHTML = `<i data-lucide="check-circle-2" class="w-5 h-5"></i> <span class="inline-block">Berhasil Deploy!</span>`;
+                    lucide.createIcons();
+                    setTimeout(function () { location.replace('../dashboard/?id=' + encodeURIComponent(pid())); }, 600);
+                    return;
+                }
+                writeDeploySession({ status: 'failed' });
                 showDeployErrorModal(err);
                 btn.innerHTML = `Jalankan Deploy`;
                 btn.className = "flex-[2] py-4 bg-transparent border border-gray-300 text-gray-900 rounded-2xl font-bold text-sm hover:bg-gray-100 transition-all shadow-lg flex items-center justify-center gap-2";
