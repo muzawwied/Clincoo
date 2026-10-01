@@ -323,7 +323,9 @@
     <script>
         try { lucide.createIcons(); } catch (e) {}
 
+        // fields=plan: mode ringan — cukup paket aktif + siklus tagihan (cepat)
         const SUB_API = 'https://clincoo-be2.pages.dev/api/subscription';
+        const SUB_API_LIGHT = SUB_API + '?fields=plan';
         const PROMO_API = 'https://clincoo-be2.pages.dev/api/promo';
         // PROMO 100 User Pertama: utk user yang eligible, kartu Pro tampil Rp5.000 (coret 49.000)
         (function(){
@@ -360,17 +362,36 @@
         function writeSubCache(plan, billingCycle) { try { localStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ plan: plan, billingCycle: billingCycle || 'Bulanan', ts: Date.now() })); } catch(e) {} }
 
         async function loadSubscription() {
-            // 1) Instan dari cache — mis. plan Pro dari halaman Langganan tampil langsung
+            // 1) Instan dari cache — mis. plan Pro dari halaman Langganan tampil langsung.
+            //    Cache basi pun tetap dipakai dulu (tampil instan), lalu diperbarui diam-diam
+            //    di belakang — tanpa loading, tanpa nunggu server.
             const cached = readSubCache();
-            if (cached && cached.plan && (Date.now() - (cached.ts || 0)) < SUB_CACHE_TTL) {
+            if (cached && cached.plan) {
                 currentActivePlan = cached.plan;
                 subData = { plan: cached.plan, billingCycle: cached.billingCycle || 'Bulanan' };
                 updateUI();
-                return; // tidak fetch ulang → tidak ada loading lama
+                const fresh = (Date.now() - (cached.ts || 0)) < SUB_CACHE_TTL;
+                if (!fresh) {
+                    // STALE-WHILE-REVALIDATE: perbarui cache di belakang, render ulang kalau beda
+                    try {
+                        const res = await fetch(SUB_API_LIGHT, { headers: subAuthHeaders() });
+                        const data = await res.json();
+                        if (data && data.plan && data.plan !== currentActivePlan) {
+                            currentActivePlan = data.plan;
+                            subData = data;
+                            writeSubCache(data.plan, data.billingCycle);
+                            updateUI();
+                        } else if (data && data.plan) {
+                            writeSubCache(data.plan, data.billingCycle); // segarkan ts cache
+                        }
+                    } catch(e) {}
+                }
+                return;
             }
-            // 2) Ambil data asli (loading indicator aktif selama fetch berjalan)
+            // 2) Tidak ada cache sama sekali → ambil data asli lewat mode ringan
+            //    (loading indicator aktif selama fetch berjalan)
             try {
-                const res = await fetch(SUB_API);
+                const res = await fetch(SUB_API_LIGHT, { headers: subAuthHeaders() });
                 const data = await res.json();
                 subData = data || null;
                 if (data && data.plan) {
@@ -379,6 +400,12 @@
                 }
             } catch(e) { console.error('Failed to load subscription:', e); }
             updateUI();
+        }
+        function subAuthHeaders() {
+            try {
+                var tok = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || '';
+                return tok ? { Authorization: 'Bearer ' + tok } : {};
+            } catch (e) { return {}; }
         }
 
         function openModal(plan, price) {

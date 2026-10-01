@@ -563,6 +563,29 @@ export async function onRequestPost({ request, env }) {
     }
 
     const files = await readFiles(db, T.files, projectId);
+
+    // === Logo Aplikasi -> favicon otomatis (Pengaturan > Umum) ===
+    // Logo yang diunggah di Pengaturan > Umum dipasang sebagai favicon situs:
+    // tag <link rel="icon"> lama diganti dengan logo, jadi ikon tab browser
+    // otomatis mengikuti logo aplikasi sejak deploy berikutnya.
+    let logoPath = null;
+    try { logoPath = await getSetting(db, T.projectSettings, projectId, 'app_logo'); } catch (e) {}
+    logoPath = String(logoPath || '').replace(/^[\/\\]+/, '');
+    if (logoPath && files.some(function (f) { return f.path === logoPath; })) {
+      const iconTag = '<link rel="icon" href="/' + logoPath + '">' +
+                      '<link rel="apple-touch-icon" href="/' + logoPath + '">';
+      for (const f of files) {
+        if (!/\.html?$/i.test(String(f.path))) continue;
+        try {
+          let html = String(f.content || '');
+          html = html.replace(/<link[^>]+rel=["']?(apple-touch-icon|shortcut icon|icon)["']?[^>]*>/gi, '');
+          if (/<\/head>/i.test(html)) html = html.replace(/<\/head>/i, iconTag + '</head>');
+          else html = iconTag + html;
+          f.content = html;
+        } catch (e) {}
+      }
+      await setPhase(db, T.projectSettings, projectId, 'Memasang logo sebagai favicon...');
+    }
     if (!files.length) {
       return json({ error: 'Workspace proyek masih kosong — tidak ada file untuk dideploy. Buat file dulu di halaman Workspace.' }, 400);
     }
@@ -640,7 +663,16 @@ export async function onRequestPost({ request, env }) {
     const assets = [];
     for (const f of files) {
       const ext = (String(f.path).split('.').pop() || '').toLowerCase();
-      const value = b64(f.content);
+      // File biner (logo/ikon) disimpan di workspace sebagai data URL — decode
+      // jadi base64 murni supaya terunggah sebagai file gambar asli, bukan teks.
+      let value;
+      const raw = String(f.content || '');
+      const dm = raw.startsWith('data:') && /^data:([a-z0-9.+-]+\/\/[a-z0-9.+-]+)?;base64,([A-Za-z0-9+/=]+)$/i.exec(raw);
+      if (dm && raw.length < 3_000_000) {
+        value = dm[2];
+      } else {
+        value = b64(f.content);
+      }
       assets.push({
         key: (await sha256hex(value + ext)).slice(0, 32),
         value,
