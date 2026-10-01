@@ -51,7 +51,7 @@ export async function onRequestGet({ request, env }) {
 
 // POST /api/project-files — { project_id, path, content } upsert a single file
 // or { project_id, files: [{path, content}, ...] } bulk upsert
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost({ request, env, waitUntil }) {
   const db = env.DB;
   if (!db) return new Response(JSON.stringify({ error: 'D1 not bound' }), { status: 500, headers: { 'Content-Type': 'application/json', ...CORS } });
   try {
@@ -85,6 +85,33 @@ export async function onRequestPost({ request, env }) {
 
     // Update project's updated_at in projects table if exists
     try { await db.prepare("UPDATE projects SET updated_at = datetime('now') WHERE id = ?").bind(projectId).run(); } catch(e) {}
+
+    // URL PREVIEW OTOMATIS: setiap perubahan kode yang disimpan memicu deploy latar belakang
+    // ke branch 'preview' Cloudflare Pages (URL preview.<project>.pages.dev) — produksi
+    // (alias main) TIDAK tersentuh, hanya berubah lewat tombol Publish manual.
+    // Throttle 20 detik per proyek; hanya berjalan bila proyek pernah di-deploy (punya Pages project).
+    try {
+      const ever = await db.prepare(`SELECT 1 FROM ${T.deployLogs} WHERE project_id = ? AND status IN ('success','preview') LIMIT 1`).bind(projectId).first();
+      if (ever) {
+        const throttleKey = 'preview_last_deployed_at';
+        const prev = await db.prepare(`SELECT value FROM ${T.projectSettings} WHERE project_id = ? AND key = ?`).bind(projectId, throttleKey).first();
+        const now = Date.now();
+        if (!prev || now - Number(prev.value || 0) > 20000) {
+          await db.prepare(`INSERT OR REPLACE INTO ${T.projectSettings} (project_id, key, value) VALUES (?, ?, ?)`)
+            .bind(projectId, throttleKey, String(now)).run();
+          const p = fetch('https://clincoo-be2.pages.dev/api/deploy', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': request.headers.get('authorization') || '',
+              'Cookie': request.headers.get('cookie') || ''
+            },
+            body: JSON.stringify({ project_id: projectId, preview: true })
+          }).then(r => r.json()).catch(() => null);
+          if (typeof waitUntil === 'function') waitUntil(p);
+        }
+      }
+    } catch (ePre) { /* preview otomatis tidak boleh menggagalkan simpan */ }
 
     return new Response(JSON.stringify({ success: true, saved: filesToSave.length }), { headers: { 'Content-Type': 'application/json', ...CORS } });
   } catch (err) {

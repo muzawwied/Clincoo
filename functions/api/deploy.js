@@ -204,6 +204,14 @@ const GATE_PAGE_HTML = `<!DOCTYPE html>
 </body>
 </html>`;
 
+// === URL PREVIEW PER PROYEK ===
+// Preview di-host di project Pages terpisah '<name>-prv' (custom domain Pages hanya
+// melayani branch produksi, jadi preview tidak bisa berupa branch di project utama).
+// URL preview mengikuti pola domain publik: <prvName>.clinqoo.biz.id.
+function prvNameFor(name) {
+  return name.slice(0, 58) + '-prv';
+}
+
 // Lihat project Pages tanpa membuat baru (8000007 = belum ada).
 async function lookupProject(creds, name) {
   try {
@@ -438,7 +446,10 @@ export async function onRequestGet({ request, env }) {
     const deployed = (Array.isArray(logs) && logs.some(l => l && l.status === 'success'))
       || (last && ['success', 'active'].includes(last.status))
       || (Array.isArray(deps) && deps.length > 0);
-    const _statusBody = { pages_project: name, pages_url: pagesUrl, public_url: publicUrl, deployed, last_deployment: last, last_deploy_by: lastDeployBy || '', domains, logs, deploy_phase: deployPhase || '', api_rev: 'uniq4' };
+    const previewDeployed = Array.isArray(logs) && logs.some(l => l && l.status === 'preview');
+    const previewLog = (Array.isArray(logs) ? logs.find(l => l && l.status === 'preview') : null);
+    const previewUrl = previewLog ? previewLog.url : ('https://' + prvNameFor(name) + PUB_SUFFIX);
+    const _statusBody = { pages_project: name, pages_url: pagesUrl, public_url: publicUrl, deployed, preview_url: previewUrl, preview_deployed: previewDeployed, last_deployment: last, last_deploy_by: lastDeployBy || '', domains, logs, deploy_phase: deployPhase || '', api_rev: 'uniq5' };
     statusCacheSet(projectId, _statusBody);
     return json(_statusBody);
   } catch (err) {
@@ -458,6 +469,10 @@ export async function onRequestPost({ request, env }) {
   const deny = await guardProject(env, request, projectId);
   if (deny) return deny;
   statusCacheDel(projectId);
+  // body.preview=true -> deploy ke project Pages terpisah '<name>-prv' (URL preview).
+  // Preview TIDAK menyentuh situs produksi, TIDAK makan kuota deploy bulanan,
+  // tidak menghitung last_deploy_by, dan tidak memicu webhook deploy (log status 'preview').
+  const isPreview = body.preview === true;
   try {
     const db = env.DB;
     const creds = await getCreds(db);
@@ -485,6 +500,19 @@ export async function onRequestPost({ request, env }) {
         return json({ success: true, unpublished: name, note: 'Situs belum pernah dideploy — tidak ada yang perlu ditarik.' });
       }
       try {
+        // Project preview '-prv' ikut ditarik (best effort): lepaskan domain + CNAME
+        // publiknya dulu, lalu hapus project-nya.
+        try {
+          const prvName0 = prvNameFor(name);
+          let pdoms = [];
+          try { pdoms = await cfFetch('/accounts/' + creds.accountId + '/pages/projects/' + prvName0 + '/domains', creds.apiKey) || []; } catch (e) { pdoms = []; }
+          for (const d of (pdoms || [])) {
+            if (!d || !d.name) continue;
+            try { await cfFetch('/accounts/' + creds.accountId + '/pages/projects/' + prvName0 + '/domains/' + d.name, creds.apiKey, { method: 'DELETE' }); } catch (e) {}
+            if (d.name.endsWith(PUB_SUFFIX)) await removePublicDomainDns(creds, d.name);
+          }
+          await cfFetch('/accounts/' + creds.accountId + '/pages/projects/' + prvName0, creds.apiKey, { method: 'DELETE' });
+        } catch (e) {}
         // Cloudflare menolak menghapus project Pages yang masih punya custom domain
         // terpasang (termasuk subdomain gratis <project>.clinqoo.biz.id) —
         // lepaskan semua domain dulu, lalu hapus project.
@@ -527,7 +555,7 @@ export async function onRequestPost({ request, env }) {
     // Kuota deploy per paket langganan (Starter 5x/bln, Pro 25x/bln, Bisnis tanpa batas)
     const user = await currentUser(env, request);
     const planInfo = await getEffectivePlan(db, user);
-    if (planInfo.limits.deployLimit !== null && planInfo.limits.deployLimit !== undefined) {
+    if (!isPreview && planInfo.limits.deployLimit !== null && planInfo.limits.deployLimit !== undefined) {
       const used = await getMonthlyDeployCount(db, user && user.id);
       if (used >= planInfo.limits.deployLimit) {
         return json({ error: 'Kuota deploy paket ' + planInfo.plan + ' habis: maksimal ' + planInfo.limits.deployLimit + ' deploy per bulan (sudah terpakai ' + used + '). Upgrade paket di halaman Langganan untuk deploy lagi.', upgrade_needed: true, plan: planInfo.plan, limit: planInfo.limits.deployLimit, used: used }, 402);
@@ -602,10 +630,11 @@ export async function onRequestPost({ request, env }) {
     }
 
     await setPhase(db, T.projectSettings, projectId, 'Menyiapkan proyek Pages...');
-    await ensurePagesProject(creds, name);
+    const targetName = isPreview ? prvNameFor(name) : name;
+    await ensurePagesProject(creds, targetName);
     await setSetting(db, T.projectSettings, projectId, 'pages_project', name);
 
-    const tokenRes = await cfFetch('/accounts/' + creds.accountId + '/pages/projects/' + name + '/upload-token', creds.apiKey);
+    const tokenRes = await cfFetch('/accounts/' + creds.accountId + '/pages/projects/' + targetName + '/upload-token', creds.apiKey);
     const jwt = tokenRes.jwt;
 
     const assets = [];
@@ -660,7 +689,7 @@ export async function onRequestPost({ request, env }) {
     for (const a of assets) manifest['/' + a.path] = a.key;
     form.append('manifest', JSON.stringify(manifest));
     form.append('branch', 'main');
-    const depRes = await fetch(API_BASE + '/accounts/' + creds.accountId + '/pages/projects/' + name + '/deployments', {
+    const depRes = await fetch(API_BASE + '/accounts/' + creds.accountId + '/pages/projects/' + targetName + '/deployments', {
       method: 'POST', headers: { Authorization: 'Bearer ' + creds.apiKey }, body: form
     });
     const depData = await depRes.json().catch(() => null);
@@ -675,28 +704,33 @@ export async function onRequestPost({ request, env }) {
       return json({ error: 'Cloudflare menolak deployment: ' + msg }, 500);
     }
     const dep = depData.result || {};
-    const pubDomain = await ensurePublicDomain(creds, name);
+    const pubDomain = await ensurePublicDomain(creds, targetName);
 
     // Log sukses dibungkus try/catch: gagal mencatat log TIDAK boleh membuat
     // deploy sukses dilaporkan gagal (pernah bikin user nyangkut di halaman
     // "Mulai Konfigurasi" padahal situsnya sudah online).
+    const pubUrl = pubDomain ? ('https://' + pubDomain) : pagesUrl;
     try {
-      await db.prepare(`INSERT INTO ${T.deployLogs} (project_id, status, url, message, created_at) VALUES (?, 'success', ?, ?, datetime('now'))`)
-        .bind(projectId, pagesUrl, 'deploy ' + files.length + ' file ke ' + name).run();
+      await db.prepare(`INSERT INTO ${T.deployLogs} (project_id, status, url, message, created_at) VALUES (?, ?, ?, ?, datetime('now'))`)
+        .bind(projectId, isPreview ? 'preview' : 'success', pubUrl, (isPreview ? 'preview ' : 'deploy ') + files.length + ' file ke ' + targetName).run();
     } catch (e) {}
     await setPhase(db, T.projectSettings, projectId, '');
-    await bumpMonthlyDeployCount(db, user && user.id);
-    try { await setSetting(db, T.projectSettings, projectId, 'last_deploy_by', (user && (user.name || user.email)) || 'pengguna'); } catch (e) {}
-    await fireWebhooks(db, T.projectSettings, projectId, 'success', {
-      event: 'deploy.success', project_id: projectId, pages_project: name, pages_url: pagesUrl, file_count: files.length, at: new Date().toISOString()
-    });
+    if (!isPreview) {
+      await bumpMonthlyDeployCount(db, user && user.id);
+      try { await setSetting(db, T.projectSettings, projectId, 'last_deploy_by', (user && (user.name || user.email)) || 'pengguna'); } catch (e) {}
+      await fireWebhooks(db, T.projectSettings, projectId, 'success', {
+        event: 'deploy.success', project_id: projectId, pages_project: name, pages_url: pubUrl, file_count: files.length, at: new Date().toISOString()
+      });
+    }
 
     return json({
       success: true,
       pages_project: name,
-      pages_url: pagesUrl,
+      pages_url: pubUrl,
       public_url: pubDomain ? ('https://' + pubDomain) : pagesUrl,
       public_domain: pubDomain || '',
+      preview: isPreview,
+      preview_url: pubDomain ? ('https://' + pubDomain) : ('https://' + targetName + '.pages.dev'),
       deployment: {
         id: dep.id,
         url: (dep.aliases && dep.aliases[0]) || dep.url || pagesUrl,
