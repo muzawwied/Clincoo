@@ -622,7 +622,7 @@ async function guestQuotaCheck(env, guestKey) {
     const r = await env.DB.prepare('SELECT count FROM ai_quota WHERE user_key = ? AND day = ?').bind(guestKey, day).first();
     const used = (r && r.count) || 0;
     if (used + 1 > GUEST_DAILY_LIMIT) {
-      return { exceeded: true, count: used, message: 'Kuota AI Clincoo tanpa login untuk hari ini sudah habis. Masuk atau daftar gratis untuk kuota penuh — atau coba lagi besok.' };
+      return { exceeded: true, scope: 'daily', count: used, message: 'Kuota AI Clincoo tanpa login untuk hari ini sudah habis. Masuk atau daftar gratis untuk kuota penuh — atau coba lagi besok.' };
     }
     await env.DB.prepare('INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, 1) ON CONFLICT(user_key, day) DO UPDATE SET count = count + 1').bind(guestKey, day).run();
     return { exceeded: false, count: used + 1 };
@@ -725,6 +725,7 @@ export async function onRequestGet({ request, env }) {
       monthly_limit: limits.monthly, monthly_used: monthUsed,
       credits_left_total: creditsLeftTotal,
       exhausted,
+      scope: exhausted ? (monthUsed >= limits.monthly ? 'monthly' : 'daily') : null,
       message: exhausted ? (monthUsed >= limits.monthly ? QUOTA_MSG_MONTHLY : QUOTA_MSG_DAILY) : null
     }), {
       headers: { 'Content-Type': 'application/json', ...CORS }

@@ -2402,17 +2402,25 @@
             return base + '/akun/langganan/';
         }
         let quotaLocked = false;
+        let quotaScope = 'monthly'; // 'monthly' | 'daily' — dari backend (scope)
         // Kuota/limit AI habis: KUNCI komposer, tidak ada jalur "coba kirim ulang" diam-diam —
         // satu-satunya CTA adalah upgrade paket (lewat banner atau tombol kirim yg terkunci).
         // Penanda "kredit user habis" — TANPA mengunci komposer. Tombol kirim & kolom
         // ketik tetap aktif; saat user mengirim pesan dalam kondisi ini, sistem membalas
         // dengan pesan kuota (pushQuotaNotice) alih-alih memanggil AI.
-        function setQuotaLock(locked) {
+        function setQuotaLock(locked, scope) {
             quotaLocked = locked;
+            if (locked && scope) quotaScope = scope;
         }
-        const QUOTA_EXHAUSTED_MSG = '⚡ Kuota pesan bulananmu sudah habis.\n\nIngin tetap menggunakan Clincoo? Upgrade langgananmu di sini:\nhttps://app.clincoo.buzz/akun/langganan/upgrade/';
+        // Pesan kuota habis sesuai scope: bulanan (kredit paket) vs harian (cap harian).
+        function quotaExhaustedMsg(scope) {
+            const first = scope === 'daily'
+                ? '⚡ Kuota pesanmu sudah habis.'
+                : '⚡ Kuota pesan bulananmu sudah habis.';
+            return first + '\n\nIngin tetap menggunakan Clincoo? Upgrade langgananmu di sini:\nhttps://app.clincoo.buzz/akun/langganan/upgrade/';
+        }
         function pushQuotaNotice() {
-            messages.push({ id: generateId(), role: 'ai', text: QUOTA_EXHAUSTED_MSG, completed: true });
+            messages.push({ id: generateId(), role: 'ai', text: quotaExhaustedMsg(quotaScope), completed: true });
             renderMessages();
             scrollToBottom(false);
             try { saveChatLog(); } catch (e) {}
@@ -2427,7 +2435,7 @@
                 var res = await fetch(TOOL_API_BASE + '/api/chat', { cache: 'no-store', headers: { Authorization: 'Bearer ' + tok } });
                 if (!res.ok) return;
                 var d = await res.json();
-                if (d && d.exhausted) setQuotaLock(true);
+                if (d && d.exhausted) setQuotaLock(true, d.scope);
                 else if (quotaLocked) setQuotaLock(false);
             } catch (e) {}
         }
@@ -2972,6 +2980,7 @@
                 if (errObj.quota_exhausted) {
                     const e = new Error('__QUOTA__');
                     e.quotaMsg = errObj.error || 'Kuota/limit AI sedang penuh.';
+                    e.quotaScope = errObj.scope || null;
                     throw e;
                 }
                 if (errObj.context_overflow) {
@@ -3811,13 +3820,13 @@
 
                         // Kirim ke backend chat dgn retry otomatis utk gangguan sesaat
                         const response = await fetchChatWithRetry(apiMessagesWithTools, hop, abortController.signal);
-                        let hopQuotaHit = false, hopCtxHit = false, hopErrDetail = '';
+                        let hopQuotaHit = false, hopCtxHit = false, hopErrDetail = '', hopQuotaScope = null;
 
                         if (!response || !response.ok) {
                             if (response) {
-                                try { const errJson = await response.json(); hopErrDetail = errJson.error || ''; hopQuotaHit = !!errJson.quota_exhausted; hopCtxHit = !!errJson.context_overflow; } catch(e) {}
+                                try { const errJson = await response.json(); hopErrDetail = errJson.error || ''; hopQuotaHit = !!errJson.quota_exhausted; hopCtxHit = !!errJson.context_overflow; hopQuotaScope = errJson.scope || null; } catch(e) {}
                             }
-                            if (hopQuotaHit) { hopError = new Error('__QUOTA__'); hopError.quotaMsg = hopErrDetail; }
+                            if (hopQuotaHit) { hopError = new Error('__QUOTA__'); hopError.quotaMsg = hopErrDetail; hopError.quotaScope = hopQuotaScope; }
                             else if (hopCtxHit) { hopError = new Error('__QUOTA__'); hopError.quotaMsg = hopErrDetail; hopError.ctxOverflow = true; }
                             else { hopError = new Error(hopErrDetail || `Proxy AI HTTP error! status: ${response ? response.status : 'No response'} (setelah ${MAX_HOP_RETRIES + 1}x percobaan)`); }
                             break;
@@ -3842,7 +3851,7 @@
                         }
                         if (resultJson.session_id) currentSessionId = resultJson.session_id;
                         if (resultJson.error && (!resultJson.tool_calls || resultJson.tool_calls.length === 0)) {
-                            if (resultJson.quota_exhausted) { hopError = new Error('__QUOTA__'); hopError.quotaMsg = resultJson.error; }
+                            if (resultJson.quota_exhausted) { hopError = new Error('__QUOTA__'); hopError.quotaMsg = resultJson.error; hopError.quotaScope = resultJson.scope || null; }
                             else if (resultJson.context_overflow) { hopError = new Error('__QUOTA__'); hopError.quotaMsg = resultJson.error; hopError.ctxOverflow = true; }
                             else { hopError = new Error(resultJson.error || 'AI gagal memproses permintaan.'); }
                             break;
@@ -3969,12 +3978,17 @@
                                 );
                                 const cpIdx = messages.findIndex(m => m.id === aiMsgObj.id);
                                 if (cpIdx !== -1) messages[cpIdx].checkpoint = true;
-                            } else {
-                                // Kredit habis: pesan user TETAP terkirim & tersimpan —
-                                // sistem membalas dengan pesan kuota + link upgrade.
-                                // Komposer tidak dikunci; tidak ada kartu di atas input.
+                            } else if (e.quotaScope) {
+                                // Kredit habis (bulanan ATAU harian): pesan user TETAP
+                                // terkirim & tersimpan — sistem membalas pesan kuota
+                                // sesuai scope + link upgrade. Komposer tidak dikunci.
+                                quotaScope = e.quotaScope;
                                 quotaLocked = true;
-                                streamingBuffer = QUOTA_EXHAUSTED_MSG;
+                                streamingBuffer = quotaExhaustedMsg(e.quotaScope);
+                            } else {
+                                // 429 tanpa scope = limit provider (sementara): tampilkan
+                                // alasan asli dari backend, jangan ajak upgrade.
+                                streamingBuffer = e.quotaMsg || 'Kuota/limit AI sedang penuh — coba lagi sebentar lagi.';
                             }
                             hasReceivedData = true;
                             isFetchComplete = true;
