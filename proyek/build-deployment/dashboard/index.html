@@ -181,6 +181,17 @@
                 </div>
             </div>
 
+            <!-- CTA Deploy Pembaruan: muncul saat berkas berubah setelah deploy terakhir -->
+            <div id="changes-banner" class="hidden w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-gray-200 bg-gray-50 rounded-xl px-4 py-3">
+                <div class="flex items-center gap-2.5 text-sm text-gray-700">
+                    <span class="w-2 h-2 rounded-full bg-gray-900 animate-pulse shrink-0"></span>
+                    <span>Perubahan kode terdeteksi — situs live masih versi lama</span>
+                </div>
+                <button id="btn-deploy-changes" type="button" class="px-5 py-2.5 rounded-2xl bg-gray-900 text-white text-sm font-semibold transition-all hover:opacity-90 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> Deploy Sekarang
+                </button>
+            </div>
+
             <hr class="border-gray-200">
 
             <!-- Bagian: Build and deployment (Flat) -->
@@ -538,11 +549,51 @@
             return "baru saja";
         }
 
+        // ==== DATA REAL-TIME: banner perubahan + refresh berkala ====
+        function updateChangesBanner(st) {
+            const b = document.getElementById('changes-banner');
+            if (!b) return;
+            const show = !!(st && st.deployed && st.files_changed && !deployState.deploying);
+            b.classList.toggle('hidden', !show);
+        }
+        async function refreshLive() {
+            try {
+                const st = await fetchStatus();
+                if (!st) return;
+                updateChangesBanner(st);
+                const tl = document.getElementById('time-ago-label');
+                if (tl && st.last_deployment && st.last_deployment.created) tl.innerText = timeAgoIso(st.last_deployment.created);
+            } catch (e) {}
+        }
+        document.getElementById('btn-deploy-changes').addEventListener('click', async function () {
+            if (deployState.deploying) return;
+            const btn = document.getElementById('btn-deploy-changes');
+            btn.disabled = true;
+            const lbl = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Mendeploy pembaruan…';
+            try { lucide.createIcons(); } catch (e) {}
+            try {
+                await processDeploy();
+                await refreshLive();
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = lbl;
+                try { lucide.createIcons(); } catch (e) {}
+            }
+        });
+        // polling ringan tiap 12 detik: status deploy, perubahan berkas, URL
+        if (pid()) {
+            setInterval(refreshLive, 12000);
+            setTimeout(refreshLive, 1500);
+        }
+
         // Lanjut deploy otomatis (auto-resume) — tombol konfigurasi tidak ada di halaman ini
         async function processDeploy() {
             if (!pid()) { window.location.replace('../build-deployment/'); return; }
             if (deployState.deploying) return;
             deployState.deploying = true;
+            const _cb = document.getElementById('changes-banner');
+            if (_cb) _cb.classList.add('hidden');
             writeDeploySession({ status: 'deploying', started_at: Date.now() });
             try {
                 const res = await apiFetch('/deploy', { method: 'POST', body: JSON.stringify({ project_id: pid() }) });
