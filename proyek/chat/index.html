@@ -668,11 +668,73 @@
         
         let messages = [];
 
-        // ===== MODE LOCALSTORAGE: riwayat chat per-proyek disimpan di browser =====
+        // ===== MODE LOCALSTORAGE + CLOUD SYNC =====
+        // Riwayat chat disimpan di browser (cache lokal, instan) DAN disinkronkan ke
+        // cloud per akun+proyek — jadi chat di HP A muncul juga di HP B (login sama).
+        // Guest (tanpa login) hanya pakai localStorage.
         const LS_CHAT_PREFIX = 'clinqoo_ls_chat_';
+        // base API dihitung lokal (TOOL_API_BASE dideklarasi lebih bawah, hindari TDZ)
+        const CHAT_LOG_API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev/api/chat-log' : '/api/chat-log';
         function lsChatKey() {
             let pid = (typeof currentProjectId !== 'undefined' && currentProjectId) ? String(currentProjectId) : 'global';
             return LS_CHAT_PREFIX + pid;
+        }
+        function lsChatAtKey() {
+            return 'clinqoo_ls_chat_at_' + ((typeof currentProjectId !== 'undefined' && currentProjectId) ? String(currentProjectId) : 'global');
+        }
+        function authHeaders() {
+            try {
+                var tok = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || '';
+                return tok ? { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok } : { 'Content-Type': 'application/json' };
+            } catch (e) { return { 'Content-Type': 'application/json' }; }
+        }
+        function currentPidForSync() {
+            return (typeof currentProjectId !== 'undefined' && currentProjectId) ? String(currentProjectId) : 'global';
+        }
+        // Debounce push ke cloud: tiap saveChatLog menjadwalkan sync (cukup 1x per jeda)
+        let chatCloudTimer = null;
+        function queueChatCloudSave() {
+            clearTimeout(chatCloudTimer);
+            chatCloudTimer = setTimeout(pushChatCloud, 4000);
+        }
+        function pushChatCloud() {
+            clearTimeout(chatCloudTimer);
+            chatCloudTimer = null;
+            const payload = {
+                project_id: currentPidForSync(),
+                client_at: Date.now(),
+                messages: messages.filter(m => m && !m.isHidden && (m.text || (m.pollQuestions && m.pollQuestions.length) || (m.toolCalls && m.toolCalls.length))).map(m => ({
+                    id: m.id, role: m.role, text: m.text, time: m.time || null,
+                    completed: !!m.completed, stoppedByUser: !!m.stoppedByUser,
+                    pollQuestions: (m.pollQuestions || []).slice(0, 6),
+                    pollState: m.pollState || null,
+                    toolCalls: (m.toolCalls || []).slice(0, 12).map(t => ({
+                        name: t.name, args: t.args, ok: t.ok, result: String(t.result || '').slice(0, 400)
+                    }))
+                }))
+            };
+            // keepalive: request tetap terkirim saat halaman ditutup / pindah halaman
+            fetch(CHAT_LOG_API, { method: 'POST', headers: authHeaders(), body: JSON.stringify(payload), keepalive: true }).catch(function() {});
+        }
+        // Muat log cloud: dipakai saat cache lokal kosong ATAU cloud lebih baru
+        // (chat dikirim dari perangkat lain dengan akun yang sama).
+        function pullChatCloud() {
+            const pid = currentPidForSync();
+            let localAt = 0;
+            try { localAt = parseInt(localStorage.getItem(lsChatAtKey()) || '0', 10) || 0; } catch (e) {}
+            fetch(CHAT_LOG_API + '?project_id=' + encodeURIComponent(pid), { headers: authHeaders() })
+                .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
+                .then(function(d) {
+                    if (!d || !Array.isArray(d.messages) || d.messages.length === 0) return;
+                    if (isGenerating) return; // jangan timpa chat yang sedang berjalan
+                    const cloudAt = Number(d.updated_at) || 0;
+                    if (cloudAt <= localAt && messages.length > 0) return; // lokal lebih baru / sama
+                    messages = d.messages;
+                    renderMessages();
+                    scrollToBottom(true);
+                    try { saveChatLog(); } catch (e) {}
+                })
+                .catch(function() {});
         }
         function saveChatLog() {
             try {
@@ -693,6 +755,8 @@
                     }))
                 }));
                 localStorage.setItem(lsChatKey(), JSON.stringify(log));
+                try { localStorage.setItem(lsChatAtKey(), String(Date.now())); } catch(e2) {}
+                queueChatCloudSave(); // sinkron ke cloud (debounced)
             } catch(e) {}
         }
         function loadChatLog() {
@@ -730,6 +794,9 @@
             }
             messages = [];
             try { localStorage.removeItem(lsChatKey()); } catch(e) {}
+            try { localStorage.removeItem(lsChatAtKey()); } catch(e) {}
+            try { clearTimeout(chatCloudTimer); chatCloudTimer = null; } catch(e) {}
+            fetch(CHAT_LOG_API + '?project_id=' + encodeURIComponent(currentPidForSync()), { method: 'DELETE', headers: authHeaders() }).catch(function() {});
             currentGreeting = welcomeGreetings[Math.floor(Math.random() * welcomeGreetings.length)];
             renderMessages();
             try { renderPromptSuggestions([]); } catch (e) {}
@@ -1877,7 +1944,7 @@
 
         // Saat tab ditutup / disembunyikan saat AI masih mengetik, simpan kondisi terakhir —
         // begitu kembali, halaman melanjutkan (lihat logika resume di bawah).
-        window.addEventListener('pagehide', function () { try { saveChatLog(); } catch (e) {} });
+        window.addEventListener('pagehide', function () { try { saveChatLog(); } catch (e) {} try { pushChatCloud(); } catch (e) {} });
         document.addEventListener('visibilitychange', function () {
             if (document.visibilityState === 'hidden') { try { saveChatLog(); } catch (e) {} }
         });
@@ -4266,13 +4333,15 @@
                     }, 500);
                 };
 
-                // MODE LOCALSTORAGE: riwayat chat dimuat dari browser (per proyek),
-// TIDAK lagi ditarik dari server — mencegah chat dari data/proyek lain muncul.
+                // MODE LOCALSTORAGE + CLOUD: cache browser dipakai dulu (instan), lalu
+// log cloud ditarik di belakang — chat dari perangkat lain (akun sama, proyek
+// sama) otomatis muncul kalau lebih baru dari cache lokal.
 if (loadChatLog()) {
     renderMessages();
     autoScrollActive = true;
     scrollToBottom(true);
     try { refreshPromptSuggestions(); } catch (e) {}
+    setTimeout(function() { try { pullChatCloud(); } catch (e) {} }, 1500);
     // FIX: jika pesan terakhir masih pertanyaan user tanpa jawaban AI (misalnya karena
     // pindah halaman saat AI masih menjawab) — lanjutkan jawaban secara otomatis.
     setTimeout(function() {
@@ -4335,8 +4404,13 @@ if (loadChatLog()) {
             }
         } catch(e) { console.error('Resume pending answer error:', e); }
     }, 1200);
-} else if (handoffMsg && handoffMsg.trim()) {
-    submitHandoff();
+} else {
+    // Tidak ada cache lokal di perangkat ini -> coba tarik log cloud
+    // (akun sama, proyek sama: chat dari perangkat lain langsung muncul).
+    setTimeout(function() { try { pullChatCloud(); } catch (e) {} }, 300);
+    if (handoffMsg && handoffMsg.trim()) {
+        submitHandoff();
+    }
 }
             } catch(e) { console.error('Handoff error:', e); }
         })();

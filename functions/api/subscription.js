@@ -56,6 +56,21 @@ export async function onRequestGet({ request, env }) {
     const startDate = data.start_date || new Date().toISOString();
     const billingCycle = data.billing_cycle || 'Bulanan';
 
+    // MODE RINGAN (?fields=plan): hanya plan + siklus tagihan — dipakai halaman
+    // Upgrade yang cuma butuh menandai paket aktif. Statistik berat (jumlah proyek,
+    // total ukuran file SEMUA proyek = query berantai per proyek, deploy bulanan)
+    // dilompati → respons jauh lebih cepat.
+    if (url.searchParams.get('fields') === 'plan') {
+      return new Response(JSON.stringify({
+        plan,
+        billingCycle,
+        startDate,
+        price: planInfo.price
+      }), {
+        headers: { 'Content-Type': 'application/json', ...CORS }
+      });
+    }
+
     // Calculate next billing date
     const nextDate = new Date(startDate);
     if (billingCycle === 'Tahunan') {
