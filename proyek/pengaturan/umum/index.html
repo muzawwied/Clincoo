@@ -253,29 +253,57 @@
             <div class="py-4 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div class="min-w-0 flex-1">
                     <h4 class="text-base font-bold text-gray-900 tracking-tight">Unduh Aplikasi (APK)</h4>
-                    <p class="text-sm text-gray-500 mt-1">Kemas situs ini jadi aplikasi Android lewat PressForge</p>
+                    <p class="text-sm text-gray-500 mt-1">Kemas situs ini jadi aplikasi Android siap install</p>
                 </div>
-                <div class="w-full sm:w-80 flex flex-col gap-2.5">
-                    <button type="button" id="btn-apk-android" class="group w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-black font-semibold text-sm transition-all active:scale-[0.98]">
-                        <svg viewBox="0 0 24 24" class="w-5 h-5 shrink-0" fill="currentColor"><path d="M3.6 1.8c-.3.2-.5.5-.5.9v19c0 .4.2.7.5.9l10.4-10.4L3.6 1.8zM16.6 8.4 5.6 2.1l9.3 9.3 1.7-3zM5.6 21.9l11-6.3-1.7-3-9.3 9.3zM18.4 10.6l-2.1 1.2 2.1 1.2 2.5-1.4c.5-.3.5-1.1 0-1.4l-2.5-1.4-2.1 1.2 2.1 1.2c-.1 0-.1 0 0 .2 0 0 0-.1 0-.2z"/></svg>
-                        <span class="text-left leading-tight">
-                            <span class="block text-[10px] font-medium uppercase tracking-wide opacity-70">Unduh di</span>
-                            <span class="block">Android (APK)</span>
-                        </span>
+                <div class="w-full sm:w-80 relative">
+                    <button type="button" id="btn-apk" class="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-2xl bg-gray-900 dark:bg-white text-white dark:text-black font-semibold text-sm transition-all hover:opacity-90 active:scale-[0.98]">
+                        <i data-lucide="smartphone" class="w-4 h-4"></i>
+                        <span id="btn-apk-label">Unduh Aplikasi</span>
                     </button>
-                    <button type="button" id="btn-apk-ios" class="relative w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-[#111] text-gray-400 font-semibold text-sm cursor-not-allowed">
-                        <svg viewBox="0 0 24 24" class="w-5 h-5 shrink-0" fill="currentColor"><path d="M17.05 12.54c-.03-2.6 2.12-3.85 2.22-3.91-1.21-1.77-3.09-2.01-3.76-2.04-1.6-.13-3.12.94-3.93.94-.81 0-2.08-.92-3.42-.9-1.76.03-3.38 1.03-4.29 2.61-1.83 3.17-.47 7.87 1.32 10.45.87 1.24 1.91 2.63 3.28 2.58 1.32-.05 1.82-.84 3.42-.84s2.04.84 3.44.81c1.42-.02 2.32-1.29 3.19-2.54.99-1.44 1.4-2.83 1.42-2.9-.03-.02-2.74-1.05-2.77-4.16zM14.55 4.72c.72-.87 1.21-2.08 1.08-3.29-1.05.04-2.32.7-3.07 1.57-.67.78-1.26 2.02-1.1 3.21 1.17.09 2.37-.6 3.09-1.49z"/></svg>
-                        <span class="text-left leading-tight">
-                            <span class="block text-[10px] font-medium uppercase tracking-wide opacity-70">Segera di</span>
-                            <span class="block">App Store (iOS)</span>
-                        </span>
-                        <span class="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 text-[9px] font-bold uppercase bg-gray-200 dark:bg-gray-800 rounded-full">Segera</span>
-                    </button>
+                    <!-- Popover pilihan toko aplikasi -->
+                    <div id="apk-popover" class="hidden absolute z-50 left-0 right-0 sm:right-0 sm:left-auto sm:w-64 bottom-full mb-2 sm:bottom-auto sm:top-full sm:mt-2 bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden">
+                        <button type="button" id="apk-opt-play" class="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+                            <svg viewBox="0 0 24 24" class="w-5 h-5 shrink-0 text-gray-900 dark:text-white" fill="currentColor"><path d="M3.6 1.8c-.3.2-.5.5-.5.9v19c0 .4.2.7.5.9l10.4-10.4L3.6 1.8zM16.6 8.4 5.6 2.1l9.3 9.3 1.7-3zM5.6 21.9l11-6.3-1.7-3-9.3 9.3zM18.4 10.6l-2.1 1.2 2.1 1.2 2.5-1.4c.5-.3.5-1.1 0-1.4l-2.5-1.4-2.1 1.2 2.1 1.2c-.1 0-.1 0 0 .2 0 0 0-.1 0-.2z"/></svg>
+                            <span class="leading-tight">
+                                <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-400">Dapatkan di</span>
+                                <span class="block font-semibold text-sm">Google Play (Android)</span>
+                            </span>
+                            <i data-lucide="chevron-right" class="w-4 h-4 ml-auto text-gray-400"></i>
+                        </button>
+                        <button type="button" id="apk-opt-ios" class="relative w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors border-t border-gray-100 dark:border-gray-800">
+                            <svg viewBox="0 0 24 24" class="w-5 h-5 shrink-0 text-gray-400" fill="currentColor"><path d="M17.05 12.54c-.03-2.6 2.12-3.85 2.22-3.91-1.21-1.77-3.09-2.01-3.76-2.04-1.6-.13-3.12.94-3.93.94-.81 0-2.08-.92-3.42-.9-1.76.03-3.38 1.03-4.29 2.61-1.83 3.17-.47 7.87 1.32 10.45.87 1.24 1.91 2.63 3.28 2.58 1.32-.05 1.82-.84 3.42-.84s2.04.84 3.44.81c1.42-.02 2.32-1.29 3.19-2.54.99-1.44 1.4-2.83 1.42-2.9-.03-.02-2.74-1.05-2.77-4.16zM14.55 4.72c.72-.87 1.21-2.08 1.08-3.29-1.05.04-2.32.7-3.07 1.57-.67.78-1.26 2.02-1.1 3.21 1.17.09 2.37-.6 3.09-1.49z"/></svg>
+                            <span class="leading-tight">
+                                <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-400">Segera di</span>
+                                <span class="block font-semibold text-sm text-gray-400">App Store (iOS)</span>
+                            </span>
+                            <span class="ml-auto px-1.5 py-0.5 text-[9px] font-bold uppercase bg-gray-100 dark:bg-gray-800 text-gray-400 rounded-full">Segera</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
         </div>
     </main>
+
+    <div id="apk-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeApkModal()"></div>
+        <div class="bg-white dark:bg-[#0a0a0a] rounded-2xl p-6 w-full max-w-sm relative z-10 shadow-2xl border border-gray-100 dark:border-gray-800">
+            <div class="flex items-start justify-between mb-1 pr-2">
+                <h3 id="apk-modal-title" class="text-lg font-bold text-gray-900 dark:text-white">Membangun APK…</h3>
+                <button onclick="closeApkModal()" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors -mt-0.5">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <p id="apk-modal-sub" class="text-xs text-gray-500 dark:text-gray-400 mb-4">Biasanya 2-3 menit. Biarkan halaman tetap terbuka.</p>
+            <div class="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden mb-4">
+                <div id="apk-progress-bar" class="h-full bg-gray-900 dark:bg-white rounded-full transition-all duration-500" style="width:0%"></div>
+            </div>
+            <div id="apk-steps" class="space-y-1.5 mb-5 max-h-44 overflow-y-auto text-sm"></div>
+            <button type="button" id="apk-btn-download" class="hidden w-full py-3 bg-black dark:bg-white text-white dark:text-black rounded-xl font-semibold text-sm hover:opacity-90 transition-all active:scale-[0.98] mb-2">Unduh APK</button>
+            <button type="button" id="apk-btn-retry" class="hidden w-full py-3 bg-black dark:bg-white text-white dark:text-black rounded-xl font-semibold text-sm hover:opacity-90 transition-all active:scale-[0.98]">Coba Lagi</button>
+            <button type="button" id="apk-btn-rebuild" class="hidden w-full py-2 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors underline">Bangun ulang APK</button>
+        </div>
+    </div>
 
     <div id="system-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeModal()"></div>
@@ -376,6 +404,16 @@
                 if (st.maintenance) { savedVals.maintenance = st.maintenance; setMaintenance(st.maintenance === 'true'); }
                 applyLogo(st.app_logo || '', st.app_logo_data || '', false);
                 writeCache({ app_name: st.app_name || '', app_desc: st.app_desc || '', runtime: st.runtime || '', maintenance: st.maintenance || 'false', app_logo: st.app_logo || '', app_logo_data: st.app_logo_data || '' });
+                // pulihkan job APK dari server (tahan ganti perangkat)
+                if (!readApkJob() && st.apk_job) {
+                    try {
+                        const j = JSON.parse(st.apk_job);
+                        if (j && j.build_id) {
+                            writeApkJob({ build_id: j.build_id, run_id: j.run_id, app_name: j.app_name, url: j.url, status: j.status, done: (j.status === 'completed' && j.conclusion === 'success') });
+                            updateApkCta();
+                        }
+                    } catch (e) {}
+                }
             } catch (e) {}
             updateNamePreview();
             showSkeletons(false);
@@ -487,35 +525,217 @@
         // Hydrate logo dari cache (instan) — server menyusul di loadUmum()
         (function () { const c = readCache(); if (c.app_logo && c.app_logo_data) applyLogo(c.app_logo, c.app_logo_data, false); })();
 
-        // ================= UNDUH APLIKASI (APK) -> PRESSFORGE =================
-        // Fondasi build APK ada di repo pressforge (ubah website jadi APK via
-        // GitHub Actions). Tombol membuka PressForge dengan URL situs + nama
-        // aplikasi ini terisi otomatis.
-        const PRESSFORGE_URL = ''; // diisi: URL app PressForge (Lovable)
+        // ================= UNDUH APLIKASI (APK) =================
+        // Sistem PressForge (port ke Clincoo): backend /api/apk memicu build APK
+        // situs ini lewat GitHub Actions. Alur CTA: klik -> popover pilihan toko
+        // -> modal progres -> CTA unduh. Setelah refresh, klik CTA langsung
+        // mengunduh APK yang sudah jadi (status job tersimpan lokal + server).
+        const APK_API = API + '/apk';
+        const _apkJobKey = 'clinqoo_apk_job_' + (pid() || 'default');
+        function readApkJob() { try { return JSON.parse(localStorage.getItem(_apkJobKey) || 'null'); } catch (e) { return null; } }
+        function writeApkJob(j) { try { localStorage.setItem(_apkJobKey, JSON.stringify(j)); } catch (e) {} }
+        function clearApkJob() { try { localStorage.removeItem(_apkJobKey); } catch (e) {} }
+        let _apkTimer = null;
+
+        function apkBuildId() { var s = ''; for (var i = 0; i < 8; i++) s += 'abcdefghijklmnopqrstuvwxyz0123456789'.charAt(Math.floor(Math.random() * 36)); return s; }
         function pkgFromName(name) {
             var s = String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 20) || 'clincoo';
             return 'id.' + s + '.app';
         }
-        document.getElementById('btn-apk-android').addEventListener('click', async function () {
-            const btn = this;
+        function apkFileSlug() { var j = readApkJob(); var n = (j && j.app_name) || (document.getElementById('input-app-name').value || 'clincoo-app'); return String(n).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'clincoo-app'; }
+        function updateApkCta() {
+            const el = document.getElementById('btn-apk-label'); if (!el) return;
+            const j = readApkJob();
+            if (j && j.done) el.textContent = 'Unduh APK';
+            else if (j && !j.done && !j.failed) el.textContent = 'Lihat Progres Build';
+            else el.textContent = 'Unduh Aplikasi';
+        }
+
+        // ---- Ikon APK: pakai logo aplikasi, fallback huruf pertama nama ----
+        async function apkIconBase64() {
+            const c = readCache();
+            if (c.app_logo_data && /^data:image\/(png|jpe?g|webp|svg\+xml);base64,/.test(c.app_logo_data)) {
+                try {
+                    const img = await new Promise(function (res, rej) { var i = new Image(); i.onload = function () { res(i); }; i.onerror = rej; i.src = c.app_logo_data; });
+                    const cv = document.createElement('canvas'); cv.width = 512; cv.height = 512;
+                    const ctx = cv.getContext('2d');
+                    var sc = Math.min(512 / img.width, 512 / img.height);
+                    var w = img.width * sc, h = img.height * sc;
+                    ctx.drawImage(img, (512 - w) / 2, (512 - h) / 2, w, h);
+                    var out = cv.toDataURL('image/png').split(',')[1];
+                    if (out && out.length > 10) return out;
+                } catch (e) {}
+            }
+            const name = ((document.getElementById('input-app-name').value || 'C').trim() || 'C')[0].toUpperCase();
+            const cv = document.createElement('canvas'); cv.width = 512; cv.height = 512;
+            const ctx = cv.getContext('2d');
+            ctx.fillStyle = '#111111'; ctx.fillRect(0, 0, 512, 512);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 280px Inter, sans-serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(name, 256, 286);
+            return cv.toDataURL('image/png').split(',')[1];
+        }
+
+        // ---- Modal progres ----
+        function openApkModal() {
+            const m = document.getElementById('apk-modal');
+            m.classList.remove('hidden'); m.classList.add('flex');
+            document.getElementById('apk-modal-title').textContent = 'Membangun APK…';
+            document.getElementById('apk-modal-sub').textContent = 'Biasanya 2-3 menit. Biarkan halaman tetap terbuka.';
+            document.getElementById('apk-btn-download').classList.add('hidden');
+            document.getElementById('apk-btn-retry').classList.add('hidden');
+            document.getElementById('apk-btn-rebuild').classList.add('hidden');
+            document.getElementById('apk-steps').innerHTML = '<p class="text-gray-500">Mengirim konfigurasi ke builder…</p>';
+            document.getElementById('apk-progress-bar').style.width = '0%';
+            try { lucide.createIcons(); } catch (e) {}
+        }
+        function closeApkModal() {
+            const m = document.getElementById('apk-modal');
+            m.classList.add('hidden'); m.classList.remove('flex');
+            stopApkPoll();
+        }
+        function stopApkPoll() { if (_apkTimer) { clearInterval(_apkTimer); _apkTimer = null; } }
+        function showApkDone(job) {
+            document.getElementById('apk-modal-title').textContent = 'APK siap diunduh';
+            document.getElementById('apk-modal-sub').textContent = 'Aplikasi ' + (job.app_name || '') + ' siap dipasang di perangkat Android.';
+            document.getElementById('apk-progress-bar').style.width = '100%';
+            const btn = document.getElementById('apk-btn-download');
+            btn.classList.remove('hidden');
+            document.getElementById('apk-btn-rebuild').classList.remove('hidden');
+            updateApkCta();
+        }
+        function showApkFailed(msg) {
+            document.getElementById('apk-modal-title').textContent = 'Build gagal';
+            document.getElementById('apk-modal-sub').textContent = msg || 'Terjadi kesalahan saat membangun APK. Coba lagi.';
+            document.getElementById('apk-btn-retry').classList.remove('hidden');
+            document.getElementById('apk-btn-rebuild').classList.remove('hidden');
+        }
+        function renderApkSteps(d) {
+            const wrap = document.getElementById('apk-steps');
+            if (!d || !d.found) { wrap.innerHTML = '<p class="text-gray-500">Menunggu runner GitHub…</p>'; return; }
+            const total = Math.max((d.steps || []).length, 1);
+            const doneN = (d.steps || []).filter(function (x) { return x.status === 'completed'; }).length;
+            document.getElementById('apk-progress-bar').style.width = Math.round(doneN / total * 100) + '%';
+            wrap.innerHTML = (d.steps || []).filter(function (x) { return x.status !== 'queued' && x.status !== 'pending'; }).map(function (x) {
+                var ic, cls;
+                if (x.status === 'completed') { ic = x.conclusion === 'success' ? '✓' : (x.conclusion === 'skipped' ? '–' : '✗'); cls = x.conclusion === 'failure' ? 'text-red-500' : 'text-gray-400'; }
+                else { ic = '▸'; cls = 'text-gray-900 dark:text-white font-semibold'; }
+                return '<p class="' + cls + '">' + ic + ' ' + x.name + (x.status === 'in_progress' ? '…' : '') + '</p>';
+            }).join('');
+        }
+
+        // ---- Polling status build ----
+        function startApkPoll(job) {
+            stopApkPoll();
+            var tick = async function () {
+                try {
+                    const r = await fetch(APK_API + '?project_id=' + encodeURIComponent(pid()) + '&build_id=' + encodeURIComponent(job.build_id), { headers: authHeaders() });
+                    const d = await r.json();
+                    if (d.error) return;
+                    renderApkSteps(d);
+                    if (d.found && d.status === 'completed') {
+                        stopApkPoll();
+                        if (d.conclusion === 'success') {
+                            job.run_id = d.run_id; job.done = true; job.status = 'completed'; job.conclusion = 'success';
+                            writeApkJob(job);
+                            showApkDone(job);
+                        } else {
+                            job.failed = true; job.status = 'completed'; job.conclusion = d.conclusion;
+                            writeApkJob(job);
+                            showApkFailed();
+                            updateApkCta();
+                        }
+                    }
+                } catch (e) {}
+            };
+            tick();
+            _apkTimer = setInterval(tick, 4000);
+        }
+
+        // ---- Mulai build baru ----
+        async function startBuildApk() {
+            const btn = document.getElementById('btn-apk');
             btn.disabled = true;
             try {
-                if (!PRESSFORGE_URL) { showModal('PressForge belum terhubung', 'Berikan URL aplikasi PressForge untuk mengaktifkan unduhan APK.'); return; }
-                // ambil URL situs live dari status deploy
-                let siteUrl = '';
-                try {
-                    const r = await fetch(API + '/deploy?fast=1', { headers: authHeaders() });
-                    const d = await r.json();
-                    siteUrl = d.pages_url || '';
-                } catch (e) {}
+                const r = await fetch(API + '/deploy?fast=1', { headers: authHeaders() });
+                const d = await r.json().catch(function () { return {}; });
+                const siteUrl = d.pages_url || '';
                 if (!siteUrl) { showModal('Situs belum dideploy', 'Deploy dulu situs ini, lalu kembali untuk membuat APK.'); return; }
-                const name = (document.getElementById('input-app-name').value || 'Clincoo').trim();
-                window.open(PRESSFORGE_URL + '?url=' + encodeURIComponent(siteUrl) + '&name=' + encodeURIComponent(name), '_blank');
+                const appName = ((document.getElementById('input-app-name').value || '').trim() || 'Clincoo').slice(0, 40);
+                const buildId = apkBuildId();
+                const icon = await apkIconBase64();
+                openApkModal();
+                const res = await fetch(APK_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                    body: JSON.stringify({ project_id: pid(), build_id: buildId, url: siteUrl, app_name: appName, package_id: pkgFromName(appName), fullscreen: true, icon_base64: icon })
+                });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                const job = { build_id: buildId, app_name: appName, url: siteUrl, status: 'starting', done: false };
+                writeApkJob(job);
+                updateApkCta();
+                startApkPoll(job);
+            } catch (e) {
+                closeApkModal();
+                showModal('Gagal memulai build', String(e && e.message || e));
             } finally { btn.disabled = false; }
+        }
+
+        // ---- Unduh APK (fetch blob -> simpan file) ----
+        async function downloadApkFile(job) {
+            try {
+                const r = await fetch(APK_API + '?project_id=' + encodeURIComponent(pid()) + '&action=download&run_id=' + encodeURIComponent(job.run_id) + '&name=' + encodeURIComponent(apkFileSlug()), { headers: authHeaders() });
+                if (!r.ok) {
+                    const d = await r.json().catch(function () { return {}; });
+                    if (r.status === 404) {
+                        // APK kedaluwarsa (retensi artifact 7 hari) -> paksa bangun ulang
+                        job.done = false; job.expired = true; writeApkJob(job); updateApkCta();
+                        showModal('APK kedaluwarsa', 'Arsip build sudah kedaluwarsa (retensi 7 hari). Silakan bangun ulang aplikasinya.');
+                        return;
+                    }
+                    throw new Error(d.error || ('HTTP ' + r.status));
+                }
+                const blob = await r.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = apkFileSlug() + '.apk';
+                document.body.appendChild(a); a.click(); a.remove();
+                setTimeout(function () { URL.revokeObjectURL(a.href); }, 10000);
+            } catch (e) {
+                showModal('Gagal mengunduh', String(e && e.message || e));
+            }
+        }
+
+        // ---- CTA utama: sesuai status job ----
+        document.getElementById('btn-apk').addEventListener('click', async function () {
+            const job = readApkJob();
+            if (job && job.done && job.run_id) { await downloadApkFile(job); return; }               // APK jadi -> langsung unduh
+            if (job && job.expired) { openApkModal(); startBuildApk(); return; }                      // kedaluwarsa -> bangun ulang
+            if (job && !job.done && !job.failed) { openApkModal(); startApkPoll(job); return; }       // masih berjalan -> lanjutkan pantau
+            document.getElementById('apk-popover').classList.toggle('hidden');                        // belum ada -> pilih toko
         });
-        document.getElementById('btn-apk-ios').addEventListener('click', function () {
-            showModal('Segera hadir', 'Versi iOS (App Store) menyusul — untuk sekarang gunakan tombol Android (APK).');
+        document.getElementById('apk-opt-play').addEventListener('click', function () {
+            document.getElementById('apk-popover').classList.add('hidden');
+            startBuildApk();
         });
+        document.getElementById('apk-opt-ios').addEventListener('click', function () {
+            document.getElementById('apk-popover').classList.add('hidden');
+            showModal('Segera di App Store', 'Versi iOS menyusul — untuk sekarang pilih Google Play (Android) untuk unduhan APK.');
+        });
+        document.getElementById('apk-btn-download').addEventListener('click', function () { const j = readApkJob(); if (j && j.run_id) downloadApkFile(j); });
+        document.getElementById('apk-btn-retry').addEventListener('click', function () { closeApkModal(); clearApkJob(); updateApkCta(); startBuildApk(); });
+        document.getElementById('apk-btn-rebuild').addEventListener('click', function () { closeApkModal(); clearApkJob(); updateApkCta(); startBuildApk(); });
+        // tutup popover saat klik di luar
+        document.addEventListener('click', function (e) {
+            const pop = document.getElementById('apk-popover');
+            if (pop && !pop.classList.contains('hidden') && !pop.contains(e.target) && e.target.id !== 'btn-apk' && !document.getElementById('btn-apk').contains(e.target)) pop.classList.add('hidden');
+        });
+        // hydrate job tersimpan (server menyimpan juga di setting apk_job)
+        (function () {
+            updateApkCta();
+        })();
         function showModal(title, message) {
             const m = document.getElementById('system-modal');
             document.getElementById('modal-title').textContent = title;
