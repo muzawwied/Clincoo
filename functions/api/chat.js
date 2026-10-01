@@ -514,7 +514,8 @@ async function fetchGemini(apiKey, model, systemInstruction, contents, tools) {
   if (!res.ok) {
     await res.text().catch(() => ''); // buang body error mentah, jangan pernah diteruskan ke user
     const reason = res.status === 429 ? 'limit tercapai' : (res.status >= 500 ? 'server bermasalah' : 'gagal (' + res.status + ')');
-    return { error: `Model ${model}: ${reason}`, status: res.status };
+    // jangan sertakan nama model di teks error: ini yang bocor ke UI chat.
+    return { error: `AI sedang ${reason}`, status: res.status };
   }
   return { data: await res.json() };
 }
@@ -535,7 +536,8 @@ async function fetchGeminiStream(apiKey, model, systemInstruction, contents, too
   if (!res.ok) {
     await res.text().catch(() => {});
     const reason = res.status === 429 ? 'limit tercapai' : (res.status >= 500 ? 'server bermasalah' : 'gagal (' + res.status + ')');
-    return { error: `Model ${model}: ${reason}`, status: res.status };
+    // jangan sertakan nama model di teks error: ini yang bocor ke UI chat.
+    return { error: `AI sedang ${reason}`, status: res.status };
   }
   const reader = res.body.getReader();
   const dec = new TextDecoder();
@@ -606,7 +608,7 @@ async function tryModels(apiKeys, systemInstruction, contents, tools, onDelta) {
       }
       if (toolCalls.length > 0) return { tool_calls: toolCalls, text, model };
       if (text) return { text, model };
-      lastError = `Model ${model} returned empty response`;
+      lastError = 'Jawaban AI kosong — coba kirim ulang';
       statuses.push(0);
     } catch (err) {
       lastError = err.message;
@@ -615,12 +617,16 @@ async function tryModels(apiKeys, systemInstruction, contents, tools, onDelta) {
   }
   }
   const quotaExhausted = statuses.length > 0 && statuses.every(st => st === 429);
+  // providerBusy: SEMUA model/kunci provider menolak 429 -> sibuknya SERVER AI,
+  // BUKAN kuota user. Dikirim sebagai provider_busy agar klien TIDAK menampilkan
+  // pesan "kuota habis/upgrade paket" yang menyesatkan (kasus: kirim gambar ->
+  // kunci Gemini kena 429 -> user dikira kehabisan kuota).
   // Konteks percakapan ke-limiter (chat panjang + kode file besar): model menolak
   // karena token melebihi jendela context. Ditandai supaya klien bisa menampilkan
   // checkpoint "lanjut?" + memangkas riwayat besar secara otomatis sebelum kirim ulang.
   const RE_CTX = /(exceeds?.{0,40}(context|token)|context.{0,40}(length|window|size)|too many (input )?tokens|maximum.{0,30}tokens|token count|input too large|payload too large|request entity too large)/i;
   const contextOverflow = !!lastError && RE_CTX.test(String(lastError));
-  return { error: lastError || 'All models failed', quotaExhausted, contextOverflow, statuses };
+  return { error: lastError || 'All models failed', quotaExhausted, providerBusy: quotaExhausted, contextOverflow, statuses };
 }
 
 // --- Kuota guest (tanpa login): per-IP per-hari, tabel sama dengan kuota user ---
@@ -928,7 +934,13 @@ export async function onRequestPost({ request, env, waitUntil }) {
     if (streamSend) {
       if (r && !r.error) streamSend({ t: 'progress', text: 'Composing answer…' });
       if (r && r.error) {
-        streamSend({ t: 'error', error: r.error, quota_exhausted: !!r.quotaExhausted, context_overflow: !!r.contextOverflow });
+        // quota_exhausted di jalur stream = SEMUA model provider 429 (bukan kuota user):
+        // kirim pesan bersih tanpa nama model — sama seperti jalur non-stream di bawah.
+        const busy = !!r.quotaExhausted; // 429 semua model -> sibuk provider
+        const errText = busy
+          ? 'Server AI sedang sibuk (limit provider). Coba lagi sebentar lagi.'
+          : r.error;
+        streamSend({ t: 'error', error: errText, provider_busy: busy ? true : undefined, quota_exhausted: busy ? undefined : !!r.quotaExhausted, context_overflow: !!r.contextOverflow });
       } else {
         const outS = {
           text: r.text || '',
@@ -943,7 +955,11 @@ export async function onRequestPost({ request, env, waitUntil }) {
     }
 
     if (r.error && r.quotaExhausted) {
-      return new Response(JSON.stringify({ quota_exhausted: true, error: 'Server AI sedang sibuk (limit provider). Coba lagi sebentar lagi.' }), {
+      // sibuknya provider, bukan kuota user: 503 + provider_busy supaya klien
+      // tidak mengunci komposer / menawarkan upgrade paket.
+      // 429 TANPA quota_exhausted: frontend tidak retry (bukan transient baginya)
+      // dan tidak mengunci komposer — langsung fallback /api/ai lalu bubble error jujur.
+      return new Response(JSON.stringify({ provider_busy: true, error: 'Server AI sedang sibuk (limit provider). Coba lagi sebentar lagi.' }), {
         status: 429, headers: { 'Content-Type': 'application/json', ...CORS }
       });
     }

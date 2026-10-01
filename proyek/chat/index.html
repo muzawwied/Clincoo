@@ -951,10 +951,33 @@
             const s = String(u || '');
             return (/^(https?:|data:image\/)/i.test(s)) ? escText(s) : '';
         }
+        // Rapihin markdown "sloppy" dari model kecil (mis. GLM flash) sebelum render:
+        // penanda ** teks ** / * teks * / ~~ teks ~~ yang dipisah spasi (tidak valid
+        // di CommonMark -> tampil bintang mentah), heading yang menjorok spasi, dan
+        // blok JSON yang lepas tanpa fence code (tampil "keluar format json").
+        // Konten di dalam ``` fence TIDAK disentuh. Fungsi idempoten.
+        function tidyMarkdown(src) {
+            if (!src) return src;
+            var parts = src.split(/(```[\s\S]*?```)/g);
+            for (var i = 0; i < parts.length; i += 2) {
+                var seg = parts[i];
+                if (!seg) continue;
+                seg = seg.replace(/(?:^|\n\n)[ \t]*([{[][\s\S]*?[}\]][ \t]*(?=\n\n|$))/g, function (m, json) {
+                    return (m.charAt(0) === '\n' ? '\n\n' : '') + '```json\n' + json.trim() + '\n```';
+                });
+                seg = seg.replace(/\*\*[ \t]+([\s\S]*?)[ \t]+\*\*/g, '**$1**');
+                seg = seg.replace(/(^|[^\w*\\])\*[ \t]+([^*\n]*?)[ \t]+\*(?![*])/g, '$1*$2*');
+                seg = seg.replace(/~~[ \t]+([\s\S]*?)[ \t]+~~/g, '~~$1~~');
+                seg = seg.replace(/^[ \t]{1,6}(#{1,6}[ \t])/gm, '$1');
+                parts[i] = seg;
+            }
+            return parts.join('');
+        }
+
         function formatMarkdown(text) {
             if (!text) return '';
             try {
-                const html = marked.parse(text);
+                const html = marked.parse(tidyMarkdown(text));
                 // Perbaikan keamanan: jika DOMPurify gagal dimuat dari CDN, JANGAN
                 // pernah render HTML mentah (pintu XSS). Render sebagai teks polos.
                 if (!window.DOMPurify) return escText(text);
@@ -3045,6 +3068,11 @@
                 }
             }
             if (errObj && !finalObj) {
+                if (errObj.provider_busy) {
+                    // server AI sibuk (limit provider 429) -> BUKAN kuota user:
+                    // jangan kunci komposer / suruh upgrade, biarkan fallback jalan.
+                    throw new Error(errObj.error || 'Server AI sedang sibuk (limit provider). Coba lagi sebentar lagi.');
+                }
                 if (errObj.quota_exhausted) {
                     const e = new Error('__QUOTA__');
                     e.quotaMsg = errObj.error || 'Kuota/limit AI sedang penuh.';
