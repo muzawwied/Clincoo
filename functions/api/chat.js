@@ -468,6 +468,22 @@ const WORKSPACE_FUNCTION_DECLARATIONS = [
   { name: 'search_clinqoo_kb',
     description: 'Cari informasi RESMI tentang Clincoo (platformnya sendiri) di basis pengetahuan internal yang diindeks dari blog resmi blog.clincoo.buzz — founder, visi, fitur produk, editor, AI, template, deploy, saldo, kebijakan/privasi, tips, dll. WAJIB dipanggil untuk pertanyaan tentang Clincoo sebagai produk/perusahaan (siapa pembuatnya, bagaimana cara pakai fitur X, kebijakan apa saja) — hasilnya adalah sumber kebenaran resmi, jangan mengarang. TIDAK untuk mencari info di web umum (pakai web_search) atau membaca file workspace.',
     parameters: { type: 'OBJECT', properties: { query: { type: 'STRING', description: 'Pertanyaan atau kata kunci tentang Clincoo, contoh: "siapa pendiri clincoo", "cara deploy situs", "kebijakan privasi data".' } }, required: ['query'] } },
+  { name: 'install_automation',
+    description: 'Pasang otomatisasi (tugas terjadwal AI) ke akun user — otomatis muncul real-time di halaman Akun > Tugas Terjadwal. Gunakan saat user minta pengingat/otomatisasi berulang: "ingatkan aku tiap pagi", "kirim ringkasan tiap hari jam 8", "cek X tiap 30 menit", dsb. Prompt tugas WAJIB detail & mandiri (AI penjadwal hanya melihat prompt itu, bukan percakapan ini).',
+    parameters: { type: 'OBJECT', properties: {
+      name: { type: 'STRING', description: 'Nama tugas singkat & jelas, contoh: "Ringkasan berita pagi".' },
+      schedule_type: { type: 'STRING', description: '"daily" (sekali sehari pada time_wib) atau "interval_minutes" (berulang tiap N menit).' },
+      time_wib: { type: 'STRING', description: 'Jam harian HH:MM WIB untuk schedule_type daily, contoh "08:00".' },
+      interval_minutes: { type: 'NUMBER', description: 'Interval menit untuk schedule_type interval_minutes (5-1440), contoh 30.' },
+      prompt: { type: 'STRING', description: 'Instruksi lengkap yang dijalankan AI penjadwal pada waktunya — tulis detail, mandiri, dengan sumber data yang jelas (mis. "Cari 5 berita teknologi terbaru hari ini di web, rangkum dalam 5 poin singkat").' },
+      notify_email: { type: 'BOOLEAN', description: 'true bila hasil juga dikirim ke email user.' }
+    }, required: ['name', 'schedule_type', 'prompt'] } },
+  { name: 'manage_domain',
+    description: 'Kelola domain kustom proyek AKTIF (halaman Fitur Domain / Domain Kustom). Action: "status" (daftar domain terpasang + record DNS yang harus disetel di provider domain), "add" (pasang domain kustom ke situs — domain harus sudah dimiliki user), "remove" (lepas domain dari situs). Catatan: record DNS di provider domain (IDWebhost, Cloudflare, dll) diatur user sendiri — bila DNS domainnya di Cloudflare dan user izinkan, gunakan cloudflare_request untuk membuat record-nya langsung.',
+    parameters: { type: 'OBJECT', properties: {
+      action: { type: 'STRING', description: 'Salah satu: status, add, remove.' },
+      domain: { type: 'STRING', description: 'Nama domain untuk add/remove, contoh "tokosaya.com".' }
+    }, required: ['action'] } },
   // ===== TOOLS BACKEND FUNCTION (dieksekusi otomatis di server) =====
   { name: 'create_backend_function',
     description: 'Buat backend function baru milik user (ala platform builder): tulis kode -> terpasang -> bisa dipanggil via URL /api/fn/<nama>. Kode adalah badan fungsi async dengan parameter `args` (objek), boleh pakai `fetch`, `JSON`, dan `db` (DATABASE BAWAAN: await db.get(k), db.set(k,v), db.del(k), db.list(prefix), db.count() — data bertahan permanen, kuota mengikuti paket langganan). WAJIB return nilai. Contoh kode: "await db.set(args.id, args); return { ok: true }". Untuk WEBHOOK PUBLIK (callback payment gateway Midtrans/Xendit/Tripay, layanan eksternal): set is_public true — respons berisi webhook_url berisi key rahasia yang WAJIB diberikan ke user untuk dipasang di dashboard gateway. Gunakan saat user minta API endpoint, webhook, payment backend, integrasi data, atau logika backend.',
@@ -643,16 +659,20 @@ async function guestQuotaCheck(env, guestKey) {
 // ===== TOOLS SERVER-SIDE (backend function & screenshot) =====
 // Tool ini dieksekusi DI SERVER (bukan di browser user): hasil langsung
 // ditempel ke percakapan dan provider dipanggil lagi — user/frontend tidak berubah.
-const SERVER_TOOLS = new Set(['create_backend_function', 'list_backend_functions', 'delete_backend_function', 'call_backend_function', 'take_screenshot', 'search_clinqoo_kb']);
+const SERVER_TOOLS = new Set(['create_backend_function', 'list_backend_functions', 'delete_backend_function', 'call_backend_function', 'take_screenshot', 'search_clinqoo_kb', 'install_automation']);
 async function executeServerTool(env, user, tc, origin) {
   const a = tc.args || {};
   // Tool yang menempel ke akun: guest (tanpa login) tidak bisa memakainya.
-  if (!user && ['create_backend_function', 'list_backend_functions', 'delete_backend_function', 'call_backend_function'].indexOf(tc.name) !== -1) {
+  if (!user && ['create_backend_function', 'list_backend_functions', 'delete_backend_function', 'call_backend_function', 'install_automation'].indexOf(tc.name) !== -1) {
     return { error: 'Fitur ini memerlukan login Clincoo (gratis).' };
   }
   try {
     if (tc.name === 'search_clinqoo_kb') {
       return await searchClincooBlog(env, a.query || '');
+    }
+    if (tc.name === 'install_automation') {
+      const st = await import('./scheduled-tasks.js');
+      return await st.createScheduledTask(env.DB, user, a);
     }
     if (tc.name === 'take_screenshot') {
       const m = await import('./screenshot.js');
@@ -752,6 +772,8 @@ export async function onRequestGet({ request, env }) {
 function serverProgressText(tc) {
   const a = tc.args || {};
   if (tc.name === 'search_clinqoo_kb') return 'Searching Clincoo knowledge base: ' + String(a.query || '').slice(0, 60) + '…';
+  if (tc.name === 'install_automation') return 'Memasang otomatisasi: ' + String(a.name || '') + '…';
+  if (tc.name === 'manage_domain') return 'Mengatur domain: ' + String(a.action || '') + (a.domain ? ' ' + a.domain : '') + '…';
   if (tc.name === 'take_screenshot') return 'Taking a screenshot of the site…';
   if (tc.name === 'create_backend_function') return 'Creating backend function: ' + String(a.name || '') + '…';
   if (tc.name === 'call_backend_function') return 'Running backend function: ' + String(a.name || '') + '…';

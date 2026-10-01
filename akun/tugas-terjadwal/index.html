@@ -175,11 +175,34 @@
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
                 tasks = data.tasks || [];
+                _lastTaskSig = tasksSig(tasks);
                 renderTasks();
             } catch (err) {
                 list.innerHTML = '<p class="text-sm text-red-500 py-6 text-center">Gagal memuat tugas: ' + esc(err.message) + '</p>';
             }
         }
+
+        // === REAL-TIME: otomasi yang dipasang AI (tool install_automation) muncul
+        // otomatis tanpa reload — polling sunyi tiap 15 detik saat halaman terlihat. ===
+        function tasksSig(t) {
+            return (t || []).map(function (x) { return (x.id || 0) + ':' + (x.active ? 1 : 0) + ':' + (x.last_run_at || '') + ':' + (x.name || ''); }).join('|');
+        }
+        let _lastTaskSig = '';
+        async function refreshTasksSilent() {
+            try {
+                const res = await fetch(API_BASE + '/api/scheduled-tasks');
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) return;
+                const t = data.tasks || [];
+                const sig = tasksSig(t);
+                if (sig !== _lastTaskSig) {
+                    _lastTaskSig = sig;
+                    tasks = t;
+                    renderTasks();
+                }
+            } catch (e) {}
+        }
+        setInterval(function () { if (!document.hidden) refreshTasksSilent(); }, 15000);
 
         function renderTasks() {
             const list = document.getElementById('task-list');
