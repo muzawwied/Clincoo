@@ -84,7 +84,7 @@ export async function sendEmail(env, opts) {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: senderName + ' <' + senderEmail + '>',
+        from: (opts.senderName || senderName) + ' <' + senderEmail + '>',
         to: [opts.toEmail],
         subject: opts.subject,
         html: opts.html,
