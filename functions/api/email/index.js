@@ -1,11 +1,11 @@
 // Clincoo Email API — kirim email dari situs deploy pengguna (form kontak, notifikasi, verifikasi).
 // Kredensial (API key) diterbitkan per proyek, tersimpan di D1, terisolasi antar proyek.
 //
-// Dua mode pengiriman:
-//   1. Default  : lewat Brevo global (kredensial BREVO_API_KEY di env_vars D1), nama pengirim
-//                 proyek TIDAK boleh menyertakan identitas tim Clincoo/Clinqoo (anti penipuan).
-//   2. Kustom   : pengirim email di domain milik pengguna sendiri + kunci API Brevo milik
-//                 pengguna (verifikasi domain dilakukan di akun Brevo pengguna, per proyek).
+// Pengiriman via Cloudflare Email Service (Worker jembatan clincoo-mail):
+//   1. Default  : dari noreply@clincoo.buzz, nama pengirim proyek TIDAK boleh menyertakan
+//                 identitas tim Clincoo/Clinqoo (anti penipuan).
+//   2. Kustom   : dari alamat domain kustom pengguna (domain harus ter-onboard di akun
+//                 Cloudflare Clincoo / terhubung lewat Zona Domain Kustom).
 //
 // Kuota bulanan dihitung LANGSUNG dari histori pengiriman (email_log bulan berjalan,
 // status terkirim) — satu sumber kebenaran, tidak ada counter terpisah.
@@ -14,7 +14,7 @@
 // GET  ?action=history&project_id=...                         → histori kirim (CRUD: read)    [auth]
 // POST {action:'activate', project_id}                        → aktifkan + terbitkan API key [auth]
 // POST {action:'sender', project_id, from_name, contact_to,
-//        sender_email, sender_key}                            → simpan pengaturan pengirim    [auth]
+//        sender_email}                                       → simpan pengaturan pengirim    [auth]
 // POST {action:'regenerate', project_id}                      → terbitkan API key baru        [auth]
 // POST {action:'revoke', project_id}                          → nonaktifkan + hapus API key   [auth]
 // POST {action:'test', project_id, to, subject, html,
@@ -23,7 +23,7 @@
 // POST {action:'send', api_key, to, subject, html, reply_to}  → kirim email dari situs deploy  [publik via api_key]
 
 import { guardProject, currentUser } from '../user-scope.js';
-import { sendEmail } from '../notify-helpers.js';
+import { getSecret } from '../notify-helpers.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -145,7 +145,7 @@ function configPayload(row, used, log) {
     from_name: (row && row.from_name) || '',
     contact_to: (row && row.contact_to) || '',
     sender_email: (row && row.sender_email) || '',
-    has_custom_key: !!(row && row.sender_key),
+    has_custom_sender: !!(row && row.sender_email),
     api_key: (row && row.active && row.api_key) ? row.api_key : '',
     used: used || 0,
     limit: QUOTA_LIMIT,
@@ -161,33 +161,52 @@ function effectiveSenderName(row) {
   return ok.ok && ok.name ? ok.name : 'Clincoo Mail';
 }
 
-// Kirim via Brevo global atau Brevo kustom milik pengguna (domain sendiri).
+const DEFAULT_FROM = 'noreply@clincoo.buzz';
+
+function stripHtml(h) {
+  return String(h || '').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 5000);
+}
+
+function friendlyEmailError(code, reason) {
+  if (code === 'E_SENDER_NOT_VERIFIED') return 'Domain pengirim belum terverifikasi di Cloudflare. Untuk pengirim kustom, pastikan domainmu sudah aktif di Clincoo (Zona Domain Kustom).';
+  if (code === 'E_RATE_LIMIT_EXCEEDED') return 'Terlalu banyak email dalam waktu singkat — tunggu sebentar lalu coba lagi.';
+  if (code === 'E_DAILY_LIMIT_EXCEEDED') return 'Kuota harian Cloudflare tercapai — coba lagi besok.';
+  if (code === 'E_DELIVERY_FAILED') return 'Penerima menolak email — periksa alamat tujuan.';
+  if (code === 'E_INTERNAL_SERVER_ERROR') return 'Layanan email Cloudflare sedang sibuk — coba lagi sebentar.';
+  if (code === 'BINDING_SEND_EMAIL_BELUM_AKTIF') return 'Layanan email belum aktif di server — hubungi tim Clincoo.';
+  if (code === 'BRIDGE_BELUM_TERKONFIGURASI') return 'Layanan email belum dikonfigurasi di server — hubungi tim Clincoo.';
+  if (code === 'E_RECIPIENT_NOT_ALLOWED') return 'Penerima belum terverifikasi di Cloudflare — mode terbatas layanan email Clincoo. Hubungi tim Clincoo bila email ini penting.';
+  return reason || 'Pengiriman gagal';
+}
+
+// Kirim via Cloudflare Email Service, lewat Worker jembatan clincoo-mail
+// (Pages belum mendukung binding send_email, jadi diproxy via Worker).
 async function sendProjectEmail(env, row, opts) {
-  if (row && row.sender_email && row.sender_key) {
-    try {
-      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: { 'api-key': String(row.sender_key), 'Content-Type': 'application/json', accept: 'application/json' },
-        body: JSON.stringify({
-          sender: { name: effectiveSenderName(row), email: String(row.sender_email) },
-          to: [{ email: opts.toEmail }],
-          subject: opts.subject,
-          htmlContent: opts.html,
-          ...(opts.replyTo ? { replyTo: { email: opts.replyTo } } : {})
-        })
-      });
-      return { sent: res.ok, via: 'brevo-custom', reason: res.ok ? null : ('HTTP ' + res.status + ' — pastikan domainmu terverifikasi di akun Brevo-mu') };
-    } catch (e) {
-      return { sent: false, via: 'brevo-custom', reason: String(e && e.message || e) };
-    }
+  const url = await getSecret(env, 'MAIL_BRIDGE_URL');
+  const bridgeKey = await getSecret(env, 'MAIL_BRIDGE_KEY');
+  if (!url || !bridgeKey) return { sent: false, via: 'cloudflare', code: 'BRIDGE_BELUM_TERKONFIGURASI', reason: null };
+  const fromMail = (row && row.sender_email) ? String(row.sender_email) : DEFAULT_FROM;
+  try {
+    const r = await fetch(String(url).replace(/\/$/, '') + '/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Bridge-Key': String(bridgeKey) },
+      body: JSON.stringify({
+        to: opts.toEmail,
+        from_email: fromMail,
+        from_name: effectiveSenderName(row),
+        subject: opts.subject,
+        html: opts.html,
+        text: stripHtml(opts.html),
+        ...(opts.replyTo ? { reply_to: opts.replyTo } : {})
+      })
+    });
+    const data = await r.json().catch(function () { return {}; });
+    if (r.ok && data.ok) return { sent: true, via: 'cloudflare', messageId: data.messageId || null };
+    return { sent: false, via: 'cloudflare', code: data.code || null, reason: data.error || ('HTTP ' + r.status) };
+  } catch (e) {
+    return { sent: false, via: 'cloudflare', code: null, reason: String((e && e.message) || e) };
   }
-  return await sendEmail(env, {
-    toEmail: opts.toEmail,
-    subject: opts.subject,
-    html: opts.html,
-    replyTo: opts.replyTo,
-    senderName: effectiveSenderName(row)
-  });
 }
 
 export async function onRequestGet({ request, env }) {
@@ -234,7 +253,7 @@ export async function onRequestPost({ request, env }) {
     });
     await env.DB.prepare('INSERT INTO email_log (project_id, to_addr, subject, status) VALUES (?, ?, ?, ?)')
       .bind(row.project_id, body.to, String(body.subject).slice(0, 200), result.sent ? 'terkirim' : 'gagal').run();
-    return json({ sent: !!result.sent, reason: result.reason || null });
+    return json({ sent: !!result.sent, reason: result.sent ? null : friendlyEmailError(result.code, result.reason) });
   }
 
   const projectId = body.project_id || '';
@@ -262,11 +281,9 @@ export async function onRequestPost({ request, env }) {
     if (!name.ok) return json({ error: name.reason }, 400);
     const mail = senderEmailAllowed(body.sender_email);
     if (!mail.ok) return json({ error: mail.reason }, 400);
-    const key = String(body.sender_key || '').trim();
-    if (key && key.length < 20) return json({ error: 'Kunci API Brevo tidak valid' }, 400);
-    // Kolom kosong = pertahankan nilai tersimpan (kecuali pengirim email kustom: kosong = hapus).
-    await env.DB.prepare("UPDATE email_settings SET from_name = ?, contact_to = ?, sender_email = ?, sender_key = CASE WHEN ? = '' THEN sender_key ELSE ? END, updated_at = datetime('now') WHERE project_id = ?")
-      .bind(name.name, String(body.contact_to || '').slice(0, 200), mail.email, key, key, projectId).run();
+    // Kolom kosong = kembali ke pengirim default (noreply@clincoo.buzz).
+    await env.DB.prepare("UPDATE email_settings SET from_name = ?, contact_to = ?, sender_email = ?, updated_at = datetime('now') WHERE project_id = ?")
+      .bind(name.name, String(body.contact_to || '').slice(0, 200), mail.email, projectId).run();
     return json({ ok: true });
   }
 
@@ -301,7 +318,7 @@ export async function onRequestPost({ request, env }) {
     });
     await env.DB.prepare('INSERT INTO email_log (project_id, to_addr, subject, status) VALUES (?, ?, ?, ?)')
       .bind(projectId, body.to, subject, result.sent ? 'terkirim' : 'gagal').run();
-    if (!result.sent) return json({ error: 'Gagal mengirim: ' + (result.reason || 'tidak diketahui') }, 502);
+    if (!result.sent) return json({ error: 'Gagal mengirim: ' + friendlyEmailError(result.code, result.reason) }, 502);
     return json({ ok: true });
   }
 

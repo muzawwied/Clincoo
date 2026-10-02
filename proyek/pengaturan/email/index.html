@@ -337,18 +337,12 @@
 
             <div class="py-4 border-b border-gray-100 dark:border-slate-800">
               <p class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Email kustom (domain sendiri)</p>
-              <div class="grid sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Alamat pengirim domainmu</label>
-                  <input id="email-sender-email" type="email" placeholder="halo@domainmu.com" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Kunci API Brevo-mu</label>
-                  <input id="email-sender-key" type="password" placeholder="xkeysib-..." class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
-                  <p id="email-custom-status" class="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5">Kosongkan alamat untuk kembali ke pengirim default.</p>
-                </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Alamat pengirim domainmu</label>
+                <input id="email-sender-email" type="email" placeholder="halo@domainmu.com" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                <p id="email-custom-status" class="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5">Kosongkan alamat untuk kembali ke pengirim default.</p>
               </div>
-              <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2.5">Verifikasi domainmu dulu di akun Brevo-mu sendiri (pengirim &amp; domain). Email lalu dikirim atas nama domainmu, bukan Clincoo.</p>
+              <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2.5">Pengiriman via Cloudflare Email Service. Domain kustom harus sudah terhubung ke Clincoo (Zona Domain Kustom) — verifikasi dilakukan otomatis oleh Cloudflare.</p>
             </div>
 
             <div class="py-4 border-b border-gray-100 dark:border-slate-800">
@@ -487,9 +481,8 @@ Content-Type: application/json
     if (cfg.from_name) document.getElementById('email-from-name').value = cfg.from_name;
     if (cfg.contact_to) document.getElementById('email-contact-to').value = cfg.contact_to;
     document.getElementById('email-sender-email').value = cfg.sender_email || '';
-    document.getElementById('email-sender-key').value = '';
     document.getElementById('email-custom-status').textContent = cfg.sender_email
-      ? (cfg.has_custom_key ? 'Pengirim kustom aktif dari domainmu sendiri.' : 'Kunci API Brevo belum tersimpan — isi untuk mengaktifkan kirim dari domainmu.')
+      ? (cfg.has_custom_sender ? 'Pengirim kustom aktif dari domainmu sendiri.' : 'Tanpa pengirim kustom, email terkirim atas nama Clincoo Mail (noreply@clincoo.buzz).')
       : 'Kosongkan alamat untuk kembali ke pengirim default.';
     if (cfg.api_key) document.getElementById('email-key-box').textContent = cfg.api_key;
     document.getElementById('email-docs-key').textContent = cfg.api_key || 'clc_email_••••••••••••';
@@ -544,8 +537,7 @@ Content-Type: application/json
     _emailPost('sender', {
       from_name: document.getElementById('email-from-name').value.trim(),
       contact_to: document.getElementById('email-contact-to').value.trim(),
-      sender_email: document.getElementById('email-sender-email').value.trim(),
-      sender_key: document.getElementById('email-sender-key').value.trim()
+      sender_email: document.getElementById('email-sender-email').value.trim()
     }).then(function () {
       btn.disabled = false; btn.textContent = 'Simpan Pengirim';
       emailToast('Pengaturan pengirim tersimpan', true);
