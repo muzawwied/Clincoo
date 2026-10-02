@@ -137,7 +137,7 @@ function randKey(n) {
 }
 
 function genOrderId() {
-  return 'PAY' + Date.now().toString(36).toUpperCase() + randKey(4).toUpperCase();
+  return 'clincoo' + Date.now().toString(36) + randKey(9);
 }
 
 // ---- Saldo: total masuk (paid) - penarikan (pending + done) ----
