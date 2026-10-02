@@ -622,6 +622,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
           writePayCache(data);
           loadPayTransactions();
           loadPayWithdrawals();
+          startPayPolling();
         } else {
           // server memastikan belum aktif → bersihkan cache palsu
           clearPayCache();
@@ -637,6 +638,20 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
     if (ep) ep.textContent = API_BASE + '/pay';
     var c = document.getElementById('action-buttons');
     if (c) { c.classList.add('hidden', 'opacity-0'); c.classList.remove('flex', 'opacity-100'); }
+  }
+
+  // ===== Auto-refresh: data baru muncul sendiri tanpa refresh halaman =====
+  var _payPollTimer = null;
+  function startPayPolling() {
+    if (_payPollTimer) return;
+    _payPollTimer = setInterval(function () {
+      if (document.hidden) return; // tab tak terlihat → jangan polling
+      var m = document.getElementById('withdraw-modal');
+      if (m && !m.classList.contains('hidden')) return; // modal terbuka → jangan ganggu
+      var act = document.getElementById('pay-active');
+      if (!act || act.classList.contains('hidden')) return; // belum aktif → tak ada yang perlu di-poll
+      loadPayConfig(); // sinkron: saldo + transaksi + penarikan (re-render hanya bila data berubah)
+    }, 15000);
   }
 
   async function activatePay() {
@@ -754,6 +769,9 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
       var empty = document.getElementById('pay-tx-empty');
       var nofilter = document.getElementById('pay-tx-nofilter');
       var txs = (data && data.transactions) || [];
+      var sig = JSON.stringify(txs);
+      if (sig === _payTxsSig) return; // data sama → jangan re-render tabel/chart
+      _payTxsSig = sig;
       _payTxs = txs;
       var cnt = document.getElementById('pay-bal-count');
       if (cnt) cnt.textContent = String(txs.length);
@@ -766,6 +784,8 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
 
   // ===== Filter transaksi =====
   var _payTxs = [];
+  var _payTxsSig = '';
+  var _payWdsSig = '';
   var _txFilter = { status: 'all', q: '', period: '0' };
   function _txPass(t) {
     if (_txFilter.status !== 'all' && t.status !== _txFilter.status) return false;
@@ -920,6 +940,9 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
       var list = document.getElementById('pay-wd-list');
       var empty = document.getElementById('pay-wd-empty');
       var wds = (data && data.withdrawals) || [];
+      var sig = JSON.stringify(wds);
+      if (sig === _payWdsSig) return; // data sama → jangan re-render daftar
+      _payWdsSig = sig;
       if (!wds.length) { empty.style.display = 'block'; return; }
       empty.style.display = 'none';
       list.innerHTML = '';
