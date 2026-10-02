@@ -1,13 +1,9 @@
-// Cloudflare Pages Function — /api/e2b (DIPENSIUNKAN)
-// Keamanan: endpoint ini dulu mengembalikan E2B_API_KEY mentah ke browser
-// sehingga key bisa dicopas dan dipakai di luar platform. Eksekusi kode kini
-// di-proxy di server lewat /api/e2b-run (key tidak pernah dikirim ke klien).
-// Respons lama tetap berbentuk {apiKey} (nilai kosong) supaya klien versi
-// lama yang masih memanggil jatuh mulus ke fallback Piston.
+// Cloudflare Pages Functions - E2B API key proxy
+// Reads E2B_API_KEY from D1 database and returns it for the client to use.
+// Replaces the external "veda" Base44 proxy.
 
 export async function onRequestOptions() {
   return new Response(null, {
-    status: 204,
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
@@ -17,15 +13,22 @@ export async function onRequestOptions() {
 }
 
 export async function onRequestGet({ env }) {
-  // catat percobaan akses untuk pemantauan (jika D1 tersedia)
   try {
-    if (env && env.DB) {
-      await env.DB.prepare("CREATE TABLE IF NOT EXISTS security_events (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT NOT NULL, ip TEXT, email TEXT, detail TEXT, created_at TEXT DEFAULT (datetime('now')))")
-        .run();
-      await env.DB.prepare('INSERT INTO security_events (type, detail) VALUES (?, ?)').bind('e2b_key_endpoint_deprecated', 'klien lama masih meminta /api/e2b').run();
+    if (!env.DB) {
+      return new Response(JSON.stringify({ error: 'Database not available' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
     }
-  } catch (e) { /* jangan ganggu respons */ }
-  return new Response(JSON.stringify({ apiKey: '' }), {
-    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-  });
+    const row = await env.DB.prepare('SELECT value FROM env_vars WHERE key = ?').bind('E2B_API_KEY').first();
+    const apiKey = row?.value || '';
+    return new Response(JSON.stringify({ apiKey }), {
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message, apiKey: '' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    });
+  }
 }

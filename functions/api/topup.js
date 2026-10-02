@@ -61,16 +61,8 @@ export async function onRequestGet({ request, env }) {
       const orderId = url.searchParams.get('order_id');
       if (!orderId) return json({ error: 'order_id required' }, 400);
 
-      // Wajib login — status order hanya boleh dilihat pemiliknya (atau admin)
-      const stUser = await currentUser(env, request);
-      if (!stUser) return json({ error: 'Login diperlukan', need_login: true }, 401);
-      const stAdmin = String(stUser.email || '').toLowerCase() === 'muzawwied@gmail.com';
-
       let order = await env.DB.prepare('SELECT * FROM topup_orders WHERE id = ?').bind(orderId).first();
       if (!order) return json({ error: 'order not found' }, 404);
-      if (order.user_id != null && !stAdmin && String(order.user_id) !== String(stUser.id)) {
-        return json({ error: 'Bukan order Anda' }, 403);
-      }
 
       // Jika masih pending: cek live ke Xendit (real-time, tanpa bergantung webhook)
       if (order.status === 'pending' && order.xendit_id) {
@@ -89,6 +81,7 @@ export async function onRequestGet({ request, env }) {
         }
       }
 
+      const stUser = await currentUser(env, request);
       const stBalKey = await scopedKey(env.DB, 'wallet_balance', stUser, 'balance');
       const balRow = await env.DB.prepare('SELECT value FROM wallet_balance WHERE key = ?').bind(stBalKey).first();
       return json({
@@ -211,14 +204,14 @@ export async function creditTopup(env, order) {
 
   await db.prepare("UPDATE topup_orders SET status = 'paid', paid_at = datetime('now') WHERE id = ?").bind(order.id).run();
 
-  // Notifikasi in-app + email konfirmasi (Resend) ke pemilik akun
+  // Notifikasi in-app + email konfirmasi (Brevo) ke pemilik akun
   if (owner) {
     const nres = { notif: false, email: null };
     try {
       nres.notif = await notifyEvent(db, owner, {
         source: 'Dompet', type: 'wallet',
         message: 'Top up ' + formatIDR(order.amount) + ' via ' + (order.method || 'Xendit') + ' berhasil. Saldo sekarang ' + formatIDR(balance) + '.',
-        link: 'https://app.clincoo.buzz/akun/dompet/'
+        link: 'https://muzawwied.github.io/Clincoo./akun/dompet/'
       });
     } catch (e) {}
     if (owner.email) {
@@ -236,7 +229,7 @@ export async function creditTopup(env, order) {
               ['Order ID', order.id]
             ],
             'Lihat Riwayat Dompet',
-            'https://app.clincoo.buzz/akun/dompet/',
+            'https://muzawwied.github.io/Clincoo./akun/dompet/',
             'Rincian lengkap transaksi dapat dilihat di halaman Dompet pada akun Clincoo Anda.'
           )
         });

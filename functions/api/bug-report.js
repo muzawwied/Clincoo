@@ -2,7 +2,7 @@ import { currentUser } from './user-scope.js';
 import { sendEmail, emailTemplate, getUserByEmail, notifyEvent, getSecret } from './notify-helpers.js';
 
 // Cloudflare Pages Functions — Laporan Bug
-// POST /api/bug-report — simpan laporan ke D1, kirim email ke pemilik (Resend), + notifikasi in-app.
+// POST /api/bug-report — simpan laporan ke D1, kirim email ke pemilik (Brevo), + notifikasi in-app.
 // Body: { category, category_label, description, page_url, user_agent, attachments: [dataURL...] }
 
 const CORS = {
@@ -58,7 +58,7 @@ export async function onRequestPost({ request, env }) {
     for (const a of rawAttachments.slice(0, 3)) {
       if (typeof a !== 'string' || !a.startsWith('data:image/')) continue;
       if (a.length > 700 * 1024) continue;
-      // base64 wajib valid (padding benar), kalau tidak Resend akan menolak seluruh email
+      // base64 wajib valid (padding benar), kalau tidak Brevo akan menolak seluruh email
       const b64 = a.split(',')[1] || '';
       if (!/^[A-Za-z0-9+/]+={0,2}$/.test(b64) || b64.length % 4 !== 0) continue;
       attachments.push(a);
@@ -94,8 +94,8 @@ export async function onRequestPost({ request, env }) {
     ).run();
     const reportId = info.meta ? info.meta.last_row_id : null;
 
-    // 2. Email ke pemilik via Resend (+ lampiran)
-    const ownerEmail = (await getSecret(env, 'BUG_REPORT_EMAIL')) || 'muzawwied@gmail.com';
+    // 2. Email ke pemilik via Brevo (+ lampiran)
+    const ownerEmail = (await getSecret(env, 'BUG_REPORT_EMAIL')) || 'devconium@gmail.com';
     const details = [
       ['Kategori', esc(categoryLabel)],
       ['Pelapor', esc((user.name || '-') + ' <' + (user.email || '-') + '>')],

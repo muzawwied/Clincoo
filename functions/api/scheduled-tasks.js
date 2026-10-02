@@ -6,7 +6,7 @@
 // POST /api/scheduled-tasks {action:'mark_run'}  -> tandai tugas milik sendiri baru dijalankan
 //
 // Eksekusi tugas = panggil Gemini (gemini-3.6-flash, fallback gemini-3-flash-preview) dengan
-// prompt tugas -> hasil disimpan ke task_results -> notifikasi in-app -> email opsional (Resend).
+// prompt tugas -> hasil disimpan ke task_results -> notifikasi in-app -> email opsional (Brevo).
 
 import { currentUser } from './user-scope.js';
 import { getSecret, emailTemplate, sendEmail, notifyEvent } from './notify-helpers.js';
@@ -188,7 +188,7 @@ async function runTask(env, db, task) {
             user.name || '',
             `Tugas “${task.name || 'Tugas'}” baru saja dijalankan otomatis oleh Clincoo. Berikut hasilnya:`,
             [['Hasil', toEmailHtml(output.length > 800 ? output.slice(0, 800) + '…' : output)], ['Jadwal', escHtml(task.when_description || (task.schedule_type === 'interval_minutes' ? 'setiap ' + (task.interval_minutes || 15) + ' menit' : 'setiap hari ' + (task.time_wib || '') + ' WIB'))]],
-            'Lihat tugas', 'https://app.clincoo.buzz/akun/tugas-terjadwal.html',
+            'Lihat tugas', 'https://clincoo.pages.dev/akun/tugas-terjadwal.html',
             'Email ini dikirim otomatis karena Anda mengaktifkan notifikasi email pada tugas ini.'
           )
         });
@@ -199,31 +199,6 @@ async function runTask(env, db, task) {
 }
 
 // ====== GET: daftar tugas milik user ======
-// Helper: buat tugas terjadwal dari tool AI (install_automation di chat.js).
-// Dipakai juga oleh action 'create' di bawah supaya logikanya satu tempat.
-export async function createScheduledTask(db, user, body) {
-  body = body || {};
-  const prompt = String(body.prompt || '').trim();
-  if (!prompt) return { error: 'prompt wajib diisi' };
-  const schedule_type = body.schedule_type === 'interval_minutes' ? 'interval_minutes' : 'daily';
-  let time_wib = null, interval_minutes = null, when_description = '';
-  if (schedule_type === 'daily') {
-    const m = /^(\d{1,2}):(\d{2})$/.exec(String(body.time_wib || ''));
-    if (!m) return { error: 'time_wib wajib format HH:MM (contoh 09:30)' };
-    const h = parseInt(m[1]); if (h > 23 || parseInt(m[2]) > 59) return { error: 'jam tidak valid' };
-    time_wib = ('0' + h).slice(-2) + ':' + m[2];
-    when_description = 'setiap hari ' + time_wib + ' WIB';
-  } else {
-    interval_minutes = Math.min(Math.max(parseInt(body.interval_minutes) || 15, 5), 1440);
-    when_description = 'setiap ' + interval_minutes + ' menit';
-  }
-  const name = String(body.name || '').trim() || ('Tugas ' + new Date().toISOString().slice(0, 10));
-  const r = await db.prepare(`INSERT INTO scheduled_tasks (user_id, name, when_description, schedule_type, time_wib, interval_minutes, prompt, notify_email, active)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`)
-    .bind(user.id, name, when_description, schedule_type, time_wib, interval_minutes, prompt, body.notify_email ? 1 : 0).run();
-  return { success: true, id: r.meta && r.meta.last_row_id, name: name, when: when_description, note: 'Tugas terpasang — muncul otomatis di halaman Akun > Tugas Terjadwal.' };
-}
-
 export async function onRequestGet({ request, env }) {
   const db = env.DB;
   if (!db) return json({ error: 'D1 not bound' }, 500);
@@ -276,9 +251,25 @@ export async function onRequestPost({ request, env }) {
     await ensureTable(db);
 
     if (action === 'create') {
-      const r = await createScheduledTask(db, user, body);
-      if (r.error) return json(r, 400);
-      return json(r);
+      const prompt = String(body.prompt || '').trim();
+      if (!prompt) return json({ error: 'prompt wajib diisi' }, 400);
+      const schedule_type = body.schedule_type === 'interval_minutes' ? 'interval_minutes' : 'daily';
+      let time_wib = null, interval_minutes = null, when_description = '';
+      if (schedule_type === 'daily') {
+        const m = /^(\d{1,2}):(\d{2})$/.exec(String(body.time_wib || ''));
+        if (!m) return json({ error: 'time_wib wajib format HH:MM (contoh 09:30)' }, 400);
+        const h = parseInt(m[1]); if (h > 23 || parseInt(m[2]) > 59) return json({ error: 'jam tidak valid' }, 400);
+        time_wib = body.time_wib;
+        when_description = 'setiap hari ' + time_wib + ' WIB';
+      } else {
+        interval_minutes = Math.min(Math.max(parseInt(body.interval_minutes) || 15, 5), 1440);
+        when_description = 'setiap ' + interval_minutes + ' menit';
+      }
+      const name = String(body.name || '').trim() || ('Tugas ' + new Date().toISOString().slice(0, 10));
+      const r = await db.prepare(`INSERT INTO scheduled_tasks (user_id, name, when_description, schedule_type, time_wib, interval_minutes, prompt, notify_email, active)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`)
+        .bind(user.id, name, when_description, schedule_type, time_wib, interval_minutes, prompt, body.notify_email ? 1 : 0).run();
+      return json({ success: true, id: r.meta?.last_row_id });
     }
 
     if (action === 'update' || action === 'toggle' || action === 'delete' || action === 'run_now' || action === 'mark_run') {

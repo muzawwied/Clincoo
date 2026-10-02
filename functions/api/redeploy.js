@@ -29,7 +29,7 @@ export async function onRequestPost({ env }) {
     // The API endpoint for creating a deployment requires a manifest, which we can't generate here
     // Instead, we'll use the "retry deployment" endpoint which retries the last deployment
     const res = await fetch(
-      'https://api.cloudflare.com/client/v4/accounts/' + accountId + '/pages/projects/clinqoo/deployments',
+      'https://api.cloudflare.com/client/v4/accounts/' + accountId + '/pages/projects/clincoo/deployments',
       {
         method: 'POST',
         headers: {

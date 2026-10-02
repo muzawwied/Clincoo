@@ -1,16 +1,7 @@
-// GET  /api/auth/github -> {client_id} (paralel dengan /api/auth/google)
 // POST /api/auth/github {code, redirect_uri} — tukar code GitHub jadi sesi Clincoo
 import { initTables, upsertOauthUser, createSession, publicUser, getEnvVarDb, json, CORS } from './shared.js';
 
 export async function onRequestOptions() { return new Response(null, { status: 204, headers: CORS }); }
-
-export async function onRequestGet({ request, env }) {
-  const db = env.DB;
-  const clientId = db ? await getEnvVarDb(db, 'GITHUB_CLIENT_ID') : null;
-  if (!clientId) return json({ error: 'Client ID GitHub tidak tersedia.' }, 500);
-  const tsKey = db ? await getEnvVarDb(db, 'TURNSTILE_SITEKEY') : null;
-  return tsKey ? json({ client_id: clientId, turnstile_sitekey: tsKey }) : json({ client_id: clientId });
-}
 
 export async function onRequestPost({ request, env }) {
   const db = env.DB;
@@ -23,18 +14,6 @@ export async function onRequestPost({ request, env }) {
 
     const body = await request.json().catch(() => ({}));
     if (!body.code) return json({ error: 'Authorization code diperlukan' }, 400);
-    // ANTI-BOT: verifikasi Cloudflare Turnstile — aktif otomatis begitu TURNSTILE_SECRET
-    // diisi di env_vars (dormant selama belum diisi, jadi tidak ada regresi).
-    const tsSecret = await getEnvVarDb(db, 'TURNSTILE_SECRET');
-    if (tsSecret) {
-      if (!body.turnstile_token) return json({ error: 'Verifikasi anti-bot diperlukan.', need_turnstile: true }, 403);
-      const v = await (await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ secret: tsSecret, response: body.turnstile_token })
-      })).json().catch(() => ({}));
-      if (!v || v.success !== true) return json({ error: 'Verifikasi anti-bot gagal atau kedaluwarsa.', need_turnstile: true }, 403);
-    }
 
     const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
@@ -45,7 +24,7 @@ export async function onRequestPost({ request, env }) {
     if (!tokenData.access_token) return json({ error: 'Kode login GitHub tidak valid atau sudah dipakai' }, 401);
     const ghToken = tokenData.access_token;
 
-    const ghHeaders = { 'Authorization': 'Bearer ' + ghToken, 'Accept': 'application/vnd.github+json', 'User-Agent': 'clinqoo' };
+    const ghHeaders = { 'Authorization': 'Bearer ' + ghToken, 'Accept': 'application/vnd.github+json', 'User-Agent': 'clincoo' };
     const ghUser = await (await fetch('https://api.github.com/user', { headers: ghHeaders })).json();
     let email = ghUser.email;
     if (!email) {
@@ -55,7 +34,7 @@ export async function onRequestPost({ request, env }) {
     }
     if (!email) return json({ error: 'Tidak bisa mendapatkan email dari GitHub' }, 401);
 
-    const user = await upsertOauthUser(db, 'github', ghUser.id, email.toLowerCase(), ghUser.name || ghUser.login || '', ghUser.avatar_url || '', ghToken, tokenData.scope || '', env);
+    const user = await upsertOauthUser(db, 'github', ghUser.id, email.toLowerCase(), ghUser.name || ghUser.login || '', ghUser.avatar_url || '', ghToken, tokenData.scope || '');
     const token = await createSession(db, user.id);
     return json({ success: true, token, user: publicUser(user) });
   } catch (e) {

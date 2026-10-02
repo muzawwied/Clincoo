@@ -2,9 +2,6 @@
 // Stores project-scoped settings (domain, webhooks, collaboration, visibility, etc) in D1
 
 import { getProjectTables } from './_tables.js';
-import { currentUser } from './user-scope.js';
-import { ADMIN_EMAILS, getEffectivePlanByUserKey } from './plan-helpers.js';
-import { userKeyPrefix } from './plan-gate.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -68,21 +65,6 @@ export async function onRequestPost({ request, env }) {
     const projectId = body.project_id || '';
     if (!projectId) {
       return new Response(JSON.stringify({ error: 'project_id required' }), { status: 400, headers: { 'Content-Type': 'application/json', ...CORS } });
-    }
-
-    // Gate Paket Bisnis: mode 'Dilindungi Password' hanya untuk paket Bisnis/admin.
-    if (body.visibility_settings) {
-      let visMode = '';
-      try { visMode = (JSON.parse(body.visibility_settings) || {}).mode || ''; } catch (e) {}
-      if (visMode === 'password') {
-        const user = await currentUser(env, request);
-        const uk = userKeyPrefix(user);
-        const allowed = ADMIN_EMAILS.has((user && user.email) || '') ||
-          (await getEffectivePlanByUserKey(env.DB, uk)).plan === 'Bisnis';
-        if (!allowed) {
-          return new Response(JSON.stringify({ error: 'Fitur Dilindungi Password hanya tersedia untuk Paket Bisnis. Upgrade paket untuk menggunakannya.', need_upgrade: 'Bisnis' }), { status: 402, headers: { 'Content-Type': 'application/json', ...CORS } });
-        }
-      }
     }
 
     const updates = {};

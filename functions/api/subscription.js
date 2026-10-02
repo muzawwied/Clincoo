@@ -1,7 +1,5 @@
 import { currentUser, scopedKey, rowScope } from './user-scope.js';
-import { ensurePromoTable, PROMO_EARLY, isPromoNewUser } from './promo.js';
-import { getMonthlyDeployCount } from './plan-helpers.js';
-import { getCpConnection, mirroredBalance, mirrorDelta } from './clinqoopay-helpers.js';
+import { getCpConnection, mirroredBalance, mirrorDelta } from './clincoopay-helpers.js';
 import { emailTemplate, formatIDR, sendEmail, notifyEvent } from './notify-helpers.js';
 
 // Cloudflare Pages Functions - Subscription Backend
@@ -18,9 +16,9 @@ export async function onRequestOptions() {
 }
 
 const PLANS = {
-  'Starter': { price: 0, projectLimit: 3, storageLimit: 5, bandwidthLimit: 10, collaboratorLimit: 1, deployLimit: 5 },
-  'Pro': { price: 49000, projectLimit: 10, storageLimit: 50, bandwidthLimit: 100, collaboratorLimit: 5, deployLimit: 25 },
-  'Bisnis': { price: 129000, projectLimit: 50, storageLimit: 200, bandwidthLimit: 500, collaboratorLimit: 20, deployLimit: null }
+  'Starter': { price: 0, projectLimit: 3, storageLimit: 5, bandwidthLimit: 10, collaboratorLimit: 1 },
+  'Pro': { price: 49000, projectLimit: 10, storageLimit: 50, bandwidthLimit: 100, collaboratorLimit: 5 },
+  'Bisnis': { price: 129000, projectLimit: 50, storageLimit: 200, bandwidthLimit: 500, collaboratorLimit: 20 }
 };
 
 export async function onRequestGet({ request, env }) {
@@ -56,21 +54,6 @@ export async function onRequestGet({ request, env }) {
     const startDate = data.start_date || new Date().toISOString();
     const billingCycle = data.billing_cycle || 'Bulanan';
 
-    // MODE RINGAN (?fields=plan): hanya plan + siklus tagihan — dipakai halaman
-    // Upgrade yang cuma butuh menandai paket aktif. Statistik berat (jumlah proyek,
-    // total ukuran file SEMUA proyek = query berantai per proyek, deploy bulanan)
-    // dilompati → respons jauh lebih cepat.
-    if (url.searchParams.get('fields') === 'plan') {
-      return new Response(JSON.stringify({
-        plan,
-        billingCycle,
-        startDate,
-        price: planInfo.price
-      }), {
-        headers: { 'Content-Type': 'application/json', ...CORS }
-      });
-    }
-
     // Calculate next billing date
     const nextDate = new Date(startDate);
     if (billingCycle === 'Tahunan') {
@@ -86,38 +69,11 @@ export async function onRequestGet({ request, env }) {
       }
     }
 
-    // Jumlah proyek diambil dari user_projects MILIK user yang login
-    // (dulu salah: COUNT(*) dari tabel 'projects' tanpa scope user -> selalu 0 / bocor antar akun).
     let projectCount = 0;
     try {
-      if (user) {
-        const projResult = await db.prepare('SELECT COUNT(*) as c FROM user_projects WHERE user_id = ?').bind(user.id).first();
-        projectCount = projResult?.c || 0;
-      } else {
-        const projResult = await db.prepare('SELECT COUNT(*) as c FROM user_projects').first();
-        projectCount = projResult?.c || 0;
-      }
+      const projResult = await db.prepare('SELECT COUNT(*) as c FROM projects').first();
+      projectCount = projResult?.c || 0;
     } catch(e) {}
-
-    // Pemakaian storage NYATA: total ukuran file workspace semua proyek milik user (GB)
-    let storageBytes = 0;
-    try {
-      if (user) {
-        const pr = await db.prepare('SELECT id FROM user_projects WHERE user_id = ?').bind(user.id).all();
-        for (const p of pr.results || []) {
-          const suf = String(p.id || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 24) || 'default';
-          try {
-            const r = await db.prepare(`SELECT COALESCE(SUM(LENGTH(content)), 0) AS s FROM p_${suf}_project_files`).first();
-            storageBytes += (r?.s || 0);
-          } catch (eT) {}
-        }
-      }
-    } catch (eS) {}
-    const storageUsed = Math.round((storageBytes / 1e9) * 1000) / 1000;
-
-    // Deploy bulan ini (nyata, dari counter bulanan)
-    let deployUsed = 0;
-    try { if (user) deployUsed = await getMonthlyDeployCount(db, user.id); } catch (eD) {}
 
     return new Response(JSON.stringify({
       plan,
@@ -128,11 +84,11 @@ export async function onRequestGet({ request, env }) {
       price: planInfo.price,
       projectLimit: planInfo.projectLimit,
       storageLimit: planInfo.storageLimit,
+      bandwidthLimit: planInfo.bandwidthLimit,
       collaboratorLimit: planInfo.collaboratorLimit,
-      deployLimit: planInfo.deployLimit,
       projectCount,
-      storageUsed,
-      deployUsed,
+      storageUsed: parseFloat(data.storage_used || '0'),
+      bandwidthUsed: parseFloat(data.bandwidth_used || '0'),
       collaboratorCount: parseInt(data.collaborator_count || '0')
     }), {
       headers: { 'Content-Type': 'application/json', ...CORS }
@@ -175,33 +131,7 @@ export async function onRequestPost({ request, env }) {
       const validPlan = PLANS[plan] ? plan : 'Starter';
       const planPrice = PLANS[validPlan].price;
       const billing = billingCycle || 'Bulanan';
-      let totalPrice = billing === 'Tahunan' ? planPrice * 10 : planPrice; // Tahunan: bayar 10 bulan, dapat 12
-
-      // PROMO 100 USER PERTAMA: Pro Bulanan jadi Rp5.000 utk 100 klaim pertama.
-      // Slot di-klaim atomik via INSERT OR IGNORE (PK user_key) SEBELUM pembayaran;
-      // bila pembayaran gagal, slot dilepas lagi (cleanup) â lihat return path 402/500 di bawah.
-      let promoApplied = false;
-      let promoUserKey = null;
-      if (validPlan === 'Pro' && billing === 'Bulanan' && user) {
-        try {
-          await ensurePromoTable(db);
-          promoUserKey = 'u' + user.id;
-          const already = await db.prepare('SELECT 1 FROM promo_early_pro WHERE user_key = ?').bind(promoUserKey).first();
-          const newUser = await isPromoNewUser(db, user);
-          if (!already && newUser) {
-            // Klaim atomik: cek kuota & insert dalam SATU statement (anti race dua request bersamaan)
-            const ins = await db.prepare(
-              'INSERT OR IGNORE INTO promo_early_pro (user_key, claimed_at) SELECT ?, ? WHERE (SELECT COUNT(*) FROM promo_early_pro) < ?'
-            ).bind(promoUserKey, new Date().toISOString(), PROMO_EARLY.maxUsers).run();
-            if (ins && ins.meta && ins.meta.changes > 0) { promoApplied = true; totalPrice = PROMO_EARLY.price; }
-          }
-        } catch (ePromo) {}
-      }
-      const releasePromoSlot = async () => {
-        if (promoApplied && promoUserKey) {
-          try { await db.prepare('DELETE FROM promo_early_pro WHERE user_key = ?').bind(promoUserKey).run(); } catch (e) {}
-        }
-      };
+      const totalPrice = billing === 'Tahunan' ? planPrice * 12 : planPrice;
 
       // Check wallet balance for paid plans
       if (planPrice > 0) {
@@ -209,14 +139,13 @@ export async function onRequestPost({ request, env }) {
           const balKey = await scopedKey(db, 'wallet_balance', user, 'balance');
           const balRow = await db.prepare('SELECT value FROM wallet_balance WHERE key = ?').bind(balKey).first();
           let balance = parseFloat(balRow?.value || '0');
-          // ClincooPay: dompet terhubung â saldo live web Wallet
+          // ClincooPay: dompet terhubung → saldo live web Wallet
           const subConn = await getCpConnection(db, user.id);
           if (subConn) {
             const wb = await mirroredBalance(subConn);
             if (wb !== null) balance = wb;
           }
           if (balance < totalPrice) {
-            await releasePromoSlot();
             return new Response(JSON.stringify({ 
               success: false, 
               error: 'Saldo tidak cukup',
@@ -224,24 +153,17 @@ export async function onRequestPost({ request, env }) {
               required: totalPrice
             }), { status: 402, headers: { 'Content-Type': 'application/json', ...CORS } });
           }
-
-          // PERBAIKAN: potong saldo NYATA dulu (ClincooPay atau lokal), baru catat riwayat
-          // transaksi di Clincoo. Sebelumnya urutan terbalik â baris wallet_transactions
-          // "keluar" sudah tercatat di Clincoo SEBELUM tahu hasil mirrorDelta() ke ClincooPay.
-          // Akibatnya kalau mirrorDelta gagal (token invalid/expired, race, server Wallet
-          // lambat), Clincoo sudah menampilkan seolah saldo terpotong padahal saldo asli
-          // di ClincooPay tidak pernah berkurang â persis gejala "di Clincoo kepotong,
-          // di ClincooPay tidak" yang dilaporkan. Sekarang riwayat baru dicatat setelah
-          // potongan beneran berhasil di salah satu sisi.
+          // Deduct from wallet
           const subUid = await rowScope(db, 'wallet_transactions', user);
           const subTxId = 'TX-' + Math.floor(100000 + Math.random() * 900000);
+          await db.prepare('INSERT INTO wallet_transactions (id, title, amount, type, method, user_id) VALUES (?, ?, ?, ?, ?, ?)')
+            .bind(subTxId, 'Langganan ' + validPlan + ' (' + billing + ')', totalPrice, 'out', 'Saldo Dompet', subUid).run();
           let newBalance = balance - totalPrice;
-          // ClincooPay: dompet terhubung â potong saldo di web Wallet (mirroring 2 arah)
+          // ClincooPay: dompet terhubung → potong saldo di web Wallet (mirroring 2 arah)
           if (subConn) {
             const mr = await mirrorDelta(subConn, -totalPrice, 'Clincoo: Langganan ' + validPlan + ' (' + billing + ')', subTxId);
             if (!mr.ok) {
               const kurang = String(mr.error).indexOf('tidak cukup') >= 0;
-              await releasePromoSlot();
               return new Response(JSON.stringify({ success: false, error: kurang ? 'Saldo ClincooPay tidak cukup.' : mr.error }), { status: kurang ? 402 : 502, headers: { 'Content-Type': 'application/json' } });
             }
             newBalance = mr.balance;
@@ -249,28 +171,25 @@ export async function onRequestPost({ request, env }) {
             await db.prepare('INSERT INTO wallet_balance (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value')
               .bind(balKey, String(newBalance)).run();
           }
-          // Baru catat riwayat transaksi lokal SETELAH potongan beneran berhasil.
-          await db.prepare('INSERT INTO wallet_transactions (id, title, amount, type, method, user_id) VALUES (?, ?, ?, ?, ?, ?)')
-            .bind(subTxId, 'Langganan ' + validPlan + ' (' + billing + ')', totalPrice, 'out', 'Saldo Dompet', subUid).run();
 
           // Notifikasi in-app + email konfirmasi aktivasi langganan
           try {
             await notifyEvent(db, user, {
               source: 'Langganan', type: 'subscription',
-              message: 'Langganan ' + validPlan + ' (' + billing + ') berhasil diaktifkan. Total ' + formatIDR(totalPrice) + ' dipotong dari Saldo Dompet. Saldo sekarang ' + formatIDR(newBalance) + '.' + (promoApplied ? ' [PROMO 100 User Pertama â Pro Rp5.000]' : ''),
-              link: 'https://app.clincoo.buzz/akun/langganan/'
+              message: 'Langganan ' + validPlan + ' (' + billing + ') berhasil diaktifkan. Total ' + formatIDR(totalPrice) + ' dipotong dari Saldo Dompet. Saldo sekarang ' + formatIDR(newBalance) + '.',
+              link: 'https://muzawwied.github.io/Clincoo./akun/langganan/'
             });
           } catch (e2) {}
           // Catat aktivitas langganan di halaman Aktivitas (per-akun)
           try {
             await db.prepare('INSERT INTO activity_log (action, details, user_id) VALUES (?, ?, ?)')
-              .bind('subscription', 'Langganan ' + validPlan + ' (' + billing + ') aktif â ' + formatIDR(totalPrice) + ' dari Saldo Dompet', subUid).run();
+              .bind('subscription', 'Langganan ' + validPlan + ' (' + billing + ') aktif — ' + formatIDR(totalPrice) + ' dari Saldo Dompet', subUid).run();
           } catch (eSub) {}
           if (user && user.email) {
             try {
               await sendEmail(env, {
                 toEmail: user.email, toName: user.name || '',
-                subject: 'Langganan Clincoo Aktif â ' + validPlan,
+                subject: 'Langganan Clincoo Aktif — ' + validPlan,
                 html: emailTemplate(
                   'Langganan Aktif',
                   user.name || '',
@@ -283,7 +202,7 @@ export async function onRequestPost({ request, env }) {
                     ['Saldo Dompet Tersisa', formatIDR(newBalance)]
                   ],
                   'Lihat Detail Langganan',
-                  'https://app.clincoo.buzz/akun/langganan/',
+                  'https://muzawwied.github.io/Clincoo./akun/langganan/',
                   'Rincian langganan dapat dilihat di halaman Langganan pada akun Clincoo Anda.'
                 )
               });
@@ -291,7 +210,6 @@ export async function onRequestPost({ request, env }) {
           }
         } catch(e) {
           // If wallet tables don't exist, still allow free plans but block paid
-          await releasePromoSlot();
           return new Response(JSON.stringify({ 
             success: false, 
             error: 'Gagal memverifikasi saldo dompet'
@@ -299,26 +217,9 @@ export async function onRequestPost({ request, env }) {
         }
       }
 
-      // Stacking periode: bila masih ada sisa masa aktif paket berbayar lama,
-      // periode baru dimulai saat masa aktif lama berakhir â sisa waktu tidak hangus.
-      let newStart = new Date();
-      if (planPrice > 0) {
-        try {
-          const cur = await db.prepare('SELECT key, value FROM subscription WHERE key IN (?, ?, ?)')
-            .bind(subPfx + 'plan', subPfx + 'start_date', subPfx + 'billing_cycle').all();
-          const m = {};
-          for (const r of cur.results || []) m[r.key.slice(subPfx.length)] = r.value;
-          const oldPaid = m.plan && PLANS[m.plan] && PLANS[m.plan].price > 0;
-          if (oldPaid && m.start_date) {
-            const days = (m.billing_cycle === 'Tahunan') ? 365 : 30;
-            const oldStart = new Date(String(m.start_date).replace(' ', 'T'));
-            const expiry = new Date(oldStart.getTime() + days * 86400000);
-            if (!isNaN(expiry.getTime()) && expiry > newStart) newStart = expiry;
-          }
-        } catch (eStack) {}
-      }
       await db.prepare("INSERT INTO subscription (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(subPfx + 'plan', validPlan).run();
-      await db.prepare("INSERT INTO subscription (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(subPfx + 'start_date', newStart.toISOString()).run();
+      const now = new Date().toISOString();
+      await db.prepare("INSERT INTO subscription (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(subPfx + 'start_date', now).run();
     }
 
     if (billingCycle) {
@@ -347,9 +248,7 @@ export async function onRequestPost({ request, env }) {
       billingCycle: data.billing_cycle || 'Bulanan',
       startDate: data.start_date,
       paymentMethod: data.payment_method || '',
-      price: planInfo.price,
-      promo_applied: promoApplied,
-      paid: promoApplied ? PROMO_EARLY.price : totalPrice
+      price: planInfo.price
     }), {
       headers: { 'Content-Type': 'application/json', ...CORS }
     });

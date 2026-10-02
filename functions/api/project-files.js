@@ -36,12 +36,6 @@ export async function onRequestGet({ request, env }) {
     if (!projectId) return new Response(JSON.stringify({ error: 'project_id required' }), { status: 400, headers: { 'Content-Type': 'application/json', ...CORS } });
 
     const T = await getProjectTables(db, projectId);
-    // ?meta=1 -> hanya path (ringan, untuk deteksi struktur workspace tanpa transfer seluruh konten)
-    const meta = url.searchParams.get('meta');
-    if (meta) {
-      const rows = await db.prepare(`SELECT path FROM ${T.files} WHERE project_id = ? ORDER BY path ASC`).bind(projectId).all();
-      return new Response(JSON.stringify({ files: (rows.results || []).map(function (r) { return { path: r.path }; }) }), { headers: { 'Content-Type': 'application/json', ...CORS } });
-    }
     const rows = await db.prepare(`SELECT path, content, updated_at FROM ${T.files} WHERE project_id = ? ORDER BY path ASC`).bind(projectId).all();
     return new Response(JSON.stringify({ files: rows.results || [] }), { headers: { 'Content-Type': 'application/json', ...CORS } });
   } catch (err) {
@@ -51,7 +45,7 @@ export async function onRequestGet({ request, env }) {
 
 // POST /api/project-files — { project_id, path, content } upsert a single file
 // or { project_id, files: [{path, content}, ...] } bulk upsert
-export async function onRequestPost({ request, env, waitUntil }) {
+export async function onRequestPost({ request, env }) {
   const db = env.DB;
   if (!db) return new Response(JSON.stringify({ error: 'D1 not bound' }), { status: 500, headers: { 'Content-Type': 'application/json', ...CORS } });
   try {
@@ -85,42 +79,6 @@ export async function onRequestPost({ request, env, waitUntil }) {
 
     // Update project's updated_at in projects table if exists
     try { await db.prepare("UPDATE projects SET updated_at = datetime('now') WHERE id = ?").bind(projectId).run(); } catch(e) {}
-
-    // MODE REPLACE (atomik): upsert semua berkas lalu hapus path yang tidak ada di
-    // payload — SATU request, tanpa jendela "cloud kosong" seperti pola lama
-    // DELETE-then-POST (penyebab berkas hilang saat POST gagal setelah DELETE sukses).
-    if (body.replace === true) {
-      const paths = filesToSave.map(f => f.path);
-      const ph = paths.map(() => '?').join(',');
-      await db.prepare(`DELETE FROM ${T.files} WHERE project_id = ? AND path NOT IN (${ph})`).bind(projectId, ...paths).run();
-    }
-
-    // URL PREVIEW OTOMATIS: setiap perubahan kode yang disimpan memicu deploy latar
-    // belakang ke project Pages terpisah '-prv' (URL <nama>.clinqoo.biz.id) — produksi
-    // TIDAK tersentuh. Preview jalan untuk proyek apa pun yang punya berkas, tanpa perlu
-    // pernah di-deploy (project '-prv' dibuat otomatis saat pertama kali).
-    // Throttle 20 detik per proyek.
-    try {
-      {
-        const throttleKey = 'preview_last_deployed_at';
-        const prev = await db.prepare(`SELECT value FROM ${T.projectSettings} WHERE project_id = ? AND key = ?`).bind(projectId, throttleKey).first();
-        const now = Date.now();
-        if (!prev || now - Number(prev.value || 0) > 20000) {
-          await db.prepare(`INSERT OR REPLACE INTO ${T.projectSettings} (project_id, key, value) VALUES (?, ?, ?)`)
-            .bind(projectId, throttleKey, String(now)).run();
-          const p = fetch('https://clincoo-be2.pages.dev/api/deploy', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': request.headers.get('authorization') || '',
-              'Cookie': request.headers.get('cookie') || ''
-            },
-            body: JSON.stringify({ project_id: projectId, preview: true })
-          }).then(r => r.json()).catch(() => null);
-          if (typeof waitUntil === 'function') waitUntil(p);
-        }
-      }
-    } catch (ePre) { /* preview otomatis tidak boleh menggagalkan simpan */ }
 
     return new Response(JSON.stringify({ success: true, saved: filesToSave.length }), { headers: { 'Content-Type': 'application/json', ...CORS } });
   } catch (err) {

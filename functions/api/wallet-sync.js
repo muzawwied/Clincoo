@@ -136,8 +136,8 @@ export async function onRequestPost({ request, env }) {
               if (newNotifs < 5) {
                 newNotifs++;
                 const msg = (type === 'in')
-                  ? 'Saldo masuk ' + amount.toLocaleString('id-ID') + ' - ' + title
-                  : 'Transfer keluar ' + amount.toLocaleString('id-ID') + ' - ' + title;
+                  ? 'Saldo masuk Rp ' + amount.toLocaleString('id-ID') + ' - ' + title
+                  : 'Transfer keluar Rp ' + amount.toLocaleString('id-ID') + ' - ' + title;
                 await db.prepare('INSERT INTO wallet_web_notifications (addr, source, message, type) VALUES (?, ?, ?, ?)')
                   .bind(addr, 'Wallet', msg, type).run();
               }
@@ -155,8 +155,8 @@ export async function onRequestPost({ request, env }) {
           if (newNotifs < 5) {
             newNotifs++;
             const msg = (type === 'in')
-              ? 'Saldo masuk ' + amount.toLocaleString('id-ID') + ' - ' + title
-              : 'Transfer keluar ' + amount.toLocaleString('id-ID') + ' - ' + title;
+              ? 'Saldo masuk Rp ' + amount.toLocaleString('id-ID') + ' - ' + title
+              : 'Transfer keluar Rp ' + amount.toLocaleString('id-ID') + ' - ' + title;
             await db.prepare('INSERT INTO wallet_web_notifications (addr, source, message, type) VALUES (?, ?, ?, ?)')
               .bind(addr, 'Wallet', msg, type).run();
           }

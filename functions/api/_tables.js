@@ -53,12 +53,11 @@ export async function ensureProjectTables(db, projectId) {
   // tabel proyek tidak pernah bentrok antar-proyek maupun dengan tabel global.
   await db.prepare(`CREATE TABLE IF NOT EXISTS _project_id_bases (suffix TEXT PRIMARY KEY, base INTEGER)`).run();
   let baseRow = await db.prepare('SELECT base FROM _project_id_bases WHERE suffix = ?').bind(s).first();
-  const isNewBase = !baseRow;
   if (!baseRow) {
     const max = await db.prepare('SELECT COALESCE(MAX(base), 900000000) AS m FROM _project_id_bases').first();
     const base = (max?.m || 900000000) + 1000000;
     await db.prepare('INSERT OR IGNORE INTO _project_id_bases (suffix, base) VALUES (?, ?)').bind(s, base).run();
-    baseRow = await db.prepare('SELECT base FROM _project_id_bases WHERE suffix = ?').bind(s).first() || { base };
+    baseRow = { base };
   }
   const idBase = baseRow.base;
   await db.prepare(`CREATE TABLE IF NOT EXISTS ${t('chat_sessions')} (
@@ -80,16 +79,8 @@ export async function ensureProjectTables(db, projectId) {
     is_secret INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now'))
   )`).run();
   // Seed AUTOINCREMENT pada base milik proyek ini — id jadi unik global.
-  // Hanya perlu dilakukan SEKALI saat base baru dialokasikan (bukan tiap
-  // panggilan ensureProjectTables) — sebelumnya insert eksplisit ini diulang
-  // di setiap request/deploy, dan dua request bersamaan bisa rebutan id yang
-  // sama lalu gagal dengan UNIQUE constraint (SQLITE_CONSTRAINT_PRIMARYKEY).
-  if (isNewBase) {
-    try {
-      await db.prepare(`INSERT OR IGNORE INTO ${t('env_vars')} (id, project_id, key, value) VALUES (?, '', '__seed__', '__seed__')`).bind(idBase).run();
-      await db.prepare(`DELETE FROM ${t('env_vars')} WHERE key = '__seed__'`).run();
-    } catch (e) { /* base sudah di-seed oleh request paralel lain — aman diabaikan */ }
-  }
+  await db.prepare(`INSERT INTO ${t('env_vars')} (id, project_id, key, value) VALUES (?, '', '__seed__', '__seed__')`).bind(idBase).run();
+  await db.prepare(`DELETE FROM ${t('env_vars')} WHERE key = '__seed__'`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS ${t('project_settings')} (
     project_id TEXT, key TEXT NOT NULL, value TEXT, PRIMARY KEY (project_id, key)
   )`).run();

@@ -1,7 +1,6 @@
 // Helper bersama untuk /api/auth/* — JANGAN pakai prefix "_" (wrangler mengecualikannya dari bundle)
-// Login Clincoo: HANYA OAuth (Google/GitHub). Auth email/sandi dihapus total
-// (login.js & register.js sudah dihapus). Kolom password_hash di tabel auth_users
-// hanyalah legasi skema (user baru selalu kosong) dan tidak pernah dibaca lagi.
+// Skema mengikuti tabel production yang sudah ada: auth_users(name, email, password_hash, avatar_url)
+// Format hash: "pbkdf2:<iterations>:<salthex>:<hashhex>"
 export const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -43,6 +42,11 @@ export async function initTables(db) {
   try { await db.prepare('ALTER TABLE auth_oauth_accounts ADD COLUMN scope TEXT').run(); } catch (e) {}
 }
 
+function hexToBytes(hex) {
+  const out = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i * 2, 2), 16);
+  return out;
+}
 function bytesToHex(bytes) {
   return Array.from(bytes).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
 }
@@ -51,6 +55,27 @@ export function randomHex(nBytes) {
   crypto.getRandomValues(b);
   return bytesToHex(b);
 }
+async function pbkdf2(password, saltHex, iterations) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: hexToBytes(saltHex), iterations }, key, 256);
+  return bytesToHex(new Uint8Array(bits));
+}
+export async function makePasswordHash(password) {
+  const iterations = 100000;
+  const salt = randomHex(16);
+  const hash = await pbkdf2(password, salt, iterations);
+  return 'pbkdf2:' + iterations + ':' + salt + ':' + hash;
+}
+export async function verifyPassword(password, stored) {
+  try {
+    const parts = String(stored || '').split(':');
+    if (parts.length !== 4 || parts[0] !== 'pbkdf2') return false;
+    const iterations = parseInt(parts[1], 10) || 100000;
+    const hash = await pbkdf2(password, parts[2], iterations);
+    return hash === parts[3];
+  } catch (e) { return false; }
+}
+export function validEmail(e) { return typeof e === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim()); }
 
 export function publicUser(u) {
   return { id: u.id, email: u.email, name: u.name || '', avatar_url: u.avatar_url || '' };
@@ -81,31 +106,19 @@ export async function getUserByToken(db, token) {
 }
 
 // Login/daftar via OAuth: pakai auth_oauth_accounts, email sebagai fallback identitas
-export async function upsertOauthUser(db, provider, providerAccountId, email, name, avatarUrl, accessToken, scope, env) {
-  // Normalisasi sekali di awal — email null/undefined tidak boleh memicu TypeError di .toLowerCase().
-  const emailNorm = email ? String(email).trim().toLowerCase() : null;
+export async function upsertOauthUser(db, provider, providerAccountId, email, name, avatarUrl, accessToken, scope) {
   let link = await db.prepare('SELECT user_id FROM auth_oauth_accounts WHERE provider = ? AND provider_account_id = ?')
     .bind(provider, String(providerAccountId)).first();
   let user;
   if (link) {
     user = await db.prepare('SELECT * FROM auth_users WHERE id = ?').bind(link.user_id).first();
   } else {
-    user = emailNorm ? await db.prepare('SELECT * FROM auth_users WHERE email = ?').bind(emailNorm).first() : null;
+    user = email ? await db.prepare('SELECT * FROM auth_users WHERE email = ?').bind(email.toLowerCase()).first() : null;
     if (!user) {
-      // User baru via OAuth: BUAT dulu baris auth_users, lalu ambil kembali (fix: sebelumnya tidak ada INSERT).
-      const ins = await db.prepare("INSERT INTO auth_users (name, email, password_hash, avatar_url) VALUES (?, ?, '', ?)")
-        .bind(name || '', emailNorm, avatarUrl || '').run();
-      if (emailNorm) {
-        user = await db.prepare('SELECT * FROM auth_users WHERE email = ?').bind(emailNorm).first();
-      } else {
-        // OAuth tanpa email (mis. GitHub private email): ambil baris baru via last_row_id — bukan TypeError.
-        const rid = ins && ins.meta && ins.meta.last_row_id;
-        user = rid ? await db.prepare('SELECT * FROM auth_users WHERE id = ?').bind(rid).first() : null;
-      }
-      // Real-time: sinkron daftar user ke GitHub saat user baru dibuat (best-effort).
-      if (env) { try { const { syncUserReport } = await import('../user-report-sync.js'); await syncUserReport(env, { timeoutMs: 9000 }); } catch (e2) {} }
+      await db.prepare('INSERT INTO auth_users (name, email, password_hash, avatar_url) VALUES (?, ?, \'\', ?)')
+        .bind(name || '', email ? email.toLowerCase() : null, avatarUrl || '').run();
+      user = await db.prepare('SELECT * FROM auth_users WHERE email = ?').bind(email.toLowerCase()).first();
     }
-    if (!user) throw new Error('Gagal membuat user OAuth (email tidak tersedia)');
     await db.prepare('INSERT OR IGNORE INTO auth_oauth_accounts (user_id, provider, provider_account_id) VALUES (?, ?, ?)')
       .bind(user.id, provider, String(providerAccountId)).run();
   }

@@ -103,8 +103,6 @@ export async function onRequestPost({ request, env }) {
       for (const t of ['chat_sessions', 'chat_messages', 'project_files', 'env_vars', 'project_settings', 'security_settings', 'deploy_logs']) {
         try { await db.prepare(`DELETE FROM ${tableFor(t, String(body.id))}`).run(); } catch (e) {}
       }
-      // log chat cloud (sync antar perangkat) ikut dihapus
-      try { await db.prepare('DELETE FROM chat_logs WHERE user_key = ? AND project_id = ?').bind('u' + user.id, String(body.id)).run(); } catch (e) {}
       return j({ success: true });
     }
     if (action === 'delete') {
@@ -115,13 +113,11 @@ export async function onRequestPost({ request, env }) {
         for (const t of ['chat_sessions', 'chat_messages', 'project_files', 'env_vars', 'project_settings', 'security_settings', 'deploy_logs']) {
           await db.prepare(`DROP TABLE IF EXISTS ${tableFor(t, String(body.id))}`).run();
         }
-        await db.prepare('DELETE FROM chat_logs WHERE user_key = ? AND project_id = ?').bind('u' + user.id, String(body.id)).run();
       } catch (e) {}
       return j({ success: true });
     }
     if (action === 'delete_all') {
       await db.prepare('DELETE FROM user_projects WHERE user_id = ?').bind(user.id).run();
-      try { await db.prepare('DELETE FROM chat_logs WHERE user_key = ?').bind('u' + user.id).run(); } catch (e) {}
       return j({ success: true });
     }
     if (action === 'replace_all') {

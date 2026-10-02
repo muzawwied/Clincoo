@@ -13,7 +13,7 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization'
 };
 
-const FRONTEND_BASE = 'https://app.clincoo.buzz/akun/';
+const FRONTEND_BASE = 'https://muzawwied.github.io/Clincoo./akun/';
 const INVITE_MAX_AGE_HOURS = 24;
 
 function j(data, status) {
@@ -22,9 +22,7 @@ function j(data, status) {
 
 export async function onRequestOptions() { return new Response(null, { headers: CORS }); }
 
-var tablesEnsured = false;
 async function ensureTables(db) {
-  if (tablesEnsured) return;
   await db.prepare(`CREATE TABLE IF NOT EXISTS user_projects (
     id TEXT PRIMARY KEY,
     user_id INTEGER,
@@ -58,7 +56,6 @@ async function ensureTables(db) {
     created_at TEXT DEFAULT (datetime('now')),
     responded_at TEXT
   )`).run();
-  tablesEnsured = true;
 }
 
 async function getProject(db, projectId) {
@@ -137,45 +134,30 @@ export async function onRequestPost({ env, request }) {
 
     /* ---------- list: anggota + undangan tertunda satu proyek ---------- */
     if (action === 'list') {
-      /* Batch 1: proyek + cek akses + anggota + undangan dalam SATU putaran D1.
-         Sebelumnya berurutan (6+ query), apalagi profil anggota diquery satu-satu
-         (N+1) -> kartu di halaman kolaborasi kelamaan muncul. */
-      const pid = String(projectId || '');
-      const [projRes, memberRes, rowsRes, pendingRes] = await db.batch([
-        db.prepare('SELECT * FROM user_projects WHERE id = ?').bind(pid),
-        db.prepare('SELECT id FROM project_members WHERE project_id = ? AND user_id = ?').bind(pid, user.id),
-        db.prepare('SELECT * FROM project_members WHERE project_id = ? ORDER BY joined_at ASC').bind(pid),
-        db.prepare("SELECT id, invitee_email, role, channel, created_at FROM collab_invites WHERE project_id = ? AND status = 'pending' ORDER BY created_at DESC").bind(pid)
-      ]);
-      const proj = (projRes.results && projRes.results[0]) || null;
+      const proj = await getProject(db, projectId);
       if (!proj) return j({ error: 'Proyek tidak ditemukan' }, 404);
       const isOwner = Number(proj.user_id) === Number(user.id);
-      const memberRow = (memberRes.results && memberRes.results[0]) || null;
+      const memberRow = await db.prepare('SELECT id FROM project_members WHERE project_id = ? AND user_id = ?')
+        .bind(projectId, user.id).first();
       if (!isOwner && !memberRow) return j({ error: 'Bukan proyek Anda' }, 403);
 
-      /* Batch 2: profil pemilik + semua anggota diambil SEKALI via IN(...) — pola list_all */
-      const profileMap = {};
-      const uidSet = new Set([proj.user_id]);
-      for (const r of (rowsRes.results || [])) uidSet.add(r.user_id);
-      const ids = Array.from(uidSet).filter(v => v !== null && v !== undefined);
-      if (ids.length) {
-        const ph = ids.map(() => '?').join(',');
-        const us = await db.prepare('SELECT id, name, email FROM auth_users WHERE id IN (' + ph + ')').bind(...ids).all();
-        for (const u of (us.results || [])) profileMap[u.id] = u;
-      }
+      const owner = await getUserById(db, proj.user_id);
+      const rows = await db.prepare('SELECT * FROM project_members WHERE project_id = ? ORDER BY joined_at ASC')
+        .bind(projectId).all();
+      const pending = await db.prepare("SELECT id, invitee_email, role, channel, created_at FROM collab_invites WHERE project_id = ? AND status = 'pending' ORDER BY created_at DESC").bind(projectId).all();
 
-      const members = (rowsRes.results || []).map(r => {
-        const u = profileMap[r.user_id];
-        return {
+      const members = [];
+      for (const r of (rows.results || [])) {
+        const u = await getUserById(db, r.user_id);
+        members.push({
           id: String(r.id),
           user_id: r.user_id,
           name: (u && u.name) || r.email || 'Anggota',
           email: r.email || (u && u.email) || '',
           role: r.role,
           initials: initialsOf((u && u.name) || r.email)
-        };
-      });
-      const owner = profileMap[proj.user_id];
+        });
+      }
       const ownerCard = owner ? {
         id: 'owner_' + proj.user_id,
         user_id: proj.user_id,
@@ -189,7 +171,7 @@ export async function onRequestPost({ env, request }) {
         success: true,
         project: { id: proj.id, title: proj.title || 'Proyek Clincoo' },
         members: ownerCard ? [ownerCard, ...members] : members,
-        pending: (pendingRes.results || []).map(p => ({
+        pending: (pending.results || []).map(p => ({
           invite_id: p.id,
           email: p.invitee_email,
           role: p.role,

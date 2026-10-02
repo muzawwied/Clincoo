@@ -6,9 +6,6 @@ const CORS = {
 
 // Cloudflare Pages Functions - GitHub API proxy
 // Allows Clincoo to import/read repo code files securely
-// Impor repository GitHub = fitur paket Pro & Bisnis (Starter diarahkan upgrade)
-import { currentUser } from './user-scope.js';
-import { getEffectivePlan, ADMIN_EMAILS } from './plan-helpers.js';
 
 export async function onRequestOptions() {
   return new Response(null, {
@@ -38,20 +35,6 @@ export async function onRequestGet({ request, env }) {
 
     const url = new URL(request.url);
     const action = url.searchParams.get('action') || 'repos';
-
-    // Gate paket: impor repository GitHub khusus Pro/Bisnis (admin bypass)
-    try {
-      const user = await currentUser(env, request);
-      if (user && !ADMIN_EMAILS.has(String(user.email || '').toLowerCase())) {
-        const eff = await getEffectivePlan(env.DB, user);
-        if (eff.plan === 'Starter') {
-          return new Response(JSON.stringify({
-            error: 'Impor repository GitHub tersedia di paket Pro & Bisnis. Upgrade paket di halaman Langganan untuk mengaktifkan fitur ini.',
-            upgrade_needed: true, plan: 'Starter'
-          }), { status: 402, headers: { 'Content-Type': 'application/json', ...CORS } });
-        }
-      }
-    } catch (e) {}
 
     if (action === 'repos') {
       // List user's repositories

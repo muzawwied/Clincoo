@@ -142,7 +142,7 @@
   // 2) Belum: nyalakan preview (deploy ringan ke <nama>-prv) -> pindah begitu siap.
   // 3) Sementara menunggu / bila preview gagal: render cepat langsung dari file cloud.
   function main() {
-    if (!pid) { failState('Tidak ada proyek aktif', 'Buka proyek dari daftar proyek Clincoo dulu, lalu pilih "Live URL proyek" di menu di header.', false); return; }
+    if (!pid) { failState('Tidak ada proyek aktif', 'Buka proyek dari daftar proyek Clincoo dulu, lalu pilih "Live preview" di menu di header.', false); return; }
     if (!token()) { failState('Masuk dulu untuk melihat live preview', 'Live URL proyek hanya bisa dibuka setelah masuk ke akun Clincoo Anda.', true); return; }
     fetchJson(API + '/deploy?project_id=' + encodeURIComponent(pid), { headers: authHeaders() })
       .then(function (st) {

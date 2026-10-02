@@ -101,20 +101,6 @@ export async function onRequestGet({ request, env }) {
       id TEXT PRIMARY KEY, title TEXT NOT NULL, amount REAL NOT NULL,
       type TEXT NOT NULL, method TEXT, created_at TEXT DEFAULT (datetime('now'))
     )`).run();
-  await db.prepare(`CREATE TABLE IF NOT EXISTS topup_orders (
-    id TEXT PRIMARY KEY,
-    amount REAL NOT NULL,
-    method TEXT,
-    status TEXT DEFAULT 'pending',
-    xendit_id TEXT,
-    invoice_url TEXT,
-    created_at TEXT DEFAULT (datetime('now')),
-    paid_at TEXT,
-    user_id TEXT,
-    qr_url TEXT,
-    bill_total REAL,
-    expires_at TEXT
-  )`).run();
 
     await db.prepare(`CREATE TABLE IF NOT EXISTS wallet_balance (
       key TEXT PRIMARY KEY, value TEXT

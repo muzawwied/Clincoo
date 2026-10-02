@@ -3,7 +3,6 @@
 // Data akun lain & key global (kredensial deploy) tidak pernah ikut.
 
 import { currentUser, userPrefix } from './user-scope.js';
-import { ADMIN_EMAILS, getEffectivePlanByUserKey } from './plan-helpers.js';
 import { tableSuffix } from './_tables.js';
 
 const CORS = {
@@ -27,14 +26,6 @@ export async function onRequestGet({ request, env }) {
   if (!user) return json({ error: 'Login diperlukan', need_login: true }, 401);
   const uid = user.id;
   const prefix = userPrefix(user); // u<id>:
-
-  // Ekspor data & backup penuh akun = manfaat Paket Bisnis (admin bypass).
-  if (!ADMIN_EMAILS.has(user.email || '')) {
-    const eff = await getEffectivePlanByUserKey(db, 'u' + uid);
-    if (eff.plan !== 'Bisnis') {
-      return json({ error: 'Ekspor data & backup penuh akun hanya tersedia untuk Paket Bisnis. Upgrade paket untuk menggunakannya.', need_upgrade: 'Bisnis' }, 402);
-    }
-  }
 
   const safe = async (sql, ...params) => {
     try { const r = await db.prepare(sql).bind(...params).all(); return r.results || []; } catch (e) { return []; }
@@ -105,7 +96,7 @@ export async function onRequestGet({ request, env }) {
     return new Response(JSON.stringify(exportData, null, 2), {
       headers: {
         'Content-Type': 'application/json',
-        'Content-Disposition': 'attachment; filename="clinqoo_data_export.json"',
+        'Content-Disposition': 'attachment; filename="clincoo_data_export.json"',
         ...CORS
       }
     });
