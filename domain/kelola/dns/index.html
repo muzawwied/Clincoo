@@ -1,14 +1,12 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-
-  <script src="../../../js/auth-client.js?v=4"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kelola DNS — Clincoo Experiment</title>
-<meta name="description" content="Kelola record DNS domain Clincoo-mu: A, CNAME, TXT, dan lainnya.">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#ffffff">
+  <script src="../../../js/auth-client.js?v=4"></script>
 <link rel="icon" type="image/png" href="https://app.clincoo.buzz/assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -167,7 +165,7 @@ function togglePin(id) {
     renderDns();
 }
 
-function goBack() { if (history.length > 1) history.back(); else location.href = '../../'; }
+function goBack() { location.href = '../../detail/?domain=' + encodeURIComponent(domain); }
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 function banner(text) {

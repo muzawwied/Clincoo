@@ -1,14 +1,12 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-
-  <script src="../../../js/auth-client.js?v=4"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pengaturan Zone — Clincoo Experiment</title>
-<meta name="description" content="Pengaturan zone domain Clincoo-mu.">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#ffffff">
+  <script src="../../../js/auth-client.js?v=4"></script>
 <link rel="icon" type="image/png" href="https://app.clincoo.buzz/assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -78,16 +76,15 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
                     <p class="text-[14px] font-semibold text-gray-900">Status Zone</p>
                     <p id="zone-status" class="text-[12px] text-gray-500 mt-0.5"><span class="shim h-2 w-12"></span></p>
                 </div>
-                <button id="zone-toggle-btn" onclick="toggleZone()" class="text-[13px] font-semibold text-red-600 cursor-pointer hover:underline decoration-2 underline-offset-4"><span class="shim h-2 w-10"></span></button>
+                <button id="zone-toggle-btn" onclick="toggleZone()" class="text-[13px] font-semibold text-red-600 cursor-pointer hover:underline decoration-2 underline-offset-4 hidden"></button>
             </div>
             <div class="py-4">
                 <p class="text-[14px] font-semibold text-gray-900">Nameservers</p>
-                <p class="mono text-[12px] text-gray-500 mt-1">dana.ns.cloudflare.com</p>
-                <p class="mono text-[12px] text-gray-500">tim.ns.cloudflare.com</p>
+                <div id="zone-ns"><p class="mono text-[12px] text-gray-500 mt-1"><span class="shim h-2 w-32"></span></p></div>
             </div>
             <div class="py-4">
                 <p class="text-[14px] font-semibold text-gray-900">Plan</p>
-                <p class="text-[12px] text-gray-500 mt-1">Free</p>
+                <p id="zone-plan" class="text-[12px] text-gray-500 mt-1"><span class="shim h-2 w-10"></span></p>
             </div>
         </div>
     </div>
@@ -96,7 +93,7 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
 <script>
 const domain = (new URLSearchParams(location.search).get('domain') || '').toLowerCase();
 
-function goBack() { if (history.length > 1) history.back(); else location.href = '../../'; }
+function goBack() { location.href = '../../detail/?domain=' + encodeURIComponent(domain); }
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 let settings = {};
 function getSetting(k, def) { return (k in settings) ? settings[k] : def; }
@@ -118,23 +115,60 @@ function initToggles() {
     });
 }
 
+let zonePaused = null; // status live dari Cloudflare (bukan asumsi lokal)
 function toggleZone() {
-    const paused = getSetting('zone', 'active') === 'paused';
-    saveSetting('zone', paused ? 'active' : 'paused');
-    document.getElementById('zone-status').textContent = paused ? 'Aktif' : 'Dijeda (paused)';
-    document.getElementById('zone-toggle-btn').textContent = paused ? 'Pause' : 'Aktifkan';
-
+    if (zonePaused === null) return;
+    const willPause = !zonePaused;
+    if (willPause && !confirm('Jeda zona domain ini? Semua DNS domain berhenti dijawab sampai zona diaktifkan lagi.')) return;
+    document.getElementById('zone-status').textContent = 'Menyimpan…';
+    store.setSetting(domain, 'zone', willPause ? 'paused' : 'active').then(() => {
+        zonePaused = willPause;
+        paintZone();
+    }).catch(() => { document.getElementById('zone-status').textContent = 'Gagal menyimpan'; });
+}
+function paintZone() {
+    const statusEl = document.getElementById('zone-status');
+    const toggleEl = document.getElementById('zone-toggle-btn');
+    if (zonePaused === null) return;
+    if (zonePaused) {
+        statusEl.textContent = 'Dijeda (paused)';
+        toggleEl.textContent = 'Aktifkan';
+        toggleEl.classList.remove('text-red-600'); toggleEl.classList.add('text-accent');
+    } else {
+        statusEl.textContent = 'Aktif';
+        toggleEl.textContent = 'Pause';
+        toggleEl.classList.add('text-red-600'); toggleEl.classList.remove('text-accent');
+    }
+    toggleEl.classList.remove('hidden');
 }
 if (!domain) { location.replace('../../'); }
 else {
     document.getElementById('v-domain').textContent = domain;
-    store.getSettings(domain, { zone: 'active' }).then(s => {
-        settings = s;
-        const st = getSetting('zone', 'active');
-        document.getElementById('zone-status').textContent = st === 'paused' ? 'Dijeda (paused)' : 'Aktif';
-        if (st === 'paused') document.getElementById('zone-toggle-btn').textContent = 'Aktifkan';
-        lucide.createIcons();
-    });
+    fetch('/api/domains/' + encodeURIComponent(domain) + '/zone', { credentials: 'include' })
+        .then(r => r.json())
+        .then(d => {
+            const z = d && d.zone;
+            const nsEl = document.getElementById('zone-ns');
+            const planEl = document.getElementById('zone-plan');
+            if (!z) {
+                nsEl.innerHTML = '<p class="text-[12px] text-gray-400">Belum tersedia</p>';
+                planEl.textContent = '-';
+                document.getElementById('zone-status').textContent = 'Belum terhubung ke Cloudflare';
+                return;
+            }
+            nsEl.innerHTML = (z.name_servers || []).map(n => '<p class="mono text-[12px] text-gray-500 mt-1">' + esc(n) + '</p>').join('') || '<p class="text-[12px] text-gray-400">-</p>';
+            planEl.textContent = z.plan || 'Free';
+            zonePaused = !!z.paused;
+            if (!z.paused && z.status === 'pending') {
+                document.getElementById('zone-status').textContent = 'Menunggu nameserver diarahkan';
+                return;
+            }
+            paintZone();
+            lucide.createIcons();
+        })
+        .catch(() => {
+            document.getElementById('zone-status').textContent = 'Gagal memuat';
+        });
 }
 </script>
 <script>try { lucide.createIcons(); } catch (e) {}</script>

@@ -1,23 +1,12 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-
-  <script src="../../js/auth-client.js?v=4"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Verifikasi Domain — Clincoo</title>
-<meta name="description" content="Verifikasi kepemilikan domain Clincoo-mu lewat record TXT atau nameserver Cloudflare yang ditugaskan.">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Clincoo">
-<meta property="og:title" content="Verifikasi Domain — Clincoo">
-<meta property="og:description" content="Verifikasi kepemilikan domain Clincoo-mu lewat record TXT atau nameserver Cloudflare yang ditugaskan.">
-<meta property="og:url" content="https://app.clincoo.buzz/domain/verifikasi/">
-<meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Verifikasi Domain — Clincoo">
-<meta name="twitter:description" content="Verifikasi kepemilikan domain Clincoo-mu lewat record TXT atau nameserver Cloudflare yang ditugaskan.">
-<meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png">
+<title>Verifikasi Domain — Clincoo Experiment</title>
+<meta name="robots" content="noindex">
 <meta name="theme-color" content="#ffffff">
+  <script src="../../js/auth-client.js?v=4"></script>
 <link rel="icon" type="image/png" href="https://app.clincoo.buzz/assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -86,66 +75,26 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
     </div>
 
     <div class="px-7">
-        <!-- Tab: TXT / Nameserver -->
-        <div class="flex items-center gap-6 border-b border-gray-100">
-            <button id="tab-txt" onclick="switchTab('txt')" class="tab-btn active flex-1 pb-3 text-[14px] font-semibold border-b-2 border-transparent transition-colors">Record TXT</button>
-            <button id="tab-ns" onclick="switchTab('ns')" class="tab-btn flex-1 pb-3 text-[14px] font-semibold text-gray-400 border-b-2 border-transparent transition-colors">Nameserver</button>
-        </div>
-
-        <!-- Panel: Record TXT -->
-        <div id="panel-txt" class="mt-5">
-            <p class="text-[13px] text-gray-500 leading-relaxed">Masuk ke pengaturan DNS penyedia domain-mu, lalu tambahkan record berikut:</p>
-            <div class="mt-1">
-                <div class="flex items-center justify-between gap-3 py-3 border-b border-gray-100">
-                    <div class="min-w-0">
-                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Tipe</p>
-                        <p class="mono text-[13px] font-semibold text-gray-900 mt-0.5">TXT</p>
-                    </div>
-                </div>
-                <div class="flex items-center justify-between gap-3 py-3 border-b border-gray-100">
-                    <div class="min-w-0">
-                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Nama / Host</p>
-                        <p class="mono text-[13px] font-semibold text-gray-900 mt-0.5 truncate" id="txt-name">_clincoo-challenge</p>
-                    </div>
-                    <button onclick="copyText('txt-name')" class="w-8 h-8 rounded-full hover:bg-gray-100 transition-colors flex items-center justify-center cursor-pointer shrink-0" title="Salin"><i data-lucide="copy" class="w-4 h-4 text-gray-400"></i></button>
-                </div>
-                <div class="flex items-center justify-between gap-3 py-3 border-b border-gray-100">
-                    <div class="min-w-0">
-                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Nilai</p>
-                        <p class="mono text-[13px] font-semibold text-gray-900 mt-0.5 truncate" id="txt-value"><span class="shim h-2 w-3.50"></span></p>
-                    </div>
-                    <button onclick="copyText('txt-value')" class="w-8 h-8 rounded-full hover:bg-gray-100 transition-colors flex items-center justify-center cursor-pointer shrink-0" title="Salin"><i data-lucide="copy" class="w-4 h-4 text-gray-400"></i></button>
-                </div>
-                <div class="flex items-center justify-between gap-3 py-3 border-b border-gray-100">
-                    <div class="min-w-0">
-                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">TTL</p>
-                        <p class="text-[13px] font-semibold text-gray-900 mt-0.5">Otomatis (atau 3600)</p>
-                    </div>
-                </div>
-            </div>
-            <p class="text-[12px] text-gray-500 leading-relaxed mt-3">Tambahkan record TXT ini di <b>penyedia DNS domain-mu</b> (dashboard registrar tempat domain dibeli). Menambahkannya lewat menu Kelola DNS Clincoo hanya berlaku bila domain sudah memakai nameserver Cloudflare — selama belum, TXT harus dibuat di registrar. Record TXT boleh dihapus setelah verifikasi selesai.</p>
-        </div>
-
-        <!-- Panel: Nameserver -->
-        <div id="panel-ns" class="hidden mt-5">
-            <p class="text-[13px] text-gray-500 leading-relaxed">Zona domain-mu dibuat di Cloudflare Clincoo. Ganti nameserver di registrar domain-mu menjadi pasangan berikut:</p>
+        <!-- Metode verifikasi: Nameserver -->
+        <div id="panel-ns" class="mt-5">
+            <p class="text-[13px] text-gray-500 leading-relaxed">Ganti nameserver di registrar domain-mu menjadi:</p>
             <div class="mt-1">
                 <div class="flex items-center justify-between gap-3 py-3 border-b border-gray-100">
                     <div class="min-w-0">
                         <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Nameserver 1</p>
-                        <p class="mono text-[13px] font-semibold text-gray-900 mt-0.5" id="ns1">ns1.clincoo.buzz</p>
+                        <p class="mono text-[13px] font-semibold text-gray-900 mt-0.5" id="ns1"><span class="shim h-2 w-32"></span></p>
                     </div>
                     <button onclick="copyText('ns1')" class="w-8 h-8 rounded-full hover:bg-gray-100 transition-colors flex items-center justify-center cursor-pointer shrink-0" title="Salin"><i data-lucide="copy" class="w-4 h-4 text-gray-400"></i></button>
                 </div>
                 <div class="flex items-center justify-between gap-3 py-3 border-b border-gray-100">
                     <div class="min-w-0">
                         <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Nameserver 2</p>
-                        <p class="mono text-[13px] font-semibold text-gray-900 mt-0.5" id="ns2">ns2.clincoo.buzz</p>
+                        <p class="mono text-[13px] font-semibold text-gray-900 mt-0.5" id="ns2"><span class="shim h-2 w-32"></span></p>
                     </div>
                     <button onclick="copyText('ns2')" class="w-8 h-8 rounded-full hover:bg-gray-100 transition-colors flex items-center justify-center cursor-pointer shrink-0" title="Salin"><i data-lucide="copy" class="w-4 h-4 text-gray-400"></i></button>
                 </div>
             </div>
-            <p class="text-[12px] text-gray-500 leading-relaxed mt-3">Perubahan nameserver butuh waktu propagasi hingga 24 jam. Cukup salah satu metode saja — TXT atau nameserver.</p>
+            <p class="text-[12px] text-gray-500 leading-relaxed mt-3">Perubahan nameserver butuh waktu propagasi — biasanya beberapa menit, maksimal 24 jam. Halaman ini memeriksa otomatis setiap 30 detik selama terbuka, atau ketuk Periksa Verifikasi kapan saja.</p>
         </div>
 
         <!-- Hasil periksa -->
@@ -169,40 +118,10 @@ const domain = (params.get('domain') || '').toLowerCase();
 let verified = false;
 let checking = false;
 
-function goBack() { if (history.length > 1) history.back(); else location.href = '../'; }
+function goBack() { location.href = '../detail/?domain=' + encodeURIComponent(domain); }
 function copyValue(txt) { navigator.clipboard.writeText(txt).then(() => {}).catch(() => {}); }
 function copyText(id) { copyValue(document.getElementById(id).textContent.trim()); }
 
-let nsLoaded = false;
-function nsFinish(ns, res) {
-    const el1 = document.getElementById('ns1');
-    const el2 = document.getElementById('ns2');
-    if (ns && ns.length >= 2) {
-        el1.textContent = ns[0];
-        el2.textContent = ns[1];
-    } else {
-        el1.textContent = (res && res.message) || 'Nameserver belum tersedia. Pastikan domain belum dipakai di akun Cloudflare lain, lalu muat ulang tab ini.';
-        el2.closest('.flex').style.display = 'none';
-    }
-}
-function loadNs() {
-    if (nsLoaded) return;
-    nsLoaded = true;
-    store.ensureZone(domain).then(r => {
-        const ns = (r && r.ok && r.name_servers) || null;
-        nsFinish(ns && ns.length >= 2 ? ns : null, r);
-    }).catch(() => nsFinish(null));
-}
-function switchTab(t) {
-    const isTxt = t === 'txt';
-    if (!isTxt) loadNs();
-    document.getElementById('panel-txt').classList.toggle('hidden', !isTxt);
-    document.getElementById('panel-ns').classList.toggle('hidden', isTxt);
-    document.getElementById('tab-txt').classList.toggle('active', isTxt);
-    document.getElementById('tab-txt').classList.toggle('text-gray-400', !isTxt);
-    document.getElementById('tab-ns').classList.toggle('active', !isTxt);
-    document.getElementById('tab-ns').classList.toggle('text-gray-400', isTxt);
-}
 
 function setResult(kind, html) {
     const el = document.getElementById('check-result');
@@ -214,7 +133,7 @@ function setResult(kind, html) {
 }
 
 function checkVerification() {
-    if (verified) { location.href = '../'; return; }
+    if (verified) { location.href = '../detail/?domain=' + encodeURIComponent(domain); return; }
     if (checking) return;
     checking = true;
     const cta = document.getElementById('cta-check');
@@ -233,11 +152,20 @@ function checkVerification() {
             label.textContent = 'Selesai';
             document.getElementById('cta-skip').classList.add('hidden');
         } else {
-            const msg = (res && res.message) || 'Record TXT belum terdeteksi di DNS publik. Pastikan record sudah tersimpan di penyedia domain-mu, lalu periksa lagi.';
+            const msg = (res && res.message) || 'Nameserver domain-mu belum terdeteksi mengarah ke Cloudflare. Pastikan nameserver di registrar sudah diganti sesuai daftar di atas, tunggu propagasi, lalu periksa lagi.';
             setResult('fail', '<i data-lucide="alert-circle" class="w-5 h-5 text-red-500 shrink-0 mt-0.5"></i><p class="text-[13px] text-red-700 font-medium leading-relaxed"></p>');
             document.querySelector('#check-result p').textContent = msg;
             label.textContent = 'Periksa Lagi';
         }
+        checking = false;
+        lucide.createIcons();
+    }).catch(() => {
+        // Audit #2: koneksi gagal/timeout — pulihkan tombol agar tidak nyangkut permanen.
+        cta.style.pointerEvents = '';
+        const spin = cta.querySelector('.cta-spinner');
+        if (spin) spin.remove();
+        setResult('fail', '<i data-lucide="alert-circle" class="w-5 h-5 text-red-500 shrink-0 mt-0.5"></i><p class="text-[13px] text-red-700 font-medium leading-relaxed">Gagal memeriksa verifikasi — koneksi terputus. Periksa koneksi internet-mu, lalu coba lagi.</p>');
+        label.textContent = 'Periksa Lagi';
         checking = false;
         lucide.createIcons();
     });
@@ -249,13 +177,29 @@ function skipVerification() { location.href = '../'; }
 if (!domain || !store.validDomain(domain)) { location.replace('../'); }
 else {
     document.getElementById('v-domain').textContent = domain;
-    document.getElementById('txt-name').textContent = '_clincoo-challenge.' + domain;
-    store.create(domain).then(row => {
-        document.getElementById('txt-value').textContent = (row && row.token) || store.stableToken(domain);
-        loadNs(); // preload nameserver sejak awal — tab Nameserver terbuka instan
+    // Pastikan baris domain ada di server (token TXT tetap dibuat sbg fallback sisi server)
+    store.create(domain).catch(() => {});
+    // Ambil pasangan nameserver asli yang ditugaskan utk domain ini
+    store.ensureZone(domain).then(r => {
+        const ns0 = (r && r.name_servers) || [];
+        return (ns0.length >= 2) ? { name_servers: ns0 } : store.zoneInfo(domain).then(z => (z && z.zone) || { name_servers: [] });
+    }).then(z => {
+        const ns = (z && z.name_servers) || [];
+        if (ns.length >= 2) {
+            document.getElementById('ns1').textContent = ns[0];
+            document.getElementById('ns2').textContent = ns[1];
+        } else {
+            document.getElementById('ns1').textContent = 'Gagal memuat nameserver';
+            document.getElementById('ns2').textContent = 'Ketuk Periksa Verifikasi utk mencoba ulang';
+        }
     }).catch(() => {
-        document.getElementById('txt-value').textContent = store.stableToken(domain);
+        document.getElementById('ns1').textContent = 'Gagal memuat nameserver';
+        document.getElementById('ns2').textContent = 'Buka ulang halaman ini utk mencoba lagi';
     });
+    // Auto-check tiap 30 detik selama halaman terbuka & terlihat — berhenti saat terverifikasi
+    setInterval(() => { if (!verified && !checking && document.visibilityState === 'visible') checkVerification(); }, 30000);
+    // Cek pertama saat halaman dibuka (delay agar create() sempat selesai)
+    setTimeout(() => { if (!verified && !checking) checkVerification(); }, 1500);
     lucide.createIcons();
 }
 </script>
