@@ -165,15 +165,34 @@ async function dnsTxtLookup(name) {
   } catch (e) { return []; }
 }
 
+// Email akun pemilik proyek — backfill lazy untuk baris lama (kolom owner_email baru).
+async function ensureOwnerEmail(env, row) {
+  if (!row || row.owner_email) return row ? row.owner_email : '';
+  try {
+    const p = await env.DB.prepare('SELECT user_id FROM user_projects WHERE id = ?').bind(String(row.project_id)).first();
+    if (p && p.user_id != null) {
+      const u = await env.DB.prepare('SELECT email FROM auth_users WHERE id = ?').bind(p.user_id).first();
+      if (u && u.email) {
+        try { await env.DB.prepare("UPDATE email_settings SET owner_email = ?, updated_at = datetime('now') WHERE project_id = ?").bind(u.email, row.project_id).run(); } catch (e) {}
+        return u.email;
+      }
+    }
+  } catch (e) {}
+  return row.owner_email || '';
+}
+
 // Tier 0: tanpa domain aktif, penerima wajib = email akun pemilik proyek.
 async function recipientAllowed(env, row, to) {
   const dom = await getDomain(env.DB, row.project_id);
   if (domainActive(dom)) return { ok: true, dom: dom };
-  const owner = String(row.owner_email || '').trim().toLowerCase();
-  if (owner && String(to || '').trim().toLowerCase() === owner) return { ok: true, dom: dom };
+  const owner = String((row.owner_email || '')).trim().toLowerCase();
+  // Pemilik tak diketahui (proyek legacy tanpa user): biarkan lewat —
+  // mode terbatas Cloudflare tetap membatasi penerima di lapisan pengiriman.
+  if (!owner) return { ok: true, dom: dom, unresolved: true };
+  if (String(to || '').trim().toLowerCase() === owner) return { ok: true, dom: dom };
   return {
     ok: false, dom: dom,
-    reason: 'Sebelum domainmu aktif, email hanya bisa dikirim ke alamat akun Clincoo kamu (' + (owner || 'email akunmu') + '). Tambahkan & verifikasi domain di menu Domain untuk membuka pengiriman bebas.'
+    reason: 'Sebelum domainmu aktif, email hanya bisa dikirim ke alamat akun Clincoo kamu (' + owner + '). Tambahkan & verifikasi domain di menu Domain untuk membuka pengiriman bebas.'
   };
 }
 
@@ -302,6 +321,7 @@ export async function onRequestGet({ request, env }) {
     if (action === 'history') {
       return json({ used: used, limit: QUOTA_LIMIT, items: await historyLog(env.DB, projectId, 100) });
     }
+    await ensureOwnerEmail(env, row);
     return json(configPayload(row, used, await historyLog(env.DB, projectId, 10), await getDomain(env.DB, projectId)));
   }
 
@@ -324,6 +344,7 @@ export async function onRequestPost({ request, env }) {
     if (!row) return json({ error: 'API key tidak valid atau belum aktif' }, 401);
     const used = await quotaUsed(env.DB, row.project_id);
     if (used >= QUOTA_LIMIT) return json({ error: 'Kuota bulanan habis' }, 429);
+    await ensureOwnerEmail(env, row);
     const allow = await recipientAllowed(env, row, body.to);
     if (!allow.ok) return json({ error: allow.reason }, 422);
     const result = await sendProjectEmail(env, row, {
@@ -433,6 +454,7 @@ export async function onRequestPost({ request, env }) {
     if (!validEmail(body.to)) return json({ error: 'Alamat email tujuan tidak valid' }, 400);
     const used = await quotaUsed(env.DB, projectId);
     if (used >= QUOTA_LIMIT) return json({ error: 'Kuota bulanan habis' }, 429);
+    await ensureOwnerEmail(env, row);
     const allow = await recipientAllowed(env, row, body.to);
     if (!allow.ok) return json({ error: allow.reason }, 422);
     const subject = String(body.subject || 'Email dari aplikasimu').slice(0, 200);
