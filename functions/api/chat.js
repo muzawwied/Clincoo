@@ -490,10 +490,10 @@ const WORKSPACE_FUNCTION_DECLARATIONS = [
       notify_email: { type: 'BOOLEAN', description: 'true bila hasil juga dikirim ke email user.' }
     }, required: ['name', 'schedule_type', 'prompt'] } },
   { name: 'manage_domain',
-    description: 'Kelola domain kustom proyek AKTIF (halaman Fitur Domain / Domain Kustom). Action: "status" (daftar domain terpasang + record DNS yang harus disetel di provider domain), "add" (pasang domain kustom ke situs — domain harus sudah dimiliki user), "remove" (lepas domain dari situs). Catatan: record DNS di provider domain (IDWebhost, Cloudflare, dll) diatur user sendiri — bila DNS domainnya di Cloudflare dan user izinkan, gunakan cloudflare_request untuk membuat record-nya langsung.',
+    description: 'Kelola domain kustom + DNS proyek AKTIF (halaman Fitur Domain / Domain Kustom). Action: "status" (daftar domain terpasang + record DNS yang harus disetel), "add" (pasang domain kustom ke situs — domain harus sudah dimiliki user), "remove" (lepas domain dari situs), "dns_status" (cek zona DNS + record yang ada untuk domain), "set_dns" (SETEL LANGSUNG record CNAME domain -> <proyek>.pages.dev di Cloudflare — pakai ini saat user minta AI mengatur DNS domainnya; konflik A/AAAA lama otomatis dibersihkan), "delete_dns" (hapus record DNS domain). Alur lengkap pindah domain: set_dns dulu, lalu add. Zona DNS harus ada di akun Cloudflare yang tersimpan di Pengaturan Deploy; bila domainnya di provider lain, jelaskan record manualnya (CNAME -> <proyek>.pages.dev).',
     parameters: { type: 'OBJECT', properties: {
-      action: { type: 'STRING', description: 'Salah satu: status, add, remove.' },
-      domain: { type: 'STRING', description: 'Nama domain untuk add/remove, contoh "tokosaya.com".' }
+      action: { type: 'STRING', description: 'Salah satu: status, add, remove, dns_status, set_dns, delete_dns.' },
+      domain: { type: 'STRING', description: 'Nama domain, contoh "tokosaya.com" atau "www.tokosaya.com".' }
     }, required: ['action'] } },
   { name: 'write_files',
     description: 'Tulis BANYAK file sekaligus ke workspace proyek aktif (bulk write) — WAJIB dipakai saat membuat/mengubah/salin 2+ file dalam satu giliran: satu panggilan berisi array files [{path, content}] jauh lebih cepat & hemat daripada write_file satu-satu. Maks 60 file per panggilan. File tersimpan permanen (cloud) dan langsung bisa di-deploy.',

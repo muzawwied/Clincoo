@@ -425,9 +425,30 @@
             </table>
           </div>
           <p class="text-xs text-gray-400 dark:text-gray-500 mt-2 leading-relaxed">Record UTAMA menunjuk ke domain utama Anda (root, tanpa www): CNAME/ALIAS <span class="font-mono">@</span> dengan nilai di atas. Catatan penting: Cloudflare Pages tidak menyediakan alamat IP tetap, jadi metode A record (IP) tidak tersedia untuk root — satu-satunya cara adalah CNAME/ALIAS ke <span class="font-mono">&lt;subdomain&gt;.pages.dev</span>. Nilai ini memang selalu lebih dari 15 karakter (format .pages.dev). Jika registrar Anda menolak nilai CNAME yang panjang atau tidak mendukung CNAME di root: 1) gunakan tipe ALIAS/ANAME untuk @ bila tersedia, atau 2) arahkan nameserver domain Anda ke Cloudflare (gratis) lalu tambahkan domain dari sini — Cloudflare melakukan flattening otomatis sehingga domain utama langsung bisa dibuka tanpa www. Record CNAME www hanya diperlukan kalau alamat www.domain.com juga ingin diaktifkan. SSL aktif otomatis beberapa menit setelah DNS terverifikasi.</p>
-        </div>
 
-      </div>
+                  <!-- Tombol AI: setel record DNS otomatis lewat chat Clincoo (manage_domain set_dns) -->
+                  <button type="button" onclick="aiSetupDns(event)" class="mt-4 w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#222222] dark:bg-white text-white dark:text-[#222222] text-sm font-semibold hover:opacity-85 transition-opacity">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 5.7L20 10l-5 3.5L16.5 20 12 16.5 7.5 20 9 13.5 4 10l6.1-1.3L12 3z"></path></svg>
+                    Atur DNS otomatis dengan AI
+                  </button>
+                  <script>
+                  function aiSetupDns(e) {
+                    if (e) e.preventDefault();
+                    var domain = '';
+                    try { var el = document.getElementById('custom-domain-input'); if (el && el.value) domain = el.value.trim(); } catch (err) {}
+                    var pid = '';
+                    try { pid = localStorage.getItem('clinqoo_current_project_id') || ''; } catch (err) {}
+                    var msg = 'Bantu saya setel DNS domain kustom proyek ini';
+                    if (domain) {
+                      msg += ' untuk domain ' + domain + ': 1) cek status DNS-nya (manage_domain action dns_status), 2) setel record CNAME ke situs proyek ini (action set_dns), 3) pasang domainnya ke situs (action add), 4) laporkan hasil & langkah verifikasi selanjutnya.';
+                    } else {
+                      msg += ' (saya belum menuliskan domainnya — tanyakan dulu domainnya, lalu: dns_status, set_dns, add, lalu laporkan hasilnya).';
+                    }
+                    try { localStorage.setItem('clinqoo_ai_prefill', msg); } catch (err) {}
+                    window.location.href = '/proyek/chat/' + (pid ? '?id=' + encodeURIComponent(pid) : '');
+                  }
+                  </script>
+              </div>
     </main>
   </div>
 

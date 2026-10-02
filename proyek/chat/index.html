@@ -792,6 +792,22 @@
         const uploadMenu = document.getElementById('upload-menu');
         const uploadFileBtn = document.getElementById('upload-file-btn');
         
+        // Prefill dari halaman lain (mis. tombol "Atur DNS otomatis dengan AI" di halaman Domain):
+        // sekali kirim otomatis lalu hapus — tidak menumpuk di kunjungan berikutnya.
+        try {
+          var __pf = localStorage.getItem('clinqoo_ai_prefill');
+          if (__pf) {
+            localStorage.removeItem('clinqoo_ai_prefill');
+            setTimeout(function () {
+              try {
+                var inp = document.getElementById('main-prompt-input');
+                var btn = document.getElementById('submit-prompt-btn');
+                if (inp && btn) { inp.value = __pf; inp.dispatchEvent(new Event('input', { bubbles: true })); btn.click(); }
+              } catch (e2) {}
+            }, 800);
+          }
+        } catch (e0) {}
+
         const sidebarToggle = document.getElementById('sidebar-toggle');
 
         sidebarToggle.addEventListener('click', () => {
@@ -1967,7 +1983,7 @@ window.chatLivePreview = function () {
                 delete_item: 'ph-trash', search_items: 'ph-magnifying-glass',
                 run_command: 'ph-terminal-window', read_web_page: 'ph-globe', web_search: 'ph-magnifying-glass',
                 search_clinqoo_kb: 'ph-brain', rename_project: 'ph-pencil-simple', set_project_info: 'ph-note-pencil',
-                deploy_project: 'ph-rocket-launch', add_env_var: 'ph-key', list_env_vars: 'ph-key', test_secret: 'ph-shield-check', cloudflare_request: 'ph-cloud',
+                deploy_project: 'ph-rocket-launch', add_env_var: 'ph-key', list_env_vars: 'ph-key', test_secret: 'ph-shield-check', cloudflare_request: 'ph-cloud', manage_domain: 'ph-globe-hemisphere-west',
                 create_backend_function: 'ph-function', call_backend_function: 'ph-function',
                 github_request: 'ph-github-logo', drive_request: 'ph-google-logo', calendar_request: 'ph-calendar-blank', notion_request: 'ph-notebook',
                 delete_backend_function: 'ph-function', list_backend_functions: 'ph-function',
@@ -3580,6 +3596,7 @@ window.chatLivePreview = function () {
                     case 'rename_project': return await toolRenameProject(args);
                     case 'set_project_info': return await toolSetProjectInfo(args);
                     case 'deploy_project': return await toolDeployProject(args);
+                    case 'manage_domain': return await toolManageDomain(args);
                     case 'add_env_var': return await toolAddEnvVar(args);
                     case 'list_env_vars': return await toolListEnvVars(args);
                     case 'test_secret': return await toolTestSecret(args);
@@ -3716,6 +3733,53 @@ window.chatLivePreview = function () {
             // URL utama: subdomain clinqoo.biz.id (public_url) — pages.dev hanya cadangan.
             const url = d.public_url || (d.public_domain ? ('https://' + d.public_domain) : '') || (d.deployment && d.deployment.url) || d.pages_url || '';
             return { success: true, url: url, pages_url: d.pages_url || '', public_domain: d.public_domain || '', pages_project: d.pages_project || '', file_count: d.fileCount || 0, message: 'Situs berhasil di-deploy' + (url ? ' ke ' + url : '') + (d.public_domain ? ' (subdomain clinqoo.biz.id aktif)' : '') + '.' };
+        }
+
+        // manage_domain: AI kelola domain kustom + setel record DNS langsung (via /api/deploy)
+        async function toolManageDomain(args) {
+            const pid = currentProjectId;
+            if (!pid) return { success: false, error: 'Tidak ada proyek aktif. Buka proyek dulu dari daftar proyek.' };
+            const action = String((args && args.action) || 'status').trim().toLowerCase();
+            const domain = args && args.domain ? String(args.domain).trim().toLowerCase() : '';
+            if (['dns_status', 'set_dns', 'delete_dns'].indexOf(action) !== -1 && !domain) {
+                return { success: false, error: 'Parameter domain wajib untuk action ' + action + '.' };
+            }
+            if (action === 'status') {
+                const res = await fetch(TOOL_API_BASE + '/api/deploy?project_id=' + encodeURIComponent(pid), { headers: { 'Content-Type': 'application/json' } });
+                const d = await res.json().catch(() => ({}));
+                if (!res.ok || d.error) return { success: false, error: d.error || 'Gagal mengambil status domain.' };
+                const doms = (d.domains || []).map(function (x) { return x.name + ' (' + x.status + ')'; });
+                return {
+                    success: true,
+                    deployed: !!d.deployed,
+                    pages_project: d.pages_project || '',
+                    pages_url: d.pages_url || '',
+                    public_url: d.public_url || '',
+                    custom_domains: doms.length ? doms : [],
+                    dns_target: (d.pages_project || '') ? d.pages_project + '.pages.dev' : '',
+                    message: (doms.length ? 'Domain terpasang: ' + doms.join(', ') + '. ' : 'Belum ada domain kustom terpasang. ') + 'Situs aktif di ' + (d.public_url || d.pages_url || '—') + '. Untuk domain kustom baru: set DNS CNAME -> ' + ((d.pages_project || '') ? d.pages_project + '.pages.dev' : '<proyek>.pages.dev') + ', lalu panggil action add.'
+                };
+            }
+            const map = { add: 'add_domain', remove: 'remove_domain', dns_status: 'dns_status', set_dns: 'set_dns', delete_dns: 'delete_dns' };
+            const apiAction = map[action];
+            if (!apiAction) return { success: false, error: 'Action tidak dikenal: ' + action + '. Pakai: status, add, remove, dns_status, set_dns, delete_dns.' };
+            const res = await fetch(TOOL_API_BASE + '/api/deploy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project_id: pid, action: apiAction, domain: domain }) });
+            const d = await res.json().catch(() => ({}));
+            if (!res.ok || d.error) return { success: false, error: d.error || ('Gagal ' + action + ' domain' + (domain ? ' ' + domain : '') + '.') };
+            if (apiAction === 'add_domain') return { success: true, domain: domain, message: 'Domain ' + domain + ' dipasang ke situs. Verifikasi DNS/SSL bisa berlangsung beberapa menit.' };
+            if (apiAction === 'remove_domain') return { success: true, domain: domain, message: 'Domain ' + domain + ' dilepas dari situs.' };
+            return {
+                success: true,
+                action: apiAction,
+                zone: d.zone || '',
+                records: d.records || [],
+                record: d.record || null,
+                removed: d.removed || [],
+                removed_conflicts: d.removed_conflicts || [],
+                pages_target: d.pages_target || '',
+                already_ok: !!d.already_ok,
+                note: d.note || ''
+            };
         }
 
         async function toolAddEnvVar(args) {

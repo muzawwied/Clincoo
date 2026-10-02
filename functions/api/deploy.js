@@ -563,6 +563,64 @@ export async function onRequestPost({ request, env }) {
       return json({ success: true, action: body.action, domain });
     }
 
+    // ===== AI DNS MANAGER: tool manage_domain (action set_dns/dns_status/delete_dns) =====
+    // AI Clincoo bisa langsung menyetel record DNS domain kustom — asal zona domainnya
+    // ada di akun Cloudflare yang tersimpan di Pengaturan Deploy (creds di atas).
+    if (body.action === 'dns_status' || body.action === 'set_dns' || body.action === 'delete_dns') {
+      const domain = String(body.domain || '').trim().toLowerCase();
+      if (!domain || !/^([a-z0-9-]+\.)+[a-z]{2,}$/.test(domain)) return json({ error: 'Domain tidak valid' }, 400);
+      // Cari zona: domain lalu induknya (www.hypeemart.my.id -> hypeemart.my.id)
+      let zone = null;
+      const parts = domain.split('.');
+      for (let i = 0; i < parts.length - 1 && !zone; i++) {
+        const cand = parts.slice(i).join('.');
+        if (cand.split('.').length < 2) break;
+        try {
+          const r = await cfFetch('/zones?name=' + encodeURIComponent(cand), creds.apiKey);
+          if (Array.isArray(r) && r.length) zone = r[0];
+        } catch (e) {}
+      }
+      if (!zone) return json({ error: 'Zona DNS untuk ' + domain + ' tidak ditemukan di akun Cloudflare yang tersimpan di Pengaturan Deploy. Kalau domainnya dikelola provider lain (IDWebhost, Namecheap, dll), record DNS harus dibuat di panel provider tersebut: CNAME ' + domain + ' -> ' + name + '.pages.dev' }, 404);
+      const target = name + '.pages.dev';
+      let recs = [];
+      try { recs = await cfFetch('/zones/' + zone.id + '/dns_records?name=' + encodeURIComponent(domain) + '&per_page=100', creds.apiKey) || []; } catch (e) {}
+      const relevant = (recs || []).filter(r => r && ['CNAME', 'A', 'AAAA', 'TXT'].includes(r.type));
+      const summary = relevant.map(r => ({ id: r.id, type: r.type, name: r.name, content: r.content, proxied: !!r.proxied }));
+      if (body.action === 'dns_status') {
+        return json({ success: true, zone: zone.name, records: summary, needed: { type: 'CNAME', name: domain, content: target, proxied: true }, pages_target: target, note: 'Setel CNAME ' + domain + ' -> ' + target + ' (proxied) supaya domain mengarah ke situs.' });
+      }
+      if (body.action === 'delete_dns') {
+        let removed = [];
+        for (const r of relevant) {
+          try { await cfFetch('/zones/' + zone.id + '/dns_records/' + r.id, creds.apiKey, { method: 'DELETE' }); removed.push(r.type + ' ' + r.name + ' -> ' + r.content); } catch (e) {}
+        }
+        return json({ success: true, removed: removed, zone: zone.name });
+      }
+      // set_dns: pastikan CNAME -> <pages>.pages.dev (proxied). Konflik A/AAAA di nama
+      // yang sama otomatis dihapus (CNAME tidak bisa berdampingan dengan A/AAAA).
+      let removedConflicts = [];
+      for (const r of relevant) {
+        if (r.type === 'A' || r.type === 'AAAA') {
+          try { await cfFetch('/zones/' + zone.id + '/dns_records/' + r.id, creds.apiKey, { method: 'DELETE' }); removedConflicts.push(r.type + ' ' + (r.content || '')); } catch (e) {}
+        }
+      }
+      const existing = relevant.find(r => r.type === 'CNAME');
+      if (existing && existing.content === target) {
+        return json({ success: true, already_ok: true, record: { type: 'CNAME', name: domain, content: target, proxied: existing.proxied }, removed_conflicts: removedConflicts, zone: zone.name });
+      }
+      try {
+        let rec;
+        if (existing) {
+          rec = await cfFetch('/zones/' + zone.id + '/dns_records/' + existing.id, creds.apiKey, { method: 'PUT', body: JSON.stringify({ type: 'CNAME', name: domain, content: target, proxied: true, comment: 'Dipasang otomatis oleh AI Clincoo' }) });
+        } else {
+          rec = await cfFetch('/zones/' + zone.id + '/dns_records', creds.apiKey, { method: 'POST', body: JSON.stringify({ type: 'CNAME', name: domain, content: target, proxied: true, comment: 'Dipasang otomatis oleh AI Clincoo' }) });
+        }
+        return json({ success: true, action: 'set_dns', record: { type: 'CNAME', name: rec.name || domain, content: rec.content || target, proxied: rec.proxied !== false }, updated: !!existing, removed_conflicts: removedConflicts, zone: zone.name, note: 'Record CNAME ' + domain + ' -> ' + target + ' aktif. Domain bisa dipasang ke situs lewat manage_domain action add.' });
+      } catch (e) {
+        return json({ error: 'Gagal menyetel record DNS: ' + e.message }, 500);
+      }
+    }
+
     // Kuota deploy per paket langganan (Starter 5x/bln, Pro 25x/bln, Bisnis tanpa batas)
     const user = await currentUser(env, request);
     const planInfo = await getEffectivePlan(db, user);
