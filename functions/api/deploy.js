@@ -207,7 +207,7 @@ const GATE_PAGE_HTML = `<!DOCTYPE html>
 // === URL PREVIEW PER PROYEK ===
 // Preview di-host di project Pages terpisah '<name>-prv' (custom domain Pages hanya
 // melayani branch produksi, jadi preview tidak bisa berupa branch di project utama).
-// URL preview mengikuti pola domain publik: <prvName>.clinqoo.biz.id.
+// URL preview mengikuti pola domain publik: <prvName>.clincoo.biz.id.
 function prvNameFor(name) {
   return name.slice(0, 58) + '-prv';
 }
@@ -226,22 +226,27 @@ async function lookupProject(creds, name) {
 // layanan Cloudflare (upload-token dll. bisa balas "Project not found" sesaat
 // setelah create — race condition nyata yang pernah membuat deploy gagal).
 // Domain publik bawaan: tiap proyek yang dideploy otomatis dapat
-// <project>.clinqoo.biz.id selain <project>.pages.dev.
-// CATATAN PENTING: zona clinqoo.biz.id bisa berada di akun Cloudflare yang
+// <project>.clincoo.biz.id selain <project>.pages.dev.
+// CATATAN PENTING: zona clincoo.biz.id bisa berada di akun Cloudflare yang
 // BERBEDA dari akun tempat project Pages berada. Kalau begitu, Cloudflare
 // TIDAK otomatis membuat record DNS saat domain dipasang, dan subdomain
 // tidak pernah aktif (status domain stuck "pending: CNAME record not set").
 // Karena itu di sini kita juga membuat/memperbaiki record CNAME
-// <project>.clinqoo.biz.id -> <project>.pages.dev lewat API DNS.
+// <project>.clincoo.biz.id -> <project>.pages.dev lewat API DNS.
 // Token API Cloudflare di pengaturan deploy harus punya permission:
 //   Account (akun Pages): Cloudflare Pages -> Edit
-//   Zone (clinqoo.biz.id): DNS -> Edit  (+ Zone -> Read untuk lookup zona)
+//   Zone (clincoo.biz.id): DNS -> Edit  (+ Zone -> Read untuk lookup zona)
 // Kalau token tidak bisa mengelola zona, gagal diam-diam dan link publik
 // tetap memakai pages.dev (halaman Domain Kustom menampilkan status pending).
-const PUB_SUFFIX = '.clinqoo.biz.id';
-const PUB_ZONE = 'clinqoo.biz.id';
+const PUB_SUFFIX = '.clincoo.biz.id';
+const PUB_ZONE = 'clincoo.biz.id';
+// Domain publik LEGACY: situs yang dideploy sebelum migrasi domain masih
+// memakai <project>.clinqoo.biz.id. Tetap dikenali (dikecualikan dari daftar
+// domain kustom, dibersihkan saat unpublish) supaya situs lama tetap rapi.
+const LEGACY_PUB_SUFFIX = '.clinqoo.biz.id';
+const LEGACY_PUB_ZONE = 'clinqoo.biz.id';
 
-// Pastikan record CNAME <project>.clinqoo.biz.id -> <project>.pages.dev ada.
+// Pastikan record CNAME <project>.clincoo.biz.id -> <project>.pages.dev ada.
 // Return true kalau record sudah benar / berhasil dibuat, false kalau tidak
 // bisa dikelola dari sini (tanpa akses zona, dsb).
 async function ensurePublicDomainDns(creds, domain, pagesName) {
@@ -282,11 +287,12 @@ async function ensurePublicDomainDns(creds, domain, pagesName) {
   } catch (e) { return false; }
 }
 
-// Hapus record CNAME <domain> dari zona publik clinqoo.biz.id (dipakai saat unpublish
+// Hapus record CNAME <domain> dari zona publik clincoo.biz.id / legacy (dipakai saat unpublish
 // supaya subdomain gratis tidak menggantung menunjuk project yang sudah dihapus).
 async function removePublicDomainDns(creds, domain) {
   try {
-    const zones = await cfFetch('/zones?name=' + PUB_ZONE, creds.apiKey);
+    const zoneName = domain.endsWith(LEGACY_PUB_SUFFIX) ? LEGACY_PUB_ZONE : PUB_ZONE;
+    const zones = await cfFetch('/zones?name=' + zoneName, creds.apiKey);
     const zoneId = zones && zones.length && zones[0].id;
     if (!zoneId) return;
     let recs = [];
@@ -419,13 +425,15 @@ export async function onRequestGet({ request, env }) {
       }
     }
     if (project && Array.isArray(doms)) {
-      // Kecualikan subdomain publik otomatis (<project>.clinqoo.biz.id) dari daftar
+      // Kecualikan subdomain publik otomatis (<project>.clincoo.biz.id & legacy) dari daftar
       // "domain kustom" — itu domain gratis bawaan, bukan domain kustom milik user.
-      domains = doms.filter(x => x && x.name !== name + PUB_SUFFIX).map(x => ({ name: x.name, status: x.status || 'pending' }));
+      domains = doms.filter(x => x && x.name !== name + PUB_SUFFIX && !x.name.endsWith(LEGACY_PUB_SUFFIX)).map(x => ({ name: x.name, status: x.status || 'pending' }));
     }
     let publicUrl = pagesUrl;
     if (Array.isArray(doms)) {
-      const pd = doms.find(x => x && x.name === name + PUB_SUFFIX && (x.status === 'active' || x.status === 'initializing'));
+      const isUp = function (x) { return x && (x.status === 'active' || x.status === 'initializing'); };
+      const pd = doms.find(x => x && x.name === name + PUB_SUFFIX && isUp(x))
+        || doms.find(x => x && x.name === name + LEGACY_PUB_SUFFIX && isUp(x));
       if (pd) publicUrl = 'https://' + pd.name;
     }
 
@@ -520,19 +528,19 @@ export async function onRequestPost({ request, env }) {
           for (const d of (pdoms || [])) {
             if (!d || !d.name) continue;
             try { await cfFetch('/accounts/' + creds.accountId + '/pages/projects/' + prvName0 + '/domains/' + d.name, creds.apiKey, { method: 'DELETE' }); } catch (e) {}
-            if (d.name.endsWith(PUB_SUFFIX)) await removePublicDomainDns(creds, d.name);
+            if (d.name.endsWith(PUB_SUFFIX) || d.name.endsWith(LEGACY_PUB_SUFFIX)) await removePublicDomainDns(creds, d.name);
           }
           await cfFetch('/accounts/' + creds.accountId + '/pages/projects/' + prvName0, creds.apiKey, { method: 'DELETE' });
         } catch (e) {}
         // Cloudflare menolak menghapus project Pages yang masih punya custom domain
-        // terpasang (termasuk subdomain gratis <project>.clinqoo.biz.id) —
+        // terpasang (termasuk subdomain gratis <project>.clincoo.biz.id) —
         // lepaskan semua domain dulu, lalu hapus project.
         let doms = [];
         try { doms = await cfFetch('/accounts/' + creds.accountId + '/pages/projects/' + name + '/domains', creds.apiKey) || []; } catch (e) { doms = []; }
         for (const d of (doms || [])) {
           if (!d || !d.name) continue;
           try { await cfFetch('/accounts/' + creds.accountId + '/pages/projects/' + name + '/domains/' + d.name, creds.apiKey, { method: 'DELETE' }); } catch (e) {}
-          if (d.name.endsWith(PUB_SUFFIX)) await removePublicDomainDns(creds, d.name);
+          if (d.name.endsWith(PUB_SUFFIX) || d.name.endsWith(LEGACY_PUB_SUFFIX)) await removePublicDomainDns(creds, d.name);
         }
         await cfFetch('/accounts/' + creds.accountId + '/pages/projects/' + name, creds.apiKey, { method: 'DELETE' });
       } catch (e) {
