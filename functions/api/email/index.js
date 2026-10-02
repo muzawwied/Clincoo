@@ -21,7 +21,7 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization'
 };
 
-const QUOTA_LIMIT = 3000;
+const QUOTA_LIMIT = 1000;
 const KEY_PREFIX = 'clc_email_';
 
 function json(data, status = 200) {
