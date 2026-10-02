@@ -136,6 +136,8 @@
   }
 
   var AMOUNT = 0;
+  var lastQrSrc = null;
+  var savedQrKey = null;
   var CACHE_KEY = 'clinqoo_pay_' + orderId;
   function saveCache(d) {
     var data = {
@@ -146,8 +148,9 @@
       status: d.status
     };
     try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch (e) {}
-    // simpan QR sbg dataURL agar refresh berikutnya NOL network untuk gambarnya
-    if (d.qr_image && !String(d.qr_image).indexOf('data:') === 0) {
+    // simpan QR sbg dataURL agar refresh berikutnya NOL network untuk gambarnya (sekali saja per QR)
+    if (d.qr_image && savedQrKey !== d.qr_image) {
+      savedQrKey = d.qr_image;
       fetch(d.qr_image).then(function (r) { return r.blob(); }).then(function (b) {
         var fr = new FileReader();
         fr.onload = function () {
@@ -168,8 +171,9 @@
     if (d.description) { el('desc').textContent = d.description; }
     else { el('desc').className = 'hidden'; }
     el('copy-order').textContent = d.order_id || orderId;
-    if (d.qr_image) {
-      el('qr').src = String(d.qr_image).indexOf('data:') === 0 ? d.qr_image : d.qr_image + '&v=' + Date.now();
+    if (d.qr_image && d.qr_image !== lastQrSrc) {
+      lastQrSrc = d.qr_image;
+      el('qr').src = d.qr_image;
       el('qr').classList.remove('hidden');
       el('qr-skel').className = 'hidden';
       el('dl-btn').classList.remove('hidden');
