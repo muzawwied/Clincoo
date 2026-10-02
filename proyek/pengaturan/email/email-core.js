@@ -64,7 +64,6 @@ function renderEmailState(mode) {
   document.getElementById('kirim-login').classList.toggle('hidden', mode !== 'login');
   document.getElementById('kirim-inactive').classList.toggle('hidden', mode !== 'inactive');
   document.getElementById('kirim-active').classList.toggle('hidden', off);
-  document.getElementById('email-menu-wrap').classList.toggle('hidden', mode !== 'active');
   if (mode === 'login') {
     document.getElementById('kirim-login-btn').href = '/auth/?next=' + encodeURIComponent(location.pathname + location.search);
   }
@@ -90,17 +89,11 @@ function emailGate(onActive) {
     });
 }
 
-// --- menu pop-up bawah ---
-function closeEmailMenu() { var p = document.getElementById('email-menu-pop'); if (p) p.classList.add('hidden'); }
-document.addEventListener('click', function (e) {
-  var pop = document.getElementById('email-menu-pop');
-  var btn = document.getElementById('email-menu-btn');
-  if (pop && !pop.classList.contains('hidden') && !pop.contains(e.target) && !(btn && btn.contains(e.target))) closeEmailMenu();
-});
+// --- menu titik-3 header: navigasi email ---
 document.addEventListener('DOMContentLoaded', function () {
   try {
-    document.querySelectorAll('#email-menu-pop a').forEach(function (a) {
-      if (a.pathname === location.pathname) a.classList.add('text-black', 'dark:text-white', 'font-semibold');
+    document.querySelectorAll('#header-more-menu a').forEach(function (a) {
+      if (a.pathname === location.pathname) a.classList.add('font-semibold');
     });
   } catch (e) {}
 });
