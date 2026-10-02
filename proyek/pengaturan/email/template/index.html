@@ -2,22 +2,22 @@
 <html lang="id">
 <head>
 <script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
-  <script src="../../../js/accent-init.js"></script>
+  <script src="../../../../js/accent-init.js"></script>
 <script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
-  <script src="../../../js/current-project.js?v=1"></script>
+  <script src="../../../../js/current-project.js?v=1"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
     <link rel="manifest" href="../../../manifest.json">
     <link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
-  <title>Email — Clincoo</title>
+  <title>Template — Clincoo Email</title>
     <meta name="description" content="Pengaturan: Email — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
     <meta name="robots" content="noindex">
     <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Clincoo">
-    <meta property="og:title" content="Email — Clincoo">
+    <meta property="og:title" content="Pengaturan: Email — Clincoo">
     <meta property="og:description" content="Pengaturan: Email — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Clincoo">
@@ -159,7 +159,7 @@
 <script src="../../../js/i18n-dict.js" defer></script>
 <script src="../../../js/i18n.js" defer></script>
 </head>
-<body data-show-quota="1" class="text-gray-900 antialiased h-screen w-full overflow-hidden relative bg-white">
+<body class="text-gray-900 antialiased h-screen w-full overflow-hidden relative bg-white">
   <script>(function(){var t=localStorage.getItem("clinqoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
   <div class="w-full h-full overflow-y-auto hide-scrollbar flex flex-col items-center">
     <header class="fixed top-0 left-0 right-0 z-30 px-3 pt-3 pointer-events-none flex justify-between items-center">
@@ -212,8 +212,8 @@
         <div class="py-5">
           <div class="flex items-start sm:items-center justify-between gap-3 mb-4">
             <div>
-              <h4 id="sec-title" class="text-base font-semibold text-gray-900 dark:text-white">Email</h4>
-              <p id="sec-sub" class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Log pengiriman beserta filternya — plus kirim email baru.</p>
+              <h4 id="sec-title" class="text-base font-semibold text-gray-900 dark:text-white">Template</h4>
+              <p id="sec-sub" class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Template isi email siap pakai.</p>
             </div>
             <span id="email-quota-mini" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 whitespace-nowrap flex-shrink-0">0 / 1.000</span>
           </div>
@@ -234,70 +234,11 @@
           <!-- Aktif: mini-app email -->
           <div id="kirim-active" class="hidden flex-col">
 
-            <!-- Email (utama): log + filter -->
-            <div id="sec-email" class="flex flex-col">
-              <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
-                <input id="log-search" type="search" placeholder="Cari subjek atau penerima…" class="w-full sm:w-56 px-3.5 py-2 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
-                <div class="flex items-center gap-2">
-                  <button type="button" data-logf="semua" onclick="setLogFilter('semua')" class="px-3 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 transition-colors">Semua</button>
-                  <button type="button" data-logf="terkirim" onclick="setLogFilter('terkirim')" class="px-3 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 transition-colors">Terkirim</button>
-                  <button type="button" data-logf="gagal" onclick="setLogFilter('gagal')" class="px-3 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 transition-colors">Gagal</button>
-                </div>
-                <div class="sm:ml-auto flex justify-end">
-                  <button type="button" onclick="toggleKirimForm()" id="kirim-toggle-btn" class="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Kirim Email</button>
-                </div>
-              </div>
-
-              <form id="kirim-form" onsubmit="submitKirim(event)" class="hidden flex-col gap-3 border-b border-gray-100 dark:border-slate-800 pb-5 mb-4">
-                <div class="grid sm:grid-cols-2 gap-3">
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Penerima</label>
-                    <input id="kirim-to" type="email" required placeholder="pelanggan@contoh.com" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Balasan ke (opsional)</label>
-                    <input id="kirim-reply" type="email" placeholder="kamu@domainmu.com" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
-                  </div>
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Subjek</label>
-                  <input id="kirim-subject" type="text" required placeholder="Subjek email" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Isi email (HTML)</label>
-                  <textarea id="kirim-html" rows="5" placeholder="&lt;p&gt;Isi email dalam HTML&lt;/p&gt;" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors font-mono"></textarea>
-                </div>
-                <div class="flex items-center gap-2">
-                  <button type="submit" id="kirim-send-btn" class="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Kirim</button>
-                  <button type="button" onclick="toggleKirimForm()" class="px-5 py-2.5 text-sm font-medium border border-gray-200 dark:border-slate-700 rounded-full hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">Batal</button>
-                </div>
-              </form>
-
-              <div id="kirim-table-wrap" class="pt-1">
-                <div class="flex items-center justify-between gap-3 mb-3">
-                  <p class="text-sm font-semibold text-gray-900 dark:text-white">Histori pengiriman</p>
-                  <span class="text-xs text-gray-400 dark:text-gray-500"><span id="log-count">0 entri</span> · kuota dari email terkirim bulan ini</span>
-                </div>
-                <div class="overflow-x-auto">
-                  <table class="w-full text-xs text-left border-collapse">
-                    <thead>
-                      <tr class="text-gray-400 dark:text-gray-500 border-b border-gray-200 dark:border-slate-700">
-                        <th class="py-2 pr-3 font-medium whitespace-nowrap">Waktu</th>
-                        <th class="py-2 pr-3 font-medium">Subjek</th>
-                        <th class="py-2 pr-3 font-medium">Penerima</th>
-                        <th class="py-2 pr-3 font-medium">Status</th>
-                        <th class="py-2 font-medium text-right">Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody id="kirim-log" class="divide-y divide-gray-100 dark:divide-slate-800">
-                      <tr><td colspan="5" class="py-2.5 text-gray-400 dark:text-gray-500">Belum ada pengiriman.</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+            <div class="py-10 flex flex-col items-center justify-center text-center">
+              <svg class="w-10 h-10 text-gray-300 dark:text-slate-600 mb-3 mx-auto" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path stroke-linecap="round" d="M3 9h18"></path><path d="M9 21V9"></path></svg>
+              <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Template</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Template isi email siap pakai untuk pengiriman berulang. Fitur ini segera hadir.</p>
             </div>
-
-
           </div>
         </div>
       </div>
@@ -335,111 +276,9 @@
   </script>
     <script>if (window.lucide) { lucide.createIcons(); }</script>
 
-<script src="email-core.js"></script>
+<script src="../email-core.js"></script>
 <script>
-  // ===== Email: halaman utama (log) =====
-var _logRows = [];
-  var _logFilter = 'semua';
-
-  function applyLogFilter() {
-    var kw = '';
-    var si = document.getElementById('log-search');
-    if (si) kw = (si.value || '').toLowerCase().trim();
-    var rows = _logRows.filter(function (r) {
-      if (_logFilter !== 'semua' && r.status !== _logFilter) return false;
-      if (kw && String(r.subject || '').toLowerCase().indexOf(kw) === -1 && String(r.to || '').toLowerCase().indexOf(kw) === -1) return false;
-      return true;
-    });
-    var tb = document.getElementById('kirim-log');
-    if (!tb) return;
-    if (!rows.length) {
-      tb.innerHTML = '<tr><td colspan="5" class="py-2.5 text-gray-400 dark:text-gray-500">Tidak ada pengiriman yang cocok.</td></tr>';
-    } else {
-      tb.innerHTML = rows.map(function (r) {
-        return '<tr>' +
-          '<td class="py-2.5 pr-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">' + _esc(r.time) + '</td>' +
-          '<td class="py-2.5 pr-3 text-gray-800 dark:text-gray-200">' + _esc(r.subject) + '</td>' +
-          '<td class="py-2.5 pr-3 text-gray-500 dark:text-gray-400">' + _esc(r.to) + '</td>' +
-          '<td class="py-2.5 pr-3 font-medium ' + (r.status === 'terkirim' ? 'text-green-600' : 'text-red-500') + '">' + _esc(r.status) + '</td>' +
-          '<td class="py-2.5 text-right"><button type="button" onclick="hapusLog(' + r.id + ')" class="text-red-500 hover:underline font-medium">Hapus</button></td></tr>';
-      }).join('');
-    }
-    var c = document.getElementById('log-count');
-    if (c) c.textContent = rows.length + ' entri';
-  }
-
-  function setLogFilter(f) {
-    _logFilter = f;
-    var btns = document.querySelectorAll('[data-logf]');
-    for (var i = 0; i < btns.length; i++) {
-      var b = btns[i], on = b.getAttribute('data-logf') === f;
-      ['bg-black','text-white','dark:bg-white','dark:text-black'].forEach(function (c) { b.classList.toggle(c, on); });
-      ['text-gray-600','dark:text-gray-300'].forEach(function (c) { b.classList.toggle(c, !on); });
-    }
-    applyLogFilter();
-  }
-
-  function renderHistory(data) {
-    var q = document.getElementById('email-quota-mini');
-    if (q) q.textContent = (data.used || 0).toLocaleString('id-ID') + ' / ' + (data.limit || 1000).toLocaleString('id-ID');
-    _logRows = (data.items && data.items.length) ? data.items : [];
-    applyLogFilter();
-    try { localStorage.setItem(_cacheKey(), JSON.stringify(data)); } catch (e) {}
-  }
-
-  function loadHistory() {
-    var cached = _readCache();
-    if (cached && cached.items) { renderEmailState('active'); renderHistory(cached); }
-    fetch(API_BASE + '/email?action=history&project_id=' + encodeURIComponent(_pid()), { headers: _hdrs() })
-      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
-      .then(function (data) { renderEmailState('active'); renderHistory(data); })
-      .catch(function (st) {
-        if (st === 401) { renderEmailState('login'); }
-        else if (st === 404) { renderEmailState('inactive'); }
-        else if (!cached) { renderEmailState('inactive'); }
-      });
-  }
-
-  function toggleKirimForm() {
-    var f = document.getElementById('kirim-form');
-    f.classList.toggle('hidden');
-    f.classList.toggle('flex');
-  }
-
-  function submitKirim(ev) {
-    ev.preventDefault();
-    var btn = document.getElementById('kirim-send-btn');
-    btn.disabled = true; btn.textContent = 'Mengirim…';
-    _apiPost('test', {
-      to: document.getElementById('kirim-to').value.trim(),
-      subject: document.getElementById('kirim-subject').value.trim(),
-      html: document.getElementById('kirim-html').value.trim() || '<p>' + document.getElementById('kirim-subject').value.trim() + '</p>',
-      reply_to: document.getElementById('kirim-reply').value.trim()
-    }).then(function () {
-      btn.disabled = false; btn.textContent = 'Kirim';
-      emailToast('Email terkirim', true);
-      document.getElementById('kirim-form').reset();
-      toggleKirimForm();
-      loadHistory();
-    }).catch(function (e) {
-      btn.disabled = false; btn.textContent = 'Kirim';
-      if (e && e.status === 401) { renderEmailState('login'); emailToast('Masuk dulu untuk mengirim email', false); return; }
-      emailToast(e && e.error ? e.error : 'Gagal mengirim (' + (e && e.status || e) + ')', false);
-    });
-  }
-
-  function hapusLog(id) {
-    if (!confirm('Hapus entri histori ini? Kuota bulanan tidak berubah.')) return;
-    _apiPost('delete_log', { id: id })
-      .then(function () { emailToast('Entri dihapus', true); loadHistory(); })
-      .catch(function (e) { emailToast(e && e.error ? e.error : 'Gagal menghapus (' + (e && e.status || e) + ')', false); });
-  }
-
-  document.addEventListener('DOMContentLoaded', function () {
-    var si = document.getElementById('log-search');
-    if (si) si.addEventListener('input', applyLogFilter);
-    loadHistory();
-  });
+document.addEventListener('DOMContentLoaded', function () { emailGate(); });
 </script>
 
 

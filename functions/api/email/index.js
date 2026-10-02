@@ -7,8 +7,8 @@
 //   2. Kustom   : dari alamat domain kustom pengguna (domain harus ter-onboard di akun
 //                 Cloudflare Clincoo / terhubung lewat Zona Domain Kustom).
 //
-// Kuota bulanan dihitung LANGSUNG dari histori pengiriman (email_log bulan berjalan,
-// status terkirim) — satu sumber kebenaran, tidak ada counter terpisah.
+// Kuota bulanan = penghitung tersendiri di email_settings (quota_used + quota_month):
+// naik saat kirim sukses, TIDAK turun saat entri histori dihapus.
 //
 // GET  ?action=config&project_id=...                          → status, pengaturan, API key, kuota [auth]
 // GET  ?action=history&project_id=...                         → histori kirim (CRUD: read)    [auth]
@@ -114,12 +114,28 @@ async function getRow(db, projectId) {
   return await db.prepare('SELECT * FROM email_settings WHERE project_id = ?').bind(projectId).first();
 }
 
-// Kuota bulanan langsung dari histori pengiriman (satu sumber kebenaran).
+// Kuota bulanan dari penghitung email_settings. Bulan baru / belum pernah dihitung →
+// inisialisasi SEKALI dari histori bulan berjalan, lalu lepas dari histori
+// (hapus entri log tidak mengurangi kuota: email sudah benar-benar terkirim).
 async function quotaUsed(db, projectId) {
+  const month = new Date().toISOString().slice(0, 7);
+  const row = await db.prepare('SELECT quota_used, quota_month FROM email_settings WHERE project_id = ?').bind(projectId).first();
+  if (row && row.quota_month === month && row.quota_used !== null && row.quota_used !== undefined) return row.quota_used;
   const r = await db.prepare(
     "SELECT COUNT(*) AS c FROM email_log WHERE project_id = ? AND status = 'terkirim' AND created_at >= datetime('now', 'start of month')"
   ).bind(projectId).first();
-  return (r && r.c) || 0;
+  const used = (r && r.c) || 0;
+  try {
+    await db.prepare('UPDATE email_settings SET quota_used = ?, quota_month = ? WHERE project_id = ?').bind(used, month, projectId).run();
+  } catch (e) {}
+  return used;
+}
+
+async function bumpQuota(db, projectId) {
+  await quotaUsed(db, projectId); // pastikan penghitung bulan ini sudah terinisialisasi
+  try {
+    await db.prepare('UPDATE email_settings SET quota_used = quota_used + 1 WHERE project_id = ?').bind(projectId).run();
+  } catch (e) {}
 }
 
 async function guardEmail(env, request, projectId) {
@@ -254,6 +270,7 @@ export async function onRequestPost({ request, env }) {
     });
     await env.DB.prepare('INSERT INTO email_log (project_id, to_addr, subject, status) VALUES (?, ?, ?, ?)')
       .bind(row.project_id, body.to, String(body.subject).slice(0, 200), result.sent ? 'terkirim' : 'gagal').run();
+    if (result.sent) await bumpQuota(env.DB, row.project_id);
     return json({ sent: !!result.sent, reason: result.sent ? null : friendlyEmailError(result.code, result.reason) });
   }
 
@@ -320,6 +337,7 @@ export async function onRequestPost({ request, env }) {
     });
     await env.DB.prepare('INSERT INTO email_log (project_id, to_addr, subject, status) VALUES (?, ?, ?, ?)')
       .bind(projectId, body.to, subject, result.sent ? 'terkirim' : 'gagal').run();
+    if (result.sent) await bumpQuota(env.DB, projectId);
     // Status bukan 5xx: Cloudflare mengganti body 5xx dengan halaman errornya sendiri.
     if (!result.sent) return json({ error: 'Gagal mengirim: ' + friendlyEmailError(result.code, result.reason) }, 422);
     return json({ ok: true });
