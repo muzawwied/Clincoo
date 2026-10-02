@@ -6,6 +6,30 @@
 //   POST   { project_id }   -> buat/ganti secret baru
 //   DELETE ?project_id=xxx  -> cabut secret
 
+import { currentUser } from '../../user-scope.js';
+
+// Kepemilikan proyek (pola sama dengan requireOwned di pay.js / mcp-token.js):
+// hanya pemilik proyek (atau anggota kolaborasi project_members) yang boleh
+// mengakses data AI proyek ini. Sebelumnya SEMUA user login bisa mengakses
+// proyek siapa pun asal tahu project_id (celah IDOR).
+async function requireOwnedProject(env, request, projectId) {
+  const user = await currentUser(env, request);
+  if (!user) return { error: json({ error: 'Login diperlukan', need_login: true }, 401) };
+  if (!projectId) return { error: json({ error: 'project_id required' }, 400) };
+  const uid = Number(user.id);
+  let row = null;
+  try { row = await env.DB.prepare('SELECT user_id FROM user_projects WHERE id = ?').bind(projectId).first(); } catch (e) { row = null; }
+  if (row) {
+    if (Number(row.user_id) === uid) return { user: user };
+    try {
+      const mem = await env.DB.prepare('SELECT id FROM project_members WHERE project_id = ? AND user_id = ?').bind(projectId, uid).first();
+      if (mem) return { user: user };
+    } catch (e) {}
+    return { error: json({ error: 'Proyek tidak ditemukan atau bukan milikmu' }, 404) };
+  }
+  return { error: json({ error: 'Proyek tidak ditemukan atau bukan milikmu' }, 404) };
+}
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
@@ -34,7 +58,8 @@ export async function onRequestGet({ request, env }) {
   try {
     await initSecretTable(db);
     const projectId = new URL(request.url).searchParams.get('project_id') || '';
-    if (!projectId) return json({ error: 'project_id required' }, 400);
+    const own = await requireOwnedProject(env, request, projectId);
+    if (own.error) return own.error;
     const row = await db.prepare('SELECT secret, created_at, last_used FROM ai_router_secrets WHERE project_id = ?').bind(projectId).first();
     if (!row) return json({ exists: false });
     return json({ exists: true, secret: row.secret, created_at: row.created_at, last_used: row.last_used });
@@ -51,7 +76,8 @@ export async function onRequestPost({ request, env }) {
     let body = {};
     try { body = await request.json(); } catch (e) {}
     const projectId = String(body.project_id || '');
-    if (!projectId) return json({ error: 'project_id required' }, 400);
+    const own = await requireOwnedProject(env, request, projectId);
+    if (own.error) return own.error;
     const secret = newSecret();
     const now = new Date().toISOString();
     await db.prepare('INSERT INTO ai_router_secrets (project_id, secret, created_at) VALUES (?, ?, ?) ON CONFLICT(project_id) DO UPDATE SET secret = excluded.secret, created_at = excluded.created_at, last_used = NULL')
@@ -69,7 +95,8 @@ export async function onRequestDelete({ request, env }) {
   try {
     await initSecretTable(db);
     const projectId = new URL(request.url).searchParams.get('project_id') || '';
-    if (!projectId) return json({ error: 'project_id required' }, 400);
+    const own = await requireOwnedProject(env, request, projectId);
+    if (own.error) return own.error;
     const res = await db.prepare('DELETE FROM ai_router_secrets WHERE project_id = ?').bind(projectId).run();
     return json({ success: true, revoked: (res.meta && res.meta.changes) > 0 });
   } catch (err) {

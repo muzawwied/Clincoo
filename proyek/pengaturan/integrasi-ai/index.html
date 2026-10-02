@@ -454,7 +454,10 @@
 
 <script>
   // ===== Integrasi AI (Clincoo Open API): secret per proyek, model, log real-time, analitik (Chart.js) =====
-  var AI_API_BASE = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev/api' : '/api';
+  // Host milik project ini sendiri (app produksi + preview) -> panggil /api same-origin: 
+  // tanpa preflight CORS, kebal terhadap ketergantungan lintas-domain. Host lain (mirror,
+  // situs deploy user) tetap pakai URL penuh.
+  var AI_API_BASE = (location.hostname === 'app.clincoo.buzz' || location.hostname === 'clincoo-be2.pages.dev' || location.hostname.slice(-22) === '.clincoo-be2.pages.dev' || ['localhost','127.0.0.1'].indexOf(location.hostname) !== -1) ? '/api' : 'https://clincoo-be2.pages.dev/api';
   var AI_OPEN_BASE = 'https://app.clincoo.buzz/v1'; // Clincoo Open API (produksi)
   var _aiToken = '';
   try { _aiToken = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
@@ -1189,7 +1192,7 @@
     renderAiCurl();
     try {
       var res = await fetch(AI_API_BASE + '/project-settings?project_id=' + encodeURIComponent(_aiPid()), { headers: _aiHdrs(false) });
-      if (!res.ok) { await loadAiSecret(); await loadAiLogs(); return; }
+      if (!res.ok) { await loadAiSecret(); await loadAiLogs(); startAiLiveLogs(); return; }
       var data = await res.json();
       var st = (data && data.settings) || {};
       var cfg = null;
