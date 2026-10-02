@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../../../js/auth-client.js?v=6"></script>
+  <script src="../../../../js/accent-init.js"></script>
+<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
+  <script src="../../../../js/current-project.js?v=4"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../../../assets/favicon.png">
+    <link rel="manifest" href="../../../../manifest.json">
+  <title>Tarik Saldo — Clincoo Pembayaran</title>
+    <meta name="description" content="Tarik saldo pembayaran ke e-wallet milikmu — Clincoo.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { display: none; width: 0; height: 0; background: transparent; }
+    * { -ms-overflow-style: none; scrollbar-width: none; }
+    body.dark-mode { background-color: #000000; color: #e0e0e0; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800 { color: #f0f0f0; }
+    body.dark-mode .text-gray-700 { color: #b0b0b0; }
+    body.dark-mode .text-gray-500, body.dark-mode .text-gray-600 { color: #888888; }
+    body.dark-mode .text-gray-400 { color: #666666; }
+    body.dark-mode .bg-white { background-color: #0a0a0a; }
+    body.dark-mode .border-gray-200, body.dark-mode .border-gray-100 { border-color: #222222; }
+    body.dark-mode .bg-gray-50, body.dark-mode .bg-gray-100 { background-color: #1a1a1a; }
+    .wd-key { -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+    .wd-key:active { transform: scale(0.94); }
+    .wd-box { transition: border-color 120ms ease, background-color 120ms ease; }
+  </style>
+</head>
+<body class="text-gray-900 antialiased min-h-screen w-full bg-white">
+  <script>(function(){var t=localStorage.getItem("clinqoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+
+  <div class="max-w-md mx-auto px-5 pb-32 pt-5">
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-7">
+      <a href="../" class="w-11 h-11 flex-shrink-0 flex items-center justify-center text-[#222222] bg-white dark:bg-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors" aria-label="Kembali">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
+      </a>
+      <div>
+        <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Tarik Saldo</h1>
+        <p class="text-xs text-gray-400 dark:text-gray-500">Dana dikirim ke e-wallet milikmu</p>
+      </div>
+    </div>
+
+    <!-- Saldo tersedia -->
+    <div id="wd-saldo-box" class="flex items-center justify-between px-4 py-3 rounded-2xl bg-gray-50 dark:bg-slate-900 mb-7">
+      <p class="text-xs text-gray-500 dark:text-gray-400">Saldo tersedia</p>
+      <p id="wd-saldo" class="text-sm font-semibold font-mono text-gray-900 dark:text-white">Rp 0</p>
+    </div>
+
+    <!-- Nominal: gaya input PIN -->
+    <p class="text-center text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">Nominal penarikan</p>
+    <div id="wd-digits" class="flex items-center justify-center gap-2 mb-2"></div>
+    <p id="wd-amount-preview" class="text-center text-2xl font-bold font-mono text-gray-900 dark:text-white mb-1">Rp 0</p>
+    <p class="text-center text-xs text-gray-400 dark:text-gray-500 mb-7">Min Rp 10.000</p>
+
+    <!-- Keyboard kustom Clincoo -->
+    <div class="grid grid-cols-3 gap-2.5 max-w-[260px] mx-auto mb-9">
+      <button type="button" onclick="wdKey('1')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">1</button>
+      <button type="button" onclick="wdKey('2')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">2</button>
+      <button type="button" onclick="wdKey('3')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">3</button>
+      <button type="button" onclick="wdKey('4')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">4</button>
+      <button type="button" onclick="wdKey('5')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">5</button>
+      <button type="button" onclick="wdKey('6')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">6</button>
+      <button type="button" onclick="wdKey('7')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">7</button>
+      <button type="button" onclick="wdKey('8')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">8</button>
+      <button type="button" onclick="wdKey('9')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">9</button>
+      <button type="button" onclick="wdKey('C')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-base font-semibold text-gray-400 dark:text-gray-500">C</button>
+      <button type="button" onclick="wdKey('0')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">0</button>
+      <button type="button" onclick="wdKey('del')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 flex items-center justify-center text-gray-400 dark:text-gray-500" aria-label="Hapus">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 9l2-2h12l4 4-9 9-9-9z"></path></svg>
+      </button>
+    </div>
+
+    <!-- Tujuan e-wallet -->
+    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2.5">Tujuan penarikan <span class="text-gray-400">(e-wallet saja)</span></p>
+    <div id="wd-wallets" class="flex flex-wrap gap-1.5 mb-4">
+      <button type="button" data-ew="dana" onclick="wdPickWallet(this)" class="px-4 py-2 text-xs font-medium rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">DANA</button>
+      <button type="button" data-ew="ovo" onclick="wdPickWallet(this)" class="px-4 py-2 text-xs font-medium rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">OVO</button>
+      <button type="button" data-ew="gopay" onclick="wdPickWallet(this)" class="px-4 py-2 text-xs font-medium rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">GoPay</button>
+      <button type="button" data-ew="shopeepay" onclick="wdPickWallet(this)" class="px-4 py-2 text-xs font-medium rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">ShopeePay</button>
+      <button type="button" data-ew="linkaja" onclick="wdPickWallet(this)" class="px-4 py-2 text-xs font-medium rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">LinkAja</button>
+    </div>
+    <div class="relative mb-5">
+      <span class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-mono text-gray-400">62</span>
+      <input id="wd-phone" type="tel" inputmode="numeric" placeholder="8123456789 (nomor e-wallet)" oninput="wdUpdate()" class="w-full pl-11 pr-4 py-2.5 text-sm font-mono rounded-full border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/40 text-gray-700 dark:text-gray-300 placeholder-gray-400 placeholder-font-sans focus:outline-none focus:border-gray-400 dark:focus:border-slate-500 transition-colors" />
+    </div>
+
+    <!-- Ringkasan biaya -->
+    <div class="px-4 py-3.5 rounded-2xl border border-gray-200 dark:border-slate-700 mb-7 space-y-2.5">
+      <div class="flex items-center justify-between"><p class="text-xs text-gray-500 dark:text-gray-400">Biaya transfer e-wallet</p><p class="text-xs font-semibold font-mono text-gray-900 dark:text-white">Rp <span id="wd-fee">0</span></p></div>
+      <div class="border-t border-dashed border-gray-200 dark:border-slate-700"></div>
+      <div class="flex items-center justify-between"><p class="text-xs font-medium text-gray-700 dark:text-gray-300">Total potong saldo</p><p class="text-sm font-bold font-mono text-gray-900 dark:text-white">Rp <span id="wd-total">0</span></p></div>
+    </div>
+
+    <p id="wd-error" class="hidden text-center text-xs text-red-500 mb-4"></p>
+    <button type="button" id="wd-next" onclick="wdNext()" disabled class="w-full h-12 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer">
+      Lanjutkan
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+    </button>
+  </div>
+
+  <script>
+  var API_BASE = (['clincoo-be2.pages.dev','app.clincoo.buzz','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://app.clincoo.buzz/api' : '/api';
+  var _apiToken = '';
+  try { _apiToken = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+  function _pid() { try { return localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) { return ''; } }
+  function _rp(n) { return Number(n || 0).toLocaleString('id-ID'); }
+
+  var _wdAmount = '';
+  var _wdWallet = '';
+  var _wdFee = 2500;
+  var _wdSaldo = 0;
+  var _wdSent = false;
+
+  function wdRenderDigits() {
+    var wrap = document.getElementById('wd-digits');
+    var n = Math.min(8, Math.max(6, _wdAmount.length));
+    var html = '';
+    for (var i = 0; i < n; i++) {
+      var ch = _wdAmount[i] || '';
+      var active = i === _wdAmount.length;
+      html += '<div class="wd-box w-10 h-12 rounded-xl border-2 flex items-center justify-center text-lg font-bold font-mono ' +
+        (ch ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white' : (active ? 'border-gray-400 dark:border-slate-500 bg-gray-50 dark:bg-slate-800/40' : 'border-gray-200 dark:border-slate-700')) + '">' + (ch || '') + '</div>';
+    }
+    wrap.innerHTML = html;
+    document.getElementById('wd-amount-preview').textContent = 'Rp ' + _rp(Number(_wdAmount || 0));
+  }
+
+  function wdKey(k) {
+    if (k === 'C') _wdAmount = '';
+    else if (k === 'del') _wdAmount = _wdAmount.slice(0, -1);
+    else if (_wdAmount.length < 8) _wdAmount += k;
+    wdRenderDigits();
+    wdUpdate();
+  }
+
+  function wdPickWallet(btn) {
+    _wdWallet = btn.getAttribute('data-ew');
+    document.querySelectorAll('#wd-wallets button').forEach(function (b) {
+      var on = b === btn;
+      b.className = on
+        ? 'px-4 py-2 text-xs font-medium rounded-full bg-black text-white dark:bg-white dark:text-black transition-colors cursor-pointer'
+        : 'px-4 py-2 text-xs font-medium rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors cursor-pointer';
+    });
+    wdUpdate();
+  }
+
+  function wdUpdate() {
+    var amount = Number(_wdAmount || 0);
+    document.getElementById('wd-fee').textContent = _rp(_wdFee);
+    document.getElementById('wd-total').textContent = _rp(amount ? amount + _wdFee : 0);
+    var phone = document.getElementById('wd-phone').value.replace(/\D/g, '');
+    var err = document.getElementById('wd-error');
+    var msg = '';
+    if (amount && amount < 10000) msg = 'Nominal minimal Rp 10.000.';
+    else if (amount + _wdFee > _wdSaldo) msg = 'Nominal + biaya melebihi saldo tersedia.';
+    else if (_wdWallet && phone && !/^8\d{7,12}$/.test(phone)) msg = 'Nomor e-wallet tidak valid (contoh: 8123456789).';
+    if (msg) { err.textContent = msg; err.classList.remove('hidden'); } else { err.classList.add('hidden'); }
+    var ok = !msg && amount >= 10000 && amount + _wdFee <= _wdSaldo && _wdWallet && /^8\d{7,12}$/.test(phone);
+    document.getElementById('wd-next').disabled = !ok;
+    return ok;
+  }
+
+  function wdNext() {
+    if (_wdSent || !wdUpdate()) return;
+    _wdSent = true;
+    var amount = Number(_wdAmount || 0);
+    var phone = '0' + document.getElementById('wd-phone').value.replace(/\D/g, '');
+    var draft = { project_id: _pid(), amount: amount, fee: _wdFee, dest_type: _wdWallet, dest_account: phone, ts: Date.now() };
+    try { sessionStorage.setItem('clinqoo_wd_draft_' + _pid(), JSON.stringify(draft)); } catch (e) {}
+    location.href = 'konfirmasi/';
+  }
+
+  (async function () {
+    if (!_apiToken) { location.href = '/akun/'; return; }
+    try {
+      var res = await fetch(API_BASE + '/pay?action=config&project_id=' + encodeURIComponent(_pid()), { headers: { Authorization: 'Bearer ' + _apiToken } });
+      if (res.ok) {
+        var data = await res.json();
+        _wdSaldo = data.available || 0;
+        document.getElementById('wd-saldo').textContent = 'Rp ' + _rp(_wdSaldo);
+        if (!data.active) location.href = '../';
+      }
+    } catch (e) {}
+    wdRenderDigits();
+  })();
+  </script>
+</body>
+</html>
