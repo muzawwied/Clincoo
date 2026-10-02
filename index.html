@@ -2,6 +2,7 @@
 <html lang="id">
 <head>
 <script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+  <script src="js/auth-client.js?v=4"></script>
   <script>
     // Domain publik clinqoo.biz.id: root diredirect ke landing page resmi
     // (landing page tetap beralamat clinqoo-landing.pages.dev).
@@ -9,11 +10,10 @@
       var h = location.hostname;
       var p = (location.pathname.replace(/\/+$/, '')) || '/';
       if ((h === 'clinqoo.biz.id' || h === 'www.clinqoo.biz.id') && (p === '/' || p === '/index.html')) {
-        location.replace('https://clinqoo-landing.pages.dev/');
+        location.replace('https://clincoo.buzz/');
       }
     })();
   </script>
-  <script src="js/auth-client.js?v=2"></script>
   <script src="js/templates-data.js?v=20260924b"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -387,10 +387,17 @@
     <div id="hero-bg"></div>
     <script>try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.body.classList.add('dark-mode');var a=localStorage.getItem('clinqoo_accent')||'Hitam (Default)';var am={'Hitam (Default)':{m:'#000000',h:'#1f2937'},'Biru':{m:'#2563eb',h:'#1d4ed8'},'Hijau':{m:'#059669',h:'#047857'},'Ungu':{m:'#9333ea',h:'#7e22ce'},'Merah':{m:'#dc2626',h:'#b91c1c'}};var c=am[a]||am['Hitam (Default)'];document.documentElement.style.setProperty('--accent-color',c.m);document.documentElement.style.setProperty('--accent-hover',c.h);}catch(e){}</script>
     <header id="main-header" class="bg-white flex justify-between items-center p-2 fixed top-0 w-full z-50 transition-transform duration-300">
-        <div class="flex items-center gap-3 cursor-pointer rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20" tabindex="0" role="button" onclick="navigateTo('page-home')" onkeydown="if(event.key==='Enter') navigateTo('page-home')">
-          <img src="assets/logo-clinqoo.png" alt="App Logo" class="w-10 h-10 rounded-full bg-white shadow-sm hover:scale-105 transition-transform">
+        <button id="menu-btn" type="button" onclick="toggleSidebar()" class="flex items-center justify-center p-2 hover:opacity-70 transition-opacity cursor-pointer rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20" aria-label="Buka Menu" aria-expanded="false">
+            <svg class="w-[22px] h-[22px] text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12h9"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 18h13"></path>
+            </svg>
+        </button>
+        <div class="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 cursor-pointer rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20" tabindex="0" role="button" onclick="navigateTo('page-home')" onkeydown="if(event.key==='Enter') navigateTo('page-home')">
+          <img src="assets/logo-clinqoo.png" alt="App Logo" class="w-9 h-9 rounded-full bg-white shadow-sm hover:scale-105 transition-transform">
             <div class="flex items-center gap-1.5">
-                <span class="font-[800] text-3xl tracking-tight text-black">Clincoo</span>
+                <span class="font-[800] text-[26px] tracking-tight text-black">Clincoo</span>
             </div>
         </div>
         <div class="flex items-center gap-1">
@@ -417,18 +424,304 @@
             </a>
         </div>
     </header>
-    <main id="page-home" class="page-view hidden flex-1 w-full max-w-3xl mx-auto px-5 pt-8 pb-10 flex flex-col justify-start">
-        <div id="promo-early-banner" class="hidden items-center gap-3 mb-6 rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3">
-            <div class="w-9 h-9 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-lg shrink-0" aria-hidden="true">🎉</div>
-            <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold text-gray-900" style="font-family: 'Space Grotesk', sans-serif;">Promo 100 User Pertama</p>
-                <p class="text-[11px] sm:text-xs text-gray-500 leading-snug">Paket Pro cuma Rp5.000/bulan <span class="line-through">Rp49.000</span> — sisa <span id="promo-early-remaining">…</span>/100 slot</p>
+
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[55] opacity-0 invisible pointer-events-none transition-opacity duration-300" onclick="toggleSidebar(false)"></div>
+    <aside id="app-sidebar" class="fixed inset-y-0 left-0 z-[60] w-72 max-w-[85vw] bg-white border-r border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex flex-col -translate-x-full transition-transform duration-300 ease-out" aria-label="Menu Samping" aria-hidden="true">
+        <style>
+            #menu-btn, body.dark-mode #menu-btn { background: transparent !important; border: none !important; box-shadow: none !important; }
+        </style>
+        <div class="flex items-center justify-between gap-3 p-2 pl-3">
+            <div class="flex items-center gap-1.5">
+                <img src="assets/logo-clinqoo.png" alt="App Logo" class="w-9 h-9 rounded-full bg-white shadow-sm">
+                <span class="font-[800] text-[26px] tracking-tight text-black">Clincoo</span>
             </div>
-            <a href="#" id="promo-early-cta" class="text-[11px] sm:text-xs font-semibold text-gray-900 shrink-0 inline-flex items-center gap-0.5 hover:opacity-60 transition-opacity whitespace-nowrap">Ambil Promo</a>
-            <button id="promo-early-close" type="button" aria-label="Tutup promo" class="w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-900 transition-colors cursor-pointer shrink-0">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 6l12 12M18 6L6 18"></path></svg>
+            <button type="button" onclick="toggleSidebar(false)" class="flex items-center justify-center p-2 hover:opacity-70 transition-opacity cursor-pointer rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20" aria-label="Tutup Menu">
+                <i data-lucide="x" class="w-[22px] h-[22px] text-black"></i>
             </button>
         </div>
+        <div class="px-3 pt-3 pb-2">
+            <div class="relative">
+                <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10"></i>
+                <input id="sidebar-search" type="text" placeholder="Cari fitur..." autocomplete="off" class="w-full bg-gray-50 border border-gray-200 rounded-full pl-11 pr-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-gray-300 focus:bg-gray-100 transition-colors">
+                <div id="sidebar-search-pop" class="hidden absolute left-0 right-0 top-full mt-2 bg-white border border-gray-100 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] py-1.5 z-50 max-h-96 overflow-y-auto"></div>
+            </div>
+        </div>
+        <nav id="sidebar-nav" class="flex-1 overflow-y-auto pb-3 flex flex-col">
+            <a href="#" onclick="event.preventDefault();toggleSidebar(false);navigateTo('page-home');" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="home beranda">
+                <i data-lucide="home" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Home</span>
+            </a>
+            <a href="domain/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="domain kustom">
+                <i data-lucide="globe" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Domain</span>
+            </a>
+            <a href="akun/proyek/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="proyek project daftar">
+                <i data-lucide="folder" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Proyek</span>
+            </a>
+            <a href="templates/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="template">
+                <i data-lucide="layout-template" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Template</span>
+            </a>
+            <a href="akun/notifikasi/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="notifikasi">
+                <i data-lucide="bell" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Notifikasi</span>
+            </a>
+            <a href="akun/langganan/upgrade/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="upgrade langganan paket">
+                <i data-lucide="crown" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Upgrade</span>
+            </a>
+            <a href="https://blog.clincoo.buzz/panduan/" target="_blank" rel="noopener" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="pusat bantuan help">
+                <i data-lucide="circle-help" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Pusat Bantuan</span>
+            </a>
+            <div class="sb-section" data-search="favorit template">
+                <button type="button" onclick="toggleSidebarDropdown('sidebar-fav-list', this)" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="template favorit">
+                    <i data-lucide="heart" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                    <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900 flex-1 text-left">Template Favorit</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 transition-transform"></i>
+                </button>
+                <div id="sidebar-fav-list" class="hidden flex-col max-h-52 overflow-y-auto"></div>
+            </div>
+            <div class="sb-section" data-search="daftar proyek">
+                <button type="button" onclick="toggleSidebarDropdown('sidebar-proj-list', this)" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="daftar proyek project">
+                    <i data-lucide="layers" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                    <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900 flex-1 text-left">Daftar Proyek</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 transition-transform"></i>
+                </button>
+                <div id="sidebar-proj-list" class="hidden flex-col max-h-52 overflow-y-auto border-t border-gray-100"></div>
+            </div>
+        </nav>
+        <a href="akun/profile/" onclick="toggleSidebar(false)" class="mt-auto border-t border-gray-100 flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors">
+            <div id="sidebar-avatar" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden shrink-0 text-sm font-bold text-gray-500"></div>
+            <div class="flex flex-col min-w-0">
+                <span id="sidebar-user-name" class="text-sm font-semibold text-gray-900 truncate">Pengguna</span>
+                <span id="sidebar-user-email" class="text-xs text-gray-500 truncate"></span>
+            </div>
+        </a>
+    </aside>
+    <script>
+        function toggleSidebar(forceState) {
+            var sidebar = document.getElementById('app-sidebar');
+            var backdrop = document.getElementById('sidebar-backdrop');
+            var menuBtn = document.getElementById('menu-btn');
+            if (!sidebar || !backdrop) return;
+            var open = (typeof forceState === 'boolean') ? forceState : sidebar.classList.contains('-translate-x-full');
+            if (open) {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.setAttribute('aria-hidden', 'false');
+                backdrop.classList.remove('opacity-0', 'invisible', 'pointer-events-none');
+                if (menuBtn) menuBtn.setAttribute('aria-expanded', 'true');
+                document.body.style.overflow = 'hidden';
+                renderSidebarDynamic();
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                sidebar.setAttribute('aria-hidden', 'true');
+                backdrop.classList.add('opacity-0', 'invisible', 'pointer-events-none');
+                if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+                document.body.style.overflow = '';
+                hideSbSearchPop();
+            }
+        }
+        function toggleSidebarDropdown(listId, btn) {
+            var list = document.getElementById(listId);
+            if (!list) return;
+            var chevron = btn ? btn.querySelector('[data-lucide="chevron-down"]') : null;
+            if (list.classList.contains('hidden')) {
+                list.classList.remove('hidden');
+                list.classList.add('flex');
+                if (chevron) chevron.style.transform = 'rotate(180deg)';
+            } else {
+                list.classList.add('hidden');
+                list.classList.remove('flex');
+                if (chevron) chevron.style.transform = '';
+            }
+        }
+        function esc(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+        function renderSidebarDynamic() {
+            // Favorit template
+            var favList = document.getElementById('sidebar-fav-list');
+            if (favList) {
+                var favs = [];
+                try { favs = JSON.parse(localStorage.getItem('clinqoo_template_favorites') || '[]'); } catch (e) {}
+                var html = '';
+                if (favs.length && typeof ClinqooTemplates !== 'undefined') {
+                    favs.forEach(function (key) {
+                        var t = ClinqooTemplates.list && ClinqooTemplates.list[key];
+                        if (!t) return;
+                        html += '<a href="' + esc(t.url) + '" onclick="toggleSidebar(false)" class="sb-sub flex items-center gap-2.5 px-6 py-2 pl-[3.25rem] hover:bg-gray-50 transition-colors" data-search="' + esc((t.name || '') + ' ' + key) + '">' +
+                            '<i data-lucide="star" class="w-4 h-4 text-gray-400 shrink-0"></i>' +
+                            '<span class="text-sm text-gray-600 truncate">' + esc(t.name || key) + '</span></a>';
+                    });
+                }
+                if (!html) html = '<p class="sb-sub px-6 py-2 pl-[3.25rem] text-xs text-gray-400">Belum ada template favorit</p>';
+                favList.innerHTML = html;
+            }
+            // Daftar proyek
+            var projList = document.getElementById('sidebar-proj-list');
+            if (projList) {
+                var projects = [];
+                try { projects = JSON.parse(localStorage.getItem('clinqoo_projects') || '[]'); } catch (e) {}
+                var html2 = '';
+                projects.forEach(function (p) {
+                    var name = (p && (p.aiName || p.title)) || 'Tanpa nama';
+                    html2 += '<a href="proyek/workspace/?id=' + encodeURIComponent(p.id) + '" onclick="toggleSidebar(false)" class="sb-sub flex items-center gap-2.5 px-6 py-2 pl-[3.25rem] hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0" data-search="' + esc(name) + '">' +
+                        '<i data-lucide="folder" class="w-4 h-4 text-gray-400 shrink-0"></i>' +
+                        '<span class="text-sm text-gray-600 truncate">' + esc(name) + '</span></a>';
+                });
+                if (!html2) html2 = '<p class="sb-sub px-6 py-2 pl-[3.25rem] text-xs text-gray-400">Belum ada proyek</p>';
+                projList.innerHTML = html2;
+            }
+            // Profil bawah
+            var av = document.getElementById('sidebar-avatar');
+            var nm = document.getElementById('sidebar-user-name');
+            var em = document.getElementById('sidebar-user-email');
+            var name = '', email = '', pic = '';
+            try { name = localStorage.getItem('clinqoo_fullname') || ''; email = localStorage.getItem('clinqoo_email') || ''; pic = localStorage.getItem('clinqoo_profile_pic') || ''; } catch (e) {}
+            if (nm) nm.textContent = name || 'Pengguna';
+            if (em) em.textContent = email || '';
+            if (av) {
+                av.style.backgroundImage = '';
+                av.textContent = '';
+                if (pic) { av.style.backgroundImage = 'url(' + pic + ')'; av.style.backgroundSize = 'cover'; av.style.backgroundPosition = 'center'; }
+                else if (name) av.textContent = name.charAt(0).toUpperCase();
+                else av.innerHTML = '<i data-lucide="user" class="w-5 h-5 text-gray-400"></i>';
+            }
+            try { lucide.createIcons(); } catch (e) {}
+        }
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') { toggleSidebar(false); }
+        });
+        // ===== Popover pencarian fitur =====
+        function sbPopGroups() {
+            return [
+                { group: 'Menu', items: [
+                    { label: 'Home', icon: 'home', act: function () { toggleSidebar(false); navigateTo('page-home'); } },
+                    { label: 'Domain', icon: 'globe', act: function () { location.href = 'domain/'; } },
+                    { label: 'Template', icon: 'layout-template', act: function () { location.href = 'templates/'; } },
+                    { label: 'Notifikasi', icon: 'bell', act: function () { location.href = 'akun/notifikasi/'; } },
+                    { label: 'Upgrade', icon: 'crown', act: function () { location.href = 'akun/langganan/upgrade/'; } },
+                    { label: 'Pusat Bantuan', icon: 'circle-help', act: function () { window.open('https://blog.clincoo.buzz/panduan/', '_blank', 'noopener'); } },
+                    { label: 'Template Favorit', icon: 'heart', act: function () { sbOpenSection('sidebar-fav-list'); } },
+                    { label: 'Daftar Proyek', icon: 'layers', act: function () { sbOpenSection('sidebar-proj-list'); } }
+                ] },
+                { group: 'Akun', items: [
+                    { label: 'Profil', icon: 'user', act: function () { location.href = 'akun/profile/'; } },
+                    { label: 'Personal', icon: 'id-card', act: function () { location.href = 'akun/profile/personal/'; } },
+                    { label: 'Aktivitas', icon: 'rotate-ccw', act: function () { location.href = 'akun/aktivitas/'; } },
+                    { label: 'Kontrol Data', icon: 'database', act: function () { location.href = 'akun/profile/kontrol-data/'; } },
+                    { label: 'Favorit', icon: 'heart', act: function () { location.href = 'akun/favorit/'; } },
+                    { label: 'Kolaborasi', icon: 'users', act: function () { location.href = 'akun/kolaborasi/'; } },
+                    { label: 'Otomatisasi AI', icon: 'calendar-clock', act: function () { location.href = 'akun/otomatisasi-ai/'; } },
+                    { label: 'Langganan', icon: 'repeat', act: function () { location.href = 'akun/langganan/'; } },
+                    { label: 'Laporkan Bug', icon: 'bug', act: function () { location.href = 'akun/laporkan-bug/'; } },
+                    { label: 'Tentang', icon: 'info', act: function () { location.href = 'akun/tentang/'; } }
+                ] },
+                { group: 'Proyek', items: [
+                    { label: 'Workspace', icon: 'layout-panel-left', act: function () { location.href = 'proyek/workspace/'; } },
+                    { label: 'Editor', icon: 'code', act: function () { location.href = 'proyek/workspace/editor/'; } },
+                    { label: 'Pengaturan', icon: 'settings', act: function () { location.href = 'proyek/dashboard/'; } },
+                    { label: 'Umum', icon: 'sliders-horizontal', act: function () { location.href = 'proyek/dashboard/'; } },
+                    { label: 'Domain Kustom', icon: 'globe-lock', act: function () { location.href = 'proyek/build-deployment/domain-kustom/'; } },
+                    { label: 'Environment', icon: 'braces', act: function () { location.href = 'proyek/pengaturan/environment/'; } },
+                    { label: 'Keamanan', icon: 'shield', act: function () { location.href = 'proyek/pengaturan/keamanan/'; } },
+                    { label: 'Keamanan HTTPS', icon: 'lock', act: function () { location.href = 'proyek/pengaturan/keamanan-https/'; } },
+                    { label: 'Integrasi Webhook', icon: 'webhook', act: function () { location.href = 'proyek/pengaturan/integrasi-webhook/'; } },
+                    { label: 'Build Deployment', icon: 'rocket', act: function () { location.href = 'proyek/build-deployment/'; } },
+                    { label: 'Dashboard Deployment', icon: 'chart-column', act: function () { location.href = 'proyek/build-deployment/dashboard/'; } },
+                    { label: 'Konfigurasi Build', icon: 'wrench', act: function () { location.href = 'proyek/build-deployment/config/'; } },
+                    { label: 'Visibilitas & Akses', icon: 'eye', act: function () { location.href = 'proyek/pengaturan/visibilitas-akses/'; } },
+                    { label: 'Zona Bahaya', icon: 'triangle-alert', act: function () { location.href = 'proyek/pengaturan/zona-bahaya/'; } }
+                ] }
+            ];
+        }
+        function sbOpenSection(listId) {
+            var list = document.getElementById(listId);
+            var btn = list ? (list.parentElement ? list.parentElement.querySelector('button') : null) : null;
+            if (list && btn) {
+                if (list.classList.contains('hidden')) toggleSidebarDropdown(listId, btn);
+                btn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            hideSbSearchPop();
+        }
+        function renderSbSearchPop(q) {
+            var pop = document.getElementById('sidebar-search-pop');
+            if (!pop) return;
+            q = (q || '').trim().toLowerCase();
+            var html = '', acts = [];
+            sbPopGroups().forEach(function (g) {
+                var hits = g.items.filter(function (it) { return !q || it.label.toLowerCase().indexOf(q) !== -1 || g.group.toLowerCase().indexOf(q) !== -1; });
+                if (!hits.length) return;
+                html += '<p class="px-4 pt-2.5 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">' + g.group + '</p>';
+                hits.forEach(function (it) {
+                    var i = acts.push(it) - 1;
+                    html += '<button type="button" data-sbpop="' + i + '" class="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition-colors group">' +
+                        '<i data-lucide="' + it.icon + '" class="w-4 h-4 text-gray-500 group-hover:text-gray-900 transition-colors"></i>' +
+                        '<span class="text-sm font-medium text-gray-800 group-hover:text-gray-900">' + it.label + '</span></button>';
+                });
+            });
+            if (!html) html = '<p class="px-4 py-2.5 text-xs text-gray-400">Fitur tidak ditemukan</p>';
+            pop.innerHTML = html;
+            pop.querySelectorAll('[data-sbpop]').forEach(function (b) {
+                b.addEventListener('click', function () { acts[+b.getAttribute('data-sbpop')].act(); });
+            });
+            try { lucide.createIcons(); } catch (e) {}
+        }
+        function showSbSearchPop() {
+            var pop = document.getElementById('sidebar-search-pop');
+            var inp = document.getElementById('sidebar-search');
+            if (!pop) return;
+            renderSbSearchPop(inp ? inp.value : '');
+            pop.classList.remove('hidden');
+        }
+        function hideSbSearchPop() {
+            var pop = document.getElementById('sidebar-search-pop');
+            if (pop) pop.classList.add('hidden');
+        }
+        document.addEventListener('click', function (e) {
+            var pop = document.getElementById('sidebar-search-pop');
+            var inp = document.getElementById('sidebar-search');
+            if (pop && !pop.classList.contains('hidden') && inp && !inp.contains(e.target) && !pop.contains(e.target)) hideSbSearchPop();
+        });
+        (function () {
+            var input = document.getElementById('sidebar-search');
+            if (!input) return;
+            input.addEventListener('focus', showSbSearchPop);
+            input.addEventListener('click', function (e) { e.stopPropagation(); showSbSearchPop(); });
+            input.addEventListener('input', function () { showSbSearchPop();
+                var q = input.value.trim().toLowerCase();
+                document.querySelectorAll('#sidebar-nav .sb-item').forEach(function (el) {
+                    el.style.display = (!q || (el.getAttribute('data-search') || '').toLowerCase().indexOf(q) !== -1) ? '' : 'none';
+                });
+                document.querySelectorAll('#sidebar-nav .sb-section').forEach(function (sec) {
+                    var secMatch = (sec.getAttribute('data-search') || '').toLowerCase().indexOf(q) !== -1;
+                    var anySub = false;
+                    sec.querySelectorAll('.sb-sub').forEach(function (sub) {
+                        var m = secMatch || (sub.getAttribute('data-search') || '').toLowerCase().indexOf(q) !== -1;
+                        sub.style.display = (!q || m) ? '' : 'none';
+                        if (m && q) anySub = true;
+                    });
+                    if (q) {
+                        var btn = sec.querySelector('button');
+                        var list = sec.querySelector('[id]');
+                        if (btn && list) {
+                            if (anySub && list.classList.contains('hidden')) toggleSidebarDropdown(list.id, btn);
+                            if (!anySub && !list.classList.contains('hidden') && !secMatch) toggleSidebarDropdown(list.id, btn);
+                        }
+                    } else {
+                        var btn2 = sec.querySelector('button');
+                        var list2 = sec.querySelector('[id]');
+                        if (btn2 && list2 && !list2.classList.contains('hidden')) toggleSidebarDropdown(list2.id, btn2);
+                    }
+                });
+            });
+        })();
+    </script>
+    <main id="page-home" class="page-view hidden flex-1 w-full max-w-3xl mx-auto px-5 pt-8 pb-10 flex flex-col justify-start">
         <div class="mb-10 text-center">
             <h1 class="text-3xl sm:text-4xl font-bold tracking-tight" style="font-family: 'Space Grotesk', sans-serif;">
                 <span id="typing-text" class="text-black"></span>
@@ -462,6 +755,14 @@
                         <button id="upload-image-btn" class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 dark:focus-visible:ring-white/20">
                             <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                             Upload gambar
+                        </button>
+                        <a href="integrasi/" class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 dark:focus-visible:ring-white/20">
+                            <svg class="w-4 h-4 text-gray-500 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M15 8V2"/><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z"/><path d="M9 8V2"/></svg>
+                            Plug-in
+                        </a>
+                        <button id="upload-automation-btn" type="button" onclick="location.href='akun/otomatisasi-ai/'" class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 dark:focus-visible:ring-white/20">
+                            <i data-lucide="calendar-clock" class="w-4 h-4 text-gray-500 shrink-0"></i>
+                            Otomatisasi AI
                         </button>
                     </div>
                     <input type="file" id="real-file-input" class="hidden" multiple>
@@ -599,7 +900,7 @@
                     </div>
                     <div class="flex justify-between items-end gap-3 w-full p-4">
                         <div class="flex flex-col flex-1 overflow-hidden">
-                            <div class="flex items-center gap-1.5"><h3 class="font-semibold text-gray-900 text-base group-hover:text-black truncate">Web Properti</h3><span class="inline-flex items-center" title="Fitur Premium" aria-label="Fitur Premium"><svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"></path></svg></span></div>
+                            <h3 class="font-semibold text-gray-900 text-base group-hover:text-black truncate">Web Properti</h3>
                             <p class="text-sm text-gray-500 mt-1 leading-relaxed line-clamp-2">Situs agen properti profesional — katalog listing dengan filter tipe, lokasi, dan budget, valuasi properti, serta layanan agen.</p>
                         </div>
                         <div class="relative flex-shrink-0">
@@ -634,9 +935,9 @@
                     <div class="flex items-center justify-center gap-2 text-[12px] flex-wrap text-gray-600 dark:text-gray-300">
                         <a href="akun/tentang/" class="hover:text-black dark:hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20 rounded-sm">Tentang</a>
                         <span class="text-gray-400 dark:text-gray-500">|</span>
-                        <a href="https://clinqoo-blog.pages.dev/legal/syarat-ketentuan/" target="_blank" rel="noopener" class="hover:text-black dark:hover:text-white transition-colors">Ketentuan</a>
+                        <a href="https://blog.clincoo.buzz/legal/syarat-ketentuan/" target="_blank" rel="noopener" class="hover:text-black dark:hover:text-white transition-colors">Ketentuan</a>
                         <span class="text-gray-400 dark:text-gray-500">|</span>
-                        <a href="https://clinqoo-blog.pages.dev/legal/kebijakan-privasi/" target="_blank" rel="noopener" class="hover:text-black dark:hover:text-white transition-colors">Privasi</a>
+                        <a href="https://blog.clincoo.buzz/legal/kebijakan-privasi/" target="_blank" rel="noopener" class="hover:text-black dark:hover:text-white transition-colors">Privasi</a>
                     </div>
                     <span class="footer-sub text-[11px] text-gray-600 dark:text-gray-300">&copy; 2026 Clincoo. Semua hak dilindungi.</span>
                 </div>
@@ -1350,32 +1651,6 @@
                 }).catch(function () {});
             } catch (e) {}
         })();
-        // PROMO 100 USER PERTAMA — banner di bawah header; X menutup utk sesi ini.
-        (function () {
-            var banner = document.getElementById('promo-early-banner');
-            if (!banner) return;
-            try { if (sessionStorage.getItem('clinqoo_promo_early_dismissed') === '1') return; } catch (e) {}
-            var apiBase = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : '';
-            fetch(apiBase + '/api/promo', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (p) {
-                if (!p || p.active !== true || p.remaining <= 0) return;
-                if (p.loggedIn && !p.eligible) return; // user lama / sudah klaim: banner disembunyikan
-                var rem = document.getElementById('promo-early-remaining');
-                if (rem) rem.textContent = String(p.remaining);
-                var cta = document.getElementById('promo-early-cta');
-                if (cta) {
-                    cta.href = (location.pathname.indexOf('/Clincoo') !== -1) ? '/Clincoo./akun/langganan/upgrade/' : '/akun/langganan/upgrade/';
-                    if (p.loggedIn) cta.textContent = p.eligible ? 'Klaim Rp5.000' : 'Lihat Paket';
-                    else cta.textContent = 'Daftar & Klaim';
-                }
-                banner.classList.remove('hidden');
-                banner.classList.add('flex');
-            }).catch(function () {});
-            var closeBtn = document.getElementById('promo-early-close');
-            if (closeBtn) closeBtn.addEventListener('click', function () {
-                try { sessionStorage.setItem('clinqoo_promo_early_dismissed', '1'); } catch (e) {}
-                banner.classList.add('hidden');
-            });
-        })();
         function processPromptSubmission(customTitle) {
             if(!mainPromptInput) return;
             if(quotaLocked) { try { window.location.href = upgradeUrl(); } catch(e) {} return; }
@@ -1525,17 +1800,23 @@
                 const st = umumSettingsMap[proj.id] || umumCacheRead(proj.id);
                 return escCard(stripMdCard((st && st.app_desc) || proj.prompt || ''));
             }
+            function projCardLogo(proj) {
+                const st = umumSettingsMap[proj.id] || umumCacheRead(proj.id);
+                return (st && st.app_logo) || '';
+            }
 
             function createHomeCard(proj) {
                 const title = projCardTitle(proj);
                 const desc = projCardDesc(proj);
+                const logo = projCardLogo(proj);
+                const avatarHtml = logo ? '<img src="' + escCard(logo) + '" class="w-6 h-6 rounded-lg object-cover shrink-0 border border-gray-100" alt="Logo">' : '';
                 return '<div data-proj-id="'+proj.id+'" class="relative w-56 sm:w-60 flex-shrink-0 border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20" tabindex="0" onclick="openProject(\''+proj.id+'\')" onkeydown="if(event.key===\'Enter\') openProject(\''+proj.id+'\')">' +
                     '<div class="w-full h-28 bg-[#F9FAFB] rounded-xl mb-3.5 p-3 flex flex-col justify-between border border-gray-100 group-hover:border-gray-200 transition-colors">' +
                     '<div class="flex items-center justify-between"><div class="w-12 h-2 bg-gray-200 rounded-full"></div><div class="w-3 h-3 rounded-full bg-black/10"></div></div>' +
                     '<div class="grid grid-cols-2 gap-2 my-auto"><div class="h-10 rounded-lg border border-gray-100 p-1.5 flex flex-col justify-between"><div class="w-6 h-1.5 bg-gray-200 rounded"></div><div class="w-10 h-2 bg-gray-900 rounded"></div></div><div class="h-10 rounded-lg border border-gray-100 p-1.5 flex flex-col justify-between"><div class="w-6 h-1.5 bg-gray-200 rounded"></div><div class="w-8 h-2 bg-gray-400 rounded"></div></div></div>' +
                     '<div class="w-full h-1.5 bg-gray-200 rounded-full"></div>' +
                     '</div>' +
-                    '<h3 class="font-semibold text-gray-900 text-sm group-hover:text-black truncate">'+title+'</h3>' +
+                    '<div class="flex items-center gap-2">'+avatarHtml+'<h3 class="font-semibold text-gray-900 text-sm group-hover:text-black truncate">'+title+'</h3></div>' +
                     '<p class="text-[11px] text-gray-500 mt-0.5 truncate">'+desc.substring(0, 40)+'</p>' +
                     '<p class="text-xs text-gray-400 mt-1.5">'+timeAgo(proj.updatedAt)+'</p>' +
                     '</div>';
@@ -1544,9 +1825,12 @@
             function createAllCard(proj) {
                 const title = projCardTitle(proj);
                 const desc = projCardDesc(proj);
+                const logo = projCardLogo(proj);
+                const thumbHtml = logo ? '<img src="' + escCard(logo) + '" class="w-full h-full rounded-xl object-cover" alt="Logo">' :
+                    ('<div class="w-full h-1.5 bg-gray-200 rounded-full"></div><div class="w-full h-1.5 bg-gray-200 rounded-full"></div><div class="w-full h-1.5 bg-gray-200 rounded-full"></div>');
                 return '<div data-proj-id="'+proj.id+'" class="relative w-full bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group flex items-center gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20" tabindex="0" onclick="openProject(\''+proj.id+'\')" onkeydown="if(event.key===\'Enter\') openProject(\''+proj.id+'\')">' +
-                    '<div class="w-20 h-20 shrink-0 bg-[#F9FAFB] rounded-xl p-2.5 flex flex-col justify-between border border-gray-100 group-hover:border-gray-200 transition-colors">' +
-                    '<div class="w-full h-1.5 bg-gray-200 rounded-full"></div><div class="w-full h-1.5 bg-gray-200 rounded-full"></div><div class="w-full h-1.5 bg-gray-200 rounded-full"></div>' +
+                    '<div class="w-20 h-20 shrink-0 bg-[#F9FAFB] rounded-xl p-2.5 flex flex-col justify-between border border-gray-100 group-hover:border-gray-200 transition-colors overflow-hidden">' +
+                    thumbHtml +
                     '</div>' +
                     '<div class="flex-1 min-w-0"><h3 class="font-semibold text-gray-900 text-base group-hover:text-black truncate">'+title+'</h3>' +
                     '<p class="text-[13px] text-gray-500 mt-0.5 truncate">'+desc.substring(0, 60)+'</p>' +
@@ -1794,8 +2078,8 @@
                     return fetch(base + '/project-settings?project_id=' + encodeURIComponent(proj.id), { headers: hdr })
                         .then(function (r) { return r.ok ? r.json() : null; })
                         .then(function (d) {
-                            if (d && (d.app_name || d.app_desc)) {
-                                umumSettingsMap[proj.id] = { app_name: d.app_name || '', app_desc: d.app_desc || '' };
+                            if (d && (d.app_name || d.app_desc || d.app_logo)) {
+                                umumSettingsMap[proj.id] = { app_name: d.app_name || '', app_desc: d.app_desc || '', app_logo: d.app_logo || '' };
                             }
                         }).catch(function () {});
                 })).then(function () { try { renderProjects(); } catch (e) {} });
@@ -1854,5 +2138,6 @@
     <script>/* clinqoo-sw-register */
     if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); }); }
     </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>

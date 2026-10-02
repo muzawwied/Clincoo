@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../js/auth-client.js?v=4"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>Preview — Clincoo</title>
+    <style>
+        html, body { margin: 0; height: 100%; background: #ffffff; }
+        #pv-frame { width: 100%; height: 100%; border: 0; display: block; }
+        #pv-msg { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #71717a; }
+        #pv-msg .pv-icon { width: 46px; height: 46px; border-radius: 14px; background: #f4f4f5; display: flex; align-items: center; justify-content: center; color: #a1a1aa; }
+        #pv-msg h2 { font-size: 15px; font-weight: 600; color: #18181b; margin: 0; }
+        #pv-msg p { font-size: 13px; margin: 0; max-width: 420px; line-height: 1.5; }
+        html[data-dark] #pv-msg { color: #a1a1aa; }
+        html[data-dark] #pv-msg h2 { color: #f4f4f5; }
+        html[data-dark] #pv-msg .pv-icon { background: #18181b; color: #52525b; }
+    </style>
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('clinqoo_theme') || 'Sistem (Default)';
+                var d = (t === 'Gelap') || ((t === 'Sistem (Default)' || !t) && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                if (d) { document.documentElement.setAttribute('data-dark', '1'); document.documentElement.style.background = '#0a0a0a'; }
+            } catch (e) {}
+        })();
+    </script>
+</head>
+<body>
+    <iframe id="pv-frame" title="Preview proyek"></iframe>
+    <div id="pv-msg" hidden>
+        <div class="pv-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <h2 id="pv-msg-title">Belum ada yang bisa dipratinjau</h2>
+        <p id="pv-msg-text">Buat file index.html di workspace Clincoo, lalu pratinjau akan tampil di sini.</p>
+    </div>
+<script>
+(function () {
+    'use strict';
+    var qs = new URLSearchParams(location.search);
+    var pid = '';
+    try { pid = qs.get('id') || localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) {}
+    if (pid) { try { localStorage.setItem('clinqoo_current_project_id', pid); } catch (e) {} }
+
+    var frame = document.getElementById('pv-frame');
+    var msg = document.getElementById('pv-msg');
+    function fail(title, text) {
+        frame.style.display = 'none';
+        document.getElementById('pv-msg-title').textContent = title;
+        document.getElementById('pv-msg-text').textContent = text;
+        msg.hidden = false;
+    }
+
+    function norm(p) { return String(p).replace(/^\//, '').replace(/\/+/g, '/'); }
+    function dirOf(p) { var i = p.lastIndexOf('/'); return i < 0 ? '' : p.slice(0, i + 1); }
+    function resolve(base, ref) {
+        if (!ref) return null;
+        if (/^(https?:|data:|blob:|#|mailto:|tel:|javascript:|\/\/)/i.test(ref)) return null;
+        var parts = (dirOf(base) + ref).split('/');
+        var out = [];
+        for (var i = 0; i < parts.length; i++) {
+            var p = parts[i];
+            if (p === '..') out.pop();
+            else if (p && p !== '.') out.push(p);
+        }
+        return out.join('/');
+    }
+    function contentOf(item) {
+        if (!item) return null;
+        var c = item.content;
+        if (c == null) return null;
+        if (typeof c !== 'string') return null;
+        if (c.indexOf('data:') === 0) {
+            var i = c.indexOf('base64,');
+            if (i > -1) { try { return decodeURIComponent(escape(atob(c.slice(i + 7)))); } catch (e) { try { return atob(c.slice(i + 7)); } catch (e2) { return null; } } }
+            var j = c.indexOf(',');
+            return j > -1 ? decodeURIComponent(c.slice(j + 1)) : null;
+        }
+        return c;
+    }
+    function isText(item) {
+        if (!item || !item.name) return false;
+        var n = item.name.toLowerCase();
+        return /\.(html?|css|js|json|txt|md|svg)$/.test(n);
+    }
+
+    function loadFiles() {
+        var map = {};
+        var keys = ['clinqoo_workspace_files_' + (pid || 'global'), 'clinqoo_workspace_files'];
+        for (var k = 0; k < keys.length; k++) {
+            var raw = null;
+            try { raw = localStorage.getItem(keys[k]); } catch (e) {}
+            if (!raw) continue;
+            var d = null;
+            try { d = JSON.parse(raw); } catch (e) { d = null; }
+            if (!d) continue;
+            Object.keys(d).forEach(function (folder) {
+                (d[folder] || []).forEach(function (it) {
+                    if (it && it.type !== 'folder' && it.path) map[norm(it.path)] = it;
+                });
+            });
+            if (Object.keys(map).length) break;
+        }
+        return map;
+    }
+
+    function inlineCssUrls(css, basePath, files) {
+        return css.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, function (m, q, ref) {
+            var p = resolve(basePath, ref);
+            if (!p) return m;
+            var it = files[p];
+            if (!it || !it.content || typeof it.content !== 'string') return m;
+            if (it.content.indexOf('data:') === 0 || it.content.indexOf('http') === 0) return 'url(' + it.content + ')';
+            return m;
+        });
+    }
+
+    function build() {
+        var files = loadFiles();
+        var keys = Object.keys(files);
+        if (!keys.length) { fail('Workspace masih kosong', 'Belum ada file di workspace Clincoo. Buat proyek dan file index.html dulu, lalu pratinjau akan tampil di sini.'); return; }
+
+        var entry = files['index.html'] || null;
+        if (!entry) {
+            var htmls = keys.filter(function (p) { return /(^|\/)index\.html?$/i.test(p); });
+            if (!htmls.length) { fail('Belum ada index.html', 'Pratinjau web membutuhkan file index.html di workspace. Buat dulu lewat editor Clincoo.'); return; }
+            entry = files[htmls[0]];
+        }
+        var basePath = norm(entry.path || 'index.html');
+        var html = contentOf(entry);
+        if (html == null) { fail('File index.html tidak bisa dibaca', 'Isi file tidak dapat dibaca dari penyimpanan workspace.'); return; }
+
+        // Inline <link rel="stylesheet"> dari workspace
+        html = html.replace(/<link\b[^>]*>/gi, function (tag) {
+            if (!/stylesheet/i.test(tag)) return tag;
+            var m = tag.match(/href\s*=\s*["']([^"']+)["']/i);
+            if (!m) return tag;
+            var p = resolve(basePath, m[1]);
+            if (!p) return tag;
+            var it = files[p];
+            if (!it || !isText(it)) return tag;
+            var c = contentOf(it);
+            if (c == null) return tag;
+            return '<style>\n' + inlineCssUrls(c, p, files) + '\n</style>';
+        });
+
+        // Inline <script src="..."> dari workspace
+        html = html.replace(/<script\b([^>]*)>\s*<\/script>/gi, function (tag, attrs) {
+            var m = (attrs || '').match(/src\s*=\s*["']([^"']+)["']/i);
+            if (!m) return tag;
+            if (/^(https?:|\/\/)/i.test(m[1])) return tag;
+            var p = resolve(basePath, m[1]);
+            if (!p) return tag;
+            var it = files[p];
+            if (!it || !isText(it)) return tag;
+            var c = contentOf(it);
+            if (c == null) return tag;
+            var keep = (attrs || '').replace(/\ssrc\s*=\s*["'][^"']*["']/i, '');
+            return '<script' + keep + '>\n' + c + '\n<\/script>';
+        });
+
+        // Inline atribut src/href data- & http- (mis. gambar) dari workspace
+        html = html.replace(/\b(src|href)\s*=\s*"([^"]*)"/gi, function (m0, attr, ref) {
+            var p = resolve(basePath, ref);
+            if (!p) return m0;
+            var it = files[p];
+            if (!it || !it.content || typeof it.content !== 'string') return m0;
+            if (it.content.indexOf('data:') === 0 || it.content.indexOf('http') === 0) return attr + '="' + it.content + '"';
+            return m0;
+        });
+
+        var blob = new Blob([html], { type: 'text/html' });
+        frame.src = URL.createObjectURL(blob);
+    }
+
+    try { build(); } catch (e) { fail('Gagal memuat pratinjau', 'Terjadi kesalahan saat menyiapkan pratinjau. Coba muat ulang halaman ini.'); }
+
+    // Saat halaman ini dipakai dalam split view, tab lain bisa memicu reload via parameter baru
+    window.addEventListener('pageshow', function () { /* noop, cache buster via query param */ });
+})();
+</script>
+</body>
+</html>

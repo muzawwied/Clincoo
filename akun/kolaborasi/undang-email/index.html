@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
-  <script src="../../../js/auth-client.js?v=2"></script>
+  <script src="../../../js/auth-client.js?v=4"></script>
     <script src="../../../js/accent-init.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,21 +10,21 @@
     <link rel="manifest" href="../../../manifest.json">
     <link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
     <title>Undang via Email — Clincoo</title>
-    <meta name="description" content="Undang via Email — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="description" content="Undang via Email — kelola langsung di Clincoo, platform pembuatan website dengan AI: template profesional, generate AI, editor kode, dan deploy instan.">
     <meta name="robots" content="noindex">
     <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Clincoo">
     <meta property="og:title" content="Undang via Email — Clincoo">
-    <meta property="og:description" content="Undang via Email — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:description" content="Undang via Email — kelola langsung di Clincoo, platform pembuatan website dengan AI: template profesional, generate AI, editor kode, dan deploy instan.">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Clincoo">
     <meta property="og:url" content="https://app.clincoo.buzz/">
     <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Undang via Email — Clincoo">
-    <meta name="twitter:description" content="Undang via Email — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:description" content="Undang via Email — kelola langsung di Clincoo, platform pembuatan website dengan AI: template profesional, generate AI, editor kode, dan deploy instan.">
     <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
@@ -73,6 +73,7 @@
 <!-- End Google tag -->
 <script src="../../../js/i18n-dict.js" defer></script>
 <script src="../../../js/i18n.js" defer></script>
+<script>window.ClinqooBack = window.ClinqooBack || function (fallbackUrl) {             try {                 var sameOrigin = document.referrer && new URL(document.referrer).origin === location.origin;                 if (sameOrigin && history.length > 1) { window.history.back(); return; }             } catch (e) {}             if (fallbackUrl) { try { location.replace(fallbackUrl); return; } catch (e2) {} }             try { window.history.back(); } catch (e3) {}         };</script>
 </head>
 <body class="min-h-screen flex flex-col text-gray-900 pt-16 bg-white dark:bg-black transition-colors duration-300 relative">
     <script>(function(){var t=localStorage.getItem("clinqoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
@@ -142,7 +143,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const projectId = (urlParams.get('project') || '').trim();
     const projectName = (urlParams.get('project_name') || '').trim();
-    if (!projectId) { window.location.replace('../kolaborasi/'); }
+    if (!projectId) { window.location.replace('../../kolaborasi/'); }
     var nameEl = document.getElementById('invite-project-name');
     if (nameEl) nameEl.innerText = projectName || 'Proyek Clincoo';
 
@@ -304,7 +305,7 @@
             btn.classList.replace('bg-gray-900', 'bg-green-600');
             btn.classList.replace('dark:bg-white', 'dark:bg-green-500');
             btn.classList.replace('dark:text-gray-900', 'dark:text-white');
-            setTimeout(function() { window.ClinqooBack('../kolaborasi/?project=' + encodeURIComponent(projectId)); }, 1200);
+            setTimeout(function() { window.ClinqooBack('../../kolaborasi/?project=' + encodeURIComponent(projectId)); }, 1200);
         }
         function fail(msg) {
             btn.innerText = "Kirim Undangan";

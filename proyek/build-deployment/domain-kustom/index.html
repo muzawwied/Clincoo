@@ -2,8 +2,8 @@
 <html lang="id">
 <head>
 <script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../../js/auth-client.js?v=4"></script>
 <script src="../../../js/loading-state.js?v=3"></script>
-  <script src="../../../js/auth-client.js?v=2"></script>
   <script src="../../../js/accent-init.js"></script>
 <script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
   <meta charset="UTF-8">
@@ -58,15 +58,15 @@
     
     /* Header Buttons Dark Mode sesuai preferensi */
     body.dark-mode button[onclick="PathRouter.goBack()"],
-    body.dark-mode header button[onclick] {
+    body.dark-mode header button[onclick]:not(.header-menu-item) {
         background-color: #000000 !important;
         border: 1.5px solid rgba(255,255,255,0.4) !important;
         color: #ffffff !important;
     }
     body.dark-mode button[onclick="PathRouter.goBack()"] svg,
-    body.dark-mode header button[onclick] svg { stroke: #ffffff !important; }
+    body.dark-mode header button[onclick]:not(.header-menu-item) svg { stroke: #ffffff !important; }
     body.dark-mode button[onclick="PathRouter.goBack()"]:hover,
-    body.dark-mode header button[onclick]:hover { 
+    body.dark-mode header button[onclick]:not(.header-menu-item):hover { 
         background-color: #1a1a1a !important; 
         border-color: rgba(255,255,255,0.7) !important; 
     }
@@ -124,7 +124,46 @@
     body.dark-mode .focus\:border-gray-400:focus,
     body.dark-mode .focus\:border-gray-900:focus { border-color: #666666 !important; }
     body.dark-mode input::placeholder, body.dark-mode textarea::placeholder { color: #666666 !important; }
-</style>
+#chat-header-capsule { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        /* Kapsul: mobile 2 menu (Workspace|Dashboard), desktop 3 menu (Live preview|Workspace|Dashboard) */
+        .chat-nav-link[data-nav="agent"] { display: none !important; }
+        .chat-nav-link[data-nav="live"] { display: none; }
+        @media (min-width: 900px) { .chat-nav-link[data-nav="live"] { display: inline-flex; } }
+        #chat-nav-pill { display: none; }
+        @view-transition { navigation: auto; }
+        /* pindah antar halaman: crossfade singkat + pill morph singkat, biar gak kedip */
+        @media (prefers-reduced-motion: no-preference) {
+            ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; animation-timing-function: cubic-bezier(.2,.7,.3,1); }
+            ::view-transition-group(chat-nav-pill) { animation-duration: .18s; animation-timing-function: cubic-bezier(.2,.7,.3,1); }
+        }
+        /* fallback browser tanpa cross-doc view transition: fade-in halus (bukan pop putih keras) */
+        @keyframes clq-page-in { from { opacity: 0 } to { opacity: 1 } }
+        @media (prefers-reduced-motion: no-preference) {
+            body { animation: clq-page-in .18s cubic-bezier(.2,.7,.3,1) both; }
+            html:active-view-transition body { animation: none; }
+        }
+        .chat-nav-link.is-active { color: #111111; background: #e9e9ec; view-transition-name: chat-nav-pill; }
+        #header-more-menu.open { display: flex; opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto; }
+        .header-menu-item { -webkit-tap-highlight-color: transparent; }
+        .header-menu-item:focus, .header-menu-item:focus-visible { outline: none; box-shadow: none; }
+        button.header-menu-item { -webkit-appearance: none; appearance: none; background: transparent; border: none; margin: 0; font: inherit; color: inherit; }
+        button.header-menu-item:active { background: rgba(0,0,0,0.04); }
+        body.dark-mode button.header-menu-item:active { background: rgba(255,255,255,0.08); }
+        .header-menu-item { cursor: pointer; }
+        body.dark-mode #chat-header-capsule { background-color: #0a0a0a; border-color: rgba(255,255,255,0.15); box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
+        body.dark-mode #chat-nav-pill { background: #ffffff !important; }
+        body.dark-mode .chat-nav-link { color: #9ca3af !important; }
+        body.dark-mode .chat-nav-link.is-active { color: #0a0a0a !important; background: #ffffff !important; }
+        body.dark-mode #sidebar-toggle, body.dark-mode #header-more-btn { background-color: #000000; border: 1.5px solid rgba(255,255,255,0.4); color: #ffffff; }
+        body.dark-mode #sidebar-toggle:hover, body.dark-mode #header-more-btn:hover { background-color: #1a1a1a; border-color: rgba(255,255,255,0.7); }
+        body.dark-mode #sidebar-toggle svg, body.dark-mode #header-more-btn svg { color: #ffffff; stroke: #ffffff; }
+        body.dark-mode #header-more-menu { background-color: #0a0a0a; border-color: rgba(255,255,255,0.15); }
+        body.dark-mode .header-menu-item { color: #e5e7eb; }
+        body.dark-mode .header-menu-item:hover { background-color: #1a1a1a; color: #ffffff; }
+        body.dark-mode .header-menu-item svg { color: #9ca3af; }
+        @media (max-width: 384px) { #sidebar-toggle, #header-more-btn { width: 38px; height: 38px; } }
+        @media (max-width: 330px) { #sidebar-toggle, #header-more-btn { width: 34px; height: 34px; } .chat-nav-link { padding-left: 0.5rem; padding-right: 0.5rem; } }
+    </style>
   
   <script>
     (function() {
@@ -137,7 +176,7 @@
     <script src="../../../js/path-router.js"></script>
 <script>const _isGHPages = window.location.pathname.includes("/Clincoo/");</script>
 <!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
-<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';var tm=document.querySelector('meta[name="theme-color"]');if(tm){tm.setAttribute('content','#0a0a0a');}}}catch(e){}})();</script>
 
     <script>/* clinqoo-seo-auto: canonical & og mengikuti domain aktif */
 (function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<3;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
@@ -159,16 +198,134 @@
   <div class="w-full h-full overflow-y-auto hide-scrollbar flex flex-col items-center">
     
     <!-- Header: Disesuaikan dengan preferensi layout fixed, tombol kembali melingkar, dan judul di tengah -->
-    <header class="bg-[#f7f7f9] flex justify-between items-center px-3 py-2 fixed top-0 w-full z-40 transition-colors">
-        <button onclick="history.back()" class="top-2 left-5 w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-100 hover:bg-gray-100 transition-all cursor-pointer text-gray-700 hover:text-black">
-            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    <header class="fixed top-0 left-0 right-0 z-30 px-3 pt-3 pointer-events-none flex justify-between items-center">
+        <button id="sidebar-toggle" type="button" class="pointer-events-auto flex-shrink-0 flex items-center justify-center text-[#222222] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:text-black hover:bg-gray-100 transition-all rounded-full w-11 h-11" aria-label="Kembali ke Beranda">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
         </button>
-        <h1 class="font-extrabold text-lg text-gray-900 tracking-tight">Domain Kustom</h1>
-        <div class="w-10"></div>
+        <div class="pointer-events-auto inline-flex items-center gap-1 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-gray-100/80 rounded-full pl-1.5 pr-1.5 h-11" id="chat-header-capsule">
+            <nav id="chat-top-nav" class="relative inline-flex items-center h-full">
+                <div id="chat-nav-pill" class="absolute bg-gray-100 rounded-full pointer-events-none" style="top:0;left:0;width:0;height:0"></div>
+                <a href="/proyek/chat/" data-nav="agent" class="chat-nav-link relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Agent</a>
+                <a href="/proyek/preview/" data-nav="live" class="chat-nav-link relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Live preview</a>
+                <a href="/proyek/code/" data-nav="code" class="chat-nav-link relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Workspace</a>
+                <a href="/proyek/dashboard/" data-nav="dashboard" class="chat-nav-link is-active relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Dashboard</a>
+            </nav>
+        </div>
+        <div class="relative flex items-center gap-1.5 flex-shrink-0 pointer-events-auto"><button id="header-more-btn" type="button" onclick="toggleHeaderMenu(event)" class="w-11 h-11 rounded-full flex items-center justify-center text-[#222222] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:bg-gray-100 hover:text-black transition-all" aria-label="Menu lainnya">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle>
+                </svg>
+            </button>
+            <div id="header-more-menu" class="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 p-1.5 flex-col gap-0.5 opacity-0 invisible translate-y-1 pointer-events-none transition-all duration-200 z-50 hidden">
+                <button id="header-live-preview" type="button" onclick="chatLivePreview()" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2 12a10 10 0 1 0 20 0 10 10 0 0 0-20 0M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"></path></svg>
+                    Live preview
+                    <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg>
+                </button>
+                    <a id="header-editor" href="/proyek/workspace/editor/" onclick="var __pid='';try{__pid=localStorage.getItem('clinqoo_current_project_id')||''}catch(e){}if(__pid){this.href='/proyek/workspace/editor/?id='+encodeURIComponent(__pid)}" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                        <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 18l6-6-6-6M8 6l-6 6 6 6"></path></svg>
+<span class="flex items-center gap-1.5">Editor <svg class="clinqoo-premium-crown w-3.5 h-3.5 text-amber-500 shrink-0" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#f59e0b" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"></path></svg></span>                        <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg>
+                    </a>
+                <button id="header-export-zip" type="button" onclick="chatExportZip()" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>
+                    Eksport zip
+                </button>
+                <a href="/integrasi/github/" class="header-menu-item flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path><path stroke-linecap="round" stroke-linejoin="round" d="M9 18c-4.51 2-5-2-7-2"></path></svg>
+                    Koneksi git
+                </a>
+                <a href="https://blog.clincoo.buzz/panduan/" target="_blank" rel="noopener" class="header-menu-item flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"></path></svg>
+                    Pusat bantuan
+                </a>
+            </div>
+        </div>
     </header>
 
     <!-- Area Konten Fitur (Diberi padding atas pt-16 agar tidak tertutup fixed header) -->
-    <main class="w-full max-w-5xl px-4 sm:px-6 pt-16 pb-24">
+    <main class="w-full max-w-5xl px-4 sm:px-6 pt-20 pb-24">
+    <style>
+        #settings-menu-pop.open { display: flex; }
+        .settings-menu-item { cursor: pointer; }
+        .settings-menu-item .text-sm { line-height: 1.3; }
+        .settings-menu-item .text-xs { line-height: 1.15; }
+        body.dark-mode #settings-menu-btn { background-color: #1c1c1c !important; border-color: rgba(255,255,255,0.22) !important; color: #f3f4f6 !important; }
+        body.dark-mode #settings-menu-pop { background-color: #1c1c1c !important; border-color: rgba(255,255,255,0.22) !important; }
+        body.dark-mode .settings-menu-item:hover { background-color: #1a1a1a; }
+        body.dark-mode .settings-menu-item .block.text-sm { color: #e5e7eb !important; }
+        body.dark-mode .settings-menu-item .block.text-xs { color: #6b7280 !important; }
+    </style>
+    <div class="relative mb-5 -mx-2.5 sm:-mx-[70px] sm:max-w-[860px]" id="settings-menu-wrap">
+            <button id="settings-menu-btn" type="button" onclick="toggleSettingsMenu(event)" class="w-full flex items-center justify-between rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-800 shadow-sm transition-all">
+                <span class="flex items-center gap-2.5">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+                    Domain Kustom
+                </span>
+                <svg id="settings-menu-chev" class="w-4 h-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div id="settings-menu-pop" class="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-12px)] sm:w-[860px] mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-1 flex-col gap-px z-40 hidden">
+                                <a href="/proyek/dashboard/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Umum</span><span class="block text-xs text-gray-400 truncate">Nama, deskripsi, dan runtime aplikasi</span></span>
+                </a>
+<a href="/proyek/build-deployment/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Build &amp; Deployment</span><span class="block text-xs text-gray-400 truncate">Sumber branch dan konfigurasi deployment</span></span>
+                </a>
+                <a href="/proyek/pengaturan/keamanan-https/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Keamanan &amp; HTTPS</span><span class="block text-xs text-gray-400 truncate">Sertifikat SSL dan protokol HTTPS</span></span>
+                </a>
+                <a href="/proyek/pengaturan/visibilitas-akses/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Visibilitas Akses</span><span class="block text-xs text-gray-400 truncate">Atur hak akses dan visibilitas</span></span>
+                </a>
+                <a href="/proyek/pengaturan/integrasi-webhook/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17H7a5 5 0 1 1 0-10h2M15 7h2a5 5 0 1 1 0 10h-2M8 12h8"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Integrasi &amp; Webhook</span><span class="block text-xs text-gray-400 truncate">Integrasi layanan luar dan webhooks</span></span>
+                </a>
+<a href="/proyek/pengaturan/integrasi-ai/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 5.7a2 2 0 001.4 1.4L21 12l-5.7 1.9a2 2 0 00-1.4 1.4L12 21l-1.9-5.7a2 2 0 00-1.4-1.4L3 12l5.7-1.9a2 2 0 001.4-1.4L12 3z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Integrasi AI</span><span class="block text-xs text-gray-400 truncate">AI Router: model dan secret per proyek</span></span>
+                </a>
+                <a href="/proyek/pengaturan/zona-bahaya/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-red-50/60 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-red-600">Zona Bahaya</span><span class="block text-xs text-red-500/70 truncate">Hapus situs atau proyek</span></span>
+                </a>
+            </div>
+        </div>
+
+    <script>
+    (function () {
+        var btn = document.getElementById('settings-menu-btn');
+        var pop = document.getElementById('settings-menu-pop');
+        var chev = document.getElementById('settings-menu-chev');
+        window.toggleSettingsMenu = function (e) {
+            e.stopPropagation();
+            var open = pop.classList.toggle('open');
+            chev.style.transform = open ? 'rotate(180deg)' : '';
+        };
+        document.addEventListener('click', function (e) {
+            if (pop.classList.contains('open') && !pop.contains(e.target) && !btn.contains(e.target)) {
+                pop.classList.remove('open');
+                chev.style.transform = '';
+            }
+        });
+
+        // Menu popover absolut di dalam konten scrollable: tutup otomatis saat halaman
+        // discroll supaya tidak nyangkut melayang di bawah header fixed.
+        // Listener di window fase capture: nangkap scroll dari elemen apa pun (scroll gak bubble).
+        window.addEventListener('scroll', function () {
+            if (pop.classList.contains('open')) {
+                pop.classList.remove('open');
+                chev.style.transform = '';
+            }
+        }, { capture: true, passive: true });
+    })();
+    </script>
+
       <div class="w-full flex flex-col divide-y divide-gray-200 dark:divide-slate-700/60">
         
         <!-- 1. Domain Utama -->
@@ -182,7 +339,6 @@
               <input type="text" value="" id="custom-domain-input" class="flex-1 min-w-0 px-3.5 py-2 text-sm rounded-lg border border-gray-300 dark:border-slate-600 focus:outline-none domain-shimmer" placeholder="contohdomain.com" disabled>
             </div>
             <p id="cf-domain-status" class="text-xs mt-1.5 hidden"></p>
-            <p id="public-subdomain-info" class="text-xs mt-1.5 text-gray-500 dark:text-gray-400 hidden">URL default Clincoo: <a id="public-subdomain-url" href="#" target="_blank" rel="noreferrer" class="font-mono text-blue-600 dark:text-blue-400 hover:underline break-all"></a></p>
           </div>
         </div>
 
@@ -378,18 +534,6 @@
             localStorage.setItem(domainCacheKey(), JSON.stringify(Object.assign({}, cur, patch, { ts: Date.now() })));
         } catch (e) {}
     }
-    // URL default (subdomain publik) tampil instan dari cache/sesi deploy —
-    // tanpa menunggu status API Cloudflare yang lambat.
-    function paintPublicSubdomain(url) {
-        const p = document.getElementById('public-subdomain-info');
-        const a = document.getElementById('public-subdomain-url');
-        if (!p || !a) return;
-        const u = String(url || '').replace(/\/$/, '');
-        if (!u || !/^https?:\/\//.test(u)) return;
-        a.textContent = u;
-        a.href = u;
-        p.classList.remove('hidden');
-    }
     function paintDomainLabel(text, ok) {
         const lbl = document.getElementById('cf-domain-status');
         if (!lbl) return;
@@ -572,9 +716,6 @@
             if (!res.ok || st.error) throw new Error(st.error || ('HTTP ' + res.status));
             window.__statusRetries = 0;
             if (st.pages_url) { lastPagesUrl = st.pages_url; updateDNSRecords('', st.pages_url); writeDomainCache({ pagesUrl: st.pages_url }); }
-            // URL default (subdomain publik clinqoo.biz.id bila aktif) disimpan ke
-            // cache supaya tampil instan pada kunjungan berikutnya.
-            if (st.public_url || st.pages_url) { writeDomainCache({ publicUrl: st.public_url || st.pages_url }); paintPublicSubdomain(st.public_url || st.pages_url); }
             // Simpan status "pernah deploy" ke cache: kalau nanti API status gagal
             // (rate limit/jaringan), section DNS tetap tampil dari cache — tidak menghilang.
             writeDomainCache({ deployed: !!(st.deployed || st.last_deployment) });
@@ -631,29 +772,13 @@
             if (cached.pagesUrl) { lastPagesUrl = cached.pagesUrl; updateDNSRecords(cached.domain || '', cached.pagesUrl); }
             if (cached.deployed) { var _dnsC = document.getElementById('dns-section'); if (_dnsC) _dnsC.classList.remove('hidden'); }
             if (cached.label) paintDomainLabel(cached.label, !!cached.active);
-            if (domainInput) {
-                if (cached.domain) domainInput.value = cached.domain;
-                // Ada cache = pernah buka halaman ini: jangan biarkan input
-                // terkunci shimmer walau belum mengisi domain kustom.
+            if (cached.domain && domainInput) {
+                domainInput.value = cached.domain;
                 domainInput.classList.remove('domain-shimmer');
                 domainInput.disabled = false;
                 var _sb2 = document.getElementById('btn-save-domain'); if (_sb2) _sb2.disabled = false;
             }
             syncDeleteBtn();
-        }
-        // 1a) URL default Clincoo (subdomain publik) siap tampil INSTAN:
-        // cache domain dulu, lalu sesi deploy dashboard (public_url/pages_url).
-        {
-            const pidNow = localStorage.getItem('clinqoo_current_project_id') || '';
-            let ses = null;
-            try { ses = JSON.parse(localStorage.getItem('clinqoo_deploy_session') || 'null') || null; } catch (e) {}
-            if (ses && ses.project_id && ses.project_id !== pidNow) ses = null;
-            const pubUrl = (cached && (cached.publicUrl || cached.pagesUrl)) || (ses && (ses.public_url || ses.pages_url)) || '';
-            if (pubUrl) paintPublicSubdomain(pubUrl);
-            if (!lastPagesUrl) {
-                const pUrl = (cached && cached.pagesUrl) || (ses && ses.pages_url) || (ses && ses.public_url) || '';
-                if (pUrl) { lastPagesUrl = pUrl; updateDNSRecords((cached && cached.domain) || '', pUrl); }
-            }
         }
         // 1b) Nilai record DNS instan: fast mode hanya baca D1 (nama project Pages),
         // tanpa menunggu status deployment dari API Cloudflare. Sekali termuat, disimpan ke cache.
@@ -666,7 +791,7 @@
                     const res = await fetchTimeout(DEPLOY_API_BASE + '/deploy?project_id=' + encodeURIComponent(pid) + '&fast=1',
                         { headers: tok ? { Authorization: 'Bearer ' + tok } : {} });
                     const st = await res.json().catch(() => ({}));
-                    if (st.pages_url) { lastPagesUrl = st.pages_url; updateDNSRecords('', st.pages_url); writeDomainCache({ pagesUrl: st.pages_url }); paintPublicSubdomain(st.pages_url); }
+                    if (st.pages_url) { lastPagesUrl = st.pages_url; updateDNSRecords('', st.pages_url); writeDomainCache({ pagesUrl: st.pages_url }); }
                     // Flag 'deployed' dari log D1: section DNS tampil pasti setelah deploy pertama,
                     // tanpa bergantung pada status API Cloudflare (yang bisa gagal/rate-limit).
                     if (st.deployed) { var _dns = document.getElementById('dns-section'); if (_dns) _dns.classList.remove('hidden'); }
@@ -685,6 +810,299 @@
     <script>/* clinqoo-sw-register */
     if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../sw.js').catch(function () {}); }); }
     </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
+<script>
+        var chatNav = document.getElementById('chat-top-nav');
+        var chatNavPill = document.getElementById('chat-nav-pill');
+        var chatNavLinks = Array.prototype.slice.call(chatNav.querySelectorAll('.chat-nav-link'));
+        var CHAT_NAV_ACTIVE = 'dashboard';
+        var chatNavActive = chatNavLinks.filter(function(l) { return l.dataset.nav === CHAT_NAV_ACTIVE; })[0] || null;
+        if (chatNavActive) chatNavActive.classList.add('is-active');
+        function chatNavMovePill(el) {
+            if (!el) { chatNavPill.style.top = '0px'; chatNavPill.style.left = '0px'; chatNavPill.style.width = '0px'; chatNavPill.style.height = '0px'; return; }
+            chatNavPill.style.top = el.offsetTop + 'px';
+            chatNavPill.style.left = el.offsetLeft + 'px';
+            chatNavPill.style.width = el.offsetWidth + 'px';
+            chatNavPill.style.height = el.offsetHeight + 'px';
+        }
+        chatNavPill.style.transition = 'none';
+        chatNavMovePill(chatNavActive);
+        requestAnimationFrame(function() { requestAnimationFrame(function() { chatNavPill.style.transition = 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)'; }); });
+        chatNavLinks.forEach(function(l) {
+            l.addEventListener('mouseenter', function() { chatNavMovePill(l); });
+            l.addEventListener('click', function() { chatNavLinks.forEach(function(x) { x.classList.remove('is-active'); }); l.classList.add('is-active'); chatNavMovePill(l); });
+        });
+        chatNav.addEventListener('mouseleave', function() { chatNavMovePill(chatNavActive); });
+        window.addEventListener('resize', function() { chatNavMovePill(chatNavActive); });
+        document.getElementById('sidebar-toggle').addEventListener('click', function() { window.location.href = '/'; });
+        var headerMoreBtn = document.getElementById('header-more-btn');
+        var headerMoreMenu = document.getElementById('header-more-menu');
+        function closeHeaderMenu() { headerMoreMenu.classList.remove('open'); }
+        window.toggleHeaderMenu = function(e) {
+            e.stopPropagation();
+            headerMoreMenu.classList.contains('open') ? closeHeaderMenu() : headerMoreMenu.classList.add('open');
+        }
+        document.addEventListener('click', function(e) {
+            if (headerMoreMenu.classList.contains('open') && !headerMoreMenu.contains(e.target) && e.target !== headerMoreBtn) closeHeaderMenu();
+        });
+        window.chatExportZip = function () {
+    closeHeaderMenu();
+    var pid = ''; try { pid = localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) {}
+    var key = 'clinqoo_workspace_files_' + (pid || 'global');
+    var byPath = {};
+    var raw = null;
+    try { raw = localStorage.getItem(key); } catch (e) {}
+    if (!raw) { try { var legacy = localStorage.getItem('clinqoo_workspace_files'); if (legacy) { localStorage.setItem(key, legacy); raw = legacy; } } catch (e) {} }
+    try {
+        var d = JSON.parse(raw) || {};
+        Object.keys(d).forEach(function (k) {
+            (d[k] || []).forEach(function (it) {
+                if (it && it.path && it.type === 'file') byPath[it.path] = it.content || '';
+            });
+        });
+    } catch (e) {}
+    var WS_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-files';
+    var tk = ''; try { tk = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+    var headers = tk ? { Authorization: 'Bearer ' + tk } : {};
+    var filesFromMap = function () {
+        return Object.keys(byPath).sort().map(function (p) { return { path: p, content: byPath[p] }; });
+    };
+    var finish = function (files) {
+        if (!files.length) { alert('Tidak ada berkas di Workspace untuk dieksport.'); return; }
+        var run = function () {
+            var zip = new window.JSZip();
+            files.forEach(function (f) { zip.file(f.path, f.content || ''); });
+            zip.generateAsync({ type: 'blob' }).then(function (blob) {
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = (pid || 'clincoo') + '.zip';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(function () { URL.revokeObjectURL(a.href); }, 500);
+            });
+        };
+        if (window.JSZip) { run(); return; }
+        var sc = document.createElement('script');
+        sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        sc.onload = run;
+        document.head.appendChild(sc);
+    };
+    if (!pid) { finish(filesFromMap()); return; }
+    // Gabungkan file cloud (D1) supaya SEMUA berkas Workspace ikut terekspor.
+    fetch(WS_API + '?project_id=' + encodeURIComponent(pid), { headers: headers })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function (resp) {
+            ((resp && resp.files) || []).forEach(function (f) {
+                if (f && f.path && !(f.path in byPath)) byPath[f.path] = f.content || '';
+            });
+            finish(filesFromMap());
+        })
+        .catch(function () { finish(filesFromMap()); });
+};
+
+window.chatLivePreview = function () {
+    closeHeaderMenu();
+    var pid = ''; try { pid = localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) {}
+    if (!pid) { alert('Tidak ada proyek aktif. Buka proyek dari daftar proyek dulu.'); return; }
+    var API = ['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api';
+    var tk = ''; try { tk = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+    var headers = tk ? { Authorization: 'Bearer ' + tk } : {};
+    var btn = document.getElementById('header-live-preview');
+    function setLoading(on) { if (btn) { btn.disabled = on; btn.style.opacity = on ? '0.55' : ''; btn.style.cursor = on ? 'wait' : ''; } }
+    setLoading(true);
+    fetch(API + '/deploy?project_id=' + encodeURIComponent(pid), { headers: headers })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) {
+            var st = res.d || {};
+            if (!res.ok || st.error) throw new Error(st.error || 'Gagal memeriksa status situs.');
+            if (st.last_deployment) {
+                var active = (st.domains || []).filter(function (x) { return x.status === 'active'; })[0];
+                var url = (active ? 'https://' + active.name : '') || st.pages_url;
+                setLoading(false);
+                window.open(url, '_blank');
+                return null;
+            }
+            // Belum pernah dipublikasikan ke Cloudflare: deploy dulu, baru buka URL yang sungguh hidup.
+            return fetch(API + '/deploy', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, headers), body: JSON.stringify({ project_id: pid }) })
+                .then(function (r2) { return r2.json().catch(function () { return {}; }).then(function (d2) { return { ok: r2.ok, d: d2 }; }); })
+                .then(function (res2) {
+                    var d = res2.d || {};
+                    if (!res2.ok || d.error) throw new Error(d.error || 'Gagal mempublikasikan situs ke Cloudflare.');
+                    var url = d.public_url || (d.public_domain ? 'https://' + d.public_domain : '') || (d.deployment && d.deployment.url) || d.pages_url || '';
+                    setLoading(false);
+                    if (url) window.open(url, '_blank');
+                    else alert('Situs berhasil dipublikasikan tapi URL pratinjau tidak ditemukan.');
+                });
+        })
+        .catch(function (err) {
+            setLoading(false);
+            alert('Gagal membuka pratinjau: ' + (err && err.message ? err.message : 'periksa koneksi internet lalu coba lagi.'));
+        });
+};
+    </script>
+<script>/* clinqoo-premium-sheet: bottom sheet daftar paket untuk fitur premium (crown) */
+(function(){
+  if (window.__clinqooPremiumSheet) return; window.__clinqooPremiumSheet = true;
+  function apiBase(){ return (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname)===-1)?'https://clincoo-be2.pages.dev':''; }
+  function token(){ try{ return localStorage.getItem('clinqoo_auth_token')||localStorage.getItem('clinqoo_token')||''; }catch(e){ return ''; } }
+  function readCache(k){ try{ var c=JSON.parse(localStorage.getItem(k)||'null'); return (c&&c.plan)?c:null; }catch(e){ return null; } }
+  var verifiedPlan=null, promoProActive=false, closeTimer=null, previousOverflow='';
+  var crownSelector='.clinqoo-premium-crown, .clinqoo-editor-crown, #export-crown-label';
+  function cacheSub(){ var a=readCache('TM_SUB_CACHE_KEY'), b=readCache('clinqoo_subscription_cache'); return a&&b?((a.ts||0)>(b.ts||0)?a:b):(a||b); }
+  function currentPlan(){ var c=cacheSub(); return verifiedPlan||(c&&c.plan)||window.clinqooEditorPlan||null; }
+  function isPaid(){ var p=currentPlan(); return !!p && String(p).toLowerCase()!=='starter'; }
+  var crownCss=document.createElement('style');
+  crownCss.textContent='body[data-pps-paid="true"] .clinqoo-premium-crown,body[data-pps-paid="true"] .clinqoo-editor-crown,body[data-pps-paid="true"] #export-crown-label,body[data-pps-paid="true"] #premium-invite-chip,body[data-pps-paid="true"] #gh-connect-crown{display:none!important;}';
+  document.head.appendChild(crownCss);
+  function currentBilling(){ var c=cacheSub(); return (c&&c.billingCycle)||'Bulanan'; }
+  var sheetEl=null, idx=1, featureMinimum='Pro';
+  // ===== Data paket: identik dengan halaman Upgrade (akun/langganan/upgrade) =====
+  var plans=[
+    { name:'Starter', tagline:'Untuk individu yang baru memulai.', price:'Gratis', per:'', hot:false,
+      items:[['Hingga 3 proyek aktif + editor kode',true],['1 kolaborator per proyek',true],['Chat AI di setiap proyek (50 pesan/bulan) + pencarian web',true],['Kelola 1 domain: verifikasi, DNS & SSL',true], ['3 template proyek siap pakai',true],['Tugas terjadwal & notifikasi',true],['Deploy web 5x per bulan',true],['Editor full-stack & integrasi GitHub',false],['Domain tanpa batas & deploy tanpa batas',false]] },
+    { name:'Pro', tagline:'Untuk profesional dan kreator aktif.', price:'49K', per:'/bln', hot:true,
+      items:[['Hingga 10 proyek aktif',true],['Hingga 5 kolaborator per proyek',true],['Semua fitur Starter',true], ['Editor kode full-stack: bangun & publikasikan dari browser',true], ['Domain tanpa batas: verifikasi, DNS & SSL',true],['Chat AI hingga 500 pesan/bulan (maks 50/hari)',true],['Deploy web hingga 25x per bulan ke domain sendiri',true],['Integrasi GitHub: impor repo, AI kerja langsung di repo kamu',true]] },
+    { name:'Bisnis', tagline:'Untuk tim dan operasi skala besar.', price:'129K', per:'/bln', hot:false,
+      items:[['Semua fitur Pro',true],['Chat AI hingga 2.000 pesan/bulan (maks 150/hari)',true],['Hingga 50 proyek aktif',true],['Hingga 20 kolaborator per proyek',true],['Kontrol akses & keamanan proyek lanjutan',true], ['Dilindungi Password & ekspor data penuh akun',true],['Deploy web tanpa batas',true]] }
+  ];
+  function checkoutUrl(name){
+    var base=(location.pathname.indexOf('/Clincoo')!==-1)?'/Clincoo.':'';
+    return base+'/akun/langganan/upgrade/konfirmasi/?plan='+encodeURIComponent(name)+'&billing='+encodeURIComponent(currentBilling());
+  }
+  function cardHtml(p,current){
+    var list=p.items.map(function(it){
+      return '<li class="flex items-start gap-2.5 text-[13px] '+(p.hot?'text-gray-900 font-medium':(it[1]?'text-gray-700':'text-gray-400 opacity-70'))+'">'+
+        (it[1]?'<svg class="w-4 h-4 shrink-0 '+(p.hot?'text-accent':'text-gray-900')+'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5"></path></svg>':'<svg class="w-4 h-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"></path></svg>')+
+        '<span>'+it[0]+'</span></li>';
+    }).join('');
+    var btn;
+    if(p.name.toLowerCase()===String(current).toLowerCase()){ btn='<div class="w-full py-3 bg-gray-50 text-gray-500 border border-gray-200 rounded-xl font-semibold text-sm text-center cursor-not-allowed">Paket Saat Ini</div>'; }
+    else if(p.hot){ btn='<a href="'+checkoutUrl(p.name)+'" class="block w-full py-3 bg-accent rounded-xl font-semibold text-sm text-center transition-all shadow-md active:scale-95">'+(p.name==='Pro'&&promoProActive?'Ambil Promo Pro Rp5.000':'Upgrade ke '+p.name)+'</a>'; }
+    else { btn='<a href="'+checkoutUrl(p.name)+'" class="block w-full py-3 bg-white text-gray-900 border-2 border-gray-200 hover:border-gray-900 hover:bg-gray-50 rounded-xl font-semibold text-sm text-center transition-all">Mulai '+p.name+'</a>'; }
+    return '<div class="w-full shrink-0 px-0.5"><div class="pps-plan-card bg-white border '+(p.hot?'border-2 border-accent shadow-xl':'border-gray-200')+' rounded-3xl p-4 sm:p-5 flex flex-col relative text-left">'+
+      (p.hot?'<div class="absolute top-0 right-0 bg-accent text-[10px] font-bold px-3.5 py-1 rounded-bl-xl rounded-tr-2xl uppercase tracking-wider">Discount</div>':'')+
+      '<div class="mb-4 '+(p.hot?'mt-2':'')+'"><h3 class="text-lg font-bold text-gray-900 '+(p.hot?'text-accent':'')+'">'+p.name+'</h3><p class="text-xs text-gray-500 mt-0.5">'+p.tagline+'</p></div>'+
+      '<div class="mb-4 flex items-baseline gap-2 flex-wrap"><span class="text-2xl font-extrabold tracking-tight text-gray-900">'+(p.name==='Pro'&&promoProActive?'Rp5.000':p.price)+'</span><span class="text-xs font-medium text-gray-500">'+p.per+'</span>'+(p.name==='Pro'&&promoProActive?'<span class="text-sm text-gray-400 line-through">Rp49.000</span>':'')+'</div>'+
+      '<ul class="flex flex-col gap-2.5 mb-4 flex-1">'+list+'</ul>'+btn+'</div></div>';
+  }
+  function buildSheet(){
+    if(sheetEl) return;
+    var current=currentPlan()||'Starter';
+    var slides=plans.map(function(p){ return cardHtml(p,current); }).join('');
+    var dots=plans.map(function(p,i){ return '<button class="pps-dot rounded-full transition-all duration-200" data-i="'+i+'" style="width:6px;height:6px;background:#d1d5db;"></button>'; }).join('');
+    var css=document.createElement('style'); css.id='premium-sheet-css';
+    css.textContent='#premium-plans-sheet .text-accent{color:var(--accent-color,#000000);} #premium-plans-sheet .bg-accent{background-color:var(--accent-color,#000000);color:#ffffff;} #premium-plans-sheet .border-accent{border-color:var(--accent-color,#000000);}'+
+      'body:is(.dark-mode,.dark) #premium-plans-sheet .text-accent{color:#ffffff !important;} body:is(.dark-mode,.dark) #premium-plans-sheet .bg-accent{background-color:#ffffff !important;color:#000000 !important;} body:is(.dark-mode,.dark) #premium-plans-sheet .border-accent{border-color:#ffffff !important;}'+
+      'body:is(.dark-mode,.dark) #premium-plans-sheet .pps-plan-card{background-color:#0a0a0a!important;border-color:#222;} body:is(.dark-mode,.dark) #premium-plans-sheet .text-gray-700{color:#d1d5db;} body:is(.dark-mode,.dark) #premium-plans-sheet .pps-card{background-color:#0a0a0a !important;} body:is(.dark-mode,.dark) #premium-plans-sheet .pps-card h3,body:is(.dark-mode,.dark) #premium-plans-sheet .pps-card .text-gray-900{color:#ffffff !important;}';
+    document.head.appendChild(css);
+    sheetEl=document.createElement('div'); sheetEl.id='premium-plans-sheet'; sheetEl.setAttribute('role','dialog'); sheetEl.setAttribute('aria-modal','true'); sheetEl.setAttribute('aria-label','Paket Clincoo');
+    sheetEl.innerHTML=
+      '<div id="pps-backdrop" class="fixed inset-0 z-[95] opacity-0 transition-opacity duration-300" style="background:rgba(0,0,0,.45)"></div>'+
+      '<div class="fixed bottom-0 left-0 right-0 z-[96] flex justify-center pointer-events-none">'+
+        '<div id="pps-card" class="pps-card pointer-events-auto w-full max-w-md bg-white rounded-t-3xl px-4 pt-3 pb-5 translate-y-full transition-transform duration-300 ease-out shadow-2xl" style="max-height:90dvh;overflow-y:auto;padding-bottom:calc(1.25rem + env(safe-area-inset-bottom,0px));">'+
+          '<div class="flex justify-center"><div class="w-10 h-1.5 rounded-full bg-gray-200 mb-2"></div></div>'+
+          '<div class="flex items-start justify-between px-1">'+
+            '<div class="pr-8"><h3 class="text-base font-semibold text-gray-900">Paket Clincoo</h3>'+
+            '<p id="pps-feature-hint" class="text-[12.5px] text-gray-500 mt-0.5 leading-snug">Fitur ini tersedia mulai paket Pro. Paket kamu saat ini: <b>'+current+'</b>.</p></div>'+
+            '<button id="pps-x" aria-label="Tutup" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-black flex items-center justify-center transition-colors shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6 6 18M6 6l12 12"></path></svg></button>'+
+          '</div>'+
+          '<div class="relative mt-3">'+
+            '<div id="pps-viewport" class="overflow-hidden rounded-2xl" style="touch-action:pan-y;">'+
+              '<div id="pps-track" class="flex transition-transform duration-300 ease-out">'+slides+'</div>'+
+            '</div>'+
+            '<button id="pps-prev" class="absolute left-0 top-1/2 -translate-y-1/2 -ml-2 w-7 h-7 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-600 hover:text-black transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6"></path></svg></button>'+
+            '<button id="pps-next" class="absolute right-0 top-1/2 -translate-y-1/2 -mr-2 w-7 h-7 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-600 hover:text-black transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"></path></svg></button>'+
+          '</div>'+
+          '<div class="flex items-center justify-center gap-2 mt-3.5">'+dots+'</div>'+
+        '</div>'+
+      '</div>';
+    document.body.appendChild(sheetEl);
+    var track=sheetEl.querySelector('#pps-track'), dotsEls=sheetEl.querySelectorAll('.pps-dot');
+    function render(){ track.style.transform='translateX(-'+(idx*100)+'%)'; dotsEls.forEach(function(d,i){ var on=(i===idx); d.style.width=on?'18px':'6px'; d.style.background=on?'':'#d1d5db'; d.classList.toggle('bg-accent',on); }); }
+    function go(i){ idx=(i+plans.length)%plans.length; render(); }
+    sheetEl.querySelector('#pps-prev').addEventListener('click',function(){ go(idx-1); });
+    sheetEl.querySelector('#pps-next').addEventListener('click',function(){ go(idx+1); });
+    dotsEls.forEach(function(d){ d.addEventListener('click',function(){ go(parseInt(d.dataset.i,10)); }); });
+    var vp=sheetEl.querySelector('#pps-viewport'), sx=null, dx=0;
+    vp.addEventListener('touchstart',function(e){ sx=e.touches[0].clientX; dx=0; track.style.transition='none'; },{passive:true});
+    vp.addEventListener('touchmove',function(e){ if(sx===null)return; dx=e.touches[0].clientX-sx; track.style.transform='translateX(calc(-'+(idx*100)+'% + '+dx+'px))'; },{passive:true});
+    vp.addEventListener('touchend',function(){ if(sx===null)return; track.style.transition=''; if(Math.abs(dx)>40){ go(idx+(dx<0?1:-1)); } else { render(); } sx=null; });
+    sheetEl.querySelector('#pps-x').addEventListener('click',closeSheet);
+    sheetEl.querySelector('#pps-backdrop').addEventListener('click',closeSheet);
+    sheetEl.__render=render;
+    render();
+  }
+  async function openSheet(crown){
+    if(isPaid()) return;
+    await refreshSubscription();
+    if(isPaid()||(token()&&!currentPlan())) return;
+    featureMinimum=crown&&crown.id==='export-crown-label'?'Bisnis':'Pro';
+    buildSheet();
+    sheetEl.querySelector('#pps-track').innerHTML=plans.map(function(p){return cardHtml(p,currentPlan()||'Starter');}).join('');
+    sheetEl.querySelector('#pps-feature-hint').textContent='Fitur ini tersedia mulai paket '+featureMinimum+'. '+(currentPlan()?'Paket kamu saat ini: '+currentPlan()+'.':'Pilih paket yang sesuai kebutuhanmu.');
+    idx=featureMinimum==='Bisnis'?2:1; sheetEl.__render();
+    if(closeTimer){clearTimeout(closeTimer);closeTimer=null;}
+    if(sheetEl.style.display==='none'||!sheetEl.__open) previousOverflow=document.body.style.overflow;
+    sheetEl.__open=true; document.body.style.overflow='hidden';
+    var b=sheetEl.querySelector('#pps-backdrop'), c=sheetEl.querySelector('#pps-card');
+    sheetEl.style.display='';
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ b.classList.remove('opacity-0'); c.classList.remove('translate-y-full'); }); });
+  }
+  function closeSheet(){
+    if(!sheetEl||!sheetEl.__open) return;
+    sheetEl.__open=false; document.body.style.overflow=previousOverflow;
+    var b=sheetEl.querySelector('#pps-backdrop'), c=sheetEl.querySelector('#pps-card');
+    b.classList.add('opacity-0'); c.classList.add('translate-y-full');
+    closeTimer=setTimeout(function(){ sheetEl.style.display='none'; closeTimer=null; },300);
+  }
+  function applyCrownState(){
+    var show=!isPaid();
+    document.body.setAttribute('data-pps-paid',show?'false':'true');
+    document.querySelectorAll(crownSelector).forEach(function(c){
+      c.style.display=show?'':'none'; c.style.cursor='pointer';
+      c.setAttribute('role','button'); c.setAttribute('tabindex',show?'0':'-1');
+      c.setAttribute('aria-label','Lihat daftar paket');
+    });
+    if(!show) closeSheet();
+  }
+  async function refreshSubscription(){
+    try{
+      var t=token();
+      var res=await fetch(apiBase()+'/api/subscription?fields=plan',{cache:'no-store',headers:t?{Authorization:'Bearer '+t}:{}});
+      if(res.ok){ var d=await res.json();
+        if(d&&d.plan){ verifiedPlan=d.plan;
+          var cache=JSON.stringify({plan:d.plan,billingCycle:d.billingCycle||'Bulanan',ts:Date.now()});
+          try{localStorage.setItem('TM_SUB_CACHE_KEY',cache);localStorage.setItem('clinqoo_subscription_cache',cache);}catch(e){}
+          applyCrownState();
+        }
+      }
+    }catch(e){}
+  }
+  // Capture hanya mahkota: cegah handler modal lama atau navigasi induknya.
+  function crownAction(e){
+    var c=e.target&&e.target.closest?e.target.closest(crownSelector):null;
+    if(!c) return;
+    if(e.type==='keydown'&&e.key!=='Enter'&&e.key!==' ') return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    openSheet(c);
+  }
+  document.addEventListener('click',crownAction,true);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeSheet();return;}crownAction(e);},true);
+  window.addEventListener('storage',function(e){if(e.key==='TM_SUB_CACHE_KEY'||e.key==='clinqoo_subscription_cache'){verifiedPlan=null;applyCrownState();refreshSubscription();}});
+  new MutationObserver(function(records){if(records.some(function(r){return Array.from(r.addedNodes).some(function(n){return n.nodeType===1&&(n.matches(crownSelector)||n.querySelector(crownSelector));});}))applyCrownState();}).observe(document.body,{childList:true,subtree:true});
+  applyCrownState();
+  document.addEventListener('DOMContentLoaded',applyCrownState);
+  refreshSubscription();
+  window.clinqooOpenPlansPopup=function(){openSheet();};
+  // Syarat promo dan harga mengikuti halaman Upgrade, bukan harga promo tanpa eligibility.
+  fetch(apiBase()+'/api/promo',{cache:'no-store'}).then(function(r){return r.json();}).then(function(p){
+    if(!p||p.active!==true||p.remaining<=0||!p.eligible)return;
+    promoProActive=true;
+    if(sheetEl){sheetEl.querySelector('#pps-track').innerHTML=plans.map(function(p){return cardHtml(p,currentPlan()||'Starter');}).join('');sheetEl.__render();}
+  }).catch(function(){});
+})();
+</script>
 </body>
 <!-- deploy: 2026-09-01T00:54 -->
 </html>

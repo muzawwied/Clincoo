@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+
+  <script src="../../js/auth-client.js?v=4"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verifikasi Domain — Clincoo Experiment</title>
+<meta name="description" content="Verifikasi kepemilikan domain Clincoo-mu lewat record TXT.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" type="image/png" href="https://app.clincoo.buzz/assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+<script src="https://unpkg.com/lucide@1.41.0"></script>
+<script src="../js/store.js"></script>
+<style>
+    @keyframes spinSlow { to { transform: rotate(360deg); } }
+    body { font-family: 'Inter', sans-serif; background-color: #ffffff; transition: background-color 0.3s ease, color 0.3s ease; }
+    :root { --accent-color: #000000; --accent-hover: #1f2937; --accent-text: #ffffff; }
+    .bg-accent { background-color: var(--accent-color) !important; }
+    .text-accent { color: var(--accent-color) !important; }
+    .border-accent { border-color: var(--accent-color) !important; }
+    .hover\:bg-accent-hover:hover { background-color: var(--accent-hover) !important; }
+    body.dark-mode { background-color: #000000; color: #ffffff; }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode .bg-gray-50 { background-color: #141414 !important; }
+    body.dark-mode .bg-gray-100 { background-color: #222222 !important; }
+    body.dark-mode .border-gray-100, body.dark-mode .border-gray-200, body.dark-mode .border-gray-300 { border-color: #222222 !important; }
+    body.dark-mode .text-accent { color: #ffffff !important; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #ffffff !important; }
+    body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 { color: #888888 !important; }
+    body.dark-mode .text-gray-400 { color: #666666 !important; }
+    body.dark-mode .bg-accent { background-color: #ffffff !important; color: #000000 !important; }
+    body.dark-mode .bg-accent.text-white { color: #000000 !important; }
+    body.dark-mode .bg-accent.text-white svg { color: #000000 !important; stroke: #000000 !important; }
+    body.dark-mode button[onclick="goBack()"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
+    body.dark-mode button[onclick="goBack()"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
+    body.dark-mode button[onclick="goBack()"] svg { color: #ffffff !important; stroke: #ffffff !important; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    body.dark-mode #cta-bar-bg { background-image: linear-gradient(to top, #000000 0%, rgba(0,0,0,0.9) 60%, transparent 100%); }
+    textarea:focus { outline: none!important; box-shadow: none!important; }
+    .spin { animation: spinSlow 1s linear infinite; }
+    .tab-btn.active { color: var(--accent-color); border-color: var(--accent-color); }
+    body.dark-mode .tab-btn.active { color: #ffffff; border-color: #ffffff; }
+
+/* Shimmer skeleton */
+.shim{position:relative;overflow:hidden;background:#ececef;border-radius:999px;display:inline-block;vertical-align:middle;opacity:.78}
+.shim::after{content:"";position:absolute;inset:0;transform:translateX(-110%);background:linear-gradient(90deg,transparent 25%,rgba(255,255,255,.72) 50%,transparent 75%);animation:shim 1.55s ease-in-out infinite}
+@keyframes shim{to{transform:translateX(110%)}}
+body.dark-mode .shim{background:#202020;opacity:.9}
+body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgba(255,255,255,.075) 50%,transparent 75%)}
+@media (prefers-reduced-motion:reduce){.shim::after{animation:none}}
+</style>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+</head>
+<body class="min-h-screen flex flex-col text-gray-900 pt-20">
+<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.body.classList.add('dark-mode');var a=localStorage.getItem('clinqoo_accent')||'Hitam (Default)';var am={'Hitam (Default)':{m:'#000000',h:'#1f2937'},'Biru':{m:'#2563eb',h:'#1d4ed8'},'Hijau':{m:'#059669',h:'#047857'},'Ungu':{m:'#9333ea',h:'#7e22ce'},'Merah':{m:'#dc2626',h:'#b91c1c'}};var c=am[a]||am['Hitam (Default)'];document.documentElement.style.setProperty('--accent-color',c.m);document.documentElement.style.setProperty('--accent-hover',c.h);}catch(e){}})();</script>
+
+<main class="flex-1 w-full max-w-2xl mx-auto pb-32 flex-col justify-start relative">
+    <!-- Header -->
+    <button onclick="goBack()" class="fixed top-3 left-3 w-10 h-10 flex items-center justify-center rounded-full bg-white backdrop-blur border border-gray-100 shadow-sm hover:bg-gray-50 transition-all cursor-pointer text-gray-700 hover:text-black z-50" aria-label="Kembali">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    </button>
+    <div class="flex flex-col px-7 pb-4 relative">
+        <h2 class="text-[24px] font-extrabold text-gray-900 tracking-tight">Verifikasi Domain</h2>
+        <p id="v-domain" class="text-[14px] text-gray-500 font-medium mt-0.5">memuat…</p>
+    </div>
+
+    <div class="px-7">
+        <!-- Tab: TXT / Nameserver -->
+        <div class="flex items-center gap-6 border-b border-gray-100">
+            <button id="tab-txt" onclick="switchTab('txt')" class="tab-btn active flex-1 pb-3 text-[14px] font-semibold border-b-2 transition-colors">Record TXT</button>
+            <button id="tab-ns" onclick="switchTab('ns')" class="tab-btn flex-1 pb-3 text-[14px] font-semibold text-gray-400 border-b-2 border-transparent transition-colors">Nameserver</button>
+        </div>
+
+        <!-- Panel: Record TXT -->
+        <div id="panel-txt" class="mt-5">
+            <p class="text-[13px] text-gray-500 leading-relaxed">Masuk ke pengaturan DNS penyedia domain-mu, lalu tambahkan record berikut:</p>
+            <div class="mt-1">
+                <div class="flex items-center justify-between gap-3 py-3 border-b border-gray-100">
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Tipe</p>
+                        <p class="mono text-[13px] font-semibold text-gray-900 mt-0.5">TXT</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between gap-3 py-3 border-b border-gray-100">
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Nama / Host</p>
+                        <p class="mono text-[13px] font-semibold text-gray-900 mt-0.5 truncate" id="txt-name">_clincoo-challenge</p>
+                    </div>
+                    <button onclick="copyText('txt-name')" class="w-8 h-8 rounded-full hover:bg-gray-100 transition-colors flex items-center justify-center cursor-pointer shrink-0" title="Salin"><i data-lucide="copy" class="w-4 h-4 text-gray-400"></i></button>
+                </div>
+                <div class="flex items-center justify-between gap-3 py-3 border-b border-gray-100">
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Nilai</p>
+                        <p class="mono text-[13px] font-semibold text-gray-900 mt-0.5 truncate" id="txt-value"><span class="shim h-2 w-3.50"></span></p>
+                    </div>
+                    <button onclick="copyText('txt-value')" class="w-8 h-8 rounded-full hover:bg-gray-100 transition-colors flex items-center justify-center cursor-pointer shrink-0" title="Salin"><i data-lucide="copy" class="w-4 h-4 text-gray-400"></i></button>
+                </div>
+                <div class="flex items-center justify-between gap-3 py-3 border-b border-gray-100">
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">TTL</p>
+                        <p class="text-[13px] font-semibold text-gray-900 mt-0.5">Otomatis (atau 3600)</p>
+                    </div>
+                </div>
+            </div>
+            <p class="text-[12px] text-gray-500 leading-relaxed mt-3">Record TXT boleh dihapus setelah verifikasi selesai.</p>
+        </div>
+
+        <!-- Panel: Nameserver -->
+        <div id="panel-ns" class="hidden mt-5">
+            <p class="text-[13px] text-gray-500 leading-relaxed">Ganti nameserver di registrar domain-mu menjadi:</p>
+            <div class="mt-1">
+                <div class="flex items-center justify-between gap-3 py-3 border-b border-gray-100">
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Nameserver 1</p>
+                        <p class="mono text-[13px] font-semibold text-gray-900 mt-0.5" id="ns1">ns1.clincoo.buzz</p>
+                    </div>
+                    <button onclick="copyText('ns1')" class="w-8 h-8 rounded-full hover:bg-gray-100 transition-colors flex items-center justify-center cursor-pointer shrink-0" title="Salin"><i data-lucide="copy" class="w-4 h-4 text-gray-400"></i></button>
+                </div>
+                <div class="flex items-center justify-between gap-3 py-3 border-b border-gray-100">
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Nameserver 2</p>
+                        <p class="mono text-[13px] font-semibold text-gray-900 mt-0.5" id="ns2">ns2.clincoo.buzz</p>
+                    </div>
+                    <button onclick="copyText('ns2')" class="w-8 h-8 rounded-full hover:bg-gray-100 transition-colors flex items-center justify-center cursor-pointer shrink-0" title="Salin"><i data-lucide="copy" class="w-4 h-4 text-gray-400"></i></button>
+                </div>
+            </div>
+            <p class="text-[12px] text-gray-500 leading-relaxed mt-3">Perubahan nameserver butuh waktu propagasi hingga 24 jam. Cukup salah satu metode saja — TXT atau nameserver.</p>
+        </div>
+
+        <!-- Hasil periksa -->
+        <div id="check-result" class="hidden mt-5 rounded-xl border p-4 flex items-start gap-3"></div>
+    </div>
+
+    <!-- CTA -->
+    <div class="fixed bottom-0 inset-x-0 z-40 pointer-events-none">
+        <div id="cta-bar-bg" class="max-w-2xl mx-auto px-5 pb-5 pt-8 bg-gradient-to-t from-white via-white/90 to-transparent pointer-events-auto">
+            <button id="cta-check" onclick="checkVerification()" class="w-full bg-accent text-white rounded-full py-3 text-[15px] font-bold hover:bg-accent-hover transition-all active:scale-[0.98] cursor-pointer shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                <span id="cta-label">Periksa Verifikasi</span>
+            </button>
+            <button id="cta-skip" onclick="skipVerification()" class="w-full mt-2 text-[13px] font-semibold text-gray-500 hover:text-gray-700 transition-colors cursor-pointer pb-1">Verifikasi nanti saja</button>
+        </div>
+    </div>
+</main>
+
+<script>
+const params = new URLSearchParams(location.search);
+const domain = (params.get('domain') || '').toLowerCase();
+let verified = false;
+let checking = false;
+
+function goBack() { if (history.length > 1) history.back(); else location.href = '../'; }
+function copyValue(txt) { navigator.clipboard.writeText(txt).then(() => {}).catch(() => {}); }
+function copyText(id) { copyValue(document.getElementById(id).textContent.trim()); }
+
+function switchTab(t) {
+    const isTxt = t === 'txt';
+    document.getElementById('panel-txt').classList.toggle('hidden', !isTxt);
+    document.getElementById('panel-ns').classList.toggle('hidden', isTxt);
+    document.getElementById('tab-txt').classList.toggle('active', isTxt);
+    document.getElementById('tab-txt').classList.toggle('text-gray-400', !isTxt);
+    document.getElementById('tab-ns').classList.toggle('active', !isTxt);
+    document.getElementById('tab-ns').classList.toggle('text-gray-400', isTxt);
+}
+
+function setResult(kind, html) {
+    const el = document.getElementById('check-result');
+    el.className = 'mt-5 rounded-xl border p-4 flex items-start gap-3 ' +
+        (kind === 'fail' ? 'border-red-100 bg-red-50' : 'border-emerald-100 bg-emerald-50');
+    el.innerHTML = html;
+    el.classList.remove('hidden');
+    lucide.createIcons();
+}
+
+function checkVerification() {
+    if (verified) { location.href = '../'; return; }
+    if (checking) return;
+    checking = true;
+    const cta = document.getElementById('cta-check');
+    const label = document.getElementById('cta-label');
+    label.textContent = 'Memeriksa…';
+    cta.insertAdjacentHTML('afterbegin', '<i data-lucide="loader-2" class="w-4 h-4 spin cta-spinner"></i>');
+    lucide.createIcons();
+    cta.style.pointerEvents = 'none';
+    store.verify(domain).then(res => {
+        cta.style.pointerEvents = '';
+        const spin = cta.querySelector('.cta-spinner');
+        if (spin) spin.remove();
+        if (res && res.ok) {
+            verified = true;
+            setResult('ok', '<i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 shrink-0 mt-0.5"></i><p class="text-[13px] text-emerald-700 font-medium leading-relaxed">Kepemilikan domain terverifikasi. Domain-mu sekarang aktif.</p>');
+            label.textContent = 'Selesai';
+            document.getElementById('cta-skip').classList.add('hidden');
+        } else {
+            const msg = (res && res.message) || 'Record TXT belum terdeteksi di DNS publik. Pastikan record sudah tersimpan di penyedia domain-mu, lalu periksa lagi.';
+            setResult('fail', '<i data-lucide="alert-circle" class="w-5 h-5 text-red-500 shrink-0 mt-0.5"></i><p class="text-[13px] text-red-700 font-medium leading-relaxed"></p>');
+            document.querySelector('#check-result p').textContent = msg;
+            label.textContent = 'Periksa Lagi';
+        }
+        checking = false;
+        lucide.createIcons();
+    });
+}
+
+function skipVerification() { location.href = '../'; }
+
+/* Init: buat/ambil domain, pasang token TXT */
+if (!domain || !store.validDomain(domain)) { location.replace('../'); }
+else {
+    document.getElementById('v-domain').textContent = domain;
+    document.getElementById('txt-name').textContent = '_clincoo-challenge.' + domain;
+    store.create(domain).then(row => {
+        document.getElementById('txt-value').textContent = (row && row.token) || store.stableToken(domain);
+    }).catch(() => {
+        document.getElementById('txt-value').textContent = store.stableToken(domain);
+    });
+    lucide.createIcons();
+}
+</script>
+<script>try { lucide.createIcons(); } catch (e) {}</script>
+</body>
+</html>

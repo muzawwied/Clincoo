@@ -1,3 +1,12 @@
+/* Fallback tombol kembali cerdas (auth-client.js dihapus — tanpa gate login) */
+window.ClinqooBack = window.ClinqooBack || function (fallbackUrl) {
+            try {
+                var sameOrigin = document.referrer && new URL(document.referrer).origin === location.origin;
+                if (sameOrigin && history.length > 1) { window.history.back(); return; }
+            } catch (e) {}
+            if (fallbackUrl) { try { location.replace(fallbackUrl); return; } catch (e2) {} }
+            try { window.history.back(); } catch (e3) {}
+        };
 /**
  * Clincoo URL Path Router
  * Parses nested URLs like /workspace/{projectId}/pengaturan/{submenu}
@@ -5,8 +14,10 @@
  */
 
 // Detect if we're on GitHub Pages (subpath) vs Cloudflare Pages (root)
-const _BASE = (window.location.pathname.match(/^(\/Clincoo[.]?)/) || [''])[0] || '';
-const _isGitHubPages = _BASE.length > 0;
+var _seg = window.location.pathname.split('/')[1] || '';
+var _known = ['akun','proyek','auth','templates','integrasi','assets','js','demo','sw.js','manifest.json','robots.txt','_redirects','index.html','404.html'];
+var _isGitHubPages = window.location.hostname.indexOf('github.io') !== -1;
+var _BASE = _isGitHubPages && _seg && _known.indexOf(_seg) === -1 ? '/' + _seg : '';
 
 const PathRouter = {
     getSegments() {
@@ -133,7 +144,7 @@ const PathRouter = {
             linkMap = {
                 'workspace': _BASE + '/proyek/workspace/?id=' + encodeURIComponent(projectId),
                 'chat': _BASE + '/proyek/chat/?id=' + encodeURIComponent(projectId),
-                'pengaturan': _BASE + '/proyek/pengaturan/?id=' + encodeURIComponent(projectId),
+                'pengaturan': _BASE + '/proyek/dashboard/?id=' + encodeURIComponent(projectId),
                 'environment': _BASE + '/proyek/pengaturan/environment/?id=' + encodeURIComponent(projectId),
                 'keamanan': _BASE + '/proyek/pengaturan/keamanan/?id=' + encodeURIComponent(projectId),
             };

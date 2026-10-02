@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daftarkan Template — Clincoo</title>
+<meta name="description" content="Daftarkan template web buatanmu ke galeri Clincoo — pilih proyek, unggah thumbnail, isi detail, dan kirim untuk ditinjau.">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" sizes="64x64" href="../assets/favicon.png">
+<script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+    body { font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { display: none; width: 0; height: 0; background: transparent; }
+    * { -ms-overflow-style: none; scrollbar-width: none; }
+
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeInUp 0.35s ease both; }
+
+    /* Dropzone */
+    .dropzone { border: 1.5px dashed #d1d5db; border-radius: 12px; transition: border-color .2s, background-color .2s; }
+    .dropzone.drag-over { border-color: #111; background: rgba(0,0,0,0.03); }
+    body.dark-mode .dropzone { border-color: #333; }
+    body.dark-mode .dropzone.drag-over { border-color: #fff; background: rgba(255,255,255,0.05); }
+
+    /* Chip proyek (bisa di-drag ke dropzone) */
+    .proj-chip { border: 1px solid #e5e7eb; border-radius: 9999px; padding: 6px 14px; font-size: 13px; cursor: grab; user-select: none; transition: all .2s; }
+    .proj-chip:hover { border-color: #9ca3af; }
+    .proj-chip.selected { background: #111; color: #fff; border-color: #111; }
+    body.dark-mode .proj-chip { border-color: #2a2a2a; }
+    body.dark-mode .proj-chip:hover { border-color: #555; }
+    body.dark-mode .proj-chip.selected { background: #fff; color: #111; border-color: #fff; }
+
+    /* Capsule Konfirmasi: bg lawanan dari bg halaman */
+    #confirm-capsule { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(80px); opacity: 0;
+        display: inline-flex; align-items: center; gap: 8px; border-radius: 9999px; padding: 13px 30px; z-index: 50;
+        background: #000; color: #fff; font-size: 14px; font-weight: 700; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        transition: transform .45s cubic-bezier(.34,1.4,.64,1), opacity .3s ease; pointer-events: none; }
+    #confirm-capsule.ready { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
+    body.dark-mode #confirm-capsule { background: #fff; color: #000; box-shadow: 0 10px 30px rgba(255,255,255,0.12), 0 10px 30px rgba(0,0,0,0.5); }
+    #confirm-capsule:active { transform: translateX(-50%) scale(0.97); }
+    #confirm-capsule.busy { opacity: .6; pointer-events: none; }
+
+    .field-label { font-size: 12px; font-weight: 600; color: #9ca3af; margin-bottom: 8px; }
+</style>
+<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+</head>
+<body class="bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white min-h-screen antialiased">
+<script>try{var t=localStorage.getItem("clinqoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}}catch(e){}</script>
+
+<!-- Gate login + injeksi token Bearer -->
+<script src="../js/auth-client.js?v=20260918"></script>
+
+<!-- HEADER bersih: arrow back + icon Clincoo saja -->
+<header class="sticky top-0 z-40 border-b border-gray-100 dark:border-[#222] bg-white/90 dark:bg-[#0a0a0a]/90 backdrop-blur-md">
+    <div class="max-w-2xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+        <a href="./" class="p-2 -ml-2 rounded-lg hover:bg-gray-50 dark:hover:bg-[#141414] transition-colors" aria-label="Kembali ke galeri template">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5m0 0l6 6m-6-6l6-6"/></svg>
+        </a>
+        <img src="../assets/logo-clinqoo.png" alt="Clincoo" class="w-7 h-7 rounded-full">
+    </div>
+</header>
+
+<main class="max-w-2xl mx-auto px-4 sm:px-6 pt-10 pb-32">
+    <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight mb-1">Daftarkan template</h1>
+    <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-9">Kirim karyamu untuk ditinjau. Setelah disetujui, template tampil di galeri Clincoo beserta hitungan pemakaian dan kunjungan secara real-time.</p>
+
+    <div class="flex flex-col gap-10">
+
+        <!-- 1. Proyek Clincoo (drag & drop) -->
+        <section class="fade-in">
+            <p class="field-label">Proyek Clincoo</p>
+            <p id="proj-empty" class="text-xs text-gray-400 dark:text-gray-500 mb-3">Tarik salah satu proyekmu ke bawah ini, atau klik untuk memilih.</p>
+            <div id="proj-chips" class="flex items-center flex-wrap gap-2 mb-4"></div>
+            <div id="proj-zone" class="dropzone px-4 py-8 text-center">
+                <p id="proj-zone-hint" class="text-xs text-gray-400 dark:text-gray-500">Lepaskan proyek di sini</p>
+                <p id="proj-zone-name" class="hidden text-sm font-semibold"></p>
+            </div>
+        </section>
+
+        <!-- 2. Thumbnail web (drag & drop foto, rasio memanjang ke samping) -->
+        <section class="fade-in">
+            <p class="field-label">Thumbnail web</p>
+            <div id="thumb-zone" class="dropzone p-3">
+                <div class="relative w-full aspect-video overflow-hidden rounded-lg bg-gray-100 dark:bg-[#111]">
+                    <img id="thumb-preview" class="hidden w-full h-full object-cover" alt="Pratinjau thumbnail">
+                    <div id="thumb-hint" class="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-gray-400 dark:text-gray-500">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A1.5 1.5 0 0021.75 19.5V4.5A1.5 1.5 0 0020.25 3H3.75A1.5 1.5 0 002.25 4.5v15A1.5 1.5 0 003.75 21z"/></svg>
+                        <p class="text-xs">Tarik foto ke sini atau <button type="button" id="thumb-pick" class="underline underline-offset-2 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">pilih file</button></p>
+                        <p class="text-[11px] text-gray-300 dark:text-gray-600">Ukuran memanjang ke samping, seperti template lainnya</p>
+                    </div>
+                    <button type="button" id="thumb-remove" class="hidden absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors" aria-label="Hapus thumbnail">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <input type="file" id="thumb-input" accept="image/*" class="hidden">
+            </div>
+        </section>
+
+        <!-- 3. Detail template -->
+        <section class="fade-in flex flex-col gap-6">
+            <div>
+                <p class="field-label">Judul</p>
+                <input id="f-title" type="text" maxlength="80" placeholder="cth. Landing Page Kafe Minimalis" class="w-full px-4 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-[#222] bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 transition-colors">
+            </div>
+            <div>
+                <p class="field-label">Deskripsi</p>
+                <textarea id="f-desc" rows="4" maxlength="500" placeholder="Ceritakan singkat template-mu: untuk siapa, apa isinya, dan apa yang membuatnya istimewa." class="w-full px-4 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-[#222] bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 transition-colors resize-none"></textarea>
+            </div>
+            <div>
+                <p class="field-label">Tautan preview</p>
+                <input id="f-url" type="url" placeholder="https://situsmu.pages.dev" class="w-full px-4 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-[#222] bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 transition-colors">
+                <p class="text-[11px] text-gray-300 dark:text-gray-600 mt-1.5">Dipakai untuk CTA "Lihat Preview" di galeri.</p>
+            </div>
+        </section>
+
+        <p id="form-error" class="hidden text-xs text-red-500 leading-relaxed"></p>
+    </div>
+</main>
+
+<!-- CTA Capsul Konfirmasi (muncul setelah semua terisi) -->
+<button type="button" id="confirm-capsule">
+    Konfirmasi
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m0 0l-6-6m6 6l-6 6"/></svg>
+</button>
+
+<script>
+var API_BASE = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api');
+
+var sel = { project: null, thumbnail: '' };
+var elTitle = document.getElementById('f-title');
+var elDesc = document.getElementById('f-desc');
+var elUrl = document.getElementById('f-url');
+var errBox = document.getElementById('form-error');
+
+// ===== Muat proyek milik akun (untuk di-drag ke dropzone) =====
+fetch(API_BASE + '/projects', { headers: { 'Authorization': 'Bearer ' + (function(){ try { return localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) { return ''; } })() } })
+    .then(function (r) { return r.ok ? r.json() : { projects: [] }; })
+    .then(function (d) {
+        var list = (d && d.projects) || [];
+        var wrap = document.getElementById('proj-chips');
+        var hint = document.getElementById('proj-empty');
+        wrap.innerHTML = '';
+        if (!list.length) {
+            hint.textContent = 'Belum ada proyek di akunmu — buat dulu di Clincoo, lalu kembali ke sini.';
+            return;
+        }
+        hint.textContent = 'Tarik salah satu proyekmu ke bawah ini, atau klik untuk memilih.';
+        list.forEach(function (p) {
+            var chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'proj-chip';
+            chip.textContent = p.title || p.ai_name || ('Proyek ' + p.id);
+            chip.draggable = true;
+            chip.dataset.id = p.id;
+            chip.dataset.title = chip.textContent;
+            chip.addEventListener('dragstart', function (e) {
+                try { e.dataTransfer.setData('text/plain', p.id); } catch (e2) {}
+                try { e.dataTransfer.effectAllowed = 'move'; } catch (e3) {}
+            });
+            chip.addEventListener('click', function () { selectProject(chip); });
+            wrap.appendChild(chip);
+        });
+    })
+    .catch(function () {});
+
+// ===== Dropzone proyek =====
+var projZone = document.getElementById('proj-zone');
+projZone.addEventListener('dragover', function (e) { e.preventDefault(); projZone.classList.add('drag-over'); });
+projZone.addEventListener('dragleave', function () { projZone.classList.remove('drag-over'); });
+projZone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    projZone.classList.remove('drag-over');
+    var id = e.dataTransfer.getData('text/plain');
+    var chip = document.querySelector('.proj-chip[data-id="' + id + '"]');
+    if (chip) selectProject(chip);
+});
+function selectProject(chip) {
+    document.querySelectorAll('.proj-chip').forEach(function (c) { c.classList.remove('selected'); });
+    chip.classList.add('selected');
+    sel.project = { id: chip.dataset.id, title: chip.dataset.title };
+    var hint = document.getElementById('proj-zone-hint');
+    var name = document.getElementById('proj-zone-name');
+    hint.classList.add('hidden');
+    name.textContent = '✓ ' + sel.project.title;
+    name.classList.remove('hidden');
+    validate();
+}
+
+// ===== Dropzone thumbnail (drag & drop / pilih file) =====
+var thumbZone = document.getElementById('thumb-zone');
+var thumbInput = document.getElementById('thumb-input');
+var thumbPreview = document.getElementById('thumb-preview');
+var thumbHint = document.getElementById('thumb-hint');
+var thumbRemove = document.getElementById('thumb-remove');
+document.getElementById('thumb-pick').addEventListener('click', function () { thumbInput.click(); });
+thumbZone.addEventListener('dragover', function (e) { e.preventDefault(); thumbZone.classList.add('drag-over'); });
+thumbZone.addEventListener('dragleave', function () { thumbZone.classList.remove('drag-over'); });
+thumbZone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    thumbZone.classList.remove('drag-over');
+    var f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) loadThumb(f);
+});
+thumbInput.addEventListener('change', function () {
+    if (thumbInput.files && thumbInput.files[0]) loadThumb(thumbInput.files[0]);
+});
+thumbRemove.addEventListener('click', function () {
+    sel.thumbnail = '';
+    thumbPreview.classList.add('hidden');
+    thumbRemove.classList.add('hidden');
+    thumbHint.classList.remove('hidden');
+    thumbInput.value = '';
+    validate();
+});
+function loadThumb(file) {
+    if (!/^image\//.test(file.type)) { showError('File thumbnail harus berupa gambar.'); return; }
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+        var img = new Image();
+        img.onload = function () {
+            // Rasio 16:9 (memanjang ke samping) + kompresi JPEG (ringan & didukung lampiran email Resend)
+            var W = 1280, H = 720;
+            var canvas = document.createElement('canvas');
+            canvas.width = W; canvas.height = H;
+            var ctx = canvas.getContext('2d');
+            var scale = Math.max(W / img.width, H / img.height);
+            var dw = img.width * scale, dh = img.height * scale;
+            ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+            ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+            var dataUrl;
+            try { dataUrl = canvas.toDataURL('image/jpeg', 0.82); } catch (e) { dataUrl = ev.target.result; }
+            if (dataUrl.indexOf('data:image/jpeg') === -1) { showError('Browser tidak mendukung kompresi gambar.'); return; }
+            if (dataUrl.length > 300000) {
+                try { dataUrl = canvas.toDataURL('image/jpeg', 0.6); } catch (e) {}
+            }
+            sel.thumbnail = dataUrl;
+            thumbPreview.src = dataUrl;
+            thumbPreview.classList.remove('hidden');
+            thumbRemove.classList.remove('hidden');
+            thumbHint.classList.add('hidden');
+            hideError();
+            validate();
+        };
+        img.onerror = function () { showError('Gambar tidak bisa dibaca.'); };
+        img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+// ===== Validasi: semua terisi -> capsule Konfirmasi muncul =====
+function validUrl(v) { return /^https?:\/\/.+\..+/i.test(v.trim()); }
+function validate() {
+    var ok = !!sel.project && !!sel.thumbnail &&
+        elTitle.value.trim().length >= 3 &&
+        elDesc.value.trim().length >= 10 &&
+        validUrl(elUrl.value);
+    document.getElementById('confirm-capsule').classList.toggle('ready', ok);
+    if (ok) hideError();
+    return ok;
+}
+[elTitle, elDesc, elUrl].forEach(function (el) {
+    el.addEventListener('input', validate);
+    el.addEventListener('blur', validate);
+});
+
+function showError(msg) { errBox.textContent = msg; errBox.classList.remove('hidden'); }
+function hideError() { errBox.classList.add('hidden'); }
+
+// ===== Konfirmasi: kirim data -> halaman "sedang ditinjau" =====
+var capsule = document.getElementById('confirm-capsule');
+capsule.addEventListener('click', function () {
+    if (!validate()) return;
+    capsule.classList.add('busy');
+    hideError();
+    fetch(API_BASE + '/template-submissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (function(){ try { return localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) { return ''; } })() },
+        body: JSON.stringify({
+            title: elTitle.value.trim(),
+            desc: elDesc.value.trim(),
+            preview_url: elUrl.value.trim(),
+            project_name: sel.project.title,
+            thumbnail: sel.thumbnail
+        })
+    })
+    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (res) {
+        if (res.ok && res.d.ok) {
+            try { sessionStorage.setItem('clinqoo_tpl_submitted', elTitle.value.trim()); } catch (e) {}
+            location.replace('ditinjau');
+        } else {
+            capsule.classList.remove('busy');
+            showError((res.d && res.d.error) || 'Gagal mengirim pengajuan. Coba lagi.');
+        }
+    })
+    .catch(function () {
+        capsule.classList.remove('busy');
+        showError('Koneksi bermasalah. Coba lagi.');
+    });
+});
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

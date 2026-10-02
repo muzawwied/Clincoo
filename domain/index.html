@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+
+  <script src="../js/auth-client.js?v=4"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Domain — Clincoo Experiment</title>
+<meta name="description" content="Kelola domain kustom Clincoo: hubungkan domain, verifikasi kepemilikan, dan kelola DNS, SSL, serta cache dalam satu tempat.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" type="image/png" href="https://app.clincoo.buzz/assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+<script src="https://unpkg.com/lucide@1.41.0"></script>
+<script src="js/store.js"></script>
+<style>
+    @keyframes menuPop { from { opacity: 0; transform: translateY(-6px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    body { font-family: 'Inter', sans-serif; background-color: #ffffff; transition: background-color 0.3s ease, color 0.3s ease; }
+    :root { --accent-color: #000000; --accent-hover: #1f2937; --accent-text: #ffffff; }
+    .bg-accent { background-color: var(--accent-color) !important; }
+    .text-accent { color: var(--accent-color) !important; }
+    .border-accent { border-color: var(--accent-color) !important; }
+    .hover\:bg-accent-hover:hover { background-color: var(--accent-hover) !important; }
+    body.dark-mode { background-color: #000000; color: #ffffff; }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode .bg-gray-50 { background-color: #141414 !important; }
+    body.dark-mode .hover\:bg-gray-50:hover { background-color: #141414 !important; }
+    body.dark-mode .bg-gray-100 { background-color: #222222 !important; }
+    body.dark-mode .border-gray-100, body.dark-mode .border-gray-200, body.dark-mode .border-gray-300 { border-color: #222222 !important; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #ffffff !important; }
+    body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 { color: #888888 !important; }
+    body.dark-mode .text-gray-400 { color: #666666 !important; }
+    body.dark-mode .bg-accent { background-color: #ffffff !important; color: #000000 !important; }
+    body.dark-mode .bg-accent.text-white { color: #000000 !important; }
+    body.dark-mode .bg-accent.text-white svg { color: #000000 !important; stroke: #000000 !important; }
+    body.dark-mode .text-accent { color: #ffffff !important; }
+    body.dark-mode button[onclick="goBack()"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
+    body.dark-mode button[onclick="goBack()"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
+    textarea:focus { outline: none!important; box-shadow: none!important; }
+    * { -webkit-tap-highlight-color: transparent; tap-highlight-color: transparent; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
+
+/* Shimmer skeleton */
+.shim{position:relative;overflow:hidden;background:#ececef;border-radius:999px;display:inline-block;vertical-align:middle;opacity:.78}
+.shim::after{content:"";position:absolute;inset:0;transform:translateX(-110%);background:linear-gradient(90deg,transparent 25%,rgba(255,255,255,.72) 50%,transparent 75%);animation:shim 1.55s ease-in-out infinite}
+@keyframes shim{to{transform:translateX(110%)}}
+body.dark-mode .shim{background:#202020;opacity:.9}
+body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgba(255,255,255,.075) 50%,transparent 75%)}
+@media (prefers-reduced-motion:reduce){.shim::after{animation:none}}
+</style>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+</head>
+<body class="min-h-screen flex flex-col text-gray-900 pt-20">
+<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.body.classList.add('dark-mode');var a=localStorage.getItem('clinqoo_accent')||'Hitam (Default)';var am={'Hitam (Default)':{m:'#000000',h:'#1f2937'},'Biru':{m:'#2563eb',h:'#1d4ed8'},'Hijau':{m:'#059669',h:'#047857'},'Ungu':{m:'#9333ea',h:'#7e22ce'},'Merah':{m:'#dc2626',h:'#b91c1c'}};var c=am[a]||am['Hitam (Default)'];document.documentElement.style.setProperty('--accent-color',c.m);document.documentElement.style.setProperty('--accent-hover',c.h);}catch(e){}})();</script>
+
+<main class="flex-1 w-full max-w-2xl md:max-w-5xl mx-auto pb-12 flex-col justify-start relative">
+    <!-- Header ala halaman Profil Clincoo -->
+    <button onclick="goBack()" class="fixed top-3 left-3 w-10 h-10 flex items-center justify-center rounded-full bg-white backdrop-blur border border-gray-100 shadow-sm hover:bg-gray-50 transition-all cursor-pointer text-gray-700 hover:text-black z-50" aria-label="Kembali">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    </button>
+    <div class="flex flex-col px-7 pb-6 relative">
+        <h2 class="text-[24px] font-extrabold text-gray-900 tracking-tight">Domain</h2>
+        <p class="text-[14px] text-gray-500 font-medium mt-0.5">Satu tempat untuk menghubungkan dan mengelola domain kustom-mu.</p>
+    </div>
+
+    <!-- Konten -->
+    <div class="px-5 md:px-7">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-[12px] font-bold text-gray-400 uppercase tracking-wider">Daftar Domain</h3>
+            <button onclick="location.href='tambah/'" class="bg-accent text-white text-sm font-semibold rounded-full px-4 py-2.5 hover:bg-accent-hover transition-all active:scale-95 cursor-pointer shadow-sm hover:shadow-md">Hubungkan Domain</button>
+        </div>
+
+        <!-- Pencarian domain (flat, capsule) -->
+        <div id="search-wrap" class="relative mb-3">
+            <i data-lucide="search" class="w-[18px] h-[18px] text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <input id="search-input" type="text" placeholder="Cari domain atau catatan…" oninput="render()" class="w-full bg-gray-50 border border-gray-100 rounded-full pl-11 pr-4 py-2.5 text-[14px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-300 transition-colors">
+        </div>
+        <p id="no-match" class="hidden text-center py-10 text-[13px] text-gray-500">Tidak ada domain yang cocok dengan pencarian.</p>
+
+        <!-- Empty state -->
+        <div id="empty-state" class="hidden flex-col items-center justify-center text-center border border-dashed border-gray-200 rounded-2xl py-16 px-6">
+            <div class="w-16 h-16 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center mb-4">
+                <i data-lucide="globe" class="w-7 h-7 text-gray-400"></i>
+            </div>
+            <p class="text-[15px] font-semibold text-gray-900">Belum ada domain terhubung</p>
+            <p class="text-[13px] text-gray-500 mt-1 max-w-xs leading-relaxed">Hubungkan domain pertama-mu, verifikasi kepemilikan lewat record TXT, lalu kelola semuanya di sini.</p>
+        </div>
+
+        <!-- Tabel domain -->
+        <div id="table-skeleton" class="bg-white rounded-xl border border-gray-100 shadow-[0_2px_12px_rgb(0,0,0,0.05)] overflow-hidden">
+            <div class="flex items-center gap-3.5 px-5 py-3.5 border-b border-gray-100"><i data-lucide="globe" class="w-[18px] h-[18px] text-gray-300 shrink-0"></i><span class="shim h-2.5 w-44"></span><span class="shim h-2 w-14"></span><i data-lucide="more-horizontal" class="w-[18px] h-[18px] text-gray-300 ml-auto shrink-0"></i></div>
+            <div class="flex items-center gap-3.5 px-5 py-3.5 border-b border-gray-100"><i data-lucide="globe" class="w-[18px] h-[18px] text-gray-300 shrink-0"></i><span class="shim h-2.5 w-44"></span><span class="shim h-2 w-14"></span><i data-lucide="more-horizontal" class="w-[18px] h-[18px] text-gray-300 ml-auto shrink-0"></i></div>
+            <div class="flex items-center gap-3.5 px-5 py-3.5 border-b border-gray-100"><i data-lucide="globe" class="w-[18px] h-[18px] text-gray-300 shrink-0"></i><span class="shim h-2.5 w-44"></span><span class="shim h-2 w-14"></span><i data-lucide="more-horizontal" class="w-[18px] h-[18px] text-gray-300 ml-auto shrink-0"></i></div>
+            <div class="flex items-center gap-3.5 px-5 py-3.5 border-b border-gray-100"><i data-lucide="globe" class="w-[18px] h-[18px] text-gray-300 shrink-0"></i><span class="shim h-2.5 w-44"></span><span class="shim h-2 w-14"></span><i data-lucide="more-horizontal" class="w-[18px] h-[18px] text-gray-300 ml-auto shrink-0"></i></div>
+            <div class="flex items-center gap-3.5 px-5 py-3.5 border-b border-gray-100 border-b-0"><i data-lucide="globe" class="w-[18px] h-[18px] text-gray-300 shrink-0"></i><span class="shim h-2.5 w-44"></span><span class="shim h-2 w-14"></span><i data-lucide="more-horizontal" class="w-[18px] h-[18px] text-gray-300 ml-auto shrink-0"></i></div>
+        </div>
+        <div id="table-card" class="hidden bg-white rounded-xl border border-gray-100 shadow-[0_2px_12px_rgb(0,0,0,0.05)] overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left min-w-[660px]">
+                    <thead>
+                        <tr class="border-b border-gray-100">
+                            <th class="px-5 py-3 text-[12px] font-bold text-gray-400 uppercase tracking-wider">Domain</th>
+                            <th class="px-5 py-3 text-[12px] font-bold text-gray-400 uppercase tracking-wider">Status</th>
+                            <th class="px-5 py-3 text-[12px] font-bold text-gray-400 uppercase tracking-wider cursor-pointer select-none hover:text-gray-600 transition-colors" onclick="sortBy('created')" title="Urutkan">Ditambahkan <span id="sort-created" class="text-gray-300"></span></th>
+                            <th class="px-5 py-3 text-[12px] font-bold text-gray-400 uppercase tracking-wider cursor-pointer select-none hover:text-gray-600 transition-colors" onclick="sortBy('updated')" title="Urutkan">Terakhir Diubah <span id="sort-updated" class="text-gray-300"></span></th>
+                            <th class="px-5 py-3 text-[12px] font-bold text-gray-400 uppercase tracking-wider text-right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="domain-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+<footer class="mt-auto py-5 text-center">
+    <p class="text-[12px] text-gray-400">© 2026 Clincoo &middot; <a class="hover:underline" href="https://clincoo.buzz/legal/syarat-ketentuan">Syarat &amp; Ketentuan</a> &middot; <a class="hover:underline" href="https://clincoo.buzz/legal/kebijakan-privasi">Kebijakan Privasi</a></p>
+</footer>
+
+<!-- Popover aksi (titik tiga) — menu kecil menempel dekat tombol, tanpa ikon -->
+<div id="actions-backdrop" class="hidden fixed inset-0 z-[55]" onclick="closeActions()"></div>
+<div id="actions-menu" class="hidden fixed z-[60] bg-white rounded-xl shadow-xl py-1 w-44" style="top:0; left:0;">
+    <div id="actions-list" class="flex flex-col"></div>
+</div>
+
+<!-- Modal hapus -->
+<div id="delete-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-5" onclick="if(event.target===this)closeModal('delete-modal')">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-5">
+        <h3 class="text-[15px] font-bold text-gray-900">Hapus Domain?</h3>
+        <p id="delete-domain-name" class="text-[13px] text-gray-500 mt-1"></p>
+        <div class="flex justify-end gap-1 mt-5">
+            <button onclick="closeModal('delete-modal')" class="rounded-md px-3 py-1.5 text-[13px] font-semibold text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors cursor-pointer">Batal</button>
+            <button onclick="confirmDelete()" class="rounded-md px-3 py-1.5 text-[13px] font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer">Hapus</button>
+        </div>
+    </div>
+</div>
+
+<script>
+try { lucide.createIcons(); } catch (e) {}
+
+let deletingId = null;
+
+function goBack() { if (history.length > 1) history.back(); }
+
+function fmtDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+let sortKey = 'created', sortDir = 'desc';
+function sortBy(key) {
+    if (sortKey === key) sortDir = sortDir === 'desc' ? 'asc' : 'desc';
+    else { sortKey = key; sortDir = 'desc'; }
+    render();
+}
+function updateSortIndicators() {
+    const c = document.getElementById('sort-created'), u = document.getElementById('sort-updated');
+    if (c) c.textContent = sortKey === 'created' ? (sortDir === 'desc' ? '\u2193' : '\u2191') : '';
+    if (u) u.textContent = sortKey === 'updated' ? (sortDir === 'desc' ? '\u2193' : '\u2191') : '';
+}
+
+const PIN_KEY = 'clincoo_pinned_domains';
+function getPinned() { try { return JSON.parse(localStorage.getItem(PIN_KEY)) || []; } catch (e) { return []; } }
+function isPinned(name) { return getPinned().includes(name); }
+function togglePin(name) {
+    const p = getPinned();
+    const i = p.indexOf(name);
+    if (i === -1) p.push(name); else p.splice(i, 1);
+    localStorage.setItem(PIN_KEY, JSON.stringify(p));
+    render();
+}
+
+async function render() {
+    const raw = await store.list();
+    const skel = document.getElementById('table-skeleton');
+    if (skel) skel.classList.add('hidden');
+    updateSortIndicators();
+    const list = raw.map(d => ({ id: d.id, name: d.name, note: d.note || '', status: d.status, created: d.created_at || d.created, updated: d.updated_at || d.created_at || d.created })).sort((a, b) => (isPinned(b.name) - isPinned(a.name)) || ((new Date(a[sortKey] || 0) - new Date(b[sortKey] || 0)) * (sortDir === 'desc' ? -1 : 1)));
+    const q = (document.getElementById('search-input').value || '').toLowerCase().trim();
+    const shown = q ? list.filter(d => d.name.toLowerCase().includes(q) || (d.note || '').toLowerCase().includes(q)) : list;
+    const tbody = document.getElementById('domain-tbody');
+    const empty = document.getElementById('empty-state');
+    const card = document.getElementById('table-card');
+    const searchWrap = document.getElementById('search-wrap');
+    const noMatch = document.getElementById('no-match');
+    const aktif = list.filter(d => d.status === 'aktif').length;
+    const pending = list.length - aktif;
+    if (!list.length) {
+        empty.classList.remove('hidden'); empty.classList.add('flex');
+        card.classList.add('hidden'); card.classList.remove('block');
+        searchWrap.classList.add('hidden');
+        noMatch.classList.add('hidden');
+        lucide.createIcons();
+        return;
+    }
+    empty.classList.add('hidden'); empty.classList.remove('flex');
+    searchWrap.classList.remove('hidden');
+    card.classList.remove('hidden'); card.classList.add('block');
+    noMatch.classList.toggle('hidden', shown.length > 0);
+    card.classList.toggle('hidden', shown.length === 0);
+    lastList = list;
+    if (!shown.length) { lucide.createIcons(); return; }
+    {
+        tbody.innerHTML = shown.map(d => `
+            <tr class="border-b border-gray-100 last:border-b-0 group cursor-pointer" onclick="goDomain(this)">
+                <td class="px-5 py-3.5">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="globe" class="w-[18px] h-[18px] text-gray-400 shrink-0"></i>
+                        <div class="min-w-0">
+                            <p class="text-[15px] font-semibold text-gray-900 truncate flex items-center gap-1.5">${isPinned(d.name) ? '<i data-lucide="pin" class="w-3.5 h-3.5 text-accent shrink-0 fill-current"></i>' : ''}<a data-domain data-name="${esc(d.name)}" href="https://${d.name}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="hover:underline decoration-2 underline-offset-4 truncate">${d.name}</a></p>
+                            ${d.note ? `<p class="text-[12px] text-gray-500 truncate mt-0.5">${esc(d.note)}</p>` : ''}
+                        </div>
+                    </div>
+                </td>
+                <td class="px-5 py-3.5">
+                    ${d.status === 'aktif' ? `
+                    <span class="text-[12px] font-semibold text-emerald-600 whitespace-nowrap">Aktif</span>` : `
+                    <span class="text-[12px] font-semibold text-red-600 whitespace-nowrap">Belum terverifikasi</span>`}
+                </td>
+                <td class="px-5 py-3.5 text-[13px] text-gray-500 whitespace-nowrap">${fmtDate(d.created)}</td>
+                <td class="px-5 py-3.5 text-[13px] text-gray-500 whitespace-nowrap">${fmtDate(d.updated)}</td>
+                <td class="px-5 py-3.5 text-right">
+                    <button onclick="openActions(event, '${d.id}')" class="w-8 h-8 flex items-center justify-center cursor-pointer ml-auto active:opacity-60 transition-opacity" title="Aksi lainnya">
+                        <i data-lucide="more-vertical" class="w-[18px] h-[18px] text-gray-400 group-hover:text-gray-900 transition-colors"></i>
+                    </button>
+                </td>
+            </tr>`).join('');
+    }
+    lucide.createIcons();
+}
+
+function goDomain(row) {
+    const a = row.querySelector('a[data-domain]');
+    if (!a) return;
+    location.href = 'detail/?domain=' + encodeURIComponent(a.dataset.name);
+}
+
+function esc(s) { return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+let actioningId = null;
+let lastList = [];
+let deleteName = null;
+function openActions(evt, id) {
+    evt.stopPropagation();
+    const d = lastList.find(x => x.id === id); if (!d) return;
+    actioningId = id;
+    const rows = [];
+    rows.push({ label: 'Detail Domain', action: `location.href='detail/?domain=' + encodeURIComponent('${esc(d.name)}')` });
+    rows.push({ label: isPinned(d.name) ? 'Lepas Sematan' : 'Sematkan', action: `togglePin('${esc(d.name)}')` });
+    if (d.status !== 'aktif') {
+        rows.push({ label: 'Verifikasi Domain', action: `location.href='verifikasi/?domain=' + encodeURIComponent('${esc(d.name)}')` });
+    }
+    rows.push({ label: 'Kelola DNS', action: `location.href='kelola/dns/?domain=' + encodeURIComponent('${esc(d.name)}')` });
+    rows.push({ label: 'SSL/TLS', action: `location.href='kelola/ssl/?domain=' + encodeURIComponent('${esc(d.name)}')` });
+    rows.push({ label: 'Cache', action: `location.href='kelola/cache/?domain=' + encodeURIComponent('${esc(d.name)}')` });
+    rows.push({ label: 'Pengaturan Zone', action: `location.href='kelola/zone/?domain=' + encodeURIComponent('${esc(d.name)}')` });
+    rows.push({ label: 'Hapus Domain', action: `openDelete('${d.id}')`, danger: true });
+    document.getElementById('actions-list').innerHTML = rows.map((r, i) => `
+        <button onclick="closeActions(); ${r.action}" class="w-full text-left px-4 py-2.5 text-[14px] font-medium cursor-pointer transition-colors hover:bg-gray-50 ${r.danger ? 'text-red-600' : 'text-gray-800'}">${r.label}</button>`).join('');
+
+    const menu = document.getElementById('actions-menu');
+    const backdrop = document.getElementById('actions-backdrop');
+    menu.classList.remove('hidden'); backdrop.classList.remove('hidden');
+    const btn = evt.currentTarget.getBoundingClientRect();
+    const menuW = menu.offsetWidth;
+    let left = btn.right - menuW;
+    if (left < 8) left = 8;
+    if (left + menuW > window.innerWidth - 8) left = window.innerWidth - 8 - menuW;
+    let top = btn.bottom + 6;
+    const menuH = menu.offsetHeight;
+    if (top + menuH > window.innerHeight - 8) top = btn.top - menuH - 6;
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+}
+function closeActions() {
+    document.getElementById('actions-menu').classList.add('hidden');
+    document.getElementById('actions-backdrop').classList.add('hidden');
+}
+
+function openDelete(id) {
+    const d = lastList.find(x => x.id === id); if (!d) return;
+    deletingId = id;
+    deleteName = d.name;
+    document.getElementById('delete-domain-name').textContent = '"' + d.name + '" akan dihapus dari daftar. Tindakan ini tidak dapat dibatalkan.';
+    openModal('delete-modal');
+}
+function confirmDelete() {
+    const name = deleteName || '';
+    store.remove(name).then(() => { closeModal('delete-modal'); render(); });
+}
+
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
+
+store.ready.then(render);
+</script>
+</body>
+</html>

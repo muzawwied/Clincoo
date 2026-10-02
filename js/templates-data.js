@@ -7,8 +7,12 @@ var ClinqooTemplates = (function () {
   var inAkun = location.pathname.indexOf('/akun/') !== -1;
   // FIX: path root-absolut — path relatif lama salah dari halaman /akun/ (menghasilkan
   // /akun/assets/templates/*.webp -> 404, jadi tombol 'Lihat Preview' menampilkan gambar rusak)
-  var IMG_BASE = '/assets/templates/';
-  var WS_URL = '/proyek/workspace.html';
+  var _tdSeg = location.pathname.split('/')[1] || '';
+  var _tdKnown = ['akun','proyek','auth','templates','integrasi','assets','js','demo','sw.js','manifest.json','robots.txt','_redirects','index.html','404.html'];
+  var _tdBase = location.hostname.indexOf('github.io') !== -1 && _tdSeg && _tdKnown.indexOf(_tdSeg) === -1 ? '/' + _tdSeg : '';
+  var IMG_BASE = _tdBase + '/assets/templates/';
+  var WS_URL = _tdBase + '/proyek/workspace.html';
+  var DEMO_BASE = _tdBase;
   var API_BASE = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api');
 
   var list = {
@@ -293,7 +297,7 @@ var ClinqooTemplates = (function () {
     var t = list[key];
     if (!t) return;
     // Template dengan situs live (mis. portfolio) — buka langsung di tab baru
-    if (t.url) { window.open(t.url, '_blank', 'noopener'); return; }
+    if (t.url) { window.open(DEMO_BASE + t.url, '_blank', 'noopener'); return; }
     var modal = document.getElementById('template-preview-modal');
     if (modal) modal.remove();
     modal = document.createElement('div');

@@ -1,801 +1,609 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
-  
-  <script src="../../../js/ws-github-sync.js"></script>
-  <script src="../../../js/accent-init.js"></script>
-  <script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%0A%20%20%0A%20%20%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%2216%22%20fill%3D%22%23ffffff%22%2F%3E%0A%20%20%3Cg%20fill%3D%22%23000000%22%3E%0A%20%20%20%20%3Cpath%20d%3D%22M10%2016C7%2010%209%207%2012%207C14%207%2015%2011%2013%2016Z%22%2F%3E%3Cpath%20d%3D%22M12%209C10.5%2011%2011%2013%2012%2014.5C13%2013%2013.5%2011%2012%209Z%22%20fill%3D%22%23ffffff%22%20opacity%3D%220.25%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M22%2016C25%2010%2023%207%2020%207C18%207%2017%2011%2019%2016Z%22%2F%3E%3Cpath%20d%3D%22M20%209C21.5%2011%2021%2013%2020%2014.5C19%2013%2018.5%2011%2020%209Z%22%20fill%3D%22%23ffffff%22%20opacity%3D%220.25%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M16%2027C24%2027%2028%2022.5%2028%2017C28%2012.5%2021%2011.5%2016%2011.5C11%2011.5%204%2012.5%204%2017C4%2022.5%208%2027%2016%2027Z%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%20%20%3Ccircle%20cx%3D%2212.5%22%20cy%3D%2217%22%20r%3D%221.5%22%20fill%3D%22%23ffffff%22%20opacity%3D%220.6%22%2F%3E%3Ccircle%20cx%3D%2219.5%22%20cy%3D%2217%22%20r%3D%221.5%22%20fill%3D%22%23ffffff%22%20opacity%3D%220.6%22%2F%3E%3Cpolygon%20points%3D%2216%2C20%2015%2C18.5%2017%2C18.5%22%20fill%3D%22%23ffffff%22%20opacity%3D%220.5%22%2F%3E%0A%3C%2Fsvg%3E">
-    <link rel="manifest" href="../../../manifest.json">
-    <link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com https://unpkg.com; img-src 'self' https: data: blob:; connect-src 'self' https: blob:;">
-  <title>Editor Kode — Clincoo</title>
 
+  <script src="../../../js/auth-client.js?v=4"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lihat Kode — Clincoo</title>
+<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#141416';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+<script>/* embed=1: kode page di dalam split view chat */(function(){try{if(/(^|[?&])embed=1(&|$)/.test(location.search)){document.documentElement.classList.add('embed-mode');}}catch(e){}})();</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;font-size:13px;
+  background:#f4f4f6;color:#24242a;display:flex;flex-direction:column;
+}
+body.dark-mode{background:#141416;color:#d6d6dc}
 
-    <meta name="description" content="Editor Kode — kelola langsung di Clincoo, platform pembuatan website dengan AI: template profesional, generate AI, editor kode, dan deploy instan.">
-    <meta name="robots" content="noindex">
-    <meta name="theme-color" content="#ffffff">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Clincoo">
-    <meta property="og:title" content="Editor Kode — Clincoo">
-    <meta property="og:description" content="Editor Kode — kelola langsung di Clincoo, platform pembuatan website dengan AI: template profesional, generate AI, editor kode, dan deploy instan.">
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Clincoo">
-    <meta property="og:url" content="https://app.clincoo.buzz/">
-    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Editor Kode — Clincoo">
-    <meta name="twitter:description" content="Editor Kode — kelola langsung di Clincoo, platform pembuatan website dengan AI: template profesional, generate AI, editor kode, dan deploy instan.">
-    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    /* ===== Clinqoo Code — style editor workspace (dari repo Clinqoo-Editor) ===== */
-    :root{ --err:#e55454; --ok:#7dca7d; --status:#131316; --radius:10px; }
-    body{
-      --accent:#4a4a55; --accent-soft:rgba(74,74,85,.12); --btn-bg:#1a1a1e;
-      --bg:#f4f4f6; --bg2:#ececef; --bg3:#e4e4e8; --bg4:#dcdce2;
-      --line:#d8d8de; --line2:#c8c8d0;
-      --text:#24242a; --text2:#5c5c66; --text3:#90909a;
-      --tab-bg:#e9e9ee; --editor-bg:#ffffff;
-      --shadow:0 12px 40px rgba(0,0,0,.18);
-    }
-    body.dark-mode{
-      --accent:#b6b6c2; --accent-soft:rgba(182,182,194,.13); --btn-bg:#34343c;
-      --bg:#141416; --bg2:#1a1a1d; --bg3:#202024; --bg4:#26262b;
-      --line:#2c2c33; --line2:#3a3a42;
-      --text:#d6d6dc; --text2:#9a9aa4; --text3:#6c6c76;
-      --tab-bg:#1d1d21; --editor-bg:#1a1a1d;
-      --shadow:0 12px 40px rgba(0,0,0,.5);
-    }
-    *{margin:0;padding:0;box-sizing:border-box}
-    html,body{height:100%;overflow:hidden}
-    body{font-family:'Inter',system-ui,-apple-system,sans-serif;font-size:13px;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
-    button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer}
-    svg{flex-shrink:0}
-    .hidden{display:none!important}
-    ::-webkit-scrollbar{width:10px;height:10px}
-    ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:6px;border:2px solid transparent;background-clip:content-box}
-    ::-webkit-scrollbar-thumb:hover{background:var(--text3);border:2px solid transparent;background-clip:content-box}
+/* ===== Header ramping ===== */
+.kd-header{
+  position:sticky;top:0;z-index:20;flex-shrink:0;
+  display:flex;align-items:center;gap:10px;
+  height:52px;padding:0 12px;
+  background:#ececef;border-bottom:1px solid #d8d8de;
+}
+body.dark-mode .kd-header{background:#1a1a1d;border-bottom-color:#2c2c33}
+.kd-back{
+  flex-shrink:0;width:38px;height:38px;border-radius:999px;
+  display:flex;align-items:center;justify-content:center;
+  background:#fff;border:1px solid #d8d8de;color:#24242a;cursor:pointer;transition:.15s;
+}
+.kd-back:hover{background:#e4e4e8}
+body.dark-mode .kd-back{background:#202024;border-color:#3a3a42;color:#d6d6dc}
+body.dark-mode .kd-back:hover{background:#26262b}
+.kd-back svg{width:18px;height:18px}
+.kd-meta{min-width:0;flex:1}
+.kd-fname{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kd-sub{font-size:11.5px;color:#5c5c66;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.dark-mode .kd-sub{color:#9a9aa4}
+.kd-btn{
+  flex-shrink:0;border:none;cursor:pointer;font-family:inherit;font-weight:600;font-size:12.5px;
+  height:34px;padding:0 16px;border-radius:999px;transition:.15s;
+  background:#1a1a1e;color:#fff;
+}
+.kd-btn:hover{opacity:.85}
+.kd-btn.ghost{background:transparent;border:1px solid rgba(0,0,0,.15);color:inherit}
+.kd-btn.ghost:hover{background:rgba(0,0,0,.05)}
+body.dark-mode .kd-btn{background:#e9e9ee;color:#141416}
+body.dark-mode .kd-btn.ghost{background:transparent;border:1px solid #3a3a42;color:#d6d6dc}
+body.dark-mode .kd-btn.ghost:hover{background:#26262b}
 
-    /* ===== Title bar ===== */
-    #titlebar{height:48px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 10px;gap:10px;flex-shrink:0;user-select:none}
-    .tb-btn{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--text2)}
-    #back-btn{border-radius:50%}
-    .tb-btn:hover{background:var(--bg4);color:var(--text)}
-    #logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14px;letter-spacing:-.01em;padding:0 4px}
-    #logo svg{width:22px;height:22px;color:var(--text)}
-    #logo b{color:var(--text)}#logo span{color:var(--accent)}
-    #titlebar .spacer{flex:1}
-    #save-btn{display:flex;align-items:center;gap:7px;height:32px;padding:0 13px;border-radius:8px;background:var(--btn-bg);color:#fff;font-weight:600;font-size:12.5px;transition:.15s}
-    #save-btn:hover{filter:brightness(1.12)}
-    #save-btn:disabled{opacity:.4;pointer-events:none}
+/* ===== Area editor ===== */
+.kd-main{flex:1;min-height:0;position:relative;display:flex}
+#kd-editor{flex:1;min-width:0}
+/* fallback tanpa Monaco: teks polos */
+.kd-fallback{display:none;flex:1;min-width:0}
+.kd-fallback.on{display:block}
+.kd-code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:13px;line-height:1.55;padding:16px;min-height:100%;
+  white-space:pre;overflow:auto;tab-size:2;
+}
+.kd-edit{
+  width:100%;height:100%;min-height:60vh;display:none;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:13px;line-height:1.55;padding:16px;
+  border:none;outline:none;resize:none;
+  background:transparent;color:inherit;
+  white-space:pre;overflow:auto;
+}
+.kd-edit.on{display:block}
 
-    /* ===== Tabs bar ===== */
-    #tabsbar{height:40px;background:var(--tab-bg);display:flex;align-items:stretch;border-bottom:1px solid var(--line);flex-shrink:0}
-    #tabs{display:flex;overflow-x:auto;scrollbar-width:none}
-    #tabs::-webkit-scrollbar{display:none}
-    .tab{display:flex;align-items:center;gap:7px;padding:0 16px;font-size:12.6px;color:var(--text2);cursor:default;border-right:1px solid var(--line);position:relative;white-space:nowrap;max-width:260px}
-    .tab .nm{overflow:hidden;text-overflow:ellipsis;font-weight:500}
-    .tab.active{color:var(--text);background:var(--editor-bg)}
-    .tab.active::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent)}
-    .tab .dirty{width:7px;height:7px;border-radius:50%;background:var(--text2);display:none}
-    .tab.dirty .dirty{display:block}
-    .fico{width:15px;height:15px;display:inline-grid;place-items:center;flex-shrink:0}
-    .fico svg{width:15px;height:15px;display:block}
+.kd-empty{padding:60px 20px;text-align:center;color:#5c5c66;flex:1}
+.kd-empty h2{font-size:15px;margin-bottom:8px;color:inherit}
+body.dark-mode .kd-empty{color:#9a9aa4}
 
-    /* ===== Editor stage ===== */
-    #stage{flex:1;display:flex;min-height:0;position:relative}
-    #editor-code-container{flex:1;display:flex;min-width:0}
-    #editor-code-container .CodeMirror{flex:1;height:100%;font-family:'Fira Code',monospace;font-size:14px;line-height:1.65}
-    .media-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;background:var(--editor-bg)}
-    .media-inner{display:flex;flex-direction:column;align-items:center;gap:26px;width:100%;max-width:420px}
-    .audio-circle{width:112px;height:112px;border-radius:50%;background:var(--bg3);border:1px solid var(--line2);display:grid;place-items:center;color:var(--accent)}
-    .audio-circle svg{width:52px;height:52px}
-    #audio-player{width:100%;border-radius:12px;outline:none}
-    .media-card{background:var(--bg3);border:1px solid var(--line);border-radius:14px;padding:10px;box-shadow:var(--shadow);max-width:100%}
-    .pdf-card{width:100%;height:100%;max-width:none;display:flex}
-    .pdf-card iframe{flex:1;width:100%;height:100%;border:none;border-radius:9px;background:#fff}
-    .pdf-note{padding:28px 20px;color:var(--text3);font-size:13px;text-align:center;line-height:1.7}
-    .media-card.wide{width:100%;max-width:960px;display:flex;justify-content:center}
-    #video-player{width:100%;max-height:calc(100vh - 200px);border-radius:9px;background:#000;outline:none;object-fit:contain}
-    #image-preview{max-width:100%;max-height:calc(100vh - 200px);object-fit:contain;border-radius:9px;display:block}
+/* ===== Preview media (gambar/audio/video/pdf) ===== */
+.kd-preview{display:none;flex:1;min-width:0;align-items:center;justify-content:center;overflow:auto;padding:24px;background:#ececef}
+body.dark-mode .kd-preview{background:#1a1a1d}
+.kd-preview.on{display:flex}
+.kd-preview img{max-width:100%;max-height:100%;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.18);background:#fff}
+.kd-preview audio{width:min(420px,90%)}
+.kd-preview video{max-width:100%;max-height:100%;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.18)}
+.kd-preview iframe{width:100%;height:100%;border:none;border-radius:10px;background:#fff}
 
-    /* ===== CodeMirror theme: clinqoo-dark / clinqoo-light ===== */
-    .CodeMirror{background:var(--editor-bg)!important;color:var(--text)!important}
-    .CodeMirror-gutters{background:var(--editor-bg)!important;border-right:1px solid var(--line)!important}
-    .CodeMirror-linenumber{color:var(--text3)!important}
-    .CodeMirror-activeline-background{background:rgba(127,127,140,.08)}
-    .CodeMirror-selected{background:rgba(127,127,140,.22)!important}
-    .CodeMirror-focused .CodeMirror-selected{background:rgba(127,127,140,.26)!important}
-    .CodeMirror-cursor{border-left:2px solid var(--accent)!important}
-    .CodeMirror-matchingbracket{color:var(--accent)!important;font-weight:600;text-decoration:none!important}
-    .cm-s-clinqoo-dark .cm-keyword{color:#569cd6}.cm-s-clinqoo-dark .cm-atom{color:#569cd6}
-    .cm-s-clinqoo-dark .cm-number{color:#b5cea8}.cm-s-clinqoo-dark .cm-def{color:#9cdcfe}
-    .cm-s-clinqoo-dark .cm-variable{color:#9cdcfe}.cm-s-clinqoo-dark .cm-variable-2{color:#9cdcfe}
-    .cm-s-clinqoo-dark .cm-variable-3{color:#9cdcfe}.cm-s-clinqoo-dark .cm-property{color:#9cdcfe}
-    .cm-s-clinqoo-dark .cm-operator{color:#d4d4d4}.cm-s-clinqoo-dark .cm-comment{color:#6a9955;font-style:italic}
-    .cm-s-clinqoo-dark .cm-string{color:#ce9178}.cm-s-clinqoo-dark .cm-string-2{color:#ce9178}
-    .cm-s-clinqoo-dark .cm-meta{color:#c586c0}.cm-s-clinqoo-dark .cm-qualifier{color:#d7ba7d}
-    .cm-s-clinqoo-dark .cm-builtin{color:#dcdcaa}.cm-s-clinqoo-dark .cm-bracket{color:#d6d6dc}
-    .cm-s-clinqoo-dark .cm-tag{color:#569cd6}.cm-s-clinqoo-dark .cm-attribute{color:#9cdcfe}
-    .cm-s-clinqoo-dark .cm-error{color:#e55454}
-    .cm-s-clinqoo-light .cm-keyword{color:#0000ff}.cm-s-clinqoo-light .cm-atom{color:#0000ff}
-    .cm-s-clinqoo-light .cm-number{color:#098658}.cm-s-clinqoo-light .cm-def{color:#001080}
-    .cm-s-clinqoo-light .cm-variable{color:#001080}.cm-s-clinqoo-light .cm-variable-2{color:#001080}
-    .cm-s-clinqoo-light .cm-variable-3{color:#001080}.cm-s-clinqoo-light .cm-property{color:#001080}
-    .cm-s-clinqoo-light .cm-operator{color:#24242a}.cm-s-clinqoo-light .cm-comment{color:#008000;font-style:italic}
-    .cm-s-clinqoo-light .cm-string{color:#a31515}.cm-s-clinqoo-light .cm-string-2{color:#a31515}
-    .cm-s-clinqoo-light .cm-meta{color:#795e26}.cm-s-clinqoo-light .cm-qualifier{color:#0000cc}
-    .cm-s-clinqoo-light .cm-builtin{color:#0000ff}.cm-s-clinqoo-light .cm-bracket{color:#24242a}
-    .cm-s-clinqoo-light .cm-tag{color:#800000}.cm-s-clinqoo-light .cm-attribute{color:#e50000}
-    .cm-s-clinqoo-light .cm-error{color:#e55454}
-    body.dark-mode .CodeMirror-linenumber{color:#4c4c56!important}
-    body.dark-mode .CodeMirror-activeline .CodeMirror-linenumber{color:#9a9aa4!important}
-    body:not(.dark-mode) .CodeMirror-activeline .CodeMirror-linenumber{color:#5c5c66!important}
+/* ===== Status bar minimalis ===== */
+.kd-status{
+  flex-shrink:0;display:flex;align-items:center;gap:14px;
+  height:26px;padding:0 12px;font-size:11.5px;color:#5c5c66;
+  background:#e4e4e8;border-top:1px solid #d8d8de;user-select:none;
+}
+body.dark-mode .kd-status{background:#131316;border-top-color:#2c2c33;color:#9a9aa4}
+.kd-status .spacer{flex:1}
 
-    /* ===== Quick tools ===== */
-    #quicktools{height:40px;display:flex;align-items:center;background:var(--bg2);border-bottom:1px solid var(--line);flex-shrink:0;padding:0 6px;gap:6px}
-    .qt-fixed{display:flex;align-items:center;gap:2px;flex-shrink:0}
-    .qt-btn{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--text2);font-size:13px;font-weight:700;flex-shrink:0}
-    .qt-btn:hover{background:var(--bg4);color:var(--text)}
-    .qt-sep{width:1px;height:20px;background:var(--line);flex-shrink:0}
-    .qt-swatch{width:16px;height:16px;border-radius:50%;background:conic-gradient(from 180deg,#ff5f5f,#ffd15f,#6bff6b,#5fd8ff,#7a6bff,#ff5fd1,#ff5f5f);border:1.5px solid var(--line2)}
-    .qt-snippets{flex:1;display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none;min-width:0}
-    .qt-snippets::-webkit-scrollbar{display:none}
-    .qt-chip{flex-shrink:0;height:28px;padding:0 11px;border-radius:7px;background:var(--bg3);border:1px solid var(--line);color:var(--text);font-family:'Fira Code',monospace;font-size:12px;white-space:nowrap;cursor:pointer}
-    .qt-chip:hover{border-color:var(--line2);background:var(--bg4)}
-    #color-picker{position:fixed;z-index:970;display:none;background:var(--bg3);border:1px solid var(--line2);border-radius:12px;box-shadow:var(--shadow);padding:12px;width:216px}
-    #color-picker.show{display:block}
-    .cp-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:10px}
-    .cp-swatch{width:20px;height:20px;border-radius:6px;border:1px solid rgba(0,0,0,.15);cursor:pointer}
-    .cp-swatch:hover{transform:scale(1.15)}
-    .cp-hexrow{display:flex;gap:6px}
-    .cp-hexrow input{flex:1;height:30px;background:var(--bg);border:1px solid var(--line2);border-radius:7px;padding:0 9px;font-size:12px;font-family:'Fira Code',monospace;outline:none;color:var(--text)}
-    .cp-hexrow button{height:30px;padding:0 12px;border-radius:7px;background:var(--btn-bg);color:#fff;font-size:12px;font-weight:600;cursor:pointer}
+/* ===== Toolbar quick-tools (undo/redo/tab/warna/snippet) ala Clincoo Code ===== */
+.kd-tools{
+  flex-shrink:0;display:flex;align-items:center;gap:6px;
+  height:40px;padding:0 6px;
+  background:#ececef;border-bottom:1px solid #d8d8de;
+}
+.kd-tools[hidden]{display:none}
+body.dark-mode .kd-tools{background:#1a1a1d;border-bottom-color:#2c2c33}
+.kd-qt-btn{
+  flex-shrink:0;width:30px;height:30px;border-radius:8px;border:none;background:transparent;cursor:pointer;
+  display:grid;place-items:center;color:#5c5c66;font-size:13px;font-weight:700;transition:.15s;
+}
+.kd-qt-btn:hover{background:#e4e4e8;color:#24242a}
+body.dark-mode .kd-qt-btn{color:#9a9aa4}
+body.dark-mode .kd-qt-btn:hover{background:#26262b;color:#d6d6dc}
+.kd-qt-sep{width:1px;height:20px;background:#d8d8de;flex-shrink:0}
+body.dark-mode .kd-qt-sep{background:#2c2c33}
+.kd-qt-swatch{width:16px;height:16px;border-radius:50%;border:1.5px solid #d8d8de;
+  background:conic-gradient(from 180deg,#ff5f5f,#ffd15f,#6bff6b,#5fd8ff,#7a6bff,#ff5fd1,#ff5f5f);}
+body.dark-mode .kd-qt-swatch{border-color:#3a3a42}
+.kd-qt-snippets{flex:1;min-width:0;display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none}
+.kd-qt-snippets::-webkit-scrollbar{display:none}
+.kd-qt-chip{
+  flex-shrink:0;height:28px;padding:0 11px;border-radius:7px;cursor:pointer;
+  background:#fff;border:1px solid #d8d8de;color:#24242a;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;white-space:nowrap;transition:.15s;
+}
+.kd-qt-chip:hover{border-color:#c8c8d0;background:#e4e4e8}
+body.dark-mode .kd-qt-chip{background:#202024;border-color:#3a3a42;color:#d6d6dc}
+body.dark-mode .kd-qt-chip:hover{border-color:#4a4a55;background:#26262b}
 
-    /* ===== Status bar ===== */
-    #statusbar{height:25px;background:var(--status);color:#fff;display:flex;align-items:center;font-size:11.5px;flex-shrink:0;user-select:none}
-    #statusbar .sb{padding:0 10px;height:100%;display:flex;align-items:center;gap:5px;cursor:default;white-space:nowrap;color:rgba(255,255,255,.85)}
-    #statusbar .spacer{flex:1}
-    #statusbar .sb.err{color:#ff9b9b}
-    #statusbar .sb.ok{color:rgba(255,255,255,.85)}
+.kd-cp{position:fixed;z-index:970;display:none;background:#fff;border:1px solid #d8d8de;border-radius:12px;
+  box-shadow:0 12px 40px rgba(0,0,0,.18);padding:12px;width:216px}
+.kd-cp.show{display:block}
+body.dark-mode .kd-cp{background:#202024;border-color:#3a3a42;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.kd-cp-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:10px}
+.kd-cp-swatch{width:20px;height:20px;border-radius:6px;border:1px solid rgba(0,0,0,.15);cursor:pointer;transition:.1s}
+.kd-cp-swatch:hover{transform:scale(1.15)}
+.kd-cp-hexrow{display:flex;gap:6px}
+.kd-cp-hexrow input{flex:1;height:30px;background:#f4f4f6;border:1px solid #d8d8de;border-radius:7px;padding:0 9px;
+  font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;outline:none;color:inherit}
+body.dark-mode .kd-cp-hexrow input{background:#1a1a1d;border-color:#3a3a42}
+.kd-cp-hexrow button{height:30px;padding:0 12px;border-radius:999px;border:none;cursor:pointer;background:#1a1a1e;color:#fff;font-size:12px;font-weight:600}
+body.dark-mode .kd-cp-hexrow button{background:#e9e9ee;color:#141416}
 
-    /* ===== Modal konfirmasi (minimalis) ===== */
-    .ee-overlay{position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);padding:1rem}
-    .ee-card{background:var(--bg3);border:1px solid var(--line2);border-radius:8px;padding:1rem;width:100%;max-width:300px;box-shadow:var(--shadow)}
-    .ee-card h3{color:var(--text);font-weight:500;font-size:.9375rem;margin:0 0 .25rem}
-    .ee-card p{font-size:.8125rem;color:var(--text2);margin:0 0 1rem}
-    .ee-card p span{color:var(--text);font-weight:500}
-    .ee-btns{display:flex;flex-direction:column}
-    .ee-btns button{cursor:pointer;font-size:.8125rem;border-radius:6px;width:100%}
-    #ee-save{background:#000;color:#fff;font-weight:500;padding:.5rem}
-    #ee-discard{border:1px solid var(--line2);color:var(--text);background:transparent;padding:.5rem;margin-top:.375rem}
-    #ee-cancel{color:var(--text3);background:none;border:none;padding:.4rem 0 0;margin-top:.125rem}
-    #ee-cancel:hover{color:var(--text2)}
-  </style>
-<!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clinqoo) -->
-<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+.kd-toast{
+  position:fixed;bottom:36px;left:50%;transform:translateX(-50%);
+  background:#1a1a1e;color:#fff;font-size:12.5px;font-weight:600;
+  padding:9px 18px;border-radius:999px;z-index:50;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+body.dark-mode .kd-toast{background:#e9e9ee;color:#141416}
+.kd-toast.show{opacity:1}
 
-    <script>/* clinqoo-seo-auto: canonical & og mengikuti domain aktif */
-(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<3;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
-    </script>
-<!-- Google tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-KMQ8WBZF6E');
-</script>
-<!-- End Google tag -->
-<script src="../../../js/i18n-dict.js" defer></script>
-<script src="../../../js/i18n.js" defer></script>
+/* Cegah auto-zoom iOS/Android saat mengetik di editor */
+.monaco-editor .inputarea{font-size:16px!important}
+@media (pointer:coarse){input,textarea,select{font-size:16px!important}}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#c8c8d0;border-radius:6px;border:2px solid transparent;background-clip:content-box}
+body.dark-mode ::-webkit-scrollbar-thumb{background:#3a3a42;border-radius:6px;border:2px solid transparent;background-clip:content-box}
+/* embed=1: dipakai dalam split view halaman chat — header chat (fixed) menutupi ~76px atas iframe,
+   geser seluruh halaman turun agar header lokal (tombol kembali, nama berkas) tetap terlihat */
+html.embed-mode body{padding-top:76px}
+</style>
 </head>
 <body>
-    <script>(function(){var t=localStorage.getItem("clinqoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
-
-
-  <div id="titlebar">
-    <button id="back-btn" class="tb-btn" onclick="navigateBackFromEditor()" title="Kembali ke Workspace">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-    </button>
-    <div id="logo">
-      <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 9.5L5 16L11 22.5"/><path d="M21 9.5L27 16L21 22.5"/><path d="M16 8.5V23.5"/></svg>
-      <b>Clincoo</b> <span>Code</span>
-    </div>
-    <div class="spacer"></div>
-    <button id="save-btn" onclick="editorSaveInPlace()" disabled title="Simpan">
-     
-      <span>Simpan</span>
-    </button>
+<div class="kd-header">
+  <button class="kd-back" onclick="history.back()" aria-label="Kembali">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+  </button>
+  <div class="kd-meta">
+    <div class="kd-fname" id="kd-fname">…</div>
+    <div class="kd-sub" id="kd-sub"></div>
   </div>
-  
-  <div id="quicktools" class="hidden">
-    <div class="qt-fixed">
-      <button class="qt-btn" onclick="edAction('undo')" title="Urungkan"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg></button>
-      <button class="qt-btn" onclick="edAction('redo')" title="Ulangi"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M21 13a9 9 0 1 1-3-7.7L21 8"/></svg></button>
-      <button class="qt-btn" onclick="qtInsert('\t')" title="Tab">&#8677;</button>
-      <button class="qt-btn" onclick="qtMoveCursor(-1)" title="Kiri"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
-      <button class="qt-btn" onclick="qtMoveCursor(1)" title="Kanan"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="qt-btn qt-color" onclick="toggleColorPicker(event)" title="Pemetik warna"><span class="qt-swatch" id="qt-swatch-dot"></span></button>
-    </div>
-    <div class="qt-sep"></div>
-    <div class="qt-snippets" id="qt-snippets"></div>
+  <button class="kd-btn" id="kd-save-btn" type="button">Simpan</button>
+</div>
+<div class="kd-tools" id="kd-tools" hidden>
+  <button class="kd-qt-btn" id="kd-undo-btn" title="Urungkan" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg></button>
+  <button class="kd-qt-btn" id="kd-redo-btn" title="Ulangi" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M21 13a9 9 0 1 1-3-7.7L21 8"/></svg></button>
+  <button class="kd-qt-btn" id="kd-tab-btn" title="Tab" type="button">⇥</button>
+  <button class="kd-qt-btn kd-qt-color" id="kd-color-btn" title="Pemetik warna" type="button"><span class="kd-qt-swatch"></span></button>
+  <div class="kd-qt-sep"></div>
+  <div class="kd-qt-snippets" id="kd-qt-snippets"></div>
+</div>
+<div class="kd-cp" id="kd-cp"></div>
+<div class="kd-main">
+  <div id="kd-editor"></div>
+  <div class="kd-fallback" id="kd-fallback">
+    <pre class="kd-code" id="kd-code"></pre>
+    <textarea class="kd-edit" id="kd-edit" spellcheck="false"></textarea>
   </div>
-  <div id="color-picker"></div>
-  <div id="stage">
-    <div id="editor-code-container">
-      <textarea id="editor-code-textarea" class="hidden"></textarea>
-    </div>
-    <div id="editor-audio-container" class="hidden media-wrap">
-      <div class="media-inner">
-        <div class="audio-circle">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 3h-7v10.55A3.98 3.98 0 0 0 11 13c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h5v6.55A3.98 3.98 0 0 0 14 13c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V3z"/></svg>
-        </div>
-        <audio id="audio-player" controls></audio>
-      </div>
-    </div>
-    <div id="editor-video-container" class="hidden media-wrap">
-      <div class="media-card wide"><video id="video-player" controls></video></div>
-    </div>
-    <div id="editor-image-container" class="hidden media-wrap">
-      <div class="media-card"><img id="image-preview" src="" alt="Preview"></div>
-    </div>
-    <div id="editor-pdf-container" class="hidden media-wrap">
-      <div class="media-card pdf-card"><iframe id="pdf-frame" title="PDF"></iframe></div>
-    </div>
+  <div class="kd-preview" id="kd-preview"></div>
+  <div class="kd-empty" id="kd-empty" style="display:none">
+    <h2>Berkas tidak ditemukan</h2>
+    <p>Berkas mungkin sudah dihapus atau dipindahkan.</p>
   </div>
-  <div id="statusbar">
-    <div class="sb" id="sb-path">workspace/</div>
-    <div class="spacer"></div>
-    <div class="sb ok" id="sb-saved">Tersimpan</div>
-    <div class="sb" id="sb-pos"></div>
-  </div>
+</div>
+<div class="kd-status" id="kd-status" hidden>
+  <span id="kd-st-size">—</span>
+  <span class="spacer"></span>
+  <span id="kd-st-cursor">Ln 1, Col 1</span>
+</div>
+<div class="kd-toast" id="kd-toast">Tersimpan</div>
 
-    <script>
-    const WS_CLOUD_API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-files';
-    let currentFolderPath = 'root';
-    let editingFileName = null;
-    let projectFilesData = { 'root': [] };
-    let codeEditor = null;
-    let editorOriginalContent = null;
-    let editorDirty = false;
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.min.js"></script>
+<script>
+(function () {
+  var qs = new URLSearchParams(location.search);
+  var pid = qs.get('id') || '';
+  var folder = qs.get('folder') || '';
+  var fname = qs.get('file') || '';
+  var key = 'clinqoo_workspace_files_' + (pid || 'global');
 
-    function wsFilesKey() {
-      let pid = null;
-      try { pid = localStorage.getItem('clinqoo_current_project_id'); } catch (e) {}
-      return 'clinqoo_workspace_files_' + (pid ? String(pid) : 'global');
+  var elFname = document.getElementById('kd-fname');
+  var elSub = document.getElementById('kd-sub');
+  var elCode = document.getElementById('kd-code');
+  var elEdit = document.getElementById('kd-edit');
+  var elEmpty = document.getElementById('kd-empty');
+  var elSaveBtn = document.getElementById('kd-save-btn');
+  var elToast = document.getElementById('kd-toast');
+  var elStatus = document.getElementById('kd-status');
+  var elStSize = document.getElementById('kd-st-size');
+  var elStCursor = document.getElementById('kd-st-cursor');
+  var elFallback = document.getElementById('kd-fallback');
+  var elPreview = document.getElementById('kd-preview');
+  var elTools = document.getElementById('kd-tools');
+  var elUndoBtn = document.getElementById('kd-undo-btn');
+  var elRedoBtn = document.getElementById('kd-redo-btn');
+  var elTabBtn = document.getElementById('kd-tab-btn');
+  var elColorBtn = document.getElementById('kd-color-btn');
+  var elSnippets = document.getElementById('kd-qt-snippets');
+  var elCp = document.getElementById('kd-cp');
+
+  /* ---------- snippet cepat per-bahasa (samakan dengan Clincoo Code) ---------- */
+  var SNIPPETS = {
+    html: ['<div>|</div>', '<a href="|"></a>', '<img src="|" alt="">', ' class="|"', ' id="|"', '<!-- | -->', '<span>|</span>', '</', '>', '<', '-', '&nbsp;'],
+    css: ['{\n\t|\n}', ':', ';', '%', 'px', 'rem', '.class{|}', '#id{|}', ':hover{|}', '@media{|}'],
+    javascript: ['(|)', '{|}', '[|]', '=>', 'console.log(|)', 'function () {|}', 'const |', '===', '!==', '; '],
+    typescript: ['(|)', '{|}', '[|]', '=>', 'console.log(|)', 'function (): void {|}', 'const |: string', 'interface |{}', '===', '!=='],
+    markdown: ['**|**', '_|_', '# |', '- |', '[|]()', '```|```', '> |'],
+    json: ['{|}', '[|]', ':', ',', '"|": ""'],
+    plaintext: ['{', '}', '(', ')', '[', ']', '<', '>', '=', '-'],
+  };
+  var CP_COLORS = ['#000000', '#ffffff', '#e55454', '#f0ad4e', '#f5d76e', '#2fbf71', '#3ba9e0', '#5c6bc0', '#8a5cf6', '#e5604f', '#9a9aa4', '#4a4a55', '#d6d6dc', '#6c6c76', '#26262b', '#1a1a1d'];
+  function escHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+
+  /* ---------- jenis berkas media (samakan dengan daftar Workspace) ---------- */
+  var AUDIO_EXT=['mp3','wav','ogg','oga','flac','m4a','m4b','aac','opus','wma','aiff','aif','amr','mid','midi'];
+  var VIDEO_EXT=['mp4','m4v','avi','mkv','mov','webm','wmv','flv','mpg','mpeg','3gp','3g2','ogv'];
+  var IMAGE_EXT=['png','jpg','jpeg','jfif','svg','gif','webp','bmp','ico','avif','apng','tif','tiff','heic','heif'];
+  var PDF_EXT=['pdf'];
+  function mediaKind(ext){
+    if (IMAGE_EXT.indexOf(ext)!==-1) return 'image';
+    if (AUDIO_EXT.indexOf(ext)!==-1) return 'audio';
+    if (VIDEO_EXT.indexOf(ext)!==-1) return 'video';
+    if (PDF_EXT.indexOf(ext)!==-1) return 'pdf';
+    return 'code';
+  }
+
+  document.title = (fname || 'Lihat Kode') + ' — Clincoo';
+
+  // tema
+  try {
+    var t = localStorage.getItem('clinqoo_theme') || 'Sistem (Default)';
+    var isDark = (t === 'Gelap') || ((!t || t === 'Sistem (Default)') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (isDark) document.body.classList.add('dark-mode');
+  } catch (e) {}
+
+  /* ---------- ekstensi -> bahasa (samakan dengan Clincoo Code) ---------- */
+  var LANGS={js:'javascript',mjs:'javascript',jsx:'javascript',ts:'typescript',tsx:'typescript',html:'html',htm:'html',css:'css',scss:'scss',json:'json',md:'markdown',py:'python',xml:'xml',svg:'xml',yml:'yaml',yaml:'yaml',txt:'plaintext',sh:'shell',sql:'sql',java:'java',c:'cpp',cpp:'cpp',cs:'csharp',go:'go',rs:'rust',php:'php',rb:'ruby',swift:'swift',kt:'kotlin'};
+  var LANG_LABELS={javascript:'JavaScript',typescript:'TypeScript',html:'HTML',css:'CSS',scss:'SCSS',json:'JSON',markdown:'Markdown',python:'Python',xml:'XML',yaml:'YAML',plaintext:'Plain Text',shell:'Shell',sql:'SQL',java:'Java',cpp:'C++',csharp:'C#',go:'Go',rust:'Rust',php:'PHP',ruby:'Ruby',swift:'Swift',kotlin:'Kotlin'};
+  function extOf(name){ var n=String(name||'').trim(); if(!n) return ''; if(n.indexOf('.')>0) return n.split('.').pop().toLowerCase(); if(n.charAt(0)==='.') return n.slice(1).toLowerCase(); return ''; }
+  function langOf(name){ return LANGS[extOf(name)] || 'plaintext'; }
+  function langLabel(name){ var l=langOf(name); return LANG_LABELS[l] || l.toUpperCase(); }
+
+  function loadData() {
+    try { return JSON.parse(localStorage.getItem(key)) || {}; } catch (e) { return {}; }
+  }
+  function findItem(data) {
+    var arr = data[folder] || [];
+    for (var i = 0; i < arr.length; i++) {
+      if (arr[i] && arr[i].name === fname && arr[i].type === 'file') return arr[i];
     }
-
-
-    function wsAuthHeaders() {
-      var t = '';
-      try { t = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
-      return t ? { Authorization: 'Bearer ' + t } : {};
+    for (var k in data) {
+      var a = data[k] || [];
+      for (var j = 0; j < a.length; j++) {
+        if (a[j] && a[j].name === fname && a[j].type === 'file') return a[j];
+      }
     }
+    return null;
+  }
+  function sizeLabel(c) {
+    var b = new Blob([c || '']).size;
+    if (b > 1024 * 1024) return (b / (1024 * 1024)).toFixed(2) + ' MB';
+    if (b > 1024) return (b / 1024).toFixed(1) + ' KB';
+    return b + ' B';
+  }
+  function toast(msg) {
+    elToast.textContent = msg;
+    elToast.classList.add('show');
+    setTimeout(function () { elToast.classList.remove('show'); }, 2000);
+  }
 
-
-    function wsProjectId() {
-      try { return localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) { return ''; }
-    }
-
-
-    function wsFlatten(data) {
-      const files = [];
-      Object.keys(data || {}).forEach(function(folderKey) {
-        (data[folderKey] || []).forEach(function(it) {
-          if (!it || !it.path) return;
-          if (it.type === 'file') {
-            files.push({ path: it.path, content: it.content || '' });
-          } else if (it.type === 'folder') {
-            const hasChildren = Object.keys(data).some(function(k) { return k === it.path || k.startsWith(it.path + '/'); });
-            if (!hasChildren) files.push({ path: it.path + '/', content: '' }); // penanda folder kosong
-          }
+  /* ---------- Monaco (tema sama dengan editor Clincoo Code) ---------- */
+  var monacoReady = false, editor = null, model = null;
+  function initMonaco(cb) {
+    try {
+      require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs' } });
+      require(['vs/editor/editor.main'], function () {
+        monaco.editor.defineTheme('clinqoo-dark', { base: 'vs-dark', inherit: true, rules: [], colors: {
+          'editor.background': '#1a1a1d', 'editor.foreground': '#d6d6dc',
+          'editor.selectionBackground': '#3c3c46', 'editor.inactiveSelectionBackground': '#2c2c34',
+          'editor.lineHighlightBackground': '#232329',
+          'editorCursor.foreground': '#c8c8d0',
+          'editorIndentGuide.background1': '#2a2a31', 'editorIndentGuide.activeBackground1': '#3a3a44',
+          'editorLineNumber.foreground': '#4c4c56', 'editorLineNumber.activeForeground': '#9a9aa4',
+          'minimap.background': '#18181b'
+        }});
+        monaco.editor.defineTheme('clinqoo-light', { base: 'vs', inherit: true, rules: [], colors: {
+          'editor.selectionBackground': '#d8d8e0', 'editor.inactiveSelectionBackground': '#e4e4ea',
+          'editor.lineHighlightBackground': '#ececef',
+          'editorCursor.foreground': '#4a4a55',
+          'editorIndentGuide.background1': '#e0e0e6', 'editorIndentGuide.activeBackground1': '#c8c8d0',
+          'editorWidget.background': '#f4f4f6', 'editorWidget.border': '#c8c8d0'
+        }});
+        monaco.editor.setTheme(document.body.classList.contains('dark-mode') ? 'clinqoo-dark' : 'clinqoo-light');
+        model = monaco.editor.createModel('', langOf(fname), monaco.Uri.parse('inmemory:/' + (fname || 'file.txt')));
+        editor = monaco.editor.create(document.getElementById('kd-editor'), {
+          model: model,
+          automaticLayout: true,
+          fontSize: 14,
+          fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+          minimap: { enabled: false },
+          wordWrap: 'on',
+          tabSize: 2,
+          smoothScrolling: true,
+          cursorBlinking: 'smooth',
+          renderLineHighlight: 'all',
+          scrollBeyondLastLine: false,
+          padding: { top: 12 },
+          readOnly: false,
+          scrollbar: { verticalScrollbarSize: 10, horizontalScrollbarSize: 10 }
         });
-      });
-      return files;
-    }
-
-
-    function wsSizeLabel(content) {
-      const b = new Blob([content || '']).size;
-      if (b > 1024 * 1024) return (b / (1024 * 1024)).toFixed(2) + ' MB';
-      if (b > 1024) return (b / 1024).toFixed(1) + ' KB';
-      return b + ' B';
-    }
-
-
-    function wsUnflatten(files) {
-      const data = { 'root': [] };
-      const ensureChain = function(folderKey) {
-        if (folderKey === 'root') return;
-        const parts = folderKey.split('/').filter(Boolean);
-        let parent = 'root', cum = '';
-        parts.forEach(function(part) {
-          cum = cum ? cum + '/' + part : part;
-          if (!Array.isArray(data[parent])) data[parent] = [];
-          if (!data[parent].some(function(i) { return i && i.type === 'folder' && i.name.toLowerCase() === part.toLowerCase(); })) {
-            data[parent].push({ type: 'folder', name: part, path: cum, fileCount: 0, previewText: 'Folder' });
-          }
-          if (!Array.isArray(data[cum])) data[cum] = [];
-          parent = cum;
+        editor.onDidChangeCursorPosition(function (e) {
+          elStCursor.textContent = 'Ln ' + e.position.lineNumber + ', Col ' + e.position.column;
         });
-      };
-      (files || []).forEach(function(f) {
-        const p = String((f && f.path) || '').trim();
-        const content = (f && f.content) || '';
-        if (p.slice(-1) === '/') { ensureChain(p.slice(0, -1)); return; }
-        const parts = p.split('/').filter(Boolean);
-        const name = parts.pop();
-        if (!name) return;
-        const folderKey = parts.length ? parts.join('/') : 'root';
-        ensureChain(folderKey);
-        if (!Array.isArray(data[folderKey])) data[folderKey] = [];
-        if (!data[folderKey].some(function(i) { return i.path.toLowerCase() === p.toLowerCase(); })) {
-          data[folderKey].push({ type: 'file', name: name, size: wsSizeLabel(content), path: p, content: content });
+        monacoReady = true;
+        elFallback.classList.remove('on'); // pastikan hanya satu mode yang tampil
+        document.getElementById('kd-editor').style.display = '';
+        if (cb) cb();
+      }, function () { fallbackMode(); });
+    } catch (e) { fallbackMode(); }
+  }
+  function fallbackMode() {
+    elFallback.classList.add('on');
+    document.getElementById('kd-editor').style.display = 'none';
+  }
+  // jaringan lambat: kalau Monaco belum juga siap 8 dtk, pakai fallback teks polos
+  setTimeout(function () {
+    if (!monacoReady && !document.getElementById('kd-editor').childElementCount) fallbackMode();
+  }, 8000);
+
+  var data = loadData();
+  var item = fname ? findItem(data) : null;
+
+  function showEmpty() {
+    document.getElementById('kd-editor').style.display = 'none';
+    elFallback.style.display = 'none';
+    elEmpty.style.display = 'block';
+    elSaveBtn.style.display = 'none';
+    elTools.hidden = true;
+    elStatus.hidden = true;
+    elFname.textContent = fname || 'Berkas';
+    elSub.textContent = '';
+  }
+
+  if (!item) {
+    // localStorage gak punya berkas ini (bisa karena kuota penuh / data belum sinkron /
+    // penyimpanan dibersihkan): tarik langsung dari cloud D1 sebelum menyerah.
+    if (!pid) { showEmpty(); return; }
+    elSub.textContent = 'Memuat dari cloud…';
+    var WS_API2 = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-files';
+    var tk2 = '';
+    try { tk2 = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+    var h2 = tk2 ? { Authorization: 'Bearer ' + tk2 } : {};
+    fetch(WS_API2 + '?project_id=' + encodeURIComponent(pid), { headers: h2 })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function (d) {
+        var files = (d && d.files) || [];
+        var hit = null;
+        var want = (folder && folder !== 'root' ? folder + '/' : '') + fname;
+        for (var i = 0; i < files.length; i++) {
+          var p = files[i] && files[i].path;
+          if (!p) continue;
+          var base = String(p).replace(/\/$/, '').split('/').pop();
+          if (base === fname) { hit = files[i]; if (p === want) break; }
         }
-      });
-      return data;
-    }
-
-
-    function loadWorkspaceFiles() {
-      const key = wsFilesKey();
-      let savedFiles = null;
-      try { savedFiles = localStorage.getItem(key); } catch (e) {}
-      // Migrasi sekali: data lama tersimpan di kunci global, pindahkan ke kunci proyek ini.
-      if (!savedFiles) {
-        try {
-          const legacy = localStorage.getItem('clinqoo_workspace_files');
-          if (legacy) { localStorage.setItem(key, legacy); savedFiles = legacy; }
-        } catch (e) {}
-      }
-      if (savedFiles) {
-        try { projectFilesData = JSON.parse(savedFiles); } catch (e) { projectFilesData = { 'root': [] }; }
-      } else {
-        projectFilesData = { 'root': [] };
-      }
-    }
-
-
-
-    function saveData() {
-      try { localStorage.setItem(wsFilesKey(), JSON.stringify(projectFilesData)); } catch (e) { console.error('Gagal menyimpan workspace:', e); }
-      // Sync GitHub: perubahan dari editor ikut tersinkron (debounce di engine)
-      try { if (window.WSGitHubSync) WSGitHubSync.schedule(); } catch (e) {}
-    }
-
-    // Push cloud LANGSUNG (bukan debounce) — halaman editor berpindah URL,
-    // timer debounce dari halaman workspace tidak hidup di sini.
-    function wsCloudPushNow() {
-      const pid = wsProjectId();
-      if (!pid) return Promise.resolve();
-      const payload = { project_id: pid, files: wsFlatten(projectFilesData) };
-      return fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { method: 'DELETE', headers: wsAuthHeaders() })
-        .then(function(r) { return r.ok ? fetch(WS_CLOUD_API, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()), body: JSON.stringify(payload) }) : Promise.reject(); });
-    }
-
-    // Tarik data cloud (dipakai bila file tidak ada di localStorage perangkat ini)
-    function wsCloudPullNow() {
-      const pid = wsProjectId();
-      if (!pid) return Promise.resolve(null);
-      return fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { headers: wsAuthHeaders() })
-        .then(function(r) { return r.ok ? r.json() : null; })
-        .catch(function() { return null; });
-    }
-
-    function getFileType(filename) {
-      if (!filename) return 'code';
-      let ext = getFileExtension(filename);
-      const audioExts = ['mp3', 'wav', 'ogg', 'oga', 'flac', 'm4a', 'm4b', 'aac', 'opus', 'wma', 'aiff', 'aif', 'amr', 'mid', 'midi'];
-      const videoExts = ['mp4', 'm4v', 'avi', 'mkv', 'mov', 'webm', 'wmv', 'flv', 'mpg', 'mpeg', '3gp', '3g2', 'ogv'];
-      const imageExts = ['png', 'jpg', 'jpeg', 'jfif', 'svg', 'gif', 'webp', 'bmp', 'ico', 'avif', 'apng', 'tif', 'tiff', 'heic', 'heif'];
-      const docExts = ['pdf'];
-      if (audioExts.includes(ext)) return 'audio';
-      if (videoExts.includes(ext)) return 'video';
-      if (imageExts.includes(ext)) return 'image';
-      if (docExts.includes(ext)) return 'pdf';
-      return 'code';
-    }
-
-
-    function getFileExtension(filename) {
-      let name = filename ? filename.trim() : '';
-      if (!name) return 'html';
-      if (name.startsWith('.') && !name.includes('.', 1)) return name.substring(1).toLowerCase();
-      if (name.includes('.')) return name.split('.').pop().toLowerCase();
-      return name.toLowerCase();
-    }
-
-
-    function getFileIcon(filename) {
-      let ext = getFileExtension(filename);
-      const w = function(inner){ return '<span class="fico">' + inner + '</span>'; };
-      switch(ext) {
-        case 'mp3': case 'wav': case 'ogg': case 'oga': case 'flac': case 'm4a': case 'm4b': case 'aac': case 'opus': case 'wma': case 'aiff': case 'aif': case 'amr': case 'mid': case 'midi':
-          return w('<svg viewBox="0 0 24 24" fill="#E04A3A"><path d="M20 3h-7v10.55A3.98 3.98 0 0 0 11 13c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h5v6.55A3.98 3.98 0 0 0 14 13c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V3z"/></svg>');
-        case 'mp4': case 'm4v': case 'avi': case 'mkv': case 'mov': case 'webm': case 'wmv': case 'flv': case 'mpg': case 'mpeg': case '3gp': case '3g2': case 'ogv':
-          return w('<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3.5" fill="#5B51DC"/><polygon points="10,8.5 15,12 10,15.5" fill="#FFFFFF"/></svg>');
-        case 'png': case 'jpg': case 'jpeg': case 'jfif': case 'svg': case 'gif': case 'webp': case 'bmp': case 'ico': case 'avif': case 'apng': case 'tif': case 'tiff': case 'heic': case 'heif':
-          return w('<svg viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="#0D9488" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>');
-        case 'py': case 'python':
-          return w('<svg viewBox="0 0 24 24"><path fill="#3776AB" d="M11.898 2c-3.15 0-5.068.322-5.068 2.373v1.89h10.136v.945H6.83c-2.453 0-4.33 1.488-4.33 4.33 0 2.843 1.877 4.33 4.33 4.33h1.892v-2.373c0-2.316 1.83-4.254 4.148-4.254h5.068c1.94 0 2.453-.562 2.453-2.373 0-2.115-1.913-4.868-8.523-4.868zm-2.58 1.418a.945.945 0 1 1 0 1.89.945.945 0 0 1 0-1.89z"/><path fill="#FFD43B" d="M12.102 22c3.15 0 5.068-.322 5.068-2.373v-1.89H7.034v-.945h10.136c2.453 0 4.33-1.488 4.33-4.33 0-2.843-1.877-4.33-4.33-4.33h-1.892v2.373c0 2.316-1.83 4.254-4.148 4.254H6.062c-1.94 0-2.453.562-2.453 2.373 0 2.115 1.913 4.868 8.493 4.868zm2.58-1.418a.945.945 0 1 1 0-1.89.945.945 0 0 1 0 1.89z"/></svg>');
-        case 'txt':
-          return w('<svg viewBox="0 0 24 24" fill="none" stroke="#546E7A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>');
-        case 'pdf':
-          return w('<svg viewBox="0 0 24 24" fill="none" stroke="#E04A3A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><text x="12" y="17" font-size="5" font-weight="800" fill="#E04A3A" stroke="none" text-anchor="middle">PDF</text></svg>');
-        case 'html': case 'htm':
-          return w('<svg viewBox="0 0 24 24" fill="none" stroke="#E34F26" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg>');
-        case 'js': case 'ts': case 'jsx':
-          return w('<svg viewBox="0 0 24 24" fill="none" stroke="#F7DF1E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4" fill="#F7DF1E"/><text x="12" y="16" font-size="8" font-weight="800" fill="#000" stroke="none" text-anchor="middle">JS</text></svg>');
-        case 'css':
-          return w('<svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><text x="12" y="15.5" font-size="7" font-weight="800" fill="#16A34A" stroke="none" text-anchor="middle">css</text></svg>');
-        case 'zip': case 'rar': case '7z': case 'tar': case 'gz':
-          return w('<svg viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M10 12v2M12 12v2M14 12v2"/></svg>');
-
-        default:
-          return w('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>');
-      }
-    }
-
-    // Status bar & tab dirty — dipanggil setiap perubahan/kursor
-    function updateEditorStatus() {
-      const isCode = editingFileName && getFileType(editingFileName) === 'code';
-      const tab = document.getElementById('editor-tab');
-      const sbSaved = document.getElementById('sb-saved');
-      const sbPos = document.getElementById('sb-pos');
-      const sbPath = document.getElementById('sb-path');
-      const saveBtn = document.getElementById('save-btn');
-      if (tab) tab.classList.toggle('dirty', !!(isCode && editorDirty));
-      if (saveBtn) saveBtn.disabled = !isCode;
-      const qt = document.getElementById('quicktools');
-      if (qt) qt.classList.toggle('hidden', !isCode);
-      if (isCode) renderQuickTools();
-      if (sbPath) {
-        const folder = (currentFolderPath === 'root' || !currentFolderPath) ? '' : currentFolderPath + '/';
-        sbPath.textContent = (folder ? folder : '') + (editingFileName || '');
-      }
-      if (sbSaved) {
-        if (!editingFileName) { sbSaved.textContent = ''; }
-        else if (!isCode) { sbSaved.textContent = 'Media'; sbSaved.className = 'sb'; }
-        else if (editorDirty) { sbSaved.textContent = '\u25CF Belum tersimpan'; sbSaved.className = 'sb err'; }
-        else { sbSaved.textContent = 'Tersimpan'; sbSaved.className = 'sb ok'; }
-      }
-      if (sbPos) {
-        if (isCode && codeEditor) {
-          const pos = codeEditor.getCursor();
-          sbPos.textContent = 'Ln ' + (pos.line + 1) + ', Col ' + (pos.ch + 1);
-        } else { sbPos.textContent = ''; }
-      }
-    }
-
-    // Simpan tanpa keluar (tombol Simpan di title bar)
-    async function editorSaveInPlace() {
-      if (!editingFileName || !codeEditor || getFileType(editingFileName) !== 'code') return;
-      const codeContent = codeEditor.getValue();
-      if (Array.isArray(projectFilesData[currentFolderPath])) {
-        const itemIndex = projectFilesData[currentFolderPath].findIndex(function(i) { return i.type === 'file' && i.name === editingFileName; });
-        if (itemIndex !== -1) {
-          projectFilesData[currentFolderPath][itemIndex].content = codeContent;
-          projectFilesData[currentFolderPath][itemIndex].size = wsSizeLabel(codeContent);
+        if (hit && typeof hit.content === 'string') {
+          item = { name: fname, path: hit.path, content: hit.content, _cloudOnly: true };
+          render();
+          if (mediaKind(extOf(item.name)) === 'code') initMonaco();
+        } else {
+          showEmpty();
         }
-      }
-      saveData();
-      editorOriginalContent = codeContent;
-      editorDirty = false;
-      updateEditorStatus();
-      try { await wsCloudPushNow(); } catch (e) {}
-    }
+      })
+      .catch(function () { showEmpty(); });
+    return;
+  }
 
-
-
-    function initCodeEditor() {
-      if (codeEditor) return;
-      const textarea = document.getElementById('editor-code-textarea');
-      if (textarea) {
-        const cmTheme = document.body.classList.contains('dark-mode') ? 'clinqoo-dark' : 'clinqoo-light';
-        codeEditor = CodeMirror.fromTextArea(textarea, {
-          lineNumbers: true,
-          theme: cmTheme,
-          mode: 'htmlmixed',
-          indentUnit: 4,
-          lineWrapping: true,
-          scrollbarStyle: 'native'
-        });
-        codeEditor.on('change', function() {
-          if (editorOriginalContent !== null) {
-            editorDirty = codeEditor.getValue() !== editorOriginalContent;
-          }
-          updateEditorStatus();
-        });
-        codeEditor.on('cursorActivity', function() { updateEditorStatus(); });
-      }
-    }
-
-    function findFileObj(filename) {
-      const items = projectFilesData[currentFolderPath] || [];
-      return items.find(function(i) { return i.type === 'file' && i.name === filename; });
-    }
-
-    async function openFileInEditor(filename) {
-      editingFileName = filename;
-      let fileObj = findFileObj(filename);
-      if (!fileObj) {
-        // mungkin data di perangkat ini belum terisi: coba tarik dari cloud
-        const d = await wsCloudPullNow();
-        const files = (d && d.files) || [];
-        if (files.length) {
-          projectFilesData = wsUnflatten(files);
-          try { localStorage.setItem(wsFilesKey(), JSON.stringify(projectFilesData)); } catch (e) {}
-          fileObj = findFileObj(filename);
-        }
-      }
-      if (!fileObj) { console.warn('File tidak ditemukan.'); if (window.ClinqooBack) { window.ClinqooBack('../workspace/?id=' + encodeURIComponent(wsProjectId())); } else { location.href = '../workspace/?id=' + encodeURIComponent(wsProjectId()); } return; }
-
-      const fileType = getFileType(filename);
-      const ext = getFileExtension(filename);
-      const labelEl = document.getElementById('editor-filename-label');
-      const iconEl = document.getElementById('editor-file-icon');
-      if (labelEl) labelEl.textContent = filename;
-      if (iconEl) iconEl.innerHTML = getFileIcon(filename);
-
-      const codeContainer = document.getElementById('editor-code-container');
-      const audioContainer = document.getElementById('editor-audio-container');
-      const videoContainer = document.getElementById('editor-video-container');
-      const imageContainer = document.getElementById('editor-image-container');
-      const pdfContainer = document.getElementById('editor-pdf-container');
-      codeContainer.classList.add('hidden'); audioContainer.classList.add('hidden');
-      videoContainer.classList.add('hidden'); imageContainer.classList.add('hidden');
-      if (pdfContainer) pdfContainer.classList.add('hidden');
-
-      if (fileType === 'audio') {
-        audioContainer.classList.remove('hidden');
-        const audioPlayer = document.getElementById('audio-player');
-        if (audioPlayer) { audioPlayer.src = fileObj.content || ''; audioPlayer.load(); }
-      } else if (fileType === 'video') {
-        videoContainer.classList.remove('hidden');
-        const videoPlayer = document.getElementById('video-player');
-        if (videoPlayer) { videoPlayer.src = fileObj.content || ''; videoPlayer.load(); }
-      } else if (fileType === 'image') {
-        imageContainer.classList.remove('hidden');
-        const img = document.getElementById('image-preview');
-        if (img) img.src = fileObj.content || '';
-      } else if (fileType === 'pdf') {
-        // PDF dirender di iframe — JANGAN dimuat ke CodeMirror (membekukan halaman).
-        if (pdfContainer) {
-          pdfContainer.classList.remove('hidden');
-          const frame = document.getElementById('pdf-frame');
-          const src = fileObj.content || '';
-          const ok = src.startsWith('data:') || src.startsWith('http') || src.startsWith('blob:');
-          if (frame) {
-            if (ok) {
-              frame.src = src; frame.style.display = '';
-              const oldNote = document.getElementById('pdf-fallback-note');
-              if (oldNote) oldNote.remove();
-            }
-            else {
-              frame.src = 'about:blank'; frame.style.display = 'none';
-              const note = document.getElementById('pdf-fallback-note');
-              if (note) note.remove();
-              const div = document.createElement('div');
-              div.id = 'pdf-fallback-note'; div.className = 'pdf-note';
-              div.textContent = 'PDF ini tidak bisa ditampilkan — kemungkinan diunggah sebelum dukungan PDF aktif. Hapus dan unggah ulang berkasnya.';
-              pdfContainer.appendChild(div);
-            }
-          }
-        }
-      } else {
-        codeContainer.classList.remove('hidden');
-        initCodeEditor();
-        let mode = 'htmlmixed';
-        if (ext === 'js' || ext === 'json' || ext === 'ts' || ext === 'jsx') mode = 'javascript';
-        else if (ext === 'css') mode = 'css';
-        else if (ext === 'py' || ext === 'python') mode = 'python';
-        if (codeEditor) {
-          codeEditor.setOption('mode', mode);
-          codeEditor.setValue(fileObj.content || '');
-          setTimeout(() => codeEditor.refresh(), 50);
-        }
-        editorOriginalContent = fileObj.content || '';
-        editorDirty = false;
-      }
-      updateEditorStatus();
-    }
-
-    function showEditorExitConfirm() {
-      const oldModal = document.getElementById('editor-exit-modal');
-      if (oldModal) oldModal.remove();
-      const ov = document.createElement('div');
-      ov.id = 'editor-exit-modal';
-      ov.className = 'ee-overlay';
-      const fileName = editingFileName || 'file ini';
-      ov.innerHTML = '<div class="ee-card">'
-        + '<h3>Simpan perubahan?</h3>'
-        + '<p>Ada perubahan pada <span></span> yang belum disimpan.</p>'
-        + '<div class="ee-btns">'
-        + '<button id="ee-save">Simpan &amp; Keluar</button>'
-        + '<button id="ee-discard">Keluar Tanpa Simpan</button>'
-        + '<button id="ee-cancel">Batal</button>'
-        + '</div></div>';
-      ov.querySelector('p span').textContent = fileName;
-      document.body.appendChild(ov);
-      ov.querySelector('#ee-cancel').onclick = function () { ov.remove(); };
-      ov.querySelector('#ee-discard').onclick = function () { ov.remove(); editorDoExit(false); };
-      ov.querySelector('#ee-save').onclick = function () { ov.remove(); editorDoExit(true); };
-      ov.addEventListener('click', function (ev) { if (ev.target === ov) ov.remove(); });
-    }
-
-    async function navigateBackFromEditor() {
-      if (editingFileName && codeEditor && editorDirty && getFileType(editingFileName) === 'code') {
-        showEditorExitConfirm();
-        return;
-      }
-      await editorDoExit(true);
-    }
-
-    async function editorDoExit(saveChanges) {
-      if (saveChanges && editingFileName && codeEditor && getFileType(editingFileName) === 'code') {
-        const codeContent = codeEditor.getValue();
-        if (Array.isArray(projectFilesData[currentFolderPath])) {
-          const itemIndex = projectFilesData[currentFolderPath].findIndex(function(i) { return i.type === 'file' && i.name === editingFileName; });
-          if (itemIndex !== -1) {
-            projectFilesData[currentFolderPath][itemIndex].content = codeContent;
-            projectFilesData[currentFolderPath][itemIndex].size = wsSizeLabel(codeContent);
-          }
-        }
-        saveData();
-        editorDirty = false;
-      }
-      const audioPlayer = document.getElementById('audio-player');
-      if (audioPlayer) { audioPlayer.pause(); audioPlayer.src = ''; }
-      const videoPlayer = document.getElementById('video-player');
-      if (videoPlayer) { videoPlayer.pause(); videoPlayer.src = ''; }
-      const pdfFrame = document.getElementById('pdf-frame');
-      if (pdfFrame) { pdfFrame.src = 'about:blank'; }
-      const pdfNote = document.getElementById('pdf-fallback-note');
-      if (pdfNote) pdfNote.remove();
-      editingFileName = null;
-      // tunggu push cloud selesai supaya simpanan tidak hilang saat pindah halaman
-      try { await wsCloudPushNow(); } catch (e) {}
-      window.location.href = '../?id=' + encodeURIComponent(wsProjectId());
-    }
-
-    // ---------- Quick tools (ala Clinqoo-Editor) ----------
-    const SNIPPETS = {
-      html: ['<div>|</div>','<a href="|"></a>','<img src="|" alt="">',' class="|"',' id="|"','<!-- | -->','<span>|</span>','&nbsp;'],
-      css: ['{\n\t|\n}',':hover{|}','@media{|}','.class{|}','#id{|}','px','rem','%'],
-      javascript: ['(|)','{|}','[|]','=>','console.log(|)','function () {|}','const |','===','!=='],
-      python: ['(|)','{|}','[|]','=>','print(|)','def |():\n\t','if |:\n\t','===','!='],
-      json: ['{|}','[|]',':',',','"|": ""'],
-      markdown: ['**|**','_|_','# |','- |','[|]()','```|```','> |'],
-      plaintext: ['(',')','[',']','{','}','<','>','=','-','_','|']
-    };
-    function qtLangOf(filename) {
-      const ext = getFileExtension(filename || '');
-      if (ext === 'html' || ext === 'htm') return 'html';
-      if (ext === 'css') return 'css';
-      if (ext === 'js' || ext === 'jsx' || ext === 'ts') return 'javascript';
-      if (ext === 'py' || ext === 'python') return 'python';
-      if (ext === 'json') return 'json';
-      if (ext === 'md' || ext === 'markdown') return 'markdown';
-      return 'plaintext';
-    }
-    function qtEsc(x) { return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-    let qtRenderedLang = null;
-    function renderQuickTools() {
-      const lang = editingFileName ? qtLangOf(editingFileName) : 'plaintext';
-      const list = SNIPPETS[lang] || SNIPPETS.plaintext;
-      const el = document.getElementById('qt-snippets');
-      if (!el) return;
-      if (qtRenderedLang === lang) return;
-      qtRenderedLang = lang;
-      el.innerHTML = list.map(function(sn, i) {
-        return '<button class="qt-chip" data-qi="' + i + '">' + qtEsc(sn.replace(/\|/g,'').replace(/\n/g,' ').replace(/\t/g,'')) + '</button>';
-      }).join('');
-      Array.prototype.forEach.call(el.querySelectorAll('.qt-chip'), function(btn) {
-        btn.onclick = function() { qtInsert(list[+btn.dataset.qi]); };
-      });
-    }
-    function qtInsert(snippet) {
-      if (!codeEditor || !editingFileName) return;
-      const idx = snippet.indexOf('|');
-      const clean = idx >= 0 ? snippet.replace('|', '') : snippet;
-      const from = codeEditor.getCursor('from');
-      codeEditor.replaceSelection(clean);
+  /* ---------- quicktools: render chip, sisip teks, undo/redo, pemetik warna ---------- */
+  function currentSnippets() {
+    return SNIPPETS[langOf(fname)] || SNIPPETS.plaintext;
+  }
+  function renderQuickTools() {
+    var list = currentSnippets();
+    elSnippets.innerHTML = list.map(function (sn, i) {
+      var label = escHtml(sn.replace(/\|/g, '').replace(/\n/g, ' ').replace(/\t/g, '')) || '&nbsp;';
+      return '<button type="button" class="kd-qt-chip" data-qi="' + i + '">' + label + '</button>';
+    }).join('');
+    Array.prototype.forEach.call(elSnippets.querySelectorAll('.kd-qt-chip'), function (btn) {
+      btn.addEventListener('click', function () { qtInsert(list[+btn.getAttribute('data-qi')]); });
+    });
+  }
+  function activeTarget() {
+    return (monacoReady && editor && !elFallback.classList.contains('on')) ? 'monaco' : 'textarea';
+  }
+  function qtInsert(snippet) {
+    var text = snippet.split('\n').join('\n');
+    var idx = text.indexOf('|');
+    var clean = idx >= 0 ? text.replace('|', '') : text;
+    if (activeTarget() === 'monaco') {
+      var sel = editor.getSelection();
+      var start = sel.getStartPosition();
+      editor.executeEdits('quicktools', [{ range: sel, text: clean, forceMoveMarkers: true }]);
       if (idx >= 0) {
-        const before = clean.slice(0, idx);
-        const bl = before.split('\n');
-        if (bl.length === 1) codeEditor.setCursor({ line: from.line, ch: from.ch + before.length });
-        else codeEditor.setCursor({ line: from.line + bl.length - 1, ch: bl[bl.length - 1].length });
+        var before = clean.slice(0, idx);
+        var beforeLines = before.split('\n');
+        var lineOffset = beforeLines.length - 1;
+        var col = lineOffset === 0 ? start.column + before.length : beforeLines[beforeLines.length - 1].length + 1;
+        editor.setPosition({ lineNumber: start.lineNumber + lineOffset, column: col });
       }
-      codeEditor.focus();
+      editor.focus();
+    } else {
+      var ta = elEdit;
+      var s0 = ta.selectionStart, e0 = ta.selectionEnd;
+      var val = ta.value;
+      ta.value = val.slice(0, s0) + clean + val.slice(e0);
+      var newPos = s0 + (idx >= 0 ? idx : clean.length);
+      ta.focus();
+      ta.setSelectionRange(newPos, newPos);
     }
-    function qtMoveCursor(dir) {
-      if (!codeEditor) return;
-      const cur = codeEditor.getCursor();
-      codeEditor.setCursor({ line: cur.line, ch: Math.max(0, cur.ch + dir) });
-      codeEditor.focus();
-    }
-    function edAction(a) {
-      if (!codeEditor) return;
-      if (a === 'undo') codeEditor.undo();
-      else if (a === 'redo') codeEditor.redo();
-      codeEditor.focus();
-    }
-    const CP_COLORS = ['#000000','#ffffff','#e55454','#f0ad4e','#f5d76e','#2fbf71','#3ba9e0','#5c6bc0','#8a5cf6','#e5604f','#9a9aa4','#4a4a55','#d6d6dc','#6c6c76','#26262b','#1a1a1d'];
-    function toggleColorPicker(e) {
-      const cp = document.getElementById('color-picker');
-      if (!cp) return;
-      if (cp.classList.contains('show')) { closeColorPicker(); return; }
-      cp.innerHTML = '<div class="cp-grid">' + CP_COLORS.map(function(c) { return '<div class="cp-swatch" style="background:' + c + '" onclick="pickColor(\'' + c + '\')" title="' + c + '"></div>'; }).join('') +
-        '</div><div class="cp-hexrow"><input id="cp-hex" placeholder="#3ba9e0" maxlength="9"><button onclick="pickColor(document.getElementById(\'cp-hex\').value)">Sisip</button></div>';
-      cp.classList.add('show');
-      const r = e.currentTarget.getBoundingClientRect();
-      cp.style.left = Math.min(r.left, innerWidth - 226) + 'px';
-      cp.style.top = (r.bottom + 8) + 'px';
-    }
-    function closeColorPicker() { const cp = document.getElementById('color-picker'); if (cp) cp.classList.remove('show'); }
-    function pickColor(hex) {
-      if (!hex) return;
-      hex = String(hex).trim();
-      if (!hex.startsWith('#')) hex = '#' + hex;
-      const dot = document.getElementById('qt-swatch-dot');
-      if (dot) dot.style.background = hex;
-      qtInsert(hex);
-      closeColorPicker();
-    }
-    document.addEventListener('click', function(e) {
-      if (!e.target.closest('#color-picker') && !e.target.closest('.qt-color')) closeColorPicker();
+  }
+  function qtUndo() {
+    if (activeTarget() === 'monaco') { editor.getAction && editor.getAction('undo') && editor.getAction('undo').run(); }
+    else { elEdit.focus(); try { document.execCommand('undo'); } catch (e) {} }
+  }
+  function qtRedo() {
+    if (activeTarget() === 'monaco') { editor.getAction && editor.getAction('redo') && editor.getAction('redo').run(); }
+    else { elEdit.focus(); try { document.execCommand('redo'); } catch (e) {} }
+  }
+  function toggleColorPicker(e) {
+    if (elCp.classList.contains('show')) { closeColorPicker(); return; }
+    elCp.innerHTML = '<div class="kd-cp-grid">' + CP_COLORS.map(function (c) {
+      return '<div class="kd-cp-swatch" style="background:' + c + '" data-color="' + c + '" title="' + c + '"></div>';
+    }).join('') + '</div><div class="kd-cp-hexrow"><input id="kd-cp-hex" placeholder="#3ba9e0" maxlength="9"><button type="button" id="kd-cp-insert">Sisip</button></div>';
+    Array.prototype.forEach.call(elCp.querySelectorAll('.kd-cp-swatch'), function (sw) {
+      sw.addEventListener('click', function () { pickColor(sw.getAttribute('data-color')); });
     });
-
-    window.addEventListener('beforeunload', function (e) {
-      if (editorDirty) { e.preventDefault(); e.returnValue = ''; }
+    document.getElementById('kd-cp-insert').addEventListener('click', function () {
+      pickColor(document.getElementById('kd-cp-hex').value);
     });
+    elCp.classList.add('show');
+    var r = e.currentTarget.getBoundingClientRect();
+    var w = 216;
+    elCp.style.left = Math.min(r.left, window.innerWidth - w - 10) + 'px';
+    elCp.style.top = (r.bottom + 8) + 'px';
+  }
+  function closeColorPicker() { elCp.classList.remove('show'); }
+  function pickColor(hex) {
+    if (!hex) return;
+    if (hex.charAt(0) !== '#') hex = '#' + hex;
+    qtInsert(hex);
+    closeColorPicker();
+  }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('#kd-cp') && !e.target.closest('.kd-qt-color')) closeColorPicker();
+  });
+  elUndoBtn.addEventListener('click', qtUndo);
+  elRedoBtn.addEventListener('click', qtRedo);
+  elTabBtn.addEventListener('click', function () { qtInsert('\t'); });
+  elColorBtn.addEventListener('click', toggleColorPicker);
 
-    document.addEventListener('DOMContentLoaded', async function() {
-      const params = new URLSearchParams(window.location.search);
-      currentFolderPath = params.get('folder') || 'root';
-      let fileParam = params.get('file') || '';
-      loadWorkspaceFiles();
-      // Tidak ada ?file= (mis. tombol Editor dari chat): buka berkas kode pertama
-      if (!fileParam) {
-        let first = null;
-        Object.keys(projectFilesData).forEach(function(fk) {
-          if (first) return;
-          (projectFilesData[fk] || []).forEach(function(it) {
-            if (!first && it && it.type === 'file') first = { folder: fk, name: it.name };
-          });
-        });
-        if (first) { currentFolderPath = first.folder; fileParam = first.name; }
-      } else {
-        // File tidak ada di folder param: cari di semua folder by nama
-        const folderGuess = projectFilesData[currentFolderPath] || [];
-        const inFolder = folderGuess.some(function(i) { return i && i.type === 'file' && i.name === fileParam; });
-        if (!inFolder) {
-          Object.keys(projectFilesData).forEach(function(fk) {
-            if (projectFilesData[fk] && projectFilesData[fk].some(function(i) { return i && i.type === 'file' && i.name === fileParam; })) {
-              currentFolderPath = fk;
-            }
-          });
+  function render() {
+    elFname.textContent = item.name;
+    var ext = extOf(item.name);
+    var kind = mediaKind(ext);
+    elStatus.hidden = false;
+    function subLabel() {
+      var bits = [];
+      if (item.path) bits.push(item.path);
+      bits.push(sizeLabel(item.content));
+      elSub.textContent = bits.join(' · ');
+      elStSize.textContent = sizeLabel(item.content);
+    }
+    subLabel();
+
+    if (kind !== 'code') {
+      // ---------- berkas media: tampilkan preview, bukan teks mentah ----------
+      document.getElementById('kd-editor').style.display = 'none';
+      elFallback.style.display = 'none';
+      elSaveBtn.style.display = 'none';
+      elTools.hidden = true;
+      elPreview.classList.add('on');
+      var raw = item.content || '';
+      var isDataUri = /^data:/.test(raw);
+      var src = isDataUri ? raw : raw; // berkas lama/non-dataURI tampil as-is
+      if (kind === 'image') {
+        elPreview.innerHTML = '<img src="' + src.replace(/"/g, '&quot;') + '" alt="' + item.name.replace(/"/g, '&quot;') + '">';
+      } else if (kind === 'audio') {
+        elPreview.innerHTML = '<audio controls src="' + src.replace(/"/g, '&quot;') + '"></audio>';
+      } else if (kind === 'video') {
+        elPreview.innerHTML = '<video controls src="' + src.replace(/"/g, '&quot;') + '"></video>';
+      } else if (kind === 'pdf') {
+        elPreview.innerHTML = '<iframe src="' + src.replace(/"/g, '&quot;') + '" title="' + item.name.replace(/"/g, '&quot;') + '"></iframe>';
+      }
+      return;
+    }
+
+    // ---------- berkas kode/teks: Monaco (atau fallback teks polos) ----------
+    renderQuickTools();
+    var monacoTimer = setInterval(function () {
+      if (monacoReady && editor) { model.setValue(item.content || ''); clearInterval(monacoTimer); }
+      else if (elFallback.classList.contains('on')) {
+        elCode.textContent = item.content || '';
+        elEdit.value = item.content || '';
+        clearInterval(monacoTimer);
+      }
+    }, 120);
+    setTimeout(function () { clearInterval(monacoTimer); }, 15000);
+    elCode.textContent = item.content || '';
+    elEdit.value = item.content || '';
+
+    function getContent() {
+      return (monacoReady && editor && !elFallback.classList.contains('on')) ? model.getValue() : elEdit.value;
+    }
+
+    // langsung bisa diedit tanpa toggle: Monaco editable + toolbar quick-tools tampil
+    elTools.hidden = false;
+    elEdit.classList.add('on');
+    elCode.style.display = 'none';
+    if (monacoReady && editor && !elFallback.classList.contains('on')) editor.updateOptions({ readOnly: false });
+    else elEdit.focus();
+
+    elSaveBtn.addEventListener('click', function () {
+      item.content = getContent();
+      if (item._cloudOnly) { // berkas baru ditarik dari cloud: masukkan dulu ke data lokal
+        var fk = (folder && folder !== 'root') ? folder : 'root';
+        if (!Array.isArray(data[fk])) data[fk] = [];
+        if (!data[fk].some(function (x) { return x && x.name === item.name; })) data[fk].push(item);
+        item._cloudOnly = false;
+      }
+      try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) { toast('Gagal: penyimpanan penuh'); return; }
+      elCode.textContent = item.content || '';
+      subLabel();
+      cloudPush();
+      toast('Tersimpan');
+    });
+  }
+
+  render();
+
+  // sinkronisasi ke Cloudflare D1 (format sama dengan halaman workspace)
+  var WS_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-files';
+  function authHeaders() {
+    var tk = '';
+    try { tk = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+    return tk ? { Authorization: 'Bearer ' + tk } : {};
+  }
+  function flatten(d) {
+    var files = [];
+    Object.keys(d || {}).forEach(function (fk) {
+      (d[fk] || []).forEach(function (it) {
+        if (!it || !it.path) return;
+        if (it.type === 'file') files.push({ path: it.path, content: it.content || '' });
+        else if (it.type === 'folder') {
+          var hasKids = Object.keys(d).some(function (k) { return k === it.path || k.indexOf(it.path + '/') === 0; });
+          if (!hasKids) files.push({ path: it.path + '/', content: '' });
         }
-      }
-      openFileInEditor(fileParam);
+      });
     });
-  </script>
+    return files;
+  }
+  var pushed = false;
+  function cloudPush() {
+    if (!pid || pushed) return;
+    pushed = true;
+    fetch(WS_API + '?project_id=' + encodeURIComponent(pid), { method: 'DELETE', headers: authHeaders() })
+      .then(function (r) {
+        if (!r.ok) return Promise.reject();
+        return fetch(WS_API, {
+          method: 'POST',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+          body: JSON.stringify({ project_id: pid, files: flatten(data) })
+        });
+      })
+      .catch(function () { pushed = false; });
+  }
 
-    <script>/* clinqoo-sw-register */
-    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../sw.js').catch(function () {}); }); }
-    </script>
+  // hanya muat Monaco untuk berkas kode/teks; berkas media tak butuh editor
+  if (item && mediaKind(extOf(item.name)) === 'code') initMonaco();
+})();
+</script>
 </body>
 </html>

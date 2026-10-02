@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../../js/auth-client.js?v=4"></script>
+    <script src="../../../js/accent-init.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
+    <link rel="manifest" href="../../../manifest.json">
+    <link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
+    <title>Tambah Otomatisasi AI — Clincoo</title>
+    <meta name="description" content="Tambah Otomatisasi AI — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clincoo">
+    <meta property="og:title" content="Tambah Otomatisasi AI — Clincoo">
+    <meta property="og:description" content="Tambah Otomatisasi AI — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Tambah Otomatisasi AI — Clincoo">
+    <meta name="twitter:description" content="Tambah Otomatisasi AI — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+    <script src="https://unpkg.com/lucide@1.41.0"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        :root {
+            --accent-color: #000000;
+            --accent-hover: #1f2937;
+            --accent-text: #ffffff;
+        }
+
+        .bg-accent { background-color: var(--accent-color) !important; }
+        .text-accent { color: var(--accent-color) !important; }
+        .border-accent { border-color: var(--accent-color) !important; }
+
+        body.dark-mode {
+            background-color: #000000;
+            color: #ffffff;
+        }
+        body.dark-mode .bg-white {
+            background-color: #0a0a0a !important;
+        }
+        body.dark-mode .text-\[\#222222\] { color: #ffffff !important; }
+        body.dark-mode button[onclick="history.back()"],
+        body.dark-mode header button[onclick] {
+            background-color: #000000 !important;
+            border: 1.5px solid rgba(255,255,255,0.4) !important;
+            color: #ffffff !important;
+        }
+        body.dark-mode button[onclick="history.back()"] svg,
+        body.dark-mode header button[onclick] svg {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+        }
+        body.dark-mode button[onclick="history.back()"]:hover,
+        body.dark-mode header button[onclick]:hover {
+            background-color: #1a1a1a !important;
+            border-color: rgba(255,255,255,0.7) !important;
+        }
+        body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black {
+            color: #ffffff !important;
+        }
+        body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 {
+            color: #888888 !important;
+        }
+        body.dark-mode .border-gray-100, body.dark-mode .border-gray-200, body.dark-mode .border-gray-300 {
+            border-color: #222222 !important;
+        }
+        body.dark-mode .hover\:bg-gray-50:hover, body.dark-mode .hover\:bg-gray-100:hover {
+            background-color: #0a0a0a !important;
+        }
+        body.dark-mode .bg-gray-50, body.dark-mode .bg-gray-100 {
+            background-color: #0a0a0a !important;
+        }
+        body.dark-mode select, body.dark-mode textarea, body.dark-mode input[type="text"], body.dark-mode input[type="time"], body.dark-mode input[type="number"] {
+            background-color: #0a0a0a;
+            color: #ffffff;
+            border-color: #222222;
+        }
+        body.dark-mode select:focus, body.dark-mode textarea:focus, body.dark-mode input:focus {
+            border-color: #444444;
+            outline: none;
+        }
+        body.dark-mode header { background-color: #000000 !important; border-color: #222222 !important; }
+        body.dark-mode .divide-gray-100 > *, body.dark-mode .divide-gray-200 > * { border-color: #222222 !important; }
+        body.dark-mode .text-gray-400 { color: #666666 !important; }
+        body.dark-mode .bg-black { background-color: #ffffff !important; color: #000000 !important; }
+        body.dark-mode .bg-black.text-white { color: #000000 !important; }
+        body.dark-mode .hover\:bg-gray-800:hover { background-color: #e5e5e5 !important; }
+        body.dark-mode .bg-accent { background-color: #ffffff !important; color: #000000 !important; }
+        body.dark-mode .bg-accent.text-white { color: #000000 !important; }
+        body.dark-mode .text-accent { color: #ffffff !important; }
+        body.dark-mode .border-accent { border-color: #ffffff !important; }
+
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
+<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+
+    <script>/* clinqoo-seo-auto: canonical & og mengikuti domain aktif */
+(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<3;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
+    </script>
+<!-- Google tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+<!-- End Google tag -->
+<script src="../../../js/i18n-dict.js" defer></script>
+<script src="../../../js/i18n.js" defer></script>
+<script>window.ClinqooBack = window.ClinqooBack || function (fallbackUrl) {             try {                 var sameOrigin = document.referrer && new URL(document.referrer).origin === location.origin;                 if (sameOrigin && history.length > 1) { window.history.back(); return; }             } catch (e) {}             if (fallbackUrl) { try { location.replace(fallbackUrl); return; } catch (e2) {} }             try { window.history.back(); } catch (e3) {}         };</script>
+</head>
+<body class="min-h-screen flex flex-col text-gray-900 pt-16 bg-[#ffffff]">
+    <script>(function(){var t=localStorage.getItem("clinqoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+
+    <header id="main-header" class="bg-white flex justify-between items-center px-3 py-2 fixed top-0 w-full z-40 transition-colors">
+        <button onclick="history.back()" class="top-2 left-5 w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-100 hover:bg-gray-100 transition-all cursor-pointer text-gray-700 hover:text-black">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </button>
+        <h1 class="font-extrabold text-lg text-gray-900 tracking-tight">Otomasi Baru</h1>
+        <div class="w-10"></div>
+    </header>
+
+    <main class="flex-1 w-full max-w-2xl mx-auto px-6 py-4 flex flex-col relative min-h-[80vh]">
+        <div class="w-full flex flex-col gap-4">
+
+            <!-- Nama tugas -->
+            <section class="w-full rounded-2xl border border-gray-200 p-5">
+                <h4 class="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-3">
+                    <i data-lucide="tag" class="w-4 h-4 text-gray-500"></i> Nama Tugas
+                </h4>
+                <input type="text" id="task-name" maxlength="60" placeholder="Contoh: Rangkuman berita teknologi pagi" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 focus:border-gray-400 focus:outline-none transition-colors bg-white">
+                <p class="text-xs text-gray-400 mt-2">Opsional — kalau dikosongkan, nama diambil dari instruksi AI.</p>
+            </section>
+
+            <!-- Jadwal -->
+            <section class="w-full rounded-2xl border border-gray-200 p-5">
+                <h4 class="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-3">
+                    <i data-lucide="calendar-clock" class="w-4 h-4 text-gray-500"></i> Jadwal
+                </h4>
+                <div class="grid grid-cols-2 gap-2 mb-4" role="tablist">
+                    <button type="button" id="type-daily" onclick="selectType('daily')" class="px-3 py-2.5 text-sm font-medium rounded-xl border-2 border-black text-black bg-gray-50 transition-colors cursor-pointer">Harian</button>
+                    <button type="button" id="type-interval" onclick="selectType('interval_minutes')" class="px-3 py-2.5 text-sm font-medium rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer">Interval</button>
+                </div>
+                <div id="daily-input" class="flex items-center gap-3">
+                    <span class="text-sm text-gray-600">Setiap hari pukul</span>
+                    <input type="time" id="task-time" value="09:00" onchange="updatePreview()" class="px-3 py-2 text-sm rounded-xl border border-gray-200 focus:border-gray-400 focus:outline-none bg-white">
+                    <span class="text-sm text-gray-600">WIB</span>
+                </div>
+                <div id="interval-input" class="hidden items-center gap-3">
+                    <span class="text-sm text-gray-600">Setiap</span>
+                    <input type="number" id="task-interval" value="30" min="5" max="1440" step="5" onchange="updatePreview(); validateInterval()" oninput="updatePreview()" class="w-24 px-3 py-2 text-sm rounded-xl border border-gray-200 focus:border-gray-400 focus:outline-none bg-white">
+                    <span class="text-sm text-gray-600">menit</span>
+                </div>
+                <div class="mt-3 flex items-start gap-2 rounded-xl bg-gray-50 border border-gray-100 px-3 py-2.5">
+                    <i data-lucide="info" class="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0"></i>
+                    <p id="schedule-preview" class="text-xs text-gray-600 leading-relaxed">Tugas akan berjalan setiap hari pukul 09:00 WIB, lalu hasilnya dikirim ke notifikasi Clincoo.</p>
+                </div>
+            </section>
+
+            <!-- Instruksi AI -->
+            <section class="w-full rounded-2xl border border-gray-200 p-5">
+                <h4 class="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-1">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-gray-500"></i> Instruksi untuk AI <span class="text-red-500">*</span>
+                </h4>
+                <p class="text-xs text-gray-500 mb-3">Apa yang harus AI kerjakan setiap kali tugas berjalan?</p>
+                <textarea id="task-prompt" rows="4" maxlength="2000" oninput="updatePromptCount()" class="w-full px-3.5 py-3 text-sm rounded-xl border border-gray-200 focus:border-gray-400 focus:outline-none resize-none transition-colors bg-white" placeholder="Contoh: Rangkum 3 berita teknologi terpenting hari ini dalam poin singkat."></textarea>
+                <div class="flex items-center justify-between mt-1.5">
+                    <div class="flex gap-1.5 flex-wrap">
+                        <button type="button" onclick="useExample('Rangkum 3 berita teknologi terpenting hari ini dalam poin singkat.')" class="px-2.5 py-1 text-[11px] font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:border-gray-400 rounded-full transition-colors cursor-pointer">Rangkuman berita</button>
+                        <button type="button" onclick="useExample('Cek cuaca Jakarta hari ini dan sarankan aktivitas luar ruangan.')" class="px-2.5 py-1 text-[11px] font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:border-gray-400 rounded-full transition-colors cursor-pointer">Cuaca harian</button>
+                        <button type="button" onclick="useExample('Buat motivasi singkat untuk memulai hari kerja.')" class="px-2.5 py-1 text-[11px] font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:border-gray-400 rounded-full transition-colors cursor-pointer">Motivasi pagi</button>
+                    </div>
+                    <span id="prompt-count" class="text-[11px] text-gray-400 shrink-0">0/2000</span>
+                </div>
+            </section>
+
+            <!-- Notifikasi email -->
+            <section class="w-full rounded-2xl border border-gray-200 px-5 py-4 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
+                        <i data-lucide="mail" class="w-4 h-4 text-gray-500"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-900">Kirim hasil ke email</h4>
+                        <p class="text-xs text-gray-500 mt-0.5">Selain notifikasi dalam aplikasi</p>
+                    </div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input type="checkbox" id="task-notify-email" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer transition-colors peer-checked:bg-black"></div>
+                    <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                </label>
+            </section>
+        </div>
+
+        <div class="mt-6 flex justify-end gap-3 pb-2">
+            <button type="button" onclick="history.back()" class="px-5 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl transition-all cursor-pointer shadow-sm">Batal</button>
+            <button type="button" onclick="createTask()" id="create-btn" class="px-5 py-2.5 text-sm font-semibold text-white bg-black hover:bg-gray-800 rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center min-w-[140px]">Simpan Tugas</button>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = ['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev' : '';
+
+        let scheduleType = 'daily';
+
+        function updatePreview() {
+            const el = document.getElementById('schedule-preview');
+            if (!el) return;
+            if (scheduleType === 'daily') {
+                const t = (document.getElementById('task-time').value || '09:00');
+                el.textContent = 'Tugas akan berjalan setiap hari pukul ' + t + ' WIB, lalu hasilnya dikirim ke notifikasi Clincoo.';
+            } else {
+                const n = parseInt(document.getElementById('task-interval').value) || 0;
+                if (n < 5) { el.textContent = 'Interval minimum 5 menit.'; return; }
+                el.textContent = 'Tugas akan berjalan setiap ' + n + ' menit, lalu hasilnya dikirim ke notifikasi Clincoo.';
+            }
+        }
+        function validateInterval() {
+            const inp = document.getElementById('task-interval');
+            let n = parseInt(inp.value);
+            if (isNaN(n) || n < 5) n = 5;
+            if (n > 1440) n = 1440;
+            if (String(n) !== inp.value) inp.value = n;
+        }
+        function updatePromptCount() {
+            const ta = document.getElementById('task-prompt');
+            const c = document.getElementById('prompt-count');
+            if (ta && c) c.textContent = ta.value.length + '/2000';
+        }
+        function useExample(text) {
+            const ta = document.getElementById('task-prompt');
+            if (ta) { ta.value = text; updatePromptCount(); ta.focus(); }
+        }
+
+        function selectType(t) {
+            scheduleType = t;
+            const daily = document.getElementById('daily-input'), interval = document.getElementById('interval-input');
+            const bd = document.getElementById('type-daily'), bi = document.getElementById('type-interval');
+            if (t === 'daily') {
+                daily.style.display = 'flex'; interval.style.display = 'none';
+                bd.className = 'flex-1 px-3 py-2.5 text-sm font-medium rounded-xl border-2 border-black text-black bg-gray-50 transition-colors cursor-pointer';
+                bi.className = 'flex-1 px-3 py-2.5 text-sm font-medium rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer';
+            } else {
+                daily.style.display = 'none'; interval.style.display = 'flex';
+                bi.className = 'flex-1 px-3 py-2.5 text-sm font-medium rounded-xl border-2 border-black text-black bg-gray-50 transition-colors cursor-pointer';
+                bd.className = 'flex-1 px-3 py-2.5 text-sm font-medium rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer';
+            }
+            updatePreview();
+        }
+
+        async function createTask() {
+            const btn = document.getElementById('create-btn');
+            const prompt = document.getElementById('task-prompt').value.trim();
+            if (!prompt) { console.warn('Instruksi untuk AI wajib diisi.'); return; }
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 mr-2 animate-spin"></i> Menyimpan...';
+            try { lucide.createIcons(); } catch (e) {}
+            btn.disabled = true; btn.classList.add('opacity-80', 'cursor-not-allowed');
+            try {
+                const res = await fetch(API_BASE + '/api/scheduled-tasks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'create',
+                        name: document.getElementById('task-name').value.trim(),
+                        schedule_type: scheduleType,
+                        time_wib: document.getElementById('task-time').value,
+                        interval_minutes: parseInt(document.getElementById('task-interval').value) || 30,
+                        prompt: prompt,
+                        notify_email: document.getElementById('task-notify-email').checked
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+                window.ClinqooBack('../otomatisasi-ai/');
+            } catch (err) {
+                btn.innerHTML = 'Simpan Tugas'; btn.disabled = false; btn.classList.remove('opacity-80', 'cursor-not-allowed');
+                console.warn('Gagal menyimpan tugas: ' + (err && err.message ? err.message : 'kesalahan jaringan'));
+            }
+        }
+
+        try { lucide.createIcons(); } catch (e) {}
+    </script>
+
+    <script>/* clinqoo-sw-register */
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../sw.js').catch(function () {}); }); }
+    </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

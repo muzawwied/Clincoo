@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+
+  <script src="../../js/auth-client.js?v=4"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hubungkan Domain — Clincoo Experiment</title>
+<meta name="description" content="Hubungkan domain kustommu ke Clincoo dan verifikasi kepemilikan lewat record TXT.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" type="image/png" href="https://app.clincoo.buzz/assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+<script src="https://unpkg.com/lucide@1.41.0"></script>
+<script src="../js/store.js"></script>
+<style>
+    body { font-family: 'Inter', sans-serif; background-color: #ffffff; transition: background-color 0.3s ease, color 0.3s ease; }
+    :root { --accent-color: #000000; --accent-hover: #1f2937; --accent-text: #ffffff; }
+    .bg-accent { background-color: var(--accent-color) !important; }
+    .text-accent { color: var(--accent-color) !important; }
+    .border-accent { border-color: var(--accent-color) !important; }
+    .hover\:bg-accent-hover:hover { background-color: var(--accent-hover) !important; }
+    body.dark-mode { background-color: #000000; color: #ffffff; }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode .bg-gray-50 { background-color: #141414 !important; }
+    body.dark-mode .border-gray-100, body.dark-mode .border-gray-200, body.dark-mode .border-gray-300 { border-color: #222222 !important; }
+    body.dark-mode .text-accent { color: #ffffff !important; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #ffffff !important; }
+    body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 { color: #888888 !important; }
+    body.dark-mode .text-gray-400 { color: #666666 !important; }
+    body.dark-mode .bg-accent { background-color: #ffffff !important; color: #000000 !important; }
+    body.dark-mode .bg-accent.text-white { color: #000000 !important; }
+    body.dark-mode .bg-accent.text-white svg { color: #000000 !important; stroke: #000000 !important; }
+    body.dark-mode button[onclick="history.back()"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
+    body.dark-mode button[onclick="history.back()"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
+    body.dark-mode button[onclick="history.back()"] svg { color: #ffffff !important; stroke: #ffffff !important; }
+    #cta-next { transition: transform .3s cubic-bezier(.2,.7,.3,1), opacity .3s ease; }
+    #cta-next.hidden-cta { transform: translateY(120%); opacity: 0; pointer-events: none; }
+    body.dark-mode #cta-bar-bg { background-image: linear-gradient(to top, #000000 0%, rgba(0,0,0,0.9) 60%, transparent 100%); }
+    textarea:focus { outline: none!important; box-shadow: none!important; }
+</style>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+</head>
+<body class="min-h-screen flex flex-col text-gray-900 pt-20">
+<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.body.classList.add('dark-mode');var a=localStorage.getItem('clinqoo_accent')||'Hitam (Default)';var am={'Hitam (Default)':{m:'#000000',h:'#1f2937'},'Biru':{m:'#2563eb',h:'#1d4ed8'},'Hijau':{m:'#059669',h:'#047857'},'Ungu':{m:'#9333ea',h:'#7e22ce'},'Merah':{m:'#dc2626',h:'#b91c1c'}};var c=am[a]||am['Hitam (Default)'];document.documentElement.style.setProperty('--accent-color',c.m);document.documentElement.style.setProperty('--accent-hover',c.h);}catch(e){}})();</script>
+
+<main class="flex-1 w-full max-w-2xl mx-auto pb-12 flex-col justify-start relative">
+    <!-- Header ala halaman Profil Clincoo -->
+    <button onclick="history.back()" class="fixed top-3 left-3 w-10 h-10 flex items-center justify-center rounded-full bg-white backdrop-blur border border-gray-100 shadow-sm hover:bg-gray-50 transition-all cursor-pointer text-gray-700 hover:text-black z-50" aria-label="Kembali">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    </button>
+    <div class="flex flex-col px-7 pb-6 relative">
+        <h2 class="text-[24px] font-extrabold text-gray-900 tracking-tight">Hubungkan Domain</h2>
+        <p class="text-[14px] text-gray-500 font-medium mt-0.5">Masukkan domain yang ingin kamu kelola</p>
+    </div>
+
+    <!-- Konten -->
+    <div class="px-7">
+        <label for="domain-input" class="text-[12px] font-bold text-gray-400 uppercase tracking-wider">Nama Domain</label>
+        <div class="relative mt-2.5">
+            <i data-lucide="globe" class="w-[18px] h-[18px] text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <input id="domain-input" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="contoh.com"
+                class="w-full bg-gray-50 border border-gray-200 rounded-full pl-11 pr-5 py-2.5 text-[15px] font-medium text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors">
+        </div>
+        <p class="text-[12px] text-gray-500 mt-2.5 leading-relaxed">Tanpa <span class="font-semibold">https://</span> atau <span class="font-semibold">www</span> — cukup nama domain, mis. tokosaya.com</p>
+        <p id="domain-error" class="hidden text-[12px] text-red-600 font-medium mt-1.5">Format domain tidak valid. Periksa kembali penulisan domain-mu.</p>
+        <p id="domain-exists" class="hidden text-[12px] text-amber-600 font-medium mt-1.5">Domain ini sudah ada di daftarmu.</p>
+
+    </div>
+
+    <!-- CTA Lanjutkan — muncul saat input terisi domain valid -->
+    <div class="fixed bottom-0 inset-x-0 z-40 pointer-events-none">
+        <div id="cta-bar-bg" class="max-w-2xl mx-auto px-5 pb-5 pt-8 bg-gradient-to-t from-white via-white/90 to-transparent pointer-events-auto">
+            <button id="cta-next" onclick="goNext()" class="hidden-cta w-full bg-accent text-white rounded-full py-3.5 text-[15px] font-bold hover:bg-accent-hover transition-all active:scale-[0.98] cursor-pointer shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                Lanjutkan<i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </div>
+</main>
+
+<script>
+const input = document.getElementById('domain-input');
+const cta = document.getElementById('cta-next');
+const errEl = document.getElementById('domain-error');
+const existsEl = document.getElementById('domain-exists');
+let existingNames = [];
+store.list().then(l => { existingNames = l.map(d => d.name); }).catch(() => {});
+
+function isValidDomain(v) {
+    const s = v.trim().toLowerCase();
+    if (!s || /\s/.test(s)) return false;
+    if (s.length > 253) return false;
+    if (!/^[a-z0-9.-]+$/.test(s)) return false;
+    const parts = s.split('.');
+    if (parts.length < 2) return false;
+    const tld = parts[parts.length - 1];
+    if (!/^[a-z]{2,}$/.test(tld)) return false;
+    return parts.every(p => p && p.length <= 63 && /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(p));
+}
+function domainExists(name) {
+    return existingNames.includes(name);
+}
+function check() {
+    const v = input.value.trim().toLowerCase();
+    const valid = isValidDomain(v);
+    const exists = valid && domainExists(v);
+    errEl.classList.toggle('hidden', !v || valid);
+    existsEl.classList.toggle('hidden', !exists);
+    cta.classList.toggle('hidden-cta', !valid || exists);
+}
+function goNext() {
+    const v = input.value.trim().toLowerCase();
+    if (!isValidDomain(v)) { check(); return; }
+    if (domainExists(v)) { check(); return; }
+    location.href = '../verifikasi/?domain=' + encodeURIComponent(v);
+}
+input.addEventListener('input', check);
+input.addEventListener('keydown', e => { if (e.key === 'Enter' && !cta.classList.contains('hidden-cta')) goNext(); });
+lucide.createIcons();
+input.focus();
+</script>
+<script>try { lucide.createIcons(); } catch (e) {}</script>
+</body>
+</html>

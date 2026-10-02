@@ -1,21 +1,28 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+
   <script src="../../../js/auth-client.js?v=4"></script>
+<script>/* Remap domain produksi ke app.clincoo.buzz */
+(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clincoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();
+</script>
+<script>/* Produksi: editor hanya untuk proyek Clincoo yang valid — tanpa id proyek, arahkan ke halaman workspace (kecuali mode pratinjau #view=) */
+(function(){
+  try{
+    if(location.hash.indexOf('#view=')===0)return;
+    var q=new URLSearchParams(location.search);
+    var pid=q.get('id')||q.get('pid');
+    if(!pid){location.replace('/proyek/workspace/');}
+  }catch(e){location.replace('/proyek/workspace/');}
+})();
+</script>
+<script>
+if(location.hash.indexOf('#view=')===0){document.documentElement.style.visibility='hidden';window.__CC_VIEW=1;(async function(){try{var b=location.hash.slice(6).replace(/-/g,'+').replace(/_/g,'/');var bin=Uint8Array.from(atob(b),function(c){return c.charCodeAt(0);});var t=await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();document.open();document.write(t);document.close();}catch(e){document.open();document.write('<p style="font-family:sans-serif;padding:24px">Tautan pratinjau rusak atau tidak lengkap.</p>');document.close();}})();}
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="description" content="Clincoo Code — editor kode full-stack untuk bangun dan publikasikan situs langsung dari browser. Lengkap, rapi & modern.">
 <title>Clincoo Code — Bangun dan Publikasikan Situs Langsung dari Browser</title>
-  <script>/* Produksi: editor hanya untuk proyek Clincoo yang valid — tanpa id proyek, arahkan ke halaman workspace */
-  (function(){
-    try{
-      var q=new URLSearchParams(location.search);
-      var pid=q.get('id')||q.get('pid');
-      if(!pid){location.replace('/proyek/workspace/');}
-    }catch(e){location.replace('/proyek/workspace/');}
-  })();
-  </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -23,6 +30,7 @@
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#141416">
+<link rel="stylesheet" href="keyboard.css">
 <style>
 :root{
   --accent:#b6b6c2; --accent-soft:rgba(182,182,194,.13);
@@ -70,7 +78,7 @@ svg{flex-shrink:0}
 .tb-btn{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--text2)}
 .tb-btn:hover{background:var(--bg4);color:var(--text)}
 .tb-btn.active{background:var(--accent-soft);color:var(--accent)}
-#run-btn{display:flex;align-items:center;gap:7px;height:32px;padding:0 13px;border-radius:8px;background:var(--btn-bg);color:#fff;font-weight:600;font-size:12.5px;transition:.15s}
+#run-btn{display:flex;align-items:center;gap:7px;height:32px;padding:0 16px;border-radius:999px;background:var(--btn-bg);color:var(--text);border:1px solid var(--line2);font-weight:600;font-size:12.5px;transition:.15s}
 #run-btn:hover{filter:brightness(1.12)}
 #searchbox{width:230px;height:30px;background:var(--bg3);border:1px solid var(--line);border-radius:8px;padding:0 11px;font-size:12.5px;outline:none;transition:.15s}
 #searchbox:focus{border-color:var(--accent);width:290px}
@@ -104,10 +112,12 @@ svg{flex-shrink:0}
 #sb-reopen{position:fixed;left:0;top:96px;z-index:520;width:16px;height:52px;border-radius:0 9px 9px 0;background:var(--bg3);border:1px solid var(--line2);border-left:none;color:var(--text3);display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:2px 0 8px rgba(0,0,0,.18)}
 #sb-reopen:hover{color:var(--text);background:var(--bg4)}
 #sb-reopen.show{display:flex}
-/* Cegah auto-zoom saat fokus ketikan di HP: input font <16px memicu zoom di iOS/Android.
-   .inputarea = textarea tersembunyi Monaco (tempat ngetik code) — tampilan kode tetap ukuran asli. */
-.monaco-editor .inputarea{font-size:16px!important}
-@media (pointer:coarse){input:not([type=range]):not([type=checkbox]):not([type=radio]),textarea,select{font-size:16px!important}}
+/* Monaco keeps its real typing textarea at 1px. Browsers zoom that focused input.
+   Give the input a readable font size without scaling its composition overlay. */
+.monaco-editor .inputarea{font-size:var(--typing-font,16px)!important;line-height:normal!important}
+@media (pointer:coarse){input:not([type=range]):not([type=checkbox]):not([type=radio]),textarea,select{font-size:max(16px,var(--typing-font,16px))!important}}
+@media (max-width:780px){#term-prompt{max-width:38%;overflow:hidden;text-overflow:ellipsis}#term-input{min-width:0}#bt-tabs{overflow-x:auto}#titlebar{gap:8px}#run-btn{padding:0 13px}}
+
 @media (max-width:780px){#sb-reopen{display:none!important}}
 .panel-head{height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 8px 0 14px;flex-shrink:0}
 .panel-head .t{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--text2)}
@@ -197,6 +207,15 @@ body.light .fico-mono{color:#2b2b30}
 .qt-fixed{display:flex;align-items:center;gap:2px;flex-shrink:0}
 .qt-btn{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--text2);font-size:13px;font-weight:700;flex-shrink:0}
 .qt-btn:hover{background:var(--bg4);color:var(--text)}
+#qt-panel{position:fixed;z-index:700;left:8px;right:8px;bottom:52px;max-width:460px;max-height:60vh;overflow-y:auto;background:var(--bg2);border:1px solid var(--line2);border-radius:12px;box-shadow:var(--shadow);padding:10px;display:none}
+#qt-panel.show{display:block}
+#qt-panel .qp-h{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin:8px 4px 6px}
+#qt-panel .qp-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}
+#qt-panel .qp-b{display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 4px;border-radius:9px;background:var(--bg3);border:1px solid var(--line);color:var(--text);font-size:11px;text-align:center;line-height:1.2;cursor:pointer;font-family:inherit}
+#qt-panel .qp-b:active,#qt-panel .qp-b:hover{background:var(--bg4)}
+#qt-panel .qp-b svg{color:var(--text2)}
+/* sembunyikan teks komposisi keyboard HP (huruf besar yang menutupi kode) */
+.monaco-editor .inputarea,.monaco-editor .inputarea.ime-input{color:transparent!important;background:transparent!important;caret-color:transparent!important;-webkit-text-fill-color:transparent!important}
 .qt-sep{width:1px;height:20px;background:var(--line);flex-shrink:0}
 .qt-swatch{width:16px;height:16px;border-radius:50%;background:conic-gradient(from 180deg,#ff5f5f,#ffd15f,#6bff6b,#5fd8ff,#7a6bff,#ff5fd1,#ff5f5f);border:1.5px solid var(--line2)}
 .qt-snippets{flex:1;display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none;min-width:0}
@@ -240,6 +259,17 @@ body.light .fico-mono{color:#2b2b30}
 #split-close{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;color:var(--text3)}
 #split-close:hover{background:var(--bg4);color:var(--text)}
 #monaco2{flex:1;min-height:0}
+#media-viewer{position:fixed;inset:0;display:none;flex-direction:column;background:var(--bg);z-index:3000}
+#media-viewer.show{display:flex}
+#mv-top{height:48px;flex:none;display:flex;align-items:center;gap:10px;padding:0 10px;background:var(--bg2);border-bottom:1px solid var(--line)}
+#mv-back{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--text2);flex:none}
+#mv-back:hover{background:var(--bg4);color:var(--text)}
+#mv-top .mv-name{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Fira Code',monospace}
+#mv-top .mv-size{font-size:11.5px;color:var(--text3);flex:none;margin-left:auto}
+#mv-body{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:30px;overflow:auto;text-align:center}
+#mv-body img,#mv-body video{max-width:100%;max-height:100%;border-radius:10px;box-shadow:0 6px 28px rgba(0,0,0,.35);background:#000}
+#mv-body audio{width:min(440px,90%)}
+#mv-body .mp-size{font-size:11.5px;color:var(--text3)}
 
 kbd{font-family:'Fira Code',monospace;background:var(--bg4);border:1px solid var(--line2);border-bottom-width:2px;border-radius:5px;padding:2px 6px;font-size:10.5px;color:var(--text2)}
 
@@ -475,6 +505,7 @@ body.light #titlebar,body.light #sidebar{background:rgba(238,238,241,.93);backdr
 <div class="dropdown" id="m-tools">
   <div class="dd-item" onclick="edAction('editor.action.formatDocument')">Format Dokumen <span class="kbd">Shift+Alt+F</span></div>
   <div class="dd-item" onclick="runPreview()">Jalankan Pratinjau <span class="kbd">F5</span></div>
+  <div class="dd-item" onclick="toggleFloatingKeyboard()">Keyboard Layar</div>
   <div class="dd-item" onclick="termRun('git status')">Cek Status Git</div>
 </div>
 <div class="dropdown" id="m-help">
@@ -549,11 +580,14 @@ body.light #titlebar,body.light #sidebar{background:rgba(238,238,241,.93);backdr
     </div>
     <div id="quicktools">
       <div class="qt-fixed">
+        <button class="qt-btn" id="qt-tools-btn" onclick="toggleToolsPanel(event)" title="Semua alat"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></button>
+        <button class="qt-btn" id="qt-keyboard-btn" onclick="toggleFloatingKeyboard()" title="Keyboard layar" aria-label="Keyboard layar" aria-pressed="false"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M5 9h1m3 0h1m3 0h1m3 0h1M5 12h1m3 0h1m3 0h1m3 0h1M7 16h10"/></svg></button>
         <button class="qt-btn" onclick="edAction('undo')" title="Urungkan"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg></button>
         <button class="qt-btn" onclick="edAction('redo')" title="Ulangi"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M21 13a9 9 0 1 1-3-7.7L21 8"/></svg></button>
         <button class="qt-btn" onclick="qtInsert('\t')" title="Tab">⇥</button>
         <button class="qt-btn qt-color" onclick="toggleColorPicker(event)" title="Pemetik warna"><span class="qt-swatch" id="qt-swatch-dot"></span></button>
       </div>
+      <div class="qt-sep"></div>
       <div class="qt-sep"></div>
       <div class="qt-snippets" id="qt-snippets"></div>
     </div>
@@ -561,6 +595,7 @@ body.light #titlebar,body.light #sidebar{background:rgba(238,238,241,.93);backdr
     <div id="bottom">
       <div id="bt-tabs">
         <button class="bt-tab active" data-bt="term">TERMINAL</button>
+        <button class="bt-tab" data-bt="linux">LINUX</button>
         <button class="bt-tab" data-bt="prob">MASALAH <span class="cnt" id="prob-cnt" style="display:none">0</span></button>
         <button class="bt-tab" data-bt="out">OUTPUT</button>
         <div class="spacer"></div>
@@ -571,10 +606,19 @@ body.light #titlebar,body.light #sidebar{background:rgba(238,238,241,.93);backdr
           <div id="term">
             <div id="term-out"></div>
             <div id="term-in">
-              <span id="term-prompt">clinqoo@code:~/project$</span>
+              <span id="term-prompt">dev@workspace:~$</span>
               <input id="term-input" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
             </div>
           </div>
+        </div>
+        <div class="bt-panel" id="bt-linux" style="flex-direction:column;background:#000">
+          <div id="linux-bar" style="display:flex;align-items:center;gap:8px;padding:5px 10px;font-size:11px;color:var(--text2);background:var(--bg2);border-bottom:1px solid var(--line);flex-shrink:0;overflow-x:auto">
+            <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🐧 Alpine Linux</span>
+            <button class="qt-chip" onclick="linuxExportProject()">Ekspor proyek</button>
+            <button class="qt-chip" onclick="linuxReboot()">Ulang</button>
+            <button class="qt-chip" onclick="linuxFull()">Penuh</button>
+          </div>
+          <iframe id="linux-frame" title="Linux" style="flex:1;border:0;width:100%;min-height:0;background:#000" allow="clipboard-read; clipboard-write; fullscreen"></iframe>
         </div>
         <div class="bt-panel" id="bt-prob"><div id="problems"><div class="empty-note">Tidak ada masalah terdeteksi. Kode bersih! ✨</div></div></div>
         <div class="bt-panel" id="bt-out"><div id="output"></div></div>
@@ -585,9 +629,7 @@ body.light #titlebar,body.light #sidebar{background:rgba(238,238,241,.93);backdr
 
 <!-- ===== STATUS BAR ===== -->
 <div id="statusbar">
-  <div class="sb" onclick="showPanel('git')" title="Cabang git">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/><path d="M6 8.6v6.8"/></svg> main
-  </div>
+
   <div class="sb" onclick="toggleBottom()">⚠ <span id="sb-warn">0</span> ✕ <span id="sb-err">0</span></div>
   <div class="spacer"></div>
   <div class="sb" id="sb-status" style="display:none"></div>
@@ -595,6 +637,20 @@ body.light #titlebar,body.light #sidebar{background:rgba(238,238,241,.93);backdr
   <div class="sb" id="sb-cursor" onclick="toast('Gunakan Ctrl+G untuk pergi ke baris')">Ln 1, Col 1</div>
   <div class="sb" id="sb-indent" onclick="cycleIndent()">Spasi: 2</div>
   <div class="sb" id="sb-lang">Plain Text</div>
+</div>
+
+<!-- Viewer media (terpisah dari code editor) -->
+<div id="media-viewer">
+  <div id="mv-top">
+    <button id="mv-back" onclick="hideMediaPreview()" title="Kembali ke editor" aria-label="Kembali ke editor"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <span class="mv-name" id="mp-name"></span>
+    <span class="mv-size" id="mp-size"></span>
+  </div>
+  <div id="mv-body">
+    <img id="mp-img" style="display:none" alt="">
+    <video id="mp-video" controls style="display:none"></video>
+    <audio id="mp-audio" controls style="display:none"></audio>
+  </div>
 </div>
 
 <!-- overlays -->
@@ -648,7 +704,7 @@ body.light #titlebar,body.light #sidebar{background:rgba(238,238,241,.93);backdr
 'use strict';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 
-const LANGS={js:'javascript',mjs:'javascript',jsx:'javascript',ts:'typescript',tsx:'typescript',html:'html',htm:'html',css:'css',scss:'scss',json:'json',md:'markdown',py:'python',xml:'xml',svg:'xml',yml:'yaml',yaml:'yaml',txt:'plaintext',sh:'shell',sql:'sql',java:'java',c:'cpp',cpp:'cpp',cs:'csharp',go:'go',rs:'rust',php:'php',rb:'ruby',swift:'swift',kt:'kotlin'};
+const LANGS={env:'shell',toml:'ini',ini:'ini',conf:'ini',config:'ini',lock:'json',dockerfile:'dockerfile',vue:'html',svelte:'html',astro:'html',graphql:'graphql',gql:'graphql',mdx:'markdown',bash:'shell',zsh:'shell',bat:'bat',ps1:'powershell',js:'javascript',mjs:'javascript',jsx:'javascript',ts:'typescript',tsx:'typescript',html:'html',htm:'html',css:'css',scss:'scss',json:'json',md:'markdown',py:'python',xml:'xml',svg:'xml',yml:'yaml',yaml:'yaml',txt:'plaintext',sh:'shell',sql:'sql',java:'java',c:'cpp',cpp:'cpp',cs:'csharp',go:'go',rs:'rust',php:'php',rb:'ruby',swift:'swift',kt:'kotlin'};
 const langOf=p=>LANGS[(p.split('.').pop()||'').toLowerCase()]||'plaintext';
 const nameOf=p=>p.split('/').pop();
 const FICO_SVG={
@@ -663,14 +719,39 @@ const FICO_SVG={
   mp3:`<svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="16" rx="4.5" fill="#e5554f"/><path d="M9.5 16.2a1.8 1.8 0 1 1-1.8-1.8 1.8 1.8 0 0 1 1.8 1.8zm6-1.4a1.7 1.7 0 1 1-1.7-1.7 1.7 1.7 0 0 1 1.7 1.7z" fill="#fff"/><path d="M9.5 16.2V8.5l6-1.2v7.5" fill="none" stroke="#fff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   png:`<svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="16" rx="4.5" fill="#43a047"/><circle cx="8.7" cy="9.3" r="1.7" fill="#fff"/><path d="M4.5 17l4.6-5 3.4 3.8 2.3-2.6 4.7 4.8" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
 };
-const FICO_LETTER={mjs:['JS','#e8d44d'],jsx:['JS','#e8d44d'],ts:['TS','#3178c6'],tsx:['TS','#3178c6'],scss:['#','#cd6799'],md:['M','#519aba'],sh:['$','#89e051'],yml:['Y','#cb171e'],yaml:['Y','#cb171e'],sql:['DB','#e38c00'],svg:['SVG','#ffb13b']};
+const MEDIA_IMG=['png','jpg','jpeg','gif','webp','bmp','ico'];
+const MEDIA_AUDIO=['mp3','wav','ogg','m4a'];
+const MEDIA_VIDEO=['mp4','webm','mov'];
+const mediaKindOf=p=>{const e=(p.split('.').pop()||'').toLowerCase();if(MEDIA_IMG.includes(e))return'image';if(MEDIA_AUDIO.includes(e))return'audio';if(MEDIA_VIDEO.includes(e))return'video';return null;};
+function showMediaPreview(path){
+  const kind=mediaKindOf(path);
+  const img=$('#mp-img'),vid=$('#mp-video'),aud=$('#mp-audio');
+  img.style.display='none';vid.style.display='none';aud.style.display='none';
+  img.src='';vid.src='';aud.src='';
+  const src=project[path]||'';
+  if(kind==='image'){img.src=src;img.style.display='block';}
+  else if(kind==='video'){vid.src=src;vid.style.display='block';}
+  else if(kind==='audio'){aud.src=src;aud.style.display='block';}
+  $('#mp-name').textContent=nameOf(path);
+  const isDataUri=src.indexOf('base64,')>=0;
+  const kb=isDataUri?((src.length-src.indexOf('base64,')-7)*0.75/1024).toFixed(1):null;
+  $('#mp-size').textContent=kb?kb+' KB':(isDataUri?'':'Berkas tidak valid (bukan base64) — import ulang berkas ini');
+  $('#media-viewer').classList.add('show');
+  closeMobileSidebar();
+}
+function hideMediaPreview(){
+  $('#media-viewer').classList.remove('show');
+}
+const FICO_LETTER={'.env':['ENV','#d6ae58'],'.env.local':['ENV','#d6ae58'],'.env.example':['ENV','#d6ae58'],'.gitignore':['GIT','#f34f29'],'dockerfile':['🐳','#4a9fd8'],'makefile':['MK','#ac9370'],'package.json':['NPM','#cb5c55'],'package-lock.json':['NPM','#cb5c55'],'readme.md':['MD','#519aba'],mjs:['JS','#e8d44d'],jsx:['JS','#e8d44d'],ts:['TS','#3178c6'],tsx:['TS','#3178c6'],scss:['#','#cd6799'],md:['M','#519aba'],sh:['$','#89e051'],yml:['Y','#cb171e'],yaml:['Y','#cb171e'],sql:['DB','#e38c00'],svg:['SVG','#ffb13b'],php:['PHP','#8892bf'],go:['GO','#00add8'],rs:['RS','#a99a8a'],java:['J','#e76f52'],rb:['RB','#cc514e'],vue:['V','#41b883'],svelte:['S','#ff765b'],astro:['A','#e78155'],toml:['T','#a58872'],ini:['CFG','#98a6ad'],lock:['LOCK','#8f9ca5'],dockerfile:['🐳','#4a9fd8'],graphql:['GQL','#e06da9'],gql:['GQL','#e06da9'],mdx:['MDX','#519aba'],bash:['$','#89e051'],zsh:['$','#89e051'],bat:['BAT','#89e051'],ps1:['PS','#569cd6']};
 const ficoHTML=p=>{
   const nm=(p.split('/').pop()||'').toLowerCase();
   if(nm==='.gitignore')return `<span class="fico">${FICO_SVG.gitignore}</span>`;
   let e=(nm.split('.').pop()||'').toLowerCase();
-  if(['jpg','jpeg','gif','webp','bmp'].includes(e))e='png';
+  if(['jpg','jpeg','gif','webp','bmp','ico'].includes(e))e='png';
+  if(['wav','ogg','m4a'].includes(e))e='mp3';
+  if(['webm','mov'].includes(e))e='mp4';
   if(FICO_SVG[e])return `<span class="fico${e==='js'?' fico-mono':''}">${FICO_SVG[e]}</span>`;
-  const f=FICO_LETTER[e]||['F','#9a9aa4'];
+  const f=FICO_LETTER[nm]||FICO_LETTER[e]||['F','#9a9aa4'];
   return `<span class="fico" style="color:${f[1]};font-size:10px;font-weight:800;font-family:'Fira Code',monospace">${f[0]}</span>`;
 };
 /* ---------- Quick tools (tools lengkap: snippet, undo/redo, tab, color picker) ---------- */
@@ -739,7 +820,7 @@ function renderBreadcrumbs(){
   if(!activePath){bc.innerHTML='';bc.style.display='none';return;}
   bc.style.display='flex';
   const parts=activePath.split('/');
-  bc.innerHTML='<span class="crumb" id="bc-root">clinqoo-editor</span>'+parts.map((s,i)=>`<span class="sep">›</span><span class="crumb ${i===parts.length-1?'active':''}" data-bc="${i}">${ficoHTML(activePath)}${esc(s)}</span>`).join('');
+  bc.innerHTML='<span class="crumb" id="bc-root">workspace</span>'+parts.map((s,i)=>`<span class="sep">›</span><span class="crumb ${i===parts.length-1?'active':''}" data-bc="${i}">${ficoHTML(activePath)}${esc(s)}</span>`).join('');
   const root=bc.querySelector('#bc-root');if(root)root.onclick=()=>showPanel('explorer');
   parts.forEach((s,i)=>{const el=bc.querySelector(`[data-bc="${i}"]`);if(el)el.onclick=()=>openFile(activePath);});
 }
@@ -967,7 +1048,7 @@ window.addEventListener('message',function(e){
   const d=e&&e.data;
   if(!d||d.type!=='clinqoo-editor-init')return;
   try{
-    if(d.token){try{if(!localStorage.getItem('clinqoo_auth_token'))localStorage.setItem('clinqoo_auth_token',d.token);}catch(err){}}
+    
     if(d.files&&typeof d.files==='object'&&!Object.keys(project).length){
       const r=wsToFlat(d.files);
       linkedEmptyFolders=r.emptyFolders;
@@ -1086,12 +1167,12 @@ require(['vs/editor/editor.main'],function(){
   monaco.editor.setTheme(document.body.classList.contains('light')?'clinqoo-light':'clinqoo-dark');
   editor=monaco.editor.create($('#monaco'),{
     automaticLayout:true,
-    fontSize:parseFloat(localStorage.getItem('cc_font')||14),
+    fontSize:Math.max(12,Math.min(20,parseFloat(localStorage.getItem('cc_font')||14)||14)),
     fontFamily:"'Fira Code','JetBrains Mono',Menlo,Consolas,monospace",
     fontLigatures:true,
-    minimap:{enabled:localStorage.getItem('cc_minimap')!=='off'},
+    minimap:{enabled:!matchMedia('(max-width:780px)').matches&&localStorage.getItem('cc_minimap')!=='off'},
     tabSize:parseInt(localStorage.getItem('cc_tab')||'2'),
-    wordWrap:localStorage.getItem('cc_wrap')==='on'?'on':'off',
+    wordWrap:matchMedia('(max-width:780px)').matches||localStorage.getItem('cc_wrap')==='on'?'on':'off',
     smoothScrolling:true,
     cursorBlinking:'smooth',
     renderLineHighlight:'all',
@@ -1107,9 +1188,8 @@ require(['vs/editor/editor.main'],function(){
   });
   openDefaultTabs();
   renderAll();
-  // start
-  termPrint(['Clincoo Code — Terminal','Ketik "help" untuk daftar perintah.','',''].join('\n'),'dim');
-  termPrint('','ok');
+  // Restore terminal transcript after the editor is ready.
+  try{const saved=JSON.parse(localStorage.getItem('cc_term_output')||'[]');if(Array.isArray(saved)&&saved.length){saved.slice(-100).forEach(([text,cls])=>{const d=document.createElement('div');d.textContent=String(text||'');d.className=['cmd','ok','err','dim'].includes(cls)?cls:'';$('#term-out').appendChild(d);});}else termPrint('Terminal siap. Ketik help untuk daftar perintah.','dim');}catch(e){termPrint('Terminal siap. Ketik help untuk daftar perintah.','dim');}
 });
 
 function modelFor(path){
@@ -1130,10 +1210,15 @@ function openFile(path,focus=true){
   if(!(path in project)){toast('Berkas tidak ditemukan: '+path);return;}
   if(!tabs.includes(path))tabs.push(path);
   activePath=path;
-  const m=modelFor(path);
-  editor.setModel(m);
+  if(mediaKindOf(path)){
+    showMediaPreview(path);
+  }else{
+    hideMediaPreview();
+    const m=modelFor(path);
+    editor.setModel(m);
+  }
   renderAll();
-  if(focus){editor.focus();closeMobileSidebar();}
+  if(focus){if(!mediaKindOf(path))editor.focus();closeMobileSidebar();}
 }
 function createStarterFiles(){
   if(Object.keys(project).some(p=>['index.html','style.css','app.js'].includes(p))){
@@ -1159,8 +1244,11 @@ function closeTab(path){
   tabs.splice(i,1);
   if(activePath===path){
     activePath=tabs[Math.min(i,tabs.length-1)]||null;
-    if(activePath)editor.setModel(modelFor(activePath));
-    else{editor.setModel(null);openDefaultTabs();}
+    if(activePath){
+      if(mediaKindOf(activePath))showMediaPreview(activePath);
+      else{hideMediaPreview();editor.setModel(modelFor(activePath));}
+    }
+    else{hideMediaPreview();editor.setModel(null);openDefaultTabs();}
   }
   renderAll();
 }
@@ -1311,6 +1399,7 @@ $$('.bt-tab').forEach(b=>b.onclick=()=>{
   $$('.bt-panel').forEach(x=>x.classList.remove('show'));
   $('#bt-'+b.dataset.bt).classList.add('show');
   if(b.dataset.bt==='term')$('#term-input').focus();
+  if(b.dataset.bt==='linux')linuxBoot();
 });
 
 /* ---------- Git ---------- */
@@ -1426,6 +1515,9 @@ function importZip(){
         if(IMG_EXTS.includes(ext)){
           const b64=await en.async('base64');
           project[path]='data:image/'+ext+';base64,'+b64;
+        }else if(MEDIA_AUDIO.includes(ext)||MEDIA_VIDEO.includes(ext)){
+          const b64=await en.async('base64');
+          project[path]='data:'+(MEDIA_AUDIO.includes(ext)?'audio':'video')+'/'+ext+';base64,'+b64;
         }else{
           project[path]=await en.async('string');
         }
@@ -1745,6 +1837,8 @@ function termPrint(text,cls){
   if(cls)d.className=cls;
   d.textContent=text;
   out.appendChild(d);
+  while(out.children.length>180)out.firstElementChild.remove();
+  try{localStorage.setItem('cc_term_output',JSON.stringify([...out.children].map(el=>[el.textContent,el.className]).slice(-100)));}catch(e){}
   out.scrollTop=out.scrollHeight;
 }
 function pkgRead(){try{const p=JSON.parse(project['package.json']||'null');return (p&&typeof p==='object')?p:null;}catch(e){return null;}}
@@ -1752,7 +1846,24 @@ function pkgWrite(p){p.name=p.name||((LINK_PID?LINK_NAME:'proyek-clinqoo')+'').t
 const NPX_BACKEND_SERVER="const express=require('express');\nconst cors=require('cors');\nrequire('dotenv').config();\n\nconst app=express();\napp.use(cors());\napp.use(express.json());\n\napp.use('/api', require('./routes/health'));\n\nconst PORT=process.env.PORT || 3000;\napp.listen(PORT, () => console.log('Server jalan di http://localhost:' + PORT));\n";
 const NPX_BACKEND_HEALTH="const express=require('express');\nconst router=express.Router();\n\nrouter.get('/health', (req,res) => res.json({ status:'ok', time:new Date().toISOString() }));\n\nmodule.exports=router;\n";
 const CMDS={
-  help(){return ['Perintah tersedia:','  help            — panduan ini','  ls / tree       — daftar / struktur berkas','  cd / pwd        — pindah & lihat folder kerja','  cat <berkas>    — tampilkan isi berkas','  open <berkas>   — buka di editor','  touch <nama>    — buat berkas baru','  mkdir <nama>    — buat folder','  rm <berkas>     — hapus berkas','  mv <a> <b>      — pindah/ganti nama','  cp <a> <b>      — salin berkas','  echo teks > f   — tulis teks ke berkas','  find <kata>     — cari berkas & isi','  stat <berkas>   — ukuran & tanggal','  save            — simpan semua berkas','  clear           — bersihkan terminal','  date            — tanggal & waktu','  git status      — status perubahan','  git log         — riwayat versi','  git commit -m <pesan> — simpan versi','  git checkout <id> — pulihkan versi','  git pull        — tarik berkas terbaru dari cloud','  git push        — kirim ke cloud Clincoo','  git clone <url> — impor repo publik GitHub ke folder','  npm run dev     — jalankan pratinjau','  npm run build   — unduh proyek jadi satu berkas HTML','  npm install <paket> — tambah dependensi (mis. npm install dotenv)','  npm uninstall <paket> / npm init / npm ls','  node <berkas.js> — jalankan simulasi JS (console.log tampil)','  npx create-backend [nama] — scaffold backend Express + dotenv','  zip             — unduh proyek sebagai arsip .zip','  grep <f> <kata> — cari dalam berkas','  wc <berkas>     — hitung baris/kata/karakter','  ↑ / ↓           — riwayat perintah'].join('\n');},
+  help(){return [
+    'PERINTAH WORKSPACE',
+    '────────────────────────────────────────',
+    'Berkas     ls, tree, cd, pwd, cat, open',
+    '           touch, mkdir, rm, mv, cp, echo',
+    '           find, grep, stat, wc',
+    'Proyek     save, zip, npm run dev, npm run build',
+    'Paket      npm init, npm install, npm uninstall, npm ls',
+    'Versi      git status, git log, git commit, git checkout',
+    'Lainnya    date, clear, history',
+    '',
+    'Contoh:  cat index.html  ·  npm run dev',
+    'Riwayat perintah: tombol ↑ / ↓.',
+    '',
+    'Perintah di tab ini mengelola berkas browser.',
+    'Untuk shell Linux, buka tab LINUX.'
+  ].join('\n');},
+  history(){return termHist.length?termHist.slice(0,30).reverse().map((cmd,i)=>String(i+1).padStart(3)+'  '+cmd).join('\n'):'Belum ada perintah.';},
   tree(){const t=treeData();let out=LINK_PID?LINK_NAME:'proyek-clinqoo';const walk=(node,pre)=>{const ds=Object.keys(node.dirs).sort(),fs=node.files.sort((a,b)=>nameOf(a).localeCompare(nameOf(b)));ds.forEach((d,i)=>{const last=i===ds.length-1&&!fs.length;out+='\n'+pre+(last?'└─ ':'├─ ')+d+'/';walk(node.dirs[d],pre+(last?'   ':'│  '));});fs.forEach((f,i)=>{out+='\n'+pre+(i===fs.length-1?'└─ ':'├─ ')+nameOf(f);});};walk(t,'');return out;},
   cd(a){const target=(a[0]||'').replace(/\/$/,'');if(!target||target==='/'){termCwd='';return 'OK — root';}const ok=Object.keys(project).some(p=>p===target||p.startsWith(target+'/')||linkedEmptyFolders.some(f=>f===target||f.startsWith(target+'/')));if(!ok)return 'cd: '+target+': folder tidak ada';termCwd=target;return 'OK — '+target;},
   pwd(){return '/'+termCwd;},
@@ -1768,7 +1879,7 @@ const CMDS={
   find(a){const q=a.join(' ').toLowerCase();if(!q)return 'Penggunaan: find <kata>';const hits=[];Object.keys(project).forEach(p=>{if(p.toLowerCase().includes(q))hits.push(p);else{const i=project[p].toLowerCase().indexOf(q);if(i!==-1)hits.push(p+': …'+project[p].slice(Math.max(0,i-20),i+30).replace(/\n/g,'␤')+'…');}});return hits.length?hits.slice(0,30).join('\n'):'Tidak ada hasil untuk "'+q+'"';},
   stat(a){const f=a[0];if(project[f]===undefined)return 'stat: '+f+': tidak ada';const c=project[f];return ['Berkas : '+f,'Ukuran: '+c.length+' byte ('+ccSizeLabel(c)+')','Baris : '+c.split('\n').length,'Karakter: '+c.length].join('\n');},
   save(){saveAll();return 'Semua berkas tersimpan'+(LINK_PID?' & tersinkron ke Clincoo':'')+'.';},
-  clear(){$('#term-out').innerHTML='';return '';},
+  clear(){$('#term-out').innerHTML='';try{localStorage.removeItem('cc_term_output');}catch(e){}return '';},
   date(){return new Date().toString();},
   git(a,line){const s=a[0];
     if(s==='status'){const d=dirtySet();return d.size?'Perubahan belum di-commit:\n'+[...d].map(p=>'  modified: '+p).join('\n')+'\n\nKetik: git commit -m <pesan>':'di cabang main\ntidak ada perubahan, pohon kerja bersih ✨';}
@@ -1927,7 +2038,7 @@ function importHandleFiles(fileList){
     fr.onload=()=>{project[path]=String(fr.result||'');done++;if(--left===0)finish();};
     fr.onerror=()=>{skipped++;if(--left===0)finish();};
     if(ext==='svg')fr.readAsText(f);
-    else if(IMG_EXTS.includes(ext))fr.readAsDataURL(f);
+    else if(IMG_EXTS.includes(ext)||MEDIA_AUDIO.includes(ext)||MEDIA_VIDEO.includes(ext))fr.readAsDataURL(f);
     else fr.readAsText(f);
   });
 }
@@ -1984,7 +2095,8 @@ function termRun(raw){
   toggleBottomIfClosed();
   const line=raw.trim();
   if(!line)return;
-  termPrint('clinqoo@code:~/'+(termCwd||'project')+'$ '+line,'cmd');
+  termHist.unshift(line);termHist=termHist.slice(0,50);try{localStorage.setItem('cc_term_hist',JSON.stringify(termHist));}catch(e){}
+  termPrint('dev@workspace:~/'+(termCwd||'project')+'$ '+line,'cmd');
   const [cRaw,...args]=line.split(/\s+/);
   const c=(cRaw||'').toLowerCase();
   let out='';
@@ -2000,7 +2112,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   $('#term-input').addEventListener('keydown',e=>{
     if(e.key==='Enter'){
       const v=e.target.value;e.target.value='';termRun(v);
-      if(v.trim()){termHist.unshift(v);termHist=termHist.slice(0,50);try{localStorage.setItem('cc_term_hist',JSON.stringify(termHist));}catch(err){}}
       termHistIdx=-1;
     }else if(e.key==='ArrowUp'){
       e.preventDefault();
@@ -2398,15 +2509,16 @@ function splitEditor(path){
   if(!editor){toast('Editor belum siap');return;}
   const p=(path&&project[path]!==undefined)?path:activePath;
   if(!p){toast('Buka berkas dulu');return;}
+  if(mediaKindOf(p)){toast('Berkas media tidak bisa dibuka di panel split');return;}
   if(!editor2){
     editor2=monaco.editor.create($('#monaco2'),{
       automaticLayout:true,
-      fontSize:parseFloat(localStorage.getItem('cc_font')||14),
+      fontSize:Math.max(12,Math.min(20,parseFloat(localStorage.getItem('cc_font')||14)||14)),
       fontFamily:"'Fira Code','JetBrains Mono',Menlo,Consolas,monospace",
       fontLigatures:true,
       minimap:{enabled:false},
       tabSize:parseInt(localStorage.getItem('cc_tab')||'2'),
-      wordWrap:localStorage.getItem('cc_wrap')==='on'?'on':'off',
+      wordWrap:matchMedia('(max-width:780px)').matches||localStorage.getItem('cc_wrap')==='on'?'on':'off',
       smoothScrolling:true,cursorBlinking:'smooth',renderLineHighlight:'all',
       padding:{top:12},
       scrollbar:{verticalScrollbarSize:10,horizontalScrollbarSize:10},
@@ -2536,83 +2648,137 @@ outPrint('<b>Clincoo Code</b> siap digunakan.');
 outPrint('Monaco engine dimuat. Semua perubahan tersimpan otomatis di browser.');
 </script>
 <script>
-/* Anti-zoom ngetik di HP — 2 lapis:
-   (1) Di perangkat sentuh, inputarea Monaco (textarea TERSEMBUNYI tempat ngetik)
-       dipaksa font besar: minimal 44px, atau 17/skala bila halaman zoom-out lebih dalam.
-       Browser HP ngezoom saat fokus input yang terlihat KECIL DI LAYAR. Di mode desktop
-       halaman dirender ~0.4x: 16px terlihat cuma ~6px, makanya aturan 16px biasa kurang.
-       Dengan min 44px, ukuran visualnya tetap ~16px+ di layar mana pun.
-       Elemen ini tak terlihat: tampilan kode & UI tidak berubah.
-   (2) Fallback: kalau browser masih juga zoom (perilaku mode desktop yang membandel),
-       skala direset lewat toggle meta viewport (trik klasik reset zoom iOS/Chrome). */
+/* Keep the hidden Monaco typing field readable to mobile browsers, including
+   when Monaco recreates it after switching files or refreshing the page. */
 (function(){
-  var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints|0) > 0;
-  if(!isTouch || !window.visualViewport) return;
-  var vv = window.visualViewport;
-  function fit(){
-    var sc = vv.scale || 1;
-    var fs = Math.min(90, Math.max(44, Math.ceil(17 / sc)));
-    var areas = document.querySelectorAll('.monaco-editor .inputarea');
-    for(var i = 0; i < areas.length; i++){
-      areas[i].style.setProperty('font-size', fs + 'px', 'important');
-    }
-  }
-  vv.addEventListener('resize', fit);
-  document.addEventListener('focusin', fit);
-  var iv = setInterval(fit, 1500); /* Monaco atur ulang inputarea saat ganti tab */
-  setTimeout(function(){ clearInterval(iv); fit(); }, 8000);
-
-  var meta = document.querySelector('meta[name="viewport"]');
-  var lastFocus = 0, scaleAtFocus = null, lastSnap = 0;
-  document.addEventListener('focusin', function(){
-    lastFocus = Date.now();
-    scaleAtFocus = vv.scale;
-  });
-  vv.addEventListener('resize', function(){
-    var now = Date.now();
-    if(!meta || scaleAtFocus == null) return;
-    if(now - lastFocus > 2500 || now - lastSnap < 5000) return;
-    if(document.documentElement.clientWidth < 900) return; /* hanya layout desktop */
-    var sc = vv.scale || 1;
-    if(sc - scaleAtFocus < 0.08) return; /* bukan zoom-in, abaikan (mis. keyboard muncul) */
-    lastSnap = now;
-    var orig = meta.getAttribute('content');
-    meta.setAttribute('content', 'width=device-width,initial-scale=1.0');
-    setTimeout(function(){ meta.setAttribute('content', orig); }, 60);
-  });
+  if(!('ontouchstart' in window) && !(navigator.maxTouchPoints>0))return;
+  const update=()=>{
+    const scale=window.visualViewport?.scale||1;
+    document.documentElement.style.setProperty('--typing-font',Math.min(72,Math.max(16,Math.ceil(18/scale)))+'px');
+  };
+  update();
+  window.visualViewport?.addEventListener('resize',update);
+  window.addEventListener('orientationchange',update);
+  new MutationObserver(update).observe(document.body,{childList:true,subtree:true});
 })();
+</script>
+<script>
+(function(){
+function I(d){return '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';}
+function A(id){return function(){edAction(id);};}
+function fontBy(d){if(!editor)return;var f=Math.max(9,Math.min(32,editor.getOption(monaco.editor.EditorOption.fontSize)+d));editor.updateOptions({fontSize:f});if(window.editor2)editor2.updateOptions({fontSize:f});localStorage.setItem('cc_font',f);toast('Ukuran huruf: '+f+'px');}
+function mapLines(fn){if(!editor)return;var m=editor.getModel(),sel=editor.getSelection();if(!m)return;var s=sel.startLineNumber,e=sel.endLineNumber;if(s===e){s=1;e=m.getLineCount();}var r=new monaco.Range(s,1,e,m.getLineMaxColumn(e));editor.executeEdits('tools',[{range:r,text:fn(m.getValueInRange(r))}]);editor.focus();}
+function selMap(fn){if(!editor)return;var m=editor.getModel();editor.executeEdits('tools',editor.getSelections().map(function(r){return{range:r,text:fn(m.getValueInRange(r))};}));editor.focus();}
+function ins(t){qtInsert(t);}
+var G=[
+['Edit',[
+['Cari',A('actions.find'),'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>'],
+['Cari & ganti',A('editor.action.startFindReplaceAction'),'<path d="M4 7h11l-3-3M20 17H9l3 3"/>'],
+['Ke baris…',function(){gotoLine();},'<path d="M5 12h14M13 6l6 6-6 6"/>'],
+['Pilih semua',A('editor.action.selectAll'),'<rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="3 3"/>'],
+['Pilih kata berikut',A('editor.action.addSelectionToNextFindMatch'),'<path d="M4 7h7M4 17h7M15 5v14"/>'],
+['Kursor ke bawah',A('editor.action.insertCursorBelow'),'<path d="M8 4v6M16 10v6M12 16v4"/>'],
+['Salin',function(){var t=editor&&editor.getModel().getValueInRange(editor.getSelection());if(t)navigator.clipboard.writeText(t).then(function(){toast('Disalin');});},'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'],
+['Tempel',function(){navigator.clipboard.readText().then(function(t){ins(t);}).catch(function(){toast('Izin papan klip ditolak');});},'<path d="M9 4h6v3H9zM7 6H5v15h14V6h-2"/>'],
+]],
+['Baris',[
+['Komentar',A('editor.action.commentLine'),'<path d="M8 4l-4 16M14 4l-4 16"/>'],
+['Indentasi',A('editor.action.indentLines'),'<path d="M3 6h18M11 12h10M11 18h10M3 10l4 3-4 3"/>'],
+['Kurangi indentasi',A('editor.action.outdentLines'),'<path d="M3 6h18M11 12h10M11 18h10M7 10l-4 3 4 3"/>'],
+['Pindah ke atas',A('editor.action.moveLinesUpAction'),'<path d="M12 19V5M5 12l7-7 7 7"/>'],
+['Pindah ke bawah',A('editor.action.moveLinesDownAction'),'<path d="M12 5v14M19 12l-7 7-7-7"/>'],
+['Duplikat baris',A('editor.action.copyLinesDownAction'),'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V4h12"/>'],
+['Hapus baris',A('editor.action.deleteLines'),'<path d="M4 7h16M6 7l1 13h10l1-13M9 7V4h6v3"/>'],
+['Gabung baris',A('editor.action.joinLines'),'<path d="M4 8h16M4 16h16M12 8v8"/>'],
+['Urutkan A–Z',A('editor.action.sortLinesAscending'),'<path d="M4 6h10M4 12h7M4 18h4M17 4v16M14 17l3 3 3-3"/>'],
+['Hapus spasi akhir',A('editor.action.trimTrailingWhitespace'),'<path d="M4 12h10M18 8l-4 4 4 4"/>'],
+]],
+['Teks',[
+['HURUF BESAR',A('editor.action.transformToUppercase'),'<path d="M4 20l6-16 6 16M6.5 14h7"/>'],
+['huruf kecil',A('editor.action.transformToLowercase'),'<circle cx="9" cy="15" r="4"/><path d="M13 11v8"/>'],
+['Judul Kata',A('editor.action.transformToTitlecase'),'<path d="M4 6h10M9 6v14"/>'],
+['Bungkus tag <div>',function(){selMap(function(t){return '<div>'+t+'</div>';});},'<path d="M8 8l-4 4 4 4M16 8l4 4-4 4"/>'],
+['Tanda kutip',function(){selMap(function(t){return '"'+t+'"';});},'<path d="M7 7v4M11 7v4M15 7v4M19 7v4"/>'],
+['Hapus baris kosong',function(){mapLines(function(t){return t.split('\n').filter(function(l){return l.trim()!=='';}).join('\n');});},'<path d="M4 6h16M4 18h16"/>'],
+['Sisip tanggal',function(){ins(new Date().toLocaleString('id-ID'));},'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'],
+['Lorem ipsum',function(){ins('Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.');},'<path d="M4 6h16M4 10h16M4 14h12M4 18h8"/>'],
+]],
+['Tampilan',[
+['Rapikan kode',A('editor.action.formatDocument'),'<path d="M4 6h16M4 12h10M4 18h13"/>'],
+['Lipat semua',A('editor.foldAll'),'<path d="M7 9l5-5 5 5M7 15l5 5 5-5"/>'],
+['Buka lipatan',A('editor.unfoldAll'),'<path d="M7 4l5 5 5-5M7 20l5-5 5 5"/>'],
+['Huruf +',function(){fontBy(1);},'<path d="M4 20l5-14 5 14M6 15h6M18 8v6M15 11h6"/>'],
+['Huruf −',function(){fontBy(-1);},'<path d="M4 20l5-14 5 14M6 15h6M15 11h6"/>'],
+['Bungkus baris',function(){if(!editor)return;var on=localStorage.getItem('cc_wrap')!=='on';localStorage.setItem('cc_wrap',on?'on':'off');editor.updateOptions({wordWrap:on?'on':'off'});toast('Bungkus baris '+(on?'aktif':'mati'));},'<path d="M4 6h16M4 12h13a3 3 0 0 1 0 6h-4M15 16l-2 2 2 2M4 18h5"/>'],
+['Minimap',function(){if(!editor)return;var on=localStorage.getItem('cc_minimap')==='off';localStorage.setItem('cc_minimap',on?'on':'off');editor.updateOptions({minimap:{enabled:on}});},'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/>'],
+['Palet perintah',A('editor.action.quickCommand'),'<path d="M5 7l5 5-5 5M12 19h7"/>'],
+['Jalankan',function(){runPreview();},'<path d="M6 4l14 8-14 8z"/>'],
+['Unduh berkas',function(){if(!editor||!activePath){toast('Buka berkas dulu');return;}var b=new Blob([editor.getValue()],{type:'text/plain'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=activePath.split('/').pop();a.click();},'<path d="M12 4v12M7 11l5 5 5-5M5 20h14"/>'],
+]],
+['Pro',[
+['Bagikan pratinjau (URL)',function(){ccShareUrl(false);},'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>'],
+['QR pratinjau ke HP',function(){ccShareUrl(true);},'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3M21 14v7h-7"/>'],
+['Pratinjau tab baru',function(){var h=buildPreview();if(h===null){toast('Tidak ada berkas HTML');return;}window.open(URL.createObjectURL(new Blob([h],{type:'text/html'})),'_blank');},'<path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/>'],
+['Pilih warna',function(){var c=document.createElement('input');c.type='color';c.style.position='fixed';c.style.opacity=0;document.body.appendChild(c);c.oninput=function(){};c.onchange=function(){ins(c.value);c.remove();};c.click();},'<circle cx="12" cy="12" r="9"/><circle cx="8" cy="10" r="1.5"/><circle cx="12" cy="7" r="1.5"/><circle cx="16" cy="10" r="1.5"/>'],
+['Rapikan JSON',function(){mapLines(function(t){try{return JSON.stringify(JSON.parse(t),null,2);}catch(e){toast('JSON tidak valid: '+e.message);return t;}});},'<path d="M8 4c-2 0-2 2-2 4s-2 4-2 4 2 0 2 4 0 4 2 4M16 4c2 0 2 2 2 4s2 4 2 4-2 0-2 4 0 4-2 4"/>'],
+['Perkecil (minify)',function(){mapLines(function(t){return t.replace(/\/\*[\s\S]*?\*\//g,'').replace(/<!--[\s\S]*?-->/g,'').replace(/\n\s*/g,'').replace(/\s{2,}/g,' ');});},'<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>'],
+['px → rem',function(){selMap(function(t){return t.replace(/(-?\d*\.?\d+)px/g,function(m,n){return (+(n/16).toFixed(4))+'rem';});});},'<path d="M4 12h16M14 6l6 6-6 6"/>'],
+['Base64 kode/dekode',function(){selMap(function(t){try{return decodeURIComponent(escape(atob(t.trim())));}catch(e){return btoa(unescape(encodeURIComponent(t)));}});},'<path d="M4 7h16M4 12h16M4 17h10"/>'],
+['URL kode/dekode',function(){selMap(function(t){var d;try{d=decodeURIComponent(t);}catch(e){d=t;}return d!==t?d:encodeURIComponent(t);});},'<path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>'],
+['Sisip UUID',function(){ins(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36));},'<path d="M5 9h14M5 15h14M10 4L8 20M16 4l-2 16"/>'],
+['Statistik berkas',function(){if(!editor)return;var v=editor.getValue(),sel=editor.getModel().getValueInRange(editor.getSelection());toast(v.split('\n').length+' baris · '+(v.match(/\S+/g)||[]).length+' kata · '+v.length+' karakter'+(sel?' · dipilih '+sel.length:''));},'<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>'],
+['Cek tautan & gambar',function(){var h=buildPreview();if(h===null){toast('Tidak ada HTML');return;}var d=new DOMParser().parseFromString(h,'text/html'),w=[];d.querySelectorAll('img:not([alt])').forEach(function(){w.push('gambar tanpa alt');});d.querySelectorAll('a:not([href]),a[href=""],a[href="#"]').forEach(function(){w.push('tautan kosong');});if(!d.querySelector('title')||!d.title.trim())w.push('tidak ada <title>');if(!d.querySelector('meta[name=viewport]'))w.push('tidak ada meta viewport');if((typeof previewMissing!=='undefined')&&previewMissing.length)w.push('aset hilang: '+previewMissing.join(', '));outPrint(w.length?'⚠ Audit: <b>'+w.length+'</b> masalah — '+esc(w.join(' · ')):'✓ Audit: tidak ada masalah ditemukan');toast(w.length?w.length+' masalah (lihat Output)':'Semua beres');},'<path d="M9 12l2 2 4-4M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/>'],
+['Simpan sesi kerja',function(){saveWorkspaceSession();},'<path d="M5 4h12l2 2v14H5zM8 4v6h8V4M8 16h8"/>'],
+['Pulihkan sesi terakhir',function(){restoreWorkspaceSession();},'<path d="M4 12a8 8 0 1 0 2-5.3M4 4v6h6"/>'],
+['Simpan snippet pilihan',function(){saveSelectionSnippet();},'<path d="M8 5l-5 7 5 7M16 5l5 7-5 7M14 3l-4 18"/>'],
+['Sisip snippet tersimpan',function(){insertSavedSnippet();},'<path d="M4 5h16v14H4zM7 9h10M7 13h7"/>'],
+]]];
+var p=document.createElement('div');p.id='qt-panel';
+p.innerHTML=G.map(function(g,gi){return '<div class="qp-h">'+g[0]+'</div><div class="qp-g">'+g[1].map(function(b,bi){return '<button class="qp-b" data-g="'+gi+'" data-b="'+bi+'">'+I(b[2])+'<span>'+b[0].replace(/</g,'&lt;')+'</span></button>';}).join('')+'</div>';}).join('');
+document.body.appendChild(p);
+p.addEventListener('click',function(e){var b=e.target.closest('.qp-b');if(!b)return;p.classList.remove('show');G[+b.dataset.g][1][+b.dataset.b][1]();});
+document.addEventListener('click',function(e){if(!e.target.closest('#qt-panel,#qt-tools-btn'))p.classList.remove('show');});
+window.toggleToolsPanel=function(e){e.stopPropagation();p.classList.toggle('show');};
+})();
+</script>
+<script>
+const CC_SESSIONS='cc_workspace_sessions_v1',CC_SNIPPETS='cc_saved_snippets_v1';
+function currentWorkspaceFiles(){var all={};Object.keys(project).forEach(function(k){all[k]=models[k]&&models[k].getValue?models[k].getValue():project[k];});return all;}
+function saveWorkspaceSession(){try{var list=JSON.parse(localStorage.getItem(CC_SESSIONS)||'[]');if(!Array.isArray(list))list=[];list.unshift({at:Date.now(),active:activePath,tabs:tabs.slice(),files:currentWorkspaceFiles()});localStorage.setItem(CC_SESSIONS,JSON.stringify(list.slice(0,8)));toast('Sesi kerja disimpan');}catch(e){toast('Sesi tidak dapat disimpan');}}
+function restoreWorkspaceSession(){try{var list=JSON.parse(localStorage.getItem(CC_SESSIONS)||'[]'),s=list&&list[0];if(!s||!s.files){toast('Belum ada sesi tersimpan');return;}if(!confirm('Pulihkan sesi terakhir? Perubahan saat ini akan diganti.'))return;Object.keys(models).forEach(function(k){try{models[k].dispose();}catch(e){}});models={};project=s.files;tabs=(s.tabs||[]).filter(function(k){return k in project;});activePath=s.active in project?s.active:null;persist();renderAll();if(activePath)openFile(activePath);else openDefaultTabs();toast('Sesi kerja dipulihkan');}catch(e){toast('Sesi tidak dapat dipulihkan');}}
+function saveSelectionSnippet(){if(!editor||!editor.getModel())return;var t=editor.getModel().getValueInRange(editor.getSelection());if(!t){toast('Pilih kode yang ingin disimpan');return;}var name=prompt('Nama snippet:','Snippet '+new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}));if(!name)return;try{var list=JSON.parse(localStorage.getItem(CC_SNIPPETS)||'[]');if(!Array.isArray(list))list=[];list.unshift({name:name.slice(0,40),text:t});localStorage.setItem(CC_SNIPPETS,JSON.stringify(list.slice(0,24)));toast('Snippet disimpan');}catch(e){toast('Snippet tidak dapat disimpan');}}
+function insertSavedSnippet(){try{var list=JSON.parse(localStorage.getItem(CC_SNIPPETS)||'[]');if(!Array.isArray(list)||!list.length){toast('Belum ada snippet tersimpan');return;}var menu=list.map(function(x,i){return (i+1)+'. '+x.name;}).join('\n');var pick=prompt('Pilih nomor snippet:\n'+menu,'1'),i=parseInt(pick,10)-1;if(list[i]){qtInsert(list[i].text);toast('Snippet disisipkan');}}catch(e){toast('Snippet tidak dapat dibuka');}}
+</script>
+<script>
+async function ccShareUrl(qr){
+  var h=buildPreview();if(h===null){toast('Tidak ada berkas HTML untuk dibagikan');return;}
+  var buf=await new Response(new Blob([h]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer();
+  var b='',u=new Uint8Array(buf);for(var i=0;i<u.length;i+=8192)b+=String.fromCharCode.apply(null,u.subarray(i,i+8192));
+  var url=location.origin+'/proyek/workspace/editor/index.html#view='+btoa(b).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  if(url.length>60000)toast('Proyek besar — tautan mungkin terlalu panjang untuk beberapa aplikasi');
+  try{await navigator.clipboard.writeText(url);}catch(e){}
+  outPrint('🔗 Tautan pratinjau ('+Math.round(url.length/1024)+' KB) disalin: <a href="'+url+'" target="_blank" style="color:inherit">buka</a>');
+  if(qr){
+    if(url.length>2900){toast('Proyek terlalu besar untuk QR — tautan sudah disalin');return;}
+    var o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center';
+    o.innerHTML='<div style="background:#fff;padding:16px;border-radius:14px;text-align:center;font:13px sans-serif;color:#222"><img width="240" height="240" src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data='+encodeURIComponent(url)+'"><div style="margin-top:8px">Pindai untuk membuka pratinjau</div></div>';
+    o.onclick=function(){o.remove();};document.body.appendChild(o);
+  }else toast('Tautan pratinjau disalin');
+}
+</script>
+<script>var LINUX_URL='https://bellard.org/jslinux/vm.html?url=alpine-x86.cfg&mem=192';
+function linuxBoot(){var f=document.getElementById('linux-frame');if(!f.src){f.src=LINUX_URL;outPrint('🐧 Menyalakan Linux (Alpine)… tunggu beberapa detik.');}}
+function linuxReboot(){var f=document.getElementById('linux-frame');f.src='about:blank';setTimeout(function(){f.src=LINUX_URL;},100);}
+function linuxFull(){var f=document.getElementById('linux-frame');(f.requestFullscreen||f.webkitRequestFullscreen||function(){}).call(f);}
+function linuxExportProject(){
+  /* satu berkas skrip: unggah ke Linux lalu jalankan "sh proyek.sh" untuk membuat ulang semua berkas proyek */
+  var out='#!/bin/sh\n# jalankan: sh proyek.sh\n';
+  Object.keys(project).forEach(function(k){if(typeof project[k]!=='string')return;var d=k.split('/').slice(0,-1).join('/');if(d)out+="mkdir -p '"+d+"'\n";out+="cat > '"+k+"' <<'__CLINCOO_EOF__'\n"+project[k]+"\n__CLINCOO_EOF__\n";});
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out],{type:'text/plain'}));a.download='proyek.sh';a.click();
+  toast('Unggah proyek.sh ke Linux, lalu ketik: sh proyek.sh');
+}
 </script>
 <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});}</script>
-<script>
-/* clinqoo-editor-plan-gate — Editor adalah fitur paket Pro.
-   Keputusan sama dengan menu sidebar (chat/code): Starter -> arahkan upgrade.
-   Kebijakan fail-open: paket tak diketahui (API gagal) -> biarkan masuk,
-   konsisten dengan gate lain di aplikasi ini. Login ditangani auth-client.js. */
-(function () {
-  function apiBase() { return (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : ''; }
-  function token() { try { return localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) { return ''; } }
-  function subCache() { try { return JSON.parse(localStorage.getItem('TM_SUB_CACHE_KEY') || 'null'); } catch (e) { return null; } }
-  var done = false;
-  function blocked() {
-    if (done) return; done = true;
-    var css=document.createElement('style');
-    css.textContent='#clinqoo-editor-gate{position:fixed;inset:0;z-index:2147483000;background:#fff;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Inter,system-ui,sans-serif;text-align:center}#clinqoo-editor-gate .card{max-width:420px}#clinqoo-editor-gate h2{font-size:20px;font-weight:800;color:#111;margin:12px 0 6px}#clinqoo-editor-gate p{font-size:14px;color:#6b7280;margin:0 0 18px}#clinqoo-editor-gate a{display:inline-block;background:#111;color:#fff;font-size:14px;font-weight:600;padding:11px 22px;border-radius:999px;text-decoration:none}body.dark-mode #clinqoo-editor-gate{background:#0a0a0a}body.dark-mode #clinqoo-editor-gate h2{color:#f3f4f6}body.dark-mode #clinqoo-editor-gate p{color:#9ca3af}body.dark-mode #clinqoo-editor-gate a{background:#f3f4f6;color:#111}@media(prefers-color-scheme:dark){body:not(.dark-mode) #clinqoo-editor-gate{background:#0a0a0a}body:not(.dark-mode) #clinqoo-editor-gate h2{color:#f3f4f6}body:not(.dark-mode) #clinqoo-editor-gate p{color:#9ca3af}body:not(.dark-mode) #clinqoo-editor-gate a{background:#f3f4f6;color:#111}}';
-    document.head.appendChild(css);
-    var ov=document.createElement('div'); ov.id='clinqoo-editor-gate';
-    ov.innerHTML='<div class="card"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/></svg><h2>Editor adalah fitur paket Pro</h2><p>Editor penuh Clincoo terbuka untuk paket Pro dan Bisnis. Upgrade sekarang untuk membukanya.</p><a href="/akun/langganan/upgrade/">Lihat Paket</a></div>';
-    (document.body||document.documentElement).appendChild(ov);
-  }
-  function decide(plan) { if (plan === 'Starter') blocked(); }
-  var c = subCache(); if (c && c.plan) decide(c.plan);
-  fetch(apiBase() + '/api/subscription', { cache: 'no-store', headers: token() ? { Authorization: 'Bearer ' + token() } : {} })
-    .then(function (r) { return r.ok ? r.json() : null; })
-    .then(function (d) {
-      if (d && d.plan) {
-        try { localStorage.setItem('TM_SUB_CACHE_KEY', JSON.stringify({ plan: d.plan, billingCycle: d.billingCycle || 'Bulanan', ts: Date.now() })); } catch (e) {}
-        decide(d.plan);
-      }
-    }).catch(function () {});
-})();
-</script>
+<script src="keyboard.js"></script>
 </body>
 </html>

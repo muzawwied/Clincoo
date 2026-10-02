@@ -20,8 +20,10 @@ function stripMd(text) {
  */
 
 // Detect GitHub Pages subpath
-const _isGHPages = window.location.pathname.includes('/Clincoo');
-const _BASE = _isGHPages ? '/Clincoo.' : '';
+var _pjSeg = window.location.pathname.split('/')[1] || '';
+var _pjKnown = ['akun','proyek','auth','templates','integrasi','assets','js','demo','sw.js','manifest.json','robots.txt','_redirects','index.html','404.html'];
+var _isGHPages = window.location.hostname.indexOf('github.io') !== -1;
+var _PJBASE = _isGHPages && _pjSeg && _pjKnown.indexOf(_pjSeg) === -1 ? '/' + _pjSeg : '';
 
 // === Sinkronisasi D1 per akun (Cloudflare) ===
 // Token Bearer diinjeksi otomatis oleh js/auth-client.js pada semua call /api/.
@@ -191,9 +193,9 @@ function openProject(id) {
         localStorage.setItem('clinqoo_current_chat_msg', proj.prompt || '');
         localStorage.setItem('clinqoo_current_project_id', id);
         if (_isGHPages) {
-            window.location.href = _BASE + '/proyek/workspace/?id=' + encodeURIComponent(id);
+            window.location.href = _PJBASE + '/proyek/workspace/?id=' + encodeURIComponent(id);
         } else {
-            window.location.href = _BASE + '/workspace/' + id;
+            window.location.href = _PJBASE + '/workspace/' + id;
         }
     }
 }
@@ -383,9 +385,9 @@ function processPromptSubmission() {
         }
     } catch(e) {}
     if (_isGHPages) {
-        window.location.href = _BASE + '/proyek/chat/?id=' + encodeURIComponent(projectId);
+        window.location.href = _PJBASE + '/proyek/chat/?id=' + encodeURIComponent(projectId);
     } else {
-        window.location.href = _BASE + '/workspace/' + projectId + '/chat';
+        window.location.href = _PJBASE + '/workspace/' + projectId + '/chat';
     }
 }
 

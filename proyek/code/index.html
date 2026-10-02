@@ -1,0 +1,2816 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../js/auth-client.js?v=4"></script>
+  <script src="../../js/ws-github-sync.js"></script>
+  <script src="../../js/accent-init.js"></script>
+<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
+<script>/* embed=1: tanpa header (dipakai dalam split view halaman chat) */(function(){try{if(/(^|[?&])embed=1(&|$)/.test(location.search)){document.documentElement.classList.add('embed-mode');}}catch(e){}})();</script>
+<script>/* Desktop (>=900px, termasuk HP mode Situs desktop ~980px): halaman workspace selalu tampil dalam split view chat */(function(){function go(){try{if(/(^|[?&])embed=1(&|$)/.test(location.search))return;if(!window.matchMedia('(min-width: 900px)').matches)return;var pid='';try{pid=new URLSearchParams(location.search).get('id')||localStorage.getItem('clinqoo_current_project_id')||''}catch(e){}var q='panel=code';if(pid)q+='&id='+encodeURIComponent(pid);location.replace('/proyek/chat/?'+q);}catch(e){}}var mq=window.matchMedia('(min-width: 900px)');go();if(mq.addEventListener)mq.addEventListener('change',go);})();</script>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com https://unpkg.com; img-src 'self' https: data: blob:; connect-src 'self' https: blob:;">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../assets/favicon.png">
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.png">
+  <title>Code — Clincoo</title>
+    <meta name="description" content="Workspace — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clincoo">
+    <meta property="og:title" content="Workspace — Clincoo">
+    <meta property="og:description" content="Workspace — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Workspace — Clincoo">
+    <meta name="twitter:description" content="Workspace — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/lucide@latest"></script>
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  
+  
+  <script defer src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #ffffff;
+    }
+    .font-mono {
+      font-family: 'Fira Code', monospace;
+    }
+    .page-view {
+      transition: opacity 0.25s ease-in-out, transform 0.25s ease-in-out;
+    }
+    .page-enter {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    .page-active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+    
+    .dark-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+    .dark-scrollbar::-webkit-scrollbar-track { background: #1e1e1e; }
+    .dark-scrollbar::-webkit-scrollbar-thumb { background: #333333; border-radius: 4px; }
+    .dark-scrollbar::-webkit-scrollbar-thumb:hover { background: #4f4f4f; }
+
+    .custom-input {
+      background-color: #f3f4f6;
+      border-color: #e5e7eb;
+      color: #111827;
+    }
+    .custom-input:focus {
+      background-color: #ffffff;
+      border-color: #9ca3af;
+      box-shadow: 0 0 0 1px #9ca3af;
+    }
+
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.2s ease-out forwards;
+    }
+
+    /* Dark mode */
+    body.dark-mode { background-color: #000000; color: #e0e0e0; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800 { color: #f0f0f0; }
+    body.dark-mode .text-gray-700 { color: #b0b0b0; }
+    body.dark-mode .text-gray-500 { color: #888888; }
+    body.dark-mode .text-gray-400 { color: #666666; }
+    body.dark-mode .text-black { color: #ffffff; }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode #syncgh-toggle-bg.bg-gray-900 { background-color: #ffffff !important; }
+    body.dark-mode #syncgh-toggle-knob.bg-white { background-color: #0a0a0a !important; }
+
+        body.dark-mode .text-\[\#222222\] { color: #ffffff !important; }
+        body.dark-mode #sidebar-toggle,
+        body.dark-mode button[onclick="toggleSidebar()"],
+        body.dark-mode button[onclick="history.back()"],
+        body.dark-mode button[onclick="navigateTo(\'page-home\')"],
+        body.dark-mode .header-glass button[onclick],
+        body.dark-mode header button[onclick]:not(.header-menu-item) {
+            background-color: #000000 !important;
+            border: 1.5px solid rgba(255,255,255,0.4) !important;
+            color: #ffffff !important;
+        }
+        body.dark-mode #sidebar-toggle svg,
+        body.dark-mode button[onclick="toggleSidebar()"] svg,
+        body.dark-mode button[onclick="history.back()"] svg,
+        body.dark-mode button[onclick="navigateTo(\'page-home\')"] svg,
+        body.dark-mode .header-glass button[onclick] svg,
+        body.dark-mode header button[onclick]:not(.header-menu-item) svg {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+        }
+        body.dark-mode #sidebar-toggle:hover,
+        body.dark-mode button[onclick="toggleSidebar()"]:hover,
+        body.dark-mode button[onclick="history.back()"]:hover,
+        body.dark-mode button[onclick="navigateTo(\'page-home\')"]:hover,
+        body.dark-mode .header-glass button[onclick]:hover,
+        body.dark-mode header button[onclick]:not(.header-menu-item):hover {
+            background-color: #1a1a1a !important;
+            border-color: rgba(255,255,255,0.7) !important;
+        }
+    body.dark-mode .bg-gray-50 { background-color: #0a0a0a !important; }
+    body.dark-mode .sidebar-nav-link.bg-gray-50 { background-color: #222222 !important; }
+    body.dark-mode .bg-gray-100 { background-color: #222222 !important; }
+    body.dark-mode .border-gray-200 { border-color: #222222 !important; }
+    body.dark-mode .border-gray-100 { border-color: #0a0a0a !important; }
+    body.dark-mode .border-black { border-color: #ffffff !important; }
+    body.dark-mode .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.3) !important; }
+    body.dark-mode .shadow-xl { box-shadow: 0 10px 30px rgba(0,0,0,0.4) !important; }
+    body.dark-mode .shadow-2xl { box-shadow: 0 20px 50px rgba(0,0,0,0.5) !important; }
+    body.dark-mode #notif-dropdown { background-color: #0a0a0a; border-color: #222222; }
+    body.dark-mode #notif-dropdown .notif-src { color: #f5f5f5; }
+    body.dark-mode #notif-dropdown .notif-msg { color: #a3a3a3; }
+    body.dark-mode #notif-dropdown .notif-time { color: #6b7280; }
+    body.dark-mode #notif-dropdown .notif-row:hover { background: rgba(255,255,255,0.06); }
+    body.dark-mode #add-menu-dropdown { background-color: #0a0a0a; border-color: #222222; }
+    body.dark-mode #item-action-menu { background-color: #0a0a0a; border-color: #222222; }
+    body.dark-mode #sidebar-popup { background-color: #0a0a0a; }
+    body.dark-mode ::-webkit-scrollbar-thumb { background: #222222; }
+
+        body.dark-mode .bg-black { background-color: #ffffff !important; color: #000000 !important; }
+        body.dark-mode .bg-black.text-white { color: #000000 !important; }
+        body.dark-mode .hover\:bg-gray-800:hover { background-color: #333333 !important; }
+        body.dark-mode .bg-accent { background-color: #ffffff !important; color: #000000 !important; }
+        body.dark-mode .bg-accent.text-white { color: #000000 !important; }
+        body.dark-mode .text-accent { color: #ffffff !important; }
+        body.dark-mode .border-accent { border-color: #ffffff !important; }
+        body.dark-mode header { background-color: #000000 !important; }
+  /* auto-dark-fix v1 */
+    body.dark-mode .bg-gray-50\/80 { background-color: #141414 !important; }
+    body.dark-mode .bg-gray-200 { background-color: #262626 !important; }
+    body.dark-mode .bg-gray-300 { background-color: #333333 !important; }
+    body.dark-mode .bg-gray-400 { background-color: #444444 !important; }
+    body.dark-mode .border-gray-50 { border-color: #0a0a0a !important; }
+    body.dark-mode .border-gray-200\/50,
+    body.dark-mode .border-gray-200\/60,
+    body.dark-mode .border-gray-200\/70 { border-color: #222222 !important; }
+    body.dark-mode .border-gray-300 { border-color: #333333 !important; }
+    body.dark-mode .border-gray-400 { border-color: #444444 !important; }
+    body.dark-mode .bg-blue-50,
+    body.dark-mode .bg-blue-50\/50 { background-color: #0d1a26 !important; }
+    body.dark-mode .border-blue-100,
+    body.dark-mode .border-blue-200 { border-color: #1e3a52 !important; }
+    body.dark-mode .bg-red-50,
+    body.dark-mode .bg-red-50\/50 { background-color: #2a1414 !important; }
+    body.dark-mode .bg-red-100 { background-color: #3a1a1a !important; }
+    body.dark-mode .border-red-100,
+    body.dark-mode .border-red-200 { border-color: #4a2020 !important; }
+    body.dark-mode .bg-green-100 { background-color: #14301c !important; }
+    body.dark-mode .bg-white\/95 { background-color: rgba(10,10,10,0.95) !important; }
+    body.dark-mode .hover\:bg-gray-50:hover,
+    body.dark-mode .hover\:bg-gray-50\/50:hover,
+    body.dark-mode .hover\:bg-gray-50\/80:hover { background-color: #1a1a1a !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #262626 !important; }
+    body.dark-mode .hover\:bg-gray-200:hover,
+    body.dark-mode .hover\:bg-gray-200\/50:hover { background-color: #333333 !important; }
+    body.dark-mode .hover\:bg-blue-50:hover,
+    body.dark-mode .hover\:bg-blue-100:hover { background-color: #163247 !important; }
+    body.dark-mode .hover\:bg-red-50:hover,
+    body.dark-mode .hover\:bg-red-100:hover { background-color: #3a1a1a !important; }
+    body.dark-mode .hover\:border-gray-300:hover,
+    body.dark-mode .hover\:border-gray-400:hover,
+    body.dark-mode .hover\:border-gray-900:hover { border-color: #555555 !important; }
+    body.dark-mode .focus\:border-gray-400:focus,
+    body.dark-mode .focus\:border-gray-900:focus { border-color: #666666 !important; }
+    body.dark-mode input::placeholder, body.dark-mode textarea::placeholder { color: #666666 !important; }
+
+        #chat-header-capsule { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        @media (max-width: 384px) { #sidebar-toggle, #header-more-btn { width: 38px; height: 38px; } }
+        @media (max-width: 330px) { #sidebar-toggle, #header-more-btn { width: 34px; height: 34px; } .chat-nav-link { padding-left: 0.5rem; padding-right: 0.5rem; } }
+        /* Kapsul: mobile 2 menu (Workspace|Dashboard), desktop 3 menu (Live preview|Workspace|Dashboard) */
+        .chat-nav-link[data-nav="agent"] { display: none !important; }
+        .chat-nav-link[data-nav="live"] { display: none; }
+        @media (min-width: 900px) { .chat-nav-link[data-nav="live"] { display: inline-flex; } }
+        #chat-nav-pill { display: none; }
+        /* FAB Agent (semua ukuran layar): langsung ke halaman chat */
+        #chat-fab { position: fixed; right: 16px; bottom: 16px; z-index: 10; display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 20px; border-radius: 9999px; border: none; background: #111111; color: #ffffff; font-size: 14px; font-weight: 600; box-shadow: 0 6px 24px rgba(0,0,0,0.28); cursor: pointer; }
+        /* FAB cuma untuk layar kecil: di desktop (>=1200px) chat lewat split view, FAB dihapus */
+        @media (min-width: 1200px) { #chat-fab { display: none !important; } }
+
+        /* Chat Agent overlay: muncul mulus dari bawah, tanpa reload halaman */
+        #agent-sheet { position: fixed; inset: 0; z-index: 80; transform: translateY(102%); transition: transform .35s cubic-bezier(.4,0,.2,1); background: #ffffff; }
+        #agent-sheet.open { transform: translateY(0); }
+        #agent-sheet-frame { width: 100%; height: 100%; border: 0; display: block; }
+        body.dark-mode #agent-sheet { background: #0a0a0a; }
+        @view-transition { navigation: auto; }
+        /* pindah antar halaman: crossfade singkat + pill morph singkat, biar gak kedip */
+        @media (prefers-reduced-motion: no-preference) {
+            ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; animation-timing-function: cubic-bezier(.2,.7,.3,1); }
+            ::view-transition-group(chat-nav-pill) { animation-duration: .18s; animation-timing-function: cubic-bezier(.2,.7,.3,1); }
+        }
+        /* fallback browser tanpa cross-doc view transition: fade-in halus (bukan pop putih keras) */
+        @keyframes clq-page-in { from { opacity: 0 } to { opacity: 1 } }
+        @media (prefers-reduced-motion: no-preference) {
+            body { animation: clq-page-in .18s cubic-bezier(.2,.7,.3,1) both; }
+            html:active-view-transition body { animation: none; }
+        }
+        .chat-nav-link.is-active { color: #111111; background: #e9e9ec; view-transition-name: chat-nav-pill; }
+        #header-more-menu.open { display: flex; opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto; }
+        .header-menu-item { -webkit-tap-highlight-color: transparent; }
+        .header-menu-item:focus, .header-menu-item:focus-visible { outline: none; box-shadow: none; }
+        button.header-menu-item { -webkit-appearance: none; appearance: none; background: transparent; border: none; margin: 0; font: inherit; color: inherit; }
+        button.header-menu-item:active { background: rgba(0,0,0,0.04); }
+        body.dark-mode button.header-menu-item:active { background: rgba(255,255,255,0.08); }
+        .header-menu-item { cursor: pointer; }
+        body.dark-mode #chat-header-capsule { background-color: #0a0a0a; border-color: rgba(255,255,255,0.15); box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
+        body.dark-mode #chat-nav-pill { background: #ffffff !important; }
+        body.dark-mode .chat-nav-link { color: #9ca3af !important; }
+        body.dark-mode .chat-nav-link.is-active { color: #0a0a0a !important; background: #ffffff !important; }
+        body.dark-mode #header-more-menu { background-color: #0a0a0a; border-color: rgba(255,255,255,0.15); }
+        body.dark-mode .header-menu-item { color: #e5e7eb; }
+        body.dark-mode .header-menu-item:hover { background-color: #1a1a1a; color: #ffffff; }
+        body.dark-mode .header-menu-item svg { color: #9ca3af; }
+  /* embed=1: sembunyikan header saat halaman ini ditampilkan dalam split view chat */
+  html.embed-mode body > header { display: none !important; }
+  html.embed-mode #chat-fab { display: none !important; } /* FAB Agent tak perlu di split view: chat sudah ada di kiri */
+</style>
+  <script>
+    (function() {
+      var t = localStorage.getItem('clinqoo_theme') || 'Sistem (Default)';
+      var isDark = (t === 'Gelap') || (t === 'Sistem (Default)' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      if (isDark) document.documentElement.classList.add('dark-mode');
+    })();
+  </script>
+<!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
+<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';var tm=document.querySelector('meta[name="theme-color"]');if(tm){tm.setAttribute('content','#0a0a0a');}}}catch(e){}})();</script>
+
+    <script>/* clinqoo-seo-auto: canonical & og mengikuti domain aktif */
+(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<2;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
+    </script>
+<!-- Google tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+<!-- End Google tag -->
+<script src="../../js/i18n-dict.js" defer></script>
+<script src="../../js/i18n.js" defer></script>
+</head>
+<body class="text-gray-900 antialiased min-h-screen relative bg-white">
+  <script>(function(){var t=localStorage.getItem("clinqoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+
+  <header class="fixed top-0 left-0 right-0 z-30 px-3 pt-3 pointer-events-none flex justify-between items-center">
+        <button id="sidebar-toggle" type="button" class="pointer-events-auto flex-shrink-0 flex items-center justify-center text-[#222222] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:text-black hover:bg-gray-100 transition-all rounded-full w-11 h-11" aria-label="Kembali ke Beranda">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+        <div class="pointer-events-auto inline-flex items-center gap-1 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-gray-100/80 rounded-full pl-1.5 pr-1.5 h-11" id="chat-header-capsule">
+            <nav id="chat-top-nav" class="relative inline-flex items-center h-full">
+                <div id="chat-nav-pill" class="absolute bg-gray-100 rounded-full pointer-events-none" style="top:0;left:0;width:0;height:0"></div>
+                <a href="/proyek/chat/" data-nav="agent" class="chat-nav-link relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold text-gray-500 whitespace-nowrap transition-colors">Agent</a>
+                <a href="/proyek/preview/" data-nav="live" class="chat-nav-link relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold text-gray-500 whitespace-nowrap transition-colors">Live preview</a>
+                <a href="/proyek/code/" data-nav="code" class="chat-nav-link is-active relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold text-gray-800 whitespace-nowrap transition-colors">Workspace</a>
+                <a href="/proyek/dashboard/" data-nav="dashboard" class="chat-nav-link relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold text-gray-500 whitespace-nowrap transition-colors">Dashboard</a>
+            </nav>
+        </div>
+        <div class="relative flex-shrink-0 pointer-events-auto">
+            <button id="header-more-btn" type="button" onclick="toggleHeaderMenu(event)" class="w-11 h-11 rounded-full flex items-center justify-center text-[#222222] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:bg-gray-100 hover:text-black transition-all" aria-label="Menu lainnya">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle>
+                </svg>
+            </button>
+            <div id="header-more-menu" class="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 p-1.5 flex-col gap-0.5 opacity-0 invisible translate-y-1 pointer-events-none transition-all duration-200 z-50 hidden">
+                <button id="header-live-preview" type="button" onclick="chatLivePreview()" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2 12a10 10 0 1 0 20 0 10 10 0 0 0-20 0M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"></path></svg>
+                    Live preview
+                    <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg>
+                </button>
+                    <a id="header-editor" href="/proyek/workspace/editor/" onclick="var __pid='';try{__pid=localStorage.getItem('clinqoo_current_project_id')||''}catch(e){}if(__pid){this.href='/proyek/workspace/editor/?id='+encodeURIComponent(__pid)}" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                        <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 18l6-6-6-6M8 6l-6 6 6 6"></path></svg>
+<span class="flex items-center gap-1.5">Editor <svg class="clinqoo-premium-crown w-3.5 h-3.5 text-amber-500 shrink-0" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#f59e0b" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"></path></svg></span>                        <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg>
+                    </a>
+                <button id="header-export-zip" type="button" onclick="chatExportZip()" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>
+                    Eksport zip
+                </button>
+                <a href="/integrasi/github/" class="header-menu-item flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path><path stroke-linecap="round" stroke-linejoin="round" d="M9 18c-4.51 2-5-2-7-2"></path></svg>
+                    Koneksi git
+                </a>
+                <a href="https://blog.clincoo.buzz/panduan/" target="_blank" rel="noopener" class="header-menu-item flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"></path></svg>
+                    Pusat bantuan
+                </a>
+            </div>
+        </div>
+    </header>
+
+  <div id="page-project-detail" class="page-view w-full min-h-screen flex flex-col items-center px-4 pt-[88px] pb-20">
+    <div class="w-full max-w-5xl">
+     <div class="w-full border-b border-gray-200 mb-6" id="project-nav-tabs">
+        <nav class="-mb-px flex space-x-6 overflow-x-auto hide-scrollbar" aria-label="Tabs">
+          <button class="tab-btn border-black text-black whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center transition-colors focus:outline-none" aria-current="page">
+            Kode
+          </button> 
+          <a href="../pengaturan/keamanan/" class="tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center transition-colors focus:outline-none">
+            Keamanan
+          </a>
+          <a href="../pengaturan/environment/" class="tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center transition-colors focus:outline-none">
+            Environment
+          </a>
+          <a href="../pengaturan/domain-kustom/" class="tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center transition-colors focus:outline-none">
+            Domain Kustom
+          </a>
+        </nav>
+      </div>
+
+      <div class="w-full mt-2 relative pb-20">
+        <div id="tab-content-kode" class="block transition-opacity">
+          <div class="flex gap-2 w-full mb-4">
+            <div class="relative flex-1 group bg-white rounded-full shadow-sm border border-gray-200/70 px-4 py-1.5 focus-within:shadow-md focus-within:border-gray-300 transition-all duration-300 flex items-center">
+              <div class="text-gray-400 group-focus-within:text-gray transition-colors mr-3 flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <input type="text" id="file-search-input" placeholder="Cari file..."
+                     class="block w-full py-1 bg-transparent text-sm sm:text-base placeholder-gray-400 focus:outline-none text-gray-900 font-medium">
+              <div class="hidden sm:flex items-center justify-center px-3 py-1 bg-gray-50 border-gray-100 rounded-full text-xs font-semibold text-gray-400 ml-2 shadow-inner">
+                File
+              </div>
+            </div>
+            
+            <div class="relative flex items-center justify-end">
+              <button onclick="toggleAddMenu(event)" class="w-10 h-10 flex items-center justify-center bg-[#273849] text-white rounded-full shadow-sm hover:bg-[#1a2530] transition-all focus:outline-none active:scale-95 flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+              </button>
+              <div id="add-menu-dropdown" class="hidden absolute top-full mt-2 right-0 w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden transition-all z-50">
+                <div class="p-1">
+                  <button onclick="openCreateModal('folder')" class="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                    <svg class="w-4 h-4 text-[#a0aec0]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                    Buat Folder
+                  </button>
+                  <button onclick="openCreateModal('file')" class="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                    <svg class="w-4 h-4 text-[#718096]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    Buat File
+                  </button>
+                  <div class="h-px bg-gray-100 my-1"></div>
+                  <button onclick="triggerImport('file')" class="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                    Import File
+                  </button>
+                  <button onclick="triggerImport('zip')" class="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                    Import ZIP
+                  </button>
+                  <button onclick="triggerImport('github')" class="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                    <svg class="w-4 h-4 text-gray-900" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                    Import dari GitHub
+                  </button>
+                  <div id="syncgh-sep" class="hidden h-px bg-gray-100 my-1"></div>
+                  <div id="syncgh-toggle-row" class="hidden items-center gap-2.5 w-full px-3 py-2.5">
+                    <span class="text-sm text-gray-700 font-medium flex-shrink-0">Sync GitHub</span>
+                    <span id="syncgh-status-text" class="flex-1 min-w-0 text-xs text-gray-400 truncate"></span>
+                    <button id="syncgh-toggle-btn" type="button" class="relative flex-shrink-0 cursor-pointer focus:outline-none" title="Sync GitHub — sinkronkan file workspace ke repo GitHub">
+                      <div id="syncgh-toggle-bg" class="w-11 h-6 bg-gray-200 rounded-full transition-colors duration-200 ease-in-out"></div>
+                      <div id="syncgh-toggle-knob" class="absolute left-0.5 top-0.5 bg-gray-900 w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out"></div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="file-breadcrumb" class="mb-3 flex items-center gap-1.5 text-xs font-medium text-gray-500 overflow-x-auto pb-1"></div>
+          <div id="file-list-container" class="flex flex-col"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+  <div id="notif-dropdown" class="fixed top-16 right-4 w-64 bg-white border border-gray-100 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-3 opacity-0 invisible -translate-y-2 pointer-events-none transition-all duration-300 z-[90] origin-top-right">
+    <div class="flex justify-between items-center mb-2 px-1">
+      <span class="font-semibold text-sm text-gray-900">Notifikasi</span>
+      <a href="../../akun/notifikasi/" class="text-xs font-semibold text-gray-400 hover:text-black transition-colors cursor-pointer">Lihat Semua</a>
+    </div>
+    <div class="flex flex-col gap-2 mb-2">
+      <div class="text-xs text-gray-500 text-center py-5">Belum ada notifikasi baru</div>
+    </div>
+  </div>
+
+  <input type="file" id="import-file-input" class="hidden" multiple onchange="handleImportFiles(event)">
+  <input type="file" id="import-zip-input" class="hidden" accept=".zip" onchange="handleImportZip(event)">
+
+  <div id="item-action-menu" class="hidden fixed w-44 bg-white rounded-xl shadow-xl overflow-hidden transition-all z-[100] py-1">
+    <button onclick="triggerRename()" class="flex items-center w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+      Edit Nama
+    </button>
+    <button onclick="triggerDownload()" class="flex items-center w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+      Unduh Berkas
+    </button>
+    <button onclick="triggerZip()" class="flex items-center w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+      Kompres ZIP
+    </button>
+    <div class="h-px bg-gray-100 my-1"></div>
+    <button onclick="confirmItemDelete()" class="flex items-center w-full px-4 py-2.5 text-sm text-red-600 font-medium hover:bg-red-50 transition-colors">
+      Hapus
+    </button>
+  </div>
+
+    
+
+  <div id="confirm-delete-overlay" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm hidden z-[100] flex items-center justify-center transition-opacity duration-300 opacity-0">
+    <div id="confirm-delete-modal" class="bg-white dark:bg-[#0a0a0a] rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden transform scale-95 transition-all duration-300 opacity-0">
+      <div class="p-6 text-center">
+        <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 dark:bg-red-950/40">
+          <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
+        </div>
+        <h3 id="confirm-delete-title" class="text-lg font-bold text-gray-900 dark:text-white">Hapus item ini?</h3>
+        <p id="confirm-delete-text" class="mt-1.5 text-sm text-gray-500 dark:text-gray-400">Item akan dihapus permanen dari workspace.</p>
+      </div>
+      <div class="flex border-t border-gray-100 dark:border-slate-800">
+        <button onclick="closeConfirmDelete()" class="flex-1 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">Batal</button>
+        <button onclick="executeItemDelete()" class="flex-1 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors border-l border-gray-100 dark:border-slate-800">Hapus</button>
+      </div>
+    </div>
+  </div>
+  <div id="input-modal-overlay" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm hidden z-[100] flex items-center justify-center transition-opacity duration-300 opacity-0">
+    <div id="input-modal" class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden transform scale-95 transition-all duration-300 opacity-0">
+      <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+        <h3 id="input-modal-title" class="text-lg font-bold text-gray-900">Buat File Baru</h3>
+        <button onclick="closeInputModal()" class="text-gray-400 hover:text-gray-600 focus:outline-none p-1.5 rounded-full hover:bg-gray-100 transition-colors">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <div id="modal-standard-body" class="p-6">
+        <div>
+          <label id="input-modal-label" class="block text-sm font-medium text-gray-700 mb-1.5">Nama File</label>
+          <input type="text" id="modal-input-name" onkeydown="handleModalInputKeydown(event)" oninput="var _e=document.getElementById('input-modal-error'); if(_e) _e.classList.add('hidden');" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#273849] focus:border-transparent transition-all" placeholder="Misal: ../index/" autocomplete="off">
+          <p id="input-modal-error" class="text-xs text-red-500 mt-2 hidden">Nama tidak boleh kosong atau sudah ada.</p>
+        </div>
+      </div>
+      
+      <div id="modal-github-body" class="p-6 hidden">
+          <!-- Step 1: Connect -->
+          <div id="github-step-connect" class="flex flex-col items-center justify-center py-4 text-center">
+            <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4 border border-gray-200 shadow-sm">
+               <svg class="w-8 h-8 text-gray-900" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            </div>
+            <h4 class="text-base font-semibold text-gray-900 mb-1.5">Hubungkan ke GitHub</h4>
+            <p class="text-sm text-gray-500 mb-6 px-2 leading-relaxed">Tautkan akun Anda untuk mengimpor repository secara langsung ke dalam workspace.</p>
+            <button onclick="connectGitHub()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#24292e] rounded-xl hover:bg-[#1b1f23] shadow-sm transition-colors focus:outline-none">
+              Hubungkan Sekarang
+            </button>
+          </div>
+
+          <!-- Step 2: Loading (Hidden by default) -->
+          <div id="github-step-loading" class="hidden flex-col items-center justify-center py-8 text-center">
+             <svg class="animate-spin h-8 w-8 text-gray-900 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+             <p class="text-sm text-gray-600 font-medium">Menghubungkan ke GitHub...</p>
+          </div>
+
+          <!-- Step 3: Input Repo (Hidden by default) -->
+          <div id="github-step-import" class="hidden flex-col">
+            <div class="flex items-center gap-3 mb-5 p-3 bg-gray-50/80 rounded-xl border border-gray-100">
+               <div class="w-9 h-9 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 shadow-sm border border-gray-200">
+                  <img id="github-avatar-img" src="https://avatars.githubusercontent.com/u/9919?v=4" alt="Avatar" class="w-full h-full object-cover">
+               </div>
+               <div class="min-w-0 flex-1">
+                 <p class="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-0.5">Terhubung sebagai</p>
+                 <p id="github-username" class="text-sm font-semibold text-gray-900 truncate">-</p>
+               </div>
+               <button onclick="disconnectGitHub()" class="ml-2 text-xs text-red-500 hover:text-red-600 font-medium px-2 py-1 hover:bg-red-50 rounded-lg transition-colors">Putuskan</button>
+            </div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Pilih Repository</label>
+            <div id="github-repo-list" class="max-h-64 overflow-y-auto flex flex-col gap-1.5"></div>
+            <p id="input-modal-github-error" class="text-xs text-red-500 mt-2 hidden">Gagal memuat repository.</p>
+          </div>
+      </div>     
+
+      <div id="modal-footer" class="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-2">
+        <button type="button" onclick="closeInputModal()" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors focus:outline-none">Batal</button>
+        <button id="modal-btn-submit" onclick="submitInputModal()" class="px-4 py-2 text-sm font-medium text-white bg-[#273849] rounded-xl hover:bg-[#1a2530] shadow-sm transition-colors focus:outline-none">Simpan</button>
+      </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+    // Shared Notification System
+    const NOTIF_KEY = 'clinqoo_notifications';
+    const NOTIF_API = 'https://clincoo-be2.pages.dev/api/notifications';
+    const NOTIF_ALLOWED = ['GitHub', 'Workspace', 'Deploy', 'Akun', 'Dompet'];
+    function isAllowedNotif(n) { return NOTIF_ALLOWED.indexOf(String((n && n.source) || '')) > -1; }
+    (function(){ try { var _pn = JSON.parse(localStorage.getItem(NOTIF_KEY) || '[]'); var _pk = _pn.filter(isAllowedNotif); if (_pk.length !== _pn.length) { localStorage.setItem(NOTIF_KEY, JSON.stringify(_pk)); } } catch(e) {} })();
+    function getNotifications() { try { return JSON.parse(localStorage.getItem(NOTIF_KEY) || '[]').filter(isAllowedNotif); } catch(e) { return []; } }
+    function saveNotifications(n) { localStorage.setItem(NOTIF_KEY, JSON.stringify(n)); }
+    function escapeNotifHtml(str) { return String(str || '').replace(/[&<>"']/g, function(c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+    function updateNotifBadge(count) {
+      const btn = document.querySelector('button[aria-label="Notifikasi"]');
+      if (!btn) return;
+      let badge = btn.querySelector('.notif-badge');
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'notif-badge absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center';
+        btn.appendChild(badge);
+      }
+      if (count > 0) { badge.textContent = count > 9 ? '9+' : String(count); badge.style.display = 'flex'; }
+      else badge.style.display = 'none';
+    }
+    async function loadNotifications() {
+      try {
+        const res = await fetch(NOTIF_API);
+        const data = await res.json();
+        if (data && Array.isArray(data.notifications)) {
+          const allowed = data.notifications.filter(isAllowedNotif);
+          saveNotifications(allowed);
+          renderNotifications();
+          updateNotifBadge(allowed.filter(function(x) { return !x.read; }).length);
+        }
+      } catch(e) {}
+    }
+    function markAllNotificationsRead() {
+      const n = getNotifications();
+      let changed = false;
+      for (let i of n) { if (!i.read) { i.read = 1; changed = true; } }
+      if (changed) saveNotifications(n);
+      updateNotifBadge(0);
+      fetch(NOTIF_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'mark_all_read' }) }).catch(function() {});
+    }
+    function addNotification(source, message, link) {
+      if (!isAllowedNotif({ source: source })) return;
+      const n = getNotifications();
+      n.unshift({ id: 'local-' + Date.now(), source: source, message: message, link: link || '', read: 0, created_at: new Date().toISOString() });
+      if (n.length > 50) n.length = 50;
+      saveNotifications(n); renderNotifications();
+      fetch(NOTIF_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source: source, message: message, link: link || '' }) }).catch(function() {});
+    }
+    function notifTime(ts) {
+      if (!ts) return '';
+      const s = String(ts);
+      const d = new Date(s.indexOf('T') > -1 ? s : s.replace(' ', 'T') + 'Z');
+      return isNaN(d.getTime()) ? '' : d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    }
+    function renderNotifications() {
+      const notifs = getNotifications();
+      const dd = document.getElementById('notif-dropdown');
+      if (!dd) return;
+      const contentArea = dd.querySelector('.text-xs.text-gray-500.text-center');
+      if (!contentArea) return;
+      const parent = contentArea.parentElement;
+      if (notifs.length === 0) {
+        parent.innerHTML = '<div class="flex flex-col gap-2 mb-2"><div class="text-xs text-gray-500 text-center py-5">Belum ada notifikasi baru</div></div>';
+        return;
+      }
+      let html = '<div class="flex flex-col gap-1 max-h-48 overflow-y-auto">';
+      for (let n of notifs.slice(0, 5)) {
+        const isUnread = !n.read;
+        const linkAttr = n.link ? ' onclick="window.location.href=\'' + escapeNotifHtml(n.link) + '\'"' : '';
+        html += '<div class="notif-row flex items-start gap-2.5 px-2 py-2 rounded-lg hover:bg-gray-50 cursor-pointer"' + linkAttr + '>' +
+          '<span class="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-[7px] ' + (isUnread ? 'bg-red-500' : 'bg-transparent') + '"></span>' +
+          '<div class="flex-1 min-w-0">' +
+          '<div class="flex items-baseline gap-2"><span class="notif-src text-[11px] font-semibold text-gray-900 tracking-wide">' + escapeNotifHtml(n.source) + '</span>' +
+          '<span class="notif-time text-[10px] text-gray-400 ml-auto flex-shrink-0">' + notifTime(n.created_at || n.timestamp) + '</span></div>' +
+          '<p class="notif-msg text-xs text-gray-600 leading-snug break-words line-clamp-2 mt-0.5">' + escapeNotifHtml(n.message) + '</p>' +
+          '</div></div>';
+      }
+      html += '</div>';
+      parent.innerHTML = html;
+    }
+    renderNotifications();
+    loadNotifications();
+
+    // Real GitHub Import
+    let githubImportAbort = null;
+    function cancelGithubImport() {
+      if (githubImportAbort) githubImportAbort.abort();
+    }
+
+    function decodeGithubContent(b64) {
+      try {
+        const bin = atob(String(b64 || '').replace(/\s+/g, ''));
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return new TextDecoder('utf-8').decode(bytes);
+      } catch (e) { return ''; }
+    }
+
+    async function importFromGitHub(repoUrl, targetPath, onProgress) {
+      githubImportAbort = new AbortController();
+      const signal = githubImportAbort.signal;
+      let importedCount = 0;
+      const reportProgress = function(label) {
+        importedCount++;
+        if (onProgress) onProgress((label ? label + ' (' + importedCount + ')' : String(importedCount)));
+      };
+      try {
+        let owner, repo;
+        if (repoUrl.includes('github.com')) {
+          const m = repoUrl.match(/github\.com\/([^/]+)\/([^/\s?#]+)/);
+          if (!m) throw new Error('URL tidak valid');
+          owner = m[1]; repo = m[2].replace('.git', '');
+        } else {
+          const p = repoUrl.split('/');
+          owner = p[0]; repo = p[1] ? p[1].replace('.git', '') : p[0];
+        }
+        renderFileList();
+        const r = await fetch('https://api.github.com/repos/' + owner + '/' + repo + '/contents', { headers: githubAuthHeaders(), signal: signal });
+        if (!r.ok) throw new Error('Repo tidak ditemukan');
+        const items = await r.json();
+        if (!projectFilesData[targetPath]) projectFilesData[targetPath] = [];
+        const targetItems = projectFilesData[targetPath];
+        const prefix = targetPath === 'root' ? '' : targetPath + '/';
+        for (let item of items) {
+          if (signal.aborted) break;
+          if (targetItems.some(function(i) { return i.name.toLowerCase() === item.name.toLowerCase(); })) continue;
+          if (item.type === 'file') {
+            try {
+              const fr = await fetch(item.url, { headers: githubAuthHeaders(), signal: signal });
+              const fd = await fr.json();
+              const fc = decodeGithubContent(fd.encoding === 'base64' ? fd.content : '');
+              const b = new Blob([fc]).size;
+              targetItems.push({ type: 'file', name: item.name, size: b > 1024 ? (b/1024).toFixed(1)+' KB' : b+' B', path: prefix + item.name, content: fc });
+              reportProgress(item.name);
+            } catch(e) {}
+          } else if (item.type === 'dir') {
+            const np = prefix + item.name;
+            targetItems.push({ type: 'folder', name: item.name, path: np, fileCount: 0, previewText: 'Folder' });
+            reportProgress(item.name + '/');
+            await importGitHubFolder(owner, repo, item.path, np, reportProgress, signal);
+          }
+        }
+        saveData(); renderFileList();
+        addNotification('GitHub', 'Berhasil import ' + owner + '/' + repo);
+        try {
+          var _cfg = (window.WSGitHubSync && WSGitHubSync.cfg) ? WSGitHubSync.cfg() : null;
+          if (!_cfg || (!_cfg.on && !_cfg.owner)) {
+            if (window.WSGitHubSync && typeof WSGitHubSync.prepare === 'function') {
+              WSGitHubSync.prepare(owner, repo, 'main');
+            } else {
+              // fallback: engine lama masih ter-cache (tanpa prepare) — tulis langsung
+              var _pk = 'clinqoo_syncgh_cfg_' + (localStorage.getItem('clinqoo_current_project_id') || 'global');
+              localStorage.setItem(_pk, JSON.stringify({ on: false, owner: owner, repo: repo, branch: 'main' }));
+            }
+          }
+          if (typeof syncghRefresh === 'function') syncghRefresh();
+        } catch (e) {}
+      } catch(err) {
+        if (err && err.name === 'AbortError') {
+          saveData(); renderFileList();
+          addNotification('GitHub', 'Import dibatalkan - file yang sudah terunduh tersimpan');
+          return;
+        }
+        addNotification('GitHub', 'Gagal: ' + err.message);
+      }
+      finally { if (onProgress) onProgress(null); }
+    }
+    async function importGitHubFolder(owner, repo, ghPath, localPath, reportProgress, signal) {
+      try {
+        const r = await fetch('https://api.github.com/repos/' + owner + '/' + repo + '/contents/' + ghPath, { headers: githubAuthHeaders(), signal: signal });
+        const items = await r.json();
+        projectFilesData[localPath] = [];
+        for (let item of items) {
+          if (signal && signal.aborted) break;
+          if (item.type === 'file') {
+            try {
+              const fr = await fetch(item.url, { headers: githubAuthHeaders(), signal: signal });
+              const fd = await fr.json();
+              const fc = decodeGithubContent(fd.encoding === 'base64' ? fd.content : '');
+              const b = new Blob([fc]).size;
+              projectFilesData[localPath].push({ type: 'file', name: item.name, size: b > 1024 ? (b/1024).toFixed(1)+' KB' : b+' B', path: localPath+'/'+item.name, content: fc });
+              if (reportProgress) reportProgress(item.name);
+            } catch(e) {}
+          } else if (item.type === 'dir') {
+            const cp = localPath + '/' + item.name;
+            projectFilesData[localPath].push({ type: 'folder', name: item.name, path: cp, fileCount: 0, previewText: 'Folder' });
+            if (reportProgress) reportProgress(item.name + '/');
+            await importGitHubFolder(owner, repo, item.path, cp, reportProgress, signal);
+          }
+        }
+      } catch(e) {}
+    }
+
+
+    let currentFolderPath = 'root';
+    let projectFilesData = { 'root': [] };
+    let modalAction = null;
+    let itemBeingRenamed = null;
+    let activeItemName = null;
+    const GITHUB_CLIENT_ID = 'Ov23ctIBGjQBolR5PS2C';
+    const GITHUB_TOKEN_KEY = 'clinqoo_github_token';
+    const GITHUB_USER_KEY = 'clinqoo_github_user';
+    let isGithubConnected = !!localStorage.getItem(GITHUB_TOKEN_KEY);
+
+    // Kunci workspace per-proyek — pola yang sama dengan riwayat per-chat (clinqoo_ls_chat_<projectId>).
+    // Murni localStorage, tanpa D1.
+    function wsFilesKey() {
+      let pid = null;
+      try { pid = localStorage.getItem('clinqoo_current_project_id'); } catch (e) {}
+      return 'clinqoo_workspace_files_' + (pid ? String(pid) : 'global');
+    }
+
+    function loadWorkspaceFiles() {
+      const key = wsFilesKey();
+      let savedFiles = null;
+      try { savedFiles = localStorage.getItem(key); } catch (e) {}
+      // Migrasi sekali: data lama tersimpan di kunci global, pindahkan ke kunci proyek ini.
+      if (!savedFiles) {
+        try {
+          const legacy = localStorage.getItem('clinqoo_workspace_files');
+          if (legacy) { localStorage.setItem(key, legacy); savedFiles = legacy; }
+        } catch (e) {}
+      }
+      if (savedFiles) {
+        try { projectFilesData = JSON.parse(savedFiles); } catch (e) { projectFilesData = { 'root': [] }; }
+      } else {
+        projectFilesData = { 'root': [] };
+      }
+    }
+
+
+    // Real-time dua arah: perubahan berkas dari editor (tab lain) langsung muncul di sini
+    window.addEventListener('storage', function (e) {
+      if (e.key === wsFilesKey() && e.newValue) {
+        try {
+          projectFilesData = JSON.parse(e.newValue);
+          renderFileList();
+          try { addNotification('Editor', 'Berkas diperbarui dari editor kode.'); } catch (err) {}
+        } catch (err) {}
+      }
+    });
+
+    // ===== Sinkronisasi workspace ke Cloudflare D1 (data per-proyek) =====
+    const WS_CLOUD_API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-files';
+
+    // Token login wajib untuk sinkronisasi D1 (guardProject menolak tanpa auth)
+    function wsAuthHeaders() {
+      var t = '';
+      try { t = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+      return t ? { Authorization: 'Bearer ' + t } : {};
+    }
+
+    function wsProjectId() {
+      try { return localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) { return ''; }
+    }
+
+    // Rata-ratakan {folder: [item]} menjadi daftar {path, content}
+    function wsFlatten(data) {
+      const files = [];
+      Object.keys(data || {}).forEach(function(folderKey) {
+        (data[folderKey] || []).forEach(function(it) {
+          if (!it || !it.path) return;
+          if (it.type === 'file') {
+            files.push({ path: it.path, content: it.content || '' });
+          } else if (it.type === 'folder') {
+            const hasChildren = Object.keys(data).some(function(k) { return k === it.path || k.startsWith(it.path + '/'); });
+            if (!hasChildren) files.push({ path: it.path + '/', content: '' }); // penanda folder kosong
+          }
+        });
+      });
+      return files;
+    }
+
+    function wsSizeLabel(content) {
+      const b = new Blob([content || '']).size;
+      if (b > 1024 * 1024) return (b / (1024 * 1024)).toFixed(2) + ' MB';
+      if (b > 1024) return (b / 1024).toFixed(1) + ' KB';
+      return b + ' B';
+    }
+
+    // Bangun kembali struktur folder dari daftar file rata + penanda folder
+    function wsUnflatten(files) {
+      const data = { 'root': [] };
+      const ensureChain = function(folderKey) {
+        if (folderKey === 'root') return;
+        const parts = folderKey.split('/').filter(Boolean);
+        let parent = 'root', cum = '';
+        parts.forEach(function(part) {
+          cum = cum ? cum + '/' + part : part;
+          if (!Array.isArray(data[parent])) data[parent] = [];
+          if (!data[parent].some(function(i) { return i && i.type === 'folder' && i.name.toLowerCase() === part.toLowerCase(); })) {
+            data[parent].push({ type: 'folder', name: part, path: cum, fileCount: 0, previewText: 'Folder' });
+          }
+          if (!Array.isArray(data[cum])) data[cum] = [];
+          parent = cum;
+        });
+      };
+      (files || []).forEach(function(f) {
+        const p = String((f && f.path) || '').trim();
+        const content = (f && f.content) || '';
+        if (p.slice(-1) === '/') { ensureChain(p.slice(0, -1)); return; }
+        const parts = p.split('/').filter(Boolean);
+        const name = parts.pop();
+        if (!name) return;
+        const folderKey = parts.length ? parts.join('/') : 'root';
+        ensureChain(folderKey);
+        if (!Array.isArray(data[folderKey])) data[folderKey] = [];
+        if (!data[folderKey].some(function(i) { return i.path.toLowerCase() === p.toLowerCase(); })) {
+          data[folderKey].push({ type: 'file', name: name, size: wsSizeLabel(content), path: p, content: content });
+        }
+      });
+      return data;
+    }
+
+    // Status sinkronisasi awal: selama true, daftar berkas menampilkan skeleton
+    // pemuatan (bukan "tidak ada berkas") supaya tidak terasa data kosong/lama dulu.
+    let wsInitialSync = true;
+
+    // Ambil data workspace dari D1; kalau D1 kosong tapi lokal ada, unggah (migrasi sekali)
+    function wsCloudPull() {
+      const pid = wsProjectId();
+      if (!pid || wsCloudTimer) { // jangan menimpa saat ada push tertunda
+        if (!pid) { wsInitialSync = false; renderFileList(); }
+        return;
+      }
+      fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { headers: wsAuthHeaders() })
+        .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function(d) {
+          const files = (d && d.files) || [];
+          if (files.length) {
+            const merged = wsUnflatten(files);
+            const mergedStr = JSON.stringify(merged);
+            if (mergedStr !== JSON.stringify(projectFilesData)) {
+              projectFilesData = merged;
+              try { localStorage.setItem(wsFilesKey(), mergedStr); } catch (e) {}
+              renderFileList();
+            }
+          } else {
+            // D1 belum berisi untuk proyek ini: migrasikan data lokal ke cloud
+            const localRaw = localStorage.getItem(wsFilesKey());
+            if (localRaw && localRaw !== JSON.stringify({ 'root': [] })) {
+              fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { method: 'DELETE', headers: wsAuthHeaders() }).catch(function() {});
+              fetch(WS_CLOUD_API, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()),
+                body: JSON.stringify({ project_id: pid, files: wsFlatten(projectFilesData) }) }).catch(function() {});
+            }
+          }
+        })
+        .catch(function() {})
+        // Sinkronisasi awal selesai (sukses/gagal): pastikan skeleton diganti tampilan asli.
+        .then(function () {
+          if (wsInitialSync) { wsInitialSync = false; renderFileList(); }
+        });
+    }
+
+    // Simpan ke D1 (debounce) — penggantian penuh supaya hapus/rename ikut tersimpan
+    let wsCloudTimer = null;
+    function wsCloudPushSchedule() {
+      const pid = wsProjectId();
+      if (!pid) return;
+      clearTimeout(wsCloudTimer);
+      wsCloudTimer = setTimeout(function() {
+        wsCloudTimer = null;
+        const payload = { project_id: pid, files: wsFlatten(projectFilesData) };
+        fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { method: 'DELETE', headers: wsAuthHeaders() })
+          .then(function(r) { return r.ok ? fetch(WS_CLOUD_API, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()), body: JSON.stringify(payload) }) : Promise.reject(); })
+          .catch(function() {});
+      }, 3000);
+    }
+
+    function saveData() {
+      try {
+        localStorage.setItem(wsFilesKey(), JSON.stringify(projectFilesData));
+      } catch (e) {
+        console.error('Gagal menyimpan workspace (penyimpanan browser penuh?):', e);
+        try { addNotification('Workspace', 'Gagal menyimpan workspace — penyimpanan browser penuh, beberapa perubahan bisa hilang saat refresh.'); } catch (e2) {}
+      }
+      wsCloudPushSchedule();
+      try { if (window.WSGitHubSync) WSGitHubSync.schedule(); } catch (e) {}
+    }
+
+    const defaultTemplates = {
+      'html': '<!DOCTYPE html>\n<html lang="id">\n<head>\n  <meta charset="UTF-8">\n  <title>File Baru</title>\n</head>\n<body>\n  <h1>Halo Dunia!</h1>\n    <\script>if (window.lucide) { lucide.createIcons(); }<\/script>\n    <\script>/* clinqoo-sw-register */\n    if (\'serviceWorker\' in navigator) { window.addEventListener(\'load\', function () { navigator.serviceWorker.register(\'../../sw.js\').catch(function () {}); }); }\n    <\/script>\n</body>\n</html>',
+      'css': 'body {\n  margin: 0;\n  padding: 0;\n  font-family: sans-serif;\n}',
+      'js': 'console.log("Hello from Clincoo Workspace!");',
+      'py': 'def main():\n  print("Hello, World!")\n\nif __name__ == "__main__":\n  main()',
+      'json': '{\n  "name": "workspace",\n  "version": "1.0.0"\n}',
+      'txt': 'Ini adalah berkas teks catatan baru.'
+    };
+
+    function getFileType(filename) {
+      if (!filename) return 'code';
+      let ext = getFileExtension(filename);
+      const audioExts = ['mp3', 'wav', 'ogg', 'oga', 'flac', 'm4a', 'm4b', 'aac', 'opus', 'wma', 'aiff', 'aif', 'amr', 'mid', 'midi'];
+      const videoExts = ['mp4', 'm4v', 'avi', 'mkv', 'mov', 'webm', 'wmv', 'flv', 'mpg', 'mpeg', '3gp', '3g2', 'ogv'];
+      const imageExts = ['png', 'jpg', 'jpeg', 'jfif', 'svg', 'gif', 'webp', 'bmp', 'ico', 'avif', 'apng', 'tif', 'tiff', 'heic', 'heif'];
+      const docExts = ['pdf'];
+      if (audioExts.includes(ext)) return 'audio';
+      if (videoExts.includes(ext)) return 'video';
+      if (imageExts.includes(ext)) return 'image';
+      if (docExts.includes(ext)) return 'pdf';
+      return 'code';
+    }
+
+    function getFileExtension(filename) {
+      let name = filename ? filename.trim() : '';
+      if (!name) return 'html';
+      if (name.startsWith('.') && !name.includes('.', 1)) return name.substring(1).toLowerCase();
+      if (name.includes('.')) return name.split('.').pop().toLowerCase();
+      return name.toLowerCase();
+    }
+
+    const pageProjectDetail = document.getElementById('page-project-detail');
+    const fileSearchInput = document.getElementById('file-search-input');
+
+    function toggleNotifications(e) {
+      e.stopPropagation();
+      const notifDropdown = document.getElementById('notif-dropdown');
+      const isHidden = notifDropdown.classList.contains('invisible');
+      if (isHidden) {
+        notifDropdown.classList.remove('hidden');
+        notifDropdown.classList.remove('opacity-0', 'invisible', '-translate-y-2', 'pointer-events-none');
+        notifDropdown.classList.add('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto');
+        loadNotifications().then(markAllNotificationsRead);
+      } else {
+        notifDropdown.classList.remove('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto');
+        notifDropdown.classList.add('opacity-0', 'invisible', '-translate-y-2', 'pointer-events-none');
+      }
+    }
+
+    function toggleAddMenu(e) {
+      e.stopPropagation();
+      const addMenuDropdown = document.getElementById('add-menu-dropdown');
+      addMenuDropdown.classList.toggle('hidden');
+      const notifDropdown = document.getElementById('notif-dropdown');
+      if (notifDropdown) {
+        notifDropdown.classList.remove('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto');
+        notifDropdown.classList.add('opacity-0', 'invisible', '-translate-y-2', 'pointer-events-none');
+      }
+    }
+    document.addEventListener('click', function(e) {
+      const notifDropdown = document.getElementById('notif-dropdown');
+      const notifBtn = e.target.closest('[onclick*="toggleNotifications"]');
+      if (notifDropdown && !notifDropdown.contains(e.target) && !notifBtn) {
+        notifDropdown.classList.remove('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto');
+        notifDropdown.classList.add('opacity-0', 'invisible', '-translate-y-2', 'pointer-events-none');
+      }
+    });
+    
+    function openItemActionMenu(e, itemName) {
+      e.stopPropagation();
+      activeItemName = itemName;
+      const menu = document.getElementById('item-action-menu');
+      menu.classList.remove('hidden');
+      
+      const rect = e.currentTarget.getBoundingClientRect();
+      let top = rect.bottom + window.scrollY;
+      let left = rect.left + window.scrollX - 140;
+      
+      if (left < 10) left = 10;
+      if (top + menu.offsetHeight > window.innerHeight + window.scrollY) {
+          top = rect.top + window.scrollY - menu.offsetHeight;
+      }
+      
+      menu.style.top = top + 'px';
+      menu.style.left = left + 'px';
+    }
+
+    document.addEventListener('click', function(event) {
+      const notifDropdown = document.getElementById('notif-dropdown');
+      const addMenuDropdown = document.getElementById('add-menu-dropdown');
+      const itemActionMenu = document.getElementById('item-action-menu');
+
+      if (notifDropdown && !notifDropdown.contains(event.target) && !event.target.closest('[aria-label="Notifikasi"]')) {
+        notifDropdown.classList.remove('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto');
+        notifDropdown.classList.add('opacity-0', 'invisible', '-translate-y-2', 'pointer-events-none');
+      }
+      if (addMenuDropdown && !addMenuDropdown.contains(event.target) && !event.target.closest('button[onclick="toggleAddMenu(event)"]')) {
+        addMenuDropdown.classList.add('hidden');
+      }
+      if (itemActionMenu && !itemActionMenu.contains(event.target)) {
+        itemActionMenu.classList.add('hidden');
+      }
+    });
+
+    function showWorkspace() {
+      pageProjectDetail.classList.remove('hidden');
+      setTimeout(() => pageProjectDetail.classList.add('page-active'), 10);
+      renderFileList();
+    }
+
+    function openFolder(folderPath) {
+      currentFolderPath = folderPath;
+      modalAction = null;
+      itemBeingRenamed = null;
+      if (fileSearchInput) fileSearchInput.value = '';
+      renderFileList();
+    }
+
+    function navigateFolderUp() {
+      if (currentFolderPath === 'root') return;
+      const parts = currentFolderPath.split('/');
+      parts.pop();
+      currentFolderPath = parts.length === 0 ? 'root' : parts.join('/');
+      renderFileList();
+    }
+
+    function getFileIcon(filename) {
+      let ext = getFileExtension(filename);
+      switch(ext) {
+        case 'mp3': case 'wav': case 'ogg': case 'oga': case 'flac': case 'm4a': case 'm4b': case 'aac': case 'opus': case 'wma': case 'aiff': case 'aif': case 'amr': case 'mid': case 'midi':
+          return `<div class="flex-shrink-0 w-5 h-5 flex items-center justify-center"><svg viewBox="0 0 24 24" class="w-4 h-4" fill="#E04A3A"><path d="M20 3h-7v10.55A3.98 3.98 0 0 0 11 13c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h5v6.55A3.98 3.98 0 0 0 14 13c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V3z"/></svg></div>`;
+        case 'mp4': case 'm4v': case 'avi': case 'mkv': case 'mov': case 'webm': case 'wmv': case 'flv': case 'mpg': case 'mpeg': case '3gp': case '3g2': case 'ogv':
+          return `<div class="flex-shrink-0 w-5 h-5 flex items-center justify-center"><svg viewBox="0 0 24 24" class="w-4 h-4" fill="none"><rect x="2" y="4" width="20" height="16" rx="3.5" fill="#5B51DC"/><polygon points="10,8.5 15,12 10,15.5" fill="#FFFFFF"/></svg></div>`;
+        case 'png': case 'jpg': case 'jpeg': case 'jfif': case 'svg': case 'gif': case 'webp': case 'bmp': case 'ico': case 'avif': case 'apng': case 'tif': case 'tiff': case 'heic': case 'heif':
+          return `<div class="flex-shrink-0 w-5 h-5 flex items-center justify-center"><svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="8.5" cy="8.5" r="1.5" fill="#0D9488" stroke="none" /><path d="M21 15l-5-5L5 21" /></svg></div>`;
+        case 'py': case 'python':
+          return `<div class="flex-shrink-0 w-5 h-5 flex items-center justify-center"><svg viewBox="0 0 24 24" class="w-4 h-4"><path fill="#3776AB" d="M11.898 2c-3.15 0-5.068.322-5.068 2.373v1.89h10.136v.945H6.83c-2.453 0-4.33 1.488-4.33 4.33 0 2.843 1.877 4.33 4.33 4.33h1.892v-2.373c0-2.316 1.83-4.254 4.148-4.254h5.068c1.94 0 2.453-.562 2.453-2.373 0-2.115-1.913-4.868-8.523-4.868zm-2.58 1.418a.945.945 0 1 1 0 1.89.945.945 0 0 1 0-1.89z"/><path fill="#FFD43B" d="M12.102 22c3.15 0 5.068-.322 5.068-2.373v-1.89H7.034v-.945h10.136c2.453 0 4.33-1.488 4.33-4.33 0-2.843-1.877-4.33-4.33-4.33h-1.892v2.373c0 2.316-1.83 4.254-4.148 4.254H6.062c-1.94 0-2.453.562-2.453 2.373 0 2.115 1.913 4.868 8.493 4.868zm2.58-1.418a.945.945 0 1 1 0-1.89.945.945 0 0 1 0 1.89z"/></svg></div>`;
+        case 'txt':
+          return `<div class="flex-shrink-0 w-5 h-5 flex items-center justify-center"><svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="#546E7A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`;
+        case 'pdf':
+          return `<div class="flex-shrink-0 w-5 h-5 flex items-center justify-center"><svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="#E04A3A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><text x="12" y="17" font-size="5" font-weight="800" fill="#E04A3A" stroke="none" text-anchor="middle">PDF</text></svg></div>`;
+        case 'html': case 'htm':
+          return `<div class="flex-shrink-0 w-5 h-5 flex items-center justify-center"><svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="#E34F26" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg></div>`;
+        case 'js': case 'ts': case 'jsx':
+          return `<div class="flex-shrink-0 w-5 h-5 flex items-center justify-center"><svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="#F7DF1E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4" fill="#F7DF1E"/><text x="12" y="16" font-size="8" font-weight="800" fill="#000" stroke="none" text-anchor="middle">JS</text></svg></div>`;
+        case 'css':
+          return `<div class="flex-shrink-0 w-5 h-5 flex items-center justify-center"><svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="#16A34A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><text x="12" y="15.5" font-size="7" font-weight="800" fill="#16A34A" stroke="none" text-anchor="middle">css</text></svg></div>`;
+        case 'zip': case 'rar': case '7z': case 'tar': case 'gz':
+          return `<div class="flex-shrink-0 w-5 h-5 flex items-center justify-center"><svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="#D97706" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M10 12v2M12 12v2M14 12v2"/></svg></div>`;
+
+        default:
+          return `<div class="flex-shrink-0 w-5 h-5 flex items-center justify-center text-[#718096]"><svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`;
+      }
+    }
+
+    function renderFileList() {
+      const container = document.getElementById('file-list-container');
+      const breadcrumb = document.getElementById('file-breadcrumb');
+      if (!container) return;
+
+      const searchTerm = fileSearchInput ? fileSearchInput.value.toLowerCase().trim() : '';
+
+      if (breadcrumb) {
+        if (currentFolderPath === 'root') {
+          breadcrumb.innerHTML = '';
+        } else {
+          const parts = currentFolderPath.split('/');
+          let bcHtml = `<button onclick="openFolder('root')" class="text-gray-500 hover:text-black flex items-center gap-1 font-medium transition-colors"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>Utama</button>`;
+          let accumulatedPath = '';
+          parts.forEach((p, index) => {
+            accumulatedPath += (index === 0 ? '' : '/') + p;
+            const isLast = index === parts.length - 1;
+            bcHtml += `<span class="text-gray-300">/</span>`;
+            if (isLast) { bcHtml += `<span class="text-black font-semibold">${p}</span>`; } 
+            else { bcHtml += `<button onclick="openFolder('${accumulatedPath}')" class="text-gray-500 hover:text-black transition-colors">${p}</button>`; }
+          });
+          breadcrumb.innerHTML = bcHtml;
+        }
+      }
+
+      let items = projectFilesData[currentFolderPath] || [];
+      if (searchTerm) items = items.filter(item => item.name.toLowerCase().includes(searchTerm));
+
+      items = items.slice().sort((a, b) => {
+        if (a.type === 'folder' && b.type !== 'folder') return -1;
+        if (a.type !== 'folder' && b.type === 'folder') return 1;
+        return a.name.localeCompare(b.name, 'id', { sensitivity: 'base' });
+      });
+
+      container.innerHTML = '';
+
+      if (currentFolderPath !== 'root' && !searchTerm) {
+        const backRow = document.createElement('div');
+        backRow.className = 'flex items-center gap-3 py-2.5 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors rounded-lg px-2 -mx-2';
+        backRow.setAttribute('onclick', 'navigateFolderUp()');
+        backRow.innerHTML = `<svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"></path></svg><span class="text-sm font-medium text-gray-600">Kembali</span>`;
+        container.appendChild(backRow);
+      }
+
+      if (items.length === 0) {
+        if (wsInitialSync && !searchTerm) {
+          // Sedang menarik data dari server: tampilkan skeleton, jangan kesan kosong.
+          let skel = '';
+          for (let i = 0; i < 4; i++) {
+            skel += `<div class="flex items-center gap-4 py-3 border-b border-gray-200 px-1 animate-pulse">
+              <div class="w-6 h-6 bg-gray-200 rounded flex-shrink-0"></div>
+              <div class="flex-1 space-y-1.5"><div class="h-3 bg-gray-200 rounded w-2/5"></div><div class="h-2 bg-gray-100 rounded w-1/4"></div></div>
+            </div>`;
+          }
+          container.innerHTML += skel;
+          return;
+        }
+        container.innerHTML += `<div class="py-12 text-center text-gray-400 text-sm">Tidak ada berkas atau folder di sini.</div>`;
+        return;
+      }
+
+      items.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-4 py-3 border-b border-gray-200 cursor-pointer hover:bg-gray-50/80 transition-colors px-1 group';
+
+        const safeName = item.name.replace(/'/g, "\\'");
+        const actionBtnHTML = `<button onclick="event.stopPropagation(); openItemActionMenu(event, '${safeName}')" class="p-1.5 text-gray-400 hover:text-gray-800 hover:bg-gray-200 rounded-full transition-colors focus:outline-none item-action-btn"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg></button>`;
+
+        if (item.type === 'folder') {
+          const subItems = projectFilesData[item.path] || [];
+          row.onclick = () => openFolder(item.path);
+          row.innerHTML = `<div class="flex-shrink-0 w-6 h-6 flex items-center justify-center text-[#a0aec0]"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg></div><div class="flex-1 min-w-0"><h3 class="text-[#222222] font-medium text-[15px] leading-tight hover:text-black transition-colors truncate">${item.name}</h3><p class="text-gray-500 text-[12px] mt-0.5">Berkas (${subItems.length}) - <span class="text-[#16a34a]">Folder</span></p></div>${actionBtnHTML}`;
+        } else {
+          row.onclick = () => openFileInEditor(item.name);
+          row.innerHTML = `${getFileIcon(item.name)}<div class="flex-1 min-w-0"><h3 class="text-[#222222] font-medium text-[15px] leading-tight hover:text-black transition-colors truncate">${item.name}</h3><p class="text-gray-500 text-[12px] mt-0.5">${item.size || '0,00 B'}</p></div>${actionBtnHTML}`;
+        }
+        container.appendChild(row);
+      });
+    }
+
+    if (fileSearchInput) fileSearchInput.addEventListener('input', renderFileList);
+
+    function openCreateModal(type) {
+      const menu = document.getElementById('add-menu-dropdown');
+      if(menu) menu.classList.add('hidden');
+      
+      modalAction = type === 'folder' ? 'create_folder' : (type === 'github' ? 'import_github' : 'create_file');
+      
+      const title = document.getElementById('input-modal-title');
+      const label = document.getElementById('input-modal-label');
+      const input = document.getElementById('modal-input-name');
+      const errorEl = document.getElementById('input-modal-error');
+      const githubErrorEl = document.getElementById('input-modal-github-error');
+      
+      const standardBody = document.getElementById('modal-standard-body');
+      const githubBody = document.getElementById('modal-github-body');
+      const btnSubmit = document.getElementById('modal-btn-submit');
+      
+      if (errorEl) errorEl.classList.add('hidden');
+      if (githubErrorEl) githubErrorEl.classList.add('hidden');
+      input.value = '';
+      
+      if (type === 'github') {
+        title.textContent = 'Import dari GitHub';
+        standardBody.classList.add('hidden');
+        githubBody.classList.remove('hidden');
+        document.getElementById('modal-footer').classList.add('hidden');
+        
+        if (!isGithubConnected) {
+          // Cek token GitHub dari sesi login Clincoo dulu — biar tidak perlu auth lagi
+          const stepConnect = document.getElementById('github-step-connect');
+          const stepLoading = document.getElementById('github-step-loading');
+          stepConnect.classList.add('hidden');
+          stepConnect.classList.remove('flex');
+          stepLoading.classList.remove('hidden');
+          stepLoading.classList.add('flex');
+          syncGithubFromSession().then(function() { updateGithubModalUI(); });
+        } else {
+          updateGithubModalUI();
+        }
+      } else {
+        standardBody.classList.remove('hidden');
+        githubBody.classList.add('hidden');
+        btnSubmit.classList.remove('hidden');
+        btnSubmit.textContent = 'Simpan';
+        
+        const footer = document.getElementById('modal-footer');
+        if (type === 'folder') {
+          title.textContent = 'Buat Folder Baru';
+          label.textContent = 'Nama Folder';
+          input.placeholder = 'Misal: assets';
+        } else {
+          title.textContent = 'Buat File Baru';
+          label.textContent = 'Nama File';
+          input.placeholder = 'Misal: ../index/';
+        }
+        footer.classList.remove('hidden');
+      }
+      
+      showInputModal();
+    }
+
+    function updateGithubModalUI() {
+      const stepConnect = document.getElementById('github-step-connect');
+      const stepLoading = document.getElementById('github-step-loading');
+      const stepImport = document.getElementById('github-step-import');
+      const btnSubmit = document.getElementById('modal-btn-submit');
+      const footer = document.getElementById('modal-footer');
+      
+      stepLoading.classList.add('hidden');
+      stepLoading.classList.remove('flex');
+      
+      if (!isGithubConnected) {
+        stepConnect.classList.remove('hidden');
+        stepConnect.classList.add('flex');
+        stepImport.classList.add('hidden');
+        stepImport.classList.remove('flex');
+        btnSubmit.classList.add('hidden');
+        footer.classList.add('hidden');
+      } else {
+        stepConnect.classList.add('hidden');
+        stepConnect.classList.remove('flex');
+        stepImport.classList.remove('hidden');
+        stepImport.classList.add('flex');
+        btnSubmit.classList.add('hidden');
+        footer.classList.add('hidden');
+
+        try {
+          const savedUser = JSON.parse(localStorage.getItem(GITHUB_USER_KEY) || 'null');
+          if (savedUser) {
+            const avatarImg = document.getElementById('github-avatar-img');
+            const usernameEl = document.getElementById('github-username');
+            if (avatarImg && savedUser.avatar_url) avatarImg.src = savedUser.avatar_url;
+            if (usernameEl && savedUser.login) usernameEl.textContent = savedUser.login;
+          }
+        } catch(e) {}
+
+        loadGithubRepoList();
+      }
+    }
+
+    function connectGitHub() {
+      const stepConnect = document.getElementById('github-step-connect');
+      const stepLoading = document.getElementById('github-step-loading');
+
+      stepConnect.classList.add('hidden');
+      stepConnect.classList.remove('flex');
+      stepLoading.classList.remove('hidden');
+      stepLoading.classList.add('flex');
+
+      // Remember that the import modal was open so we can reopen it after the OAuth redirect
+      localStorage.setItem('clinqoo_github_modal_open', '1');
+
+      const redirectUri = window.location.origin + window.location.pathname;
+      const authUrl = 'https://github.com/login/oauth/authorize?client_id=' + GITHUB_CLIENT_ID +
+        '&scope=repo%20user:email&redirect_uri=' + encodeURIComponent(redirectUri);
+
+      window.location.href = authUrl;
+    }
+
+    async function handleGitHubOAuthCallback(code) {
+      try {
+        const resp = await fetch('https://clincoo-be2.pages.dev/api/github-oauth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clinqooAuthToken() },
+          body: JSON.stringify({ code, redirect_uri: window.location.origin + window.location.pathname })
+        });
+        const data = await resp.json();
+
+        if (data && data.upgrade_needed) {
+          addNotification('GitHub', data.error || 'Fitur ini tersedia di paket Pro & Bisnis.');
+          setTimeout(function(){ window.location.href = '../../akun/langganan/upgrade/'; }, 1800);
+          return;
+        }
+        if (!resp.ok || !data.access_token) {
+          throw new Error(data.error || 'Gagal mendapatkan access token');
+        }
+
+        localStorage.setItem(GITHUB_TOKEN_KEY, data.access_token);
+
+        // Fetch the connected user's profile
+        const userResp = await fetch('https://api.github.com/user', {
+          headers: { Authorization: 'Bearer ' + data.access_token }
+        });
+        const user = await userResp.json();
+        localStorage.setItem(GITHUB_USER_KEY, JSON.stringify({ login: user.login, avatar_url: user.avatar_url }));
+
+        // ==== Sinkronisasi profil GitHub -> profil akun Clincoo (data sama untuk semua metode login) ====
+        try {
+          const profilePatch = {};
+          // Nama: isi hanya kalau profil masih kosong (jangan menimpa data yang sudah ada)
+          const fullName = user.name || user.login;
+          if (fullName && !localStorage.getItem('clinqoo_fullname')) {
+            localStorage.setItem('clinqoo_fullname', fullName);
+            profilePatch.name = fullName;
+          }
+          // Email: ambil email utama dari GitHub (scope user:email)
+          if (!localStorage.getItem('clinqoo_email')) {
+            try {
+              const emailResp = await fetch('https://api.github.com/user/emails', {
+                headers: { Authorization: 'Bearer ' + data.access_token, Accept: 'application/vnd.github.v3+json' }
+              });
+              if (emailResp.ok) {
+                const emails = await emailResp.json();
+                const primary = (Array.isArray(emails) ? emails : []).find(function(e) { return e && e.primary && e.verified; }) || (Array.isArray(emails) ? emails[0] : null);
+                if (primary && primary.email) {
+                  localStorage.setItem('clinqoo_email', primary.email);
+                  profilePatch.email = primary.email;
+                }
+              }
+            } catch (e) {}
+          }
+          // Avatar: pakai avatar GitHub hanya kalau user belum punya foto profil sendiri
+          if (user.avatar_url && !localStorage.getItem('clinqoo_profile_pic')) {
+            localStorage.setItem('clinqoo_profile_pic', user.avatar_url);
+            profilePatch.avatar = user.avatar_url;
+          }
+          // Kirim ke database supaya sinkron di semua halaman & perangkat
+          if (Object.keys(profilePatch).length > 0) {
+            fetch('https://clincoo-be2.pages.dev/api/account-profile', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(profilePatch)
+            }).catch(function() {});
+          }
+        } catch (e) {}
+
+        isGithubConnected = true;
+        addNotification('GitHub', 'Terhubung sebagai ' + (user.login || 'GitHub user'));
+      } catch (err) {
+        isGithubConnected = false;
+        localStorage.removeItem(GITHUB_TOKEN_KEY);
+        addNotification('GitHub', 'Gagal menghubungkan: ' + err.message);
+      }
+
+      // Clean the ?code=&state= params out of the URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      // Reopen the import modal at the correct step if it was open before the redirect
+      if (localStorage.getItem('clinqoo_github_modal_open')) {
+        localStorage.removeItem('clinqoo_github_modal_open');
+        triggerImport('github');
+      }
+    }
+
+    function disconnectGitHub() {
+      isGithubConnected = false;
+      localStorage.removeItem(GITHUB_TOKEN_KEY);
+      localStorage.removeItem(GITHUB_USER_KEY);
+      addNotification('GitHub', 'Koneksi GitHub diputuskan.');
+      updateGithubModalUI();
+    }
+
+    function getGitHubToken() {
+      return localStorage.getItem(GITHUB_TOKEN_KEY);
+    }
+
+    // Pakai token GitHub dari sesi login Clincoo (masuk via GitHub OAuth) tanpa auth ulang
+    async function syncGithubFromSession() {
+      if (getGitHubToken()) { isGithubConnected = true; return; }
+      try {
+        const sessionToken = localStorage.getItem('clinqoo_auth_token');
+        if (!sessionToken) return;
+        const res = await fetch('https://clincoo-be2.pages.dev/api/auth/github-token', {
+          headers: { 'Authorization': 'Bearer ' + sessionToken }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.access_token) return;
+        localStorage.setItem(GITHUB_TOKEN_KEY, data.access_token);
+        const userResp = await fetch('https://api.github.com/user', {
+          headers: { Authorization: 'Bearer ' + data.access_token }
+        });
+        if (userResp.ok) {
+          const user = await userResp.json();
+          localStorage.setItem(GITHUB_USER_KEY, JSON.stringify({ login: user.login, avatar_url: user.avatar_url }));
+        }
+        isGithubConnected = true;
+        addNotification('GitHub', 'Terhubung otomatis dari akun GitHub Anda.');
+      } catch (e) {}
+    }
+
+    function githubAuthHeaders() {
+      const token = getGitHubToken();
+      return token ? { Authorization: 'Bearer ' + token } : {};
+    }
+
+    function escapeGithubHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, function(c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+
+    async function loadGithubRepoList() {
+      const listEl = document.getElementById('github-repo-list');
+      const errEl = document.getElementById('input-modal-github-error');
+      if (!listEl) return;
+      const token = getGitHubToken();
+      if (!token) return;
+      if (errEl) errEl.classList.add('hidden');
+      listEl.innerHTML = '<div class="flex items-center justify-center py-6 text-xs text-gray-500"><svg class="w-4 h-4 animate-spin mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>Memuat repository...</div>';
+      try {
+        const res = await fetch('https://api.github.com/user/repos?sort=updated&per_page=50', {
+          headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.v3+json' }
+        });
+        if (!res.ok) {
+          if (res.status === 401) {
+            isGithubConnected = false;
+            localStorage.removeItem(GITHUB_TOKEN_KEY);
+            localStorage.removeItem(GITHUB_USER_KEY);
+            updateGithubModalUI();
+            return;
+          }
+          throw new Error('Gagal memuat repository (' + res.status + ')');
+        }
+        const repos = await res.json();
+        if (!repos || repos.length === 0) {
+          listEl.innerHTML = '<p class="text-xs text-gray-500 text-center py-6">Tidak ada repository ditemukan</p>';
+          return;
+        }
+        listEl.innerHTML = repos.map(function(r) {
+          const desc = r.description ? escapeGithubHtml(r.description) : escapeGithubHtml(r.full_name);
+          return '<button onclick="startGithubImport(\'' + r.full_name + '\')" class="flex items-center gap-2.5 w-full px-3 py-2.5 text-left bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors focus:outline-none">' +
+            '<svg class="w-4 h-4 text-gray-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 4H4a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-6M14 4h6m0 0v6m0-6L10 14"/></svg>' +
+            '<div class="min-w-0 flex-1"><p class="text-xs font-semibold text-gray-800 truncate">' + escapeGithubHtml(r.name) + '</p>' +
+            '<p class="text-[11px] text-gray-500 truncate">' + desc + '</p></div>' +
+            (r.private ? '<span class="text-[10px] text-gray-500 border border-gray-200 rounded-md px-1.5 py-0.5 flex-shrink-0">Privat</span>' : '') +
+            '</button>';
+        }).join('');
+      } catch (err) {
+        if (errEl) { errEl.textContent = err.message; errEl.classList.remove('hidden'); }
+        listEl.innerHTML = '<p class="text-xs text-red-500 text-center py-4">' + escapeGithubHtml(err.message) + '</p>';
+      }
+    }
+
+    function showGithubImportingUI(repoName) {
+      const listEl = document.getElementById('github-repo-list');
+      const errEl = document.getElementById('input-modal-github-error');
+      if (errEl) errEl.classList.add('hidden');
+      if (!listEl) return;
+      listEl.innerHTML = '<div class="flex flex-col items-center justify-center py-8 gap-2.5">' +
+        '<svg class="w-8 h-8 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>' +
+        '<p class="text-sm font-semibold text-gray-800">Mengimpor ' + escapeGithubHtml(repoName) + '</p>' +
+        '<p id="github-import-status" class="text-xs text-gray-500">Menyiapkan...</p>' +
+        '<button onclick="cancelGithubImport()" class="mt-1.5 text-xs text-red-500 hover:text-red-600 font-medium px-2 py-1 hover:bg-red-50 rounded-lg transition-colors focus:outline-none">Batal</button>' +
+        '</div>';
+    }
+
+    function startGithubImport(fullName) {
+      const repoName = (fullName.split('/').filter(Boolean).pop() || 'github-repo').replace('.git', '');
+      showGithubImportingUI(repoName);
+      importFromGitHub(fullName, currentFolderPath, function(status) {
+        if (status === null) {
+          closeInputModal();
+          return;
+        }
+        const el = document.getElementById('github-import-status');
+        if (el) el.textContent = status;
+      });
+    }
+
+    function triggerRename() {
+      const menu = document.getElementById('item-action-menu');
+      if (menu) menu.classList.add('hidden');
+      
+      modalAction = 'rename';
+      itemBeingRenamed = activeItemName;
+      
+      const title = document.getElementById('input-modal-title');
+      const label = document.getElementById('input-modal-label');
+      const input = document.getElementById('modal-input-name');
+      const errorEl = document.getElementById('input-modal-error');
+      
+      const standardBody = document.getElementById('modal-standard-body');
+      const githubBody = document.getElementById('modal-github-body');
+      const btnSubmit = document.getElementById('modal-btn-submit');
+      
+      standardBody.classList.remove('hidden');
+      githubBody.classList.add('hidden');
+      btnSubmit.classList.remove('hidden');
+      btnSubmit.textContent = 'Simpan';
+      
+      if (errorEl) errorEl.classList.add('hidden');
+      title.textContent = 'Ganti Nama';
+      label.textContent = 'Nama Baru';
+      input.value = itemBeingRenamed;
+      document.getElementById('modal-footer').classList.remove('hidden');
+      
+      showInputModal();
+    }
+
+    function showInputModal() {
+      const overlay = document.getElementById('input-modal-overlay');
+      const modal = document.getElementById('input-modal');
+      overlay.classList.remove('hidden');
+      setTimeout(() => {
+        overlay.classList.remove('opacity-0');
+        modal.classList.remove('opacity-0', 'scale-95');
+        modal.classList.add('opacity-100', 'scale-100');
+        
+        const input = document.getElementById('modal-input-name');
+        
+        if (modalAction !== 'import_github') {
+           input.focus();
+           if (modalAction === 'rename') {
+              const item = (projectFilesData[currentFolderPath] || []).find(i => i.name === itemBeingRenamed);
+              if(item && item.type === 'file' && input.value.includes('.')) {
+                 input.setSelectionRange(0, input.value.lastIndexOf('.'));
+              } else {
+                 input.select();
+              }
+           }
+        }
+      }, 10);
+    }
+
+    function closeInputModal() {
+      const overlay = document.getElementById('input-modal-overlay');
+      const modal = document.getElementById('input-modal');
+      
+      overlay.classList.add('opacity-0');
+      modal.classList.remove('opacity-100', 'scale-100');
+      modal.classList.add('opacity-0', 'scale-95');
+      
+      setTimeout(() => {
+        overlay.classList.add('hidden');
+        modalAction = null;
+        itemBeingRenamed = null;
+      }, 300);
+    }
+
+    function handleModalInputKeydown(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        submitInputModal();
+      }
+      if (e.key === 'Escape') closeInputModal();
+    }
+
+    function submitInputModal() {
+      const input = document.getElementById('modal-input-name');
+      const errorEl = document.getElementById('input-modal-error');
+      
+      let name = '';
+      let currentErrorEl = errorEl;
+      
+      name = input.value.trim();
+      
+      if(!name) { 
+         currentErrorEl.textContent = "Nama tidak boleh kosong.";
+         currentErrorEl.classList.remove('hidden');
+         return; 
+      }
+      
+      const items = projectFilesData[currentFolderPath] || [];
+
+      if (modalAction === 'create_file' || modalAction === 'create_folder') {
+          const finalName = name; // nama murni manual sesuai ketikan user
+          
+          const exists = items.some(item => item.name.toLowerCase() === finalName.toLowerCase());
+          if (exists) {
+             currentErrorEl.textContent = "Nama sudah ada di direktori ini.";
+             currentErrorEl.classList.remove('hidden');
+             return;
+          }
+          
+          if (!projectFilesData[currentFolderPath]) projectFilesData[currentFolderPath] = [];
+
+          if(modalAction === 'create_folder') {
+            const newPath = currentFolderPath === 'root' ? finalName : currentFolderPath + '/' + finalName;
+            projectFilesData[currentFolderPath].push({ type: 'folder', name: finalName, path: newPath, fileCount: 0, previewText: 'Folder' });
+          } else {
+            const ext = getFileExtension(finalName);
+            const content = defaultTemplates[ext] || '';
+            const bytes = new Blob([content]).size;
+            let sizeStr = '0,00 B';
+            if (bytes > 1024 * 1024) sizeStr = (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+            else if (bytes > 1024) sizeStr = (bytes / 1024).toFixed(1) + ' KB';
+            else if (bytes > 0) sizeStr = bytes + ' B';
+
+            const filePath = currentFolderPath === 'root' ? finalName : currentFolderPath + '/' + finalName;
+            projectFilesData[currentFolderPath].push({ type: 'file', name: finalName, size: sizeStr, path: filePath, content: content });
+          }
+      } else if (modalAction === 'rename') {
+          if (name === itemBeingRenamed) {
+             closeInputModal();
+             return;
+          }
+          if(items.find(i => i.name.toLowerCase() === name.toLowerCase())) {
+             currentErrorEl.textContent = "Nama sudah digunakan.";
+             currentErrorEl.classList.remove('hidden');
+             return;
+          }
+          
+          const itemIndex = items.findIndex(i => i.name === itemBeingRenamed);
+          if(itemIndex !== -1) {
+            const item = items[itemIndex];
+            if(item.type === 'folder') {
+              const oldPath = item.path;
+              const newPath = currentFolderPath === 'root' ? name : currentFolderPath + '/' + name;
+              item.name = name;
+              item.path = newPath;
+              
+              const keysToUpdate = Object.keys(projectFilesData).filter(k => k === oldPath || k.startsWith(oldPath + '/'));
+              keysToUpdate.forEach(key => {
+                const newKey = newPath + key.substring(oldPath.length);
+                projectFilesData[newKey] = projectFilesData[key];
+                delete projectFilesData[key];
+                projectFilesData[newKey].forEach(child => {
+                  if (child.path.startsWith(oldPath + '/')) {
+                    child.path = newPath + child.path.substring(oldPath.length);
+                  }
+                });
+              });
+            } else {
+              item.name = name;
+              item.path = currentFolderPath === 'root' ? name : currentFolderPath + '/' + name;
+            }
+          }
+      }
+      
+      saveData();
+      if (fileSearchInput) fileSearchInput.value = '';
+      renderFileList();
+      closeInputModal();
+    }
+
+    function confirmItemDelete() {
+      const menu = document.getElementById('item-action-menu');
+      if (menu) menu.classList.add('hidden');
+      if(!activeItemName) return;
+      // popup konfirmasi dulu — jangan hapus instan
+      const title = document.getElementById('confirm-delete-title');
+      const text = document.getElementById('confirm-delete-text');
+      const items0 = projectFilesData[currentFolderPath] || [];
+      const item0 = items0.find(i => i.name === activeItemName);
+      if (title) title.textContent = "Hapus '" + activeItemName + "'?";
+      if (text) text.textContent = item0 && item0.type === 'folder'
+        ? 'Folder beserta semua isi di dalamnya akan dihapus permanen dari workspace.'
+        : 'File akan dihapus permanen dari workspace.';
+      const overlay = document.getElementById('confirm-delete-overlay');
+      const modal = document.getElementById('confirm-delete-modal');
+      overlay.classList.remove('hidden');
+      setTimeout(() => {
+        overlay.classList.remove('opacity-0');
+        modal.classList.remove('opacity-0', 'scale-95');
+        modal.classList.add('opacity-100', 'scale-100');
+      }, 10);
+    }
+
+    function closeConfirmDelete() {
+      const overlay = document.getElementById('confirm-delete-overlay');
+      const modal = document.getElementById('confirm-delete-modal');
+      modal.classList.remove('opacity-100', 'scale-100');
+      modal.classList.add('opacity-0', 'scale-95');
+      overlay.classList.add('opacity-0');
+      setTimeout(() => { overlay.classList.add('hidden'); }, 300);
+    }
+
+    function executeItemDelete() {
+      closeConfirmDelete();
+      if(!activeItemName) return;
+
+      const items = projectFilesData[currentFolderPath] || [];
+      const itemIndex = items.findIndex(i => i.name === activeItemName);
+      
+      if(itemIndex !== -1) {
+        const item = items[itemIndex];
+        if(item.type === 'folder') {
+          const prefix = item.path;
+          Object.keys(projectFilesData).forEach(key => {
+            if (key === prefix || key.startsWith(prefix + '/')) {
+              delete projectFilesData[key];
+            }
+          });
+        }
+        items.splice(itemIndex, 1);
+      }
+      saveData();
+      renderFileList();
+    }
+
+    function triggerImport(type) {
+      const menu = document.getElementById('add-menu-dropdown');
+      if(menu) menu.classList.add('hidden');
+      if (type === 'file') {
+        const input = document.getElementById('import-file-input');
+        if (input) input.click();
+      } else if (type === 'zip') {
+        const input = document.getElementById('import-zip-input');
+        if (input) input.click();
+      } else if (type === 'github') {
+        checkPlanThenOpenGithub();
+      }
+    }
+
+    // Impor repository GitHub = fitur paket Pro ke atas; Starter melihat daftar paket
+    // Cache langganan (key sama dgn halaman Upgrade/Konfirmasi — saling terpakai)
+    var SUB_CACHE_KEY = 'clinqoo_subscription_cache';
+    var SUB_CACHE_TTL = 5 * 60 * 1000;
+    function readSubCache() { try { return JSON.parse(localStorage.getItem(SUB_CACHE_KEY) || 'null') || null; } catch (e) { return null; } }
+    function writeSubCache(d) { try { localStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ plan: d.plan, billingCycle: d.billingCycle || 'Bulanan', ts: Date.now() })); } catch (e) {} }
+
+    // ===== Sync GitHub: toggle + popup pengaturan & konfirmasi ubah file =====
+    function syncghState() {
+      var c = window.WSGitHubSync ? WSGitHubSync.cfg() : null;
+      return { on: !!(c && c.on && c.owner && c.repo), ready: !!(c && c.owner && c.repo), owner: c ? c.owner : '', name: c ? c.repo : '', repo: c ? (c.owner + '/' + c.repo) : '', branch: c ? (c.branch || 'main') : 'main' };
+    }
+    function syncghRefresh() {
+      var st = syncghState();
+      var row = document.getElementById('syncgh-toggle-row');
+      var sep = document.getElementById('syncgh-sep');
+      if (row) {
+        if (st.ready) { row.classList.remove('hidden'); row.classList.add('flex'); }
+        else { row.classList.add('hidden'); row.classList.remove('flex'); }
+      }
+      if (sep) sep.classList.toggle('hidden', !st.ready);
+      var bg = document.getElementById('syncgh-toggle-bg');
+      var knob = document.getElementById('syncgh-toggle-knob');
+      if (bg) bg.className = 'w-11 h-6 rounded-full transition-colors duration-200 ease-in-out ' + (st.on ? 'bg-gray-900' : 'bg-gray-200');
+      if (knob) knob.className = 'absolute left-0.5 top-0.5 w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out ' + (st.on ? 'bg-white translate-x-5' : 'bg-gray-900');
+      var statusText = document.getElementById('syncgh-status-text');
+      if (statusText) statusText.textContent = st.on ? ('Aktif ke ' + st.repo) : st.repo;
+    }
+    function syncghClosePopup() {
+      var ov = document.getElementById('syncgh-popup');
+      if (ov) ov.remove();
+    }
+    function syncghShowConnect() {
+      var ov = document.createElement('div');
+      ov.id = 'syncgh-popup';
+      ov.className = 'fixed inset-0 z-[80] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4';
+      ov.innerHTML = '<div class="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-xs p-5 relative">'
+        + '<button type="button" class="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-gray-900 rounded-lg transition-colors" onclick="syncghClosePopup()" title="Tutup"><i data-lucide="x" class="w-4 h-4"></i></button>'
+        + '<div class="flex flex-col items-center text-center py-2">'
+        + '<svg class="w-9 h-9 text-gray-900 mb-2" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>'
+        + '<h3 class="text-base font-bold text-gray-900">Hubungkan GitHub dulu</h3>'
+        + '<p class="text-sm text-gray-500 mt-1 leading-relaxed">Sync GitHub perlu akun GitHub yang terhubung untuk menulis file ke repo Anda.</p>'
+        + '<button id="syncgh-connect-btn" class="mt-4 w-full bg-gray-900 text-white rounded-xl py-2.5 text-sm font-semibold hover:opacity-90 transition-opacity">Hubungkan GitHub</button>'
+        + '</div></div>';
+      document.body.appendChild(ov);
+      try { lucide.createIcons(); } catch (e) {}
+      ov.addEventListener('click', function (ev) { if (ev.target === ov) syncghClosePopup(); });
+      var cb = document.getElementById('syncgh-connect-btn');
+      if (cb) cb.addEventListener('click', function () { syncghClosePopup(); connectGitHub(); });
+    }
+    window.syncghClosePopup = syncghClosePopup;
+    (function () {
+      var toggleBtn = document.getElementById('syncgh-toggle-btn');
+      syncghRefresh();
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var st = syncghState();
+          if (st.on) {
+            WSGitHubSync.disable();
+            syncghRefresh();
+            return;
+          }
+          if (!st.ready) return; // toggle hanya muncul setelah import repo
+          if (!getGitHubToken()) { syncghShowConnect(); return; }
+          // Otomatis: langsung aktif & sync pakai repo hasil import, tanpa popup URL
+          WSGitHubSync.enable(st.owner, st.name, st.branch);
+          WSGitHubSync.resetSnapshot();
+          syncghRefresh();
+          WSGitHubSync.syncNow().then(function (r) {
+            if (r && r.error) addNotification('GitHub', 'Sync GitHub gagal: ' + r.error);
+          });
+        });
+      }
+      if (window.WSGitHubSync) {
+        WSGitHubSync.onChange(function (r) {
+          if (r && r.error) addNotification('GitHub', 'Sync GitHub: ' + r.error);
+        });
+      }
+    })();
+
+    async function checkPlanThenOpenGithub() {
+      const apiBase = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api');
+      // Popup carousel paket HANYA untuk user Starter (terverifikasi).
+      // Paket sudah diketahui dari init halaman -> putuskan instan tanpa kedipan popup.
+      if (window.clinqooEditorPlan && window.clinqooEditorPlan !== 'Starter') { openCreateModal('github'); return; }
+      if (window.clinqooEditorPlan === 'Starter') {
+        const c2 = readSubCache();
+        showUpgradePlansModal(c2 && c2.plan ? { plan: 'Starter', billingCycle: c2.billingCycle } : null);
+        return;
+      }
+      const cached = readSubCache();
+      const fresh = cached && cached.plan && (Date.now() - (cached.ts || 0)) < SUB_CACHE_TTL;
+      if (fresh) {
+        if (cached.plan !== 'Starter') { openCreateModal('github'); return; }
+        showUpgradePlansModal({ plan: cached.plan, billingCycle: cached.billingCycle });
+        return;
+      }
+      // Cache basi & paket belum diketahui: tanya server dulu, baru putuskan.
+      // (Sebelumnya popup tampil dulu utk semua user lalu ditutup bila ternyata Pro -> kedip.)
+      try {
+        const token = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || '';
+        const res = await fetch(apiBase + '/subscription', { cache: 'no-store', headers: token ? { Authorization: 'Bearer ' + token } : {} });
+        if (res.ok) {
+          const d = await res.json();
+          if (d && d.plan) {
+            writeSubCache(d);
+            window.clinqooEditorPlan = d.plan;
+            if (d.plan !== 'Starter') { openCreateModal('github'); } else { showUpgradePlansModal({ plan: d.plan, billingCycle: d.billingCycle }); }
+            return;
+          }
+        }
+      } catch (e) {}
+      // Server tidak terjangkau: fail-open ke modal impor (paket tetap divalidasi backend saat impor).
+      openCreateModal('github');
+    }
+
+    // Popup daftar paket (carousel 3 kartu, bisa digeser/swap) untuk fitur Impor GitHub.
+        function showUpgradePlansModal(sub) {
+      if (document.getElementById('upgrade-plans-modal')) return;
+      var m = document.createElement('div');
+      m.id = 'upgrade-plans-modal';
+      var base = (location.pathname.indexOf('/Clincoo') !== -1) ? '/Clincoo.' : '';
+      var current = (sub && sub.plan) ? sub.plan : 'Starter';
+      var billing = (sub && sub.billingCycle) ? sub.billingCycle : 'Bulanan';
+      var checkoutUrl = function (name, cyc) {
+        return base + '/akun/langganan/upgrade/konfirmasi/?plan=' + encodeURIComponent(name) + '&billing=' + encodeURIComponent(cyc || billing);
+      };
+
+      var plans = [
+        { name: 'Starter', tagline: 'Untuk individu yang baru memulai.', price: 'Gratis', per: '', hot: false,
+          items: [
+            ['Hingga 3 proyek aktif + editor kode', true],
+            ['1 kolaborator per proyek', true],
+            ['Chat AI di setiap proyek (50 pesan/bulan) + pencarian web', true],
+            ['Kelola 1 domain: verifikasi, DNS & SSL', true], ['3 template proyek siap pakai', true],
+            ['Tugas terjadwal & notifikasi', true],
+            ['Deploy web 5x per bulan', true],
+            ['Editor full-stack & integrasi GitHub', false],
+            ['Domain tanpa batas & deploy tanpa batas', false]
+          ] },
+        { name: 'Pro', tagline: 'Untuk profesional dan kreator aktif.', price: '49K', per: '/bln', hot: true,
+          items: [
+            ['Hingga 10 proyek aktif', true],
+            ['Hingga 5 kolaborator per proyek', true],
+            ['Semua fitur Starter', true], ['Editor kode full-stack: bangun & publikasikan dari browser', true], ['Domain tanpa batas: verifikasi, DNS & SSL', true],
+            ['Deploy web hingga 25x per bulan ke domain sendiri', true],
+            ['Integrasi GitHub: impor repo, AI kerja langsung di repo kamu', true]
+          ] },
+        { name: 'Bisnis', tagline: 'Untuk tim dan operasi skala besar.', price: '129K', per: '/bln', hot: false,
+          items: [
+            ['Semua fitur Pro', true],
+            ['Hingga 50 proyek aktif', true],
+            ['Hingga 20 kolaborator per proyek', true],
+            ['Kontrol akses & keamanan proyek lanjutan', true],
+            ['Deploy web tanpa batas', true]
+          ] }
+      ];
+
+      var card = function (p) {
+        var isCurrent = (p.name === current);
+        var list = p.items.map(function (it) {
+          return '<li class="flex items-start gap-2.5 text-[13px] ' + (p.hot ? 'text-gray-900 font-medium' : (it[1] ? 'text-gray-700' : 'text-gray-400 opacity-70')) + '">' +
+            (it[1]
+              ? '<i data-lucide="' + (p.hot ? 'check-circle-2' : 'check') + '" class="w-4 h-4 shrink-0 ' + (p.hot ? 'text-accent' : 'text-gray-900') + '"></i>'
+              : '<i data-lucide="minus" class="w-4 h-4 shrink-0"></i>') +
+            '<span>' + it[0] + '</span></li>';
+        }).join('');
+        var btn;
+        if (isCurrent) {
+          btn = '<div class="w-full py-3 bg-gray-50 text-gray-500 border border-gray-200 rounded-xl font-semibold text-sm text-center cursor-not-allowed">Paket Saat Ini</div>';
+        } else if (p.hot) {
+          btn = '<a href="' + checkoutUrl(p.name, billing) + '" class="block w-full py-3 bg-accent rounded-xl font-semibold text-sm text-center transition-all shadow-md active:scale-95">Upgrade ke ' + p.name + '</a>';
+        } else {
+          btn = '<a href="' + checkoutUrl(p.name, billing) + '" class="block w-full py-3 bg-white text-gray-900 border-2 border-gray-200 hover:border-gray-900 hover:bg-gray-50 rounded-xl font-semibold text-sm text-center transition-all">Mulai ' + p.name + '</a>';
+        }
+        return '<div class="w-full shrink-0 px-0.5"><div class="bg-white border ' + (p.hot ? 'border-2 border-accent shadow-xl' : 'border-gray-200') + ' rounded-3xl p-4 sm:p-5 flex flex-col relative text-left">' +
+          (p.hot ? '<div class="absolute top-0 right-0 bg-accent text-[10px] font-bold px-3.5 py-1 rounded-bl-xl rounded-tr-2xl uppercase tracking-wider">Paling Populer</div>' : '') +
+          '<div class="mb-4 ' + (p.hot ? 'mt-2' : '') + '"><h3 class="text-lg font-bold text-gray-900 ' + (p.hot ? 'text-accent' : '') + '">' + p.name + '</h3>' +
+          '<p class="text-xs text-gray-500 mt-0.5">' + p.tagline + '</p></div>' +
+          '<div class="mb-4 flex items-baseline"><span class="text-2xl font-extrabold tracking-tight text-gray-900">' + p.price + '</span><span class="text-xs font-medium text-gray-500 ml-1">' + p.per + '</span></div>' +
+          '<ul class="flex flex-col gap-2.5 mb-4 flex-1">' + list + '</ul>' + btn + '</div></div>';
+      };
+
+      var slides = plans.map(card).join('');
+      var dots = plans.map(function (p, i) {
+        return '<button class="upc-dot rounded-full transition-all duration-200" data-i="' + i + '" style="width:6px;height:6px;background:#d1d5db;"></button>';
+      }).join('');
+
+      var css = document.createElement('style');
+      css.textContent =
+        '#upgrade-plans-modal .text-accent{color:var(--accent-color,#000000);} ' +
+        '#upgrade-plans-modal .bg-accent{background-color:var(--accent-color,#000000);color:#ffffff;} ' +
+        '#upgrade-plans-modal .border-accent{border-color:var(--accent-color,#000000);} ' +
+        'body.dark-mode #upgrade-plans-modal .text-accent{color:#ffffff !important;} ' +
+        'body.dark-mode #upgrade-plans-modal .bg-accent{background-color:#ffffff !important;color:#000000 !important;} ' +
+        'body.dark-mode #upgrade-plans-modal .border-accent{border-color:#ffffff !important;}';
+
+      m.innerHTML =
+        '<div class="fixed inset-0 z-[95] overflow-y-auto p-3 sm:p-4" style="background:rgba(0,0,0,0.45)">' +
+        '<div class="min-h-full flex items-center justify-center">' +
+        '<div class="bg-white rounded-2xl w-full max-w-sm relative px-4 sm:px-5 pt-9 pb-4 my-2">' +
+        '<button id="upgrade-plans-x" class="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-black flex items-center justify-center transition-colors z-10" aria-label="Tutup"><i data-lucide="x" class="w-4 h-4"></i></button>' +
+        '<h3 class="text-base font-semibold text-gray-900 text-center pr-6">Impor repository GitHub</h3>' +
+        '<p class="text-[13px] sm:text-sm text-gray-500 mt-1 text-center leading-snug px-1">Fitur ini tersedia mulai paket Pro. Paket kamu saat ini: <b>' + current + '</b>.</p>' +
+        '<div class="relative mt-4">' +
+          '<div id="upc-viewport" class="overflow-hidden rounded-2xl" style="touch-action:pan-y;">' +
+            '<div id="upc-track" class="flex transition-transform duration-300 ease-out">' + slides + '</div>' +
+          '</div>' +
+          '<button id="upc-prev" class="absolute left-0 top-1/2 -translate-y-1/2 -ml-2 w-7 h-7 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-600 hover:text-black transition-colors"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>' +
+          '<button id="upc-next" class="absolute right-0 top-1/2 -translate-y-1/2 -mr-2 w-7 h-7 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-600 hover:text-black transition-colors"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>' +
+        '</div>' +
+        '<div class="flex items-center justify-center gap-2 mt-4">' + dots + '</div>' +
+        '</div></div>';
+      document.body.appendChild(css);
+      document.body.appendChild(m);
+      try { lucide.createIcons(); } catch (e) {}
+
+      var track = m.querySelector('#upc-track');
+      var dotsEls = m.querySelectorAll('.upc-dot');
+      var idx = 1;
+      function render() {
+        track.style.transform = 'translateX(-' + (idx * 100) + '%)';
+        dotsEls.forEach(function (d, i) {
+          var on = (i === idx);
+          d.style.width = on ? '18px' : '6px';
+          d.style.background = on ? '' : '#d1d5db';
+          d.classList.toggle('bg-accent', on);
+        });
+      }
+      function go(i) { idx = (i + plans.length) % plans.length; render(); }
+      m.querySelector('#upc-prev').addEventListener('click', function () { go(idx - 1); });
+      m.querySelector('#upc-next').addEventListener('click', function () { go(idx + 1); });
+      dotsEls.forEach(function (d) { d.addEventListener('click', function () { go(parseInt(d.dataset.i, 10)); }); });
+
+      var vp = m.querySelector('#upc-viewport'), sx = null, dx = 0;
+      vp.addEventListener('touchstart', function (e) { sx = e.touches[0].clientX; dx = 0; track.style.transition = 'none'; }, { passive: true });
+      vp.addEventListener('touchmove', function (e) {
+        if (sx === null) return;
+        dx = e.touches[0].clientX - sx;
+        var w = vp.offsetWidth;
+        var lo = -(w * (plans.length - 1)) - 30;
+        var trackX = Math.min(Math.max(-(idx * w) + dx, lo), 30);
+        track.style.transform = 'translateX(' + trackX + 'px)';
+      }, { passive: true });
+      vp.addEventListener('touchend', function () {
+        track.style.transition = '';
+        if (Math.abs(dx) > 40) go(dx < 0 ? idx + 1 : idx - 1); else render();
+        sx = null;
+      });
+
+      m.querySelector('#upgrade-plans-x').addEventListener('click', function () { m.remove(); });
+      m.firstElementChild.addEventListener('click', function (e) { if (e.target === m.firstElementChild) m.remove(); });
+      render();
+    }
+
+
+    function handleImportFiles(e) {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      Array.from(files).forEach(file => importSingleFile(file, currentFolderPath));
+      e.target.value = '';
+    }
+
+    function importSingleFile(file, targetPath) {
+      if (!projectFilesData[targetPath]) projectFilesData[targetPath] = [];
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const content = event.target.result;
+        let sizeStr = '0,00 B';
+        if (file.size > 1024 * 1024) sizeStr = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+        else if (file.size > 1024) sizeStr = (file.size / 1024).toFixed(1) + ' KB';
+        else if (file.size > 0) sizeStr = file.size + ' B';
+
+        const filePath = targetPath === 'root' ? file.name : targetPath + '/' + file.name;
+        const existingIndex = projectFilesData[targetPath].findIndex(i => i.name === file.name && i.type === 'file');
+        
+        if (existingIndex !== -1) {
+          projectFilesData[targetPath][existingIndex].content = content;
+          projectFilesData[targetPath][existingIndex].size = sizeStr;
+        } else {
+          projectFilesData[targetPath].push({ type: 'file', name: file.name, size: sizeStr, path: filePath, content: content });
+        }
+        saveData();
+        if (targetPath === currentFolderPath || targetPath.startsWith(currentFolderPath)) renderFileList();
+      };
+      const type = getFileType(file.name);
+      if (type === 'code') reader.readAsText(file);
+      else reader.readAsDataURL(file);
+    }
+
+    async function handleImportZip(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (typeof JSZip === 'undefined') return;
+      try {
+        const zip = await JSZip.loadAsync(file);
+        let folderName = file.name.replace('.zip', '');
+        let basePath = currentFolderPath === 'root' ? folderName : currentFolderPath + '/' + folderName;
+        
+        if (!projectFilesData[currentFolderPath]) projectFilesData[currentFolderPath] = [];
+        
+        let counter = 1;
+        let finalFolderName = folderName;
+        while(projectFilesData[currentFolderPath].find(i => i.type === 'folder' && i.name === finalFolderName)) {
+          finalFolderName = folderName + '_' + counter;
+          counter++;
+        }
+        folderName = finalFolderName;
+        basePath = currentFolderPath === 'root' ? folderName : currentFolderPath + '/' + folderName;
+
+        projectFilesData[currentFolderPath].push({ type: 'folder', name: folderName, path: basePath, fileCount: 0, previewText: 'Folder' });
+        
+        for (let relativePath of Object.keys(zip.files)) {
+          const zipEntry = zip.files[relativePath];
+          const pathParts = relativePath.split('/').filter(p => p);
+          
+          if (pathParts.length === 0) continue;
+          
+          let currentIterPath = basePath;
+          
+          for (let i = 0; i < pathParts.length - 1; i++) {
+            const part = pathParts[i];
+            if (!projectFilesData[currentIterPath]) projectFilesData[currentIterPath] = [];
+            const newPath = currentIterPath + '/' + part;
+            if (!projectFilesData[currentIterPath].find(item => item.type === 'folder' && item.name === part)) {
+               projectFilesData[currentIterPath].push({ type: 'folder', name: part, path: newPath, fileCount: 0, previewText: 'Folder' });
+            }
+            currentIterPath = newPath;
+          }
+          
+          if (!zipEntry.dir) {
+             const fileName = pathParts[pathParts.length - 1];
+             const ext = getFileExtension(fileName);
+             const type = getFileType(fileName);
+             
+             let fileContent, sizeStr;
+             if (type === 'code') {
+               fileContent = await zipEntry.async("string");
+               const bytes = new Blob([fileContent]).size;
+               sizeStr = formatBytes(bytes);
+             } else {
+               const base64 = await zipEntry.async("base64");
+               const mimeType = getMimeType(ext);
+               fileContent = `data:${mimeType};base64,${base64}`;
+               const bytes = atob(base64).length;
+               sizeStr = formatBytes(bytes);
+             }
+             
+             if (!projectFilesData[currentIterPath]) projectFilesData[currentIterPath] = [];
+             const filePath = currentIterPath + '/' + fileName;
+             projectFilesData[currentIterPath].push({ type: 'file', name: fileName, size: sizeStr, path: filePath, content: fileContent });
+          } else {
+             const dirName = pathParts[pathParts.length - 1];
+             if (!projectFilesData[currentIterPath]) projectFilesData[currentIterPath] = [];
+             const newPath = currentIterPath + '/' + dirName;
+             if (!projectFilesData[currentIterPath].find(item => item.type === 'folder' && item.name === dirName)) {
+                projectFilesData[currentIterPath].push({ type: 'folder', name: dirName, path: newPath, fileCount: 0, previewText: 'Folder' });
+             }
+          }
+        }
+        saveData();
+        renderFileList();
+      } catch (err) {}
+      e.target.value = '';
+    }
+
+    function formatBytes(bytes) {
+       if (bytes > 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+       if (bytes > 1024) return (bytes / 1024).toFixed(1) + ' KB';
+       return bytes + ' B';
+    }
+
+    function getMimeType(ext) {
+       const mimeTypes = {
+          'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'gif': 'image/gif', 'svg': 'image/svg+xml',
+          'webp': 'image/webp', 'bmp': 'image/bmp', 'ico': 'image/x-icon',
+          'mp3': 'audio/mpeg', 'wav': 'audio/wav', 'ogg': 'audio/ogg', 'flac': 'audio/flac', 'm4a': 'audio/mp4', 'aac': 'audio/aac',
+          'mp4': 'video/mp4', 'webm': 'video/webm', 'mov': 'video/quicktime', 'avi': 'video/x-msvideo', 'mkv': 'video/x-matroska',
+          'pdf': 'application/pdf'
+       };
+       return mimeTypes[ext] || 'application/octet-stream';
+    }
+
+    function triggerDownload() {
+      const menu = document.getElementById('item-action-menu');
+      if (menu) menu.classList.add('hidden');
+      const item = (projectFilesData[currentFolderPath] || []).find(i => i.name === activeItemName);
+      if(!item || item.type !== 'file') return;
+      const a = document.createElement('a');
+      if (item.content.startsWith('http') || item.content.startsWith('data:') || item.content.startsWith('blob:')) {
+        a.href = item.content;
+      } else {
+        const blob = new Blob([item.content], { type: 'text/plain' });
+        a.href = URL.createObjectURL(blob);
+      }
+      a.download = item.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    async function triggerZip() {
+      const menu = document.getElementById('item-action-menu');
+      if (menu) menu.classList.add('hidden');
+      const item = (projectFilesData[currentFolderPath] || []).find(i => i.name === activeItemName);
+      if(!item || typeof JSZip === 'undefined') return;
+
+      const zip = new JSZip();
+      if (item.type === 'file') {
+        let contentData = item.content;
+        if (contentData.startsWith('http') || contentData.startsWith('blob:') || contentData.startsWith('data:')) {
+          try { const response = await fetch(contentData); contentData = await response.blob(); } catch (e) {}
+        }
+        zip.file(item.name, contentData);
+      } else if (item.type === 'folder') {
+        await addFolderToZipAsync(zip.folder(item.name), item.path);
+      }
+
+      zip.generateAsync({type:"blob"}).then(function(content) {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(content);
+        a.download = item.name + '.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      });
+    }
+
+    async function addFolderToZipAsync(zipFolder, folderPath) {
+      const items = projectFilesData[folderPath] || [];
+      for (let child of items) {
+        if (child.type === 'file') {
+          let contentData = child.content;
+          if (contentData.startsWith('http') || contentData.startsWith('blob:') || contentData.startsWith('data:')) {
+            try { const response = await fetch(contentData); contentData = await response.blob(); } catch(e){}
+          }
+          zipFolder.file(child.name, contentData);
+        } else if (child.type === 'folder') {
+          await addFolderToZipAsync(zipFolder.folder(child.name), child.path);
+        }
+      }
+    }
+
+    // Buka editor kode lengkap (Clincoo-Editor) — berkas proyek ini tersinkron dua arah
+    // via localStorage 'clinqoo_workspace_files_<id>' + cloud D1 (push/pull).
+    function openFullEditor(e) {
+      if (e) e.preventDefault();
+      var pid = ''; try { pid = localStorage.getItem('clinqoo_current_project_id') || ''; } catch (err) {}
+      if (!pid) { try { addNotification('Editor', 'Buka proyek dulu untuk mengakses editor.'); } catch (err) {} return; }
+      // Editor = fitur paket Pro. Keputusan instan dari state/cache (tanpa menunggu server) —
+      // revalidasi dilakukan di belakang supaya keputusan klik berikutnya tetap segar.
+      if (window.clinqooEditorPlan === 'Starter') {
+        if (typeof window.clinqooOpenPlansPopup === 'function') { window.clinqooOpenPlansPopup(); return; }
+        clinqooLaunchEditor(pid); return;
+      }
+      if (window.clinqooEditorPlan) { clinqooLaunchEditor(pid); return; }
+      var _cSub = clinqooReadSubCache();
+      if (_cSub && _cSub.plan) {
+        window.clinqooEditorPlan = _cSub.plan;
+        clinqooShowCrowns(_cSub.plan === 'Starter');
+        if (_cSub.plan === 'Starter' && typeof window.clinqooOpenPlansPopup === 'function') { window.clinqooOpenPlansPopup(); return; }
+        clinqooLaunchEditor(pid);
+        clinqooRevalidatePlan();
+        return;
+      }
+      // Plan belum diketahui — cek server, tapi jangan menggantung klik:
+      // timeout 2.5s; bila server lambat/gagal, buka editor dulu (fail-open, paywall tetap berlaku saat normal).
+      (async function () {
+        var _d = null;
+        try {
+          var _t = clinqooAuthToken();
+          var _res = await fetch(clinqooApiBase() + '/api/subscription', { cache: 'no-store', headers: _t ? { Authorization: 'Bearer ' + _t } : {} });
+          if (_res.ok) _d = await _res.json();
+        } catch (_e) {}
+        if (_d && _d.plan) {
+          window.clinqooEditorPlan = _d.plan;
+          try { localStorage.setItem('TM_SUB_CACHE_KEY', JSON.stringify({ plan: _d.plan, billingCycle: _d.billingCycle || 'Bulanan', ts: Date.now() })); } catch (_e) {}
+          clinqooShowCrowns(_d.plan === 'Starter');
+          if (_d.plan !== 'Starter') { clinqooLaunchEditor(pid); return; }
+          if (typeof window.clinqooOpenPlansPopup === 'function') { window.clinqooOpenPlansPopup(); return; }
+        }
+        clinqooLaunchEditor(pid);
+      })();
+    }
+
+    // Revalidasi paket di belakang (tidak memblokir klik) — menyegarkan cache & ikon crown.
+    function clinqooRevalidatePlan() {
+      (async function () {
+        try {
+          var _t = clinqooAuthToken();
+          var _res = await fetch(clinqooApiBase() + '/api/subscription', { cache: 'no-store', headers: _t ? { Authorization: 'Bearer ' + _t } : {} });
+          if (!_res.ok) return;
+          var _d = await _res.json();
+          if (_d && _d.plan) {
+            window.clinqooEditorPlan = _d.plan;
+            try { localStorage.setItem('TM_SUB_CACHE_KEY', JSON.stringify({ plan: _d.plan, billingCycle: _d.billingCycle || 'Bulanan', ts: Date.now() })); } catch (_e) {}
+            clinqooShowCrowns(_d.plan === 'Starter');
+          }
+        } catch (_e) {}
+      })();
+    }
+
+// Sidebar Editor -> editor asli Clincoo (dengan gating paket Pro seperti semula)
+(function () {
+  var el = document.getElementById('sidebar-editor-link');
+  if (el) el.addEventListener('click', openFullEditor);
+})();
+
+function clinqooLaunchEditor(pid) {
+      var name = 'Proyek';
+      try {
+        var ps = JSON.parse(localStorage.getItem('clinqoo_projects') || '[]');
+        var p = ps.find(function (x) { return x && x.id === pid; });
+        if (p && p.name) name = p.name; else if (p && p.aiName) name = p.aiName;
+      } catch (err) {}
+      var w = window.open('/proyek/workspace/editor/?id=' + encodeURIComponent(pid) + '&name=' + encodeURIComponent(name), '_blank');
+      // Popup diblokir browser (umum setelah async): fallback buka di tab yang sama, jangan diam saja.
+      if (!w) { window.location.href = '/proyek/workspace/editor/?id=' + encodeURIComponent(pid) + '&name=' + encodeURIComponent(name); return; }
+      // Kirim berkas proyek + token ke editor lewat postMessage (mendukung domain berbeda).
+      var sendInit = function () {
+        var files = null;
+        try { files = JSON.parse(localStorage.getItem('clinqoo_workspace_files_' + pid) || 'null'); } catch (err) {}
+        if (!files) { try { files = JSON.parse(localStorage.getItem('clinqoo_workspace_files') || 'null'); } catch (err) {} }
+        var token = ''; try { token = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (err) {}
+        try {
+          w.postMessage({ type: 'clinqoo-editor-init', pid: pid, name: name, token: token, files: files }, '*');
+        } catch (err) {}
+      };
+      var tries = 0;
+      var tmr = setInterval(function () {
+        tries++;
+        if (tries > 20 || w.closed) { clearInterval(tmr); return; }
+        sendInit();
+      }, 500);
+      var ack = function (ev) {
+        if (ev && ev.data && ev.data.type === 'clinqoo-editor-ack') {
+          clearInterval(tmr);
+          window.removeEventListener('message', ack);
+        }
+      };
+      window.addEventListener('message', ack);
+      try { addNotification('Editor', 'Editor lengkap dibuka — berkas tersinkron dengan proyek ini.'); } catch (err) {}
+    }
+
+    function openFileInEditor(filename) {
+      // Editor sederhana terpisah: satu halaman ringan khusus lihat/sunting kode
+      // (beda dari editor workspace penuh dan editor luar /editor/).
+      window.location.href = '../workspace/kode/?id=' + encodeURIComponent(wsProjectId()) +
+        '&folder=' + encodeURIComponent(currentFolderPath) + '&file=' + encodeURIComponent(filename) +
+        ((/[?&]embed=1(&|$)/.test(location.search)) ? '&embed=1' : ''); // dalam split view chat: kode page harus tahu ia di-embed
+    }
+    // Initialize application
+    // Boot secepat mungkin: jangan nunggu semua resource CDN (window.onload) —
+    // DOM sudah ter-parse karena script ini di akhir <body>.
+    (function wsBoot() {
+      loadWorkspaceFiles();
+      wsCloudPull();
+      showWorkspace();
+      renderNotifications();
+      // Ikon lucide dimuat defer — begitu siap, render ulang ikon yang belum tergambar.
+      if (window.lucide) { try { lucide.createIcons(); } catch (e) {} }
+      else { window.addEventListener('load', function () { try { lucide.createIcons(); } catch (e) {} }); }
+
+      // Handle GitHub OAuth redirect callback (?code=...)
+      const urlParams = new URLSearchParams(window.location.search);
+      const oauthCode = urlParams.get('code');
+      if (oauthCode) {
+        handleGitHubOAuthCallback(oauthCode);
+      }
+    })();
+
+  </script>
+<script>
+(function(){
+  var seg=window.location.pathname.split('/').filter(Boolean);var path=(seg.pop()||'').replace(/\.html$/,'');
+  var links=document.querySelectorAll('.sidebar-nav-link');
+  links.forEach(function(link){
+    var href=link.getAttribute('href')||'';var hrefSeg=(href.split('?')[0].split('/').filter(Boolean).pop()||'').replace(/\.html$/,'');
+    if(hrefSeg===path){
+      link.classList.add('bg-gray-50','text-gray-900');
+      link.classList.remove('hover:bg-gray-50','text-gray-700');
+      var icon=link.querySelector('i');
+      if(icon){
+        icon.className=icon.className.replace('ph ph-','ph-fill ph-');
+        icon.classList.remove('text-gray-500');
+        icon.classList.add('text-gray-900');
+      }
+      var svg=link.querySelector('svg');
+      if(svg){
+        svg.classList.remove('text-gray-500');
+        svg.classList.add('text-gray-900');
+      }
+    }
+  });
+})();
+</script>
+<script>
+(function(){
+  var seg=window.location.pathname.split('/').filter(Boolean);var path=(seg.pop()||'').replace(/\.html$/,'');
+  var links=document.querySelectorAll('.sidebar-nav-link');
+  links.forEach(function(link){
+    var href=link.getAttribute('href')||'';var hrefSeg=(href.split('?')[0].split('/').filter(Boolean).pop()||'').replace(/\.html$/,'');
+    if(hrefSeg===path){
+      link.classList.add('bg-gray-50','text-gray-900');
+      link.classList.remove('hover:bg-gray-50','text-gray-700');
+      var icon=link.querySelector('i');
+      if(icon){
+        icon.className=icon.className.replace('ph ph-','ph-fill ph-');
+        icon.classList.remove('text-gray-500');
+        icon.classList.add('text-gray-900');
+      }
+      var svg=link.querySelector('svg');
+      if(svg){
+        svg.classList.remove('text-gray-500');
+        svg.classList.add('text-gray-900');
+      }
+    }
+  });
+})();
+</script>
+
+<script>
+(function () {
+  function clinqooApiBase() { return (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : ''; }
+  function clinqooAuthToken() {
+    try { return localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) { return ''; }
+  }
+  window.clinqooEditorPlan = null;
+  function clinqooShowCrowns(show) {
+    document.querySelectorAll('.clinqoo-editor-crown').forEach(function (c) { c.style.display = show ? '' : 'none'; });
+  }
+  function clinqooReadSubCache() {
+    try { return JSON.parse(localStorage.getItem('TM_SUB_CACHE_KEY') || 'null'); } catch (e) { return null; }
+  }
+  async function clinqooRefreshEditorCrown() {
+    var cached = clinqooReadSubCache();
+    if (cached && cached.plan) {
+      window.clinqooEditorPlan = cached.plan;
+      clinqooShowCrowns(cached.plan === 'Starter');
+    }
+    try {
+      var t = clinqooAuthToken();
+      var res = await fetch(clinqooApiBase() + '/api/subscription', { cache: 'no-store', headers: t ? { Authorization: 'Bearer ' + t } : {} });
+      if (res.ok) {
+        var d = await res.json();
+        if (d && d.plan) {
+          window.clinqooEditorPlan = d.plan;
+          try { localStorage.setItem('TM_SUB_CACHE_KEY', JSON.stringify({ plan: d.plan, billingCycle: d.billingCycle || 'Bulanan', ts: Date.now() })); } catch (e) {}
+          clinqooShowCrowns(d.plan === 'Starter');
+        }
+      }
+    } catch (e) {}
+    if (!window.clinqooEditorPlan) clinqooShowCrowns(true); // paket tak diketahui (mis. API gagal): fail-open
+  }
+  window.clinqooOpenPlansPopup = async function () {
+    if (window.clinqooEditorPlan && window.clinqooEditorPlan !== 'Starter') return;
+    var current = 'Starter', billing = 'Bulanan';
+    var cached = clinqooReadSubCache();
+    if (cached && cached.plan) { current = cached.plan; billing = cached.billingCycle || 'Bulanan'; }
+    clinqooShowPlansModal(current, billing);
+    try {
+      var res = await fetch(clinqooApiBase() + '/api/subscription', { cache: 'no-store', headers: clinqooAuthToken() ? { Authorization: 'Bearer ' + clinqooAuthToken() } : {} });
+      if (res.ok) {
+        var d = await res.json();
+        if (d && d.plan) {
+          window.clinqooEditorPlan = d.plan;
+          try { localStorage.setItem('TM_SUB_CACHE_KEY', JSON.stringify({ plan: d.plan, billingCycle: d.billingCycle || 'Bulanan', ts: Date.now() })); } catch (e) {}
+          clinqooShowCrowns(d.plan === 'Starter');
+          if (d.plan !== 'Starter') {
+            var mp = document.getElementById('upgrade-plans-modal');
+            if (mp) { mp.remove(); var cs0 = document.getElementById('upgrade-plans-css'); if (cs0) cs0.remove(); }
+          } else if (d.plan !== current) {
+            var badge = document.getElementById('upgrade-plans-modal');
+            if (badge) { badge.remove(); var cs1 = document.getElementById('upgrade-plans-css'); if (cs1) cs1.remove(); clinqooShowPlansModal(d.plan, d.billingCycle || 'Bulanan'); }
+          }
+        }
+      }
+    } catch (e) {}
+  };
+
+  function clinqooShowPlansModal(current, billing) {
+    if (document.getElementById('upgrade-plans-modal')) return;
+    var m = document.createElement('div');
+    m.id = 'upgrade-plans-modal';
+    var base = (location.pathname.indexOf('/Clincoo') !== -1) ? '/Clincoo.' : '';
+    var checkoutUrl = function (name, cyc) {
+      return base + '/akun/langganan/upgrade/konfirmasi/?plan=' + encodeURIComponent(name) + '&billing=' + encodeURIComponent(cyc || billing);
+    };
+    var plans = [
+      { name: 'Starter', tagline: 'Untuk individu yang baru memulai.', price: 'Gratis', per: '', hot: false,
+        items: [
+          ['Hingga 3 proyek aktif + editor kode', true], ['1 kolaborator per proyek', true], ['Chat AI di setiap proyek (50 pesan/bulan) + pencarian web', true],
+          ['Kelola 1 domain: verifikasi, DNS & SSL', true], ['3 template proyek siap pakai', true], ['Tugas terjadwal & notifikasi', true], ['Deploy web 5x per bulan', true],
+          ['Editor full-stack & integrasi GitHub', false], ['Domain tanpa batas & deploy tanpa batas', false]
+        ] },
+      { name: 'Pro', tagline: 'Untuk profesional dan kreator aktif.', price: '49K', per: '/bln', hot: true,
+        items: [
+          ['Hingga 10 proyek aktif & 5 kolaborator per proyek', true],
+          ['Semua fitur Starter', true], ['Editor kode full-stack: bangun & publikasikan dari browser', true], ['Domain tanpa batas: verifikasi, DNS & SSL', true], ['Deploy web hingga 25x per bulan ke domain sendiri', true],
+          ['Integrasi GitHub: impor repo, AI kerja langsung di repo kamu', true]
+        ] },
+      { name: 'Bisnis', tagline: 'Untuk tim dan operasi skala besar.', price: '129K', per: '/bln', hot: false,
+        items: [
+          ['Semua fitur Pro', true], ['Hingga 50 proyek aktif & 20 kolaborator per proyek', true],
+          ['Kontrol akses & keamanan proyek lanjutan', true], ['Deploy web tanpa batas', true]
+        ] }
+    ];
+    var card = function (p) {
+      var isCurrent = (p.name === current);
+      var list = p.items.map(function (it) {
+        return '<li class="flex items-start gap-2.5 text-[13px] ' + (p.hot ? 'text-gray-900 font-medium' : (it[1] ? 'text-gray-700' : 'text-gray-400 opacity-70')) + '">' +
+          (it[1]
+            ? '<svg class="w-4 h-4 shrink-0 ' + (p.hot ? 'text-accent' : 'text-gray-900') + '" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5"></path></svg>'
+            : '<svg class="w-4 h-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"></path></svg>') +
+          '<span>' + it[0] + '</span></li>';
+      }).join('');
+      var btn;
+      if (isCurrent) {
+        btn = '<div class="w-full py-3 bg-gray-50 text-gray-500 border border-gray-200 rounded-xl font-semibold text-sm text-center cursor-not-allowed">Paket Saat Ini</div>';
+      } else if (p.hot) {
+        btn = '<a href="' + checkoutUrl(p.name, billing) + '" class="block w-full py-3 bg-accent rounded-xl font-semibold text-sm text-center transition-all shadow-md active:scale-95">Upgrade ke ' + p.name + '</a>';
+      } else {
+        btn = '<a href="' + checkoutUrl(p.name, billing) + '" class="block w-full py-3 bg-white text-gray-900 border-2 border-gray-200 hover:border-gray-900 hover:bg-gray-50 rounded-xl font-semibold text-sm text-center transition-all">Mulai ' + p.name + '</a>';
+      }
+      return '<div class="w-full shrink-0 px-0.5"><div class="bg-white border ' + (p.hot ? 'border-2 border-accent shadow-xl' : 'border-gray-200') + ' rounded-3xl p-4 sm:p-5 flex flex-col relative text-left">' +
+        (p.hot ? '<div class="absolute top-0 right-0 bg-accent text-[10px] font-bold px-3.5 py-1 rounded-bl-xl rounded-tr-2xl uppercase tracking-wider">Paling Populer</div>' : '') +
+        '<div class="mb-4 ' + (p.hot ? 'mt-2' : '') + '"><h3 class="text-lg font-bold text-gray-900 ' + (p.hot ? 'text-accent' : '') + '">' + p.name + '</h3>' +
+        '<p class="text-xs text-gray-500 mt-0.5">' + p.tagline + '</p></div>' +
+        '<div class="mb-4 flex items-baseline"><span class="text-2xl font-extrabold tracking-tight text-gray-900">' + p.price + '</span><span class="text-xs font-medium text-gray-500 ml-1">' + p.per + '</span></div>' +
+        '<ul class="flex flex-col gap-2.5 mb-4 flex-1">' + list + '</ul>' + btn + '</div></div>';
+    };
+    var slides = plans.map(card).join('');
+    var dots = plans.map(function (p, i) {
+      return '<button class="upc-dot rounded-full transition-all duration-200" data-i="' + i + '" style="width:6px;height:6px;background:#d1d5db;"></button>';
+    }).join('');
+    var css = document.createElement('style');
+    css.id = 'upgrade-plans-css';
+    css.textContent =
+      '#upgrade-plans-modal .text-accent{color:var(--accent-color,#000000);} ' +
+      '#upgrade-plans-modal .bg-accent{background-color:var(--accent-color,#000000);color:#ffffff;} ' +
+      '#upgrade-plans-modal .border-accent{border-color:var(--accent-color,#000000);} ' +
+      'body.dark-mode #upgrade-plans-modal .text-accent{color:#ffffff !important;} ' +
+      'body.dark-mode #upgrade-plans-modal .bg-accent{background-color:#ffffff !important;color:#000000 !important;} ' +
+      'body.dark-mode #upgrade-plans-modal .border-accent{border-color:#ffffff !important;}';
+    m.innerHTML =
+      '<div class="fixed inset-0 z-[95] overflow-y-auto p-3 sm:p-4" style="background:rgba(0,0,0,0.45)">' +
+      '<div class="min-h-full flex items-center justify-center">' +
+      '<div class="bg-white rounded-2xl w-full max-w-sm relative px-4 sm:px-5 pt-9 pb-4 my-2">' +
+      '<button id="upgrade-plans-x" class="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-black flex items-center justify-center transition-colors z-10" aria-label="Tutup"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6 6 18M6 6l12 12"></path></svg></button>' +
+      '<h3 class="text-base font-semibold text-gray-900 text-center pr-6">Paket Clincoo</h3>' +
+      '<p class="text-[13px] sm:text-sm text-gray-500 mt-1 text-center leading-snug px-1">Fitur Editor & impor GitHub tersedia mulai paket Pro. Paket kamu saat ini: <b>' + current + '</b>.</p>' +
+      '<div class="relative mt-4">' +
+        '<div id="upc-viewport" class="overflow-hidden rounded-2xl" style="touch-action:pan-y;">' +
+          '<div id="upc-track" class="flex transition-transform duration-300 ease-out">' + slides + '</div>' +
+        '</div>' +
+        '<button id="upc-prev" class="absolute left-0 top-1/2 -translate-y-1/2 -ml-2 w-7 h-7 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-600 hover:text-black transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6"></path></svg></button>' +
+        '<button id="upc-next" class="absolute right-0 top-1/2 -translate-y-1/2 -mr-2 w-7 h-7 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-600 hover:text-black transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"></path></svg></button>' +
+      '</div>' +
+      '<div class="flex items-center justify-center gap-2 mt-4">' + dots + '</div>' +
+      '</div></div>';
+    document.body.appendChild(css);
+    document.body.appendChild(m);
+    var track = m.querySelector('#upc-track');
+    var dotsEls = m.querySelectorAll('.upc-dot');
+    var idx = 1;
+    function render() {
+      track.style.transform = 'translateX(-' + (idx * 100) + '%)';
+      dotsEls.forEach(function (d, i) {
+        var on = (i === idx);
+        d.style.width = on ? '18px' : '6px';
+        d.style.background = on ? '' : '#d1d5db';
+        d.classList.toggle('bg-accent', on);
+      });
+    }
+    function go(i) { idx = (i + plans.length) % plans.length; render(); }
+    m.querySelector('#upc-prev').addEventListener('click', function () { go(idx - 1); });
+    m.querySelector('#upc-next').addEventListener('click', function () { go(idx + 1); });
+    dotsEls.forEach(function (d) { d.addEventListener('click', function () { go(parseInt(d.dataset.i, 10)); }); });
+    var vp = m.querySelector('#upc-viewport'), sx = null, dx = 0;
+    vp.addEventListener('touchstart', function (e) { sx = e.touches[0].clientX; dx = 0; track.style.transition = 'none'; }, { passive: true });
+    vp.addEventListener('touchmove', function (e) {
+      if (sx === null) return;
+      dx = e.touches[0].clientX - sx;
+      var w = vp.offsetWidth;
+      var lo = -(w * (plans.length - 1)) - 30;
+      var trackX = Math.min(Math.max(-(idx * w) + dx, lo), 30);
+      track.style.transform = 'translateX(' + trackX + 'px)';
+    }, { passive: true });
+    vp.addEventListener('touchend', function () {
+      track.style.transition = '';
+      if (Math.abs(dx) > 40) go(dx < 0 ? idx + 1 : idx - 1); else render();
+      sx = null;
+    });
+    m.querySelector('#upgrade-plans-x').addEventListener('click', function () { m.remove(); var cs = document.getElementById('upgrade-plans-css'); if (cs) cs.remove(); });
+    m.firstElementChild.addEventListener('click', function (e) { if (e.target === m.firstElementChild) m.remove(); });
+    render();
+  }
+  clinqooRefreshEditorCrown();
+  window.addEventListener('storage', function (ev) { if (ev.key === 'TM_SUB_CACHE_KEY') clinqooRefreshEditorCrown(); });
+})();
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
+    <script>
+        var chatNav = document.getElementById('chat-top-nav');
+        var chatNavPill = document.getElementById('chat-nav-pill');
+        var chatNavLinks = Array.prototype.slice.call(chatNav.querySelectorAll('.chat-nav-link'));
+        var chatNavActive = chatNavLinks.filter(function(l) { return l.dataset.nav === 'code'; })[0] || chatNavLinks[0];
+        if (chatNavActive) chatNavActive.classList.add('is-active');
+        function chatNavMovePill(el) {
+            if (!el) return;
+            chatNavPill.style.top = el.offsetTop + 'px';
+            chatNavPill.style.left = el.offsetLeft + 'px';
+            chatNavPill.style.width = el.offsetWidth + 'px';
+            chatNavPill.style.height = el.offsetHeight + 'px';
+        }
+        chatNavPill.style.transition = 'none';
+        chatNavMovePill(chatNavActive);
+        requestAnimationFrame(function() { requestAnimationFrame(function() { chatNavPill.style.transition = 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)'; }); });
+        chatNavLinks.forEach(function(l) {
+            l.addEventListener('mouseenter', function() { chatNavMovePill(l); });
+            l.addEventListener('click', function() { chatNavLinks.forEach(function(x) { x.classList.remove('is-active'); }); l.classList.add('is-active'); chatNavMovePill(l); });
+        });
+        chatNav.addEventListener('mouseleave', function() { chatNavMovePill(chatNavActive); });
+        window.addEventListener('resize', function() { chatNavMovePill(chatNavActive); });
+        document.getElementById('sidebar-toggle').addEventListener('click', function() { window.location.href = '/'; });
+        var headerMoreBtn = document.getElementById('header-more-btn');
+        var headerMoreMenu = document.getElementById('header-more-menu');
+        function closeHeaderMenu() { headerMoreMenu.classList.remove('open'); }
+        window.toggleHeaderMenu = function(e) {
+            e.stopPropagation();
+            headerMoreMenu.classList.contains('open') ? closeHeaderMenu() : headerMoreMenu.classList.add('open');
+        }
+        document.addEventListener('click', function(e) {
+            if (headerMoreMenu.classList.contains('open') && !headerMoreMenu.contains(e.target) && e.target !== headerMoreBtn) closeHeaderMenu();
+        });
+        window.chatExportZip = function () {
+    closeHeaderMenu();
+    var pid = ''; try { pid = localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) {}
+    var key = 'clinqoo_workspace_files_' + (pid || 'global');
+    var byPath = {};
+    var raw = null;
+    try { raw = localStorage.getItem(key); } catch (e) {}
+    if (!raw) { try { var legacy = localStorage.getItem('clinqoo_workspace_files'); if (legacy) { localStorage.setItem(key, legacy); raw = legacy; } } catch (e) {} }
+    try {
+        var d = JSON.parse(raw) || {};
+        Object.keys(d).forEach(function (k) {
+            (d[k] || []).forEach(function (it) {
+                if (it && it.path && it.type === 'file') byPath[it.path] = it.content || '';
+            });
+        });
+    } catch (e) {}
+    var WS_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-files';
+    var tk = ''; try { tk = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+    var headers = tk ? { Authorization: 'Bearer ' + tk } : {};
+    var filesFromMap = function () {
+        return Object.keys(byPath).sort().map(function (p) { return { path: p, content: byPath[p] }; });
+    };
+    var finish = function (files) {
+        if (!files.length) { alert('Tidak ada berkas di Workspace untuk dieksport.'); return; }
+        var run = function () {
+            var zip = new window.JSZip();
+            files.forEach(function (f) { zip.file(f.path, f.content || ''); });
+            zip.generateAsync({ type: 'blob' }).then(function (blob) {
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = (pid || 'clincoo') + '.zip';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(function () { URL.revokeObjectURL(a.href); }, 500);
+            });
+        };
+        if (window.JSZip) { run(); return; }
+        var sc = document.createElement('script');
+        sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        sc.onload = run;
+        document.head.appendChild(sc);
+    };
+    if (!pid) { finish(filesFromMap()); return; }
+    // Gabungkan file cloud (D1) supaya SEMUA berkas Workspace ikut terekspor.
+    fetch(WS_API + '?project_id=' + encodeURIComponent(pid), { headers: headers })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function (resp) {
+            ((resp && resp.files) || []).forEach(function (f) {
+                if (f && f.path && !(f.path in byPath)) byPath[f.path] = f.content || '';
+            });
+            finish(filesFromMap());
+        })
+        .catch(function () { finish(filesFromMap()); });
+};
+
+window.chatLivePreview = function () {
+    closeHeaderMenu();
+    var pid = ''; try { pid = localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) {}
+    if (!pid) { alert('Tidak ada proyek aktif. Buka proyek dari daftar proyek dulu.'); return; }
+    var API = ['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api';
+    var tk = ''; try { tk = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+    var headers = tk ? { Authorization: 'Bearer ' + tk } : {};
+    var btn = document.getElementById('header-live-preview');
+    function setLoading(on) { if (btn) { btn.disabled = on; btn.style.opacity = on ? '0.55' : ''; btn.style.cursor = on ? 'wait' : ''; } }
+    setLoading(true);
+    fetch(API + '/deploy?project_id=' + encodeURIComponent(pid), { headers: headers })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) {
+            var st = res.d || {};
+            if (!res.ok || st.error) throw new Error(st.error || 'Gagal memeriksa status situs.');
+            if (st.last_deployment) {
+                var active = (st.domains || []).filter(function (x) { return x.status === 'active'; })[0];
+                var url = (active ? 'https://' + active.name : '') || st.pages_url;
+                setLoading(false);
+                window.open(url, '_blank');
+                return null;
+            }
+            // Belum pernah dipublikasikan ke Cloudflare: deploy dulu, baru buka URL yang sungguh hidup.
+            return fetch(API + '/deploy', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, headers), body: JSON.stringify({ project_id: pid }) })
+                .then(function (r2) { return r2.json().catch(function () { return {}; }).then(function (d2) { return { ok: r2.ok, d: d2 }; }); })
+                .then(function (res2) {
+                    var d = res2.d || {};
+                    if (!res2.ok || d.error) throw new Error(d.error || 'Gagal mempublikasikan situs ke Cloudflare.');
+                    // DNS cache: hasil deploy langsung siap di halaman Domain Kustom (tanpa buka halaman itu dulu)
+                    try { var _dk = 'clinqoo_' + pid + "_domain_cache", _dc = {}; try { _dc = JSON.parse(localStorage.getItem(_dk) || '{}') || {}; } catch (e) {} localStorage.setItem(_dk, JSON.stringify(Object.assign(_dc, { pagesUrl: d.pages_url || '', deployed: true, ts: Date.now() }))); } catch (e) {}
+                    var url = d.public_url || (d.public_domain ? 'https://' + d.public_domain : '') || (d.deployment && d.deployment.url) || d.pages_url || '';
+                    setLoading(false);
+                    if (url) window.open(url, '_blank');
+                    else alert('Situs berhasil dipublikasikan tapi URL pratinjau tidak ditemukan.');
+                });
+        })
+        .catch(function (err) {
+            setLoading(false);
+            alert('Gagal membuka pratinjau: ' + (err && err.message ? err.message : 'periksa koneksi internet lalu coba lagi.'));
+        });
+};
+    </script>
+<script>if(document.documentElement.classList.contains('embed-mode')){document.addEventListener('click',function(e){var t=e.target;var a=t&&t.closest?t.closest('a'):null;if(a&&a.href&&a.target!=='_blank'&&!a.hasAttribute('download')){a.target='_top';}},true);}</script>
+<script>/* clinqoo-premium-sheet: bottom sheet daftar paket untuk fitur premium (crown) */
+(function(){
+  if (window.__clinqooPremiumSheet) return; window.__clinqooPremiumSheet = true;
+  function apiBase(){ return (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname)===-1)?'https://clincoo-be2.pages.dev':''; }
+  function token(){ try{ return localStorage.getItem('clinqoo_auth_token')||localStorage.getItem('clinqoo_token')||''; }catch(e){ return ''; } }
+  function readCache(k){ try{ var c=JSON.parse(localStorage.getItem(k)||'null'); return (c&&c.plan)?c:null; }catch(e){ return null; } }
+  var verifiedPlan=null, promoProActive=false, closeTimer=null, previousOverflow='';
+  var crownSelector='.clinqoo-premium-crown, .clinqoo-editor-crown, #export-crown-label';
+  function cacheSub(){ var a=readCache('TM_SUB_CACHE_KEY'), b=readCache('clinqoo_subscription_cache'); return a&&b?((a.ts||0)>(b.ts||0)?a:b):(a||b); }
+  function currentPlan(){ var c=cacheSub(); return verifiedPlan||(c&&c.plan)||window.clinqooEditorPlan||null; }
+  function isPaid(){ var p=currentPlan(); return !!p && String(p).toLowerCase()!=='starter'; }
+  var crownCss=document.createElement('style');
+  crownCss.textContent='body[data-pps-paid="true"] .clinqoo-premium-crown,body[data-pps-paid="true"] .clinqoo-editor-crown,body[data-pps-paid="true"] #export-crown-label,body[data-pps-paid="true"] #premium-invite-chip,body[data-pps-paid="true"] #gh-connect-crown{display:none!important;}';
+  document.head.appendChild(crownCss);
+  function currentBilling(){ var c=cacheSub(); return (c&&c.billingCycle)||'Bulanan'; }
+  var sheetEl=null, idx=1, featureMinimum='Pro';
+  // ===== Data paket: identik dengan halaman Upgrade (akun/langganan/upgrade) =====
+  var plans=[
+    { name:'Starter', tagline:'Untuk individu yang baru memulai.', price:'Gratis', per:'', hot:false,
+      items:[['Hingga 3 proyek aktif + editor kode',true],['1 kolaborator per proyek',true],['Chat AI di setiap proyek (50 pesan/bulan) + pencarian web',true],['Kelola 1 domain: verifikasi, DNS & SSL',true], ['3 template proyek siap pakai',true],['Tugas terjadwal & notifikasi',true],['Deploy web 5x per bulan',true],['Editor full-stack & integrasi GitHub',false],['Domain tanpa batas & deploy tanpa batas',false]] },
+    { name:'Pro', tagline:'Untuk profesional dan kreator aktif.', price:'49K', per:'/bln', hot:true,
+      items:[['Hingga 10 proyek aktif',true],['Hingga 5 kolaborator per proyek',true],['Semua fitur Starter',true], ['Editor kode full-stack: bangun & publikasikan dari browser',true], ['Domain tanpa batas: verifikasi, DNS & SSL',true],['Chat AI hingga 500 pesan/bulan (maks 50/hari)',true],['Deploy web hingga 25x per bulan ke domain sendiri',true],['Integrasi GitHub: impor repo, AI kerja langsung di repo kamu',true]] },
+    { name:'Bisnis', tagline:'Untuk tim dan operasi skala besar.', price:'129K', per:'/bln', hot:false,
+      items:[['Semua fitur Pro',true],['Chat AI hingga 2.000 pesan/bulan (maks 150/hari)',true],['Hingga 50 proyek aktif',true],['Hingga 20 kolaborator per proyek',true],['Kontrol akses & keamanan proyek lanjutan',true], ['Dilindungi Password & ekspor data penuh akun',true],['Deploy web tanpa batas',true]] }
+  ];
+  function checkoutUrl(name){
+    var base=(location.pathname.indexOf('/Clincoo')!==-1)?'/Clincoo.':'';
+    return base+'/akun/langganan/upgrade/konfirmasi/?plan='+encodeURIComponent(name)+'&billing='+encodeURIComponent(currentBilling());
+  }
+  function cardHtml(p,current){
+    var list=p.items.map(function(it){
+      return '<li class="flex items-start gap-2.5 text-[13px] '+(p.hot?'text-gray-900 font-medium':(it[1]?'text-gray-700':'text-gray-400 opacity-70'))+'">'+
+        (it[1]?'<svg class="w-4 h-4 shrink-0 '+(p.hot?'text-accent':'text-gray-900')+'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5"></path></svg>':'<svg class="w-4 h-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"></path></svg>')+
+        '<span>'+it[0]+'</span></li>';
+    }).join('');
+    var btn;
+    if(p.name.toLowerCase()===String(current).toLowerCase()){ btn='<div class="w-full py-3 bg-gray-50 text-gray-500 border border-gray-200 rounded-xl font-semibold text-sm text-center cursor-not-allowed">Paket Saat Ini</div>'; }
+    else if(p.hot){ btn='<a href="'+checkoutUrl(p.name)+'" class="block w-full py-3 bg-accent rounded-xl font-semibold text-sm text-center transition-all shadow-md active:scale-95">'+(p.name==='Pro'&&promoProActive?'Ambil Promo Pro Rp5.000':'Upgrade ke '+p.name)+'</a>'; }
+    else { btn='<a href="'+checkoutUrl(p.name)+'" class="block w-full py-3 bg-white text-gray-900 border-2 border-gray-200 hover:border-gray-900 hover:bg-gray-50 rounded-xl font-semibold text-sm text-center transition-all">Mulai '+p.name+'</a>'; }
+    return '<div class="w-full shrink-0 px-0.5"><div class="pps-plan-card bg-white border '+(p.hot?'border-2 border-accent shadow-xl':'border-gray-200')+' rounded-3xl p-4 sm:p-5 flex flex-col relative text-left">'+
+      (p.hot?'<div class="absolute top-0 right-0 bg-accent text-[10px] font-bold px-3.5 py-1 rounded-bl-xl rounded-tr-2xl uppercase tracking-wider">Discount</div>':'')+
+      '<div class="mb-4 '+(p.hot?'mt-2':'')+'"><h3 class="text-lg font-bold text-gray-900 '+(p.hot?'text-accent':'')+'">'+p.name+'</h3><p class="text-xs text-gray-500 mt-0.5">'+p.tagline+'</p></div>'+
+      '<div class="mb-4 flex items-baseline gap-2 flex-wrap"><span class="text-2xl font-extrabold tracking-tight text-gray-900">'+(p.name==='Pro'&&promoProActive?'Rp5.000':p.price)+'</span><span class="text-xs font-medium text-gray-500">'+p.per+'</span>'+(p.name==='Pro'&&promoProActive?'<span class="text-sm text-gray-400 line-through">Rp49.000</span>':'')+'</div>'+
+      '<ul class="flex flex-col gap-2.5 mb-4 flex-1">'+list+'</ul>'+btn+'</div></div>';
+  }
+  function buildSheet(){
+    if(sheetEl) return;
+    var current=currentPlan()||'Starter';
+    var slides=plans.map(function(p){ return cardHtml(p,current); }).join('');
+    var dots=plans.map(function(p,i){ return '<button class="pps-dot rounded-full transition-all duration-200" data-i="'+i+'" style="width:6px;height:6px;background:#d1d5db;"></button>'; }).join('');
+    var css=document.createElement('style'); css.id='premium-sheet-css';
+    css.textContent='#premium-plans-sheet .text-accent{color:var(--accent-color,#000000);} #premium-plans-sheet .bg-accent{background-color:var(--accent-color,#000000);color:#ffffff;} #premium-plans-sheet .border-accent{border-color:var(--accent-color,#000000);}'+
+      'body:is(.dark-mode,.dark) #premium-plans-sheet .text-accent{color:#ffffff !important;} body:is(.dark-mode,.dark) #premium-plans-sheet .bg-accent{background-color:#ffffff !important;color:#000000 !important;} body:is(.dark-mode,.dark) #premium-plans-sheet .border-accent{border-color:#ffffff !important;}'+
+      'body:is(.dark-mode,.dark) #premium-plans-sheet .pps-plan-card{background-color:#0a0a0a!important;border-color:#222;} body:is(.dark-mode,.dark) #premium-plans-sheet .text-gray-700{color:#d1d5db;} body:is(.dark-mode,.dark) #premium-plans-sheet .pps-card{background-color:#0a0a0a !important;} body:is(.dark-mode,.dark) #premium-plans-sheet .pps-card h3,body:is(.dark-mode,.dark) #premium-plans-sheet .pps-card .text-gray-900{color:#ffffff !important;}';
+    document.head.appendChild(css);
+    sheetEl=document.createElement('div'); sheetEl.id='premium-plans-sheet'; sheetEl.setAttribute('role','dialog'); sheetEl.setAttribute('aria-modal','true'); sheetEl.setAttribute('aria-label','Paket Clincoo');
+    sheetEl.innerHTML=
+      '<div id="pps-backdrop" class="fixed inset-0 z-[95] opacity-0 transition-opacity duration-300" style="background:rgba(0,0,0,.45)"></div>'+
+      '<div class="fixed bottom-0 left-0 right-0 z-[96] flex justify-center pointer-events-none">'+
+        '<div id="pps-card" class="pps-card pointer-events-auto w-full max-w-md bg-white rounded-t-3xl px-4 pt-3 pb-5 translate-y-full transition-transform duration-300 ease-out shadow-2xl" style="max-height:90dvh;overflow-y:auto;padding-bottom:calc(1.25rem + env(safe-area-inset-bottom,0px));">'+
+          '<div class="flex justify-center"><div class="w-10 h-1.5 rounded-full bg-gray-200 mb-2"></div></div>'+
+          '<div class="flex items-start justify-between px-1">'+
+            '<div class="pr-8"><h3 class="text-base font-semibold text-gray-900">Paket Clincoo</h3>'+
+            '<p id="pps-feature-hint" class="text-[12.5px] text-gray-500 mt-0.5 leading-snug">Fitur ini tersedia mulai paket Pro. Paket kamu saat ini: <b>'+current+'</b>.</p></div>'+
+            '<button id="pps-x" aria-label="Tutup" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-black flex items-center justify-center transition-colors shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6 6 18M6 6l12 12"></path></svg></button>'+
+          '</div>'+
+          '<div class="relative mt-3">'+
+            '<div id="pps-viewport" class="overflow-hidden rounded-2xl" style="touch-action:pan-y;">'+
+              '<div id="pps-track" class="flex transition-transform duration-300 ease-out">'+slides+'</div>'+
+            '</div>'+
+            '<button id="pps-prev" class="absolute left-0 top-1/2 -translate-y-1/2 -ml-2 w-7 h-7 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-600 hover:text-black transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6"></path></svg></button>'+
+            '<button id="pps-next" class="absolute right-0 top-1/2 -translate-y-1/2 -mr-2 w-7 h-7 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-600 hover:text-black transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"></path></svg></button>'+
+          '</div>'+
+          '<div class="flex items-center justify-center gap-2 mt-3.5">'+dots+'</div>'+
+        '</div>'+
+      '</div>';
+    document.body.appendChild(sheetEl);
+    var track=sheetEl.querySelector('#pps-track'), dotsEls=sheetEl.querySelectorAll('.pps-dot');
+    function render(){ track.style.transform='translateX(-'+(idx*100)+'%)'; dotsEls.forEach(function(d,i){ var on=(i===idx); d.style.width=on?'18px':'6px'; d.style.background=on?'':'#d1d5db'; d.classList.toggle('bg-accent',on); }); }
+    function go(i){ idx=(i+plans.length)%plans.length; render(); }
+    sheetEl.querySelector('#pps-prev').addEventListener('click',function(){ go(idx-1); });
+    sheetEl.querySelector('#pps-next').addEventListener('click',function(){ go(idx+1); });
+    dotsEls.forEach(function(d){ d.addEventListener('click',function(){ go(parseInt(d.dataset.i,10)); }); });
+    var vp=sheetEl.querySelector('#pps-viewport'), sx=null, dx=0;
+    vp.addEventListener('touchstart',function(e){ sx=e.touches[0].clientX; dx=0; track.style.transition='none'; },{passive:true});
+    vp.addEventListener('touchmove',function(e){ if(sx===null)return; dx=e.touches[0].clientX-sx; track.style.transform='translateX(calc(-'+(idx*100)+'% + '+dx+'px))'; },{passive:true});
+    vp.addEventListener('touchend',function(){ if(sx===null)return; track.style.transition=''; if(Math.abs(dx)>40){ go(idx+(dx<0?1:-1)); } else { render(); } sx=null; });
+    sheetEl.querySelector('#pps-x').addEventListener('click',closeSheet);
+    sheetEl.querySelector('#pps-backdrop').addEventListener('click',closeSheet);
+    sheetEl.__render=render;
+    render();
+  }
+  async function openSheet(crown){
+    if(isPaid()) return;
+    await refreshSubscription();
+    if(isPaid()||(token()&&!currentPlan())) return;
+    featureMinimum=crown&&crown.id==='export-crown-label'?'Bisnis':'Pro';
+    buildSheet();
+    sheetEl.querySelector('#pps-track').innerHTML=plans.map(function(p){return cardHtml(p,currentPlan()||'Starter');}).join('');
+    sheetEl.querySelector('#pps-feature-hint').textContent='Fitur ini tersedia mulai paket '+featureMinimum+'. '+(currentPlan()?'Paket kamu saat ini: '+currentPlan()+'.':'Pilih paket yang sesuai kebutuhanmu.');
+    idx=featureMinimum==='Bisnis'?2:1; sheetEl.__render();
+    if(closeTimer){clearTimeout(closeTimer);closeTimer=null;}
+    if(sheetEl.style.display==='none'||!sheetEl.__open) previousOverflow=document.body.style.overflow;
+    sheetEl.__open=true; document.body.style.overflow='hidden';
+    var b=sheetEl.querySelector('#pps-backdrop'), c=sheetEl.querySelector('#pps-card');
+    sheetEl.style.display='';
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ b.classList.remove('opacity-0'); c.classList.remove('translate-y-full'); }); });
+  }
+  function closeSheet(){
+    if(!sheetEl||!sheetEl.__open) return;
+    sheetEl.__open=false; document.body.style.overflow=previousOverflow;
+    var b=sheetEl.querySelector('#pps-backdrop'), c=sheetEl.querySelector('#pps-card');
+    b.classList.add('opacity-0'); c.classList.add('translate-y-full');
+    closeTimer=setTimeout(function(){ sheetEl.style.display='none'; closeTimer=null; },300);
+  }
+  function applyCrownState(){
+    var show=!isPaid();
+    document.body.setAttribute('data-pps-paid',show?'false':'true');
+    document.querySelectorAll(crownSelector).forEach(function(c){
+      c.style.display=show?'':'none'; c.style.cursor='pointer';
+      c.setAttribute('role','button'); c.setAttribute('tabindex',show?'0':'-1');
+      c.setAttribute('aria-label','Lihat daftar paket');
+    });
+    if(!show) closeSheet();
+  }
+  async function refreshSubscription(){
+    try{
+      var t=token();
+      var res=await fetch(apiBase()+'/api/subscription?fields=plan',{cache:'no-store',headers:t?{Authorization:'Bearer '+t}:{}});
+      if(res.ok){ var d=await res.json();
+        if(d&&d.plan){ verifiedPlan=d.plan;
+          var cache=JSON.stringify({plan:d.plan,billingCycle:d.billingCycle||'Bulanan',ts:Date.now()});
+          try{localStorage.setItem('TM_SUB_CACHE_KEY',cache);localStorage.setItem('clinqoo_subscription_cache',cache);}catch(e){}
+          applyCrownState();
+        }
+      }
+    }catch(e){}
+  }
+  // Capture hanya mahkota: cegah handler modal lama atau navigasi induknya.
+  function crownAction(e){
+    var c=e.target&&e.target.closest?e.target.closest(crownSelector):null;
+    if(!c) return;
+    if(e.type==='keydown'&&e.key!=='Enter'&&e.key!==' ') return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    openSheet(c);
+  }
+  document.addEventListener('click',crownAction,true);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeSheet();return;}crownAction(e);},true);
+  window.addEventListener('storage',function(e){if(e.key==='TM_SUB_CACHE_KEY'||e.key==='clinqoo_subscription_cache'){verifiedPlan=null;applyCrownState();refreshSubscription();}});
+  new MutationObserver(function(records){if(records.some(function(r){return Array.from(r.addedNodes).some(function(n){return n.nodeType===1&&(n.matches(crownSelector)||n.querySelector(crownSelector));});}))applyCrownState();}).observe(document.body,{childList:true,subtree:true});
+  applyCrownState();
+  document.addEventListener('DOMContentLoaded',applyCrownState);
+  refreshSubscription();
+  window.clinqooOpenPlansPopup=function(){openSheet();};
+  // Syarat promo dan harga mengikuti halaman Upgrade, bukan harga promo tanpa eligibility.
+  fetch(apiBase()+'/api/promo',{cache:'no-store'}).then(function(r){return r.json();}).then(function(p){
+    if(!p||p.active!==true||p.remaining<=0||!p.eligible)return;
+    promoProActive=true;
+    if(sheetEl){sheetEl.querySelector('#pps-track').innerHTML=plans.map(function(p){return cardHtml(p,currentPlan()||'Starter');}).join('');sheetEl.__render();}
+  }).catch(function(){});
+})();
+</script>    <button id="chat-fab" type="button" onclick="agentSheetOpen()" aria-label="Buka chat Agent">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 5.7a2 2 0 0 0 1.3 1.3L21 12l-5.8 2a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.7a2 2 0 0 0-1.3-1.3L3 12l5.8-2a2 2 0 0 0 1.3-1.3L12 3z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M19 3v.01M5 19v.01"></path></svg>
+        Agent
+    </button>
+
+    <!-- Chat Agent sebagai sheet overlay (iframe chat, tanpa reload) -->
+    <div id="agent-sheet" aria-hidden="true"><iframe id="agent-sheet-frame" title="Chat Agent" tabindex="-1"></iframe></div>
+
+<script>
+/* FAB Agent: buka chat sebagai overlay mulus dari bawah (URL halaman tetap) */
+(function () {
+    var sh = document.getElementById('agent-sheet'), fr = document.getElementById('agent-sheet-frame');
+    if (!sh || !fr) return;
+    window.agentSheetOpen = function () {
+        if (!fr.getAttribute('src')) fr.src = '/proyek/chat/?embed=1';
+        sh.classList.add('open');
+    };
+    window.agentSheetClose = function () { sh.classList.remove('open'); };
+    window.addEventListener('message', function (ev) { if (ev && ev.data === 'clinqoo:chat-close') window.agentSheetClose(); });
+})();
+</script>
+
+</body>
+</html>

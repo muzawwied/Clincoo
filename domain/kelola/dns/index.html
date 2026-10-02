@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+
+  <script src="../../../js/auth-client.js?v=4"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kelola DNS — Clincoo Experiment</title>
+<meta name="description" content="Kelola record DNS domain Clincoo-mu: A, CNAME, TXT, dan lainnya.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" type="image/png" href="https://app.clincoo.buzz/assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+<script src="https://unpkg.com/lucide@1.41.0"></script>
+<script src="../../js/store.js"></script>
+<style>
+    body { font-family: 'Inter', sans-serif; background-color: #ffffff; transition: background-color 0.3s ease, color 0.3s ease; }
+    :root { --accent-color: #000000; --accent-hover: #1f2937; --accent-text: #ffffff; }
+    .bg-accent { background-color: var(--accent-color) !important; }
+    .text-accent { color: var(--accent-color) !important; }
+    .border-accent { border-color: var(--accent-color) !important; }
+    .hover\:bg-accent-hover:hover { background-color: var(--accent-hover) !important; }
+    body.dark-mode { background-color: #000000; color: #ffffff; }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode .bg-gray-50 { background-color: #141414 !important; }
+    body.dark-mode .bg-gray-100 { background-color: #222222 !important; }
+    body.dark-mode .border-gray-100, body.dark-mode .border-gray-200, body.dark-mode .border-gray-300 { border-color: #222222 !important; }
+    body.dark-mode .text-accent { color: #ffffff !important; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #ffffff !important; }
+    body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 { color: #888888 !important; }
+    body.dark-mode .text-gray-400 { color: #666666 !important; }
+    body.dark-mode .bg-accent { background-color: #ffffff !important; color: #000000 !important; }
+    body.dark-mode .bg-accent.text-white { color: #000000 !important; }
+    body.dark-mode .bg-accent.text-white svg { color: #000000 !important; stroke: #000000 !important; }
+    body.dark-mode button[onclick="goBack()"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
+    body.dark-mode button[onclick="goBack()"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
+    body.dark-mode button[onclick="goBack()"] svg { color: #ffffff !important; stroke: #ffffff !important; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    input:focus, select:focus, textarea:focus { outline: none!important; box-shadow: none!important; }
+
+/* Shimmer skeleton */
+.shim{position:relative;overflow:hidden;background:#ececef;border-radius:999px;display:inline-block;vertical-align:middle;opacity:.78}
+.shim::after{content:"";position:absolute;inset:0;transform:translateX(-110%);background:linear-gradient(90deg,transparent 25%,rgba(255,255,255,.72) 50%,transparent 75%);animation:shim 1.55s ease-in-out infinite}
+@keyframes shim{to{transform:translateX(110%)}}
+body.dark-mode .shim{background:#202020;opacity:.9}
+body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgba(255,255,255,.075) 50%,transparent 75%)}
+@media (prefers-reduced-motion:reduce){.shim::after{animation:none}}
+</style>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+</head>
+<body class="min-h-screen flex flex-col text-gray-900 pt-20">
+<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.body.classList.add('dark-mode');var a=localStorage.getItem('clinqoo_accent')||'Hitam (Default)';var am={'Hitam (Default)':{m:'#000000',h:'#1f2937'},'Biru':{m:'#2563eb',h:'#1d4ed8'},'Hijau':{m:'#059669',h:'#047857'},'Ungu':{m:'#9333ea',h:'#7e22ce'},'Merah':{m:'#dc2626',h:'#b91c1c'}};var c=am[a]||am['Hitam (Default)'];document.documentElement.style.setProperty('--accent-color',c.m);document.documentElement.style.setProperty('--accent-hover',c.h);}catch(e){}})();</script>
+
+<main class="flex-1 w-full max-w-3xl mx-auto pb-16 flex-col justify-start relative">
+    <button onclick="goBack()" class="fixed top-3 left-3 w-10 h-10 flex items-center justify-center rounded-full bg-white backdrop-blur border border-gray-100 shadow-sm hover:bg-gray-50 transition-all cursor-pointer text-gray-700 hover:text-black z-50" aria-label="Kembali">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    </button>
+    <div class="flex flex-col px-5 pb-2 relative">
+        <h2 class="text-[24px] font-extrabold text-gray-900 tracking-tight">Kelola DNS</h2>
+        <p id="v-domain" class="text-[14px] text-gray-500 font-medium mt-0.5">memuat…</p>
+    </div>
+
+    <div class="px-5">
+        <div class="flex items-center justify-between mt-6">
+            <h3 class="text-[12px] font-bold text-gray-400 uppercase tracking-wider">Record DNS <span id="dns-count" class="text-gray-300 font-semibold"></span></h3>
+            <button onclick="openAddRecord()" class="bg-accent text-white text-[13px] font-semibold rounded-full px-3.5 py-1.5 cursor-pointer active:scale-95 transition-all">Tambah Record</button>
+        </div>
+
+        <div id="zone-banner" class="hidden"></div>
+        <div class="overflow-x-auto mt-3 -mx-5 px-5">
+            <table class="w-full min-w-[520px] border-collapse">
+                <thead>
+                    <tr>
+                        <th class="text-[10px] font-bold text-gray-300 uppercase tracking-widest text-left py-2 pr-4 w-[76px]">Tipe</th>
+                        <th class="text-[10px] font-bold text-gray-300 uppercase tracking-widest text-left py-2 pr-4 w-[170px]">Nama</th>
+                        <th class="text-[10px] font-bold text-gray-300 uppercase tracking-widest text-left py-2 pr-4">Nilai</th>
+                        <th class="w-[52px]"></th>
+                    </tr>
+                </thead>
+                <tbody id="dns-list" class="divide-y divide-gray-100 border-t border-gray-100">
+                    <tr class="dns-shimmer"><td class="py-3.5 pr-4"><span class="shim h-2.5 w-9"></span></td><td class="py-3.5 pr-4"><span class="shim h-2.5 w-24"></span></td><td class="py-3.5 pr-4"><span class="shim h-2.5 w-36 max-w-full"></span><span class="shim block h-1.5 w-20 mt-1.5"></span></td><td class="py-3.5 text-right"><i data-lucide="more-horizontal" class="w-[18px] h-[18px] text-gray-300 inline-block"></i></td></tr>
+                    <tr class="dns-shimmer"><td class="py-3.5 pr-4"><span class="shim h-2.5 w-9"></span></td><td class="py-3.5 pr-4"><span class="shim h-2.5 w-24"></span></td><td class="py-3.5 pr-4"><span class="shim h-2.5 w-36 max-w-full"></span><span class="shim block h-1.5 w-20 mt-1.5"></span></td><td class="py-3.5 text-right"><i data-lucide="more-horizontal" class="w-[18px] h-[18px] text-gray-300 inline-block"></i></td></tr>
+                    <tr class="dns-shimmer"><td class="py-3.5 pr-4"><span class="shim h-2.5 w-9"></span></td><td class="py-3.5 pr-4"><span class="shim h-2.5 w-24"></span></td><td class="py-3.5 pr-4"><span class="shim h-2.5 w-36 max-w-full"></span><span class="shim block h-1.5 w-20 mt-1.5"></span></td><td class="py-3.5 text-right"><i data-lucide="more-horizontal" class="w-[18px] h-[18px] text-gray-300 inline-block"></i></td></tr>
+                    <tr class="dns-shimmer"><td class="py-3.5 pr-4"><span class="shim h-2.5 w-9"></span></td><td class="py-3.5 pr-4"><span class="shim h-2.5 w-24"></span></td><td class="py-3.5 pr-4"><span class="shim h-2.5 w-36 max-w-full"></span><span class="shim block h-1.5 w-20 mt-1.5"></span></td><td class="py-3.5 text-right"><i data-lucide="more-horizontal" class="w-[18px] h-[18px] text-gray-300 inline-block"></i></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+
+    </div>
+</main>
+
+<!-- Modal tambah record -->
+<div id="add-record-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-5" onclick="if(event.target===this)closeAddRecord()">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-5">
+        <h3 class="text-[15px] font-bold text-gray-900">Tambah Record DNS</h3>
+
+        <div class="mt-4">
+            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Tipe Record</label>
+            <div class="relative">
+                <button id="dns-type-trigger" type="button" onclick="toggleTypePopover()" class="w-full flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-[13px] font-semibold text-gray-900 cursor-pointer">
+                    <span id="dns-type-label">A</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+                </button>
+                <div id="dns-type-popover" class="hidden absolute left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-lg shadow-lg z-[80] py-1 max-h-44 overflow-auto"></div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Nama</label>
+            <input id="dns-name" type="text" placeholder="@" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-[13px] font-medium text-gray-900 placeholder-gray-400">
+        </div>
+
+        <div class="mt-4">
+            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Nilai</label>
+            <input id="dns-content" type="text" placeholder="192.0.2.1" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-[13px] font-medium text-gray-900 placeholder-gray-400">
+        </div>
+
+        <div class="flex justify-end gap-1 mt-5">
+            <button onclick="closeAddRecord()" class="rounded-md px-3 py-1.5 text-[13px] font-semibold text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors cursor-pointer">Batal</button>
+            <button onclick="addRecord()" class="rounded-md px-3 py-1.5 text-[13px] font-semibold text-accent hover:bg-gray-50 transition-colors cursor-pointer">Simpan</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal konfirmasi hapus record -->
+<div id="confirm-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[70] flex items-center justify-center p-5" onclick="if(event.target===this)closeConfirm()">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-[320px] px-5 pt-4 pb-3.5 text-center">
+        <h3 class="text-[14px] font-bold text-gray-900">Hapus record DNS ini?</h3>
+        <p id="confirm-detail" class="mono mt-1.5 text-[12px] text-gray-500 leading-relaxed break-all"></p>
+        <div class="flex justify-center gap-1 mt-4">
+            <button onclick="closeConfirm()" class="rounded-md px-4 py-1.5 text-[13px] font-semibold text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors cursor-pointer">Batal</button>
+            <button onclick="doDeleteRecord()" class="rounded-md px-4 py-1.5 text-[13px] font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer">Hapus</button>
+        </div>
+    </div>
+</div>
+
+<!-- Popover aksi record (titik tiga tiduran) -->
+<div id="row-backdrop" class="hidden fixed inset-0 z-[55]" onclick="closeRowMenu()"></div>
+<div id="row-menu" class="hidden fixed z-[60] bg-white rounded-xl shadow-xl py-1 w-40" style="top:0; left:0;">
+    <div id="row-menu-list" class="flex flex-col"></div>
+</div>
+
+<script>
+const domain = (new URLSearchParams(location.search).get('domain') || '').toLowerCase();
+let records = [];
+let simMode = false;
+
+function pinKey() { return 'clincoo_pinned_dns_' + domain; }
+function getPinned() { try { return JSON.parse(localStorage.getItem(pinKey())) || []; } catch (e) { return []; } }
+function isPinned(id) { return getPinned().includes(id); }
+function togglePin(id) {
+    const p = getPinned();
+    const i = p.indexOf(id);
+    if (i === -1) p.push(id); else p.splice(i, 1);
+    localStorage.setItem(pinKey(), JSON.stringify(p));
+    renderDns();
+}
+
+function goBack() { if (history.length > 1) history.back(); else location.href = '../../'; }
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function banner(text) {
+    document.getElementById('zone-banner').innerHTML = text;
+    document.getElementById('zone-banner').classList.remove('hidden');
+}
+
+async function renderDns() {
+    const res = await store.listDns(domain);
+    const listEl = document.getElementById('dns-list');
+    if (!res || !res.ok) {
+        simMode = false;
+        const msg = (res && res.message) || 'Record DNS tidak dapat dimuat.';
+        listEl.innerHTML = '';
+        banner('<div class="flex items-start gap-3 mt-4 rounded-xl border border-amber-100 bg-amber-50 p-4"><i data-lucide="info" class="w-5 h-5 text-amber-500 shrink-0 mt-0.5"></i><p class="text-[13px] text-amber-700 font-medium leading-relaxed"></p></div>');
+        document.querySelector('#zone-banner p').textContent = msg;
+        document.getElementById('dns-count').textContent = '';
+        lucide.createIcons();
+        return;
+    }
+    simMode = !!res.simulated;
+    document.getElementById('zone-banner').classList.add('hidden');
+    records = res.records || [];
+
+    const suffix = '.' + domain;
+    const shortName = n => n === domain ? '@' : (n.endsWith(suffix) ? n.slice(0, -suffix.length) : n);
+    const meta = r => r.proxied === true
+        ? 'Tersambung ke Cloudflare'
+        : 'TTL ' + (r.ttl === 1 ? 'otomatis' : r.ttl + ' detik');
+
+    const sorted = records.length
+        ? [...records].sort((a, b) => {
+            const pinDiff = isPinned(b.id) - isPinned(a.id);
+            if (pinDiff) return pinDiff;
+            const ka = (a.name === domain ? '' : a.name) + '|' + a.type;
+            const kb = (b.name === domain ? '' : b.name) + '|' + b.type;
+            return ka.localeCompare(kb);
+          })
+        : [];
+
+    document.getElementById('dns-count').textContent = records.length ? records.length + ' record' : '';
+    listEl.innerHTML = sorted.length ? sorted.map(r => `
+        <tr class="group hover:bg-gray-50/60 transition-colors">
+            <td class="py-3.5 pr-4 align-top">
+                <span class="mono text-[10px] font-bold uppercase tracking-wide border border-gray-200 bg-gray-100 text-gray-600 rounded px-1.5 py-1">${esc(r.type)}</span>
+            </td>
+            <td class="py-3.5 pr-4 align-top">
+                <p class="mono text-[13px] font-semibold text-gray-900 truncate max-w-[170px] flex items-center gap-1">${isPinned(r.id) ? '<i data-lucide="pin" class="w-3 h-3 text-accent shrink-0 fill-current"></i>' : ''}<span class="truncate">${esc(shortName(r.name))}</span></p>
+            </td>
+            <td class="py-3.5 pr-4 align-top">
+                <p class="mono text-[12px] text-gray-700 truncate max-w-[300px]">${esc(r.content)}</p>
+                <p class="text-[10px] text-gray-300 font-medium mt-0.5">${esc(meta(r))}</p>
+            </td>
+            <td class="py-3.5 text-right align-top">
+                <button onclick="openRowMenu(event, '${r.id}')" class="w-8 h-8 inline-flex items-center justify-center cursor-pointer bg-transparent transition-colors hover:bg-gray-100 rounded-full" title="Aksi lainnya">
+                    <i data-lucide="more-horizontal" class="w-[18px] h-[18px] text-gray-400"></i>
+                </button>
+            </td>
+        </tr>`).join('') : '<tr><td colspan="4" class="text-[13px] text-gray-500 py-3">Belum ada record DNS.</td></tr>';
+    lucide.createIcons();
+}
+
+const DNS_TYPES = ['A', 'AAAA', 'CNAME', 'TXT', 'MX'];
+function renderTypePopover() {
+    const current = document.getElementById('dns-type-label').textContent;
+    document.getElementById('dns-type-popover').innerHTML = DNS_TYPES.map(t => `
+        <button type="button" onclick="selectDnsType('${t}')" class="w-full text-left px-3 py-2 text-[13px] font-semibold cursor-pointer transition-colors hover:bg-gray-50 ${t === current ? 'text-accent' : 'text-gray-800'}">${t}</button>`).join('');
+}
+function toggleTypePopover() {
+    renderTypePopover();
+    document.getElementById('dns-type-popover').classList.toggle('hidden');
+}
+function selectDnsType(t) {
+    document.getElementById('dns-type-label').textContent = t;
+    document.getElementById('dns-type-popover').classList.add('hidden');
+}
+document.addEventListener('click', (e) => {
+    const pop = document.getElementById('dns-type-popover');
+    const trigger = document.getElementById('dns-type-trigger');
+    if (!pop || pop.classList.contains('hidden')) return;
+    if (!pop.contains(e.target) && !trigger.contains(e.target)) pop.classList.add('hidden');
+});
+function openAddRecord() {
+    document.getElementById('dns-type-label').textContent = 'A';
+    document.getElementById('dns-type-popover').classList.add('hidden');
+    document.getElementById('dns-name').value = '';
+    document.getElementById('dns-content').value = '';
+    const m = document.getElementById('add-record-modal');
+    m.classList.remove('hidden'); m.classList.add('flex');
+    lucide.createIcons();
+    document.getElementById('dns-name').focus();
+}
+function closeAddRecord() {
+    document.getElementById('dns-type-popover').classList.add('hidden');
+    const m = document.getElementById('add-record-modal');
+    m.classList.add('hidden'); m.classList.remove('flex');
+}
+let adding = false;
+async function addRecord() {
+    if (adding) return;
+    const type = document.getElementById('dns-type-label').textContent;
+    const name = document.getElementById('dns-name').value.trim();
+    const content = document.getElementById('dns-content').value.trim();
+    if (!name || !content) return;
+    adding = true;
+    const res = await store.addDns(domain, { type, name, content });
+    adding = false;
+    if (!res || !res.ok) {
+        const msg = (res && res.message) || 'Record gagal ditambahkan.';
+        alert(msg);
+        return;
+    }
+    closeAddRecord(); renderDns();
+}
+function openRowMenu(evt, id) {
+    const r = records.find(x => x.id === id); if (!r) return;
+    document.getElementById('row-menu-list').innerHTML = `
+        <button onclick="closeRowMenu(); togglePin('${r.id}')" class="w-full text-left px-4 py-2.5 text-[13px] font-medium text-gray-800 cursor-pointer transition-colors hover:bg-gray-50">${isPinned(r.id) ? 'Lepas Sematan' : 'Sematkan'}</button>
+        <button onclick="closeRowMenu(); copyRecordValue('${r.id}')" class="w-full text-left px-4 py-2.5 text-[13px] font-medium text-gray-800 cursor-pointer transition-colors hover:bg-gray-50">Salin Nilai</button>
+        <button onclick="closeRowMenu(); askDeleteRecord('${r.id}')" class="w-full text-left px-4 py-2.5 text-[13px] font-semibold text-red-600 cursor-pointer transition-colors hover:bg-gray-50">Hapus</button>`;
+    const menu = document.getElementById('row-menu');
+    const backdrop = document.getElementById('row-backdrop');
+    menu.classList.remove('hidden'); backdrop.classList.remove('hidden');
+    const btn = evt.currentTarget.getBoundingClientRect();
+    const menuW = menu.offsetWidth;
+    let left = btn.right - menuW;
+    if (left < 8) left = 8;
+    if (left + menuW > window.innerWidth - 8) left = window.innerWidth - 8 - menuW;
+    let top = btn.bottom + 6;
+    const menuH = menu.offsetHeight;
+    if (top + menuH > window.innerHeight - 8) top = btn.top - menuH - 6;
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+}
+function closeRowMenu() {
+    document.getElementById('row-menu').classList.add('hidden');
+    document.getElementById('row-backdrop').classList.add('hidden');
+}
+function copyRecordValue(id) {
+    const r = records.find(x => x.id === id);
+    if (r) navigator.clipboard.writeText(r.content).catch(() => {});
+}
+let confirmDeleteId = null;
+function askDeleteRecord(id) {
+    const r = records.find(x => x.id === id); if (!r) return;
+    confirmDeleteId = id;
+    document.getElementById('confirm-detail').textContent = r.type + ' · ' + r.name + ' · ' + r.content;
+    document.getElementById('confirm-modal').classList.remove('hidden');
+}
+function closeConfirm() {
+    document.getElementById('confirm-modal').classList.add('hidden');
+    confirmDeleteId = null;
+}
+async function doDeleteRecord() {
+    if (confirmDeleteId) await store.deleteDns(domain, confirmDeleteId);
+    closeConfirm();
+    renderDns();
+}
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeConfirm(); });
+if (!domain) { location.replace('../../'); }
+else {
+    document.getElementById('v-domain').textContent = domain;
+    store.ready.then(renderDns);
+    lucide.createIcons();
+}
+</script>
+<script>try { lucide.createIcons(); } catch (e) {}</script>
+</body>
+</html>

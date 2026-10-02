@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../../js/auth-client.js?v=4"></script>
+  <script src="../../../js/accent-init.js"></script>
+<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
+    <link rel="manifest" href="../../../manifest.json">
+    <link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
+  <title>Pengaturan: Integrasi AI — Clincoo</title>
+    <meta name="description" content="Pengaturan: Integrasi AI — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clincoo">
+    <meta property="og:title" content="Pengaturan: Integrasi AI — Clincoo">
+    <meta property="og:description" content="Pengaturan: Integrasi AI — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Pengaturan: Integrasi AI — Clincoo">
+    <meta name="twitter:description" content="Pengaturan: Integrasi AI — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+  <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { display: none; width: 0; height: 0; background: transparent; }
+    * { -ms-overflow-style: none; scrollbar-width: none; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    body.dark-mode { background-color: #000000; color: #e0e0e0; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800 { color: #f0f0f0; }
+    body.dark-mode .text-gray-700 { color: #b0b0b0; }
+    body.dark-mode .text-gray-500, body.dark-mode .text-gray-600 { color: #888888; }
+    body.dark-mode .text-gray-400 { color: #666666; }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode header button[onclick="history.back()"], body.dark-mode header button[aria-label="Kembali"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
+    body.dark-mode header button[onclick="history.back()"] svg, body.dark-mode header button[aria-label="Kembali"] svg { color: #ffffff !important; stroke: #ffffff !important; }
+    body.dark-mode header button[onclick="history.back()"]:hover, body.dark-mode header button[aria-label="Kembali"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
+    body.dark-mode .bg-gray-50 { background-color: #222222 !important; }
+    body.dark-mode .bg-gray-100 { background-color: #222222 !important; }
+    body.dark-mode .border-gray-200, body.dark-mode .border-gray-100 { border-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-200:hover { background-color: #222222 !important; }
+    body.dark-mode input, body.dark-mode select, body.dark-mode textarea { background-color: #0a0a0a; color: #ffffff; border-color: #222222; }
+    body.dark-mode input:focus, body.dark-mode select:focus, body.dark-mode textarea:focus { border-color: #222222; outline: none; }
+    body.dark-mode header { background-color: #000000 !important; }
+    body.dark-mode .bg-black { background-color: #ffffff !important; color: #000000 !important; }
+  /* auto-dark-fix v1 */
+    body.dark-mode .bg-gray-50\/80 { background-color: #141414 !important; }
+    body.dark-mode .bg-gray-200 { background-color: #262626 !important; }
+    body.dark-mode .bg-gray-300 { background-color: #333333 !important; }
+    body.dark-mode .bg-gray-400 { background-color: #444444 !important; }
+    body.dark-mode .border-gray-50 { border-color: #0a0a0a !important; }
+    body.dark-mode .border-gray-200\/50,
+    body.dark-mode .border-gray-200\/60,
+    body.dark-mode .border-gray-200\/70 { border-color: #222222 !important; }
+    body.dark-mode .border-gray-300 { border-color: #333333 !important; }
+    body.dark-mode .border-gray-400 { border-color: #444444 !important; }
+    body.dark-mode .bg-blue-50,
+    body.dark-mode .bg-blue-50\/50 { background-color: #0d1a26 !important; }
+    body.dark-mode .border-blue-100,
+    body.dark-mode .border-blue-200 { border-color: #1e3a52 !important; }
+    body.dark-mode .bg-red-50,
+    body.dark-mode .bg-red-50\/50 { background-color: #2a1414 !important; }
+    body.dark-mode .bg-red-100 { background-color: #3a1a1a !important; }
+    body.dark-mode .border-red-100,
+    body.dark-mode .border-red-200 { border-color: #4a2020 !important; }
+    body.dark-mode .bg-green-100 { background-color: #14301c !important; }
+    body.dark-mode .bg-white\/95 { background-color: rgba(10,10,10,0.95) !important; }
+    body.dark-mode .hover\:bg-gray-50:hover,
+    body.dark-mode .hover\:bg-gray-50\/50:hover,
+    body.dark-mode .hover\:bg-gray-50\/80:hover { background-color: #1a1a1a !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #262626 !important; }
+    body.dark-mode .hover\:bg-gray-200:hover,
+    body.dark-mode .hover\:bg-gray-200\/50:hover { background-color: #333333 !important; }
+    body.dark-mode .hover\:bg-blue-50:hover,
+    body.dark-mode .hover\:bg-blue-100:hover { background-color: #163247 !important; }
+    body.dark-mode .hover\:bg-red-50:hover,
+    body.dark-mode .hover\:bg-red-100:hover { background-color: #3a1a1a !important; }
+    body.dark-mode .hover\:border-gray-300:hover,
+    body.dark-mode .hover\:border-gray-400:hover,
+    body.dark-mode .hover\:border-gray-900:hover { border-color: #555555 !important; }
+    body.dark-mode .focus\:border-gray-400:focus,
+    body.dark-mode .focus\:border-gray-900:focus { border-color: #666666 !important; }
+    body.dark-mode input::placeholder, body.dark-mode textarea::placeholder { color: #666666 !important; }
+#chat-header-capsule { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        /* Kapsul: mobile 2 menu (Workspace|Dashboard), desktop 3 menu (Live preview|Workspace|Dashboard) */
+        .chat-nav-link[data-nav="agent"] { display: none !important; }
+        .chat-nav-link[data-nav="live"] { display: none; }
+        @media (min-width: 900px) { .chat-nav-link[data-nav="live"] { display: inline-flex; } }
+        #chat-nav-pill { display: none; }
+        @view-transition { navigation: auto; }
+        /* pindah antar halaman: crossfade singkat + pill morph singkat, biar gak kedip */
+        @media (prefers-reduced-motion: no-preference) {
+            ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; animation-timing-function: cubic-bezier(.2,.7,.3,1); }
+            ::view-transition-group(chat-nav-pill) { animation-duration: .18s; animation-timing-function: cubic-bezier(.2,.7,.3,1); }
+        }
+        /* fallback browser tanpa cross-doc view transition: fade-in halus (bukan pop putih keras) */
+        @keyframes clq-page-in { from { opacity: 0 } to { opacity: 1 } }
+        @media (prefers-reduced-motion: no-preference) {
+            body { animation: clq-page-in .18s cubic-bezier(.2,.7,.3,1) both; }
+            html:active-view-transition body { animation: none; }
+        }
+        .chat-nav-link.is-active { color: #111111; background: #e9e9ec; view-transition-name: chat-nav-pill; }
+        #header-more-menu.open { display: flex; opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto; }
+        .header-menu-item { -webkit-tap-highlight-color: transparent; }
+        .header-menu-item:focus, .header-menu-item:focus-visible { outline: none; box-shadow: none; }
+        button.header-menu-item { -webkit-appearance: none; appearance: none; background: transparent; border: none; margin: 0; font: inherit; color: inherit; }
+        button.header-menu-item:active { background: rgba(0,0,0,0.04); }
+        body.dark-mode button.header-menu-item:active { background: rgba(255,255,255,0.08); }
+        .header-menu-item { cursor: pointer; }
+        body.dark-mode #chat-header-capsule { background-color: #0a0a0a; border-color: rgba(255,255,255,0.15); box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
+        body.dark-mode #chat-nav-pill { background: #ffffff !important; }
+        body.dark-mode .chat-nav-link { color: #9ca3af !important; }
+        body.dark-mode .chat-nav-link.is-active { color: #0a0a0a !important; background: #ffffff !important; }
+        body.dark-mode #sidebar-toggle, body.dark-mode #header-more-btn { background-color: #000000; border: 1.5px solid rgba(255,255,255,0.4); color: #ffffff; }
+        body.dark-mode #sidebar-toggle:hover, body.dark-mode #header-more-btn:hover { background-color: #1a1a1a; border-color: rgba(255,255,255,0.7); }
+        body.dark-mode #sidebar-toggle svg, body.dark-mode #header-more-btn svg { color: #ffffff; stroke: #ffffff; }
+        body.dark-mode #header-more-menu { background-color: #0a0a0a; border-color: rgba(255,255,255,0.15); }
+        body.dark-mode .header-menu-item { color: #e5e7eb; }
+        body.dark-mode .header-menu-item:hover { background-color: #1a1a1a; color: #ffffff; }
+        body.dark-mode .header-menu-item svg { color: #9ca3af; }
+        @media (max-width: 384px) { #sidebar-toggle, #header-more-btn { width: 38px; height: 38px; } }
+        @media (max-width: 330px) { #sidebar-toggle, #header-more-btn { width: 34px; height: 34px; } .chat-nav-link { padding-left: 0.5rem; padding-right: 0.5rem; } }
+        /* fix: ikon logo model AI (chip bulat putih) jangan ikut digelapkan body.dark-mode .bg-white, krn logo monokrom (hitam) jadi tak terlihat. Pakai class khusus ai-logo-chip-bg (bukan selector ID kontainer) biar TIDAK ikut nimpa background popover/modal yg juga punya class bg-white. */
+        body.dark-mode .ai-logo-chip-bg { background-color: #ffffff !important; }
+    </style>
+  <script>(function(){var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var isDark=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(isDark)document.documentElement.classList.add('dark-mode');})();</script>
+<!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
+<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';var tm=document.querySelector('meta[name="theme-color"]');if(tm){tm.setAttribute('content','#0a0a0a');}}}catch(e){}})();</script>
+
+    <script>/* clinqoo-seo-auto: canonical & og mengikuti domain aktif */
+(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<3;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
+    </script>
+<!-- Google tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+<!-- End Google tag -->
+<script src="../../../js/i18n-dict.js" defer></script>
+<script src="../../../js/i18n.js" defer></script>
+</head>
+<body class="text-gray-900 antialiased h-screen w-full overflow-hidden relative bg-white">
+  <script>(function(){var t=localStorage.getItem("clinqoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+  <div class="w-full h-full overflow-y-auto hide-scrollbar flex flex-col items-center">
+    <header class="fixed top-0 left-0 right-0 z-30 px-3 pt-3 pointer-events-none flex justify-between items-center">
+        <button id="sidebar-toggle" type="button" class="pointer-events-auto flex-shrink-0 flex items-center justify-center text-[#222222] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:text-black hover:bg-gray-100 transition-all rounded-full w-11 h-11" aria-label="Kembali ke Beranda">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+        <div class="pointer-events-auto inline-flex items-center gap-1 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-gray-100/80 rounded-full pl-1.5 pr-1.5 h-11" id="chat-header-capsule">
+            <nav id="chat-top-nav" class="relative inline-flex items-center h-full">
+                <div id="chat-nav-pill" class="absolute bg-gray-100 rounded-full pointer-events-none" style="top:0;left:0;width:0;height:0"></div>
+                <a href="/proyek/chat/" data-nav="agent" class="chat-nav-link relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Agent</a>
+                <a href="/proyek/preview/" data-nav="live" class="chat-nav-link relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Live preview</a>
+                <a href="/proyek/code/" data-nav="code" class="chat-nav-link relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Workspace</a>
+                <a href="/proyek/dashboard/" data-nav="dashboard" class="chat-nav-link is-active relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Dashboard</a>
+            </nav>
+        </div>
+        <div class="relative flex items-center gap-1.5 flex-shrink-0 pointer-events-auto"><button id="header-more-btn" type="button" onclick="toggleHeaderMenu(event)" class="w-11 h-11 rounded-full flex items-center justify-center text-[#222222] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:bg-gray-100 hover:text-black transition-all" aria-label="Menu lainnya">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle>
+                </svg>
+            </button>
+            <div id="header-more-menu" class="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 p-1.5 flex-col gap-0.5 opacity-0 invisible translate-y-1 pointer-events-none transition-all duration-200 z-50 hidden">
+                <button id="header-live-preview" type="button" onclick="chatLivePreview()" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2 12a10 10 0 1 0 20 0 10 10 0 0 0-20 0M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"></path></svg>
+                    Live preview
+                    <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg>
+                </button>
+                    <a id="header-editor" href="/proyek/workspace/editor/" onclick="var __pid='';try{__pid=localStorage.getItem('clinqoo_current_project_id')||''}catch(e){}if(__pid){this.href='/proyek/workspace/editor/?id='+encodeURIComponent(__pid)}" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                        <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 18l6-6-6-6M8 6l-6 6 6 6"></path></svg>
+<span class="flex items-center gap-1.5">Editor <svg class="clinqoo-premium-crown w-3.5 h-3.5 text-amber-500 shrink-0" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#f59e0b" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"></path></svg></span>                        <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg>
+                    </a>
+                <button id="header-export-zip" type="button" onclick="chatExportZip()" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>
+                    Eksport zip
+                </button>
+                <a href="/integrasi/github/" class="header-menu-item flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path><path stroke-linecap="round" stroke-linejoin="round" d="M9 18c-4.51 2-5-2-7-2"></path></svg>
+                    Koneksi git
+                </a>
+                <a href="https://blog.clincoo.buzz/panduan/" target="_blank" rel="noopener" class="header-menu-item flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"></path></svg>
+                    Pusat bantuan
+                </a>
+            </div>
+        </div>
+    </header>
+    <main class="w-full max-w-5xl px-4 sm:px-6 pt-20 pb-24">
+    <style>
+        #settings-menu-pop.open { display: flex; }
+        .settings-menu-item { cursor: pointer; }
+        .settings-menu-item .text-sm { line-height: 1.3; }
+        .settings-menu-item .text-xs { line-height: 1.15; }
+        body.dark-mode #settings-menu-btn { background-color: #1c1c1c !important; border-color: rgba(255,255,255,0.22) !important; color: #f3f4f6 !important; }
+        body.dark-mode #settings-menu-pop { background-color: #1c1c1c !important; border-color: rgba(255,255,255,0.22) !important; }
+        body.dark-mode .settings-menu-item:hover { background-color: #1a1a1a; }
+        body.dark-mode .settings-menu-item .block.text-sm { color: #e5e7eb !important; }
+        body.dark-mode .settings-menu-item .block.text-xs { color: #6b7280 !important; }
+    </style>
+    <div class="relative mb-5 -mx-2.5 sm:-mx-[70px] sm:max-w-[860px]" id="settings-menu-wrap">
+            <button id="settings-menu-btn" type="button" onclick="toggleSettingsMenu(event)" class="w-full flex items-center justify-between rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-800 shadow-sm transition-all">
+                <span class="flex items-center gap-2.5">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 5.7a2 2 0 001.4 1.4L21 12l-5.7 1.9a2 2 0 00-1.4 1.4L12 21l-1.9-5.7a2 2 0 00-1.4-1.4L3 12l5.7-1.9a2 2 0 001.4-1.4L12 3z"></path></svg>
+                    Integrasi AI
+                </span>
+                <svg id="settings-menu-chev" class="w-4 h-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div id="settings-menu-pop" class="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-12px)] sm:w-[860px] mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-1 flex-col gap-px z-40 hidden">
+                                <a href="/proyek/dashboard/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Umum</span><span class="block text-xs text-gray-400 truncate">Nama, deskripsi, dan runtime aplikasi</span></span>
+                </a>
+<a href="/proyek/build-deployment/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Build &amp; Deployment</span><span class="block text-xs text-gray-400 truncate">Sumber branch dan konfigurasi deployment</span></span>
+                </a>
+                <a href="/proyek/pengaturan/keamanan-https/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Keamanan &amp; HTTPS</span><span class="block text-xs text-gray-400 truncate">Sertifikat SSL dan protokol HTTPS</span></span>
+                </a>
+                <a href="/proyek/pengaturan/visibilitas-akses/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Visibilitas Akses</span><span class="block text-xs text-gray-400 truncate">Atur hak akses dan visibilitas</span></span>
+                </a>
+                <a href="/proyek/pengaturan/integrasi-webhook/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17H7a5 5 0 1 1 0-10h2M15 7h2a5 5 0 1 1 0 10h-2M8 12h8"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Integrasi &amp; Webhook</span><span class="block text-xs text-gray-400 truncate">Integrasi layanan luar dan webhooks</span></span>
+                </a>
+<a href="/proyek/pengaturan/integrasi-ai/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 5.7a2 2 0 001.4 1.4L21 12l-5.7 1.9a2 2 0 00-1.4 1.4L12 21l-1.9-5.7a2 2 0 00-1.4-1.4L3 12l5.7-1.9a2 2 0 001.4-1.4L12 3z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Integrasi AI</span><span class="block text-xs text-gray-400 truncate">AI Router: model dan secret per proyek</span></span>
+                </a>
+                <a href="/proyek/pengaturan/zona-bahaya/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-red-50/60 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-red-600">Zona Bahaya</span><span class="block text-xs text-red-500/70 truncate">Hapus situs atau proyek</span></span>
+                </a>
+            </div>
+        </div>
+
+    <script>
+    (function () {
+        var btn = document.getElementById('settings-menu-btn');
+        var pop = document.getElementById('settings-menu-pop');
+        var chev = document.getElementById('settings-menu-chev');
+        window.toggleSettingsMenu = function (e) {
+            e.stopPropagation();
+            var open = pop.classList.toggle('open');
+            chev.style.transform = open ? 'rotate(180deg)' : '';
+        };
+        document.addEventListener('click', function (e) {
+            if (pop.classList.contains('open') && !pop.contains(e.target) && !btn.contains(e.target)) {
+                pop.classList.remove('open');
+                chev.style.transform = '';
+            }
+        });
+        // Menu popover absolut di dalam konten scrollable: tutup otomatis saat halaman
+        // discroll supaya tidak nyangkut melayang di bawah header fixed.
+        // Listener di window fase capture: nangkap scroll dari elemen apa pun (scroll gak bubble).
+        window.addEventListener('scroll', function () {
+            if (pop.classList.contains('open')) {
+                pop.classList.remove('open');
+                chev.style.transform = '';
+            }
+        }, { capture: true, passive: true });
+    })();
+    </script>
+
+      <div class="w-full flex flex-col divide-y divide-gray-200 dark:divide-slate-700/60">
+
+        <!-- 1. Clincoo Open API -->
+        <div class="py-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h4 class="text-base font-semibold text-gray-900 dark:text-white">Clincoo Open API</h4>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">API AI Clincoo — format kompatibel OpenAI. Semua model dikelola dan disediakan Clincoo di server (alokasi gratis); proyek ini cukup pakai secret sendiri.</p>
+            </div>
+            <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300">Aktif</span>
+          </div>
+          <div class="relative">
+            <code class="block w-full px-3.5 py-2.5 pr-11 text-sm font-mono rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-gray-200 truncate">https://app.clincoo.buzz/v1</code>
+            <button type="button" onclick="copyAiBaseUrl()" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:text-slate-500 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer" aria-label="Salin URL API" title="Salin URL API">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            </button>
+          </div>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">Endpoint chat: <span class="font-mono">/v1/chat/completions</span> · daftar model: <span class="font-mono">/v1/models</span></p>
+        </div>
+
+        <!-- 2. Model Default -->
+        <div class="py-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h4 class="text-base font-semibold text-gray-900 dark:text-white">Model Default</h4>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Model yang dipakai fitur AI di proyek ini</p>
+            </div>
+            <span id="ai-model-rate" class="hidden sm:block text-xs text-gray-400"></span>
+          </div>
+          <div class="w-full sm:w-80 relative" id="ai-model-popover-wrap">
+            <button type="button" onclick="toggleAiModelPopover(event)" class="w-full flex items-center justify-between px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white hover:border-gray-400 transition-colors cursor-pointer">
+              <span class="flex items-center gap-2.5 min-w-0"><span id="ai-model-icon" class="shrink-0"></span><span id="ai-model-label" class="font-medium truncate">clincoo/auto</span></span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div id="ai-model-popover" class="hidden absolute left-0 top-full mt-1.5 w-full sm:w-[430px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl shadow-lg z-50 p-1 max-h-72 overflow-y-auto"></div>
+          </div>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-2.5">Semua model bisa dipanggil langsung lewat secret proyek — pakai id modelnya (mis. <span class="font-mono">clincoo/glm-5.2</span>) di parameter <span class="font-mono">model</span> pada cURL.</p>
+        </div>
+
+        <!-- 3. Secret API (per proyek) -->
+        <div class="py-5">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h4 class="text-base font-semibold text-gray-900 dark:text-white">Secret API</h4>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Secret dikeluarkan Clincoo khusus untuk proyek ini — setiap proyek punya secret berbeda</p>
+            </div>
+          </div>
+          <div id="ai-secret-empty" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <p class="text-xs text-gray-400 dark:text-gray-500">Belum ada secret — buat secret baru untuk mulai memakai Clincoo Open API.</p>
+            <button type="button" id="ai-secret-create-btn" onclick="createAiSecret()" class="px-4 py-2 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-lg transition-colors cursor-pointer flex-shrink-0">Buat Secret Baru</button>
+          </div>
+          <div id="ai-secret-active" class="hidden">
+            <div class="flex gap-2 items-center">
+              <div class="relative flex-1">
+                <input type="password" id="ai-secret-value" autocomplete="off" spellcheck="false" readonly class="w-full px-3.5 py-2.5 pr-10 text-sm font-mono rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none transition-colors">
+                <button type="button" onclick="toggleAiKeyVisibility()" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer" aria-label="Tampilkan / sembunyikan secret">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                </button>
+              </div>
+              <button type="button" onclick="copyAiSecret()" class="px-3 py-2.5 text-xs font-medium text-blue-600 border border-blue-200 dark:text-blue-300 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors cursor-pointer flex-shrink-0">Salin</button>
+            </div>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-2.5">
+              <p id="ai-secret-meta" class="text-xs text-gray-400 dark:text-gray-500"></p>
+              <div class="flex gap-2 flex-shrink-0">
+                <button type="button" onclick="createAiSecret()" class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer">Ganti Secret</button>
+                <button type="button" onclick="revokeAiSecret()" class="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-300 border border-red-200 dark:border-red-900 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer">Cabut</button>
+              </div>
+            </div>
+          </div>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-3">Secret dipakai sebagai <span class="font-mono">Authorization: Bearer</span> di endpoint /v1/chat/completions.</p>
+        </div>
+
+        <!-- 4. Contoh cURL -->
+        <div class="py-5">
+          <div class="mb-3">
+            <h4 class="text-base font-semibold text-gray-900 dark:text-white">Contoh Pemanggilan (cURL)</h4>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Format mengikuti secret &amp; model terpilih</p>
+          </div>
+          <div class="relative">
+            <pre id="ai-curl" class="w-full text-xs leading-relaxed bg-gray-950 text-gray-100 rounded-xl border border-gray-800 dark:border-slate-700 p-4 pr-12 overflow-x-auto whitespace-pre font-mono"></pre>
+            <button type="button" onclick="copyAiCurl()" class="absolute top-2.5 right-2.5 p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer" aria-label="Salin cURL" title="Salin cURL">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- 5. Uji Koneksi -->
+        <div class="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <h4 class="text-base font-semibold text-gray-900 dark:text-white">Uji Koneksi</h4>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kirim satu panggilan kecil ke Clincoo Open API dengan secret proyek ini</p>
+          </div>
+          <button type="button" id="ai-test-btn" onclick="testAiCall()" class="px-4 py-2 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-lg transition-colors cursor-pointer flex-shrink-0">Tes panggilan</button>
+        </div>
+
+        <!-- 6. Log Pemakaian -->
+        <div class="py-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h4 class="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">Log Pemakaian</h4>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Riwayat panggilan Clincoo Open API untuk proyek ini</p>
+            </div>
+          </div>
+          <div id="ai-log-list" class="space-y-2"></div>
+          <p id="ai-log-empty" class="text-xs text-gray-400 dark:text-gray-500 py-4 text-center">Belum ada log — panggilan lewat Clincoo Open API akan tercatat di sini</p>
+        </div>
+
+        <!-- 7. Analitik & Pemakaian -->
+        <div class="py-5">
+          <div class="mb-4">
+            <h4 class="text-base font-semibold text-gray-900 dark:text-white">Analitik &amp; Pemakaian</h4>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Ringkasan pemakaian dihitung dari log proyek ini</p>
+          </div>
+          <div class="grid grid-cols-3 gap-2 sm:gap-2.5">
+            <div class="rounded-xl border border-gray-200 dark:border-slate-700 p-2 sm:p-3.5">
+              <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">Total permintaan</p>
+              <p id="ai-stat-total" class="text-base sm:text-xl font-bold text-gray-900 dark:text-white mt-0.5">0</p>
+            </div>
+            <div class="rounded-xl border border-gray-200 dark:border-slate-700 p-2 sm:p-3.5">
+              <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">Total token</p>
+              <p id="ai-stat-tokens" class="text-base sm:text-xl font-bold text-gray-900 dark:text-white mt-0.5">0</p>
+            </div>
+            <div class="rounded-xl border border-gray-200 dark:border-slate-700 p-2 sm:p-3.5">
+              <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">Total kredit</p>
+              <p id="ai-stat-cost" class="text-base sm:text-xl font-bold text-gray-900 dark:text-white mt-0.5">0</p>
+            </div>
+          </div>
+          <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Status permintaan (Sukses vs Gagal)</p>
+              <div id="ai-status-chart-wrap" class="relative w-full h-[200px] rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 overflow-hidden p-2"><canvas id="ai-status-chart"></canvas></div>
+            </div>
+            <div>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Pemakaian harian (14 hari terakhir)</p>
+              <div id="ai-daily-chart-wrap" class="relative w-full h-[200px] rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 overflow-hidden p-2"><canvas id="ai-daily-usage-chart"></canvas></div>
+            </div>
+          </div>
+          <div class="mt-5">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Pemakaian per model</p>
+            <div id="ai-chart-wrap" class="hidden relative w-full h-[220px] rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 overflow-hidden mb-4 p-2"><canvas id="ai-usage-chart"></canvas></div>
+            <div id="ai-model-usage" class="space-y-2.5"></div>
+            <p id="ai-usage-empty" class="text-xs text-gray-400 dark:text-gray-500 py-3 text-center">Belum ada data pemakaian</p>
+          </div>
+          <p id="ai-est-cost" class="text-xs text-gray-400 dark:text-gray-500 mt-4"></p>
+        </div>
+      </div>
+
+      <div id="action-buttons" class="mt-8 pt-6 border-t border-gray-200 dark:border-slate-700/60 hidden justify-end gap-3 opacity-0 transition-opacity duration-300">
+        <button type="button" onclick="cancelChanges()" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors">Batal</button>
+        <button type="button" onclick="saveChanges()" class="px-5 py-2 text-sm font-medium text-white bg-black hover:bg-gray-800 rounded-lg shadow-sm transition-colors focus:outline-none cursor-pointer">Simpan Perubahan</button>
+      </div>
+    </main>
+  </div>
+  <script>
+    let isEdited=false;function showActionButtons(){if(!isEdited){isEdited=true;const c=document.getElementById('action-buttons');c.classList.remove('hidden');c.classList.add('flex');void c.offsetWidth;c.classList.remove('opacity-0');c.classList.add('opacity-100');}}function cancelChanges(){window.location.reload();}function saveChanges(){saveAiSettings();}document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('input,textarea,select').forEach(input=>{input.addEventListener('input',showActionButtons);input.addEventListener('change',showActionButtons);});});function toggleSwitch(idPrefix){showActionButtons();const bg=document.getElementById(idPrefix+'-bg');const knob=document.getElementById(idPrefix+'-knob');if(bg.classList.contains('bg-blue-500')){bg.classList.replace('bg-blue-500','bg-gray-200');bg.classList.add('dark:bg-slate-700');knob.classList.remove('translate-x-5');}else{bg.classList.remove('bg-gray-200','dark:bg-slate-700');bg.classList.add('bg-blue-500');knob.classList.add('translate-x-5');}}
+  </script>
+    <script>if (window.lucide) { lucide.createIcons(); }</script>
+
+<script>
+  // ===== Integrasi AI (Clincoo Open API): secret per proyek, model, log real-time, analitik (Chart.js) =====
+  var AI_API_BASE = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev/api' : '/api';
+  var AI_OPEN_BASE = 'https://app.clincoo.buzz/v1'; // Clincoo Open API (produksi)
+  var _aiToken = '';
+  try { _aiToken = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+  function _aiPid() { try { return localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) { return ''; } }
+  function _aiHdrs(json) {
+    var h = json ? { 'Content-Type': 'application/json' } : {};
+    if (_aiToken) h['Authorization'] = 'Bearer ' + _aiToken;
+    return h;
+  }
+
+  var _aiModelValue = 'clincoo/auto';
+  var _aiSecret = '';
+  // Daftar model: nama dirapikan (tanpa duplikasi brand, tanpa suffix teknis), dikelompokkan per brand.
+  // Sumber: model gratis OpenRouter + model Workers AI Cloudflare (alokasi gratis), dialihkan Clincoo.
+  var AI_MODELS = [
+    { id: 'clincoo/auto', label: 'Auto (rantai otomatis)', rate: 'gratis', ctx: 'Mengikuti model terpilih', vision: false, desc: 'Memilih model terbaik secara otomatis untuk tiap permintaan, menyeimbangkan kecepatan dan kualitas jawaban.' },
+    { id: 'clincoo/deepseek-v4-flash', label: 'DeepSeek V4 Flash', rate: 'gratis · konteks besar', ctx: '160K token', vision: false, desc: 'Model cepat dari DeepSeek dengan jendela konteks besar, cocok untuk percakapan panjang dan ringkasan dokumen.' },
+    { id: 'clincoo/deepseek-v4-pro', label: 'DeepSeek V4 Pro', rate: 'gratis · reasoning · konteks 1M', ctx: '1M token', vision: false, desc: 'Varian reasoning DeepSeek dengan konteks hingga 1 juta token, untuk analisis mendalam dan tugas multi-langkah.' },
+    { id: 'clincoo/glm-5.2', label: 'Z.ai: GLM 5.2', rate: 'gratis · reasoning & kode', ctx: '128K token', vision: false, desc: 'Model Zhipu (Z.ai) yang kuat untuk reasoning dan pembuatan kode.' },
+    { id: 'clincoo/glm-5.3', label: 'Z.ai: GLM 5.3', rate: 'gratis · coding & agen', ctx: '128K token', vision: false, desc: 'Versi lanjutan GLM untuk coding dan tugas agentic (otomasi multi-langkah).' },
+    { id: 'clincoo/glm-5.3-flash', label: 'Z.ai: GLM 5.3 Flash', rate: 'gratis · multimodal', ctx: '128K token', vision: true, desc: 'Varian cepat GLM 5.3 dengan dukungan input gambar, cocok untuk tugas multimodal ringan.' },
+    { id: 'clincoo/glm-4.7-flash', label: 'Z.ai: GLM 4.7 Flash', rate: 'gratis · multilingual', ctx: '128K token', vision: false, desc: 'Model Zhipu yang ringan dan mendukung banyak bahasa.' },
+    { id: 'clincoo/gpt-oss-120b', label: 'OpenAI: GPT-OSS 120B', rate: 'gratis · reasoning terbuka', ctx: '128K token', vision: false, desc: 'Model open-weight OpenAI untuk reasoning umum dengan performa tinggi.' },
+    { id: 'clincoo/gpt-oss-20b', label: 'OpenAI: GPT-OSS 20B', rate: 'gratis · ringan', ctx: '128K token', vision: false, desc: 'Versi ringan GPT-OSS, lebih cepat dan hemat untuk tugas sehari-hari.' },
+    { id: 'clincoo/kimi-k2.6', label: 'Moonshot: Kimi K2.6', rate: 'gratis · frontier 1T', ctx: '256K token', vision: false, desc: 'Model skala besar (1T parameter) dari Moonshot untuk tugas kompleks dan reasoning frontier.' },
+    { id: 'clincoo/kimi-k2.7-code', label: 'Moonshot: Kimi K2.7 Code', rate: 'gratis · fokus kode', ctx: '256K token', vision: false, desc: 'Varian Kimi yang difokuskan untuk pemrograman dan debugging.' },
+    { id: 'clincoo/llama-4-scout', label: 'Meta: Llama 4 Scout', rate: 'gratis · multimodal', ctx: '128K token', vision: true, desc: 'Model multimodal Meta, bisa memahami teks dan gambar sekaligus.' },
+    { id: 'clincoo/llama-3.3-70b', label: 'Meta: Llama 3.3 70B', rate: 'gratis · serba guna', ctx: '128K token', vision: false, desc: 'Model serba guna Meta dengan performa seimbang untuk berbagai tugas.' },
+    { id: 'clincoo/mistral-small-3.1', label: 'Mistral: Small 3.1', rate: 'gratis · cepat · konteks besar', ctx: '256K token', vision: false, desc: 'Model Mistral yang cepat dengan jendela konteks besar.' },
+    { id: 'clincoo/reasoning-120b', label: 'NVIDIA: Nemotron 3 Super', rate: 'gratis · reasoning umum', ctx: '128K token', vision: false, desc: 'Model NVIDIA Nemotron untuk reasoning umum dengan performa andal.' },
+    { id: 'clincoo/reasoning-550b', label: 'NVIDIA: Nemotron 3 Ultra', rate: 'gratis · konteks 1M token', ctx: '1M token', vision: false, desc: 'Model Nemotron terbesar dengan konteks hingga 1 juta token, untuk analisis dokumen panjang.' },
+    { id: 'clincoo/lightning', label: 'NVIDIA: Nemotron 3.5 Lightning', rate: 'gratis · ringan & cepat', ctx: '64K token', vision: false, desc: 'Model Nemotron yang ringan dan sangat cepat merespons.' },
+    { id: 'clincoo/omni-nano', label: 'NVIDIA: Nemotron 3 Nano Omni', rate: 'gratis · multimodal', ctx: '128K token', vision: true, desc: 'Model Nemotron multimodal berukuran kecil, mendukung input gambar.' },
+    { id: 'clincoo/vision-31b', label: 'Google: Gemma 4 31B', rate: 'gratis · teks & gambar', ctx: '128K token', vision: true, desc: 'Model Google Gemma yang memahami teks dan gambar.' },
+    { id: 'clincoo/vision-26b', label: 'Google: Gemma 4 26B', rate: 'gratis · ringan', ctx: '64K token', vision: true, desc: 'Varian Gemma yang lebih ringan, tetap mendukung gambar.' },
+    { id: 'clincoo/multimodal-27b', label: 'Qwen 3.8 27B', rate: 'gratis · multimodal', ctx: '256K token', vision: true, desc: 'Model Qwen multimodal dengan konteks besar.' },
+    { id: 'clincoo/qwq-32b', label: 'QwQ 32B', rate: 'gratis · reasoning', ctx: '128K token', vision: false, desc: 'Model Qwen yang difokuskan pada reasoning langkah demi langkah.' },
+    { id: 'clincoo/qwen-coder-32b', label: 'Qwen 2.5 Coder 32B', rate: 'gratis · fokus kode', ctx: '128K token', vision: false, desc: 'Model Qwen yang dioptimalkan khusus untuk pemrograman.' },
+    { id: 'clincoo/granite-4-micro', label: 'IBM: Granite 4.0 Micro', rate: 'gratis · super ringan', ctx: '32K token', vision: false, desc: 'Model IBM Granite yang sangat ringan dan hemat resource.' },
+    { id: 'clincoo/sea-lion-27b', label: 'AI Singapore: SEA-LION 27B', rate: 'gratis · bahasa Asia Tenggara', ctx: '128K token', vision: false, desc: 'Model dari AI Singapore yang dilatih khusus untuk bahasa-bahasa Asia Tenggara.' },
+    { id: 'clincoo/reasoning-mini', label: 'Apodex 1.1 Mini', rate: 'gratis · reasoning panjang', ctx: '128K token', vision: false, desc: 'Model ringan dengan kemampuan reasoning panjang untuk tugas yang butuh penalaran bertahap.' },
+    { id: 'clincoo/ling-flash', label: 'InclusionAI: Ling 3.0 Flash', rate: 'gratis · cepat', ctx: '64K token', vision: false, desc: 'Model InclusionAI yang cepat untuk respons singkat.' },
+    { id: 'clincoo/dots-note', label: 'Dots3-Note Preview', rate: 'gratis · multimodal', ctx: '128K token', vision: true, desc: 'Model multimodal untuk membaca dan meringkas catatan atau dokumen bergambar.' },
+    { id: 'clincoo/lfm-mini', label: 'Liquid AI: LFM 2.5 2.6B', rate: 'gratis · super ringan', ctx: '32K token', vision: false, desc: 'Model Liquid AI yang super ringan, cocok untuk tugas sederhana dan cepat.' },
+    { id: 'clincoo/inkling', label: 'Thinking Machines: Inkling', rate: 'gratis · multimodal', ctx: '128K token', vision: true, desc: 'Model multimodal dari Thinking Machines untuk tugas teks dan gambar.' },
+    { id: 'clincoo/inkling-small', label: 'Thinking Machines: Inkling Small', rate: 'gratis · multimodal ringan', ctx: '64K token', vision: true, desc: 'Varian ringan Inkling, tetap mendukung gambar dengan lebih cepat.' },
+    { id: 'clincoo/laguna-s', label: 'Poolside: Laguna S 2.1', rate: 'gratis · serba guna', ctx: '128K token', vision: false, desc: 'Model serba guna dari Poolside untuk berbagai kebutuhan umum.' },
+    { id: 'clincoo/laguna-xs', label: 'Poolside: Laguna XS 2.1', rate: 'gratis · super ringan', ctx: '32K token', vision: false, desc: 'Varian super ringan Laguna, cepat dan hemat.' },
+    { id: 'clincoo/north-code', label: 'Cohere: North Mini Code', rate: 'gratis · fokus kode', ctx: '128K token', vision: false, desc: 'Model Cohere yang difokuskan khusus untuk pemrograman.' },
+    { id: 'clincoo/space-bunny', label: 'Space Bunny Alpha', rate: 'gratis · eksperimental', ctx: '64K token', vision: false, desc: 'Model eksperimental untuk eksplorasi fitur baru.' },
+    { id: 'clincoo/acak', label: 'Acak (jaringan mitra)', rate: 'gratis · otomatis', ctx: 'Bervariasi (jaringan mitra)', vision: false, desc: 'Memilih model secara acak dari jaringan mitra yang tersedia, cocok untuk pemerataan beban.' }
+  ];
+
+  function toggleAiModelPopover(e) {
+    e.stopPropagation();
+    var p = document.getElementById('ai-model-popover');
+    if (p) p.classList.toggle('hidden');
+  }
+  function aiModelLabel(id) {
+    var m = AI_MODELS.filter(function (x) { return x.id === id; })[0];
+    return m ? m.label : id;
+  }
+  // Logo tiap model: gambar logo asli brand-nya (chip bulat), monogram utk brand tanpa logo publik
+  var AI_MODEL_LOGOS = {
+    'clincoo/auto': '../../../assets/logo-clinqoo.png',
+    'clincoo/glm-5.2': '../../../assets/ai-logos/zai.png',
+    'clincoo/deepseek-v4-flash': '../../../assets/ai-logos/deepseek.png',
+    'clincoo/glm-4.7-flash': '../../../assets/ai-logos/zai.png',
+    'clincoo/reasoning-120b': '../../../assets/ai-logos/nvidia.svg',
+    'clincoo/reasoning-550b': '../../../assets/ai-logos/nvidia.svg',
+    'clincoo/lightning': '../../../assets/ai-logos/nvidia.svg',
+    'clincoo/omni-nano': '../../../assets/ai-logos/nvidia.svg',
+    'clincoo/vision-31b': '../../../assets/ai-logos/google-gemma.png',
+    'clincoo/vision-26b': '../../../assets/ai-logos/google-gemma.png',
+    'clincoo/multimodal-27b': '../../../assets/ai-logos/qwen.png',
+    'clincoo/lfm-mini': '../../../assets/ai-logos/liquid-mark.png',
+    'clincoo/inkling': '../../../assets/ai-logos/thinkingmachines-mark.png',
+    'clincoo/inkling-small': '../../../assets/ai-logos/thinkingmachines-mark.png',
+    'clincoo/laguna-s': '../../../assets/ai-logos/poolside-mark.png',
+    'clincoo/laguna-xs': '../../../assets/ai-logos/poolside-mark.png',
+    'clincoo/north-code': '../../../assets/ai-logos/cohere-mark.png',
+    'clincoo/deepseek-v4-pro': '../../../assets/ai-logos/deepseek.png',
+    'clincoo/glm-5.3': '../../../assets/ai-logos/zai.png',
+    'clincoo/glm-5.3-flash': '../../../assets/ai-logos/zai.png',
+    'clincoo/gpt-oss-120b': '../../../assets/ai-logos/openai.png',
+    'clincoo/gpt-oss-20b': '../../../assets/ai-logos/openai.png',
+    'clincoo/kimi-k2.6': '../../../assets/ai-logos/moonshot.png',
+    'clincoo/kimi-k2.7-code': '../../../assets/ai-logos/moonshot.png',
+    'clincoo/llama-4-scout': '../../../assets/ai-logos/meta-llama.png',
+    'clincoo/llama-3.3-70b': '../../../assets/ai-logos/meta-llama.png',
+    'clincoo/mistral-small-3.1': '../../../assets/ai-logos/mistral.png',
+    'clincoo/qwq-32b': '../../../assets/ai-logos/qwen.png',
+    'clincoo/qwen-coder-32b': '../../../assets/ai-logos/qwen.png',
+    'clincoo/granite-4-micro': '../../../assets/ai-logos/granite.png',
+    'clincoo/sea-lion-27b': '../../../assets/ai-logos/aisingapore.png',
+    'clincoo/dots-note': '../../../assets/ai-logos/dots.png',
+    'clincoo/acak': '../../../assets/logo-clinqoo.png'
+  };
+  var AI_LOGO_FALLBACK = '../../../assets/logo-clinqoo.png';
+  function aiModelIconChip(id) {
+    var logo = AI_MODEL_LOGOS[id];
+    var chip = 'w-7 h-7 rounded-full flex items-center justify-center shrink-0 overflow-hidden border border-gray-200 dark:border-slate-600';
+    if (logo) {
+      return '<span class="' + chip + ' bg-white ai-logo-chip-bg">' +
+        '<img src="' + logo + '" alt="' + aiModelLabel(id) + '" class="w-5 h-5 object-contain" loading="lazy" onerror="if(!this.dataset.f){this.dataset.f=1;this.src=AI_LOGO_FALLBACK;}else{this.style.display=&#39;none&#39;;}">' +
+        '</span>';
+    }
+    var ch = (aiModelLabel(id) || '?').trim().charAt(0).toUpperCase();
+    return '<span class="' + chip + ' bg-gray-100 dark:bg-slate-700/70"><span class="text-[11px] font-bold text-gray-500 dark:text-gray-300">' + ch + '</span></span>';
+  }
+  function aiModelApplyUi() {
+    var l = document.getElementById('ai-model-label');
+    if (l) l.textContent = aiModelLabel(_aiModelValue);
+    var ic = document.getElementById('ai-model-icon');
+    if (ic) ic.innerHTML = aiModelIconChip(_aiModelValue);
+    if (window.lucide) lucide.createIcons();
+  }
+  function pickAiModel(id) {
+    _aiModelValue = id;
+    aiModelApplyUi();
+    var p = document.getElementById('ai-model-popover');
+    if (p) p.classList.add('hidden');
+    updateAiRateHint();
+    renderAiCurl();
+    showActionButtons();
+  }
+  document.addEventListener('click', function (e) {
+    var wrap = document.getElementById('ai-model-popover-wrap');
+    var p = document.getElementById('ai-model-popover');
+    if (p && wrap && !wrap.contains(e.target)) p.classList.add('hidden');
+  });
+  // Dropdown model memakai absolute positioning di dalam konten yang bisa discroll:
+  // tutup otomatis saat halaman discroll supaya tidak nyangkut/terpotong di bawah header fixed.
+  // Listener di window fase capture: nangkap scroll dari elemen apa pun (scroll gak bubble).
+  window.addEventListener('scroll', function (e) {
+    var p = document.getElementById('ai-model-popover');
+    if (!p || p.classList.contains('hidden')) return;
+    if (p.contains(e.target)) return; // scroll terjadi di DALAM list popover sendiri (overflow-y-auto) — jangan tutup, biar bisa discroll
+    p.classList.add('hidden');
+  }, { capture: true, passive: true });
+  // Favorit model: disimpan per-browser, dipakai di modal detail
+  function aiFavModels() {
+    try { return JSON.parse(localStorage.getItem('clincoo_ai_fav_models') || '[]'); } catch (e) { return []; }
+  }
+  function isAiModelFav(id) { return aiFavModels().indexOf(id) !== -1; }
+  function toggleAiModelFav(id) {
+    var favs = aiFavModels();
+    var i = favs.indexOf(id);
+    if (i === -1) favs.push(id); else favs.splice(i, 1);
+    try { localStorage.setItem('clincoo_ai_fav_models', JSON.stringify(favs)); } catch (e) {}
+    return isAiModelFav(id);
+  }
+  function aiModelCategory(rate) {
+    var parts = String(rate || '').split('\u00b7');
+    var cat = parts.length > 1 ? parts.slice(1).join(',').trim() : 'Umum';
+    return cat ? (cat.charAt(0).toUpperCase() + cat.slice(1)) : 'Umum';
+  }
+  // Modal detail model (bottom sheet, gaya Clincoo): logo + nama, favorit, id capsule + salin,
+  // deskripsi (bisa diperluas), info modalitas/konteks/kategori, tombol pakai model.
+  var _aiDetailSheet = null, _aiDetailCloseTimer = null, _aiDetailPrevOverflow = '';
+  function _aiScroller() { return document.querySelector('.hide-scrollbar') || document.body; }
+  function closeAiModelDetail() {
+    var mod = _aiDetailSheet;
+    if (!mod || mod.__closing) return;
+    mod.__closing = true;
+    _aiScroller().style.overflow = _aiDetailPrevOverflow;
+    var b = mod.querySelector('#ai-model-detail-backdrop'), c = mod.querySelector('#ai-model-detail-card');
+    if (b) b.classList.add('opacity-0');
+    if (c) c.classList.add('translate-y-full');
+    _aiDetailCloseTimer = setTimeout(function () { if (mod && mod.parentNode) mod.remove(); if (_aiDetailSheet === mod) _aiDetailSheet = null; }, 300);
+  }
+  function openAiModelDetail(id) {
+    var m = AI_MODELS.filter(function (x) { return x.id === id; })[0];
+    if (!m) return;
+    var p = document.getElementById('ai-model-popover');
+    if (p) p.classList.add('hidden');
+    if (_aiDetailSheet) { if (_aiDetailCloseTimer) { clearTimeout(_aiDetailCloseTimer); _aiDetailCloseTimer = null; } _aiDetailSheet.remove(); _aiDetailSheet = null; }
+    var sel = m.id === _aiModelValue;
+    var fav = isAiModelFav(m.id);
+    var cat = aiModelCategory(m.rate);
+    var modalitas = m.vision ? 'Teks &amp; Gambar' : 'Teks';
+    var descLong = (m.desc || '').length > 90;
+    var descShort = descLong ? (m.desc.slice(0, 88).trim() + '\u2026') : (m.desc || '');
+    var mod = document.createElement('div');
+    mod.id = 'ai-model-detail-modal';
+    mod.setAttribute('role', 'dialog');
+    mod.setAttribute('aria-modal', 'true');
+    mod.setAttribute('aria-label', 'Detail model ' + m.label);
+    mod.innerHTML =
+      '<div id="ai-model-detail-backdrop" class="fixed inset-0 z-[95] opacity-0 transition-opacity duration-300" style="background:rgba(0,0,0,.45)"></div>' +
+      '<div class="fixed bottom-0 left-0 right-0 z-[96] flex justify-center pointer-events-none">' +
+        '<div id="ai-model-detail-card" class="pointer-events-auto relative w-full max-w-md bg-white dark:bg-[#0a0a0a] rounded-t-3xl px-4 sm:px-5 pt-3 translate-y-full transition-transform duration-300 ease-out shadow-2xl" style="max-height:88dvh;overflow-y:auto;padding-bottom:calc(1.25rem + env(safe-area-inset-bottom,0px));">' +
+          '<div class="flex justify-center"><div class="w-10 h-1.5 rounded-full bg-gray-200 dark:bg-slate-700 mb-2"></div></div>' +
+          '<button id="ai-model-detail-x" aria-label="Tutup" class="absolute top-3 right-3 sm:right-4 w-7 h-7 rounded-full bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-300 hover:text-black dark:hover:text-white flex items-center justify-center transition-colors z-10"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6 6 18M6 6l12 12"></path></svg></button>' +
+          '<div class="flex items-start gap-3 pr-8">' + aiModelIconChip(m.id) +
+          '<div class="min-w-0 flex-1"><h3 class="text-base font-semibold text-gray-900 dark:text-white leading-snug">' + m.label + '</h3>' +
+          '<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">' + m.rate + '</p></div>' +
+          '<button id="ai-model-detail-fav" aria-label="' + (fav ? 'Hapus dari favorit' : 'Tandai favorit') + '" class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ' + (fav ? 'text-amber-500 bg-amber-50 dark:bg-amber-500/10' : 'text-gray-300 dark:text-slate-600 hover:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800') + '">' +
+          '<svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="' + (fav ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.5a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385c.117.489-.417.874-.846.61l-4.725-2.885a.562.562 0 0 0-.588 0L5.973 20.54c-.429.264-.963-.12-.846-.61l1.285-5.385a.563.563 0 0 0-.182-.557L2.026 10.386c-.38-.325-.178-.948.321-.988l5.518-.442a.563.563 0 0 0 .475-.345L10.465 3.5Z"></path></svg>' +
+          '</button></div>' +
+          '<div class="flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 w-fit max-w-full">' +
+          '<code class="min-w-0 text-[12.5px] font-mono text-gray-600 dark:text-gray-300 truncate">' + m.id + '</code>' +
+          '<button id="ai-model-detail-copy" class="p-1 rounded-full text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-gray-200 hover:bg-gray-200/70 dark:hover:bg-slate-600 transition-colors cursor-pointer shrink-0" aria-label="Salin id model" title="Salin id model"><svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>' +
+          '</div>' +
+          (m.desc ? ('<p id="ai-model-detail-desc" class="text-[13px] text-gray-600 dark:text-gray-300 mt-3 leading-relaxed">' + (descLong ? descShort : m.desc) + '</p>' +
+            (descLong ? '<button id="ai-model-detail-more" class="text-[12.5px] font-medium text-gray-900 dark:text-white mt-1 cursor-pointer hover:underline" data-open="0">Lihat selengkapnya</button>' : '')) : '') +
+          '<div class="grid grid-cols-3 gap-2 mt-4">' +
+          '<div class="rounded-xl border border-gray-200 dark:border-slate-700 p-2.5"><p class="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide truncate">Modalitas</p><p class="text-[13px] font-semibold text-gray-900 dark:text-white mt-0.5">' + modalitas + '</p></div>' +
+          '<div class="rounded-xl border border-gray-200 dark:border-slate-700 p-2.5"><p class="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide truncate">Konteks</p><p class="text-[13px] font-semibold text-gray-900 dark:text-white mt-0.5">' + (m.ctx || '-') + '</p></div>' +
+          '<div class="rounded-xl border border-gray-200 dark:border-slate-700 p-2.5"><p class="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide truncate">Kategori</p><p class="text-[13px] font-semibold text-gray-900 dark:text-white mt-0.5 truncate">' + cat + '</p></div>' +
+          '</div>' +
+          '<button id="ai-model-detail-use" class="w-full mt-4 py-2.5 rounded-xl text-[14px] font-semibold transition-colors ' +
+          (sel ? 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-300 cursor-default' : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 cursor-pointer') + '">' +
+          (sel ? 'Dipakai saat ini' : 'Pakai model ini') + '</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(mod);
+    _aiDetailSheet = mod;
+    mod.querySelector('#ai-model-detail-backdrop').addEventListener('click', closeAiModelDetail);
+    mod.querySelector('#ai-model-detail-x').addEventListener('click', closeAiModelDetail);
+    mod.querySelector('#ai-model-detail-copy').addEventListener('click', function () { copyAiModelId(id, this); });
+    var favBtn = mod.querySelector('#ai-model-detail-fav');
+    if (favBtn) favBtn.addEventListener('click', function () {
+      var on = toggleAiModelFav(m.id);
+      favBtn.setAttribute('aria-label', on ? 'Hapus dari favorit' : 'Tandai favorit');
+      favBtn.className = 'w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ' + (on ? 'text-amber-500 bg-amber-50 dark:bg-amber-500/10' : 'text-gray-300 dark:text-slate-600 hover:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800');
+      var svg = favBtn.querySelector('svg');
+      if (svg) svg.setAttribute('fill', on ? 'currentColor' : 'none');
+    });
+    var moreBtn = mod.querySelector('#ai-model-detail-more');
+    if (moreBtn) moreBtn.addEventListener('click', function () {
+      var open = moreBtn.getAttribute('data-open') === '1';
+      var descEl = mod.querySelector('#ai-model-detail-desc');
+      if (descEl) descEl.textContent = open ? descShort : m.desc;
+      moreBtn.textContent = open ? 'Lihat selengkapnya' : 'Lihat lebih sedikit';
+      moreBtn.setAttribute('data-open', open ? '0' : '1');
+    });
+    mod.querySelector('#ai-model-detail-use').addEventListener('click', function () {
+      if (!sel) pickAiModel(id);
+      closeAiModelDetail();
+    });
+    if (_aiDetailCloseTimer) { clearTimeout(_aiDetailCloseTimer); _aiDetailCloseTimer = null; }
+    _aiDetailPrevOverflow = _aiScroller().style.overflow;
+    _aiScroller().style.overflow = 'hidden';
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        var b = mod.querySelector('#ai-model-detail-backdrop'), c = mod.querySelector('#ai-model-detail-card');
+        if (b) b.classList.remove('opacity-0');
+        if (c) c.classList.remove('translate-y-full');
+      });
+    });
+  }
+
+  function copyAiModelId(id, btn) {
+    var done = function () {
+      if (!btn) return;
+      var orig = btn.innerHTML;
+      btn.innerHTML = '<svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>';
+      setTimeout(function () { btn.innerHTML = orig; }, 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(id).then(done).catch(function () {});
+    else {
+      var ta = document.createElement('textarea');
+      ta.value = id; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+  }
+  function renderAiModelOptions() {
+    var pop = document.getElementById('ai-model-popover');
+    if (!pop) return;
+    pop.innerHTML = '';
+    AI_MODELS.forEach(function (m) {
+      // baris bersih: logo + nama saja; id & tombol salin pindah ke modal detail
+      var b = document.createElement('button');
+      b.type = 'button';
+      var sel = m.id === _aiModelValue;
+      b.className = 'w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-slate-700 rounded-lg transition-colors text-left cursor-pointer' + (sel ? ' bg-gray-50 dark:bg-slate-700/60 font-medium' : '');
+      b.innerHTML = aiModelIconChip(m.id) + '<span class="truncate">' + m.label + '</span>' +
+        (sel ? '<span class="ml-auto pl-2 flex-shrink-0 text-gray-900 dark:text-white"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg></span>' : '');
+      b.addEventListener('click', function () { openAiModelDetail(m.id); });
+      pop.appendChild(b);
+    });
+    if (window.lucide) lucide.createIcons();
+  }
+  function updateAiRateHint() {
+    var hint = document.getElementById('ai-model-rate');
+    if (!hint) return;
+    var m = AI_MODELS.filter(function (x) { return x.id === _aiModelValue; })[0];
+    hint.textContent = m ? m.rate : '';
+  }
+
+  // ===== Secret API per proyek =====
+  async function loadAiSecret() {
+    try {
+      var res = await fetch(AI_API_BASE + '/ai/v1/secret?project_id=' + encodeURIComponent(_aiPid()), { headers: _aiHdrs(false) });
+      if (!res.ok) return;
+      var data = await res.json();
+      if (data && data.exists && data.secret) {
+        _aiSecret = data.secret;
+        renderAiSecret(data);
+      } else {
+        _aiSecret = '';
+        renderAiSecret(null);
+      }
+    } catch (e) {}
+    renderAiCurl();
+  }
+  function renderAiSecret(data) {
+    var emptyWrap = document.getElementById('ai-secret-empty');
+    var activeWrap = document.getElementById('ai-secret-active');
+    var input = document.getElementById('ai-secret-value');
+    if (!data) {
+      if (emptyWrap) emptyWrap.style.display = '';
+      if (activeWrap) activeWrap.classList.add('hidden');
+      if (input) input.value = '';
+      return;
+    }
+    if (emptyWrap) emptyWrap.style.display = 'none';
+    if (activeWrap) activeWrap.classList.remove('hidden');
+    if (input) { input.value = data.secret; input.type = 'password'; }
+    var meta = document.getElementById('ai-secret-meta');
+    if (meta) {
+      var lu = data.last_used ? ' · terakhir dipakai ' + new Date(data.last_used).toLocaleString('id-ID') : '';
+      meta.textContent = 'Dibuat ' + new Date(data.created_at).toLocaleString('id-ID') + lu;
+    }
+  }
+  async function createAiSecret() {
+    try {
+      var res = await fetch(AI_API_BASE + '/ai/v1/secret', { method: 'POST', headers: _aiHdrs(true), body: JSON.stringify({ project_id: _aiPid() }) });
+      var data = await res.json();
+      if (res.ok && data && data.secret) {
+        _aiSecret = data.secret;
+        renderAiSecret({ secret: data.secret, created_at: data.created_at, last_used: null });
+        renderAiCurl();
+      } else {
+        alert((data && data.error) || 'Gagal membuat secret.');
+      }
+    } catch (e) { alert('Gagal membuat secret: ' + e.message); }
+  }
+  async function revokeAiSecret() {
+    if (!confirm('Cabut secret proyek ini? Semua integrasi yang memakai secret ini akan langsung berhenti bekerja.')) return;
+    try {
+      var res = await fetch(AI_API_BASE + '/ai/v1/secret?project_id=' + encodeURIComponent(_aiPid()), { method: 'DELETE', headers: _aiHdrs(false) });
+      var data = await res.json();
+      if (res.ok && data && data.success) {
+        _aiSecret = '';
+        renderAiSecret(null);
+        renderAiCurl();
+      } else { alert((data && data.error) || 'Gagal mencabut secret.'); }
+    } catch (e) { alert('Gagal mencabut secret: ' + e.message); }
+  }
+  function toggleAiKeyVisibility() {
+    var el = document.getElementById('ai-secret-value');
+    if (!el) return;
+    el.type = (el.type === 'password') ? 'text' : 'password';
+  }
+  function copyAiSecret() {
+    if (!_aiSecret) return;
+    var done = function () { alert('Secret tersalin.'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(_aiSecret).then(done).catch(function () {});
+    else {
+      var ta = document.createElement('textarea');
+      ta.value = _aiSecret; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+  }
+  function _aiFlashCopied(sel) {
+    var btn = document.querySelector(sel);
+    if (!btn) return;
+    var orig = btn.innerHTML;
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>';
+    setTimeout(function () { btn.innerHTML = orig; }, 1500);
+  }
+  function copyAiBaseUrl() {
+    var url = 'https://app.clincoo.buzz/v1';
+    var done = function () { _aiFlashCopied('button[onclick="copyAiBaseUrl()"]'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done).catch(function () {});
+    else {
+      var ta = document.createElement('textarea');
+      ta.value = url; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+  }
+
+  // ===== Contoh cURL =====
+  function renderAiCurl() {
+    var pre = document.getElementById('ai-curl');
+    if (!pre) return;
+    var secret = _aiSecret || 'clk_sk_SECRET_PROYEK_KAMU';
+    var model = _aiModelValue || 'clincoo/auto';
+    pre.textContent =
+      'curl -X POST \\\n' +
+      '  "https://app.clincoo.buzz/v1/chat/completions" \\\n' +
+      '  -H "Authorization: Bearer ' + secret + '" \\\n' +
+      '  -H "Content-Type: application/json" \\\n' +
+      '  -d \'{ "model": "' + model + '", "messages": [{ "role": "user", "content": "Halo!" }] }\'';
+  }
+  function copyAiCurl() {
+    var txt = document.getElementById('ai-curl');
+    if (!txt || !txt.textContent) return;
+    var done = function () { _aiFlashCopied('button[onclick="copyAiCurl()"]'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt.textContent).then(done).catch(function () {});
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = txt.textContent; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta); done();
+    }
+  }
+
+  // ===== Uji koneksi (panggilan nyata ke Clincoo Open API) =====
+  async function testAiCall() {
+    var btn = document.getElementById('ai-test-btn');
+    if (btn) { btn.disabled = true; btn.classList.add('opacity-60', 'cursor-not-allowed'); btn.textContent = 'Menguji...'; }
+    if (!_aiSecret) {
+      alert('Buat secret dulu di bagian Secret API.');
+      if (btn) { btn.disabled = false; btn.classList.remove('opacity-60', 'cursor-not-allowed'); btn.textContent = 'Tes panggilan'; }
+      return;
+    }
+    var model = _aiModelValue || 'clincoo/auto';
+    var t0 = Date.now();
+    try {
+      var res = await fetch('https://app.clincoo.buzz/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + _aiSecret, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: model, messages: [{ role: 'user', content: 'Ping! Balas singkat.' }], max_tokens: 16 })
+      });
+      var ms = Date.now() - t0;
+      var data = await res.json().catch(function () { return null; });
+      var okCall = res.ok && data && data.choices;
+      var tok = (data && data.usage && data.usage.total_tokens) || 0;
+      var err = okCall ? '' : ((data && data.error && data.error.message) || ('HTTP ' + res.status));
+      if (okCall) { alert('Sukses (' + ms + ' ms) — jawaban: ' + String(data.choices[0].message.content).slice(0, 80)); }
+      else { alert('Gagal: ' + err); }
+      await loadAiLogs();
+    } catch (err) {
+      alert('Gagal menghubungi Clincoo Open API: ' + (err && err.message));
+      await loadAiLogs();
+    }
+    if (btn) { btn.disabled = false; btn.classList.remove('opacity-60', 'cursor-not-allowed'); btn.textContent = 'Tes panggilan'; }
+  }
+
+  // ===== Log real-time & Analitik =====
+  function fmtAiTime(iso) {
+    var t = new Date(iso);
+    if (isNaN(t.getTime())) return '-';
+    var p = function (n) { return ('0' + n).slice(-2); };
+    return p(t.getDate()) + '/' + p(t.getMonth() + 1) + ' ' + p(t.getHours()) + ':' + p(t.getMinutes()) + ':' + p(t.getSeconds());
+  }
+  async function loadAiLogs() {
+    try {
+      var res = await fetch(AI_API_BASE + '/ai/v1/logs?project_id=' + encodeURIComponent(_aiPid()), { headers: _aiHdrs(false) });
+      if (!res.ok) { renderAiLogs([]); renderAiAnalytics({}); return; }
+      var data = await res.json();
+      renderAiLogs((data && data.logs) || []);
+      renderAiAnalytics((data && data.stats) || {});
+    } catch (e) { /* pertahankan tampilan terakhir */ }
+  }
+  function startAiLiveLogs() {
+    setInterval(function () { if (!document.hidden) loadAiLogs(); }, 5000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) loadAiLogs(); });
+  }
+  async function clearAiLogs() {
+    if (!confirm('Kosongkan log pemakaian proyek ini?')) return;
+    // hapus lokal saja: log server dibersihkan otomatis (maks 500 baris per proyek)
+    renderAiLogs([]); renderAiAnalytics({});
+  }
+  var _aiLogsRaw = [];
+  function renderAiLogs(logs) {
+    _aiLogsRaw = logs || [];
+    renderAiDailyChart();
+    var list = document.getElementById('ai-log-list');
+    var empty = document.getElementById('ai-log-empty');
+    if (!list) return;
+    list.innerHTML = '';
+    if (empty) empty.style.display = logs.length ? 'none' : 'block';
+    logs.slice(0, 30).forEach(function (lg) {
+      var row = document.createElement('div');
+      row.className = 'flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700';
+      var statusHtml = lg.ok
+        ? '<span class="text-xs font-medium text-emerald-600 dark:text-emerald-400">Sukses</span>'
+        : '<span class="text-xs font-medium text-red-600 dark:text-red-400">Gagal' + (lg.err ? ' — ' + String(lg.err).slice(0, 40) : '') + '</span>';
+      var detail = fmtAiTime(lg.t) + ' · ' + (lg.ms || 0) + ' ms · ' + (lg.tok || 0) + ' token · kredit ' + (lg.c || 0) + ' · dari: ' + (lg.s || 'langsung');
+      row.innerHTML =
+        '<div class="min-w-0"><p class="text-sm font-medium text-gray-900 dark:text-white truncate">' + (lg.m || '-') + '</p>' +
+        '<p class="text-xs text-gray-400 dark:text-gray-500">' + detail + '</p></div>' +
+        '<div class="flex-shrink-0">' + statusHtml + '</div>';
+      list.appendChild(row);
+    });
+  }
+
+  // ===== Analitik: kotak angka + grafik (Chart.js) =====
+  function renderAiAnalytics(stats) {
+    var set = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
+    set('ai-stat-total', (stats && stats.total) || 0);
+    set('ai-stat-tokens', (stats && stats.tokens) || 0);
+    set('ai-stat-cost', (stats && stats.cost) || 0);
+    renderAiStatusChart((stats && stats.ok) || 0, (stats && stats.fail) || 0);
+    var wrap = document.getElementById('ai-model-usage');
+    var empty = document.getElementById('ai-usage-empty');
+    var perModel = (stats && stats.per_model) || [];
+    if (wrap) {
+      wrap.innerHTML = '';
+      if (empty) empty.style.display = perModel.length ? 'none' : 'block';
+      var maxN = 1;
+      perModel.forEach(function (x) { maxN = Math.max(maxN, x.n); });
+      perModel.forEach(function (x) {
+        var row = document.createElement('div');
+        row.innerHTML =
+          '<div class="flex items-center justify-between gap-3 mb-1"><p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">' + x.m + '</p>' +
+          '<p class="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">' + x.n + 'x · ' + (x.tok || 0) + ' token · kredit ' + (x.c || 0) + '</p></div>' +
+          '<div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden"><div class="h-full rounded-full bg-black dark:bg-white" style="width:' + Math.round(x.n / maxN * 100) + '%"></div></div>';
+        wrap.appendChild(row);
+      });
+    }
+    var est = document.getElementById('ai-est-cost');
+    if (est) {
+      est.textContent = ((stats && stats.total) || 0)
+        ? 'Log diperbarui otomatis setiap 5 detik (real-time). Log server dibatasi 500 baris terakhir per proyek.'
+        : '';
+    }
+    renderAiChart(perModel);
+  }
+
+  // --- Grafik status permintaan: doughnut Sukses vs Gagal (Chart.js) ---
+  var _aiStatusChart = { inst: null };
+  function renderAiStatusChart(ok, fail) {
+    var wrap = document.getElementById('ai-status-chart-wrap');
+    if (!wrap) return;
+    loadChartJs(function (okLoad) {
+      if (!okLoad || !window.Chart) { wrap.classList.add('hidden'); return; }
+      wrap.classList.remove('hidden');
+      if (_aiStatusChart.inst) { _aiStatusChart.inst.destroy(); _aiStatusChart.inst = null; }
+      var dark = _aiDark();
+      var tick = dark ? '#9ca3af' : '#6b7280';
+      try {
+        _aiStatusChart.inst = new Chart(document.getElementById('ai-status-chart'), {
+          type: 'doughnut',
+          data: {
+            labels: ['Sukses', 'Gagal'],
+            datasets: [{
+              data: [ok, fail],
+              backgroundColor: [dark ? '#34d399' : '#10b981', dark ? '#f87171' : '#ef4444'],
+              borderColor: dark ? '#0a0a0a' : '#ffffff',
+              borderWidth: 2,
+              hoverOffset: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 300 },
+            cutout: '62%',
+            plugins: {
+              legend: { position: 'bottom', labels: { color: tick, boxWidth: 10, boxHeight: 10, font: { size: 11 }, padding: 12 } },
+              tooltip: { callbacks: { label: function (ctx) {
+                var total = ok + fail;
+                var pct = total ? Math.round(ctx.parsed / total * 100) : 0;
+                return ' ' + ctx.label + ': ' + ctx.parsed + ' (' + pct + '%)';
+              } } }
+            }
+          }
+        });
+      } catch (e) { wrap.classList.add('hidden'); }
+    });
+  }
+
+  // --- Grafik pemakaian harian (Chart.js) ---
+  var _aiDailyChart = { inst: null };
+  function renderAiDailyChart() {
+    var wrap = document.getElementById('ai-daily-chart-wrap');
+    if (!wrap) return;
+    var logs = _aiLogsRaw || []; // boleh kosong: chart tampil dengan angka 0 utk pengecekan
+    loadChartJs(function (ok) {
+      if (!ok || !window.Chart) { wrap.classList.add('hidden'); return; }
+      wrap.classList.remove('hidden');
+      // agregasi per hari lokal, 14 hari terakhir
+      var days = [];
+      var byDay = {};
+      var d = new Date();
+      d.setHours(0, 0, 0, 0);
+      for (var i = 13; i >= 0; i--) {
+        var dt = new Date(d.getTime() - i * 86400000);
+        var key = dt.toISOString().slice(0, 10);
+        days.push({ key: key, label: dt.getDate() + '/' + (dt.getMonth() + 1), n: 0, tok: 0, c: 0 });
+        byDay[key] = days[days.length - 1];
+      }
+      logs.forEach(function (lg) {
+        var t = new Date(lg.t);
+        if (isNaN(t.getTime())) return;
+        t.setHours(0, 0, 0, 0);
+        var day = byDay[t.toISOString().slice(0, 10)];
+        if (!day) return;
+        day.n += 1;
+        day.tok += (lg.tok || 0);
+        day.c += (lg.c || 0);
+      });
+      if (_aiDailyChart.inst) { _aiDailyChart.inst.destroy(); _aiDailyChart.inst = null; }
+      var dark = _aiDark();
+      var tick = dark ? '#9ca3af' : '#6b7280';
+      var grid = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+      var line = dark ? 'rgba(255,255,255,0.9)' : 'rgba(17,17,17,0.9)';
+      var fill = dark ? 'rgba(255,255,255,0.08)' : 'rgba(17,17,17,0.06)';
+      try {
+        _aiDailyChart.inst = new Chart(document.getElementById('ai-daily-usage-chart'), {
+          type: 'line',
+          data: {
+            labels: days.map(function (x) { return x.label; }),
+            datasets: [{
+              label: 'Permintaan',
+              data: days.map(function (x) { return x.n; }),
+              borderColor: line,
+              backgroundColor: fill,
+              fill: true,
+              tension: 0.35,
+              pointRadius: 2.5,
+              pointHoverRadius: 4,
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 300 },
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { display: false },
+              tooltip: { callbacks: { label: function (ctx) {
+                var x = days[ctx.dataIndex];
+                return x.n + 'x · ' + x.tok + ' token · kredit ' + x.c;
+              } } }
+            },
+            scales: {
+              x: { ticks: { color: tick, font: { size: 10 }, maxRotation: 0, autoSkip: true }, grid: { display: false } },
+              y: { beginAtZero: true, ticks: { color: tick, precision: 0 }, grid: { color: grid } }
+            }
+          }
+        });
+      } catch (e) { wrap.classList.add('hidden'); }
+    });
+  }
+
+  // --- Grafik pemakaian per model (Chart.js) ---
+  var _aiChart = { loaded: false, failed: false, inst: null };
+  function _aiDark() { return document.body.classList.contains('dark-mode') || document.documentElement.classList.contains('dark-mode'); }
+  function loadChartJs(cb) {
+    if (_aiChart.loaded) { cb(true); return; }
+    if (_aiChart.failed) { cb(false); return; }
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
+    s.onload = function () { _aiChart.loaded = true; cb(true); };
+    s.onerror = function () { _aiChart.failed = true; cb(false); };
+    document.head.appendChild(s);
+  }
+  function renderAiChart(perModel) {
+    var wrap = document.getElementById('ai-chart-wrap');
+    if (!wrap) return;
+    if (!perModel || !perModel.length) {
+      wrap.classList.add('hidden');
+      if (_aiChart.inst) { _aiChart.inst.destroy(); _aiChart.inst = null; }
+      return;
+    }
+    loadChartJs(function (ok) {
+      if (!ok || !window.Chart) { wrap.classList.add('hidden'); return; }
+      wrap.classList.remove('hidden');
+      if (_aiChart.inst) { _aiChart.inst.destroy(); _aiChart.inst = null; }
+      var dark = _aiDark();
+      var tick = dark ? '#9ca3af' : '#6b7280';
+      var grid = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+      var toks = perModel.map(function (x) { return x.tok || 0; });
+      var creds = perModel.map(function (x) { return x.c || 0; });
+      try {
+        _aiChart.inst = new Chart(document.getElementById('ai-usage-chart'), {
+          type: 'bar',
+          data: {
+            labels: perModel.map(function (x) { return x.m; }),
+            datasets: [{
+              label: 'Permintaan',
+              data: perModel.map(function (x) { return x.n; }),
+              backgroundColor: dark ? 'rgba(255,255,255,0.85)' : 'rgba(17,17,17,0.85)',
+              borderRadius: 6,
+              maxBarThickness: 42
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 300 },
+            plugins: {
+              legend: { display: false },
+              tooltip: { callbacks: { label: function (ctx) { var i = ctx.dataIndex; return ctx.parsed.y + 'x · ' + (toks[i] || 0) + ' token · kredit ' + (creds[i] || 0); } } }
+            },
+            scales: {
+              x: { ticks: { color: tick, font: { size: 10 } }, grid: { display: false } },
+              y: { beginAtZero: true, ticks: { color: tick, precision: 0 }, grid: { color: grid } }
+            }
+          }
+        });
+      } catch (e) { wrap.classList.add('hidden'); }
+    });
+  }
+
+  // ===== Simpan & muat model default (project-settings per proyek) =====
+  async function saveAiSettings() {
+    var btn = document.querySelector('#action-buttons button.bg-black');
+    if (!btn) return;
+    btn.innerText = 'Menyimpan...';
+    btn.disabled = true;
+    btn.classList.add('opacity-80', 'cursor-not-allowed');
+    var payload = { project_id: _aiPid(), ai_router_settings: JSON.stringify({ model: _aiModelValue }) };
+    var ok = false;
+    try {
+      var r1 = await fetch(AI_API_BASE + '/project-settings', { method: 'POST', headers: _aiHdrs(true), body: JSON.stringify(payload) });
+      ok = r1.ok;
+    } catch (e) {}
+    btn.innerText = ok ? 'Tersimpan!' : 'Tersimpan (offline cache)';
+    btn.classList.replace('bg-black', 'bg-emerald-500');
+    btn.classList.replace('hover:bg-gray-800', 'hover:bg-emerald-600');
+    btn.disabled = false;
+    btn.classList.remove('opacity-80', 'cursor-not-allowed');
+    isEdited = false;
+  }
+
+  async function loadAiSettings() {
+    // render awal dulu — jangan tergantung sukses/tidaknya fetch
+    renderAiModelOptions();
+    updateAiRateHint();
+    renderAiCurl();
+    try {
+      var res = await fetch(AI_API_BASE + '/project-settings?project_id=' + encodeURIComponent(_aiPid()), { headers: _aiHdrs(false) });
+      if (!res.ok) { await loadAiSecret(); await loadAiLogs(); return; }
+      var data = await res.json();
+      var st = (data && data.settings) || {};
+      var cfg = null;
+      try { cfg = st.ai_router_settings ? JSON.parse(st.ai_router_settings) : null; } catch (e) {}
+      if (cfg && cfg.model) {
+        // migrasi nama lama -> baru
+        var oldMap = { 'clinqoo/auto': 'clincoo/auto', 'clinqoo/glm-5.2': 'clincoo/glm-5.2', 'clinqoo/deepseek-v4-flash': 'clincoo/deepseek-v4-flash', 'clinqoo/glm-4.7-flash': 'clincoo/glm-4.7-flash' };
+        _aiModelValue = oldMap[cfg.model] || cfg.model;
+      }
+    } catch (e) {}
+    aiModelApplyUi();
+    renderAiModelOptions();
+    await loadAiSecret();
+    await loadAiLogs();
+    startAiLiveLogs();
+    try {
+      isEdited = false;
+      var c = document.getElementById('action-buttons');
+      if (c) { c.classList.add('hidden', 'opacity-0'); c.classList.remove('flex', 'opacity-100'); }
+    } catch (e) {}
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    loadAiSettings();
+  });
+</script>
+
+
+
+    <script>/* clinqoo-sw-register */
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../sw.js').catch(function () {}); }); }
+    </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
+<script>
+        var chatNav = document.getElementById('chat-top-nav');
+        var chatNavPill = document.getElementById('chat-nav-pill');
+        var chatNavLinks = Array.prototype.slice.call(chatNav.querySelectorAll('.chat-nav-link'));
+        var CHAT_NAV_ACTIVE = 'dashboard';
+        var chatNavActive = chatNavLinks.filter(function(l) { return l.dataset.nav === CHAT_NAV_ACTIVE; })[0] || null;
+        if (chatNavActive) chatNavActive.classList.add('is-active');
+        function chatNavMovePill(el) {
+            if (!el) { chatNavPill.style.top = '0px'; chatNavPill.style.left = '0px'; chatNavPill.style.width = '0px'; chatNavPill.style.height = '0px'; return; }
+            chatNavPill.style.top = el.offsetTop + 'px';
+            chatNavPill.style.left = el.offsetLeft + 'px';
+            chatNavPill.style.width = el.offsetWidth + 'px';
+            chatNavPill.style.height = el.offsetHeight + 'px';
+        }
+        chatNavPill.style.transition = 'none';
+        chatNavMovePill(chatNavActive);
+        requestAnimationFrame(function() { requestAnimationFrame(function() { chatNavPill.style.transition = 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)'; }); });
+        chatNavLinks.forEach(function(l) {
+            l.addEventListener('mouseenter', function() { chatNavMovePill(l); });
+            l.addEventListener('click', function() { chatNavLinks.forEach(function(x) { x.classList.remove('is-active'); }); l.classList.add('is-active'); chatNavMovePill(l); });
+        });
+        chatNav.addEventListener('mouseleave', function() { chatNavMovePill(chatNavActive); });
+        window.addEventListener('resize', function() { chatNavMovePill(chatNavActive); });
+        document.getElementById('sidebar-toggle').addEventListener('click', function() { window.location.href = '/'; });
+        var headerMoreBtn = document.getElementById('header-more-btn');
+        var headerMoreMenu = document.getElementById('header-more-menu');
+        function closeHeaderMenu() { headerMoreMenu.classList.remove('open'); }
+        window.toggleHeaderMenu = function(e) {
+            e.stopPropagation();
+            headerMoreMenu.classList.contains('open') ? closeHeaderMenu() : headerMoreMenu.classList.add('open');
+        }
+        document.addEventListener('click', function(e) {
+            if (headerMoreMenu.classList.contains('open') && !headerMoreMenu.contains(e.target) && e.target !== headerMoreBtn) closeHeaderMenu();
+        });
+        // Menu titik-3 (popover di bawah header) juga tutup otomatis saat halaman discroll —
+        // window fase capture menangkap scroll dari elemen apa pun (scroll gak bubble).
+        window.addEventListener('scroll', function() {
+            if (headerMoreMenu.classList.contains('open')) closeHeaderMenu();
+        }, { capture: true, passive: true });
+        window.chatExportZip = function () {
+    closeHeaderMenu();
+    var pid = ''; try { pid = localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) {}
+    var key = 'clinqoo_workspace_files_' + (pid || 'global');
+    var byPath = {};
+    var raw = null;
+    try { raw = localStorage.getItem(key); } catch (e) {}
+    if (!raw) { try { var legacy = localStorage.getItem('clinqoo_workspace_files'); if (legacy) { localStorage.setItem(key, legacy); raw = legacy; } } catch (e) {} }
+    try {
+        var d = JSON.parse(raw) || {};
+        Object.keys(d).forEach(function (k) {
+            (d[k] || []).forEach(function (it) {
+                if (it && it.path && it.type === 'file') byPath[it.path] = it.content || '';
+            });
+        });
+    } catch (e) {}
+    var WS_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-files';
+    var tk = ''; try { tk = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+    var headers = tk ? { Authorization: 'Bearer ' + tk } : {};
+    var filesFromMap = function () {
+        return Object.keys(byPath).sort().map(function (p) { return { path: p, content: byPath[p] }; });
+    };
+    var finish = function (files) {
+        if (!files.length) { alert('Tidak ada berkas di Workspace untuk dieksport.'); return; }
+        var run = function () {
+            var zip = new window.JSZip();
+            files.forEach(function (f) { zip.file(f.path, f.content || ''); });
+            zip.generateAsync({ type: 'blob' }).then(function (blob) {
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = (pid || 'clincoo') + '.zip';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(function () { URL.revokeObjectURL(a.href); }, 500);
+            });
+        };
+        if (window.JSZip) { run(); return; }
+        var sc = document.createElement('script');
+        sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        sc.onload = run;
+        document.head.appendChild(sc);
+    };
+    if (!pid) { finish(filesFromMap()); return; }
+    // Gabungkan file cloud (D1) supaya SEMUA berkas Workspace ikut terekspor.
+    fetch(WS_API + '?project_id=' + encodeURIComponent(pid), { headers: headers })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function (resp) {
+            ((resp && resp.files) || []).forEach(function (f) {
+                if (f && f.path && !(f.path in byPath)) byPath[f.path] = f.content || '';
+            });
+            finish(filesFromMap());
+        })
+        .catch(function () { finish(filesFromMap()); });
+};
+
+window.chatLivePreview = function () {
+    closeHeaderMenu();
+    var pid = ''; try { pid = localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) {}
+    if (!pid) { alert('Tidak ada proyek aktif. Buka proyek dari daftar proyek dulu.'); return; }
+    var API = ['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api';
+    var tk = ''; try { tk = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+    var headers = tk ? { Authorization: 'Bearer ' + tk } : {};
+    var btn = document.getElementById('header-live-preview');
+    function setLoading(on) { if (btn) { btn.disabled = on; btn.style.opacity = on ? '0.55' : ''; btn.style.cursor = on ? 'wait' : ''; } }
+    setLoading(true);
+    fetch(API + '/deploy?project_id=' + encodeURIComponent(pid), { headers: headers })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) {
+            var st = res.d || {};
+            if (!res.ok || st.error) throw new Error(st.error || 'Gagal memeriksa status situs.');
+            if (st.last_deployment) {
+                var active = (st.domains || []).filter(function (x) { return x.status === 'active'; })[0];
+                var url = (active ? 'https://' + active.name : '') || st.pages_url;
+                setLoading(false);
+                window.open(url, '_blank');
+                return null;
+            }
+            // Belum pernah dipublikasikan ke Cloudflare: deploy dulu, baru buka URL yang sungguh hidup.
+            return fetch(API + '/deploy', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, headers), body: JSON.stringify({ project_id: pid }) })
+                .then(function (r2) { return r2.json().catch(function () { return {}; }).then(function (d2) { return { ok: r2.ok, d: d2 }; }); })
+                .then(function (res2) {
+                    var d = res2.d || {};
+                    if (!res2.ok || d.error) throw new Error(d.error || 'Gagal mempublikasikan situs ke Cloudflare.');
+                    var url = d.public_url || (d.public_domain ? 'https://' + d.public_domain : '') || (d.deployment && d.deployment.url) || d.pages_url || '';
+                    setLoading(false);
+                    if (url) window.open(url, '_blank');
+                    else alert('Situs berhasil dipublikasikan tapi URL pratinjau tidak ditemukan.');
+                });
+        })
+        .catch(function (err) {
+            setLoading(false);
+            alert('Gagal membuka pratinjau: ' + (err && err.message ? err.message : 'periksa koneksi internet lalu coba lagi.'));
+        });
+};
+    </script>
+<script>/* clinqoo-premium-sheet: bottom sheet daftar paket untuk fitur premium (crown) */
+(function(){
+  if (window.__clinqooPremiumSheet) return; window.__clinqooPremiumSheet = true;
+  function apiBase(){ return (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname)===-1)?'https://clincoo-be2.pages.dev':''; }
+  function token(){ try{ return localStorage.getItem('clinqoo_auth_token')||localStorage.getItem('clinqoo_token')||''; }catch(e){ return ''; } }
+  function readCache(k){ try{ var c=JSON.parse(localStorage.getItem(k)||'null'); return (c&&c.plan)?c:null; }catch(e){ return null; } }
+  var verifiedPlan=null, promoProActive=false, closeTimer=null, previousOverflow='';
+  var crownSelector='.clinqoo-premium-crown, .clinqoo-editor-crown, #export-crown-label';
+  function cacheSub(){ var a=readCache('TM_SUB_CACHE_KEY'), b=readCache('clinqoo_subscription_cache'); return a&&b?((a.ts||0)>(b.ts||0)?a:b):(a||b); }
+  function currentPlan(){ var c=cacheSub(); return verifiedPlan||(c&&c.plan)||window.clinqooEditorPlan||null; }
+  function isPaid(){ var p=currentPlan(); return !!p && String(p).toLowerCase()!=='starter'; }
+  var crownCss=document.createElement('style');
+  crownCss.textContent='body[data-pps-paid="true"] .clinqoo-premium-crown,body[data-pps-paid="true"] .clinqoo-editor-crown,body[data-pps-paid="true"] #export-crown-label,body[data-pps-paid="true"] #premium-invite-chip,body[data-pps-paid="true"] #gh-connect-crown{display:none!important;}';
+  document.head.appendChild(crownCss);
+  function currentBilling(){ var c=cacheSub(); return (c&&c.billingCycle)||'Bulanan'; }
+  var sheetEl=null, idx=1, featureMinimum='Pro';
+  // ===== Data paket: identik dengan halaman Upgrade (akun/langganan/upgrade) =====
+  var plans=[
+    { name:'Starter', tagline:'Untuk individu yang baru memulai.', price:'Gratis', per:'', hot:false,
+      items:[['Hingga 3 proyek aktif + editor kode',true],['1 kolaborator per proyek',true],['Chat AI di setiap proyek (50 pesan/bulan) + pencarian web',true],['Kelola 1 domain: verifikasi, DNS & SSL',true], ['3 template proyek siap pakai',true],['Tugas terjadwal & notifikasi',true],['Deploy web 5x per bulan',true],['Editor full-stack & integrasi GitHub',false],['Domain tanpa batas & deploy tanpa batas',false]] },
+    { name:'Pro', tagline:'Untuk profesional dan kreator aktif.', price:'49K', per:'/bln', hot:true,
+      items:[['Hingga 10 proyek aktif',true],['Hingga 5 kolaborator per proyek',true],['Semua fitur Starter',true], ['Editor kode full-stack: bangun & publikasikan dari browser',true], ['Domain tanpa batas: verifikasi, DNS & SSL',true],['Chat AI hingga 500 pesan/bulan (maks 50/hari)',true],['Deploy web hingga 25x per bulan ke domain sendiri',true],['Integrasi GitHub: impor repo, AI kerja langsung di repo kamu',true]] },
+    { name:'Bisnis', tagline:'Untuk tim dan operasi skala besar.', price:'129K', per:'/bln', hot:false,
+      items:[['Semua fitur Pro',true],['Chat AI hingga 2.000 pesan/bulan (maks 150/hari)',true],['Hingga 50 proyek aktif',true],['Hingga 20 kolaborator per proyek',true],['Kontrol akses & keamanan proyek lanjutan',true], ['Dilindungi Password & ekspor data penuh akun',true],['Deploy web tanpa batas',true]] }
+  ];
+  function checkoutUrl(name){
+    var base=(location.pathname.indexOf('/Clincoo')!==-1)?'/Clincoo.':'';
+    return base+'/akun/langganan/upgrade/konfirmasi/?plan='+encodeURIComponent(name)+'&billing='+encodeURIComponent(currentBilling());
+  }
+  function cardHtml(p,current){
+    var list=p.items.map(function(it){
+      return '<li class="flex items-start gap-2.5 text-[13px] '+(p.hot?'text-gray-900 font-medium':(it[1]?'text-gray-700':'text-gray-400 opacity-70'))+'">'+
+        (it[1]?'<svg class="w-4 h-4 shrink-0 '+(p.hot?'text-accent':'text-gray-900')+'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5"></path></svg>':'<svg class="w-4 h-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"></path></svg>')+
+        '<span>'+it[0]+'</span></li>';
+    }).join('');
+    var btn;
+    if(p.name.toLowerCase()===String(current).toLowerCase()){ btn='<div class="w-full py-3 bg-gray-50 text-gray-500 border border-gray-200 rounded-xl font-semibold text-sm text-center cursor-not-allowed">Paket Saat Ini</div>'; }
+    else if(p.hot){ btn='<a href="'+checkoutUrl(p.name)+'" class="block w-full py-3 bg-accent rounded-xl font-semibold text-sm text-center transition-all shadow-md active:scale-95">'+(p.name==='Pro'&&promoProActive?'Ambil Promo Pro Rp5.000':'Upgrade ke '+p.name)+'</a>'; }
+    else { btn='<a href="'+checkoutUrl(p.name)+'" class="block w-full py-3 bg-white text-gray-900 border-2 border-gray-200 hover:border-gray-900 hover:bg-gray-50 rounded-xl font-semibold text-sm text-center transition-all">Mulai '+p.name+'</a>'; }
+    return '<div class="w-full shrink-0 px-0.5"><div class="pps-plan-card bg-white border '+(p.hot?'border-2 border-accent shadow-xl':'border-gray-200')+' rounded-3xl p-4 sm:p-5 flex flex-col relative text-left">'+
+      (p.hot?'<div class="absolute top-0 right-0 bg-accent text-[10px] font-bold px-3.5 py-1 rounded-bl-xl rounded-tr-2xl uppercase tracking-wider">Discount</div>':'')+
+      '<div class="mb-4 '+(p.hot?'mt-2':'')+'"><h3 class="text-lg font-bold text-gray-900 '+(p.hot?'text-accent':'')+'">'+p.name+'</h3><p class="text-xs text-gray-500 mt-0.5">'+p.tagline+'</p></div>'+
+      '<div class="mb-4 flex items-baseline gap-2 flex-wrap"><span class="text-2xl font-extrabold tracking-tight text-gray-900">'+(p.name==='Pro'&&promoProActive?'Rp5.000':p.price)+'</span><span class="text-xs font-medium text-gray-500">'+p.per+'</span>'+(p.name==='Pro'&&promoProActive?'<span class="text-sm text-gray-400 line-through">Rp49.000</span>':'')+'</div>'+
+      '<ul class="flex flex-col gap-2.5 mb-4 flex-1">'+list+'</ul>'+btn+'</div></div>';
+  }
+  function buildSheet(){
+    if(sheetEl) return;
+    var current=currentPlan()||'Starter';
+    var slides=plans.map(function(p){ return cardHtml(p,current); }).join('');
+    var dots=plans.map(function(p,i){ return '<button class="pps-dot rounded-full transition-all duration-200" data-i="'+i+'" style="width:6px;height:6px;background:#d1d5db;"></button>'; }).join('');
+    var css=document.createElement('style'); css.id='premium-sheet-css';
+    css.textContent='#premium-plans-sheet .text-accent{color:var(--accent-color,#000000);} #premium-plans-sheet .bg-accent{background-color:var(--accent-color,#000000);color:#ffffff;} #premium-plans-sheet .border-accent{border-color:var(--accent-color,#000000);}'+
+      'body:is(.dark-mode,.dark) #premium-plans-sheet .text-accent{color:#ffffff !important;} body:is(.dark-mode,.dark) #premium-plans-sheet .bg-accent{background-color:#ffffff !important;color:#000000 !important;} body:is(.dark-mode,.dark) #premium-plans-sheet .border-accent{border-color:#ffffff !important;}'+
+      'body:is(.dark-mode,.dark) #premium-plans-sheet .pps-plan-card{background-color:#0a0a0a!important;border-color:#222;} body:is(.dark-mode,.dark) #premium-plans-sheet .text-gray-700{color:#d1d5db;} body:is(.dark-mode,.dark) #premium-plans-sheet .pps-card{background-color:#0a0a0a !important;} body:is(.dark-mode,.dark) #premium-plans-sheet .pps-card h3,body:is(.dark-mode,.dark) #premium-plans-sheet .pps-card .text-gray-900{color:#ffffff !important;}';
+    document.head.appendChild(css);
+    sheetEl=document.createElement('div'); sheetEl.id='premium-plans-sheet'; sheetEl.setAttribute('role','dialog'); sheetEl.setAttribute('aria-modal','true'); sheetEl.setAttribute('aria-label','Paket Clincoo');
+    sheetEl.innerHTML=
+      '<div id="pps-backdrop" class="fixed inset-0 z-[95] opacity-0 transition-opacity duration-300" style="background:rgba(0,0,0,.45)"></div>'+
+      '<div class="fixed bottom-0 left-0 right-0 z-[96] flex justify-center pointer-events-none">'+
+        '<div id="pps-card" class="pps-card pointer-events-auto w-full max-w-md bg-white rounded-t-3xl px-4 pt-3 pb-5 translate-y-full transition-transform duration-300 ease-out shadow-2xl" style="max-height:90dvh;overflow-y:auto;padding-bottom:calc(1.25rem + env(safe-area-inset-bottom,0px));">'+
+          '<div class="flex justify-center"><div class="w-10 h-1.5 rounded-full bg-gray-200 mb-2"></div></div>'+
+          '<div class="flex items-start justify-between px-1">'+
+            '<div class="pr-8"><h3 class="text-base font-semibold text-gray-900">Paket Clincoo</h3>'+
+            '<p id="pps-feature-hint" class="text-[12.5px] text-gray-500 mt-0.5 leading-snug">Fitur ini tersedia mulai paket Pro. Paket kamu saat ini: <b>'+current+'</b>.</p></div>'+
+            '<button id="pps-x" aria-label="Tutup" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-black flex items-center justify-center transition-colors shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6 6 18M6 6l12 12"></path></svg></button>'+
+          '</div>'+
+          '<div class="relative mt-3">'+
+            '<div id="pps-viewport" class="overflow-hidden rounded-2xl" style="touch-action:pan-y;">'+
+              '<div id="pps-track" class="flex transition-transform duration-300 ease-out">'+slides+'</div>'+
+            '</div>'+
+            '<button id="pps-prev" class="absolute left-0 top-1/2 -translate-y-1/2 -ml-2 w-7 h-7 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-600 hover:text-black transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6"></path></svg></button>'+
+            '<button id="pps-next" class="absolute right-0 top-1/2 -translate-y-1/2 -mr-2 w-7 h-7 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-600 hover:text-black transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"></path></svg></button>'+
+          '</div>'+
+          '<div class="flex items-center justify-center gap-2 mt-3.5">'+dots+'</div>'+
+        '</div>'+
+      '</div>';
+    document.body.appendChild(sheetEl);
+    var track=sheetEl.querySelector('#pps-track'), dotsEls=sheetEl.querySelectorAll('.pps-dot');
+    function render(){ track.style.transform='translateX(-'+(idx*100)+'%)'; dotsEls.forEach(function(d,i){ var on=(i===idx); d.style.width=on?'18px':'6px'; d.style.background=on?'':'#d1d5db'; d.classList.toggle('bg-accent',on); }); }
+    function go(i){ idx=(i+plans.length)%plans.length; render(); }
+    sheetEl.querySelector('#pps-prev').addEventListener('click',function(){ go(idx-1); });
+    sheetEl.querySelector('#pps-next').addEventListener('click',function(){ go(idx+1); });
+    dotsEls.forEach(function(d){ d.addEventListener('click',function(){ go(parseInt(d.dataset.i,10)); }); });
+    var vp=sheetEl.querySelector('#pps-viewport'), sx=null, dx=0;
+    vp.addEventListener('touchstart',function(e){ sx=e.touches[0].clientX; dx=0; track.style.transition='none'; },{passive:true});
+    vp.addEventListener('touchmove',function(e){ if(sx===null)return; dx=e.touches[0].clientX-sx; track.style.transform='translateX(calc(-'+(idx*100)+'% + '+dx+'px))'; },{passive:true});
+    vp.addEventListener('touchend',function(){ if(sx===null)return; track.style.transition=''; if(Math.abs(dx)>40){ go(idx+(dx<0?1:-1)); } else { render(); } sx=null; });
+    sheetEl.querySelector('#pps-x').addEventListener('click',closeSheet);
+    sheetEl.querySelector('#pps-backdrop').addEventListener('click',closeSheet);
+    sheetEl.__render=render;
+    render();
+  }
+  async function openSheet(crown){
+    if(isPaid()) return;
+    await refreshSubscription();
+    if(isPaid()||(token()&&!currentPlan())) return;
+    featureMinimum=crown&&crown.id==='export-crown-label'?'Bisnis':'Pro';
+    buildSheet();
+    sheetEl.querySelector('#pps-track').innerHTML=plans.map(function(p){return cardHtml(p,currentPlan()||'Starter');}).join('');
+    sheetEl.querySelector('#pps-feature-hint').textContent='Fitur ini tersedia mulai paket '+featureMinimum+'. '+(currentPlan()?'Paket kamu saat ini: '+currentPlan()+'.':'Pilih paket yang sesuai kebutuhanmu.');
+    idx=featureMinimum==='Bisnis'?2:1; sheetEl.__render();
+    if(closeTimer){clearTimeout(closeTimer);closeTimer=null;}
+    if(sheetEl.style.display==='none'||!sheetEl.__open) previousOverflow=document.body.style.overflow;
+    sheetEl.__open=true; document.body.style.overflow='hidden';
+    var b=sheetEl.querySelector('#pps-backdrop'), c=sheetEl.querySelector('#pps-card');
+    sheetEl.style.display='';
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ b.classList.remove('opacity-0'); c.classList.remove('translate-y-full'); }); });
+  }
+  function closeSheet(){
+    if(!sheetEl||!sheetEl.__open) return;
+    sheetEl.__open=false; document.body.style.overflow=previousOverflow;
+    var b=sheetEl.querySelector('#pps-backdrop'), c=sheetEl.querySelector('#pps-card');
+    b.classList.add('opacity-0'); c.classList.add('translate-y-full');
+    closeTimer=setTimeout(function(){ sheetEl.style.display='none'; closeTimer=null; },300);
+  }
+  function applyCrownState(){
+    var show=!isPaid();
+    document.body.setAttribute('data-pps-paid',show?'false':'true');
+    document.querySelectorAll(crownSelector).forEach(function(c){
+      c.style.display=show?'':'none'; c.style.cursor='pointer';
+      c.setAttribute('role','button'); c.setAttribute('tabindex',show?'0':'-1');
+      c.setAttribute('aria-label','Lihat daftar paket');
+    });
+    if(!show) closeSheet();
+  }
+  async function refreshSubscription(){
+    try{
+      var t=token();
+      var res=await fetch(apiBase()+'/api/subscription?fields=plan',{cache:'no-store',headers:t?{Authorization:'Bearer '+t}:{}});
+      if(res.ok){ var d=await res.json();
+        if(d&&d.plan){ verifiedPlan=d.plan;
+          var cache=JSON.stringify({plan:d.plan,billingCycle:d.billingCycle||'Bulanan',ts:Date.now()});
+          try{localStorage.setItem('TM_SUB_CACHE_KEY',cache);localStorage.setItem('clinqoo_subscription_cache',cache);}catch(e){}
+          applyCrownState();
+        }
+      }
+    }catch(e){}
+  }
+  // Capture hanya mahkota: cegah handler modal lama atau navigasi induknya.
+  function crownAction(e){
+    var c=e.target&&e.target.closest?e.target.closest(crownSelector):null;
+    if(!c) return;
+    if(e.type==='keydown'&&e.key!=='Enter'&&e.key!==' ') return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    openSheet(c);
+  }
+  document.addEventListener('click',crownAction,true);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeSheet();return;}crownAction(e);},true);
+  window.addEventListener('storage',function(e){if(e.key==='TM_SUB_CACHE_KEY'||e.key==='clinqoo_subscription_cache'){verifiedPlan=null;applyCrownState();refreshSubscription();}});
+  new MutationObserver(function(records){if(records.some(function(r){return Array.from(r.addedNodes).some(function(n){return n.nodeType===1&&(n.matches(crownSelector)||n.querySelector(crownSelector));});}))applyCrownState();}).observe(document.body,{childList:true,subtree:true});
+  applyCrownState();
+  document.addEventListener('DOMContentLoaded',applyCrownState);
+  refreshSubscription();
+  window.clinqooOpenPlansPopup=function(){openSheet();};
+  // Syarat promo dan harga mengikuti halaman Upgrade, bukan harga promo tanpa eligibility.
+  fetch(apiBase()+'/api/promo',{cache:'no-store'}).then(function(r){return r.json();}).then(function(p){
+    if(!p||p.active!==true||p.remaining<=0||!p.eligible)return;
+    promoProActive=true;
+    if(sheetEl){sheetEl.querySelector('#pps-track').innerHTML=plans.map(function(p){return cardHtml(p,currentPlan()||'Starter');}).join('');sheetEl.__render();}
+  }).catch(function(){});
+})();
+</script>
+</body>
+</html>

@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
-<script src="../../../js/auth-client.js?v=2"></script>
+  <script src="../../../js/auth-client.js?v=4"></script>
   <script src="../../../js/accent-init.js"></script>
 <script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
     <meta charset="UTF-8">
@@ -186,7 +186,7 @@
                     <input id="input-subdomain" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="otomatis dari nama proyek" oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/^-+/g, '')" class="flex-1 min-w-0 px-4 py-3 text-sm rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-colors focus:outline-none focus:border-gray-900">
                     <span class="text-sm text-gray-400 font-medium whitespace-nowrap select-none">.clinqoo.biz.id</span>
                 </div>
-                <p class="text-xs text-gray-400 mt-1.5 leading-relaxed">Biarkan kosong: subdomain dibuat otomatis dari nama proyek Anda. Isi untuk mengganti subdomain publik situs Anda (huruf kecil, angka, tanda hubung). Ini adalah domain utama situs yang dipublikasikan — alamat <code class="text-[11px] bg-gray-50 dark:bg-gray-800 px-1 py-0.5 rounded">.pages.dev</code> tetap aktif sebagai cadangan.</p>
+                <p class="text-xs text-gray-400 mt-1.5 leading-relaxed">Biarkan kosong: subdomain dibuat otomatis dari nama proyek Anda. Isi untuk mengganti subdomain publik situs Anda (huruf kecil, angka, tanda hubung). Ini adalah domain utama situs yang dipublikasikan.</p>
             </div>
 
             <div class="flex gap-3 mt-4 pt-6 border-t border-gray-200">
@@ -335,6 +335,8 @@
                 const res = await apiFetch('/deploy', { method: 'POST', body: JSON.stringify({ project_id: pid(), ...(subdomain ? { subdomain } : {}) }) });
                 clearInterval(phaseTimer);
                 deployState.deploying = false;
+                // DNS cache: hasil deploy langsung siap di halaman Domain Kustom (tanpa buka halaman itu dulu)
+                try { var _dk = 'clinqoo_' + pid() + "_domain_cache", _dc = {}; try { _dc = JSON.parse(localStorage.getItem(_dk) || '{}') || {}; } catch (e) {} localStorage.setItem(_dk, JSON.stringify(Object.assign(_dc, { pagesUrl: (res && res.pages_url) || '', deployed: true, ts: Date.now() }))); } catch (e) {}
                 writeDeploySession({ status: 'done', pages_url: (res && res.pages_url) || deployState.pages_url || '', public_url: (res && res.public_url) || '', done_at: Date.now() });
                 btn.innerHTML = `<i data-lucide="check-circle-2" class="w-5 h-5"></i> <span class="inline-block">Berhasil Deploy!</span>`;
                 lucide.createIcons();
@@ -350,34 +352,8 @@
             } catch (err) {
                 clearInterval(phaseTimer);
                 deployState.deploying = false;
-                console.warn('Deploy gagal: ' + err.message);
-                // FIX "Failed to fetch": deploy panjang bisa kehilangan koneksi di
-                // tengah jalan padahal server menyelesaikannya. Jangan langsung
-                // bilang gagal — cek status deploy dulu: kalau ada log sukses baru
-                // sejak deploy ini dimulai, anggap BERHASIL dan lanjut ke dashboard.
-                btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> <span class="inline-block">Memeriksa hasil deploy...</span>`;
-                lucide.createIcons();
-                let okState = null;
-                const startedAt = (readDeploySession() || {}).started_at || (Date.now() - 60000);
-                for (let i = 0; i < 3; i++) {
-                    try {
-                        const st = await apiFetch('/deploy?project_id=' + encodeURIComponent(pid()));
-                        const okLog = (Array.isArray(st.logs) ? st.logs : []).find(l => l && l.status === 'success');
-                        if (okLog && okLog.created_at) {
-                            const t = new Date(String(okLog.created_at).replace(' ', 'T') + 'Z').getTime();
-                            if (!isNaN(t) && t >= startedAt - 90000) { okState = st; break; }
-                        }
-                    } catch (e) {}
-                    await new Promise(r => setTimeout(r, 2500));
-                }
-                if (okState) {
-                    writeDeploySession({ status: 'done', pages_url: (okState.pages_url || ''), public_url: (okState.public_url || ''), done_at: Date.now() });
-                    btn.innerHTML = `<i data-lucide="check-circle-2" class="w-5 h-5"></i> <span class="inline-block">Berhasil Deploy!</span>`;
-                    lucide.createIcons();
-                    setTimeout(function () { location.replace('../dashboard/?id=' + encodeURIComponent(pid())); }, 600);
-                    return;
-                }
                 writeDeploySession({ status: 'failed' });
+                console.warn('Deploy gagal: ' + err.message);
                 showDeployErrorModal(err);
                 btn.innerHTML = `Jalankan Deploy`;
                 btn.className = "flex-[2] py-4 bg-transparent border border-gray-300 text-gray-900 rounded-2xl font-bold text-sm hover:bg-gray-100 transition-all shadow-lg flex items-center justify-center gap-2";
@@ -420,22 +396,22 @@
       var plans = [
         { name: 'Starter', tagline: 'Untuk individu yang baru memulai.', price: 'Gratis', per: '', hot: false,
           items: [
-            ['Hingga 3 proyek aktif', true],
+            ['Hingga 3 proyek aktif + editor kode', true],
             ['1 kolaborator per proyek', true],
-            ['Chat AI di setiap proyek (50 pesan/bulan)', true],
-            ['3 template proyek siap pakai', true],
+            ['Chat AI di setiap proyek (50 pesan/bulan) + pencarian web', true],
+            ['Kelola 1 domain: verifikasi, DNS & SSL', true], ['3 template proyek siap pakai', true],
             ['Tugas terjadwal & notifikasi', true],
             ['Deploy web 5x per bulan', true],
-            ['Kolaborasi tim lebih besar', false],
-            ['Impor repository GitHub', false]
+            ['Editor full-stack & integrasi GitHub', false],
+            ['Domain tanpa batas & deploy tanpa batas', false]
           ] },
         { name: 'Pro', tagline: 'Untuk profesional dan kreator aktif.', price: '49K', per: '/bln', hot: true,
           items: [
             ['Hingga 10 proyek aktif', true],
             ['Hingga 5 kolaborator per proyek', true],
-            ['Semua fitur Starter: chat AI, template & tugas terjadwal', true],
-            ['Deploy web hingga 25x per bulan', true],
-            ['Impor repository GitHub ke workspace', true]
+            ['Semua fitur Starter', true], ['Editor kode full-stack: bangun & publikasikan dari browser', true], ['Domain tanpa batas: verifikasi, DNS & SSL', true],
+            ['Deploy web hingga 25x per bulan ke domain sendiri', true],
+            ['Integrasi GitHub: impor repo, AI kerja langsung di repo kamu', true], ['Chat AI hingga 500 pesan/bulan (maks 50/hari)', true]
           ] },
         { name: 'Bisnis', tagline: 'Untuk tim dan operasi skala besar.', price: '129K', per: '/bln', hot: false,
           items: [
@@ -560,5 +536,6 @@
     <script>/* clinqoo-sw-register */
     if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../sw.js').catch(function () {}); }); }
     </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>

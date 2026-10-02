@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
-<script src="../../../js/auth-client.js?v=2"></script>
+  <script src="../../../js/auth-client.js?v=4"></script>
   <script src="../../../js/accent-init.js"></script>
 <script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
     <meta charset="UTF-8">
@@ -127,6 +127,7 @@
 <!-- End Google tag -->
 <script src="../../../js/i18n-dict.js" defer></script>
 <script src="../../../js/i18n.js" defer></script>
+<script>window.ClinqooBack = window.ClinqooBack || function (fallbackUrl) {             try {                 var sameOrigin = document.referrer && new URL(document.referrer).origin === location.origin;                 if (sameOrigin && history.length > 1) { window.history.back(); return; }             } catch (e) {}             if (fallbackUrl) { try { location.replace(fallbackUrl); return; } catch (e2) {} }             try { window.history.back(); } catch (e3) {}         };</script>
 </head>
 <body class="min-h-screen flex flex-col text-gray-900 pt-16 relative">
     <script>
@@ -170,6 +171,15 @@
                         </span>
                         <span id="time-ago-label">menunggu status...</span>
                     </p>
+                    
+                    <!-- URL Preview: ter-update otomatis setiap perubahan kode (deploy latar belakang ke branch preview) -->
+                    <div id="preview-url-block" class="hidden mt-3">
+                        <p class="text-xs text-gray-500 flex items-center gap-1.5">
+                            <i data-lucide="eye" class="w-3.5 h-3.5 shrink-0"></i> URL Preview <span class="text-gray-400">(otomatis ter-update setiap perubahan kode)</span>
+                        </p>
+                        <a id="preview-link" href="#" target="_blank" class="hidden text-blue-600 dark:text-blue-400 font-medium text-sm hover:underline break-all"></a>
+                        <p id="preview-note" class="text-xs text-gray-400 mt-0.5">Preview aktif otomatis setelah perubahan kode disimpan di Workspace.</p>
+                    </div>
                 </div>
                 <div class="flex items-center gap-3 w-full md:w-auto mt-2 md:mt-0">
                     <button id="btn-visit-site" class="flex-1 md:flex-none px-4 py-2 border border-gray-300 bg-white rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 opacity-50 cursor-not-allowed" disabled>
@@ -246,6 +256,36 @@
                     <div class="pt-2 text-sm text-gray-500 leading-relaxed">
                         Situs Anda terakhir kali di-deploy ke lingkungan <span class="font-semibold text-gray-700">clinqoo-pages</span> melalui alur kerja otomatis.<br>
                         <a href="#" class="text-blue-600 hover:underline">Pelajari lebih lanjut tentang mendeploy ke Clincoo menggunakan alur kerja kustom.</a>
+                    </div>
+                </div>
+            </section>
+
+            <hr class="border-gray-200">
+
+            <!-- Bagian: Custom Domain (Flat) -->
+            <section class="space-y-5">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">Domain kustom</h2>
+                    <p class="text-sm text-gray-500 mt-1">Gunakan domain kustom untuk mengakses situs Anda selain dari URL default yang kami sediakan. <a href="../domain-kustom/" class="text-blue-600 hover:underline">Kelola domain kustom Anda di sini.</a></p>
+                </div>
+                
+                <!-- Input domain kustom dipindah ke halaman Domain Kustom (build-deployment/domain-kustom) -->
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <a href="../domain-kustom/" class="custom-domain-btn inline-flex items-center gap-2 px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-md text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm">Kelola Domain Kustom <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+                </div>
+
+                <p class="pt-2"><span id="cf-domain-status" class="text-xs mt-1.5 font-medium hidden"></span></p>
+
+                <div class="pt-4 flex items-start gap-3">
+                    <div class="mt-0.5">
+<input type="checkbox" id="check-https" onchange="toggleHttps()" checked disabled class="w-4 h-4 rounded border-gray-300 text-black focus:ring-black opacity-50 cursor-not-allowed">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900">Wajibkan HTTPS</label>
+                        <p class="text-sm text-gray-500 mt-0.5">Diperlukan karena Anda menggunakan domain default Clincoo</p>
+                        <p class="text-sm text-gray-500 mt-4 leading-relaxed max-w-3xl">
+                            HTTPS menyediakan lapisan enkripsi yang mencegah pihak lain mengintip atau merusak lalu lintas ke situs Anda. Saat HTTPS diwajibkan, situs Anda hanya akan disajikan melalui HTTPS. <a href="#" class="text-blue-600 hover:underline">Pelajari lebih lanjut tentang mengamankan situs Anda dengan HTTPS.</a>
+                        </p>
                     </div>
                 </div>
             </section>
@@ -343,6 +383,7 @@
             fetchStatus().then(st => {
                 if (!st) return;
                 const dep = st.last_deployment;
+                renderPreviewUrl(st);
                 if (st.last_deploy_by) setDeployedBy(st.last_deploy_by);
                 if (dep && ['success', 'active'].includes(dep.status)) {
                     const url = st.public_url || dep.url || ses.pages_url;
@@ -373,8 +414,27 @@
             const blk = document.getElementById('source-config-block');
             if (blk) blk.classList.remove('hidden');
         }
+        // Tampilkan URL preview (branch 'preview') di bawah URL produksi.
+        // Link muncul begitu preview pertama ter-deploy (otomatis saat simpan file);
+        // sebelum itu tampilkan catatan singkat agar pengguna tahu mekanismenya.
+        function renderPreviewUrl(st) {
+            const blk = document.getElementById('preview-url-block');
+            if (!blk || !st || !st.preview_url) return;
+            blk.classList.remove('hidden');
+            const a = document.getElementById('preview-link');
+            const note = document.getElementById('preview-note');
+            if (st.preview_deployed && a) {
+                a.classList.remove('hidden');
+                a.textContent = st.preview_url;
+                a.href = st.preview_url;
+                if (note) note.classList.add('hidden');
+                try { if (window.lucide) lucide.createIcons(); } catch (e) {}
+            }
+        }
+
         function showDeployedState(st) {
             showSourceConfigBlock();
+            renderPreviewUrl(st);
             const dep = st.last_deployment;
             const ok = dep && ['success', 'active'].includes(dep.status);
             const indicator = document.getElementById('live-indicator');
@@ -559,7 +619,7 @@
 
         // Lanjut deploy otomatis (auto-resume) — tombol konfigurasi tidak ada di halaman ini
         async function processDeploy() {
-            if (!pid()) { window.location.replace('../build-deployment/'); return; }
+            if (!pid()) { window.location.replace('../'); return; }
             if (deployState.deploying) return;
             deployState.deploying = true;
             const _cb = document.getElementById('changes-banner');
@@ -568,32 +628,11 @@
             try {
                 const res = await apiFetch('/deploy', { method: 'POST', body: JSON.stringify({ project_id: pid() }) });
                 deployState.deploying = false;
+                // DNS cache: hasil deploy langsung siap di halaman Domain Kustom (tanpa buka halaman itu dulu)
+                try { var _dk = 'clinqoo_' + pid() + "_domain_cache", _dc = {}; try { _dc = JSON.parse(localStorage.getItem(_dk) || '{}') || {}; } catch (e) {} localStorage.setItem(_dk, JSON.stringify(Object.assign(_dc, { pagesUrl: (res && res.pages_url) || '', deployed: true, ts: Date.now() }))); } catch (e) {}
                 writeDeploySession({ status: 'done', pages_url: (res && res.pages_url) || deployState.pages_url || '', public_url: (res && res.public_url) || '', done_at: Date.now() });
             } catch (err) {
                 deployState.deploying = false;
-                // FIX "Failed to fetch": koneksi bisa putus saat deploy panjang
-                // padahal server menyelesaikannya. Cek status dulu — kalau ada
-                // log sukses baru sejak deploy ini dimulai, tampilkan dashboard
-                // sukses, jangan modal error.
-                let okState = null;
-                const startedAt = (readDeploySession() || {}).started_at || (Date.now() - 60000);
-                for (let i = 0; i < 3; i++) {
-                    try {
-                        const st = await fetchStatus();
-                        const okLog = (Array.isArray(st.logs) ? st.logs : []).find(l => l && l.status === 'success');
-                        if (okLog && okLog.created_at) {
-                            const t = new Date(String(okLog.created_at).replace(' ', 'T') + 'Z').getTime();
-                            if (!isNaN(t) && t >= startedAt - 90000) { okState = st; break; }
-                        }
-                    } catch (e) {}
-                    await new Promise(r => setTimeout(r, 2500));
-                }
-                if (okState) {
-                    writeDeploySession({ status: 'done', pages_url: (okState.pages_url || deployState.pages_url || ''), public_url: (okState.public_url || ''), done_at: Date.now() });
-                    if (deployState.pollTimer) clearInterval(deployState.pollTimer);
-                    showDeployedState(okState);
-                    return;
-                }
                 writeDeploySession({ status: 'failed' });
                 showDeployErrorModal(err);
             }
@@ -632,22 +671,22 @@
       var plans = [
         { name: 'Starter', tagline: 'Untuk individu yang baru memulai.', price: 'Gratis', per: '', hot: false,
           items: [
-            ['Hingga 3 proyek aktif', true],
+            ['Hingga 3 proyek aktif + editor kode', true],
             ['1 kolaborator per proyek', true],
-            ['Chat AI di setiap proyek (50 pesan/bulan)', true],
-            ['3 template proyek siap pakai', true],
+            ['Chat AI di setiap proyek (50 pesan/bulan) + pencarian web', true],
+            ['Kelola 1 domain: verifikasi, DNS & SSL', true], ['3 template proyek siap pakai', true],
             ['Tugas terjadwal & notifikasi', true],
             ['Deploy web 5x per bulan', true],
-            ['Kolaborasi tim lebih besar', false],
-            ['Impor repository GitHub', false]
+            ['Editor full-stack & integrasi GitHub', false],
+            ['Domain tanpa batas & deploy tanpa batas', false]
           ] },
         { name: 'Pro', tagline: 'Untuk profesional dan kreator aktif.', price: '49K', per: '/bln', hot: true,
           items: [
             ['Hingga 10 proyek aktif', true],
             ['Hingga 5 kolaborator per proyek', true],
-            ['Semua fitur Starter: chat AI, template & tugas terjadwal', true],
-            ['Deploy web hingga 25x per bulan', true],
-            ['Impor repository GitHub ke workspace', true]
+            ['Semua fitur Starter', true], ['Editor kode full-stack: bangun & publikasikan dari browser', true], ['Domain tanpa batas: verifikasi, DNS & SSL', true],
+            ['Deploy web hingga 25x per bulan ke domain sendiri', true],
+            ['Integrasi GitHub: impor repo, AI kerja langsung di repo kamu', true], ['Chat AI hingga 500 pesan/bulan (maks 50/hari)', true]
           ] },
         { name: 'Bisnis', tagline: 'Untuk tim dan operasi skala besar.', price: '129K', per: '/bln', hot: false,
           items: [
@@ -765,7 +804,7 @@
                 localStorage.removeItem('clinqoo_is_deployed');
                 localStorage.removeItem('clinqoo_deploy_time');
                 clearDeploySession();
-                window.ClinqooBack('../build-deployment/');
+                window.ClinqooBack('../');
             } catch (err) {
                 console.warn('Gagal: ' + err.message);
                 alert('Gagal membatalkan publikasi: ' + ((err && err.message) ? err.message : 'coba lagi beberapa saat.'));
@@ -786,7 +825,7 @@
                 }
                 if (st && (st.last_deployment || (st.domains || []).length)) { startDeploySimulation(); return; }
             } catch (e) {}
-            window.location.replace('../build-deployment/');
+            window.location.replace('../');
         });
         // Fitur Tombol Save di Source Config dengan Animasi Loading -> Check
         function saveSourceConfig() {
@@ -837,5 +876,6 @@
     <script>/* clinqoo-sw-register */
     if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../sw.js').catch(function () {}); }); }
     </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>

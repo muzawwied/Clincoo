@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
-  <script src="../../../js/auth-client.js?v=2"></script>
+  <script src="../../../js/auth-client.js?v=4"></script>
   <script src="../../../js/accent-init.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -359,7 +359,7 @@
     // Privacy Guard Logic
     async function checkAdminPing() {
       try {
-        const token = ClinqooAuth.getToken();
+        const token = (window.ClinqooAuth && ClinqooAuth.getToken) ? ClinqooAuth.getToken() : (function(){try{return localStorage.getItem('clinqoo_auth_token')||localStorage.getItem('clinqoo_token')||'';}catch(e){return '';}})();
         const res = await fetch(API_BASE + '/api/admin/ping', {
           headers: token ? { 'Authorization': 'Bearer ' + token } : {}
         });
@@ -401,7 +401,7 @@
       if (spin) spin.classList.add('animate-spin');
 
       try {
-        const token = ClinqooAuth.getToken();
+        const token = (window.ClinqooAuth && ClinqooAuth.getToken) ? ClinqooAuth.getToken() : (function(){try{return localStorage.getItem('clinqoo_auth_token')||localStorage.getItem('clinqoo_token')||'';}catch(e){return '';}})();
         const res = await fetch(API_BASE + '/api/admin/stats', {
           headers: token ? { 'Authorization': 'Bearer ' + token } : {}
         });
@@ -673,5 +673,6 @@
       });
     });
   </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>

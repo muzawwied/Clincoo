@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+
+  <script src="../../js/auth-client.js?v=4"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verifikasi Domain — Clincoo Experiment</title>
+<meta name="description" content="Detail domain Clincoo: status verifikasi, catatan, dan pintasan pengelolaan.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" type="image/png" href="https://app.clincoo.buzz/assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+<script src="https://unpkg.com/lucide@1.41.0"></script>
+<script src="../js/store.js"></script>
+<style>
+    @keyframes spinSlow { to { transform: rotate(360deg); } }
+    body { font-family: 'Inter', sans-serif; background-color: #ffffff; transition: background-color 0.3s ease, color 0.3s ease; }
+    :root { --accent-color: #000000; --accent-hover: #1f2937; --accent-text: #ffffff; }
+    .bg-accent { background-color: var(--accent-color) !important; }
+    .text-accent { color: var(--accent-color) !important; }
+    .border-accent { border-color: var(--accent-color) !important; }
+    .hover\:bg-accent-hover:hover { background-color: var(--accent-hover) !important; }
+    body.dark-mode { background-color: #000000; color: #ffffff; }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode .bg-gray-50 { background-color: #141414 !important; }
+    body.dark-mode .bg-gray-100 { background-color: #222222 !important; }
+    body.dark-mode .border-gray-100, body.dark-mode .border-gray-200, body.dark-mode .border-gray-300 { border-color: #222222 !important; }
+    body.dark-mode .text-accent { color: #ffffff !important; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #ffffff !important; }
+    body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 { color: #888888 !important; }
+    body.dark-mode .text-gray-400 { color: #666666 !important; }
+    body.dark-mode .bg-accent { background-color: #ffffff !important; color: #000000 !important; }
+    body.dark-mode .bg-accent.text-white { color: #000000 !important; }
+    body.dark-mode .bg-accent.text-white svg { color: #000000 !important; stroke: #000000 !important; }
+    body.dark-mode button[onclick="goBack()"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
+    body.dark-mode button[onclick="goBack()"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
+    body.dark-mode button[onclick="goBack()"] svg { color: #ffffff !important; stroke: #ffffff !important; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    body.dark-mode #cta-bar-bg { background-image: linear-gradient(to top, #000000 0%, rgba(0,0,0,0.9) 60%, transparent 100%); }
+    textarea:focus { outline: none!important; box-shadow: none!important; }
+    .spin { animation: spinSlow 1s linear infinite; }
+    .tab-btn.active { color: var(--accent-color); border-color: var(--accent-color); }
+    body.dark-mode .tab-btn.active { color: #ffffff; border-color: #ffffff; }
+
+/* Shimmer skeleton */
+.shim{position:relative;overflow:hidden;background:#ececef;border-radius:999px;display:inline-block;vertical-align:middle;opacity:.78}
+.shim::after{content:"";position:absolute;inset:0;transform:translateX(-110%);background:linear-gradient(90deg,transparent 25%,rgba(255,255,255,.72) 50%,transparent 75%);animation:shim 1.55s ease-in-out infinite}
+@keyframes shim{to{transform:translateX(110%)}}
+body.dark-mode .shim{background:#202020;opacity:.9}
+body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgba(255,255,255,.075) 50%,transparent 75%)}
+@media (prefers-reduced-motion:reduce){.shim::after{animation:none}}
+</style>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+</head>
+<body class="min-h-screen flex flex-col text-gray-900 pt-20">
+<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.body.classList.add('dark-mode');var a=localStorage.getItem('clinqoo_accent')||'Hitam (Default)';var am={'Hitam (Default)':{m:'#000000',h:'#1f2937'},'Biru':{m:'#2563eb',h:'#1d4ed8'},'Hijau':{m:'#059669',h:'#047857'},'Ungu':{m:'#9333ea',h:'#7e22ce'},'Merah':{m:'#dc2626',h:'#b91c1c'}};var c=am[a]||am['Hitam (Default)'];document.documentElement.style.setProperty('--accent-color',c.m);document.documentElement.style.setProperty('--accent-hover',c.h);}catch(e){}})();</script>
+
+<main class="flex-1 w-full max-w-2xl mx-auto pb-16 flex-col justify-start relative">
+    <button onclick="goBack()" class="fixed top-3 left-3 w-10 h-10 flex items-center justify-center rounded-full bg-white backdrop-blur border border-gray-100 shadow-sm hover:bg-gray-50 transition-all cursor-pointer text-gray-700 hover:text-black z-50" aria-label="Kembali">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    </button>
+    <div class="flex flex-col px-7 pb-4 relative">
+        <h2 class="text-[24px] font-extrabold text-gray-900 tracking-tight">Detail Domain</h2>
+        <p id="v-domain" class="text-[14px] text-gray-500 font-medium mt-0.5">memuat…</p>
+    </div>
+
+    <div class="px-7">
+        <!-- Info -->
+        <h3 class="text-[12px] font-bold text-gray-400 uppercase tracking-wider mt-1">Informasi</h3>
+        <div class="mt-2 border-t border-gray-100 divide-y divide-gray-100">
+            <div class="flex items-center justify-between gap-3 py-3.5">
+                <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider shrink-0">Status</p>
+                <p id="d-status" class="text-[13px] font-semibold text-right"><span class="shim h-2 w-20"></span></p>
+            </div>
+            <div class="flex items-center justify-between gap-3 py-3.5">
+                <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider shrink-0">Ditambahkan</p>
+                <p id="d-created" class="text-[13px] text-gray-700 text-right"><span class="shim h-2 w-24"></span></p>
+            </div>
+            <div class="flex items-center justify-between gap-3 py-3.5">
+                <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider shrink-0">Terakhir Diubah</p>
+                <p id="d-updated" class="text-[13px] text-gray-700 text-right"><span class="shim h-2 w-24"></span></p>
+            </div>
+            <div class="flex items-center justify-between gap-3 py-3.5">
+                <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider shrink-0">Catatan</p>
+                <p id="d-note" class="text-[13px] text-gray-700 text-right truncate">—</p>
+            </div>
+        </div>
+
+        <!-- Kelola -->
+        <h3 class="text-[12px] font-bold text-gray-400 uppercase tracking-wider mt-7">Kelola</h3>
+        <div class="mt-2 border-t border-gray-100 divide-y divide-gray-100">
+            <a href="#" id="lk-dns" class="flex items-center justify-between py-3.5 group">
+                <span class="text-[14px] font-medium text-gray-900">Kelola DNS</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-gray-300 group-hover:text-gray-900 transition-colors"></i>
+            </a>
+            <a href="#" id="lk-ssl" class="flex items-center justify-between py-3.5 group">
+                <span class="text-[14px] font-medium text-gray-900">SSL/TLS</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-gray-300 group-hover:text-gray-900 transition-colors"></i>
+            </a>
+            <a href="#" id="lk-cache" class="flex items-center justify-between py-3.5 group">
+                <span class="text-[14px] font-medium text-gray-900">Cache</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-gray-300 group-hover:text-gray-900 transition-colors"></i>
+            </a>
+            <a href="#" id="lk-zone" class="flex items-center justify-between py-3.5 group">
+                <span class="text-[14px] font-medium text-gray-900">Pengaturan Zone</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-gray-300 group-hover:text-gray-900 transition-colors"></i>
+            </a>
+        </div>
+
+        <!-- Aksi -->
+        <h3 class="text-[12px] font-bold text-gray-400 uppercase tracking-wider mt-7">Aksi</h3>
+        <div class="mt-2 flex flex-col gap-2.5">
+            <a id="d-verify" href="#" class="hidden bg-accent text-white text-sm font-semibold rounded-full px-4 py-2.5 text-center hover:bg-accent-hover transition-all active:scale-[0.98] shadow-sm">Verifikasi Domain</a>
+            <button onclick="openDelete()" class="w-full border border-red-200 text-red-600 text-sm font-semibold rounded-full px-4 py-2.5 cursor-pointer hover:bg-red-50 transition-colors">Hapus Domain</button>
+        </div>
+    </div>
+</main>
+
+<!-- Modal hapus -->
+<div id="delete-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-5" onclick="if(event.target===this)closeModal('delete-modal')">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-5">
+        <h3 class="text-[15px] font-bold text-gray-900">Hapus Domain?</h3>
+        <p id="delete-domain-name" class="text-[13px] text-gray-500 mt-1"></p>
+        <div class="flex justify-end gap-1 mt-5">
+            <button onclick="closeModal('delete-modal')" class="rounded-md px-3 py-1.5 text-[13px] font-semibold text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors cursor-pointer">Batal</button>
+            <button onclick="confirmDelete()" class="rounded-md px-3 py-1.5 text-[13px] font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer">Hapus</button>
+        </div>
+    </div>
+</div>
+
+<script>
+try { lucide.createIcons(); } catch (e) {}
+
+const dName = (new URLSearchParams(location.search).get('domain') || '').trim().toLowerCase();
+function goBack() { if (history.length > 1) history.back(); else location.href = '../'; }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtDate(v) {
+    if (!v) return '—';
+    const d = new Date(v);
+    if (isNaN(d)) return '—';
+    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
+
+let domain = null;
+store.ready.then(async () => {
+    if (!dName) { location.replace('../'); return; }
+    const list = await store.list();
+    domain = (list || []).find(d => d.name === dName);
+    if (!domain) { location.replace('../'); return; }
+    document.getElementById('v-domain').textContent = domain.name;
+    document.getElementById('d-status').innerHTML = domain.status === 'aktif'
+        ? '<span class="text-emerald-600">Aktif</span>'
+        : '<span class="text-red-600">Belum terverifikasi</span>';
+    document.getElementById('d-created').textContent = fmtDate(domain.created_at || domain.created);
+    document.getElementById('d-updated').textContent = fmtDate(domain.updated_at || domain.created_at || domain.created);
+    document.getElementById('d-note').textContent = domain.note || '—';
+    const enc = encodeURIComponent(domain.name);
+    document.getElementById('lk-dns').href = '../kelola/dns/?domain=' + enc;
+    document.getElementById('lk-ssl').href = '../kelola/ssl/?domain=' + enc;
+    document.getElementById('lk-cache').href = '../kelola/cache/?domain=' + enc;
+    document.getElementById('lk-zone').href = '../kelola/zone/?domain=' + enc;
+    if (domain.status !== 'aktif') {
+        const v = document.getElementById('d-verify');
+        v.href = '../verifikasi/?domain=' + enc;
+        v.classList.remove('hidden');
+    }
+    document.title = domain.name + ' — Detail Domain';
+});
+
+function openDelete() {
+    if (!domain) return;
+    document.getElementById('delete-domain-name').textContent = '"' + domain.name + '" akan dihapus dari daftar. Tindakan ini tidak dapat dibatalkan.';
+    openModal('delete-modal');
+}
+function confirmDelete() {
+    if (!domain) return;
+    store.remove(domain.name).then(() => { closeModal('delete-modal'); location.href = '../'; });
+}
+</script>
+</body>
+</html>
