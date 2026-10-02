@@ -2,11 +2,12 @@
 <html lang="id">
 <head>
 <script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
-  <script src="../../../js/auth-client.js?v=4"></script>
   <script src="../../../js/accent-init.js"></script>
 <script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
+  <script src="../../../js/current-project.js?v=1"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>/* embed=1: halaman ini di dalam panel split view chat (kolom kanan halaman chat) */(function(){try{if(/(^|[?&])embed=1(&|$)/.test(location.search)){document.documentElement.classList.add('embed-mode');}}catch(e){}})();</script>
     <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
     <link rel="manifest" href="../../../manifest.json">
     <link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
@@ -213,7 +214,13 @@
         body.dark-mode .header-menu-item svg { color: #9ca3af; }
         @media (max-width: 384px) { #sidebar-toggle, #header-more-btn { width: 38px; height: 38px; } }
         @media (max-width: 330px) { #sidebar-toggle, #header-more-btn { width: 34px; height: 34px; } .chat-nav-link { padding-left: 0.5rem; padding-right: 0.5rem; } }
-    </style>
+      /* embed=1: dalam panel split view chat — header chat (fixed, lebar penuh) menutupi ~76px atas,
+     sembunyikan header & FAB lokal supaya gak dobel, geser konten turun di bawah header chat */
+  html.embed-mode body > header { display: none !important; }
+  html.embed-mode #chat-fab { display: none !important; }
+  html.embed-mode body { padding-top: 76px; }
+  html.embed-mode .pt-\[84px\] { padding-top: 0 !important; }
+</style>
   <script>
     (function() {
       var t = localStorage.getItem('clinqoo_theme') || 'Sistem (Default)';
@@ -263,11 +270,6 @@
                 </svg>
             </button>
             <div id="header-more-menu" class="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 p-1.5 flex-col gap-0.5 opacity-0 invisible translate-y-1 pointer-events-none transition-all duration-200 z-50 hidden">
-                <a id="header-live-url" href="/proyek/live/" target="_blank" rel="noopener" onclick="var __pid='';try{__pid=localStorage.getItem('clinqoo_current_project_id')||''}catch(e){}if(__pid){this.href='/proyek/live/?id='+encodeURIComponent(__pid)}" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
-                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path stroke-linecap="round" stroke-linejoin="round" d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                    Live URL proyek
-                    <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg>
-                </a>
                 <button id="header-live-preview" type="button" onclick="chatLivePreview()" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
                     <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2 12a10 10 0 1 0 20 0 10 10 0 0 0-20 0M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"></path></svg>
                     Live preview
@@ -1044,5 +1046,8 @@ window.chatLivePreview = function () {
 })();
 </script>
 
+
+<script>/* embed=1: bawa flag embed saat pindah antar tab proyek, biar halaman tujuan tetap sadar di-embed (tanpa header/FAB dobel) */
+(function(){try{if(!document.documentElement.classList.contains('embed-mode'))return;document.querySelectorAll('#project-nav-tabs a.tab-btn[href]').forEach(function(a){try{var u=new URL(a.getAttribute('href'),location.href);u.searchParams.set('embed','1');a.setAttribute('href',u.href);}catch(e){}});}catch(e){}})();</script>
 </body>
 </html>
