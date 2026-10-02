@@ -58,14 +58,13 @@ function _apiPost(action, body) {
     });
 }
 
-// --- state: login / belum aktif / aktif ---
+// --- state: loading (shell terlihat) / login / belum aktif / aktif ---
 function renderEmailState(mode) {
+  var off = (mode === 'login' || mode === 'inactive');
   document.getElementById('kirim-login').classList.toggle('hidden', mode !== 'login');
   document.getElementById('kirim-inactive').classList.toggle('hidden', mode !== 'inactive');
-  document.getElementById('kirim-active').classList.toggle('hidden', mode !== 'active');
+  document.getElementById('kirim-active').classList.toggle('hidden', off);
   document.getElementById('email-menu-wrap').classList.toggle('hidden', mode !== 'active');
-  var chip = document.getElementById('email-quota-mini');
-  if (chip) chip.classList.toggle('hidden', !document.body.hasAttribute('data-show-quota'));
   if (mode === 'login') {
     document.getElementById('kirim-login-btn').href = '/auth/?next=' + encodeURIComponent(location.pathname + location.search);
   }
