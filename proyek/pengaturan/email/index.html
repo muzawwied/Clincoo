@@ -428,7 +428,31 @@ Content-Type: application/json
   var API_BASE = (['clincoo-be2.pages.dev','app.clincoo.buzz','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://app.clincoo.buzz/api' : '/api';
   var _apiToken = '';
   try { _apiToken = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
-  function _pid() { try { return localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) { return ''; } }
+  function _pid() {
+  try {
+    var q = new URLSearchParams(location.search).get('id');
+    if (q && q.indexOf('proj_') === 0) return q;
+    if (typeof getClinqooProjectId === 'function') {
+      var g = getClinqooProjectId();
+      if (g) return g;
+    }
+    var plain = '', ns = [], ids = {};
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i); if (!k) continue;
+      var v = localStorage.getItem(k); if (!v) continue;
+      if (k === 'clinqoo_current_project_id') plain = v;
+      else if (/:clinqoo_current_project_id$/.test(k) && v.indexOf('proj_') === 0) ns.push(v);
+      else if (k === 'clinqoo_projects' || /:clinqoo_projects$/.test(k)) {
+        try { JSON.parse(v).forEach(function(pr){ if(pr&&pr.id) ids[pr.id]=1; }); } catch(e){}
+      }
+    }
+    var has = Object.keys(ids).length > 0;
+    for (var j = 0; j < ns.length; j++) { if (!has || ids[ns[j]]) return ns[j]; }
+    if (plain && plain.indexOf('proj_') === 0 && (!has || ids[plain])) return plain;
+    for (var id in ids) return id;
+    return ns[0] || plain || '';
+  } catch (e) { return ''; }
+  }
   function _hdrs() { return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _apiToken }; }
 
   // Cache config per proyek — refresh tampil instan tanpa flash ke empty state.
@@ -553,13 +577,13 @@ Content-Type: application/json
   function copyEmailKey() {
     var key = document.getElementById('email-key-box').textContent.trim();
     if (!key || key.indexOf('clc_email_') !== 0) { emailToast('Belum ada API key aktif', false); return; }
-    navigator.clipboard.writeText(key).then(function () { emailToast('API key disalin', true); });
+    navigator.clipboard.writeText(key).then(function () { emailToast('API key disalin', true); }).catch(function () { emailToast('Gagal menyalin', false); });
   }
 
   function copyDocs() {
     var pre = document.getElementById('email-docs-pre');
     if (!pre) return;
-    navigator.clipboard.writeText(pre.innerText).then(function () { emailToast('Dokumentasi disalin', true); });
+    navigator.clipboard.writeText(pre.innerText).then(function () { emailToast('Dokumentasi disalin', true); }).catch(function () { emailToast('Gagal menyalin', false); });
   }
 
   function regenerateEmailKey() {

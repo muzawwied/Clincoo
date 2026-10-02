@@ -240,6 +240,7 @@ export async function onRequestPost({ request, env }) {
     const apiKey = (body.api_key || (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '')).trim();
     if (!apiKey) return json({ error: 'api_key diperlukan' }, 401);
     if (!body.to || !body.subject || !body.html) return json({ error: 'to, subject, dan html wajib diisi' }, 400);
+    if (!validEmail(body.to)) return json({ error: 'Alamat email tujuan tidak valid' }, 400);
     await ensureTables(env.DB);
     const row = await env.DB.prepare('SELECT * FROM email_settings WHERE api_key = ? AND active = 1').bind(apiKey).first();
     if (!row) return json({ error: 'API key tidak valid atau belum aktif' }, 401);
@@ -306,6 +307,7 @@ export async function onRequestPost({ request, env }) {
     const row = await getRow(env.DB, projectId);
     if (!row || !row.active) return json({ error: 'Aktifkan email dulu' }, 400);
     if (!body.to) return json({ error: 'Alamat tujuan diperlukan' }, 400);
+    if (!validEmail(body.to)) return json({ error: 'Alamat email tujuan tidak valid' }, 400);
     const used = await quotaUsed(env.DB, projectId);
     if (used >= QUOTA_LIMIT) return json({ error: 'Kuota bulanan habis' }, 429);
     const subject = String(body.subject || 'Email dari aplikasimu').slice(0, 200);
