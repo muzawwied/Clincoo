@@ -6,6 +6,25 @@
 
 export const PAYMENT_KB = [
   {
+    id: 'clinqoopay-internal',
+    gateway: 'ClincooPay',
+    keywords: ['clincoo pay', 'clinqoo pay', 'clinqoopay', 'payment clincoo', 'pembayaran clincoo', 'qris clincoo', 'pembayaran', 'qris', 'bayar', 'pay', 'checkout', 'pay_key', 'clc_pk_', 'api/pay'],
+    summary: 'ClincooPay: pembayaran QRIS bawaan Clincoo — aktivasi per proyek, buat QRIS dari situs deploy via /api/pay, cek status order.',
+    doc: `CLINQOOPAY (pembayaran bawaan Clincoo, endpoint: https://app.clincoo.buzz/api/pay):
+- AKTIVASI (pemilik proyek, perlu login Clincoo): UI Pengaturan > Pembayaran > tombol Aktifkan, atau POST /api/pay body {"action":"activate","project_id":"<id>"} dengan header Authorization: Bearer <token akun Clincoo>. Respons: {"active":true,"account_id":"CPPX....","pay_key":"clc_pk_....","secret":"cps_...."}.
+- PAY_KEY: kunci publik per proyek (clc_pk_ + hex). Dipakai situs deploy untuk membuat QRIS — aman diletakkan di frontend. SECRET (cps_...) JANGAN dipublikasikan.
+- BUAT QRIS DARI SITUS DEPLOY (TANPA login — publik): POST https://app.clincoo.buzz/api/pay body {"action":"create","key":"clc_pk_....","amount":25000,"description":"Paket A"}. amount minimum Rp 1.000 (integer rupiah). Respons: {"order_id":"ORD....","amount":25000,"status":"pending","qris_url":"<url>"}. Arahkan pembeli ke qris_url (QRIS). qris_url bernilai null bila QRIS gateway server belum terkonfigurasi — sampaikan itu ke user, jangan mengarang URL.
+- CEK STATUS (TANPA login): GET https://app.clincoo.buzz/api/pay?action=status&key=clc_pk_....&order_id=ORD.... -> {"order_id","amount","status","description","created_at"}. status: "pending" lalu "paid" setelah pembayaran dikonfirmasi. Pola situs: polling tiap 3-5 detik sampai status "paid", lalu tampilkan halaman sukses.
+- DASHBOARD PEMILIK (perlu login): GET /api/pay?action=config&project_id=... (saldo tersedia = total paid), POST body {"action":"transactions","project_id":...} (25 transaksi terakhir), GET ?action=history juga tersedia.
+- KODE SITUS CONTOH:
+  async function buatBayaran(amount) {
+    const r = await fetch('https://app.clincoo.buzz/api/pay', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'create', key:'clc_pk_....', amount, description:'Pembayaran'}) });
+    const d = await r.json(); if (d.qris_url) window.location.href = d.qris_url;
+  }
+- Catatan: pesan error dari server (mis. "nominal minimum Rp 1.000", "pay key tidak valid") sampaikan apa adanya. Untuk gateway eksternal (Xendit/Midtrans), lihat entri dokumentasi terpisah di KB ini.`
+  },
+
+  {
     id: 'xendit-integration',
     gateway: 'Xendit',
     keywords: ['xendit'],

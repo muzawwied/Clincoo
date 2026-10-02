@@ -26,7 +26,11 @@
 //      (data sensitif tidak pernah nempel di cache).
 import { initTables as initAuthTables, getUserByToken, getToken } from './auth/shared.js';
 
-const PUBLIC = [/^\/api\/fn-db(\/|$)/, /^\/api\/beta-claim(\/|$)/, /^\/api\/promo(\/|$)/, /^\/api\/template-submissions(\/|$)/, /^\/api\/auth(\/|$)/, /^\/api\/github-oauth(\/|$)/, /^\/api\/topup(-qris)?(\/|$)/, /^\/api\/wallet(\/|$)/, /^\/api\/scheduled-tasks(\/|$)/, /^\/api\/user-report-sync(\/|$)/, /^\/api\/wallet-sync(\/|$)/, /^\/api\/collab(\/|$)/, /^\/api\/chat(\/|$)/, /^\/api\/prompt-templates(\/|$)/, /^\/api\/wa(\/|$)/, /^\/api\/email(\/|$)/];
+// /api/pay  -> publik: action create/status meng-autentikasi sendiri via pay_key
+//             (clc_pk_...) demi situs deploy; action lain tetap cek sesi (requireOwned).
+// /api/mcp  -> publik: klien AI luar tidak punya sesi Clincoo; handler mcp.js
+//             memverifikasi token MCP per proyek + izin read/write/delete sendiri.
+const PUBLIC = [/^\/api\/pay(\/|$)/, /^\/api\/mcp(\/|$)/, /^\/api\/fn-db(\/|$)/, /^\/api\/beta-claim(\/|$)/, /^\/api\/promo(\/|$)/, /^\/api\/template-submissions(\/|$)/, /^\/api\/auth(\/|$)/, /^\/api\/github-oauth(\/|$)/, /^\/api\/topup(-qris)?(\/|$)/, /^\/api\/wallet(\/|$)/, /^\/api\/scheduled-tasks(\/|$)/, /^\/api\/user-report-sync(\/|$)/, /^\/api\/wallet-sync(\/|$)/, /^\/api\/collab(\/|$)/, /^\/api\/chat(\/|$)/, /^\/api\/prompt-templates(\/|$)/, /^\/api\/wa(\/|$)/, /^\/api\/email(\/|$)/];
 
 // ---- 1. RATE LIMIT (anti-DDoS L7 / anti-brute-force) ----
 const _buckets = new Map(); // key -> array timestamp

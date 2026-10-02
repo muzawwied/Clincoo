@@ -8,6 +8,7 @@
 
 import { KB_ARTICLES } from './blog-kb-data.js';
 import { PAYMENT_KB } from './payment-kb-data.js';
+import { INTEGRATION_KB } from './integration-kb-data.js';
 
 function tokenize(q) {
   return String(q || '')
@@ -39,6 +40,14 @@ export async function searchClincooBlog(env, query) {
   if (!tokens.length) return { error: 'Query pencarian kosong.' };
 
   const qLower = q.toLowerCase();
+  // --- KB INTEGRASI (Integrasi AI, Email, Server MCP — docs internal) ---
+  const intDocs = INTEGRATION_KB.filter(k => {
+    const hay = (k.topic + ' ' + k.summary + ' ' + (k.keywords || []).join(' ') + ' ' + k.doc).toLowerCase();
+    let sc = 0;
+    for (const t of tokens) if (hay.includes(t)) sc += 2;
+    for (const w of (k.keywords || [])) if (qLower.includes(w)) sc += 10;
+    return sc >= 10;
+  });
   // --- KB PAYMENT GATEWAY (docs internal, bukan artikel blog) ---
   const payDocs = PAYMENT_KB.filter(k => {
     const hay = (k.gateway + ' ' + k.summary + ' ' + (k.keywords || []).join(' ') + ' ' + k.doc).toLowerCase();
@@ -76,10 +85,21 @@ export async function searchClincooBlog(env, query) {
     kutipan_relevan: excerptAround(art.x || '', tokens)
   }));
   // docs payment gateway selalu ditampilkan paling atas bila relevan
-  for (const k of payDocs) {
+  // (urutan tampil = urutan array PAYMENT_KB — ClincooPay duluan; unshift dibalik)
+  for (const k of payDocs.slice().reverse()) {
     results.unshift({
       judul: 'Dokumentasi Internal: Integrasi ' + k.gateway,
       kategori: 'Payment Gateway',
+      url: '',
+      ringkasan: k.summary,
+      kutipan_relevan: k.doc.slice(0, 2000)
+    });
+  }
+  // docs integrasi (AI/email/MCP) ditampilkan paling atas bila relevan
+  for (const k of intDocs.slice().reverse()) {
+    results.unshift({
+      judul: 'Dokumentasi Internal: ' + k.topic,
+      kategori: 'Integrasi Clincoo',
       url: '',
       ringkasan: k.summary,
       kutipan_relevan: k.doc.slice(0, 2000)
