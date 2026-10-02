@@ -111,9 +111,9 @@ async function getOpenRouterKeys(env) {
   return keys;
 }
 
-// ===== Provider utama: GLM 5.3 Flash via OpenRouter =====
-// (GLM 5.x di Workers AI hanya tersedia di plan berbayar; OpenRouter jalan di akun mana pun.)
-const OPENROUTER_MODELS = ['z-ai/glm-5.3-flash'];
+// ===== Provider utama: NVIDIA Nemotron 3 Ultra via OpenRouter =====
+// (free tier dulu, lalu berbayar, GLM 5.3 Flash tetap sebagai cadangan terakhir.)
+const OPENROUTER_MODELS = ['nvidia/nemotron-3-ultra-550b-a55b:free', 'nvidia/nemotron-3-ultra-550b-a55b', 'z-ai/glm-5.3-flash'];
 const oaiToolsOf = (gDecls) => (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
 
 async function tryOpenRouterText(keys, messages, gDecls) {
@@ -127,7 +127,7 @@ async function tryOpenRouterText(keys, messages, gDecls) {
     const baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
     let data = null;
     try {
-      const payload = { model, messages: baseMsgs, max_tokens: 4096 };
+      const payload = { model, messages: baseMsgs, max_tokens: 16384 };
       if (oaiTools) payload.tools = oaiTools;
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
