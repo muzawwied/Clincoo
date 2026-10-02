@@ -67,6 +67,16 @@
             return row;
           })());
     },
+    zoneInfo(domain) {
+      return probe.then(() => apiMode
+        ? api('/api/domains/' + encodeURIComponent(domain) + '/zone')
+        : { ok: true, simulated: true, zone: null });
+    },
+    ensureZone(domain) {
+      return probe.then(() => apiMode
+        ? api('/api/domains/' + encodeURIComponent(domain) + '/zone', { method: 'POST' })
+        : { ok: false, simulated: true, message: 'Mode simulasi — nameserver otomatis belum tersedia di sini.' });
+    },
     remove(name) {
       return probe.then(() => apiMode
         ? api('/api/domains/' + encodeURIComponent(name), { method: 'DELETE' })

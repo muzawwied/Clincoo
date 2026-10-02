@@ -5,9 +5,18 @@
   <script src="../../js/auth-client.js?v=4"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Verifikasi Domain — Clincoo Experiment</title>
-<meta name="description" content="Verifikasi kepemilikan domain Clincoo-mu lewat record TXT.">
-<meta name="robots" content="noindex">
+<title>Verifikasi Domain — Clincoo</title>
+<meta name="description" content="Verifikasi kepemilikan domain Clincoo-mu lewat record TXT atau nameserver Cloudflare yang ditugaskan.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Clincoo">
+<meta property="og:title" content="Verifikasi Domain — Clincoo">
+<meta property="og:description" content="Verifikasi kepemilikan domain Clincoo-mu lewat record TXT atau nameserver Cloudflare yang ditugaskan.">
+<meta property="og:url" content="https://app.clincoo.buzz/domain/verifikasi/">
+<meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Verifikasi Domain — Clincoo">
+<meta name="twitter:description" content="Verifikasi kepemilikan domain Clincoo-mu lewat record TXT atau nameserver Cloudflare yang ditugaskan.">
+<meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png">
 <meta name="theme-color" content="#ffffff">
 <link rel="icon" type="image/png" href="https://app.clincoo.buzz/assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -79,7 +88,7 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
     <div class="px-7">
         <!-- Tab: TXT / Nameserver -->
         <div class="flex items-center gap-6 border-b border-gray-100">
-            <button id="tab-txt" onclick="switchTab('txt')" class="tab-btn active flex-1 pb-3 text-[14px] font-semibold border-b-2 transition-colors">Record TXT</button>
+            <button id="tab-txt" onclick="switchTab('txt')" class="tab-btn active flex-1 pb-3 text-[14px] font-semibold border-b-2 border-transparent transition-colors">Record TXT</button>
             <button id="tab-ns" onclick="switchTab('ns')" class="tab-btn flex-1 pb-3 text-[14px] font-semibold text-gray-400 border-b-2 border-transparent transition-colors">Nameserver</button>
         </div>
 
@@ -119,7 +128,7 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
 
         <!-- Panel: Nameserver -->
         <div id="panel-ns" class="hidden mt-5">
-            <p class="text-[13px] text-gray-500 leading-relaxed">Ganti nameserver di registrar domain-mu menjadi:</p>
+            <p class="text-[13px] text-gray-500 leading-relaxed">Zona domain-mu dibuat di Cloudflare Clincoo. Ganti nameserver di registrar domain-mu menjadi pasangan berikut:</p>
             <div class="mt-1">
                 <div class="flex items-center justify-between gap-3 py-3 border-b border-gray-100">
                     <div class="min-w-0">
@@ -164,8 +173,35 @@ function goBack() { if (history.length > 1) history.back(); else location.href =
 function copyValue(txt) { navigator.clipboard.writeText(txt).then(() => {}).catch(() => {}); }
 function copyText(id) { copyValue(document.getElementById(id).textContent.trim()); }
 
+let nsLoaded = false;
+function nsFinish(ns, res) {
+    const el1 = document.getElementById('ns1');
+    const el2 = document.getElementById('ns2');
+    if (ns && ns.length >= 2) {
+        el1.textContent = ns[0];
+        el2.textContent = ns[1];
+    } else {
+        el1.textContent = (res && res.message) || 'Nameserver belum tersedia. Pastikan domain belum dipakai di akun Cloudflare lain, lalu muat ulang tab ini.';
+        el2.closest('.flex').style.display = 'none';
+    }
+}
+function loadNs() {
+    if (nsLoaded) return;
+    nsLoaded = true;
+    document.getElementById('ns1').textContent = 'memuat…';
+    document.getElementById('ns2').textContent = 'memuat…';
+    store.zoneInfo(domain).then(res => {
+        const zs = res && res.zone && res.zone.name_servers;
+        if (zs && zs.length >= 2) return nsFinish(zs, res);
+        store.ensureZone(domain).then(r2 => {
+            const ns2s = (r2 && r2.ok && r2.name_servers) || null;
+            nsFinish(ns2s && ns2s.length >= 2 ? ns2s : null, r2 && !r2.ok ? r2 : res);
+        }).catch(() => nsFinish(null));
+    }).catch(() => nsFinish(null));
+}
 function switchTab(t) {
     const isTxt = t === 'txt';
+    if (!isTxt) loadNs();
     document.getElementById('panel-txt').classList.toggle('hidden', !isTxt);
     document.getElementById('panel-ns').classList.toggle('hidden', isTxt);
     document.getElementById('tab-txt').classList.toggle('active', isTxt);
