@@ -206,13 +206,13 @@
             </div>
         </div>
     </header>
-    <main class="w-full max-w-5xl px-4 sm:px-6 pt-20 pb-24">
+    <main class="w-full max-w-5xl px-4 sm:px-6 pt-20 pb-28">
             <div class="w-full flex flex-col divide-y divide-gray-200 dark:divide-slate-700/60">
         <div class="py-5">
           <div class="flex items-start sm:items-center justify-between gap-3 mb-4">
             <div>
-              <h4 class="text-base font-semibold text-gray-900 dark:text-white">Kirim Email</h4>
-              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Buat, lihat, dan kelola email terkirim proyek ini.</p>
+              <h4 id="sec-title" class="text-base font-semibold text-gray-900 dark:text-white">Email</h4>
+              <p id="sec-sub" class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Log pengiriman beserta filternya — plus kirim email baru.</p>
             </div>
             <span id="email-quota-mini" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 whitespace-nowrap flex-shrink-0">0 / 1.000</span>
           </div>
@@ -220,69 +220,178 @@
           <!-- Butuh login -->
           <div id="kirim-login" class="hidden py-10 flex flex-col items-center justify-center text-center">
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Masuk dulu untuk mengelola email</p>
-            <a id="kirim-login-btn" href="/auth/" class="mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2">Masuk ke Clincoo</a>
+            <a id="kirim-login-btn" href="/auth/" class="mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Masuk ke Clincoo</a>
           </div>
 
           <!-- Belum aktif -->
           <div id="kirim-inactive" class="hidden py-10 flex flex-col items-center justify-center text-center">
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Email proyek ini belum aktif</p>
             <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Aktifkan fitur email di halaman pengaturan terlebih dulu.</p>
-            <a href="/proyek/pengaturan/email/" class="mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2">Ke Pengaturan Email</a>
+            <a href="/proyek/pengaturan/email/" class="mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Ke Pengaturan Email</a>
           </div>
 
-          <!-- CRUD: create -->
+          <!-- Aktif: mini-app email -->
           <div id="kirim-active" class="hidden flex-col">
-            <div class="flex items-center justify-between gap-3 mb-4">
-              <p class="text-sm font-semibold text-gray-900 dark:text-white">Buat email</p>
-              <button type="button" onclick="toggleKirimForm()" id="kirim-toggle-btn" class="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Kirim Email</button>
-            </div>
-            <form id="kirim-form" onsubmit="submitKirim(event)" class="hidden flex-col gap-3 border-b border-gray-100 dark:border-slate-800 pb-5">
-              <div class="grid sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Penerima</label>
-                  <input id="kirim-to" type="email" required placeholder="pelanggan@contoh.com" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Balasan ke (opsional)</label>
-                  <input id="kirim-reply" type="email" placeholder="kamu@domainmu.com" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
-                </div>
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Subjek</label>
-                <input id="kirim-subject" type="text" required placeholder="Subjek email" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Isi email (HTML)</label>
-                <textarea id="kirim-html" rows="5" placeholder="&lt;p&gt;Isi email dalam HTML&lt;/p&gt;" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors font-mono"></textarea>
-              </div>
-              <div class="flex items-center gap-2">
-                <button type="submit" id="kirim-send-btn" class="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Kirim</button>
-                <button type="button" onclick="toggleKirimForm()" class="px-5 py-2.5 text-sm font-medium border border-gray-200 dark:border-slate-700 rounded-full hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">Batal</button>
-              </div>
-            </form>
-          </div>
-        </div>
 
-        <div id="kirim-table-wrap" class="hidden py-5">
-          <div class="flex items-center justify-between gap-3 mb-3">
-            <p class="text-sm font-semibold text-gray-900 dark:text-white">Histori pengiriman</p>
-            <span class="text-xs text-gray-400 dark:text-gray-500">Kuota dihitung dari email terkirim bulan ini</span>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-xs text-left border-collapse">
-              <thead>
-                <tr class="text-gray-400 dark:text-gray-500 border-b border-gray-200 dark:border-slate-700">
-                  <th class="py-2 pr-3 font-medium whitespace-nowrap">Waktu</th>
-                  <th class="py-2 pr-3 font-medium">Subjek</th>
-                  <th class="py-2 pr-3 font-medium">Penerima</th>
-                  <th class="py-2 pr-3 font-medium">Status</th>
-                  <th class="py-2 font-medium text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="kirim-log" class="divide-y divide-gray-100 dark:divide-slate-800">
-                <tr><td colspan="5" class="py-2.5 text-gray-400 dark:text-gray-500">Belum ada pengiriman.</td></tr>
-              </tbody>
-            </table>
+            <!-- Email (utama): log + filter -->
+            <div id="sec-email" class="hidden flex flex-col">
+              <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+                <input id="log-search" type="search" placeholder="Cari subjek atau penerima…" class="w-full sm:w-56 px-3.5 py-2 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                <div class="flex items-center gap-2">
+                  <button type="button" data-logf="semua" onclick="setLogFilter('semua')" class="px-3 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 transition-colors">Semua</button>
+                  <button type="button" data-logf="terkirim" onclick="setLogFilter('terkirim')" class="px-3 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 transition-colors">Terkirim</button>
+                  <button type="button" data-logf="gagal" onclick="setLogFilter('gagal')" class="px-3 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 transition-colors">Gagal</button>
+                </div>
+                <div class="sm:ml-auto flex justify-end">
+                  <button type="button" onclick="toggleKirimForm()" id="kirim-toggle-btn" class="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Kirim Email</button>
+                </div>
+              </div>
+
+              <form id="kirim-form" onsubmit="submitKirim(event)" class="hidden flex-col gap-3 border-b border-gray-100 dark:border-slate-800 pb-5 mb-4">
+                <div class="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Penerima</label>
+                    <input id="kirim-to" type="email" required placeholder="pelanggan@contoh.com" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Balasan ke (opsional)</label>
+                    <input id="kirim-reply" type="email" placeholder="kamu@domainmu.com" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Subjek</label>
+                  <input id="kirim-subject" type="text" required placeholder="Subjek email" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Isi email (HTML)</label>
+                  <textarea id="kirim-html" rows="5" placeholder="&lt;p&gt;Isi email dalam HTML&lt;/p&gt;" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors font-mono"></textarea>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button type="submit" id="kirim-send-btn" class="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Kirim</button>
+                  <button type="button" onclick="toggleKirimForm()" class="px-5 py-2.5 text-sm font-medium border border-gray-200 dark:border-slate-700 rounded-full hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">Batal</button>
+                </div>
+              </form>
+
+              <div id="kirim-table-wrap" class="pt-1">
+                <div class="flex items-center justify-between gap-3 mb-3">
+                  <p class="text-sm font-semibold text-gray-900 dark:text-white">Histori pengiriman</p>
+                  <span class="text-xs text-gray-400 dark:text-gray-500"><span id="log-count">0 entri</span> · kuota dari email terkirim bulan ini</span>
+                </div>
+                <div class="overflow-x-auto">
+                  <table class="w-full text-xs text-left border-collapse">
+                    <thead>
+                      <tr class="text-gray-400 dark:text-gray-500 border-b border-gray-200 dark:border-slate-700">
+                        <th class="py-2 pr-3 font-medium whitespace-nowrap">Waktu</th>
+                        <th class="py-2 pr-3 font-medium">Subjek</th>
+                        <th class="py-2 pr-3 font-medium">Penerima</th>
+                        <th class="py-2 pr-3 font-medium">Status</th>
+                        <th class="py-2 font-medium text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="kirim-log" class="divide-y divide-gray-100 dark:divide-slate-800">
+                      <tr><td colspan="5" class="py-2.5 text-gray-400 dark:text-gray-500">Belum ada pengiriman.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Segera hadir -->
+            <div id="sec-broadcast" class="hidden py-10 flex flex-col items-center justify-center text-center">
+              <svg class="w-10 h-10 text-gray-300 dark:text-slate-600 mb-3 mx-auto" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m3 11 18-5v12L3 14v-3z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path></svg>
+              <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Broadcast</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Kirim email massal ke banyak penerima sekaligus. Fitur ini segera hadir.</p>
+            </div>
+            <div id="sec-otomasi" class="hidden py-10 flex flex-col items-center justify-center text-center">
+              <svg class="w-10 h-10 text-gray-300 dark:text-slate-600 mb-3 mx-auto" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+              <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Otomasi</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Alur email otomatis berdasarkan pemicu — pendaftaran, form, dan lainnya. Segera hadir.</p>
+            </div>
+            <div id="sec-template" class="hidden py-10 flex flex-col items-center justify-center text-center">
+              <svg class="w-10 h-10 text-gray-300 dark:text-slate-600 mb-3 mx-auto" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path stroke-linecap="round" d="M3 9h18"></path><path d="M9 21V9"></path></svg>
+              <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Template</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Template isi email siap pakai untuk pengiriman berulang. Segera hadir.</p>
+            </div>
+            <div id="sec-audiens" class="hidden py-10 flex flex-col items-center justify-center text-center">
+              <svg class="w-10 h-10 text-gray-300 dark:text-slate-600 mb-3 mx-auto" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path stroke-linecap="round" d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Audiens</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Kelola daftar penerima dan grup kontak. Segera hadir.</p>
+            </div>
+
+            <!-- Metrik -->
+            <div id="sec-metrik" class="hidden flex flex-col">
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="border border-gray-200 dark:border-slate-700 rounded-xl p-4">
+                  <p class="text-[11px] text-gray-400 dark:text-gray-500">Terkirim (histori)</p>
+                  <p id="m-trkirim" class="text-lg font-semibold text-gray-900 dark:text-white mt-1">0</p>
+                </div>
+                <div class="border border-gray-200 dark:border-slate-700 rounded-xl p-4">
+                  <p class="text-[11px] text-gray-400 dark:text-gray-500">Gagal (histori)</p>
+                  <p id="m-gagal" class="text-lg font-semibold text-gray-900 dark:text-white mt-1">0</p>
+                </div>
+                <div class="border border-gray-200 dark:border-slate-700 rounded-xl p-4">
+                  <p class="text-[11px] text-gray-400 dark:text-gray-500">Kuota terpakai (bulan ini)</p>
+                  <p id="m-kuota" class="text-lg font-semibold text-gray-900 dark:text-white mt-1">0</p>
+                </div>
+                <div class="border border-gray-200 dark:border-slate-700 rounded-xl p-4">
+                  <p class="text-[11px] text-gray-400 dark:text-gray-500">Sisa kuota</p>
+                  <p id="m-sisa" class="text-lg font-semibold text-gray-900 dark:text-white mt-1">1.000</p>
+                </div>
+              </div>
+              <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-3">Kuota dihitung dari email terkirim bulan ini. Statistik histori menampilkan entri terbaru.</p>
+            </div>
+
+            <!-- Domain -->
+            <div id="sec-domain" class="hidden flex flex-col">
+              <div class="border border-gray-200 dark:border-slate-700 rounded-xl divide-y divide-gray-100 dark:divide-slate-800">
+                <div class="flex items-center justify-between gap-3 px-4 py-3">
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Pengirim default</span>
+                  <span class="text-sm text-gray-900 dark:text-white font-medium">noreply@clincoo.buzz</span>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-4 py-3">
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Pengirim kustom</span>
+                  <span id="d-kustom" class="text-sm text-gray-900 dark:text-white font-medium">—</span>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-4 py-3">
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Nama pengirim</span>
+                  <span id="d-nama" class="text-sm text-gray-900 dark:text-white font-medium">Clincoo Mail</span>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-4 py-3">
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Email form kontak</span>
+                  <span id="d-kontak" class="text-sm text-gray-900 dark:text-white font-medium">—</span>
+                </div>
+              </div>
+              <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-3">Pengiriman via Cloudflare Email Service — domain kustom diverifikasi otomatis oleh Cloudflare.</p>
+              <a href="/proyek/pengaturan/email/" class="mt-4 self-start px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Kelola Pengirim</a>
+            </div>
+
+            <!-- Kunci API -->
+            <div id="sec-apikey" class="hidden flex flex-col">
+              <div class="flex items-center justify-between gap-3 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3">
+                <code id="ak-value" class="text-xs font-mono text-gray-800 dark:text-gray-200 break-all">—</code>
+                <div class="flex items-center gap-3 flex-shrink-0">
+                  <button type="button" onclick="toggleKey()" id="ak-toggle" class="text-xs font-medium text-gray-600 dark:text-gray-300 hover:underline">Lihat</button>
+                  <button type="button" onclick="salinKey()" class="text-xs font-medium text-gray-600 dark:text-gray-300 hover:underline">Salin</button>
+                </div>
+              </div>
+              <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-3">Gunakan kunci ini di situs deploy-mu lewat endpoint <code>POST /api/email</code>. Ganti atau cabut kuncinya di halaman Pengaturan.</p>
+            </div>
+
+            <!-- Pengaturan -->
+            <div id="sec-pengaturan" class="hidden flex flex-col">
+              <p class="text-sm text-gray-600 dark:text-gray-300 max-w-md">Pengirim, aktivasi, kuota, dan dokumentasi lengkap ada di halaman Pengaturan Email.</p>
+              <a href="/proyek/pengaturan/email/" class="mt-4 self-start px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Buka Pengaturan Email</a>
+            </div>
+
+            <!-- Bantuan -->
+            <div id="sec-bantuan" class="hidden flex flex-col gap-3">
+              <p class="text-sm text-gray-600 dark:text-gray-300 max-w-md">Kirim email dari situs deploy-mu dengan satu request:</p>
+              <pre class="text-[11px] font-mono bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-xl p-4 overflow-x-auto whitespace-pre-wrap break-all">curl -X POST https://app.clincoo.buzz/api/email \
+  -H "Content-Type: application/json" \
+  -d '{"action":"send","api_key":"clc_email_…","to":"pelanggan@contoh.com","subject":"Halo","html":"&lt;p&gt;Halo!&lt;/p&gt;"}'</pre>
+              <p class="text-xs text-gray-400 dark:text-gray-500">Bidang opsional: <code>reply_to</code>. Kuota 1.000 email/bulan per proyek.</p>
+            </div>
+
           </div>
         </div>
       </div>
@@ -290,6 +399,31 @@
         Penggunaan Clincoo Email API tunduk pada <a href="https://blog.clincoo.buzz/legal/syarat-ketentuan/" target="_blank" rel="noopener" class="underline hover:text-gray-600 dark:hover:text-gray-300">Syarat &amp; Ketentuan</a> dan <a href="https://blog.clincoo.buzz/legal/kebijakan-privasi/" target="_blank" rel="noopener" class="underline hover:text-gray-600 dark:hover:text-gray-300">Kebijakan Privasi</a> Clincoo.
       </footer>
 </main>
+
+<!-- Menu email (pop-up bawah) -->
+<div id="email-menu-wrap" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-40">
+  <div class="relative">
+    <button id="email-menu-btn" type="button" onclick="event.stopPropagation(); document.getElementById('email-menu-pop').classList.toggle('hidden')" class="flex items-center gap-2 px-4 py-2.5 text-xs font-medium text-black bg-white border border-gray-200 shadow-[0_4px_24px_rgba(0,0,0,0.10)] hover:bg-gray-50 dark:bg-white dark:text-black dark:hover:bg-gray-100 rounded-full transition-colors">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+      Menu Email
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 15l-6-6-6 6"></path></svg>
+    </button>
+    <div id="email-menu-pop" class="hidden absolute bottom-12 left-1/2 -translate-x-1/2 w-72 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl p-1.5">
+      <div class="grid grid-cols-2">
+        <button type="button" onclick="showSection('email')" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><path stroke-linecap="round" stroke-linejoin="round" d="m22 6-10 7L2 6"></path></svg> Email</button>
+        <button type="button" onclick="showSection('broadcast')" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m3 11 18-5v12L3 14v-3z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path></svg> Broadcast</button>
+        <button type="button" onclick="showSection('otomasi')" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path></svg> Otomasi</button>
+        <button type="button" onclick="showSection('template')" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path stroke-linecap="round" d="M3 9h18"></path><path d="M9 21V9"></path></svg> Template</button>
+        <button type="button" onclick="showSection('audiens')" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path stroke-linecap="round" d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Audiens</button>
+        <button type="button" onclick="showSection('metrik')" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M18 20V10M12 20V4M6 20v-6"></path></svg> Metrik</button>
+        <button type="button" onclick="showSection('domain')" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Domain</button>
+        <button type="button" onclick="showSection('apikey')" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg> Kunci API</button>
+        <button type="button" onclick="showSection('pengaturan')" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg> Pengaturan</button>
+        <button type="button" onclick="showSection('bantuan')" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path stroke-linecap="round" d="M12 17h.01"></path></svg> Bantuan</button>
+      </div>
+    </div>
+  </div>
+</div>
   </div>
   <script>
     let isEdited=false;function showActionButtons(){if(!isEdited){isEdited=true;const c=document.getElementById('action-buttons');c.classList.remove('hidden');c.classList.add('flex');void c.offsetWidth;c.classList.remove('opacity-0');c.classList.add('opacity-100');}}function cancelChanges(){window.location.reload();}function saveChanges(){showActionButtons();}document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('input,textarea,select').forEach(input=>{input.addEventListener('input',showActionButtons);input.addEventListener('change',showActionButtons);});});function toggleSwitch(idPrefix){showActionButtons();const bg=document.getElementById(idPrefix+'-bg');const knob=document.getElementById(idPrefix+'-knob');if(bg.classList.contains('bg-blue-500')){bg.classList.replace('bg-blue-500','bg-gray-200');bg.classList.add('dark:bg-slate-700');knob.classList.remove('translate-x-5');}else{bg.classList.remove('bg-gray-200','dark:bg-slate-700');bg.classList.add('bg-blue-500');knob.classList.add('translate-x-5');}}
@@ -297,7 +431,7 @@
     <script>if (window.lucide) { lucide.createIcons(); }</script>
 
 <script>
-  // ===== Kirim Email (CRUD): create (form), read (tabel), delete (hapus entri) =====
+  // ===== Email mini-app: log+filter (utama), metrik, domain, kunci API, bantuan =====
   var API_BASE = (['clincoo-be2.pages.dev','app.clincoo.buzz','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://app.clincoo.buzz/api' : '/api';
   var _apiToken = '';
   try { _apiToken = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
@@ -305,7 +439,28 @@
   function _hdrs() { return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _apiToken }; }
   function _cacheKey() { return 'clincoo_email_history_' + _pid(); }
   function _readCache() { try { return JSON.parse(localStorage.getItem(_cacheKey()) || 'null'); } catch (e) { return null; } }
-  function _clearCache() { try { localStorage.removeItem(_cacheKey()); } catch (e) {} }
+  function _clearCache() { try { localStorage.removeItem(_cacheKey()); localStorage.removeItem('clincoo_email_cfg_' + _pid()); } catch (e) {} }
+  function _cfgCacheKey() { return 'clincoo_email_cfg_' + _pid(); }
+
+  var _section = 'email';
+  var _logRows = [];
+  var _logFilter = 'semua';
+  var _cfg = null;
+  var _quota = { used: 0, limit: 1000 };
+  var _keyShown = false;
+
+  var SECTIONS = {
+    email:      { t: 'Email',       s: 'Log pengiriman beserta filternya — plus kirim email baru.' },
+    broadcast:  { t: 'Broadcast',   s: 'Kirim email massal ke banyak penerima sekaligus.' },
+    otomasi:    { t: 'Otomasi',     s: 'Alur email otomatis berdasarkan pemicu.' },
+    template:   { t: 'Template',    s: 'Template isi email siap pakai.' },
+    audiens:    { t: 'Audiens',     s: 'Kelola daftar penerima dan grup kontak.' },
+    metrik:     { t: 'Metrik',      s: 'Ringkasan pengiriman email.' },
+    domain:     { t: 'Domain',      s: 'Alamat pengirim dan domain kustom proyek ini.' },
+    apikey:     { t: 'Kunci API',   s: 'Kunci akses Clincoo Email API proyek ini.' },
+    pengaturan: { t: 'Pengaturan',  s: 'Pengirim, aktivasi, dan kuota fitur email.' },
+    bantuan:    { t: 'Bantuan',     s: 'Cara mengirim email dari situs deploy-mu.' }
+  };
 
   function emailToast(msg, ok) {
     var t = document.getElementById('email-toast');
@@ -333,24 +488,54 @@
     });
   }
 
+  // --- navigasi seksi + menu pop-up bawah ---
+  function showSection(name, save) {
+    if (!SECTIONS[name]) name = 'email';
+    _section = name;
+    Object.keys(SECTIONS).forEach(function (k) {
+      var el = document.getElementById('sec-' + k);
+      if (el) el.classList.toggle('hidden', k !== name);
+    });
+    document.getElementById('sec-title').textContent = SECTIONS[name].t;
+    document.getElementById('sec-sub').textContent = SECTIONS[name].s;
+    var q = document.getElementById('email-quota-mini');
+    if (q) q.classList.toggle('hidden', name !== 'email' && name !== 'metrik');
+    closeEmailMenu();
+    if (save !== false) { try { localStorage.setItem('clincoo_email_section_' + _pid(), name); } catch (e) {} }
+  }
+  function closeEmailMenu() { var p = document.getElementById('email-menu-pop'); if (p) p.classList.add('hidden'); }
+  document.addEventListener('click', function (e) {
+    var pop = document.getElementById('email-menu-pop');
+    var btn = document.getElementById('email-menu-btn');
+    if (pop && !pop.classList.contains('hidden') && !pop.contains(e.target) && !(btn && btn.contains(e.target))) closeEmailMenu();
+  });
+
+  // --- state: login / belum aktif / aktif ---
   function renderState(mode) {
     document.getElementById('kirim-login').classList.toggle('hidden', mode !== 'login');
     document.getElementById('kirim-inactive').classList.toggle('hidden', mode !== 'inactive');
     document.getElementById('kirim-active').classList.toggle('hidden', mode !== 'active');
-    document.getElementById('kirim-table-wrap').classList.toggle('hidden', mode !== 'active');
+    document.getElementById('email-menu-wrap').classList.toggle('hidden', mode !== 'active');
     if (mode === 'login') {
       document.getElementById('kirim-login-btn').href = '/auth/?next=' + encodeURIComponent(location.pathname + location.search);
     }
     if (mode !== 'active') _clearCache();
   }
 
-  function renderHistory(data) {
-    var q = document.getElementById('email-quota-mini');
-    q.textContent = (data.used || 0).toLocaleString('id-ID') + ' / ' + (data.limit || 1000).toLocaleString('id-ID');
+  // --- histori + filter ---
+  function applyLogFilter() {
+    var kw = '';
+    var si = document.getElementById('log-search');
+    if (si) kw = (si.value || '').toLowerCase().trim();
+    var rows = _logRows.filter(function (r) {
+      if (_logFilter !== 'semua' && r.status !== _logFilter) return false;
+      if (kw && String(r.subject || '').toLowerCase().indexOf(kw) === -1 && String(r.to || '').toLowerCase().indexOf(kw) === -1) return false;
+      return true;
+    });
     var tb = document.getElementById('kirim-log');
-    var rows = (data.items && data.items.length) ? data.items : [];
+    if (!tb) return;
     if (!rows.length) {
-      tb.innerHTML = '<tr><td colspan="5" class="py-2.5 text-gray-400 dark:text-gray-500">Belum ada pengiriman.</td></tr>';
+      tb.innerHTML = '<tr><td colspan="5" class="py-2.5 text-gray-400 dark:text-gray-500">Tidak ada pengiriman yang cocok.</td></tr>';
     } else {
       tb.innerHTML = rows.map(function (r) {
         return '<tr>' +
@@ -361,6 +546,28 @@
           '<td class="py-2.5 text-right"><button type="button" onclick="hapusLog(' + r.id + ')" class="text-red-500 hover:underline font-medium">Hapus</button></td></tr>';
       }).join('');
     }
+    var c = document.getElementById('log-count');
+    if (c) c.textContent = rows.length + ' entri';
+  }
+
+  function setLogFilter(f) {
+    _logFilter = f;
+    var btns = document.querySelectorAll('[data-logf]');
+    for (var i = 0; i < btns.length; i++) {
+      var b = btns[i], on = b.getAttribute('data-logf') === f;
+      ['bg-black','text-white','dark:bg-white','dark:text-black'].forEach(function (c) { b.classList.toggle(c, on); });
+      ['text-gray-600','dark:text-gray-300'].forEach(function (c) { b.classList.toggle(c, !on); });
+    }
+    applyLogFilter();
+  }
+
+  function renderHistory(data) {
+    var q = document.getElementById('email-quota-mini');
+    _quota = { used: data.used || 0, limit: data.limit || 1000 };
+    if (q) q.textContent = _quota.used.toLocaleString('id-ID') + ' / ' + _quota.limit.toLocaleString('id-ID');
+    _logRows = (data.items && data.items.length) ? data.items : [];
+    applyLogFilter();
+    renderMetrik();
     try { localStorage.setItem(_cacheKey(), JSON.stringify(data)); } catch (e) {}
   }
 
@@ -377,6 +584,63 @@
       });
   }
 
+  // --- metrik / domain / kunci API ---
+  function renderMetrik() {
+    var set = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
+    var sent = _logRows.filter(function (r) { return r.status === 'terkirim'; }).length;
+    var fail = _logRows.filter(function (r) { return r.status === 'gagal'; }).length;
+    set('m-trkirim', sent.toLocaleString('id-ID'));
+    set('m-gagal', fail.toLocaleString('id-ID'));
+    set('m-kuota', _quota.used.toLocaleString('id-ID'));
+    set('m-sisa', Math.max(0, _quota.limit - _quota.used).toLocaleString('id-ID'));
+  }
+
+  function renderDomain() {
+    var set = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
+    set('d-kustom', (_cfg && _cfg.sender_email) ? _cfg.sender_email : '— pakai default');
+    set('d-nama', (_cfg && _cfg.from_name) ? _cfg.from_name : 'Clincoo Mail');
+    set('d-kontak', (_cfg && _cfg.contact_to) ? _cfg.contact_to : '—');
+  }
+
+  function renderApikey() {
+    var el = document.getElementById('ak-value');
+    if (!el) return;
+    var k = (_cfg && _cfg.api_key) ? String(_cfg.api_key) : '';
+    if (!k) { el.textContent = '—'; return; }
+    _keyShown = false;
+    var tg = document.getElementById('ak-toggle'); if (tg) tg.textContent = 'Lihat';
+    el.textContent = k.slice(0, 14) + '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022' + k.slice(-4);
+  }
+
+  function toggleKey() {
+    var el = document.getElementById('ak-value');
+    var k = (_cfg && _cfg.api_key) ? String(_cfg.api_key) : '';
+    if (!el || !k) return;
+    _keyShown = !_keyShown;
+    el.textContent = _keyShown ? k : (k.slice(0, 14) + '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022' + k.slice(-4));
+    var tg = document.getElementById('ak-toggle');
+    if (tg) tg.textContent = _keyShown ? 'Sembunyikan' : 'Lihat';
+  }
+
+  function salinKey() {
+    if (!_cfg || !_cfg.api_key) { emailToast('Kunci belum tersedia', false); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(_cfg.api_key).then(function () { emailToast('Kunci API disalin', true); })
+        .catch(function () { emailToast('Gagal menyalin', false); });
+    } else { emailToast('Browser tidak mendukung salin', false); }
+  }
+
+  function loadEmailConfig() {
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem(_cfgCacheKey()) || 'null'); } catch (e) {}
+    if (cached && cached.api_key) { _cfg = cached; renderDomain(); renderApikey(); }
+    fetch(API_BASE + '/email?action=config&project_id=' + encodeURIComponent(_pid()), { headers: _hdrs() })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function (cfg) { _cfg = cfg; renderDomain(); renderApikey(); try { localStorage.setItem(_cfgCacheKey(), JSON.stringify(cfg)); } catch (e) {} })
+      .catch(function () {});
+  }
+
+  // --- kirim email ---
   function toggleKirimForm() {
     var f = document.getElementById('kirim-form');
     f.classList.toggle('hidden');
@@ -398,6 +662,7 @@
       document.getElementById('kirim-form').reset();
       toggleKirimForm();
       loadHistory();
+      loadEmailConfig();
     }).catch(function (e) {
       btn.disabled = false; btn.textContent = 'Kirim';
       if (e && e.status === 401) { renderState('login'); emailToast('Masuk dulu untuk mengirim email', false); return; }
@@ -408,11 +673,19 @@
   function hapusLog(id) {
     if (!confirm('Hapus entri histori ini? Kuota bulanan ikut menyesuaikan.')) return;
     _apiPost('delete_log', { id: id })
-      .then(function () { emailToast('Entri dihapus', true); loadHistory(); })
+      .then(function () { emailToast('Entri dihapus', true); loadHistory(); loadEmailConfig(); })
       .catch(function (e) { emailToast(e && e.error ? e.error : 'Gagal menghapus (' + (e && e.status || e) + ')', false); });
   }
 
-  document.addEventListener('DOMContentLoaded', loadHistory);
+  document.addEventListener('DOMContentLoaded', function () {
+    var saved = null;
+    try { saved = localStorage.getItem('clincoo_email_section_' + _pid()); } catch (e) {}
+    showSection(saved || 'email', false);
+    var si = document.getElementById('log-search');
+    if (si) si.addEventListener('input', applyLogFilter);
+    loadHistory();
+    loadEmailConfig();
+  });
 </script>
 
 
