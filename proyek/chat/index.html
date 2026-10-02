@@ -3482,6 +3482,9 @@ window.chatLivePreview = function () {
                 case 'cloudflare_request': return 'Accessing Cloudflare API…';
                 case 'github_request': return 'Accessing GitHub connector…';
                 case 'notion_request': return 'Accessing Notion connector…';
+                case 'write_files': return 'Writing ' + (Array.isArray(a.files) ? a.files.length : '?') + ' files…';
+                case 'clone_repo': return 'Cloning repo: ' + String(a.repo || '') + '…';
+                case 'push_to_github': return 'Pushing to GitHub: ' + String(a.repo || '') + '…';
                 default: return 'Processing: ' + tc.name + '…';
             }
         }
@@ -3603,6 +3606,9 @@ window.chatLivePreview = function () {
                     case 'drive_request': return await toolDriveRequest(args);
                     case 'calendar_request': return await toolCalendarRequest(args);
                     case 'review_code': return await toolReviewCode(args);
+                    case 'write_files': return wsWriteFilesBatch(args);
+                    case 'clone_repo': return await toolCloneRepo(args);
+                    case 'push_to_github': return await toolPushToGithub(args);
                     default: return { success: false, error: 'Tool tidak dikenal: ' + name };
                 }
             } catch (e) {
@@ -3846,6 +3852,202 @@ window.chatLivePreview = function () {
                 return { success: false, error: 'Gagal memanggil GitHub API: ' + (e && e.message ? e.message : String(e)) };
             }
         }
+        // ===== TOOL write_files: bulk write — satu load + satu save untuk semua file =====
+        function wsWriteFilesBatch(args) {
+            const files = args && Array.isArray(args.files) ? args.files : [];
+            if (!files.length) return { success: false, error: 'Parameter files wajib array [{path, content}].' };
+            const data = wsLoad();
+            const results = [];
+            const capped = files.slice(0, 60); // batas deklarasi tool: maks 60 file/panggilan
+            for (const f of capped) {
+                const path = f && f.path;
+                const content = f && typeof f.content === 'string' ? f.content : '';
+                if (!path) { results.push({ path: null, ok: false, error: 'path kosong' }); continue; }
+                const info = wsParentInfo(path);
+                if (!info || info.name.includes('/')) { results.push({ path: path, ok: false, error: 'path tidak valid' }); continue; }
+                wsEnsureFolderChain(data, info.folderKey);
+                if (!Array.isArray(data[info.folderKey])) data[info.folderKey] = [];
+                const sizeStr = wsSizeStr(content);
+                const idx = data[info.folderKey].findIndex(function(i) { return i && i.type === 'file' && i.name.toLowerCase() === info.name.toLowerCase(); });
+                if (idx !== -1) {
+                    data[info.folderKey][idx].content = content;
+                    data[info.folderKey][idx].size = sizeStr;
+                } else {
+                    data[info.folderKey].push({ type: 'file', name: info.name, size: sizeStr, path: info.itemPath, content: content });
+                }
+                results.push({ path: info.itemPath, ok: true });
+            }
+            const err = wsSave(data);
+            if (err) return err;
+            const ok = results.filter(function(r) { return r.ok; }).length;
+            return { success: true, written: ok, failed: results.length - ok, files: results };
+        }
+
+        // ===== TOOL clone_repo: salin repo GitHub ke workspace / AI Storage =====
+        function _ghRepoSlug(v) {
+            var s = String(v || '').trim();
+            var m = s.match(/github\.com\/([^\/\s]+)\/([^\/\s#?]+)/i);
+            if (m) s = m[1] + '/' + m[2];
+            s = s.replace(/\.git$/i, '');
+            if (!/^[\w.-]+\/[\w.-]+$/.test(s)) return '';
+            return s;
+        }
+        const GH_TEXT_EXT = ('js mjs cjs ts tsx jsx json html htm css scss sass less md markdown mdx txt text xml yml yaml toml ini env cfg conf sh bash zsh py rb php java kt kts swift c h cpp hpp cc cxx cs go rs sql graphql gql vue svelte svg csv properties gradle pl r lua dart gitignore dockerfile makefile lock license readme contributing changelog gitattributes npmrc nvmrc editorconfig babelrc eslintrc prettierrc').split(' ');
+        const GH_BIN_EXT = ('png jpg jpeg gif webp ico bmp pdf zip gz tar rar 7z woff woff2 ttf eot otf mp3 mp4 mov avi webm wasm exe dll so dylib class jar apk bin db sqlite sqlite3 psd ai sketch xlsx xls doc docx ppt pptx ttf').split(' ');
+        function _ghIsTextPath(p) {
+            var base = String(p || '').split('/').pop() || '';
+            var dot = base.lastIndexOf('.');
+            if (dot > 0) {
+                var ext = base.slice(dot + 1).toLowerCase();
+                if (GH_BIN_EXT.indexOf(ext) !== -1) return false;
+                if (GH_TEXT_EXT.indexOf(ext) !== -1) return true;
+                return true; // ekstensi tak dikenal: coba teks (dicek byte NUL saat unduh)
+            }
+            var low = base.toLowerCase();
+            return GH_TEXT_EXT.indexOf(low) !== -1 || /^(license|readme|changelog|contributing|dockerfile|makefile|notice|authors|code_?of_?conduct)/.test(low);
+        }
+        async function toolCloneRepo(args) {
+            const slug = _ghRepoSlug(args && args.repo);
+            if (!slug) return { success: false, error: 'Parameter repo wajib format "owner/nama" atau URL GitHub lengkap.' };
+            const ref = String((args && args.ref) || '');
+            let folder = String((args && args.folder) || '').replace(/^\/+|\/+$|^\.\.+\/+/g, '');
+            const target = String((args && args.target) || 'workspace');
+            if (!folder) folder = slug.split('/')[1];
+            let token = '';
+            try { token = localStorage.getItem('clincoo_gh_token') || ''; } catch (e) {}
+            const ghHeaders = { 'Accept': 'application/vnd.github+json' };
+            if (token) ghHeaders['Authorization'] = 'Bearer ' + token;
+
+            // 1) info repo (default branch + validasi akses)
+            let info = null;
+            try {
+                const r = await fetch('https://api.github.com/repos/' + slug, { headers: ghHeaders });
+                if (r.status === 404) return { success: false, error: 'Repo tidak ditemukan: ' + slug + (token ? '' : ' (repo privat? Hubungkan GitHub dulu di menu Integrasi.)') };
+                if (r.status === 401 || r.status === 403) return { success: false, error: 'Akses GitHub ditolak (HTTP ' + r.status + ') — hubungkan ulang GitHub di menu Integrasi, lalu coba lagi.' };
+                info = await r.json();
+            } catch (e) {
+                return { success: false, error: 'Gagal menghubungi GitHub: ' + (e && e.message ? e.message : String(e)) };
+            }
+            const branch = ref || info.default_branch || 'main';
+
+            // 2) tree rekursif: daftar file + ukuran
+            let tree = null;
+            try {
+                const r = await fetch('https://api.github.com/repos/' + slug + '/git/trees/' + encodeURIComponent(branch) + '?recursive=1', { headers: ghHeaders });
+                if (r.status === 404) return { success: false, error: 'Branch/ref "' + branch + '" tidak ditemukan di ' + slug + '.' };
+                tree = await r.json();
+            } catch (e) {
+                return { success: false, error: 'Gagal membaca daftar file repo: ' + (e && e.message ? e.message : String(e)) };
+            }
+            let blobs = (tree && Array.isArray(tree.tree) ? tree.tree : []).filter(function(t) {
+                return t && t.type === 'blob' && (t.size || 0) <= 262144 && String(t.path || '').length < 200 && !String(t.path || '').includes('..');
+            });
+            blobs = blobs.filter(function(t) { return _ghIsTextPath(t.path); });
+            let truncated = false;
+            if (blobs.length > 300) { blobs = blobs.slice(0, 300); truncated = true; }
+            if (!blobs.length) return { success: false, error: 'Tidak ada file teks yang bisa disalin dari ' + slug + '.' };
+
+            // 3) unduh isi file (6 paralel; skip binary via byte NUL; batas total ±4MB)
+            const rawHeaders = {};
+            if (token) rawHeaders['Authorization'] = 'Bearer ' + token;
+            const files = [];
+            let skippedBinary = 0, skippedFetch = 0, totalBytes = 0;
+            const queue = blobs.slice();
+            const MAX_CLONE_BYTES = 4 * 1024 * 1024;
+            async function cloneWorker() {
+                while (queue.length) {
+                    if (totalBytes >= MAX_CLONE_BYTES) { truncated = true; return; }
+                    const t = queue.shift();
+                    try {
+                        const res = await fetch('https://raw.githubusercontent.com/' + slug + '/' + encodeURIComponent(branch) + '/' + t.path.split('/').map(encodeURIComponent).join('/'), { headers: rawHeaders });
+                        if (!res.ok) { skippedFetch++; continue; }
+                        const buf = await res.arrayBuffer();
+                        const bytes = new Uint8Array(buf);
+                        let bad = false;
+                        for (let i = 0; i < bytes.length; i += 997) { if (bytes[i] === 0) { bad = true; break; } }
+                        if (bad) { skippedBinary++; continue; }
+                        totalBytes += bytes.length;
+                        files.push({ path: t.path, content: new TextDecoder('utf-8', { fatal: false }).decode(buf) });
+                    } catch (e) { skippedFetch++; }
+                }
+            }
+            await Promise.all([cloneWorker(), cloneWorker(), cloneWorker(), cloneWorker(), cloneWorker(), cloneWorker()]);
+            if (!files.length) return { success: false, error: 'Gagal mengunduh file repo (0 berhasil). Coba lagi, atau hubungkan GitHub di menu Integrasi untuk repo privat.' };
+
+            // 4a) target storage: simpan ke AI Storage milik akun (hemat token)
+            if (target === 'storage') {
+                const tk = (typeof clinqooAuthToken === 'function' ? clinqooAuthToken() : '');
+                if (!tk) return { success: false, error: 'AI Storage memerlukan login Clincoo (gratis).' };
+                let saved = 0, updated = 0;
+                for (let i = 0; i < files.length; i += 60) { // save_bulk: maks 60 file/panggilan
+                    const chunk = files.slice(i, i + 60).map(function(f) { return { path: folder + '/' + f.path, content: f.content }; });
+                    const res = await fetch(TOOL_API_BASE + '/api/ai-storage', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tk },
+                        body: JSON.stringify({ action: 'save_bulk', files: chunk })
+                    });
+                    const d = await res.json().catch(function() { return {}; });
+                    if (!res.ok || d.error) return { success: false, error: d.error || ('Gagal menyimpan ke AI Storage (HTTP ' + res.status + ').'), saved_so_far: saved };
+                    saved += (d.saved || 0);
+                    updated += (d.updated || 0);
+                }
+                return { success: true, repo: slug, ref: branch, target: 'storage', prefix: folder, saved: saved, updated: updated, skipped_binary: skippedBinary, skipped_fetch: skippedFetch, truncated: truncated, note: 'Hasil clone tersimpan di AI Storage prefix "' + folder + '/" — baca dengan read_storage_file, tidak memakan token history.' };
+            }
+
+            // 4b) target workspace: satu load + satu save (batch)
+            const data = wsLoad();
+            for (const f of files) {
+                const info = wsParentInfo(folder + '/' + f.path);
+                if (!info || info.name.includes('/')) { skippedFetch++; continue; }
+                wsEnsureFolderChain(data, info.folderKey);
+                if (!Array.isArray(data[info.folderKey])) data[info.folderKey] = [];
+                const sizeStr = wsSizeStr(f.content);
+                const idx = data[info.folderKey].findIndex(function(it) { return it && it.type === 'file' && it.name.toLowerCase() === info.name.toLowerCase(); });
+                if (idx !== -1) {
+                    data[info.folderKey][idx].content = f.content;
+                    data[info.folderKey][idx].size = sizeStr;
+                } else {
+                    data[info.folderKey].push({ type: 'file', name: info.name, size: sizeStr, path: info.itemPath, content: f.content });
+                }
+            }
+            const err = wsSave(data);
+            if (err) return err;
+            return { success: true, repo: slug, ref: branch, target: 'workspace', folder: folder, cloned: files.length, skipped_binary: skippedBinary, skipped_fetch: skippedFetch, truncated: truncated, note: 'Repo tersimpan di folder workspace "' + folder + '" — bisa langsung diedit atau di-deploy.' };
+        }
+
+        // ===== TOOL push_to_github: kirim semua file workspace ke repo GitHub =====
+        async function toolPushToGithub(args) {
+            const slug = _ghRepoSlug(args && args.repo);
+            if (!slug) return { success: false, error: 'Parameter repo wajib format "owner/nama" atau URL GitHub lengkap.' };
+            const branch = String((args && args.branch) || 'main');
+            const message = String((args && args.commit_message) || 'Update dari Clincoo workspace');
+            let token = '';
+            try { token = localStorage.getItem('clincoo_gh_token') || ''; } catch (e) {}
+            if (!token) return { success: false, error: 'GitHub belum terhubung. Buka menu Integrasi, hubungkan GitHub, lalu coba lagi.' };
+
+            const files = wsFlatten(wsLoad()).filter(function(f) { return f && f.path && !String(f.path).endsWith('/'); });
+            if (!files.length) return { success: false, error: 'Workspace proyek aktif kosong — tidak ada file untuk di-push.' };
+            if (files.length > 60) return { success: false, error: 'Workspace berisi ' + files.length + ' file (batas sekali push: 60). Kurangi file dulu atau minta push bertahap per folder.' };
+
+            const results = [];
+            for (const f of files) {
+                const ghPath = '/' + String(f.path).split('/').map(encodeURIComponent).join('/');
+                try {
+                    const content = btoa(unescape(encodeURIComponent(f.content || '')));
+                    let body = { message: message + ' — ' + f.path, content: content, branch: branch };
+                    const g = await toolGithubRequest({ path: '/repos' + ghPath + '?ref=' + encodeURIComponent(branch), method: 'GET' });
+                    if (g && g.success && g.result && g.result.sha) body.sha = g.result.sha;
+                    const p = await toolGithubRequest({ path: '/repos' + ghPath, method: 'PUT', body: body });
+                    if (p && p.success) results.push({ path: f.path, ok: true, action: body.sha ? 'updated' : 'created' });
+                    else results.push({ path: f.path, ok: false, error: (p && p.error) || 'gagal' });
+                } catch (e) {
+                    results.push({ path: f.path, ok: false, error: e && e.message ? e.message : String(e) });
+                }
+            }
+            const ok = results.filter(function(r) { return r.ok; }).length;
+            return { success: ok > 0, repo: slug, branch: branch, pushed: ok, failed: results.length - ok, files: results.slice(0, 20) };
+        }
+
         // Tool konektor Notion: token OAuth diambil OTOMATIS dari halaman Plugin
         // (localStorage) — user tidak pernah menempel token manual di chat.
         async function toolNotionRequest(args) {

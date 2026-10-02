@@ -722,8 +722,11 @@ async function guestQuotaCheck(env, guestKey) {
 // ===== TOOLS SERVER-SIDE (backend function & screenshot) =====
 // Tool ini dieksekusi DI SERVER (bukan di browser user): hasil langsung
 // ditempel ke percakapan dan provider dipanggil lagi — user/frontend tidak berubah.
-const SERVER_TOOLS = new Set(['create_backend_function', 'list_backend_functions', 'delete_backend_function', 'call_backend_function', 'take_screenshot', 'search_clinqoo_kb', 'install_automation', 'save_to_storage', 'read_storage_file', 'list_storage', 'delete_from_storage']);
+const SERVER_TOOLS = new Set(['create_backend_function', 'list_backend_functions', 'delete_backend_function', 'call_backend_function', 'take_screenshot', 'search_clinqoo_kb', 'create_automation', 'install_automation', 'save_to_storage', 'read_storage_file', 'list_storage', 'delete_from_storage']);
 async function executeServerTool(env, user, tc, origin) {
+  // create_automation = nama lama/alias dari install_automation (deklarasi duplikat
+  // di TOOLS) — satukan di sini supaya tidak jatuh ke klien sebagai tool tak dikenal.
+  if (tc && tc.name === 'create_automation') tc = Object.assign({}, tc, { name: 'install_automation' });
   const a = tc.args || {};
   // Tool yang menempel ke akun: guest (tanpa login) tidak bisa memakainya.
   if (!user && ['create_backend_function', 'list_backend_functions', 'delete_backend_function', 'call_backend_function', 'install_automation', 'save_to_storage', 'read_storage_file', 'list_storage', 'delete_from_storage'].indexOf(tc.name) !== -1) {

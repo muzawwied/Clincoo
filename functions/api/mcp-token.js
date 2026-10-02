@@ -28,11 +28,41 @@ async function requireOwnedProject(env, request) {
   }
   if (!projectId) return { error: json({ error: 'project_id wajib diisi' }, 400) };
   const uid = Number(user.id);
-  const own = await env.DB.prepare('SELECT id FROM user_projects WHERE id = ? AND user_id = ?').bind(projectId, uid).first();
-  if (own) return { user, projectId };
+  // Pastikan tabel ada (akun/proyek baru) — skema identik dengan projects.js
   try {
-    const mem = await env.DB.prepare('SELECT id FROM project_members WHERE project_id = ? AND user_id = ?').bind(projectId, uid).first();
-    if (mem) return { user, projectId };
+    await env.DB.prepare(`CREATE TABLE IF NOT EXISTS user_projects (
+      id TEXT PRIMARY KEY,
+      user_id INTEGER,
+      title TEXT DEFAULT '',
+      prompt TEXT DEFAULT '',
+      ai_name TEXT DEFAULT '',
+      ai_desc TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT
+    )`).run();
+  } catch (e) {}
+  const row = await env.DB.prepare('SELECT user_id FROM user_projects WHERE id = ?').bind(projectId).first();
+  if (row) {
+    if (Number(row.user_id) === uid) return { user, projectId };
+    try {
+      const mem = await env.DB.prepare('SELECT id FROM project_members WHERE project_id = ? AND user_id = ?').bind(projectId, uid).first();
+      if (mem) return { user, projectId };
+    } catch (e) {}
+    return { error: json({ error: 'Proyek tidak ditemukan atau bukan milikmu' }, 404) };
+  }
+  // Proyek lama yang belum pernah tercatat di user_projects (dibuat sebelum era
+  // sinkronisasi akun): klaim otomatis ke akun yang meminta aktivasi — konsisten
+  // dengan guardProject di user-scope.js yang membolehkan proyek legacy lalu
+  // mencatatnya. Setelah ini, aktivasi MCP tidak lagi gagal 404 untuk proyek lama.
+  try {
+    await env.DB.prepare(`INSERT OR IGNORE INTO user_projects (id, user_id, title, prompt, ai_name, ai_desc, updated_at)
+      VALUES (?, ?, '', '', '', '', ?)`).bind(projectId, uid, new Date().toISOString()).run();
+    const own = await env.DB.prepare('SELECT id FROM user_projects WHERE id = ? AND user_id = ?').bind(projectId, uid).first();
+    if (own) return { user, projectId };
+    try {
+      const mem = await env.DB.prepare('SELECT id FROM project_members WHERE project_id = ? AND user_id = ?').bind(projectId, uid).first();
+      if (mem) return { user, projectId };
+    } catch (e) {}
   } catch (e) {}
   return { error: json({ error: 'Proyek tidak ditemukan atau bukan milikmu' }, 404) };
 }
