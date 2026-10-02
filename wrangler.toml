@@ -1,19 +1,15 @@
+# Cloudflare Pages — project: clincoo (app.clincoo.buzz)
+# Deploy: wrangler pages deploy . --project-name=clincoo
+# Secrets & extra bindings dikelola di dashboard Pages.
 name = "clincoo"
 compatibility_date = "2024-09-01"
 pages_build_output_dir = "."
 
-# D1 Database binding
 [[d1_databases]]
 binding = "DB"
 database_name = "clincoo-db"
 database_id = "49b6fed3-a237-46e3-ab2b-b0de31cc862b"
 
-# Workers AI binding (Clinqoo AI — /api/ai)
-# Catatan: format objek (bukan [[ai]]) — wrangler >= 4.x menolak format array
-[ai]
-binding = "AI"
-
-# D1 Database wallet (wallet.clincoo.buzz) — dipakai sync laporan users-live.md
 [[d1_databases]]
 binding = "WALLET_DB"
 database_name = "wallet-db"
