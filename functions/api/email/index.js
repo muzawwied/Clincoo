@@ -10,11 +10,20 @@
 // Kuota bulanan = penghitung tersendiri di email_settings (quota_used + quota_month):
 // naik saat kirim sukses, TIDAK turun saat entri histori dihapus.
 //
-// GET  ?action=config&project_id=...                          → status, pengaturan, API key, kuota [auth]
+// Tier pengiriman:
+//   0. Tanpa domain terverifikasi : pengirim default noreply@clincoo.buzz ("Clincoo Mail"),
+//      penerima HANYA email akun Clincoo pemilik proyek (mode terbatas Cloudflare).
+//   1. Domain terverifikasi      : pengirim kustom nama@domainmilikpengguna + nama tampilan,
+//      penerima bebas (routing selesai setelah domain di-onboard di dashboard Cloudflare).
+//
+// GET  ?action=config&project_id=...                          → status, pengirim, domain, API key, kuota [auth]
 // GET  ?action=history&project_id=...                         → histori kirim (CRUD: read)    [auth]
 // POST {action:'activate', project_id}                        → aktifkan + terbitkan API key [auth]
-// POST {action:'sender', project_id, from_name, contact_to,
-//        sender_email}                                       → simpan pengaturan pengirim    [auth]
+// POST {action:'add_domain', project_id, domain}              → daftar domain + token verifikasi TXT [auth]
+// POST {action:'check_domain', project_id}                    → cek TXT _clincoo-verify → verified [auth]
+// POST {action:'set_domain_sender', project_id, local,
+//        sender_name}                                          → alamat pengirim kustom @domain [auth]
+// POST {action:'delete_domain', project_id}                   → hapus domain → kembali tier 0   [auth]
 // POST {action:'regenerate', project_id}                      → terbitkan API key baru        [auth]
 // POST {action:'revoke', project_id}                          → nonaktifkan + hapus API key   [auth]
 // POST {action:'test', project_id, to, subject, html,
@@ -71,9 +80,19 @@ async function ensureTables(db) {
   )`).run();
   await db.prepare('CREATE INDEX IF NOT EXISTS idx_email_log_project ON email_log(project_id, created_at)').run();
   // Kolom baru untuk deployment lama (idempoten).
-  for (const col of ['sender_email', 'sender_key']) {
+  for (const col of ['sender_email', 'sender_key', 'owner_email']) {
     try { await db.prepare(`ALTER TABLE email_settings ADD COLUMN ${col} TEXT DEFAULT ''`).run(); } catch (e) {}
   }
+  await db.prepare(`CREATE TABLE IF NOT EXISTS email_domains (
+    project_id TEXT PRIMARY KEY,
+    domain TEXT DEFAULT '',
+    verify_token TEXT DEFAULT '',
+    status TEXT DEFAULT 'pending',
+    sender_email TEXT DEFAULT '',
+    sender_name TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  )`).run();
 }
 
 function genApiKey() {
@@ -98,20 +117,64 @@ function senderNameAllowed(name) {
   return { ok: true, name: n.slice(0, 100) };
 }
 
-// Validasi email kustom: wajib domain sendiri, bukan domain resmi Clincoo.
-function senderEmailAllowed(email) {
-  const e = String(email || '').trim();
-  if (!e) return { ok: true, email: '' };
-  if (!validEmail(e)) return { ok: false, reason: 'Alamat email pengirim tidak valid.' };
-  const domain = e.split('@')[1].toLowerCase();
-  if (BANNED_EMAIL_DOMAINS.indexOf(domain) !== -1) {
-    return { ok: false, reason: 'Domain Clincoo tidak boleh dipakai sebagai pengirim kustom.' };
-  }
-  return { ok: true, email: e.slice(0, 200) };
-}
-
 async function getRow(db, projectId) {
   return await db.prepare('SELECT * FROM email_settings WHERE project_id = ?').bind(projectId).first();
+}
+
+// ---- Domain kustom ----
+function genToken() {
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(b).map(function (x) { return x.toString(16).padStart(2, '0'); }).join('');
+}
+
+function validDomain(d) {
+  return /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(d) && d.length <= 200;
+}
+
+async function getDomain(db, projectId) {
+  try {
+    return await db.prepare('SELECT * FROM email_domains WHERE project_id = ?').bind(projectId).first() || null;
+  } catch (e) { return null; }
+}
+
+function domainActive(dom) {
+  return !!(dom && dom.status === 'verified');
+}
+
+function domainPayload(dom) {
+  if (!dom || !dom.domain) return { domain: '', status: '', verify_token: '', txt_name: '', txt_value: '', sender_email: '', sender_name: '' };
+  return {
+    domain: dom.domain,
+    status: dom.status || 'pending',
+    verify_token: dom.verify_token || '',
+    txt_name: '_clincoo-verify.' + dom.domain,
+    txt_value: 'clincoo-verify=' + (dom.verify_token || ''),
+    sender_email: dom.sender_email || '',
+    sender_name: dom.sender_name || ''
+  };
+}
+
+// Lookup TXT via DNS-over-HTTPS Cloudflare (port 443, aman dari Pages Function).
+async function dnsTxtLookup(name) {
+  try {
+    const r = await fetch('https://cloudflare-dns.com/dns-query?name=' + encodeURIComponent(name) + '&type=TXT',
+      { headers: { accept: 'application/dns-json' } });
+    if (!r.ok) return [];
+    const d = await r.json().catch(function () { return {}; });
+    return (d.Answer || []).map(function (a) { return String(a.data || '').replace(/^"+|"+$/g, ''); });
+  } catch (e) { return []; }
+}
+
+// Tier 0: tanpa domain aktif, penerima wajib = email akun pemilik proyek.
+async function recipientAllowed(env, row, to) {
+  const dom = await getDomain(env.DB, row.project_id);
+  if (domainActive(dom)) return { ok: true, dom: dom };
+  const owner = String(row.owner_email || '').trim().toLowerCase();
+  if (owner && String(to || '').trim().toLowerCase() === owner) return { ok: true, dom: dom };
+  return {
+    ok: false, dom: dom,
+    reason: 'Sebelum domainmu aktif, email hanya bisa dikirim ke alamat akun Clincoo kamu (' + (owner || 'email akunmu') + '). Tambahkan & verifikasi domain di menu Domain untuk membuka pengiriman bebas.'
+  };
 }
 
 // Kuota bulanan dari penghitung email_settings. Bulan baru / belum pernah dihitung →
@@ -155,26 +218,22 @@ async function historyLog(db, projectId, limit) {
   });
 }
 
-function configPayload(row, used, log) {
+function configPayload(row, used, log, dom) {
+  const custom = !!(dom && dom.status === 'verified' && dom.sender_email);
   return {
     active: !!(row && row.active),
-    from_name: (row && row.from_name) || '',
-    contact_to: (row && row.contact_to) || '',
-    sender_email: (row && row.sender_email) || '',
-    has_custom_sender: !!(row && row.sender_email),
     api_key: (row && row.active && row.api_key) ? row.api_key : '',
     used: used || 0,
     limit: QUOTA_LIMIT,
-    log: log || []
+    log: log || [],
+    owner_email: (row && row.owner_email) || '',
+    sender: {
+      email: custom ? dom.sender_email : DEFAULT_FROM,
+      name: custom && dom.sender_name ? dom.sender_name : 'Clincoo Mail',
+      custom: custom
+    },
+    domain: domainPayload(dom)
   };
-}
-
-// Nama pengirim efektif untuk email proyek — default dibedakan dari identitas tim
-// ("Clincoo Mail", bukan "Clincoo") dan selalu lolos validasi anti-impersonasi.
-function effectiveSenderName(row) {
-  const n = (row && row.from_name) || '';
-  const ok = senderNameAllowed(n);
-  return ok.ok && ok.name ? ok.name : 'Clincoo Mail';
 }
 
 const DEFAULT_FROM = 'noreply@clincoo.buzz';
@@ -202,7 +261,10 @@ async function sendProjectEmail(env, row, opts) {
   const url = await getSecret(env, 'MAIL_BRIDGE_URL');
   const bridgeKey = await getSecret(env, 'MAIL_BRIDGE_KEY');
   if (!url || !bridgeKey) return { sent: false, via: 'cloudflare', code: 'BRIDGE_BELUM_TERKONFIGURASI', reason: null };
-  const fromMail = (row && row.sender_email) ? String(row.sender_email) : DEFAULT_FROM;
+  const dom = await getDomain(env.DB, row.project_id);
+  const custom = domainActive(dom) && dom.sender_email;
+  const fromMail = custom ? dom.sender_email : DEFAULT_FROM;
+  const fromName = custom && dom.sender_name ? dom.sender_name : 'Clincoo Mail';
   try {
     const r = await fetch(String(url).replace(/\/$/, '') + '/', {
       method: 'POST',
@@ -210,7 +272,7 @@ async function sendProjectEmail(env, row, opts) {
       body: JSON.stringify({
         to: opts.toEmail,
         from_email: fromMail,
-        from_name: effectiveSenderName(row),
+        from_name: fromName,
         subject: opts.subject,
         html: opts.html,
         text: stripHtml(opts.html),
@@ -240,7 +302,7 @@ export async function onRequestGet({ request, env }) {
     if (action === 'history') {
       return json({ used: used, limit: QUOTA_LIMIT, items: await historyLog(env.DB, projectId, 100) });
     }
-    return json(configPayload(row, used, await historyLog(env.DB, projectId, 10)));
+    return json(configPayload(row, used, await historyLog(env.DB, projectId, 10), await getDomain(env.DB, projectId)));
   }
 
   return json({ error: 'unknown_action' }, 400);
@@ -262,6 +324,8 @@ export async function onRequestPost({ request, env }) {
     if (!row) return json({ error: 'API key tidak valid atau belum aktif' }, 401);
     const used = await quotaUsed(env.DB, row.project_id);
     if (used >= QUOTA_LIMIT) return json({ error: 'Kuota bulanan habis' }, 429);
+    const allow = await recipientAllowed(env, row, body.to);
+    if (!allow.ok) return json({ error: allow.reason }, 422);
     const result = await sendProjectEmail(env, row, {
       toEmail: body.to,
       subject: String(body.subject).slice(0, 200),
@@ -280,28 +344,70 @@ export async function onRequestPost({ request, env }) {
   await ensureTables(env.DB);
 
   if (action === 'activate') {
+    const user = await currentUser(env, request);
+    const ownerEmail = (user && user.email) || '';
     const existing = await getRow(env.DB, projectId);
     if (existing) {
-      await env.DB.prepare("UPDATE email_settings SET active = 1, api_key = COALESCE(api_key, ?), updated_at = datetime('now') WHERE project_id = ?")
-        .bind(genApiKey(), projectId).run();
+      await env.DB.prepare("UPDATE email_settings SET active = 1, api_key = COALESCE(api_key, ?), owner_email = COALESCE(NULLIF(owner_email, ''), ?), updated_at = datetime('now') WHERE project_id = ?")
+        .bind(genApiKey(), ownerEmail, projectId).run();
     } else {
-      await env.DB.prepare('INSERT INTO email_settings (project_id, api_key, active) VALUES (?, ?, 1)')
-        .bind(projectId, genApiKey()).run();
+      await env.DB.prepare('INSERT INTO email_settings (project_id, api_key, active, owner_email) VALUES (?, ?, 1, ?)')
+        .bind(projectId, genApiKey(), ownerEmail).run();
     }
     const row = await getRow(env.DB, projectId);
-    return json(configPayload(row, await quotaUsed(env.DB, projectId), []));
+    return json(configPayload(row, await quotaUsed(env.DB, projectId), [], await getDomain(env.DB, projectId)));
   }
 
-  if (action === 'sender') {
+  // ---- Domain kustom ----
+  if (action === 'add_domain') {
     const row = await getRow(env.DB, projectId);
-    if (!row) return json({ error: 'Aktifkan email dulu' }, 400);
-    const name = senderNameAllowed(body.from_name);
+    if (!row || !row.active) return json({ error: 'Aktifkan email dulu' }, 400);
+    const dom = String(body.domain || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, '');
+    if (!validDomain(dom)) return json({ error: 'Format domain tidak valid' }, 400);
+    if (BANNED_EMAIL_DOMAINS.some(function (b) { return dom === b || dom.endsWith('.' + b); })) {
+      return json({ error: 'Domain resmi Clincoo tidak bisa dipakai' }, 400);
+    }
+    const token = genToken();
+    await env.DB.prepare(`INSERT INTO email_domains (project_id, domain, verify_token, status, updated_at)
+      VALUES (?, ?, ?, 'pending', datetime('now'))
+      ON CONFLICT(project_id) DO UPDATE SET domain = excluded.domain, verify_token = excluded.verify_token,
+        status = 'pending', sender_email = '', sender_name = '', updated_at = datetime('now')`)
+      .bind(projectId, dom, token).run();
+    return json({ ok: true, domain: domainPayload(await getDomain(env.DB, projectId)) });
+  }
+
+  if (action === 'check_domain') {
+    const dom = await getDomain(env.DB, projectId);
+    if (!dom || !dom.domain) return json({ error: 'Belum ada domain terdaftar' }, 400);
+    if (dom.status === 'verified') return json({ verified: true, domain: domainPayload(dom) });
+    const txts = await dnsTxtLookup('_clincoo-verify.' + dom.domain);
+    if (txts.some(function (t) { return t.indexOf(dom.verify_token) !== -1; })) {
+      await env.DB.prepare("UPDATE email_domains SET status = 'verified', updated_at = datetime('now') WHERE project_id = ?").bind(projectId).run();
+      return json({ verified: true, domain: domainPayload(await getDomain(env.DB, projectId)) });
+    }
+    return json({ verified: false, found: txts.length, domain: domainPayload(dom) });
+  }
+
+  if (action === 'set_domain_sender') {
+    const dom = await getDomain(env.DB, projectId);
+    if (!dom || dom.status !== 'verified') return json({ error: 'Verifikasi domain dulu' }, 400);
+    const name = senderNameAllowed(body.sender_name);
     if (!name.ok) return json({ error: name.reason }, 400);
-    const mail = senderEmailAllowed(body.sender_email);
-    if (!mail.ok) return json({ error: mail.reason }, 400);
-    // Kolom kosong = kembali ke pengirim default (noreply@clincoo.buzz).
-    await env.DB.prepare("UPDATE email_settings SET from_name = ?, contact_to = ?, sender_email = ?, updated_at = datetime('now') WHERE project_id = ?")
-      .bind(name.name, String(body.contact_to || '').slice(0, 200), mail.email, projectId).run();
+    const local = String(body.local || '').trim().toLowerCase();
+    if (!local) {
+      // kosong = kembali ke pengirim default
+      await env.DB.prepare("UPDATE email_domains SET sender_email = '', sender_name = '', updated_at = datetime('now') WHERE project_id = ?").bind(projectId).run();
+      return json({ ok: true, sender_email: '' });
+    }
+    if (!/^[a-z0-9]([a-z0-9._+-]{0,62}[a-z0-9])?$/.test(local)) return json({ error: 'Nama alamat tidak valid' }, 400);
+    const email = local + '@' + dom.domain;
+    await env.DB.prepare("UPDATE email_domains SET sender_email = ?, sender_name = ?, updated_at = datetime('now') WHERE project_id = ?")
+      .bind(email, name.name, projectId).run();
+    return json({ ok: true, sender_email: email, sender_name: name.name });
+  }
+
+  if (action === 'delete_domain') {
+    await env.DB.prepare('DELETE FROM email_domains WHERE project_id = ?').bind(projectId).run();
     return json({ ok: true });
   }
 
@@ -327,6 +433,8 @@ export async function onRequestPost({ request, env }) {
     if (!validEmail(body.to)) return json({ error: 'Alamat email tujuan tidak valid' }, 400);
     const used = await quotaUsed(env.DB, projectId);
     if (used >= QUOTA_LIMIT) return json({ error: 'Kuota bulanan habis' }, 429);
+    const allow = await recipientAllowed(env, row, body.to);
+    if (!allow.ok) return json({ error: allow.reason }, 422);
     const subject = String(body.subject || 'Email dari aplikasimu').slice(0, 200);
     const html = body.html ? String(body.html) : '<p>Ini email dari proyekmu di Clincoo. Jika kamu menerima email ini, pengaturan pengirimmu sudah bekerja.</p>';
     const result = await sendProjectEmail(env, row, {
