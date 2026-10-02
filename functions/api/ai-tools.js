@@ -247,6 +247,7 @@ async function calendarRequest(body) {
 async function cloudflareRequest(body) {
   const secret = String(body.secret || '').trim();
   if (!secret) return jsonOut({ ok: false, error: 'Parameter secret (API token Cloudflare) wajib diisi.' }, 400);
+  if (secret.includes('Secret detected') || secret.includes('🔒') || secret.includes('manage or disable') || secret.includes('•••') || /^\$[A-Z0-9_]+$/.test(secret)) return jsonOut({ ok: false, error: 'Nilai yang dikirim bukan secret asli, melainkan teks placeholder/redaksi — tidak bisa dipakai memanggil API. Jangan menyimpulkan token invalid. Minta user menempel ulang token aslinya.' }, 400);
   const method = String(body.method || 'GET').toUpperCase();
   if (!['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) return jsonOut({ ok: false, error: 'Method tidak didukung: ' + method }, 400);
   let path = String(body.path || '').trim();
