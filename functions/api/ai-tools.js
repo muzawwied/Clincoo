@@ -26,6 +26,8 @@ async function testSecret(body) {
   const secret = String(body.secret || '').trim();
   const extra = body.extra || {};
   if (!secret) return jsonOut({ ok: false, error: 'Parameter secret wajib diisi.' }, 400);
+  const isPlaceholder = secret.includes('Secret detected') || secret.includes('🔒') || secret.includes('manage or disable') || secret.includes('•••') || /^\$[A-Z0-9_]+$/.test(secret);
+  if (isPlaceholder) return jsonOut({ ok: false, error: 'Nilai yang dikirim bukan secret asli, melainkan teks placeholder/redaksi — nilai aslinya tidak pernah dikirim ke chat dan tidak bisa diuji. Jangan menyimpulkan token invalid. Minta user menempel ulang token aslinya kalau memang ingin diuji.' }, 400);
 
   const mask = (s) => (s.length > 8 ? s.slice(0, 4) + '…' + s.slice(-4) : '…');
   const result = { ok: true, provider, masked: mask(secret) };
