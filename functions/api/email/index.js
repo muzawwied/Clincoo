@@ -318,7 +318,8 @@ export async function onRequestPost({ request, env }) {
     });
     await env.DB.prepare('INSERT INTO email_log (project_id, to_addr, subject, status) VALUES (?, ?, ?, ?)')
       .bind(projectId, body.to, subject, result.sent ? 'terkirim' : 'gagal').run();
-    if (!result.sent) return json({ error: 'Gagal mengirim: ' + friendlyEmailError(result.code, result.reason) }, 502);
+    // Status bukan 5xx: Cloudflare mengganti body 5xx dengan halaman errornya sendiri.
+    if (!result.sent) return json({ error: 'Gagal mengirim: ' + friendlyEmailError(result.code, result.reason) }, 422);
     return json({ ok: true });
   }
 
