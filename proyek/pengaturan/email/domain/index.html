@@ -210,10 +210,7 @@
                 <a href="/proyek/pengaturan/email/kunci-api/" data-menu="apikey" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
                     Kunci API
                 </a>
-                <a href="/proyek/pengaturan/email/pengaturan/" data-menu="pengaturan" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                    Pengaturan
-                </a>
-                <a href="/proyek/pengaturan/email/bantuan/" data-menu="bantuan" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path stroke-linecap="round" d="M12 17h.01"></path></svg>
+                                <a href="/proyek/pengaturan/email/bantuan/" data-menu="bantuan" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path stroke-linecap="round" d="M12 17h.01"></path></svg>
                     Bantuan
                 </a>
             </div>
@@ -324,34 +321,74 @@
           <!-- Belum aktif -->
           <div id="kirim-inactive" class="hidden py-10 flex flex-col items-center justify-center text-center">
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Email proyek ini belum aktif</p>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Aktifkan fitur email di halaman pengaturan terlebih dulu.</p>
-            <a href="/proyek/pengaturan/email/pengaturan/" class="mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Ke Pengaturan Email</a>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Aktifkan fitur email untuk proyek ini — sekali klik.</p>
+            <button type="button" onclick="activateEmail()" class="mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Aktifkan Email</button>
           </div>
 
           <!-- Aktif: mini-app email -->
           <div id="kirim-active" class="hidden flex-col">
+            <div class="flex flex-col gap-4">
+              <!-- status pengirim -->
+              <div class="rounded-2xl border border-gray-200 dark:border-slate-700 p-4">
+                <div class="flex items-center gap-2 mb-1">
+                  <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"></path></svg>
+                  <p class="text-sm font-semibold text-gray-900 dark:text-white">Pengirim saat ini</p>
+                </div>
+                <p id="dom-sender" class="text-sm text-gray-500 dark:text-gray-400">…</p>
+                <p id="dom-tier" class="text-xs text-gray-400 dark:text-gray-500 mt-1"></p>
+              </div>
 
-            <div class="flex flex-col">
-              <div class="border border-gray-200 dark:border-slate-700 rounded-xl divide-y divide-gray-100 dark:divide-slate-800">
-                <div class="flex items-center justify-between gap-3 px-4 py-3">
-                  <span class="text-xs text-gray-500 dark:text-gray-400">Pengirim default</span>
-                  <span class="text-sm text-gray-900 dark:text-white font-medium">noreply@clincoo.buzz</span>
+              <!-- belum ada domain -->
+              <div id="dom-none" class="hidden flex-col gap-3">
+                <p class="text-sm text-gray-500 dark:text-gray-400">Tambahkan domain milikmu untuk kirim dari alamat email sendiri (mis. <span class="font-mono text-xs">halo@domainmu.com</span>) ke penerima mana pun.</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500">Tanpa domain: pengiriman hanya dari <span class="font-mono">noreply@clincoo.buzz</span> dan hanya ke email akun Clincoo kamu.</p>
+                <form onsubmit="addDomain(event)" class="flex flex-col sm:flex-row gap-2 mt-1">
+                  <input id="dom-input" type="text" required placeholder="domainmu.com" autocapitalize="none" spellcheck="false" class="flex-1 px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                  <button type="submit" id="dom-add-btn" class="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Tambah domain</button>
+                </form>
+              </div>
+
+              <!-- menunggu verifikasi -->
+              <div id="dom-pending" class="hidden flex-col gap-3">
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">1. Verifikasi kepemilikan domain</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Tambahkan record TXT berikut di pengaturan DNS domain <b id="dom-name-1"></b> (mis. di registrar tempat kamu membeli domain):</p>
+                <div class="rounded-xl border border-gray-200 dark:border-slate-700 p-3 text-xs font-mono flex flex-col gap-1">
+                  <div>Tipe: <b>TXT</b></div>
+                  <div class="break-all">Nama: <b id="dom-txt-name"></b></div>
+                  <div class="break-all flex items-center gap-2">Isi: <b id="dom-txt-value"></b>
+                    <button type="button" onclick="copyTxt()" class="px-2 py-0.5 text-[10px] rounded-full border border-gray-300 dark:border-slate-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800">Salin</button>
+                  </div>
                 </div>
-                <div class="flex items-center justify-between gap-3 px-4 py-3">
-                  <span class="text-xs text-gray-500 dark:text-gray-400">Pengirim kustom</span>
-                  <span id="d-kustom" class="text-sm text-gray-900 dark:text-white font-medium">—</span>
-                </div>
-                <div class="flex items-center justify-between gap-3 px-4 py-3">
-                  <span class="text-xs text-gray-500 dark:text-gray-400">Nama pengirim</span>
-                  <span id="d-nama" class="text-sm text-gray-900 dark:text-white font-medium">Clincoo Mail</span>
-                </div>
-                <div class="flex items-center justify-between gap-3 px-4 py-3">
-                  <span class="text-xs text-gray-500 dark:text-gray-400">Email form kontak</span>
-                  <span id="d-kontak" class="text-sm text-gray-900 dark:text-white font-medium">—</span>
+                <div><button type="button" id="dom-check-btn" onclick="checkDomain()" class="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors cursor-pointer">Periksa DNS</button></div>
+                <p class="text-xs text-gray-400 dark:text-gray-500">Butuh beberapa menit sampai record DNS aktif di seluruh dunia — klik periksa kapan pun.</p>
+              </div>
+
+              <!-- terverifikasi: onboarding CF + buat alamat -->
+              <div id="dom-verified" class="hidden flex-col gap-3">
+                <p class="text-sm font-semibold text-green-600">Domain terverifikasi ✓</p>
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">2. Selesaikan routing di Cloudflare</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Buka <span class="font-mono">dash.cloudflare.com</span> akunmu → Compute &amp; Workers → Email Service → Email Sending → Onboard Domain → <b id="dom-name-2"></b>. Langkah ini mengaktifkan SPF/DKIM dan mengizinkan email keluar dari domainmu.</p>
+                <p class="text-sm font-semibold text-gray-900 dark:text-white mt-2">3. Buat alamat pengirim</p>
+                <form onsubmit="setSender(event)" class="flex flex-col gap-2">
+                  <div class="flex items-center gap-2">
+                    <input id="dom-local" type="text" required placeholder="halo" autocapitalize="none" spellcheck="false" class="w-40 px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                    <span class="text-sm text-gray-500 dark:text-gray-400 font-mono">@<span id="dom-domain-2"></span></span>
+                  </div>
+                  <input id="dom-sender-name" type="text" placeholder="Nama tampilan (mis. Tim Toko)" class="px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                  <div><button type="submit" id="dom-set-btn" class="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors cursor-pointer">Simpan pengirim</button></div>
+                </form>
+              </div>
+
+              <!-- selesai -->
+              <div id="dom-done" class="hidden flex-col gap-3">
+                <p class="text-sm font-semibold text-green-600">Pengirim kustom aktif ✓</p>
+                <p id="dom-done-detail" class="text-sm text-gray-500 dark:text-gray-400"></p>
+                <p class="text-xs text-gray-400 dark:text-gray-500">Semua email proyek ini sekarang dikirim dari alamat di atas dan bisa dikirim ke penerima mana pun.</p>
+                <div class="flex flex-wrap items-center gap-2">
+                  <button type="button" onclick="resetSender()" class="px-5 py-2.5 text-sm font-medium border border-gray-200 dark:border-slate-700 rounded-full hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">Ubah alamat</button>
+                  <button type="button" onclick="deleteDomain()" class="px-5 py-2.5 text-sm font-medium text-red-500 border border-red-200 dark:border-red-900/50 rounded-full hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer">Hapus domain</button>
                 </div>
               </div>
-              <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-3">Pengiriman via Cloudflare Email Service — domain kustom diverifikasi otomatis oleh Cloudflare.</p>
-              <a href="/proyek/pengaturan/email/pengaturan/" class="mt-4 self-start px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Kelola Pengirim</a>
             </div>
           </div>
         </div>
@@ -370,14 +407,98 @@
 
 <script src="../email-core.js"></script>
 <script>
-// ===== Email: halaman domain =====
-  document.addEventListener('DOMContentLoaded', function () {
-    emailGate(function (cfg) {
-      document.getElementById('d-kustom').textContent = (cfg && cfg.sender_email) ? cfg.sender_email : '— pakai default';
-      document.getElementById('d-nama').textContent = (cfg && cfg.from_name) ? cfg.from_name : 'Clincoo Mail';
-      document.getElementById('d-kontak').textContent = (cfg && cfg.contact_to) ? cfg.contact_to : '—';
+// ===== Email: wizard domain =====
+  function _show(id) {
+    ['dom-none','dom-pending','dom-verified','dom-done'].forEach(function (i) {
+      var el = document.getElementById(i); if (el) el.classList.toggle('hidden', i !== id);
     });
-  });
+  }
+  function renderDomain(cfg) {
+    var d = (cfg && cfg.domain) || {};
+    var s = (cfg && cfg.sender) || {};
+    var el = document.getElementById('dom-sender');
+    if (el) el.textContent = s.email + (s.name ? ' (' + s.name + ')' : '');
+    var tier = document.getElementById('dom-tier');
+    if (tier) tier.textContent = s.custom ? 'Tier domain aktif — kirim ke siapa pun.' : 'Tier default — hanya ke ' + ((cfg && cfg.owner_email) || 'email akun Clincoo kamu') + '.';
+    if (!d.domain) { _show('dom-none'); return; }
+    if (d.status !== 'verified') {
+      document.getElementById('dom-name-1').textContent = d.domain;
+      document.getElementById('dom-txt-name').textContent = d.txt_name;
+      document.getElementById('dom-txt-value').textContent = d.txt_value;
+      _show('dom-pending');
+      return;
+    }
+    if (d.sender_email) {
+      var det = document.getElementById('dom-done-detail');
+      if (det) det.textContent = d.sender_email + (d.sender_name ? ' (' + d.sender_name + ')' : '');
+      _show('dom-done');
+      return;
+    }
+    document.getElementById('dom-name-2').textContent = d.domain;
+    document.getElementById('dom-domain-2').textContent = d.domain;
+    _show('dom-verified');
+  }
+  function loadDomCfg(cb) {
+    fetch(API_BASE + '/email?action=config&project_id=' + encodeURIComponent(_pid()), { headers: _hdrs() })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function (cfg) {
+        try { localStorage.setItem('clincoo_email_cfg_' + _pid(), JSON.stringify(cfg)); } catch (e) {}
+        renderDomain(cfg);
+        if (cb) cb(cfg);
+      })
+      .catch(function () {});
+  }
+  function addDomain(ev) {
+    ev.preventDefault();
+    var btn = document.getElementById('dom-add-btn');
+    btn.disabled = true; btn.textContent = 'Menyimpan…';
+    _apiPost('add_domain', { domain: document.getElementById('dom-input').value })
+      .then(function (r) { emailToast('Domain terdaftar — selesaikan verifikasi', true); loadDomCfg(); })
+      .catch(function (e) {
+        btn.disabled = false; btn.textContent = 'Tambah domain';
+        if (e && e.status === 401) { renderEmailState('login'); return; }
+        emailToast(e && e.error ? e.error : 'Gagal (' + (e && e.status || e) + ')', false);
+      });
+  }
+  function copyTxt() {
+    var v = document.getElementById('dom-txt-value').textContent || '';
+    if (navigator.clipboard) navigator.clipboard.writeText(v).then(function () { emailToast('Isi record TXT disalin', true); }).catch(function () {});
+  }
+  function checkDomain() {
+    var btn = document.getElementById('dom-check-btn');
+    btn.disabled = true; btn.textContent = 'Memeriksa…';
+    _apiPost('check_domain', {})
+      .then(function (r) {
+        btn.disabled = false; btn.textContent = 'Periksa DNS';
+        if (r && r.verified) { emailToast('Domain terverifikasi ✓', true); loadDomCfg(); }
+        else emailToast('Record TXT belum ketemu' + (r && r.found ? ' — ditemukan ' + r.found + ' TXT lain' : '') + '. Coba lagi nanti.', false);
+      })
+      .catch(function (e) {
+        btn.disabled = false; btn.textContent = 'Periksa DNS';
+        emailToast(e && e.error ? e.error : 'Gagal (' + (e && e.status || e) + ')', false);
+      });
+  }
+  function setSender(ev) {
+    ev.preventDefault();
+    var btn = document.getElementById('dom-set-btn');
+    btn.disabled = true; btn.textContent = 'Menyimpan…';
+    _apiPost('set_domain_sender', { local: document.getElementById('dom-local').value, sender_name: document.getElementById('dom-sender-name').value })
+      .then(function () { emailToast('Pengirim kustom disimpan', true); loadDomCfg(); })
+      .catch(function (e) {
+        btn.disabled = false; btn.textContent = 'Simpan pengirim';
+        if (e && e.status === 401) { renderEmailState('login'); return; }
+        emailToast(e && e.error ? e.error : 'Gagal (' + (e && e.status || e) + ')', false);
+      });
+  }
+  function resetSender() { _show('dom-verified'); }
+  function deleteDomain() {
+    if (!confirm('Hapus domain? Pengiriman kembali ke pengirim default dan hanya bisa ke email akun Clincoo kamu.')) return;
+    _apiPost('delete_domain', {})
+      .then(function () { emailToast('Domain dihapus', true); loadDomCfg(); })
+      .catch(function (e) { emailToast(e && e.error ? e.error : 'Gagal (' + (e && e.status || e) + ')', false); });
+  }
+  document.addEventListener('DOMContentLoaded', function () { emailGate(renderDomain); });
+  window.addEventListener('clincoo:email-activated', function () { loadDomCfg(); });
 </script>
 
 

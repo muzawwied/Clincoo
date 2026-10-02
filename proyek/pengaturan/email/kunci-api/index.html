@@ -210,10 +210,7 @@
                 <a href="/proyek/pengaturan/email/kunci-api/" data-menu="apikey" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
                     Kunci API
                 </a>
-                <a href="/proyek/pengaturan/email/pengaturan/" data-menu="pengaturan" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                    Pengaturan
-                </a>
-                <a href="/proyek/pengaturan/email/bantuan/" data-menu="bantuan" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path stroke-linecap="round" d="M12 17h.01"></path></svg>
+                                <a href="/proyek/pengaturan/email/bantuan/" data-menu="bantuan" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path stroke-linecap="round" d="M12 17h.01"></path></svg>
                     Bantuan
                 </a>
             </div>
@@ -324,22 +321,34 @@
           <!-- Belum aktif -->
           <div id="kirim-inactive" class="hidden py-10 flex flex-col items-center justify-center text-center">
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Email proyek ini belum aktif</p>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Aktifkan fitur email di halaman pengaturan terlebih dulu.</p>
-            <a href="/proyek/pengaturan/email/pengaturan/" class="mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Ke Pengaturan Email</a>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Aktifkan fitur email untuk proyek ini — sekali klik.</p>
+            <button type="button" onclick="activateEmail()" class="mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Aktifkan Email</button>
           </div>
 
           <!-- Aktif: mini-app email -->
           <div id="kirim-active" class="hidden flex-col">
-
-            <div class="flex flex-col">
-              <div class="flex items-center justify-between gap-3 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3">
-                <code id="ak-value" class="text-xs font-mono text-gray-800 dark:text-gray-200 break-all">—</code>
-                <div class="flex items-center gap-3 flex-shrink-0">
-                  <button type="button" onclick="toggleKey()" id="ak-toggle" class="text-xs font-medium text-gray-600 dark:text-gray-300 hover:underline">Lihat</button>
-                  <button type="button" onclick="salinKey()" class="text-xs font-medium text-gray-600 dark:text-gray-300 hover:underline">Salin</button>
+            <div class="flex flex-col gap-4">
+              <div class="rounded-2xl border border-gray-200 dark:border-slate-700 p-4">
+                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">API key proyek ini — pakai di situs deploy untuk kirim email.</p>
+                <div class="flex items-center gap-2">
+                  <code id="key-val" class="flex-1 block truncate text-xs font-mono bg-gray-50 dark:bg-slate-800 rounded-lg px-3 py-2.5 text-gray-800 dark:text-gray-200">…</code>
+                  <button type="button" id="key-toggle" onclick="toggleKey()" class="px-3 py-2.5 text-xs font-medium border border-gray-200 dark:border-slate-700 rounded-full hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">Lihat</button>
+                  <button type="button" onclick="copyKey()" class="px-3 py-2.5 text-xs font-medium border border-gray-200 dark:border-slate-700 rounded-full hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">Salin</button>
                 </div>
               </div>
-              <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-3">Gunakan kunci ini di situs deploy-mu lewat endpoint <code>POST /api/email</code>. Ganti atau cabut kuncinya di halaman Pengaturan.</p>
+
+              <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="regenKey()" class="px-5 py-2.5 text-sm font-medium border border-gray-200 dark:border-slate-700 rounded-full hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">Buat ulang kunci</button>
+                <button type="button" onclick="revokeKey()" class="px-5 py-2.5 text-sm font-medium text-red-500 border border-red-200 dark:border-red-900/50 rounded-full hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer">Nonaktifkan</button>
+              </div>
+
+              <details class="rounded-2xl border border-gray-200 dark:border-slate-700 p-4">
+                <summary class="text-sm font-medium text-gray-900 dark:text-white cursor-pointer">Contoh pemakaian dari situs deploy</summary>
+                <pre class="mt-3 text-[11px] font-mono overflow-x-auto bg-gray-50 dark:bg-slate-800 rounded-lg p-3 text-gray-700 dark:text-gray-300">curl -X POST https://app.clincoo.buzz/api/email \
+  -H "Content-Type: application/json" \
+  -d '{"action":"send","api_key":"clc_email_…","to":"penerima@contoh.com","subject":"Halo","html":"&lt;p&gt;Halo!&lt;/p&gt;"}'</pre>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">Kuota 1.000 email/bulan per proyek. Sebelum domainmu aktif di menu Domain, penerima hanya boleh email akun Clincoo kamu.</p>
+              </details>
             </div>
           </div>
         </div>
@@ -358,36 +367,54 @@
 
 <script src="../email-core.js"></script>
 <script>
-// ===== Email: halaman kunci API =====
-  var _cfg = null, _keyShown = false;
-  function renderKey() {
-    var el = document.getElementById('ak-value');
-    if (!el) return;
-    var k = (_cfg && _cfg.api_key) ? String(_cfg.api_key) : '';
-    if (!k) { el.textContent = '—'; return; }
-    _keyShown = false;
-    var tg = document.getElementById('ak-toggle'); if (tg) tg.textContent = 'Lihat';
-    el.textContent = k.slice(0, 14) + '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022' + k.slice(-4);
+// ===== Email: kunci API =====
+  var _keyShown = false;
+  function _mask(k) { return k ? k.slice(0, 12) + '••••••••' + k.slice(-4) : '—'; }
+  function renderKey(cfg) {
+    var k = (cfg && cfg.api_key) || '';
+    var el = document.getElementById('key-val');
+    if (el) { el.textContent = _keyShown ? k : _mask(k); }
+    var tg = document.getElementById('key-toggle');
+    if (tg && k) { tg.textContent = _keyShown ? 'Sembunyikan' : 'Lihat'; }
+    else if (tg) { tg.classList.add('hidden'); }
   }
-  function toggleKey() {
-    var el = document.getElementById('ak-value');
-    var k = (_cfg && _cfg.api_key) ? String(_cfg.api_key) : '';
-    if (!el || !k) return;
-    _keyShown = !_keyShown;
-    el.textContent = _keyShown ? k : (k.slice(0, 14) + '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022' + k.slice(-4));
-    var tg = document.getElementById('ak-toggle');
-    if (tg) tg.textContent = _keyShown ? 'Sembunyikan' : 'Lihat';
+  function toggleKey() { _keyShown = !_keyShown; var el = document.getElementById('key-val'); var k = el.getAttribute('data-key') || ''; if (_keyShown && k) { el.textContent = k; document.getElementById('key-toggle').textContent = 'Sembunyikan'; } else { el.textContent = _mask(k); document.getElementById('key-toggle').textContent = 'Lihat'; } }
+  function copyKey() {
+    var k = document.getElementById('key-val').getAttribute('data-key') || '';
+    if (!k) { emailToast('Kunci belum tersedia', false); return; }
+    if (navigator.clipboard) navigator.clipboard.writeText(k).then(function () { emailToast('API key disalin', true); }).catch(function () { emailToast('Gagal menyalin', false); });
   }
-  function salinKey() {
-    if (!_cfg || !_cfg.api_key) { emailToast('Kunci belum tersedia', false); return; }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(_cfg.api_key).then(function () { emailToast('Kunci API disalin', true); })
-        .catch(function () { emailToast('Gagal menyalin', false); });
-    } else { emailToast('Browser tidak mendukung salin', false); }
+  function regenKey() {
+    if (!confirm('Buat ulang API key? Situs deploy yang masih memakai kunci lama akan berhenti bisa mengirim.')) return;
+    _apiPost('regenerate', {})
+      .then(function (r) { emailToast('Kunci baru diterbitkan', true); loadKeyCfg(); })
+      .catch(function (e) { emailToast(e && e.error ? e.error : 'Gagal (' + (e && e.status || e) + ')', false); });
+  }
+  function revokeKey() {
+    if (!confirm('Nonaktifkan fitur email proyek ini? API key dihapus dan situs deploy berhenti bisa mengirim.')) return;
+    _apiPost('revoke', {})
+      .then(function () { emailToast('Fitur email dinonaktifkan', true); _clearCache(); renderEmailState('inactive'); })
+      .catch(function (e) { emailToast(e && e.error ? e.error : 'Gagal (' + (e && e.status || e) + ')', false); });
+  }
+  function loadKeyCfg() {
+    fetch(API_BASE + '/email?action=config&project_id=' + encodeURIComponent(_pid()), { headers: _hdrs() })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function (cfg) {
+        try { localStorage.setItem('clincoo_email_cfg_' + _pid(), JSON.stringify(cfg)); } catch (e) {}
+        var el = document.getElementById('key-val');
+        if (el) el.setAttribute('data-key', cfg.api_key || '');
+        renderKey(cfg);
+      })
+      .catch(function () {});
   }
   document.addEventListener('DOMContentLoaded', function () {
-    emailGate(function (cfg) { _cfg = cfg; renderKey(); });
+    emailGate(function (cfg) {
+      var el = document.getElementById('key-val');
+      if (el) el.setAttribute('data-key', cfg.api_key || '');
+      renderKey(cfg);
+    });
   });
+  window.addEventListener('clincoo:email-activated', function () { loadKeyCfg(); });
 </script>
 
 
