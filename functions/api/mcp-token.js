@@ -1,11 +1,4 @@
 // Cloudflare Pages Functions — token + izin akses MCP per proyek.
-// Dipakai oleh /proyek/pengaturan/server-mcp (tombol Aktifkan, toggle izin,
-// Buat ulang token, Putuskan semua akses). Sebelumnya file ini TIDAK ADA sama
-// sekali di backend meski frontend sudah lengkap — makanya toggle izin selalu
-// gagal (fetch 401 lewat _middleware, request yang sah pun tidak ada handler
-// yang nyata di baliknya).
-// Disimpan di tabel project_settings per-proyek (key: mcp_token / mcp_scopes /
-// mcp_created_at) via getProjectTables — konsisten dengan project-settings.js.
 import { getProjectTables } from './_tables.js';
 import { currentUser } from './user-scope.js';
 import { randomHex } from './auth/shared.js';
@@ -25,11 +18,23 @@ async function requireOwnedProject(env, request) {
   const user = await currentUser(env, request);
   if (!user) return { error: json({ error: 'Login diperlukan', need_login: true }, 401) };
   const url = new URL(request.url);
-  const projectId = url.searchParams.get('project_id') || '';
+  let projectId = url.searchParams.get('project_id') || '';
+  if (!projectId && request.method !== 'GET' && request.method !== 'HEAD' && request.method !== 'DELETE') {
+    try {
+      const clone = request.clone();
+      const body = await clone.json();
+      if (body && body.project_id) projectId = String(body.project_id);
+    } catch (e) {}
+  }
   if (!projectId) return { error: json({ error: 'project_id wajib diisi' }, 400) };
-  const own = await env.DB.prepare('SELECT id FROM user_projects WHERE id = ? AND user_id = ?').bind(projectId, user.id).first();
-  if (!own) return { error: json({ error: 'Proyek tidak ditemukan atau bukan milikmu' }, 404) };
-  return { user, projectId };
+  const uid = Number(user.id);
+  const own = await env.DB.prepare('SELECT id FROM user_projects WHERE id = ? AND user_id = ?').bind(projectId, uid).first();
+  if (own) return { user, projectId };
+  try {
+    const mem = await env.DB.prepare('SELECT id FROM project_members WHERE project_id = ? AND user_id = ?').bind(projectId, uid).first();
+    if (mem) return { user, projectId };
+  } catch (e) {}
+  return { error: json({ error: 'Proyek tidak ditemukan atau bukan milikmu' }, 404) };
 }
 
 const DEFAULT_SCOPES = { read: true, write: false, delete: false };
@@ -51,11 +56,9 @@ async function readState(db, projectId) {
 
 async function writeSetting(db, projectId, key, value) {
   const T = await getProjectTables(db, projectId);
-  await db.prepare(`INSERT INTO ${T.projectSettings} (project_id, key, value) VALUES (?, ?, ?)
-    ON CONFLICT(project_id, key) DO UPDATE SET value = excluded.value`).bind(projectId, key, value).run();
+  await db.prepare(`INSERT INTO ${T.projectSettings} (project_id, key, value) VALUES (?, ?, ?) ON CONFLICT(project_id, key) DO UPDATE SET value = excluded.value`).bind(projectId, key, value).run();
 }
 
-// GET /api/mcp-token?project_id=xxx — status token+izin saat ini
 export async function onRequestGet({ request, env }) {
   if (!env.DB) return json({ error: 'D1 not bound' }, 500);
   const r = await requireOwnedProject(env, request);
@@ -67,7 +70,6 @@ export async function onRequestGet({ request, env }) {
   } catch (e) { return json({ error: e.message }, 500); }
 }
 
-// POST /api/mcp-token — aktifkan server MCP / buat ulang token (body: {project_id, scopes})
 export async function onRequestPost({ request, env }) {
   if (!env.DB) return json({ error: 'D1 not bound' }, 500);
   const r = await requireOwnedProject(env, request);
@@ -85,7 +87,6 @@ export async function onRequestPost({ request, env }) {
   } catch (e) { return json({ error: e.message }, 500); }
 }
 
-// PATCH /api/mcp-token — ubah izin saja, token tetap (body: {project_id, scopes})
 export async function onRequestPatch({ request, env }) {
   if (!env.DB) return json({ error: 'D1 not bound' }, 500);
   const r = await requireOwnedProject(env, request);
@@ -100,7 +101,6 @@ export async function onRequestPatch({ request, env }) {
   } catch (e) { return json({ error: e.message }, 500); }
 }
 
-// DELETE /api/mcp-token?project_id=xxx — putuskan semua akses
 export async function onRequestDelete({ request, env }) {
   if (!env.DB) return json({ error: 'D1 not bound' }, 500);
   const r = await requireOwnedProject(env, request);
