@@ -326,7 +326,7 @@
           </div>
 
           <!-- Aktif: mini-app email -->
-          <div id="kirim-active" class="hidden flex-col">
+          <div id="kirim-active" class="flex-col">
             <div class="flex flex-col gap-4">
               <div class="rounded-2xl border border-gray-200 dark:border-slate-700 p-4">
                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">API key proyek ini — pakai di situs deploy untuk kirim email.</p>
@@ -415,6 +415,8 @@
     });
   });
   window.addEventListener('clincoo:email-activated', function () { loadKeyCfg(); });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { loadKeyCfg(); } });
+  window.addEventListener('pageshow', function () { loadKeyCfg(); });
 </script>
 
 

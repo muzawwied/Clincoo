@@ -326,7 +326,7 @@
           </div>
 
           <!-- Aktif: mini-app email -->
-          <div id="kirim-active" class="hidden flex-col">
+          <div id="kirim-active" class="flex-col">
 
             <div class="flex flex-col">
               <form id="kirim-form" onsubmit="submitKirim(event)" class="flex flex-col gap-3">
@@ -388,6 +388,7 @@
       btn.disabled = false; btn.textContent = 'Kirim';
       emailToast('Email terkirim', true);
       document.getElementById('kirim-form').reset();
+      try { sessionStorage.setItem('clincoo_email_dirty', '1'); } catch (e2) {}
     }).catch(function (e) {
       btn.disabled = false; btn.textContent = 'Kirim';
       if (e && e.status === 401) { renderEmailState('login'); emailToast('Masuk dulu untuk mengirim email', false); return; }

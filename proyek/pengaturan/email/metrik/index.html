@@ -326,7 +326,7 @@
           </div>
 
           <!-- Aktif: mini-app email -->
-          <div id="kirim-active" class="hidden flex-col">
+          <div id="kirim-active" class="flex-col">
 
             <div class="flex flex-col">
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -375,18 +375,25 @@
     document.getElementById('m-kuota').textContent = (data.used || 0).toLocaleString('id-ID');
     document.getElementById('m-sisa').textContent = Math.max(0, (data.limit || 1000) - (data.used || 0)).toLocaleString('id-ID');
   }
-  document.addEventListener('DOMContentLoaded', function () {
-    var cached = _readCache();
-    if (cached && cached.items) { renderEmailState('active'); renderStats(cached); }
+  var _mLast = 0;
+  function mRefresh() {
+    if (Date.now() - _mLast < 8000) return;
+    _mLast = Date.now();
     fetch(API_BASE + '/email?action=history&project_id=' + encodeURIComponent(_pid()), { headers: _hdrs() })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
       .then(function (data) { renderEmailState('active'); renderStats(data); try { localStorage.setItem(_cacheKey(), JSON.stringify(data)); } catch (e) {} })
       .catch(function (st) {
         if (st === 401) { renderEmailState('login'); }
         else if (st === 404) { renderEmailState('inactive'); }
-        else if (!cached) { renderEmailState('inactive'); }
       });
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    var cached = _readCache();
+    if (cached && cached.items) { renderEmailState('active'); renderStats(cached); }
+    mRefresh();
   });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') mRefresh(); });
+  window.addEventListener('pageshow', function () { mRefresh(); });
 </script>
 
 

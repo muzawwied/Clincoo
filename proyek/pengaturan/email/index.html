@@ -326,7 +326,7 @@
           </div>
 
           <!-- Aktif: mini-app email -->
-          <div id="kirim-active" class="hidden flex-col">
+          <div id="kirim-active" class="flex-col">
 
             <!-- Email (utama): log + filter -->
             <div id="sec-email" class="flex flex-col">
@@ -440,7 +440,9 @@ var _logRows = [];
     try { localStorage.setItem(_cacheKey(), JSON.stringify(data)); } catch (e) {}
   }
 
+  var _lastFetch = 0;
   function fetchHistory(silent) {
+    _lastFetch = Date.now();
     return fetch(API_BASE + '/email?action=history&project_id=' + encodeURIComponent(_pid()), { headers: _hdrs() })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
       .then(function (data) { renderEmailState('active'); renderHistory(data); })
@@ -460,7 +462,7 @@ var _logRows = [];
   function hapusLog(id) {
     if (!confirm('Hapus entri histori ini? Kuota bulanan tidak berubah.')) return;
     _apiPost('delete_log', { id: id })
-      .then(function () { emailToast('Entri dihapus', true); fetchHistory(true); })
+      .then(function () { emailToast('Entri dihapus', true); _lastFetch = 0; fetchHistory(true); })
       .catch(function (e) { emailToast(e && e.error ? e.error : 'Gagal menghapus (' + (e && e.status || e) + ')', false); });
   }
 
@@ -468,11 +470,21 @@ var _logRows = [];
     var si = document.getElementById('log-search');
     if (si) si.addEventListener('input', applyLogFilter);
     loadHistory();
-    // histori nambah tanpa refresh: cek halus tiap 30 detik saat halaman terlihat
-    setInterval(function () {
-      var akt = document.getElementById('kirim-active');
-      if (document.visibilityState === 'visible' && akt && !akt.classList.contains('hidden')) fetchHistory(true);
-    }, 30000);
+    // histori nambah tanpa refresh: cek halus tiap 15 detik saat halaman terlihat
+    setInterval(autoRefresh, 15000);
+  });
+  function autoRefresh() {
+    if (Date.now() - _lastFetch < 8000) return; // jangan spam
+    var akt = document.getElementById('kirim-active');
+    if (document.visibilityState === 'visible' && akt && !akt.classList.contains('hidden')) fetchHistory(true);
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') { autoRefresh(); }
+  });
+  window.addEventListener('pageshow', function () {
+    var dirty = false;
+    try { dirty = sessionStorage.getItem('clincoo_email_dirty') === '1'; if (dirty) sessionStorage.removeItem('clincoo_email_dirty'); } catch (e) {}
+    if (dirty) { _lastFetch = 0; fetchHistory(true); }
   });
   window.addEventListener('clincoo:email-activated', function () { loadHistory(); });
 </script>
