@@ -188,15 +188,9 @@ function nsFinish(ns, res) {
 function loadNs() {
     if (nsLoaded) return;
     nsLoaded = true;
-    document.getElementById('ns1').textContent = 'memuat…';
-    document.getElementById('ns2').textContent = 'memuat…';
-    store.zoneInfo(domain).then(res => {
-        const zs = res && res.zone && res.zone.name_servers;
-        if (zs && zs.length >= 2) return nsFinish(zs, res);
-        store.ensureZone(domain).then(r2 => {
-            const ns2s = (r2 && r2.ok && r2.name_servers) || null;
-            nsFinish(ns2s && ns2s.length >= 2 ? ns2s : null, r2 && !r2.ok ? r2 : res);
-        }).catch(() => nsFinish(null));
+    store.ensureZone(domain).then(r => {
+        const ns = (r && r.ok && r.name_servers) || null;
+        nsFinish(ns && ns.length >= 2 ? ns : null, r);
     }).catch(() => nsFinish(null));
 }
 function switchTab(t) {
@@ -258,6 +252,7 @@ else {
     document.getElementById('txt-name').textContent = '_clincoo-challenge.' + domain;
     store.create(domain).then(row => {
         document.getElementById('txt-value').textContent = (row && row.token) || store.stableToken(domain);
+        loadNs(); // preload nameserver sejak awal — tab Nameserver terbuka instan
     }).catch(() => {
         document.getElementById('txt-value').textContent = store.stableToken(domain);
     });
