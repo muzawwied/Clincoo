@@ -55,7 +55,11 @@
         <img id="qr" alt="Kode QRIS" class="w-full h-full hidden" src="">
         <div id="qr-skel" class="w-full h-full bg-slate-100 dark-mode:bg-slate-800 animate-pulse rounded-xl"></div>
       </div>
-      <div class="mt-5 flex flex-col items-center gap-1.5">
+      <button id="dl-btn" class="hidden mt-5 inline-flex items-center gap-2 pl-4 pr-5 py-2 rounded-full border border-slate-200 dark-mode:border-slate-700 text-sm font-semibold text-slate-700 dark-mode:text-slate-200 hover:bg-slate-50 dark-mode:hover:bg-slate-800/60 active:scale-95 transition-all">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Download QRIS
+      </button>
+      <div class="mt-4 flex flex-col items-center gap-1.5">
         <div class="text-[11px] uppercase tracking-[0.14em] text-slate-400 dark-mode:text-slate-500">Order ID</div>
         <button id="copy-order" class="font-mono text-sm font-semibold text-slate-600 dark-mode:text-slate-300 hover:text-slate-900 dark-mode:hover:text-white px-2 py-0.5 transition-colors">…</button>
       </div>
@@ -94,14 +98,6 @@
       </div>
     </div>
 
-    <!-- CTA download Clincoo -->
-    <div id="cta" class="mt-8 w-full divider pt-6 flex flex-col items-center text-center">
-      <div class="text-[13px] text-slate-500 dark-mode:text-slate-400">Punya bisnis sendiri? Bikin situs + terima pembayaran QRIS gampang lewat Clincoo</div>
-      <a href="https://app.clincoo.buzz/" class="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-semibold transition-transform active:scale-95" style="background: var(--accent-color, #000);">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-        Download Clincoo
-      </a>
-    </div>
 
     <!-- Error -->
     <div id="err" class="hidden mt-10 w-full flex flex-col items-center text-center">
@@ -128,12 +124,12 @@
 
   function show(state) {
     if (state === 'paid') {
-      el('qr-area').className = 'hidden'; el('howto').className = 'hidden'; el('cta').className = 'hidden';
+      el('qr-area').className = 'hidden'; el('howto').className = 'hidden';
       el('ok-area').className = 'mt-10 w-full flex flex-col items-center text-center';
       el('ok-amount').textContent = rp(AMOUNT);
       if (timer) { clearInterval(timer); timer = null; }
     } else if (state === 'expired') {
-      el('qr-area').className = 'hidden'; el('howto').className = 'hidden'; el('cta').className = 'hidden';
+      el('qr-area').className = 'hidden'; el('howto').className = 'hidden';
       el('exp-area').className = 'mt-10 w-full flex flex-col items-center text-center';
       if (timer) { clearInterval(timer); timer = null; }
     }
@@ -151,6 +147,8 @@
       el('qr').src = d.qr_image + '&v=' + Date.now();
       el('qr').classList.remove('hidden');
       el('qr-skel').className = 'hidden';
+      el('dl-btn').classList.remove('hidden');
+      dlUrl = d.qr_image;
     }
     show(d.status);
   }
@@ -163,6 +161,22 @@
     } catch (e) { /* jaringan lemot: coba lagi di tick berikutnya */ }
   }
 
+  var dlUrl = null;
+  el('dl-btn').addEventListener('click', async function () {
+    if (!dlUrl) return;
+    var btn = this, lbl = btn.lastChild; try { lbl.nodeValue = ' Mengunduh…'; } catch (e) {}
+    try {
+      var r = await fetch(dlUrl);
+      var b = await r.blob();
+      var u = URL.createObjectURL(b);
+      var a = document.createElement('a');
+      a.href = u; a.download = 'QRIS-' + orderId + '.png';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(u); }, 4000);
+    } catch (e) { window.open(dlUrl, '_blank'); }
+    try { lbl.nodeValue = ' Download QRIS'; } catch (e) {}
+  });
+
   el('copy-order').addEventListener('click', function () {
     var t = this.textContent;
     try { navigator.clipboard.writeText(t); } catch (e) {}
@@ -171,7 +185,7 @@
   });
 
   if (!key || !orderId) {
-    el('qr-area').className = 'hidden'; el('howto').className = 'hidden'; el('cta').className = 'hidden';
+    el('qr-area').className = 'hidden'; el('howto').className = 'hidden';
     el('err').classList.remove('hidden');
   } else {
     poll();
