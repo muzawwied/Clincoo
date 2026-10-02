@@ -278,13 +278,14 @@ export async function onRequestPost({ request, env }) {
     return json({ error: e && e.message ? e.message : 'Eksekusi gagal.' }, 504);
   }
 
-  if (result.error && !('stdout' in result)) return json({ error: result.error }, 502);
+  const cleanExit = result.error && result.error.name === 'SystemExit' && String(result.error.value || '') === '0';
+  if (result.error && !cleanExit && !('stdout' in result)) return json({ error: result.error }, 502);
   return json({
     session: mode === 'command',
-    ok: !result.error,
+    ok: !result.error || cleanExit,
     stdout: String(result.stdout || '').slice(0, 50000),
     stderr: String(result.stderr || '').slice(0, 20000),
-    error: result.error ? { name: result.error.name, value: String(result.error.value || '').slice(0, 2000) } : null,
+    error: (result.error && !cleanExit) ? { name: result.error.name, value: String(result.error.value || '').slice(0, 2000) } : null,
     results: (result.results || []).slice(0, 5).map(r => ({ text: String(r.text || '').slice(0, 5000) }))
   });
 }
