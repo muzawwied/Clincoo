@@ -936,21 +936,35 @@
     var list = document.getElementById('ai-log-list');
     var empty = document.getElementById('ai-log-empty');
     if (!list) return;
-    list.innerHTML = '';
     if (empty) empty.style.display = logs.length ? 'none' : 'block';
-    logs.slice(0, 30).forEach(function (lg) {
-      var row = document.createElement('div');
-      row.className = 'flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700';
+    if (!logs.length) { list.innerHTML = ''; return; }
+    var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>\"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    var rows = logs.slice(0, 30).map(function (lg) {
       var statusHtml = lg.ok
-        ? '<span class="text-xs font-medium text-emerald-600 dark:text-emerald-400">Sukses</span>'
-        : '<span class="text-xs font-medium text-red-600 dark:text-red-400">Gagal' + (lg.err ? ' — ' + String(lg.err).slice(0, 40) : '') + '</span>';
-      var detail = fmtAiTime(lg.t) + ' · ' + (lg.ms || 0) + ' ms · ' + (lg.tok || 0) + ' token · kredit ' + (lg.c || 0) + ' · dari: ' + (lg.s || 'langsung');
-      row.innerHTML =
-        '<div class="min-w-0"><p class="text-sm font-medium text-gray-900 dark:text-white truncate">' + (lg.m || '-') + '</p>' +
-        '<p class="text-xs text-gray-400 dark:text-gray-500">' + detail + '</p></div>' +
-        '<div class="flex-shrink-0">' + statusHtml + '</div>';
-      list.appendChild(row);
-    });
+        ? '<span class="font-medium text-emerald-600 dark:text-emerald-400">Sukses</span>'
+        : '<span class="font-medium text-red-600 dark:text-red-400">Gagal' + (lg.err ? ' · <span class="font-normal text-red-500/80 dark:text-red-300/70" title="' + esc(lg.err) + '">' + esc(String(lg.err).slice(0, 24)) + '</span>' : '') + '</span>';
+      return '<tr class="border-t border-gray-100 dark:border-slate-700/60">' +
+        '<td class="px-3 py-2 whitespace-nowrap text-gray-500 dark:text-gray-400">' + fmtAiTime(lg.t) + '</td>' +
+        '<td class="px-3 py-2 font-medium text-gray-900 dark:text-white max-w-[180px] truncate">' + esc(lg.m || '-') + '</td>' +
+        '<td class="px-3 py-2 whitespace-nowrap">' + statusHtml + '</td>' +
+        '<td class="px-3 py-2 text-right whitespace-nowrap text-gray-500 dark:text-gray-400">' + (lg.ms || 0) + ' ms</td>' +
+        '<td class="px-3 py-2 text-right whitespace-nowrap text-gray-500 dark:text-gray-400">' + (lg.tok || 0) + '</td>' +
+        '<td class="px-3 py-2 text-right whitespace-nowrap text-gray-500 dark:text-gray-400">' + (lg.c || 0) + '</td>' +
+        '<td class="px-3 py-2 whitespace-nowrap text-gray-400 dark:text-gray-500 max-w-[140px] truncate" title="' + esc(lg.s || 'langsung') + '">' + esc(lg.s || 'langsung') + '</td>' +
+        '</tr>';
+    }).join('');
+    list.innerHTML =
+      '<div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-700">' +
+      '<table class="w-full min-w-[640px] text-xs border-collapse">' +
+      '<thead><tr class="bg-gray-50 dark:bg-slate-800/60 text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">' +
+      '<th class="px-3 py-2 text-left font-medium">Waktu</th>' +
+      '<th class="px-3 py-2 text-left font-medium">Model</th>' +
+      '<th class="px-3 py-2 text-left font-medium">Status</th>' +
+      '<th class="px-3 py-2 text-right font-medium">Latensi</th>' +
+      '<th class="px-3 py-2 text-right font-medium">Token</th>' +
+      '<th class="px-3 py-2 text-right font-medium">Kredit</th>' +
+      '<th class="px-3 py-2 text-left font-medium">Sumber</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
 
   // ===== Analitik: kotak angka + grafik (Chart.js) =====
@@ -968,14 +982,29 @@
       if (empty) empty.style.display = perModel.length ? 'none' : 'block';
       var maxN = 1;
       perModel.forEach(function (x) { maxN = Math.max(maxN, x.n); });
-      perModel.forEach(function (x) {
-        var row = document.createElement('div');
-        row.innerHTML =
-          '<div class="flex items-center justify-between gap-3 mb-1"><p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">' + x.m + '</p>' +
-          '<p class="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">' + x.n + 'x · ' + (x.tok || 0) + ' token · kredit ' + (x.c || 0) + '</p></div>' +
-          '<div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden"><div class="h-full rounded-full bg-black dark:bg-white" style="width:' + Math.round(x.n / maxN * 100) + '%"></div></div>';
-        wrap.appendChild(row);
-      });
+      if (perModel.length) {
+        var esc2 = function (v) { return String(v == null ? '' : v).replace(/[&<>\"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+        var rowsM = perModel.map(function (x) {
+          var pct = Math.round(x.n / maxN * 100);
+          return '<tr class="border-t border-gray-100 dark:border-slate-700/60">' +
+            '<td class="px-3 py-2 font-medium text-gray-900 dark:text-white max-w-[200px] truncate" title="' + esc2(x.m) + '">' + esc2(x.m) + '</td>' +
+            '<td class="px-3 py-2 text-right whitespace-nowrap text-gray-700 dark:text-gray-300">' + x.n + 'x</td>' +
+            '<td class="px-3 py-2 text-right whitespace-nowrap text-gray-500 dark:text-gray-400">' + (x.tok || 0) + '</td>' +
+            '<td class="px-3 py-2 text-right whitespace-nowrap text-gray-500 dark:text-gray-400">' + (x.c || 0) + '</td>' +
+            '<td class="px-3 py-2 w-[28%]"><div class="flex items-center gap-2"><div class="h-1.5 flex-1 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden"><div class="h-full rounded-full bg-black dark:bg-white" style="width:' + pct + '%"></div></div><span class="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums w-8 text-right">' + pct + '%</span></div></td>' +
+            '</tr>';
+        }).join('');
+        wrap.innerHTML =
+          '<div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-700">' +
+          '<table class="w-full min-w-[560px] text-xs border-collapse">' +
+          '<thead><tr class="bg-gray-50 dark:bg-slate-800/60 text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">' +
+          '<th class="px-3 py-2 text-left font-medium">Model</th>' +
+          '<th class="px-3 py-2 text-right font-medium">Permintaan</th>' +
+          '<th class="px-3 py-2 text-right font-medium">Token</th>' +
+          '<th class="px-3 py-2 text-right font-medium">Kredit</th>' +
+          '<th class="px-3 py-2 text-left font-medium">Porsi</th>' +
+          '</tr></thead><tbody>' + rowsM + '</tbody></table></div>';
+      }
     }
     var est = document.getElementById('ai-est-cost');
     if (est) {
