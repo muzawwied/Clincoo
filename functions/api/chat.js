@@ -116,6 +116,16 @@ async function getOpenRouterKeys(env) {
 const OPENROUTER_MODELS = ['z-ai/glm-5.3-flash'];
 const oaiToolsOf = (gDecls) => (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
 
+// Pembatas waktu per-panggilan provider — fetch/binding AI TIDAK punya timeout
+// bawaan; kalau upstream hang (bukan error, cuma diam), seluruh chat ikut hang
+// selamanya ("Thinking..." tanpa akhir). withTimeout memastikan tiap provider
+// menyerah dalam batas waktu wajar dan jatuh ke fallback berikutnya seperti biasa.
+function withTimeout(promise, ms, label) {
+  let t;
+  const timeout = new Promise((_, reject) => { t = setTimeout(() => reject(new Error((label || 'provider') + ' timeout setelah ' + ms + 'ms')), ms); });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
+}
+
 async function tryOpenRouterText(keys, messages, gDecls) {
   const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
   if (!keyList.length) return null;
@@ -962,20 +972,20 @@ export async function onRequestPost({ request, env, waitUntil }) {
     for (let sHop = 0; sHop <= 4; sHop++) {
       r = null;
       if (orKeys.length && !hasImages) {
-        const o = await tryOpenRouterText(orKeys, workMessages, toolDecls);
+        const o = await withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls), 25000, 'OpenRouter').catch(e => ({ error: e.message }));
         if (o) r = o;
       }
       if ((!r || r.error) && aiMain) {
-        const w = await tryWorkersAIText(env, workMessages, toolDecls);
+        const w = await withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 25000, 'Workers AI').catch(e => ({ error: e.message }));
         if (w) r = w;
       }
       if ((!r || r.error) && apiKey.length) {
         const { systemInstruction, contents } = toGeminiPayload(workMessages);
-        r = await tryModels(apiKey, systemInstruction, contents, gTools, streamSend ? (chunkText) => streamSend({ t: 'delta', text: chunkText }) : null);
+        r = await withTimeout(tryModels(apiKey, systemInstruction, contents, gTools, streamSend ? (chunkText) => streamSend({ t: 'delta', text: chunkText }) : null), 25000, 'Gemini').catch(e => ({ error: e.message }));
       }
       // Fallback terakhir (dipakai bila GLM utama dilewati, mis. chat bergambar): teks saja
       if ((!r || r.error) && env.AI && !hasImages && !aiMain) {
-        const w = await tryWorkersAIText(env, workMessages, toolDecls);
+        const w = await withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 25000, 'Workers AI').catch(e => ({ error: e.message }));
         if (w) r = w;
       }
       if (!r || r.error) break; // error/kutipan ditangani di bawah seperti biasa
