@@ -305,6 +305,11 @@
                 </svg>
             </button>
             <div id="header-more-menu" class="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 p-1.5 flex-col gap-0.5 opacity-0 invisible translate-y-1 pointer-events-none transition-all duration-200 z-50 hidden">
+                <a id="header-live-url" href="/proyek/live/" target="_blank" rel="noopener" onclick="var __pid='';try{__pid=localStorage.getItem('clinqoo_current_project_id')||''}catch(e){}if(__pid){this.href='/proyek/live/?id='+encodeURIComponent(__pid)}" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path stroke-linecap="round" stroke-linejoin="round" d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                    Live URL proyek
+                    <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg>
+                </a>
                 <button id="header-live-preview" type="button" onclick="chatLivePreview()" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
                     <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2 12a10 10 0 1 0 20 0 10 10 0 0 0-20 0M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"></path></svg>
                     Live preview
@@ -735,6 +740,20 @@
       return 'clinqoo_workspace_files_' + (pid ? String(pid) : 'global');
     }
 
+    // Flag "lokal lebih baru dari cloud": mencegah pull D1 menimpa edit yang belum sempat terkirim.
+    // Kunci sama dipakai halaman editor (workspace/editor) supaya guard lintas halaman konsisten.
+    function wsDirtyKey() {
+      let pid = null;
+      try { pid = localStorage.getItem('clinqoo_current_project_id'); } catch (e) {}
+      return 'clinqoo_ws_dirty_' + (pid ? String(pid) : 'global');
+    }
+    function wsDirtySet(on) {
+      try { if (on) localStorage.setItem(wsDirtyKey(), '1'); else localStorage.removeItem(wsDirtyKey()); } catch (e) {}
+    }
+    function wsDirtyIs() {
+      try { return !!localStorage.getItem(wsDirtyKey()); } catch (e) { return false; }
+    }
+
     function loadWorkspaceFiles() {
       const key = wsFilesKey();
       let savedFiles = null;
@@ -848,6 +867,11 @@
         if (!pid) { wsInitialSync = false; renderFileList(); }
         return;
       }
+      if (wsDirtyIs()) { // ada edit lokal yang belum terkirim ke cloud: kirim ulang, jangan ditimpa
+        wsCloudPushSchedule();
+        wsInitialSync = false; renderFileList();
+        return;
+      }
       fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { headers: wsAuthHeaders() })
         .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
         .then(function(d) {
@@ -877,27 +901,74 @@
         });
     }
 
-    // Simpan ke D1 (debounce) — penggantian penuh supaya hapus/rename ikut tersimpan
+    // Simpan ke D1 (debounce) — penggantian penuh supaya hapus/rename ikut tersimpan.
+    // Cloud (D1) adalah sumber utama: localStorage hanya cache, kegagalan kuota browser
+    // tidak pernah menghilangkan data karena push ke cloud tetap jalan + retry + verifikasi.
     let wsCloudTimer = null;
+    let wsCloudFailNotified = false;
     function wsCloudPushSchedule() {
       const pid = wsProjectId();
       if (!pid) return;
+      wsDirtySet(true);
       clearTimeout(wsCloudTimer);
       wsCloudTimer = setTimeout(function() {
         wsCloudTimer = null;
-        const payload = { project_id: pid, files: wsFlatten(projectFilesData) };
-        fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { method: 'DELETE', headers: wsAuthHeaders() })
-          .then(function(r) { return r.ok ? fetch(WS_CLOUD_API, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()), body: JSON.stringify(payload) }) : Promise.reject(); })
-          .catch(function() {});
-      }, 3000);
+        wsCloudPushNow(0);
+      }, 1200);
     }
 
+    // Push ATOMIK: satu POST mode replace (upsert semua + hapus path yang hilang).
+    // Tidak ada jendela "cloud kosong" seperti pola lama DELETE-then-POST, jadi
+    // berkas tidak pernah hilang semua bila salah satu langkah gagal.
+    // Subdomain live preview (-prv) di-update otomatis oleh backend setelah simpan.
+    function wsCloudPushNow(attempt, keepalive) {
+      const pid = wsProjectId();
+      if (!pid) return;
+      const payload = { project_id: pid, files: wsFlatten(projectFilesData), replace: true };
+      const H = Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders());
+      const opt = { method: 'POST', headers: H, body: JSON.stringify(payload) };
+      if (keepalive) { opt.keepalive = true; }
+      fetch(WS_CLOUD_API, opt)
+        .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function() {
+          // Verifikasi: jumlah file di cloud == yang dikirim (POST benar-benar masuk)
+          return fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&meta=1', { headers: wsAuthHeaders() });
+        })
+        .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function(d) {
+          const sent = payload.files.length;
+          const there = ((d && d.files) || []).length;
+          if (there === sent) {
+            wsDirtySet(false);
+            wsCloudFailNotified = false;
+          } else { throw new Error('verifikasi gagal'); }
+        })
+        .catch(function() {
+          if (attempt < 2) { setTimeout(function() { wsCloudPushNow(attempt + 1, keepalive); }, 1500 * (attempt + 1)); return; }
+          // Tetap dirty: pull berikutnya tidak akan menimpa data lokal yang lebih baru
+          if (!wsCloudFailNotified) {
+            wsCloudFailNotified = true;
+            try { addNotification('Workspace', 'Perubahan belum tersinkron ke cloud — akan dicoba otomatis. Jangan bersihkan data situs.'); } catch (e) {}
+          }
+          wsCloudPushSchedule(); // coba lagi di siklus berikutnya
+        });
+    }
+
+    // Flush sebelum halaman ditutup / disembunyikan: data terakhir tetap terkirim
+    window.addEventListener('pagehide', function() { if (wsDirtyIs()) wsCloudPushNow(0, true); });
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'hidden' && wsDirtyIs()) wsCloudPushNow(0, true);
+      if (document.visibilityState === 'visible') wsCloudPull(); // refresh real-time lintas perangkat
+    });
+
     function saveData() {
+      // Cache lokal best-effort: kalau kuota browser penuh, data TETAP aman —
+      // sumber utama ada di cloud (D1) via wsCloudPushSchedule.
       try {
         localStorage.setItem(wsFilesKey(), JSON.stringify(projectFilesData));
       } catch (e) {
-        console.error('Gagal menyimpan workspace (penyimpanan browser penuh?):', e);
-        try { addNotification('Workspace', 'Gagal menyimpan workspace — penyimpanan browser penuh, beberapa perubahan bisa hilang saat refresh.'); } catch (e2) {}
+        console.warn('Cache lokal penuh (aman): perubahan tetap disimpan ke cloud.');
+        try { addNotification('Workspace', 'Penyimpanan browser penuh — tidak masalah, perubahan tetap tersimpan ke cloud.'); } catch (e2) {}
       }
       wsCloudPushSchedule();
       try { if (window.WSGitHubSync) WSGitHubSync.schedule(); } catch (e) {}

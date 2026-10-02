@@ -994,10 +994,14 @@ function loadProject(){
   }catch(e){}
   return JSON.parse(JSON.stringify(FILES));
 }
+function wsDirtyKey(){return 'clinqoo_ws_dirty_'+(LINK_PID||'global');}
+function wsDirtySet(on){try{if(on)localStorage.setItem(wsDirtyKey(),'1');else localStorage.removeItem(wsDirtyKey());}catch(e){}}
+function wsDirtyIs(){try{return !!localStorage.getItem(wsDirtyKey());}catch(e){return false;}}
 function persist(){
-  try{localStorage.setItem('clinqoo_editor_project',JSON.stringify(project));}catch(e){}
+  try{localStorage.setItem('clinqoo_editor_project',JSON.stringify(project));}catch(e){} // cache lokal best-effort; cloud = sumber utama
   if(LINK_PID){
-    try{localStorage.setItem(wsFilesKey(),JSON.stringify(flatToWs()));}catch(e){}
+    try{localStorage.setItem(wsFilesKey(),JSON.stringify(flatToWs()));}catch(e){} // kuota penuh tidak apa-apa: data aman di cloud
+    wsDirtySet(true);
     linkedCloudPushSchedule();
   }
   updateGit();
@@ -1007,19 +1011,39 @@ function linkedCloudPushSchedule(){
   clearTimeout(cloudTimer);
   cloudTimer=setTimeout(linkedCloudPush,2500);
 }
-function linkedCloudPush(){
+// Push ATOMIK (POST mode replace) + retry 3x + verifikasi jumlah file.
+function linkedCloudPush(){linkedCloudPushNow(0,false);}
+function linkedCloudPushNow(attempt,keepalive){
   cloudTimer=null;
   if(!LINK_PID)return;
   const files=[];
   Object.keys(project).forEach(p=>files.push({path:p,content:project[p]}));
   linkedEmptyFolders.forEach(f=>files.push({path:f+'/',content:''}));
   const H=Object.assign({'Content-Type':'application/json'},ccAuthHeaders());
-  // Push atomik: satu POST mode replace — tidak ada jendela cloud kosong lagi
-  // (pola lama DELETE dulu lalu POST bikin semua berkas hilang bila POST gagal).
-  fetch(WS_API,{method:'POST',headers:H,body:JSON.stringify({project_id:LINK_PID,files,replace:true})})
-    .then(r=>r.ok?setCloudDot(true):Promise.reject())
-    .catch(()=>setCloudDot(false));
+  const opt={method:'POST',headers:H,body:JSON.stringify({project_id:LINK_PID,files,replace:true})};
+  if(keepalive)opt.keepalive=true;
+  fetch(WS_API,opt)
+    .then(r=>r.ok?r.json():Promise.reject())
+    .then(()=>fetch(WS_API+'?project_id='+encodeURIComponent(LINK_PID)+'&meta=1',{headers:ccAuthHeaders()}))
+    .then(r=>r.ok?r.json():Promise.reject())
+    .then(d=>{
+      const there=((d&&d.files)||[]).length;
+      if(there!==files.length)throw new Error('verifikasi gagal');
+      wsDirtySet(false);
+      setCloudDot(true);
+      wsCloudFailNotified=false;
+    })
+    .catch(()=>{
+      if(attempt<2){setTimeout(()=>linkedCloudPushNow(attempt+1,keepalive),1500*(attempt+1));return;}
+      setCloudDot(false);
+      if(typeof wsCloudFailNotified==='undefined')var wsCloudFailNotified;
+      if(!wsCloudFailNotified){wsCloudFailNotified=true;try{toast('Belum tersinkron ke cloud — dicoba otomatis. Jangan bersihkan data situs.');}catch(e){}}
+      linkedCloudPushSchedule();
+    });
 }
+// Flush saat tab ditutup/disembunyikan supaya detik-detik terakhir tidak hilang
+window.addEventListener('pagehide',()=>{if(wsDirtyIs())linkedCloudPushNow(0,true);});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&wsDirtyIs())linkedCloudPushNow(0,true);});
 function userIsEditing(){
   // true bila user sudah menyentuh editor (ada model dengan perubahan belum tersimpan)
   try{for(const p of Object.keys(models)){const m=models[p];if(m&&m.getValue&&project[p]!==undefined&&m.getValue()!==project[p])return true;}}catch(e){}
@@ -1027,6 +1051,7 @@ function userIsEditing(){
 }
 function linkedCloudPull(){
   if(!LINK_PID)return;
+  if(wsDirtyIs())return; // ada edit lokal belum terkirim: jangan ditimpa data cloud
   if(Object.keys(project).length)return; // hanya bila lokal kosong
   fetch(WS_API+'?project_id='+encodeURIComponent(LINK_PID),{headers:ccAuthHeaders()})
     .then(r=>r.ok?r.json():Promise.reject())

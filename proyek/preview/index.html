@@ -107,6 +107,31 @@
         return map;
     }
 
+    // File proyek kini bersumber dari cloud (D1): kalau cache lokal hilang/kosong
+    // (browser dibersihkan, ganti perangkat, kuota penuh), pratinjau tetap jalan
+    // dengan menarik file langsung dari server.
+    var PV_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev/api' : '/api';
+    function pvCloudReload() {
+        if (!pid) return;
+        var tk = '';
+        try { tk = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+        if (!tk) return; // guest: tetap pakai cache lokal
+        fetch(PV_API + '/project-files?project_id=' + encodeURIComponent(pid), { headers: { Authorization: 'Bearer ' + tk } })
+            .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+            .then(function (d) {
+                var files = (d && d.files) || [];
+                if (!files.length) return; // workspace memang kosong: biarkan pesan kosong dari build()
+                var map = {};
+                files.forEach(function (f) {
+                    if (!f || !f.path || String(f.path).slice(-1) === '/') return;
+                    map[norm(f.path)] = { type: 'file', name: String(f.path).split('/').pop(), path: f.path, content: f.content || '' };
+                });
+                if (!Object.keys(map).length) return;
+                try { build(map); } catch (e) {}
+            })
+            .catch(function () {});
+    }
+
     function inlineCssUrls(css, basePath, files) {
         return css.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, function (m, q, ref) {
             var p = resolve(basePath, ref);
@@ -118,8 +143,8 @@
         });
     }
 
-    function build() {
-        var files = loadFiles();
+    function build(cloudMap) {
+        var files = cloudMap || loadFiles();
         var keys = Object.keys(files);
         if (!keys.length) { fail('Workspace masih kosong', 'Belum ada file di workspace Clincoo. Buat proyek dan file index.html dulu, lalu pratinjau akan tampil di sini.'); return; }
 
@@ -177,6 +202,7 @@
     }
 
     try { build(); } catch (e) { fail('Gagal memuat pratinjau', 'Terjadi kesalahan saat menyiapkan pratinjau. Coba muat ulang halaman ini.'); }
+    try { pvCloudReload(); } catch (e) {}
 
     // Saat halaman ini dipakai dalam split view, tab lain bisa memicu reload via parameter baru
     window.addEventListener('pageshow', function () { /* noop, cache buster via query param */ });
