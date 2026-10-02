@@ -113,6 +113,9 @@ async function ensureTables(db) {
     updated_at TEXT DEFAULT (datetime('now'))
   )`).run();
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_pay_tx_order ON pay_transactions(pay_key, order_id)`).run();
+  // Migrasi kolom tambahan untuk halaman checkout hosted (/pay/) — idempotent
+  try { await db.prepare('ALTER TABLE pay_transactions ADD COLUMN qr_string TEXT DEFAULT ''').run(); } catch (e) {}
+  try { await db.prepare('ALTER TABLE pay_transactions ADD COLUMN total_payment INTEGER').run(); } catch (e) {}
   await db.prepare(`CREATE TABLE IF NOT EXISTS pay_withdrawals (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id TEXT NOT NULL,
@@ -178,19 +181,25 @@ export async function onRequestGet({ request, env }) {
     if (!key || !orderId) return json({ error: 'key dan order_id wajib diisi' }, 400);
     const tx = await db.prepare('SELECT * FROM pay_transactions WHERE pay_key = ? AND order_id = ?').bind(key, orderId).first();
     if (!tx) return json({ error: 'transaksi tidak ditemukan' }, 404);
-    if (tx.status === 'paid') return json({ success: true, status: 'paid', amount: tx.amount });
-    if (!tx.trx_ref) return json({ success: true, status: tx.status, amount: tx.amount });
+    const det = {
+      order_id: tx.order_id, description: tx.description || '',
+      qr_image: qrImageUrl(tx.qr_string || ''),
+      total_payment: (tx.total_payment != null ? tx.total_payment : tx.amount),
+      created_at: tx.created_at || ''
+    };
+    if (tx.status === 'paid') return json({ success: true, status: 'paid', amount: tx.amount, ...det });
+    if (!tx.trx_ref) return json({ success: true, status: tx.status, amount: tx.amount, ...det });
     // hormati rate limit Pakasir: 4 detik per transaksi
     const last = PKS_THROTTLE.get(tx.id) || 0;
-    if (Date.now() - last < 4000) return json({ success: true, status: tx.status, amount: tx.amount });
+    if (Date.now() - last < 4000) return json({ success: true, status: tx.status, amount: tx.amount, ...det });
     PKS_THROTTLE.set(tx.id, Date.now());
     const d = await pakasirFetch(env, '/api/v2/transaction-status/' + encodeURIComponent(env.PAKASIR_SLUG) + '/' + encodeURIComponent(tx.trx_ref), { method: 'GET' });
-    if (d.error) return json({ success: true, status: tx.status, amount: tx.amount, message: d.message || '' });
+    if (d.error) return json({ success: true, status: tx.status, amount: tx.amount, message: d.message || '', ...det });
     const st = mapPksStatus(d.status);
     if (st !== tx.status) {
       await db.prepare('UPDATE pay_transactions SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').bind(st, tx.id).run();
     }
-    return json({ success: true, status: st, amount: tx.amount, message: d.message || '' });
+    return json({ success: true, status: st, amount: tx.amount, message: d.message || '', ...det });
   }
 
   return json({ error: 'action tidak dikenal' }, 400);
@@ -281,14 +290,16 @@ export async function onRequestPost({ request, env }) {
       '/api/v2/create-transaction/' + encodeURIComponent(env.PAKASIR_SLUG) + '/' + encodeURIComponent(orderId),
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: 'qris', amount: amount }) });
     const ok = txn && txn.txn_id;
-    await db.prepare('INSERT INTO pay_transactions (project_id, pay_key, order_id, trx_ref, amount, description, status) VALUES (?, ?, ?, ?, ?, ?, ?)')
-      .bind(creds.project_id, key, orderId, ok ? txn.txn_id : '', amount, description, ok ? 'pending' : 'failed').run();
+    await db.prepare('INSERT INTO pay_transactions (project_id, pay_key, order_id, trx_ref, amount, description, status, qr_string, total_payment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(creds.project_id, key, orderId, ok ? txn.txn_id : '', amount, description, ok ? 'pending' : 'failed', txn.qr_string || '', txn.total_payment || amount).run();
     if (!ok) {
       return json({ success: false, message: (txn && (txn.message || txn.error)) || 'Gagal membuat QRIS ClincooPay.' }, 502);
     }
+    const origin = new URL(request.url).origin;
     return json({
       success: true,
       order_id: orderId,
+      checkout_url: origin + '/pay/?order_id=' + encodeURIComponent(orderId) + '&key=' + encodeURIComponent(key),
       amount: amount,
       qr_image: qrImageUrl(txn.qr_string),
       qr_string: txn.qr_string || '',
