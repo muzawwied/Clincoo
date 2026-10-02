@@ -501,7 +501,7 @@ const WORKSPACE_FUNCTION_DECLARATIONS = [
       files: { type: 'ARRAY', description: 'Array file yang mau ditulis/salin.', items: { type: 'OBJECT', properties: {
         path: { type: 'STRING', description: 'Path file di workspace, contoh "assets/style.css".' },
         content: { type: 'STRING', description: 'Isi lengkap file siap jalan.' }
-      }, required: ['path', 'content'] } } }
+      }, required: ['path', 'content'] } }
     }, required: ['files'] } },
   { name: 'save_to_storage',
     description: 'Simpan/update file ke AI STORAGE milikmu sendiri (server Clincoo, per akun — BUKAN workspace proyek, BUKAN GitHub). Penyimpanan abadi antar sesi/chat, isi file TIDAK memakan token history: simpan sekali, lalu di giliran mana pun baca ulang hanya file yang perlu dengan read_storage_file. WAJIB dipakai untuk: hasil clone/fetch file dari sumber mana pun (GitHub, web) yang akan dipakai lagi nanti, file rujukan besar, atau kode sumber yang akan sering diubah atas perintah user. Upor path konsisten (mis. "repo/nama/file.ext").',
@@ -509,7 +509,7 @@ const WORKSPACE_FUNCTION_DECLARATIONS = [
       files: { type: 'ARRAY', description: 'Array file yang mau disimpan.', items: { type: 'OBJECT', properties: {
         path: { type: 'STRING', description: 'Path/identitas file, contoh "libs/jquery-3.7.js".' },
         content: { type: 'STRING', description: 'Isi file.' }
-      }, required: ['path', 'content'] } } }
+      }, required: ['path', 'content'] } }
     }, required: ['files'] } },
   { name: 'read_storage_file',
     description: 'Baca isi satu file dari AI STORAGE milikmu — jauh lebih hemat & cepat daripada re-clone atau membaca ulang dari history. Gunakan setiap kali akan mengubah/memakai file yang sudah tersimpan di storage.',
