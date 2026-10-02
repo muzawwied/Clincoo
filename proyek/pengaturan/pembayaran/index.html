@@ -139,7 +139,11 @@
     @keyframes payShimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
     .pay-skel { background: linear-gradient(90deg, rgba(0,0,0,.06) 25%, rgba(0,0,0,.12) 37%, rgba(0,0,0,.06) 63%); background-size: 400% 100%; animation: payShimmer 1.2s ease infinite; }
     .dark-mode .pay-skel { background: linear-gradient(90deg, rgba(255,255,255,.06) 25%, rgba(255,255,255,.12) 37%, rgba(255,255,255,.06) 63%); background-size: 400% 100%; }
-    </style>
+    /* popover pengganti alert bawaan browser */
+.pay-toast{position:fixed;bottom:36px;left:50%;transform:translateX(-50%);background:#1a1a1e;color:#fff;font-size:12.5px;font-weight:600;padding:9px 18px;border-radius:999px;z-index:90;opacity:0;pointer-events:none;transition:opacity .25s;max-width:86vw;text-align:center}
+.pay-toast.show{opacity:1}
+body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
+</style>
 
   <script>(function(){var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var isDark=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(isDark)document.documentElement.classList.add('dark-mode');})();</script>
 <!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
@@ -504,7 +508,21 @@
         return;
       }
     } catch (e) {}
-    alert(msg);
+    _payToast(msg);
+  }
+
+  function _payToast(msg) {
+    var t = document.getElementById('pay-toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'pay-toast';
+      t.className = 'pay-toast';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg || '';
+    t.classList.add('show');
+    if (t._t) clearTimeout(t._t);
+    t._t = setTimeout(function () { t.classList.remove('show'); }, 2400);
   }
 
   function _rp(n) { return 'Rp ' + Number(n || 0).toLocaleString('id-ID'); }
@@ -965,7 +983,7 @@
         return Object.keys(byPath).sort().map(function (p) { return { path: p, content: byPath[p] }; });
     };
     var finish = function (files) {
-        if (!files.length) { alert('Tidak ada berkas di Workspace untuk dieksport.'); return; }
+        if (!files.length) { _payToast('Tidak ada berkas di Workspace untuk dieksport.'); return; }
         var run = function () {
             var zip = new window.JSZip();
             files.forEach(function (f) { zip.file(f.path, f.content || ''); });
@@ -1001,7 +1019,7 @@
 window.chatLivePreview = function () {
     closeHeaderMenu();
     var pid = ''; try { pid = localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) {}
-    if (!pid) { alert('Tidak ada proyek aktif. Buka proyek dari daftar proyek dulu.'); return; }
+    if (!pid) { _payToast('Tidak ada proyek aktif. Buka proyek dari daftar proyek dulu.'); return; }
     var API = ['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api';
     var tk = ''; try { tk = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
     var headers = tk ? { Authorization: 'Bearer ' + tk } : {};
@@ -1029,12 +1047,12 @@ window.chatLivePreview = function () {
                     var url = d.public_url || (d.public_domain ? 'https://' + d.public_domain : '') || (d.deployment && d.deployment.url) || d.pages_url || '';
                     setLoading(false);
                     if (url) window.open(url, '_blank');
-                    else alert('Situs berhasil dipublikasikan tapi URL pratinjau tidak ditemukan.');
+                    else _payToast('Situs berhasil dipublikasikan tapi URL pratinjau tidak ditemukan.');
                 });
         })
         .catch(function (err) {
             setLoading(false);
-            alert('Gagal membuka pratinjau: ' + (err && err.message ? err.message : 'periksa koneksi internet lalu coba lagi.'));
+            _payToast('Gagal membuka pratinjau: ' + (err && err.message ? err.message : 'periksa koneksi internet lalu coba lagi.'));
         });
 };
     </script>
