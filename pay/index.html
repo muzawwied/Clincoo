@@ -42,27 +42,24 @@
       <span class="text-2xl font-extrabold tracking-tight leading-none">Clincoo</span>
     </div>
 
-    <!-- Judul -->
-    <div class="mt-12 text-center text-[11px] uppercase tracking-[0.18em] text-slate-400 dark-mode:text-slate-500">Pembayaran QRIS</div>
-
-    <!-- Total tagihan -->
-    <div class="mt-8 w-full">
+    <!-- Total tagihan (tengah) -->
+    <div class="mt-12 w-full text-center">
       <div class="text-[13px] text-slate-400 dark-mode:text-slate-500">Total Tagihan</div>
-      <div id="amount" class="mt-1 text-[38px] leading-none font-extrabold tracking-tight">…</div>
+      <div id="amount" class="mt-1 text-[40px] leading-none font-extrabold tracking-tight">…</div>
       <div id="desc" class="mt-2 text-sm text-slate-500 dark-mode:text-slate-400 truncate"></div>
     </div>
 
     <!-- QR -->
-    <div id="qr-area" class="mt-8 w-full flex flex-col items-center">
+    <div id="qr-area" class="mt-10 w-full flex flex-col items-center">
       <div class="qr-wrap w-full max-w-[240px] aspect-square flex items-center justify-center relative">
         <img id="qr" alt="Kode QRIS" class="w-full h-full hidden" src="">
         <div id="qr-skel" class="w-full h-full bg-slate-100 dark-mode:bg-slate-800 animate-pulse rounded-xl"></div>
       </div>
-      <button id="dl-btn" class="hidden mt-5 inline-flex items-center gap-2 pl-4 pr-5 py-2 rounded-full border border-slate-200 dark-mode:border-slate-700 text-sm font-semibold text-slate-700 dark-mode:text-slate-200 hover:bg-slate-50 dark-mode:hover:bg-slate-800/60 active:scale-95 transition-all">
+      <button id="dl-btn" class="hidden mt-6 inline-flex items-center gap-2 pl-4 pr-5 py-2 rounded-full border border-slate-200 dark-mode:border-slate-700 text-sm font-semibold text-slate-700 dark-mode:text-slate-200 hover:bg-slate-50 dark-mode:hover:bg-slate-800/60 active:scale-95 transition-all">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
         Download QRIS
       </button>
-      <div class="mt-4 flex flex-col items-center gap-1.5">
+      <div class="mt-5 flex flex-col items-center gap-1.5">
         <div class="text-[11px] uppercase tracking-[0.14em] text-slate-400 dark-mode:text-slate-500">Order ID</div>
         <button id="copy-order" class="font-mono text-sm font-semibold text-slate-600 dark-mode:text-slate-300 hover:text-slate-900 dark-mode:hover:text-white px-2 py-0.5 transition-colors">…</button>
       </div>
@@ -139,6 +136,21 @@
   }
 
   var AMOUNT = 0;
+  var CACHE_KEY = 'clinqoo_pay_' + orderId;
+  function saveCache(d) {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        amount: d.total_payment || d.amount || 0,
+        description: d.description || '',
+        qr_image: d.qr_image || '',
+        order_id: d.order_id || orderId,
+        status: d.status
+      }));
+    } catch (e) {}
+  }
+  function loadCache() {
+    try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch (e) { return null; }
+  }
   function render(d) {
     if (!d || !d.success) return;
     AMOUNT = d.total_payment || d.amount || AMOUNT;
@@ -153,6 +165,7 @@
       el('dl-btn').classList.remove('hidden');
       dlUrl = d.qr_image;
     }
+    saveCache(d);
     show(d.status);
   }
 
@@ -191,6 +204,8 @@
     el('qr-area').className = 'hidden'; el('howto').className = 'hidden';
     el('err').classList.remove('hidden');
   } else {
+    var cached = loadCache();
+    if (cached) render(cached);   // tampil instan dari cache, tanpa loading
     poll();
     timer = setInterval(poll, 1000);
     document.addEventListener('visibilitychange', function () {
