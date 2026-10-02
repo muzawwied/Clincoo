@@ -138,15 +138,25 @@
   var AMOUNT = 0;
   var CACHE_KEY = 'clinqoo_pay_' + orderId;
   function saveCache(d) {
-    try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify({
-        amount: d.total_payment || d.amount || 0,
-        description: d.description || '',
-        qr_image: d.qr_image || '',
-        order_id: d.order_id || orderId,
-        status: d.status
-      }));
-    } catch (e) {}
+    var data = {
+      amount: d.total_payment || d.amount || 0,
+      description: d.description || '',
+      qr_image: '',
+      order_id: d.order_id || orderId,
+      status: d.status
+    };
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch (e) {}
+    // simpan QR sbg dataURL agar refresh berikutnya NOL network untuk gambarnya
+    if (d.qr_image && !String(d.qr_image).indexOf('data:') === 0) {
+      fetch(d.qr_image).then(function (r) { return r.blob(); }).then(function (b) {
+        var fr = new FileReader();
+        fr.onload = function () {
+          data.qr_image = fr.result;
+          try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch (e) {}
+        };
+        fr.readAsDataURL(b);
+      }).catch(function () {});
+    }
   }
   function loadCache() {
     try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch (e) { return null; }
@@ -159,7 +169,7 @@
     else { el('desc').className = 'hidden'; }
     el('copy-order').textContent = d.order_id || orderId;
     if (d.qr_image) {
-      el('qr').src = d.qr_image + '&v=' + Date.now();
+      el('qr').src = String(d.qr_image).indexOf('data:') === 0 ? d.qr_image : d.qr_image + '&v=' + Date.now();
       el('qr').classList.remove('hidden');
       el('qr-skel').className = 'hidden';
       el('dl-btn').classList.remove('hidden');
@@ -205,7 +215,7 @@
     el('err').classList.remove('hidden');
   } else {
     var cached = loadCache();
-    if (cached) render(cached);   // tampil instan dari cache, tanpa loading
+    if (cached) { cached.success = true; render(cached); }   // tampil instan dari cache, tanpa loading
     poll();
     timer = setInterval(poll, 1000);
     document.addEventListener('visibilitychange', function () {
