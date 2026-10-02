@@ -17,7 +17,7 @@ export async function getCpConnection(db, uid) {
   if (!uid) return null;
   try {
     await ensureCpTable(db);
-    const row = await db.prepare('SELECT wallet_address, token FROM clinqoopay_connections WHERE user_id = ?').bind(uid).first();
+    const row = await db.prepare('SELECT wallet_address, token FROM clinqoopay_connections WHERE CAST(user_id AS REAL) = CAST(? AS REAL)').bind(uid).first();
     return row || null;
   } catch (e) { return null; }
 }

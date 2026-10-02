@@ -1,7 +1,7 @@
 // Cloudflare Pages Functions - Wallet Backend (per-account)
 import { currentUser, scopedKey, rowScope } from './user-scope.js';
 import { emailTemplate, formatIDR, sendEmail, notifyEvent, getUserByEmail } from './notify-helpers.js';
-import { getCpConnection, mirroredBalance, mirrorDelta } from './clinqoopay-helpers.js';
+import { getCpConnection, mirroredBalance, mirrorDelta, WALLET_API } from './clinqoopay-helpers.js';
 import { ADMIN_EMAILS } from './plan-helpers.js';
 
 const CORS = {
@@ -74,7 +74,30 @@ export async function onRequestGet({ request, env }) {
       const uid = await rowScope(db, 'wallet_transactions', user);
       if (!uid) return j({ transactions: [] }); // tanpa login: jangan bocorkan transaksi akun lain
       const txs = await db.prepare('SELECT * FROM wallet_transactions WHERE user_id = ? ORDER BY created_at DESC').bind(uid).all();
-      return j({ transactions: txs.results || [] });
+      let merged = (txs.results || []).map(function(t){ return { id: String(t.id), title: t.title, amount: Number(t.amount) || 0, type: t.type, method: t.method || '', created_at: t.created_at }; });
+      if (url.searchParams.get('full') === '1' && user) {
+        const conn = await getCpConnection(db, user.id);
+        if (conn) {
+          try {
+            const r = await fetch(WALLET_API + '?action=transactions&address=' + encodeURIComponent(conn.wallet_address));
+            const d = await r.json();
+            const seen = new Set(merged.map(function(t){ return t.id; }));
+            const remotes = (d && d.transactions) || [];
+            for (const t of remotes) {
+              const tid = t.id ? String(t.id) : ('cp-' + (t.date || '') + '-' + (t.amount || 0));
+              if (seen.has(tid)) continue;
+              seen.add(tid);
+              merged.push({ id: tid, title: (t.note || t.name || 'Transaksi ClincooPay'), amount: Number(t.amount) || 0, type: (t.type === 'masuk') ? 'in' : 'out', method: 'ClincooPay', created_at: t.date });
+            }
+          } catch (e) {}
+        }
+      }
+      merged.sort(function(a, b){
+        const ta = new Date(String(a.created_at || '').replace(' ', 'T') + (String(a.created_at || '').length <= 10 ? 'T00:00:00' : '')).getTime() || 0;
+        const tb = new Date(String(b.created_at || '').replace(' ', 'T') + (String(b.created_at || '').length <= 10 ? 'T00:00:00' : '')).getTime() || 0;
+        return tb - ta;
+      });
+      return j({ transactions: merged });
     }
 
     if (!user) return j({ balance: 0 }); // tanpa login: jangan bocorkan saldo legacy bersama (key non-scoped)

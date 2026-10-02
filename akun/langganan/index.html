@@ -377,7 +377,7 @@
         const tbody = document.getElementById('history-body');
         if(!tbody) return;
         try {
-            const res = await fetch(WALLET_API + '?action=transactions', { headers: authHeaders() });
+            const res = await fetch(WALLET_API + '?action=transactions&full=1&_=' + Date.now(), { headers: authHeaders(), cache: 'no-store' });
             const data = await res.json();
             const txs = (data && data.transactions) || [];
             if(!txs.length){
