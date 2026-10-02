@@ -2,94 +2,60 @@
 <html lang="id">
 <head>
 <script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
-  <script src="../../../js/auth-client.js?v=4"></script>
   <script src="../../../js/accent-init.js"></script>
 <script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>/* embed=1: halaman ini di dalam panel split view chat (kolom kanan halaman chat) */(function(){try{if(/(^|[?&])embed=1(&|$)/.test(location.search)){document.documentElement.classList.add('embed-mode');}}catch(e){}})();</script>
     <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
     <link rel="manifest" href="../../../manifest.json">
     <link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
-    <title>Pengaturan: Keamanan HTTPS — Clincoo</title>
-    <meta name="description" content="Pengaturan: Keamanan HTTPS — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+  <title>Pengaturan: Server MCP — Clincoo</title>
+    <meta name="description" content="Pengaturan: Integrasi AI — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
     <meta name="robots" content="noindex">
     <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Clincoo">
-    <meta property="og:title" content="Pengaturan: Keamanan HTTPS — Clincoo">
-    <meta property="og:description" content="Pengaturan: Keamanan HTTPS — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:title" content="Pengaturan: Integrasi AI — Clincoo">
+    <meta property="og:description" content="Pengaturan: Integrasi AI — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Clincoo">
     <meta property="og:url" content="https://app.clincoo.buzz/">
     <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Pengaturan: Keamanan HTTPS — Clincoo">
-    <meta name="twitter:description" content="Pengaturan: Keamanan HTTPS — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:title" content="Pengaturan: Integrasi AI — Clincoo">
+    <meta name="twitter:description" content="Pengaturan: Integrasi AI — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
     <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
-    
-    <!-- Dependencies -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <style>
-        /* Base styles */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #ffffff;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        
-        /* Dark Mode Configuration */
-        body.dark-mode { background-color: #000000; color: #ffffff; }
-        body.dark-mode .bg-white { background-color: #0a0a0a !important; }
-        
-        /* Header Buttons Dark Mode */
-        body.dark-mode button[onclick="history.back()"],
-        body.dark-mode header button[onclick]:not(.header-menu-item) {
-            background-color: #000000 !important;
-            border: 1.5px solid rgba(255,255,255,0.4) !important;
-            color: #ffffff !important;
-        }
-        body.dark-mode button[onclick="history.back()"] svg,
-        body.dark-mode header button[onclick]:not(.header-menu-item) svg { stroke: #ffffff !important; }
-        body.dark-mode button[onclick="history.back()"]:hover,
-        body.dark-mode header button[onclick]:not(.header-menu-item):hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
-        
-        /* Typography & Borders Dark Mode */
-        body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #ffffff !important; }
-        body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 { color: #888888 !important; }
-        body.dark-mode .border-gray-100, body.dark-mode .border-gray-200, body.dark-mode .border-gray-300 { border-color: #222222 !important; }
-        body.dark-mode header { background-color: #000000 !important; border-color: #222222 !important; }
-        body.dark-mode .bg-\[#ffffff\], body.dark-mode .bg-gray-50 { background-color: #000000 !important; }
-        body.dark-mode .bg-gray-100 { background-color: #111111 !important; }
-        body.dark-mode .hover\:bg-gray-50:hover, body.dark-mode .hover\:bg-gray-100:hover { background-color: #1a1a1a !important; }
-        
-        /* Inputs & Buttons Custom Dark Mode */
-        body.dark-mode input[type="text"], 
-        body.dark-mode textarea, 
-        body.dark-mode .custom-select-trigger, 
-        body.dark-mode .custom-dropdown-menu { 
-            background-color: #0a0a0a; 
-            color: #ffffff; 
-            border-color: #222222; 
-        }
-        body.dark-mode input[type="text"]:focus, body.dark-mode textarea:focus { border-color: #555555; }
-        body.dark-mode .bg-black.text-white { background-color: #ffffff !important; color: #000000 !important; }
-        body.dark-mode .hover\:bg-gray-800:hover { background-color: #dddddd !important; }
-
-        /* Animation Utilities */
-        .fade-in { animation: fadeIn 0.3s ease-in-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Hide scrollbar */
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    /* auto-dark-fix v1 */
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { display: none; width: 0; height: 0; background: transparent; }
+    * { -ms-overflow-style: none; scrollbar-width: none; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    body.dark-mode { background-color: #000000; color: #e0e0e0; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800 { color: #f0f0f0; }
+    body.dark-mode .text-gray-700 { color: #b0b0b0; }
+    body.dark-mode .text-gray-500, body.dark-mode .text-gray-600 { color: #888888; }
+    body.dark-mode .text-gray-400 { color: #666666; }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode header button[onclick="history.back()"], body.dark-mode header button[aria-label="Kembali"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
+    body.dark-mode header button[onclick="history.back()"] svg, body.dark-mode header button[aria-label="Kembali"] svg { color: #ffffff !important; stroke: #ffffff !important; }
+    body.dark-mode header button[onclick="history.back()"]:hover, body.dark-mode header button[aria-label="Kembali"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
+    body.dark-mode .bg-gray-50 { background-color: #222222 !important; }
+    body.dark-mode .bg-gray-100 { background-color: #222222 !important; }
+    body.dark-mode .border-gray-200, body.dark-mode .border-gray-100 { border-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-200:hover { background-color: #222222 !important; }
+    body.dark-mode input, body.dark-mode select, body.dark-mode textarea { background-color: #0a0a0a; color: #ffffff; border-color: #222222; }
+    body.dark-mode input:focus, body.dark-mode select:focus, body.dark-mode textarea:focus { border-color: #222222; outline: none; }
+    body.dark-mode header { background-color: #000000 !important; }
+    body.dark-mode .bg-black { background-color: #ffffff !important; color: #000000 !important; }
+  /* auto-dark-fix v1 */
     body.dark-mode .bg-gray-50\/80 { background-color: #141414 !important; }
     body.dark-mode .bg-gray-200 { background-color: #262626 !important; }
     body.dark-mode .bg-gray-300 { background-color: #333333 !important; }
@@ -166,7 +132,15 @@
         body.dark-mode .header-menu-item svg { color: #9ca3af; }
         @media (max-width: 384px) { #sidebar-toggle, #header-more-btn { width: 38px; height: 38px; } }
         @media (max-width: 330px) { #sidebar-toggle, #header-more-btn { width: 34px; height: 34px; } .chat-nav-link { padding-left: 0.5rem; padding-right: 0.5rem; } }
-    </style>
+        /* fix: ikon logo model AI (chip bulat putih) jangan ikut digelapkan body.dark-mode .bg-white, krn logo monokrom (hitam) jadi tak terlihat. Pakai class khusus ai-logo-chip-bg (bukan selector ID kontainer) biar TIDAK ikut nimpa background popover/modal yg juga punya class bg-white. */
+        body.dark-mode .ai-logo-chip-bg { background-color: #ffffff !important; }
+      /* embed=1: dalam panel split view chat — sembunyikan header & FAB lokal */
+  html.embed-mode body > header { display: none !important; }
+  html.embed-mode #chat-fab { display: none !important; }
+  html.embed-mode body { padding-top: 76px; }
+  html.embed-mode .pt-\[84px\] { padding-top: 0 !important; }
+</style>
+  <script>(function(){var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var isDark=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(isDark)document.documentElement.classList.add('dark-mode');})();</script>
 <!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
 <script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';var tm=document.querySelector('meta[name="theme-color"]');if(tm){tm.setAttribute('content','#0a0a0a');}}}catch(e){}})();</script>
 
@@ -184,17 +158,14 @@
 <!-- End Google tag -->
 <script src="../../../js/i18n-dict.js" defer></script>
 <script src="../../../js/i18n.js" defer></script>
+<style>
+@keyframes mcpIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.mcp-anim{animation:mcpIn .38s ease both}
+</style>
 </head>
-<body class="min-h-screen flex flex-col text-gray-900 relative hide-scrollbar">
-    <script>
-        (function(){
-            var t=localStorage.getItem("clinqoo_theme");
-            var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);
-            if(isDark){document.body.classList.add("dark-mode");}
-        })();
-    </script>
-    
-    <!-- Header Sesuai Preferensi -->
+<body class="text-gray-900 antialiased h-screen w-full overflow-hidden relative bg-white">
+  <script>(function(){var t=localStorage.getItem("clinqoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+  <div class="w-full h-full overflow-y-auto hide-scrollbar flex flex-col items-center">
     <header class="fixed top-0 left-0 right-0 z-30 px-3 pt-3 pointer-events-none flex justify-between items-center">
         <button id="sidebar-toggle" type="button" class="pointer-events-auto flex-shrink-0 flex items-center justify-center text-[#222222] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:text-black hover:bg-gray-100 transition-all rounded-full w-11 h-11" aria-label="Kembali ke Beranda">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -216,11 +187,6 @@
                 </svg>
             </button>
             <div id="header-more-menu" class="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 p-1.5 flex-col gap-0.5 opacity-0 invisible translate-y-1 pointer-events-none transition-all duration-200 z-50 hidden">
-                <a id="header-live-url" href="/proyek/live/" target="_blank" rel="noopener" onclick="var __pid='';try{__pid=localStorage.getItem('clinqoo_current_project_id')||''}catch(e){}if(__pid){this.href='/proyek/live/?id='+encodeURIComponent(__pid)}" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
-                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path stroke-linecap="round" stroke-linejoin="round" d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                    Live URL proyek
-                    <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg>
-                </a>
                 <button id="header-live-preview" type="button" onclick="chatLivePreview()" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
                     <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2 12a10 10 0 1 0 20 0 10 10 0 0 0-20 0M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"></path></svg>
                     Live preview
@@ -245,9 +211,7 @@
             </div>
         </div>
     </header>
-
-    <!-- Area Utama Konten -->
-    <main class="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 pt-20 pb-24 relative">
+    <main class="w-full max-w-5xl px-4 sm:px-6 pt-20 pb-24">
     <style>
         #settings-menu-pop.open { display: flex; }
         .settings-menu-item { cursor: pointer; }
@@ -262,12 +226,12 @@
     <div class="relative mb-5 -mx-2.5 sm:-mx-[70px] sm:max-w-[860px]" id="settings-menu-wrap">
             <button id="settings-menu-btn" type="button" onclick="toggleSettingsMenu(event)" class="w-full flex items-center justify-between rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-800 shadow-sm transition-all">
                 <span class="flex items-center gap-2.5">
-                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                    Keamanan &amp; HTTPS
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.01M6 18h.01"></path></svg>
+                    Server MCP
                 </span>
                 <svg id="settings-menu-chev" class="w-4 h-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
             </button>
-            <div id="settings-menu-pop" class="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-12px)] sm:w-[860px] mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-1 flex-col gap-px z-40 hidden">
+            <div id="settings-menu-pop" class="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-12px)] sm:w-[860px] mt-0 bg-white rounded-2xl shadow-xl border border-gray-100 p-1 flex-col gap-px z-40 hidden">
                                 <a href="/proyek/dashboard/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Umum</span><span class="block text-xs text-gray-400 truncate">Nama, deskripsi, dan runtime aplikasi</span></span>
@@ -286,21 +250,21 @@
                 </a>
                 <a href="/proyek/pengaturan/integrasi-webhook/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17H7a5 5 0 1 1 0-10h2M15 7h2a5 5 0 1 1 0 10h-2M8 12h8"></path></svg>
-                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Integrasi &amp; Webhook</span><span class="block text-xs text-gray-400 truncate">Integrasi layanan luar dan webhooks</span></span>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Webhook</span><span class="block text-xs text-gray-400 truncate">Notifikasi event lewat webhook</span></span>
                 </a>
 <a href="/proyek/pengaturan/integrasi-ai/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 5.7a2 2 0 001.4 1.4L21 12l-5.7 1.9a2 2 0 00-1.4 1.4L12 21l-1.9-5.7a2 2 0 00-1.4-1.4L3 12l5.7-1.9a2 2 0 001.4-1.4L12 3z"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Integrasi AI</span><span class="block text-xs text-gray-400 truncate">AI Router: model dan secret per proyek</span></span>
                 </a>
-                <a href="/proyek/pengaturan/server-mcp/" class="settings-menu-item flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left rounded-lg transition-colors text-left">
+                <a href="/proyek/pengaturan/server-mcp/" class="settings-menu-item settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.01M6 18h.01"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Server MCP</span><span class="block text-xs text-gray-400 truncate">Sambungkan proyek ke platform AI lain (MCP)</span></span>
                 </a>
-                <a href="/proyek/pengaturan/pembayaran/" class="settings-menu-item flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                <a href="/proyek/pengaturan/pembayaran/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Pembayaran</span><span class="block text-xs text-gray-400 truncate">QRIS instan, dana masuk langsung ke akunmu</span></span>
                 </a>
-                <a href="/proyek/pengaturan/email/" class="settings-menu-item flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                <a href="/proyek/pengaturan/email/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Email</span><span class="block text-xs text-gray-400 truncate">Kirim email otomatis lewat API Clincoo</span></span>
                 </a>
@@ -327,7 +291,6 @@
                 chev.style.transform = '';
             }
         });
-
         // Menu popover absolut di dalam konten scrollable: tutup otomatis saat halaman
         // discroll supaya tidak nyangkut melayang di bawah header fixed.
         // Listener di window fase capture: nangkap scroll dari elemen apa pun (scroll gak bubble).
@@ -340,248 +303,397 @@
     })();
     </script>
 
-        <div class="w-full flex flex-col divide-y divide-gray-200 dark:divide-gray-800">
-            
-            <!-- 1. Paksa HTTPS -->
-            <div class="py-6 flex items-center justify-between gap-4">
-                <div class="min-w-0 flex-1">
-                    <h4 class="text-base font-bold text-gray-900 tracking-tight">Paksa HTTPS</h4>
-                    <p class="text-sm text-gray-500 mt-1">Redirect semua permintaan HTTP ke HTTPS secara otomatis</p>
-                </div>
-                <button type="button" onclick="toggleSwitch('forceHttps')" class="relative flex-shrink-0 cursor-pointer focus:outline-none">
-                    <div id="forceHttps-bg" class="w-11 h-6 bg-black dark:bg-white rounded-full transition-colors duration-200 ease-in-out"></div>
-                    <div id="forceHttps-knob" class="absolute left-0.5 top-0.5 bg-white dark:bg-black w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out translate-x-5"></div>
+      <div class="w-full flex flex-col divide-y divide-gray-200 dark:divide-slate-700/60">
+
+        <!-- 1. Server MCP (Clincoo sebagai penyedia server MCP proyek ini) -->
+        <div class="py-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h4 class="text-base font-semibold text-gray-900 dark:text-white">Server MCP</h4>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Sambungkan proyek ini ke AI platform lain (Claude, Cursor, Windsurf, dll.) lewat Model Context Protocol. AI luar bisa mengakses workspace proyek ini secara real-time sesuai izin yang kamu atur.</p>
+            </div>
+            <span id="mcp-status-badge" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300">Memuat…</span>
+          </div>
+
+          <!-- Memuat: skeleton animasi biar gak blank saat data diambil -->
+          <div id="mcp-loading" class="py-8 flex flex-col items-center justify-center gap-4 text-center">
+            <svg class="w-6 h-6 text-gray-400 dark:text-slate-500 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path></svg>
+            <div class="w-full max-w-md mx-auto space-y-3 animate-pulse">
+              <div class="h-10 rounded-xl bg-gray-100 dark:bg-slate-800/80"></div>
+              <div class="h-10 rounded-xl bg-gray-100 dark:bg-slate-800/80"></div>
+              <div class="h-28 rounded-xl bg-gray-100 dark:bg-slate-800/80"></div>
+            </div>
+          </div>
+
+          <!-- Belum aktif -->
+          <div id="mcp-inactive" class="py-10 flex-col items-center justify-center text-center hidden">
+            <svg class="w-10 h-10 text-gray-300 dark:text-slate-600 mb-3 mx-auto" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><path stroke-linecap="round" d="M6 6h.01M6 18h.01"></path></svg>
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Server MCP proyek ini belum aktif</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Aktifkan untuk mendapatkan endpoint + token yang bisa dipasang di platform AI lain.</p>
+            <button type="button" onclick="activateMcp()" id="mcp-activate-btn" class="mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">
+              Aktifkan Server MCP
+            </button>
+          </div>
+
+          <!-- Aktif -->
+          <div id="mcp-active" class="hidden flex-col gap-5">
+            <div>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Endpoint MCP</p>
+              <div class="flex items-center gap-2 p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-[#0f0f0f]">
+                <code id="mcp-url" class="flex-1 text-xs font-mono text-gray-700 dark:text-gray-300 break-all select-all"></code>
+                <button type="button" onclick="copyMcpText(mcpState.url, this)" class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-500 transition-colors cursor-pointer" title="Salin URL"><svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M5 15.4A2 2 0 0 1 3.6 14V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 1.4"></path></svg><span>Salin</span></button>
+                              </div>
+            </div>
+
+            <div>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Token Akses</p>
+              <div class="flex items-center gap-1 p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-[#0f0f0f]">
+                <code id="mcp-token" class="flex-1 text-xs font-mono text-gray-700 dark:text-gray-300 break-all"></code>
+                <button type="button" onclick="toggleMcpTokenVisible()" id="mcp-eye-btn" class="flex-shrink-0 inline-flex items-center justify-center px-2.5 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-500 transition-colors cursor-pointer" title="Tampilkan/sembunyikan token">
+                  <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                 </button>
+                <button type="button" onclick="copyMcpText(mcpState.token, this)" class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-500 transition-colors cursor-pointer" title="Salin token"><svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M5 15.4A2 2 0 0 1 3.6 14V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 1.4"></path></svg><span>Salin</span></button>
+              </div>
+              <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+                <button type="button" onclick="regenerateMcp()" class="text-xs font-medium text-gray-500 hover:text-black dark:hover:text-white underline underline-offset-4 cursor-pointer bg-transparent border-0 p-0">Buat ulang token</button>
+                <button type="button" onclick="revokeMcp()" class="text-xs font-medium text-red-500 hover:text-red-600 underline underline-offset-4 cursor-pointer bg-transparent border-0 p-0">Putuskan semua akses</button>
+              </div>
             </div>
 
-            <!-- 2. HSTS -->
-            <div class="py-6 flex items-center justify-between gap-4">
-                <div class="min-w-0 flex-1">
-                    <h4 class="text-base font-bold text-gray-900 tracking-tight">HSTS (HTTP Strict Transport Security)</h4>
-                    <p class="text-sm text-gray-500 mt-1">Perlindungan ekstra untuk memaksa browser menggunakan koneksi aman</p>
+            <div>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Konfigurasi Akses</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mb-2">Tentukan apa saja yang boleh dilakukan AI luar di workspace proyek ini. Perubahan tersimpan otomatis.</p>
+              <div class="rounded-xl border border-gray-200 dark:border-slate-700 divide-y divide-gray-100 dark:divide-slate-800 overflow-hidden">
+                <div class="flex items-center justify-between gap-3 px-3.5 py-3 bg-white dark:bg-[#0a0a0a]">
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white">Lihat &amp; baca file</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI bisa melihat daftar file dan membaca isinya</p>
+                  </div>
+                  <button type="button" onclick="toggleScope('read')" class="relative w-11 h-6 flex-shrink-0 cursor-pointer focus:outline-none" aria-label="Izinkan baca file">
+                    <div id="sw-read-bg" class="w-11 h-6 rounded-full transition-colors duration-200"></div>
+                    <div id="sw-read-knob" class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200"></div>
+                  </button>
                 </div>
-                <button type="button" onclick="toggleSwitch('hsts')" class="relative flex-shrink-0 cursor-pointer focus:outline-none">
-                    <div id="hsts-bg" class="w-11 h-6 bg-gray-200 dark:bg-gray-800 rounded-full transition-colors duration-200 ease-in-out"></div>
-                    <div id="hsts-knob" class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out"></div>
-                </button>
+                <div class="flex items-center justify-between gap-3 px-3.5 py-3 bg-white dark:bg-[#0a0a0a]">
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white">Tulis &amp; ubah file</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI bisa membuat file baru dan mengubah isi file</p>
+                  </div>
+                  <button type="button" onclick="toggleScope('write')" class="relative w-11 h-6 flex-shrink-0 cursor-pointer focus:outline-none" aria-label="Izinkan tulis file">
+                    <div id="sw-write-bg" class="w-11 h-6 rounded-full transition-colors duration-200"></div>
+                    <div id="sw-write-knob" class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200"></div>
+                  </button>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-3.5 py-3 bg-white dark:bg-[#0a0a0a]">
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white">Hapus file</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI bisa menghapus file atau folder di workspace</p>
+                  </div>
+                  <button type="button" onclick="toggleScope('delete')" class="relative w-11 h-6 flex-shrink-0 cursor-pointer focus:outline-none" aria-label="Izinkan hapus file">
+                    <div id="sw-delete-bg" class="w-11 h-6 rounded-full transition-colors duration-200"></div>
+                    <div id="sw-delete-knob" class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200"></div>
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <!-- 3. Status Sertifikat SSL -->
-            <div class="py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div class="min-w-0 flex-1">
-                    <h4 class="text-base font-bold text-gray-900 tracking-tight">Status Sertifikat SSL</h4>
-                    <p class="text-sm text-gray-500 mt-1">Sertifikat enkripsi TLS/SSL yang aktif untuk domain Anda</p>
-                </div>
-                <div class="w-full sm:w-80 flex items-center gap-3">
-                    <span id="ssl-status-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/50">
-                        <span id="ssl-status-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                        <span id="ssl-status-text">Memuat...</span>
-                    </span>
-                    <span id="ssl-valid-text" class="text-xs text-gray-500 font-medium">mengambil status...</span>
-                </div>
+            <div>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">URL + Token (aplikasi 2 kolom saja)</p>
+              <div class="flex items-center gap-1 p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-[#0f0f0f]">
+                <code id="mcp-url-token" class="flex-1 text-[11px] font-mono text-gray-700 dark:text-gray-300 break-all select-all"></code>
+                <button type="button" onclick="copyMcpText(mcpState.urlToken, this)" class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-500 transition-colors cursor-pointer" title="Salin URL + token"><svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M5 15.4A2 2 0 0 1 3.6 14V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 1.4"></path></svg><span>Salin</span></button>
+              </div>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Untuk aplikasi yang cuma sediain kolom nama + URL server (tanpa kolom token). Token udah nempel di URL, jadi gak perlu header Authorization.</p>
             </div>
 
-            <!-- 4. Min TLS Version (Menggunakan Popover Preferensi) -->
-            <div class="py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div class="min-w-0 flex-1">
-                    <h4 class="text-base font-bold text-gray-900 tracking-tight">Versi Minimum TLS</h4>
-                    <p class="text-sm text-gray-500 mt-1">Standar protokol enkripsi minimum yang diizinkan untuk klien</p>
-                </div>
-                <div class="w-full sm:w-80 relative">
-                    <div class="custom-select-trigger flex items-center justify-between w-full px-4 py-3 text-sm rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleDropdown(this, 'tls', ['TLS 1.3 (Direkomendasikan)', 'TLS 1.2'])">
-                        <div class="flex items-center gap-2.5 min-w-0">
-                            <i data-lucide="shield-check" class="w-4 h-4 text-gray-500 shrink-0"></i>
-                            <span id="label-tls" class="font-medium truncate">TLS 1.3 (Direkomendasikan)</span>
-                        </div>
-                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-200 pointer-events-none shrink-0"></i>
-                    </div>
-                </div>
+            <div>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Konfigurasi Klien</p>
+              <div class="relative">
+                <pre id="mcp-config" class="p-3 pr-12 rounded-xl bg-gray-900 dark:bg-black text-gray-100 text-[11px] leading-relaxed font-mono overflow-x-auto whitespace-pre"></pre>
+                <button type="button" onclick="copyMcpText(document.getElementById('mcp-config').textContent, this)" class="absolute top-2.5 right-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-white/10 text-gray-300 hover:text-white hover:bg-white/20 transition-colors cursor-pointer" title="Salin konfigurasi"><svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M5 15.4A2 2 0 0 1 3.6 14V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 1.4"></path></svg><span>Salin</span></button>
+              </div>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Tempel ke pengaturan MCP aplikasi AI kamu (Cursor/Windsurf: file mcp.json). Untuk klien yang belum mendukung server remote, gunakan wrapper mcp-remote.</p>
             </div>
 
+            <div>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Tools untuk AI</p>
+              <div id="mcp-tools" class="flex flex-wrap gap-1.5"></div>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-100 dark:border-slate-700/60">
+              <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">Akses bersifat real-time: perubahan yang dilakukan AI luar langsung tersimpan di workspace proyek ini. "Putuskan semua akses" mencabut token sepenuhnya.</p>
+            </div>
+          </div>
         </div>
-    </main>
+      </div>
+</main>
+  </div>
+  
+    <script>if (window.lucide) { lucide.createIcons(); }</script>
 
-    <!-- Modal Dialog Sistem -->
-    <div id="system-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeModal()"></div>
-        <div class="bg-white dark:bg-[#0a0a0a] rounded-2xl p-6 w-full max-w-sm relative z-10 shadow-2xl border border-gray-100 dark:border-gray-800">
-            <h3 id="modal-title" class="text-lg font-bold text-gray-900 dark:text-white mb-2"></h3>
-            <p id="modal-message" class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed"></p>
-            <button onclick="closeModal()" class="w-full py-3 bg-black dark:bg-white text-white dark:text-black rounded-xl font-semibold text-sm hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">Tutup</button>
-        </div>
-    </div>
+<script>
+// ===== Server MCP: Clincoo sebagai penyedia server MCP per proyek =====
+var MCP_TOKEN_API = (['app.clincoo.buzz','clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) !== -1) ? '/api/mcp-token' : 'https://app.clincoo.buzz/api/mcp-token';
+var _mcpUserToken = '';
+try { _mcpUserToken = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+function _mcpPid() { try { return localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) { return ''; } }
 
-    <script src="../../../js/api.js"></script>
-    
-    <!-- Header Sesuai Preferensi -->
+var mcpState = { active: false, token: '', scopes: { read: true, write: false, delete: false }, created_at: null, url: '', urlToken: '' };
+var mcpTokenVisible = false;
 
-    <!-- Modal Dialog Sistem -->
-    <script>
-        // Render Lucide Icons
-        lucide.createIcons();
+var _mcpToastTimer = null;
+function mcpToast(msg) {
+  var el = document.getElementById('mcp-toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.remove('opacity-0', 'translate-y-2');
+  if (_mcpToastTimer) clearTimeout(_mcpToastTimer);
+  _mcpToastTimer = setTimeout(function () { el.classList.add('opacity-0', 'translate-y-2'); }, 2200);
+}
 
-        // --- Logika Popover Dropdown Preferensi ---
-        function toggleDropdown(element, targetId, optionsArray) {
-            const wrapper = element.parentElement;
-            const existingDropdown = wrapper.querySelector('.custom-dropdown-menu');
-            
-            closeAllDropdowns();
+function mcpEndpointUrl() {
+  return 'https://app.clincoo.buzz/api/mcp?project_id=' + encodeURIComponent(_mcpPid() || '');
+}
 
-            if (existingDropdown) return; 
+async function mcpRequest(method, body) {
+  var headers = { 'Authorization': 'Bearer ' + (_mcpUserToken || '') };
+  if (body) headers['Content-Type'] = 'application/json';
+  var r = await fetch(MCP_TOKEN_API + '?project_id=' + encodeURIComponent(_mcpPid() || ''), {
+    method: method, headers: headers, body: body ? JSON.stringify(body) : undefined
+  });
+  return r.json().catch(function () { return {}; });
+}
 
-            const labelEl = document.getElementById('label-' + targetId);
-            const currentValue = labelEl ? labelEl.textContent.trim() : '';
-            
-            const dropdown = document.createElement('div');
-            dropdown.className = 'custom-dropdown-menu absolute top-full left-0 w-full mt-1 z-50 bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden flex flex-col fade-in';
-            
-            let optionsHtml = '';
-            optionsArray.forEach(option => {
-                const isActive = option === currentValue;
-                optionsHtml += `
-                    <div class="w-full px-4 py-3 text-left text-sm font-medium transition-colors cursor-pointer flex items-center justify-between ${isActive ? 'bg-gray-50 text-black dark:bg-gray-800 dark:text-white' : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}" onclick="selectOption(event, '${targetId}', '${option}')">
-                        <span>${option}</span>
-                        ${isActive ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}
-                    </div>
-                `;
-            });
-            
-            dropdown.innerHTML = optionsHtml;
-            wrapper.appendChild(dropdown);
-            
-            const chevron = element.querySelector('[data-lucide="chevron-down"]');
-            if(chevron) chevron.classList.add('rotate-180');
-            
-            lucide.createIcons();
+function applyScopeSwitch(key) {
+  var bg = document.getElementById('sw-' + key + '-bg');
+  var knob = document.getElementById('sw-' + key + '-knob');
+  if (!bg || !knob) return;
+  var on = mcpState.scopes[key] !== false;
+  if (on) {
+    bg.className = 'w-11 h-6 bg-blue-500 rounded-full transition-colors duration-200';
+    knob.classList.add('translate-x-5');
+  } else {
+    bg.className = 'w-11 h-6 bg-gray-200 dark:bg-slate-700 rounded-full transition-colors duration-200';
+    knob.classList.remove('translate-x-5');
+  }
+}
 
-            setTimeout(() => {
-                document.addEventListener('click', outsideClickListener);
-            }, 10);
+function renderMcpTools() {
+  var wrap = document.getElementById('mcp-tools');
+  if (!wrap) return;
+  var defs = [
+    ['list_items', null],
+    ['read_file', 'read'],
+    ['write_file', 'write'],
+    ['delete_item', 'delete'],
+    ['get_project_info', null]
+  ];
+  wrap.innerHTML = defs.map(function (d) {
+    var enabled = !d[1] || mcpState.scopes[d[1]] !== false;
+    return '<span class="inline-flex items-center px-2 py-0.5 text-[11px] font-mono rounded-full ' +
+      (enabled ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-gray-500') +
+      '">' + d[0] + (enabled ? '' : ' (nonaktif)') + '</span>';
+  }).join('');
+}
+
+function renderMcp() {
+  var inactive = document.getElementById('mcp-inactive');
+  var active = document.getElementById('mcp-active');
+  var badge = document.getElementById('mcp-status-badge');
+  if (badge) {
+    badge.textContent = mcpState.active ? 'Aktif' : 'Belum aktif';
+    badge.className = 'hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ' +
+      (mcpState.active ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300');
+  }
+  var loading = document.getElementById('mcp-loading');
+  if (loading) loading.style.display = 'none';
+  var show = function (el, on) {
+    if (!el) return;
+    el.classList.remove('mcp-anim');
+    el.style.display = on ? 'flex' : 'none';
+    if (on) { void el.offsetWidth; el.classList.add('mcp-anim'); }
+  };
+  show(inactive, !mcpState.active);
+  show(active, mcpState.active);
+  if (!mcpState.active) return;
+  mcpState.url = mcpEndpointUrl();
+  mcpState.urlToken = mcpState.url + '&token=' + encodeURIComponent(mcpState.token || '');
+  var urlEl = document.getElementById('mcp-url');
+  if (urlEl) urlEl.textContent = mcpState.url;
+  var urlTokEl = document.getElementById('mcp-url-token');
+  if (urlTokEl) urlTokEl.textContent = mcpState.urlToken;
+  var tkEl = document.getElementById('mcp-token');
+  if (tkEl) {
+    tkEl.textContent = mcpTokenVisible ? mcpState.token : (mcpState.token ? mcpState.token.slice(0, 6) + '••••••••••••' + mcpState.token.slice(-4) : '');
+  }
+  var cfg = document.getElementById('mcp-config');
+  if (cfg) {
+    cfg.textContent = JSON.stringify({
+      mcpServers: {
+        clincoo: {
+          url: mcpState.url,
+          headers: { Authorization: 'Bearer ' + mcpState.token }
         }
+      }
+    }, null, 2);
+  }
+  applyScopeSwitch('read');
+  applyScopeSwitch('write');
+  applyScopeSwitch('delete');
+  renderMcpTools();
+}
 
-        function closeAllDropdowns() {
-            const openDropdowns = document.querySelectorAll('.custom-dropdown-menu');
-            openDropdowns.forEach(dropdown => {
-                const chevron = dropdown.parentElement.querySelector('.rotate-180');
-                if(chevron) chevron.classList.remove('rotate-180');
-                dropdown.remove();
-            });
-            document.removeEventListener('click', outsideClickListener);
-        }
+// ===== Cache lokal: refresh gak loading terus — state terakhir langsung tampil,
+// lalu dicegarkan diam-diam di background (cuma kalau memang berubah). =====
+function _mcpCacheKey() { return 'clinqoo_mcp_' + (_mcpPid() || 'none'); }
+function _mcpCacheRead() { try { return JSON.parse(localStorage.getItem(_mcpCacheKey()) || 'null'); } catch (e) { return null; } }
+function _mcpCacheWrite(d) {
+  try { localStorage.setItem(_mcpCacheKey(), JSON.stringify({ token: d.token, scopes: d.scopes || { read: true, write: false, delete: false }, created_at: d.created_at || null, ts: Date.now() })); } catch (e) {}
+}
+function _mcpCacheClear() { try { localStorage.removeItem(_mcpCacheKey()); } catch (e) {} }
 
-        function outsideClickListener(e) {
-            if (!e.target.closest('.custom-select-trigger') && !e.target.closest('.custom-dropdown-menu')) {
-                closeAllDropdowns();
-            }
-        }
+async function loadMcp() {
+  // 1) Ada cache? Tampilin LANGSUNG tanpa skeleton.
+  var cached = _mcpCacheRead();
+  if (cached && cached.token && _mcpPid()) {
+    mcpState.active = true;
+    mcpState.token = cached.token;
+    mcpState.scopes = cached.scopes || { read: true, write: false, delete: false };
+    mcpState.created_at = cached.created_at || null;
+    renderMcp();
+    // 2) Cegarkan diam-diam: gak ada skeleton, UI gak berkedip.
+    //    Cukup tiap 10 menit; lebih baru dari itu percuma (datanya sama terus).
+    if (Date.now() - (cached.ts || 0) < 10 * 60 * 1000) return;
+    try {
+      var r = await mcpRequest('GET');
+      if (r && r.token) { _mcpCacheWrite(r); mcpState.scopes = r.scopes || mcpState.scopes; mcpState.created_at = r.created_at || mcpState.created_at; renderMcp(); }
+      else if (r && (r.error === 'Token MCP tidak valid atau sudah dicabut untuk proyek ini' || r.revoked)) { _mcpCacheClear(); mcpState.active = false; mcpState.token = ''; renderMcp(); }
+      else if (r && r.not_found) { _mcpCacheClear(); mcpState.active = false; mcpState.token = ''; renderMcp(); }
+    } catch (e) { /* offline/lelet: tetap pakai cache */ }
+    return;
+  }
+  // 3) Gak ada cache: ambil seperti biasa (skeleton), lalu simpan.
+  var d = await mcpRequest('GET');
+  if (d && d.token) {
+    mcpState.active = true;
+    mcpState.token = d.token;
+    mcpState.scopes = d.scopes || { read: true, write: false, delete: false };
+    mcpState.created_at = d.created_at || null;
+    _mcpCacheWrite(d);
+  } else {
+    mcpState.active = false;
+    mcpState.token = '';
+  }
+  renderMcp();
+}
 
-        function selectOption(event, targetId, value) {
-            event.stopPropagation();
-            const label = document.getElementById('label-' + targetId);
-            if (label) {
-                label.textContent = value;
-            }
-            closeAllDropdowns();
-            // Simpan versi TLS minimum ke backend
-            if (targetId === 'tls' && typeof ClinqooAPI !== 'undefined' && ClinqooAPI.updateSecurity) {
-                ClinqooAPI.updateSecurity('min_tls', value.indexOf('1.2') !== -1 ? '1.2' : '1.3').catch(e => console.warn('Gagal menyimpan min_tls:', e));
-            }
-        }
+async function activateMcp() {
+  var btn = document.getElementById('mcp-activate-btn');
+  var orig = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.style.opacity = '0.75';
+    btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path></svg><span>Mengaktifkan\u2026</span>';
+  }
+  var d;
+  try { d = await mcpRequest('POST', { project_id: _mcpPid(), scopes: { read: true, write: false, delete: false } }); }
+  catch (e) { d = null; }
+  if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.innerHTML = orig; }
+  if (d && d.token) {
+    mcpState.active = true;
+    mcpState.token = d.token;
+    mcpState.scopes = d.scopes || mcpState.scopes;
+    mcpState.created_at = d.created_at || mcpState.created_at;
+    _mcpCacheWrite(d);
+    renderMcp();
+    mcpToast('Server MCP aktif');
+  } else {
+    mcpToast((d && d.error) ? d.error : 'Gagal mengaktifkan server MCP');
+  }
+}
 
-        // --- Logika Switch Toggle ---
-        // Peta id toggle -> kunci setting di backend
-        const SECURITY_KEYS = { forceHttps: 'force_https', hsts: 'hsts' };
-        function toggleSwitch(idPrefix) {
-            const bg = document.getElementById(idPrefix + '-bg');
-            const knob = document.getElementById(idPrefix + '-knob');
-            
-            const isActive = bg.classList.contains('bg-black') || bg.classList.contains('bg-white');
-            
-            if (isActive) {
-                bg.className = 'w-11 h-6 bg-gray-200 dark:bg-gray-800 rounded-full transition-colors duration-200 ease-in-out';
-                knob.className = 'absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out';
-            } else {
-                bg.className = 'w-11 h-6 bg-black dark:bg-white rounded-full transition-colors duration-200 ease-in-out';
-                knob.className = 'absolute left-0.5 top-0.5 bg-white dark:bg-black w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out translate-x-5';
-            }
-            // Simpan perubahan ke backend (bukan sekadar tampilan)
-            const newActive = !isActive;
-            const key = SECURITY_KEYS[idPrefix];
-            if (key && typeof ClinqooAPI !== 'undefined' && ClinqooAPI.updateSecurity) {
-                ClinqooAPI.updateSecurity(key, newActive ? '1' : '0').catch(e => console.warn('Gagal menyimpan ' + key + ':', e));
-            }
-        }
+async function regenerateMcp() {
+  if (!confirm('Buat ulang token? Token lama langsung tidak berlaku.')) return;
+  var d = await mcpRequest('POST', { project_id: _mcpPid(), scopes: mcpState.scopes });
+  if (d && d.token) {
+    mcpState.token = d.token;
+    mcpState.scopes = d.scopes || mcpState.scopes;
+    _mcpCacheWrite(d);
+    mcpTokenVisible = true;
+    renderMcp();
+    mcpToast('Token baru dibuat');
+  } else {
+    mcpToast((d && d.error) ? d.error : 'Gagal membuat ulang token');
+  }
+}
 
-        // API Integration
-        async function loadSecuritySettings() {
-            try {
-                if (typeof ClinqooAPI !== 'undefined' && ClinqooAPI.getSecurity) {
-                    const data = await ClinqooAPI.getSecurity();
-                    const settings = data.settings || {};
-                    if (settings.force_https === '0') {
-                        const bg = document.getElementById('forceHttps-bg');
-                        const knob = document.getElementById('forceHttps-knob');
-                        bg.className = 'w-11 h-6 bg-gray-200 dark:bg-gray-800 rounded-full transition-colors duration-200 ease-in-out';
-                        knob.className = 'absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out';
-                    }
-                    if (settings.hsts === '1') {
-                        const bg = document.getElementById('hsts-bg');
-                        const knob = document.getElementById('hsts-knob');
-                        bg.className = 'w-11 h-6 bg-black dark:bg-white rounded-full transition-colors duration-200 ease-in-out';
-                        knob.className = 'absolute left-0.5 top-0.5 bg-white dark:bg-black w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out translate-x-5';
-                    }
-                    if (settings.min_tls) {
-                        const label = document.getElementById('label-tls');
-                        if (label) label.textContent = settings.min_tls === '1.2' ? 'TLS 1.2' : 'TLS 1.3 (Direkomendasikan)';
-                    }
-                }
-            } catch (e) { console.error('Security settings load failed:', e); }
-        }
+async function revokeMcp() {
+  if (!confirm('Putuskan semua akses? AI luar tidak akan bisa mengakses proyek ini lagi sampai kamu mengaktifkan ulang.')) return;
+  var d = await mcpRequest('DELETE');
+  if (d && d.ok) {
+    mcpState.active = false;
+    _mcpCacheClear();
+    mcpState.token = '';
+    mcpTokenVisible = false;
+    renderMcp();
+    mcpToast('Akses diputuskan');
+  } else {
+    mcpToast((d && d.error) ? d.error : 'Gagal memutuskan akses');
+  }
+}
 
-        // Modal Helpers
-        function showModal(title, message) {
-        return;
-    }
+async function toggleScope(key) {
+  if (!mcpState.active) return;
+  var next = {};
+  ['read', 'write', 'delete'].forEach(function (k) { next[k] = k === key ? mcpState.scopes[k] === false : mcpState.scopes[k] !== false; });
+  mcpState.scopes = next;
+  renderMcp();
+  var d = await mcpRequest('PATCH', { project_id: _mcpPid(), scopes: next });
+  if (d && d.ok) {
+    mcpToast('Izin diperbarui');
+  } else {
+    mcpState.scopes = next;
+    renderMcp();
+    mcpToast((d && d.error) ? d.error : 'Gagal menyimpan izin');
+  }
+}
 
-        function closeModal() {
-            const modal = document.getElementById('system-modal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
+function toggleMcpTokenVisible() {
+  mcpTokenVisible = !mcpTokenVisible;
+  renderMcp();
+}
 
-        loadSecuritySettings();
-        loadSslStatus();
+function copyMcpText(text, btn) {
+  if (!text) return;
+  var done = function () {
+    mcpToast('Disalin');
+    if (!btn || !btn.innerHTML) return;
+    if (!btn._orig) btn._orig = btn.innerHTML;
+    btn.innerHTML = '<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg><span>Tersalin</span>';
+    if (btn._t) clearTimeout(btn._t);
+    btn._t = setTimeout(function () { btn.innerHTML = btn._orig; }, 1800);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(function () { mcpCopyFallback(text, done); });
+  } else {
+    mcpCopyFallback(text, done);
+  }
+}
+function mcpCopyFallback(text, done) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); done(); } catch (e) {}
+  ta.remove();
+}
 
-        // Status sertifikat SSL dari data deployment nyata (Cloudflare Pages selalu otomatis HTTPS)
-        async function loadSslStatus() {
-            const badge = document.getElementById('ssl-status-badge');
-            const dot = document.getElementById('ssl-status-dot');
-            const text = document.getElementById('ssl-status-text');
-            const valid = document.getElementById('ssl-valid-text');
-            if (!badge || !text || !valid) return;
-            let st = null;
-            try {
-                if (typeof ClinqooAPI !== 'undefined' && ClinqooAPI.getDeployInfo) st = await ClinqooAPI.getDeployInfo();
-            } catch (e) { st = null; }
-            const dep = st && st.last_deployment;
-            const ok = dep && ['success', 'active'].includes(dep.status);
-            const activeDomain = (st && (st.domains || []).find(d => d.status === 'active') || {}).name || '';
-            if (ok) {
-                text.textContent = 'Aktif';
-                valid.textContent = 'Otomatis oleh Cloudflare — ' + (activeDomain || (st.public_url || '').replace(/^https?:\/\//, '').replace(/\/$/, '') || 'domain situs Anda');
-            } else if (st && dep) {
-                badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/50';
-                dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500';
-                text.textContent = 'Menunggu';
-                valid.textContent = 'Deployment terakhir belum aktif — jalankan deploy lagi';
-            } else {
-                badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-gray-800/60 dark:text-gray-400 border border-gray-200/60 dark:border-gray-700/50';
-                dot.className = 'w-1.5 h-1.5 rounded-full bg-gray-400';
-                text.textContent = 'Belum ada situs';
-                valid.textContent = 'Deploy proyek untuk mendapat SSL otomatis';
-            }
-        }
-    </script>
+document.addEventListener('DOMContentLoaded', loadMcp);
+</script>
+
+
 
     <script>/* clinqoo-sw-register */
     if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../sw.js').catch(function () {}); }); }
@@ -621,6 +733,11 @@
         document.addEventListener('click', function(e) {
             if (headerMoreMenu.classList.contains('open') && !headerMoreMenu.contains(e.target) && e.target !== headerMoreBtn) closeHeaderMenu();
         });
+        // Menu titik-3 (popover di bawah header) juga tutup otomatis saat halaman discroll —
+        // window fase capture menangkap scroll dari elemen apa pun (scroll gak bubble).
+        window.addEventListener('scroll', function() {
+            if (headerMoreMenu.classList.contains('open')) closeHeaderMenu();
+        }, { capture: true, passive: true });
         window.chatExportZip = function () {
     closeHeaderMenu();
     var pid = ''; try { pid = localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) {}
@@ -879,5 +996,6 @@ window.chatLivePreview = function () {
   }).catch(function(){});
 })();
 </script>
+<div id="mcp-toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] px-4 py-2 rounded-full bg-black text-white text-sm font-medium shadow-lg opacity-0 translate-y-2 transition-all duration-200 pointer-events-none">Tersimpan</div>
 </body>
 </html>

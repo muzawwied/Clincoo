@@ -2,94 +2,59 @@
 <html lang="id">
 <head>
 <script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
-  <script src="../../../js/auth-client.js?v=4"></script>
   <script src="../../../js/accent-init.js"></script>
 <script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
     <link rel="manifest" href="../../../manifest.json">
     <link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
-    <title>Pengaturan: Keamanan HTTPS — Clincoo</title>
-    <meta name="description" content="Pengaturan: Keamanan HTTPS — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+  <title>Pengaturan: Email — Clincoo</title>
+    <meta name="description" content="Pengaturan: Email — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
     <meta name="robots" content="noindex">
     <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Clincoo">
-    <meta property="og:title" content="Pengaturan: Keamanan HTTPS — Clincoo">
-    <meta property="og:description" content="Pengaturan: Keamanan HTTPS — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:title" content="Pengaturan: Email — Clincoo">
+    <meta property="og:description" content="Pengaturan: Email — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Clincoo">
     <meta property="og:url" content="https://app.clincoo.buzz/">
     <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Pengaturan: Keamanan HTTPS — Clincoo">
-    <meta name="twitter:description" content="Pengaturan: Keamanan HTTPS — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:title" content="Pengaturan: Email — Clincoo">
+    <meta name="twitter:description" content="Pengaturan: Email — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
     <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
-    
-    <!-- Dependencies -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <style>
-        /* Base styles */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #ffffff;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        
-        /* Dark Mode Configuration */
-        body.dark-mode { background-color: #000000; color: #ffffff; }
-        body.dark-mode .bg-white { background-color: #0a0a0a !important; }
-        
-        /* Header Buttons Dark Mode */
-        body.dark-mode button[onclick="history.back()"],
-        body.dark-mode header button[onclick]:not(.header-menu-item) {
-            background-color: #000000 !important;
-            border: 1.5px solid rgba(255,255,255,0.4) !important;
-            color: #ffffff !important;
-        }
-        body.dark-mode button[onclick="history.back()"] svg,
-        body.dark-mode header button[onclick]:not(.header-menu-item) svg { stroke: #ffffff !important; }
-        body.dark-mode button[onclick="history.back()"]:hover,
-        body.dark-mode header button[onclick]:not(.header-menu-item):hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
-        
-        /* Typography & Borders Dark Mode */
-        body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #ffffff !important; }
-        body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 { color: #888888 !important; }
-        body.dark-mode .border-gray-100, body.dark-mode .border-gray-200, body.dark-mode .border-gray-300 { border-color: #222222 !important; }
-        body.dark-mode header { background-color: #000000 !important; border-color: #222222 !important; }
-        body.dark-mode .bg-\[#ffffff\], body.dark-mode .bg-gray-50 { background-color: #000000 !important; }
-        body.dark-mode .bg-gray-100 { background-color: #111111 !important; }
-        body.dark-mode .hover\:bg-gray-50:hover, body.dark-mode .hover\:bg-gray-100:hover { background-color: #1a1a1a !important; }
-        
-        /* Inputs & Buttons Custom Dark Mode */
-        body.dark-mode input[type="text"], 
-        body.dark-mode textarea, 
-        body.dark-mode .custom-select-trigger, 
-        body.dark-mode .custom-dropdown-menu { 
-            background-color: #0a0a0a; 
-            color: #ffffff; 
-            border-color: #222222; 
-        }
-        body.dark-mode input[type="text"]:focus, body.dark-mode textarea:focus { border-color: #555555; }
-        body.dark-mode .bg-black.text-white { background-color: #ffffff !important; color: #000000 !important; }
-        body.dark-mode .hover\:bg-gray-800:hover { background-color: #dddddd !important; }
-
-        /* Animation Utilities */
-        .fade-in { animation: fadeIn 0.3s ease-in-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Hide scrollbar */
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    /* auto-dark-fix v1 */
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { display: none; width: 0; height: 0; background: transparent; }
+    * { -ms-overflow-style: none; scrollbar-width: none; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    body.dark-mode { background-color: #000000; color: #e0e0e0; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800 { color: #f0f0f0; }
+    body.dark-mode .text-gray-700 { color: #b0b0b0; }
+    body.dark-mode .text-gray-500, body.dark-mode .text-gray-600 { color: #888888; }
+    body.dark-mode .text-gray-400 { color: #666666; }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode header button[onclick="history.back()"], body.dark-mode header button[aria-label="Kembali"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
+    body.dark-mode header button[onclick="history.back()"] svg, body.dark-mode header button[aria-label="Kembali"] svg { color: #ffffff !important; stroke: #ffffff !important; }
+    body.dark-mode header button[onclick="history.back()"]:hover, body.dark-mode header button[aria-label="Kembali"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
+    body.dark-mode .bg-gray-50 { background-color: #222222 !important; }
+    body.dark-mode .bg-gray-100 { background-color: #222222 !important; }
+    body.dark-mode .border-gray-200, body.dark-mode .border-gray-100 { border-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-200:hover { background-color: #222222 !important; }
+    body.dark-mode input, body.dark-mode select, body.dark-mode textarea { background-color: #0a0a0a; color: #ffffff; border-color: #222222; }
+    body.dark-mode input:focus, body.dark-mode select:focus, body.dark-mode textarea:focus { border-color: #222222; outline: none; }
+    body.dark-mode header { background-color: #000000 !important; }
+    body.dark-mode .bg-black { background-color: #ffffff !important; color: #000000 !important; }
+  /* auto-dark-fix v1 */
     body.dark-mode .bg-gray-50\/80 { background-color: #141414 !important; }
     body.dark-mode .bg-gray-200 { background-color: #262626 !important; }
     body.dark-mode .bg-gray-300 { background-color: #333333 !important; }
@@ -166,7 +131,15 @@
         body.dark-mode .header-menu-item svg { color: #9ca3af; }
         @media (max-width: 384px) { #sidebar-toggle, #header-more-btn { width: 38px; height: 38px; } }
         @media (max-width: 330px) { #sidebar-toggle, #header-more-btn { width: 34px; height: 34px; } .chat-nav-link { padding-left: 0.5rem; padding-right: 0.5rem; } }
+      /* Animasi & skeleton halaman Pembayaran */
+    @keyframes payFadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .pay-fade { animation: payFadeUp .35s ease both; }
+    @keyframes payShimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+    .pay-skel { background: linear-gradient(90deg, rgba(0,0,0,.06) 25%, rgba(0,0,0,.12) 37%, rgba(0,0,0,.06) 63%); background-size: 400% 100%; animation: payShimmer 1.2s ease infinite; }
+    .dark-mode .pay-skel { background: linear-gradient(90deg, rgba(255,255,255,.06) 25%, rgba(255,255,255,.12) 37%, rgba(255,255,255,.06) 63%); background-size: 400% 100%; }
     </style>
+
+  <script>(function(){var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var isDark=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(isDark)document.documentElement.classList.add('dark-mode');})();</script>
 <!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
 <script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';var tm=document.querySelector('meta[name="theme-color"]');if(tm){tm.setAttribute('content','#0a0a0a');}}}catch(e){}})();</script>
 
@@ -185,16 +158,9 @@
 <script src="../../../js/i18n-dict.js" defer></script>
 <script src="../../../js/i18n.js" defer></script>
 </head>
-<body class="min-h-screen flex flex-col text-gray-900 relative hide-scrollbar">
-    <script>
-        (function(){
-            var t=localStorage.getItem("clinqoo_theme");
-            var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);
-            if(isDark){document.body.classList.add("dark-mode");}
-        })();
-    </script>
-    
-    <!-- Header Sesuai Preferensi -->
+<body class="text-gray-900 antialiased h-screen w-full overflow-hidden relative bg-white">
+  <script>(function(){var t=localStorage.getItem("clinqoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+  <div class="w-full h-full overflow-y-auto hide-scrollbar flex flex-col items-center">
     <header class="fixed top-0 left-0 right-0 z-30 px-3 pt-3 pointer-events-none flex justify-between items-center">
         <button id="sidebar-toggle" type="button" class="pointer-events-auto flex-shrink-0 flex items-center justify-center text-[#222222] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:text-black hover:bg-gray-100 transition-all rounded-full w-11 h-11" aria-label="Kembali ke Beranda">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -216,11 +182,6 @@
                 </svg>
             </button>
             <div id="header-more-menu" class="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 p-1.5 flex-col gap-0.5 opacity-0 invisible translate-y-1 pointer-events-none transition-all duration-200 z-50 hidden">
-                <a id="header-live-url" href="/proyek/live/" target="_blank" rel="noopener" onclick="var __pid='';try{__pid=localStorage.getItem('clinqoo_current_project_id')||''}catch(e){}if(__pid){this.href='/proyek/live/?id='+encodeURIComponent(__pid)}" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
-                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path stroke-linecap="round" stroke-linejoin="round" d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                    Live URL proyek
-                    <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg>
-                </a>
                 <button id="header-live-preview" type="button" onclick="chatLivePreview()" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
                     <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2 12a10 10 0 1 0 20 0 10 10 0 0 0-20 0M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"></path></svg>
                     Live preview
@@ -245,9 +206,7 @@
             </div>
         </div>
     </header>
-
-    <!-- Area Utama Konten -->
-    <main class="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 pt-20 pb-24 relative">
+    <main class="w-full max-w-5xl px-4 sm:px-6 pt-20 pb-24">
     <style>
         #settings-menu-pop.open { display: flex; }
         .settings-menu-item { cursor: pointer; }
@@ -262,12 +221,12 @@
     <div class="relative mb-5 -mx-2.5 sm:-mx-[70px] sm:max-w-[860px]" id="settings-menu-wrap">
             <button id="settings-menu-btn" type="button" onclick="toggleSettingsMenu(event)" class="w-full flex items-center justify-between rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-800 shadow-sm transition-all">
                 <span class="flex items-center gap-2.5">
-                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                    Keamanan &amp; HTTPS
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"></path></svg>
+                    Email
                 </span>
                 <svg id="settings-menu-chev" class="w-4 h-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
             </button>
-            <div id="settings-menu-pop" class="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-12px)] sm:w-[860px] mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-1 flex-col gap-px z-40 hidden">
+            <div id="settings-menu-pop" class="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-12px)] sm:w-[860px] mt-0 bg-white rounded-2xl shadow-xl border border-gray-100 p-1 flex-col gap-px z-40 hidden">
                                 <a href="/proyek/dashboard/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Umum</span><span class="block text-xs text-gray-400 truncate">Nama, deskripsi, dan runtime aplikasi</span></span>
@@ -286,13 +245,13 @@
                 </a>
                 <a href="/proyek/pengaturan/integrasi-webhook/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17H7a5 5 0 1 1 0-10h2M15 7h2a5 5 0 1 1 0 10h-2M8 12h8"></path></svg>
-                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Integrasi &amp; Webhook</span><span class="block text-xs text-gray-400 truncate">Integrasi layanan luar dan webhooks</span></span>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Webhook</span><span class="block text-xs text-gray-400 truncate">Notifikasi event lewat webhook</span></span>
                 </a>
 <a href="/proyek/pengaturan/integrasi-ai/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 5.7a2 2 0 001.4 1.4L21 12l-5.7 1.9a2 2 0 00-1.4 1.4L12 21l-1.9-5.7a2 2 0 00-1.4-1.4L3 12l5.7-1.9a2 2 0 001.4-1.4L12 3z"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Integrasi AI</span><span class="block text-xs text-gray-400 truncate">AI Router: model dan secret per proyek</span></span>
                 </a>
-                <a href="/proyek/pengaturan/server-mcp/" class="settings-menu-item flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left rounded-lg transition-colors text-left">
+                <a href="/proyek/pengaturan/server-mcp/" class="settings-menu-item settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.01M6 18h.01"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Server MCP</span><span class="block text-xs text-gray-400 truncate">Sambungkan proyek ke platform AI lain (MCP)</span></span>
                 </a>
@@ -340,248 +299,298 @@
     })();
     </script>
 
-        <div class="w-full flex flex-col divide-y divide-gray-200 dark:divide-gray-800">
-            
-            <!-- 1. Paksa HTTPS -->
-            <div class="py-6 flex items-center justify-between gap-4">
-                <div class="min-w-0 flex-1">
-                    <h4 class="text-base font-bold text-gray-900 tracking-tight">Paksa HTTPS</h4>
-                    <p class="text-sm text-gray-500 mt-1">Redirect semua permintaan HTTP ke HTTPS secara otomatis</p>
+            <div class="w-full flex flex-col divide-y divide-gray-200 dark:divide-slate-700/60">
+        <div class="py-5">
+          <div class="flex items-start sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <h4 class="text-base font-semibold text-gray-900 dark:text-white">Email</h4>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kirim email otomatis dari situs deploy-mu lewat Clincoo Email API — form kontak, notifikasi, dan verifikasi.</p>
+            </div>
+          </div>
+
+          <!-- Belum aktif (gaya empty state ala Pembayaran) -->
+          <div id="email-inactive" class="py-10 flex flex-col items-center justify-center text-center">
+            <svg class="w-10 h-10 text-gray-300 dark:text-slate-600 mb-3 mx-auto" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"></path></svg>
+            <p id="email-empty-title" class="text-sm font-medium text-gray-500 dark:text-gray-400">Email proyek ini belum aktif</p>
+            <p id="email-empty-desc" class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Aktifkan untuk mendapatkan API key per proyek — kuota 1.000 email/bulan, pengirim domain sendiri, dan halaman kirim email.</p>
+            <button type="button" onclick="activateEmail()" id="email-activate-btn" class="mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Aktifkan Email</button>
+            <a id="email-login-btn" href="/auth/" class="hidden mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2">Masuk ke Clincoo</a>
+          </div>
+
+          <!-- Aktif: flat, tanpa card -->
+          <div id="email-active" class="hidden flex-col">
+            <div class="py-4 border-b border-gray-100 dark:border-slate-800">
+              <p class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Pengaturan pengirim</p>
+              <div class="grid sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Nama pengirim</label>
+                  <input id="email-from-name" type="text" placeholder="Nama aplikasi" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                  <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5">Tidak boleh memakai nama/identitas tim Clincoo.</p>
                 </div>
-                <button type="button" onclick="toggleSwitch('forceHttps')" class="relative flex-shrink-0 cursor-pointer focus:outline-none">
-                    <div id="forceHttps-bg" class="w-11 h-6 bg-black dark:bg-white rounded-full transition-colors duration-200 ease-in-out"></div>
-                    <div id="forceHttps-knob" class="absolute left-0.5 top-0.5 bg-white dark:bg-black w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out translate-x-5"></div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Email tujuan form kontak</label>
+                  <input id="email-contact-to" type="email" placeholder="email@pemilik-proyek.com" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                </div>
+              </div>
+              <button type="button" onclick="saveSenderSettings()" id="email-save-btn" class="mt-4 px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Simpan Pengirim</button>
+            </div>
+
+            <div class="py-4 border-b border-gray-100 dark:border-slate-800">
+              <p class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Email kustom (domain sendiri)</p>
+              <div class="grid sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Alamat pengirim domainmu</label>
+                  <input id="email-sender-email" type="email" placeholder="halo@domainmu.com" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Kunci API Brevo-mu</label>
+                  <input id="email-sender-key" type="password" placeholder="xkeysib-..." class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                  <p id="email-custom-status" class="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5">Kosongkan alamat untuk kembali ke pengirim default.</p>
+                </div>
+              </div>
+              <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2.5">Verifikasi domainmu dulu di akun Brevo-mu sendiri (pengirim &amp; domain). Email lalu dikirim atas nama domainmu, bukan Clincoo.</p>
+            </div>
+
+            <div class="py-4 border-b border-gray-100 dark:border-slate-800">
+              <div class="flex items-center justify-between mb-3">
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">API Key</p>
+                <div class="flex gap-2">
+                  <button type="button" onclick="copyEmailKey()" class="px-3.5 py-2 text-xs font-medium border border-gray-200 dark:border-slate-700 rounded-full hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">Salin</button>
+                  <button type="button" onclick="regenerateEmailKey()" class="px-3.5 py-2 text-xs font-medium border border-gray-200 dark:border-slate-700 rounded-full hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">Buat Ulang</button>
+                  <button type="button" onclick="revokeEmailKey()" class="px-3.5 py-2 text-xs font-medium border border-gray-200 dark:border-slate-700 rounded-full hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">Cabut</button>
+                </div>
+              </div>
+              <div id="email-key-box" class="font-mono text-xs bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-gray-600 dark:text-gray-300 truncate">clc_email_••••••••••••</div>
+              <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2">Kunci ini dipakai di header <span class="font-mono">Authorization: Bearer</span> — satu kunci hanya untuk proyek ini.</p>
+            </div>
+
+            <div class="py-4 border-b border-gray-100 dark:border-slate-800">
+              <div class="flex items-center justify-between mb-3">
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">Kuota bulan ini</p>
+                <span id="email-quota" class="text-xs text-gray-500 dark:text-gray-400">0 / 1.000</span>
+              </div>
+              <div class="h-1.5 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div id="email-quota-bar" class="h-full bg-gray-900 dark:bg-white rounded-full transition-all" style="width:0%"></div>
+              </div>
+              <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2">Dihitung langsung dari histori pengiriman bulan berjalan.</p>
+            </div>
+
+            <div class="py-4 border-b border-gray-100 dark:border-slate-800">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <p class="text-sm font-semibold text-gray-900 dark:text-white">Kirim email</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Kelola dan kirim email proyek ini — tabel histori lengkap.</p>
+                </div>
+                <a href="/proyek/pengaturan/email/kirim/" class="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center gap-2 whitespace-nowrap">Buka
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12l-7.5 7.5M21 12H3"/></svg>
+                </a>
+              </div>
+            </div>
+
+            <div class="py-4">
+              <p class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Dokumentasi API</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Satu endpoint untuk semua kebutuhan email situs deploy-mu.</p>
+              <div class="relative bg-gray-50 dark:bg-slate-900 rounded-xl p-4 pr-12 overflow-x-auto">
+                <button type="button" onclick="copyDocs()" title="Salin dokumentasi" class="absolute top-2.5 right-2.5 w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                  <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.255.332 1.711.744.456.412.703.951.703 1.516v10.75a2.25 2.25 0 01-2.25 2.25h-6.75a2.25 2.25 0 01-2.25-2.25V6.75c0-.565.247-1.104.703-1.516.456-.412 1.065-.695 1.711-.744m-3.088 0A.75.75 0 016 4.5v0a.75.75 0 01.75-.75h.5m8.75 0h.5a.75.75 0 01.75.75v0a.75.75 0 01-.084.338m-8.166 0c.055-.194.084-.4.084-.612v0a.75.75 0 00-.084-.338"/></svg>
                 </button>
-            </div>
+                <pre id="email-docs-pre" class="text-[11px] leading-relaxed font-mono text-gray-700 dark:text-gray-300 whitespace-pre">POST https://app.clincoo.buzz/api/email
+Content-Type: application/json
 
-            <!-- 2. HSTS -->
-            <div class="py-6 flex items-center justify-between gap-4">
-                <div class="min-w-0 flex-1">
-                    <h4 class="text-base font-bold text-gray-900 tracking-tight">HSTS (HTTP Strict Transport Security)</h4>
-                    <p class="text-sm text-gray-500 mt-1">Perlindungan ekstra untuk memaksa browser menggunakan koneksi aman</p>
-                </div>
-                <button type="button" onclick="toggleSwitch('hsts')" class="relative flex-shrink-0 cursor-pointer focus:outline-none">
-                    <div id="hsts-bg" class="w-11 h-6 bg-gray-200 dark:bg-gray-800 rounded-full transition-colors duration-200 ease-in-out"></div>
-                    <div id="hsts-knob" class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out"></div>
-                </button>
+{ "action": "send",
+  "api_key": "<span id="email-docs-key" class="text-gray-900 dark:text-white">clc_email_••••••••••••</span>",
+  "to": "pelanggan@contoh.com",
+  "subject": "Pesanan diterima",
+  "html": "&lt;h1&gt;Terima kasih!&lt;/h1&gt;&lt;p&gt;Pesananmu sedang diproses.&lt;/p&gt;",
+  "reply_to": "kamu@domainmu.com" }</pre>
+              </div>
+              <div class="mt-3 grid gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <p><span class="font-medium text-gray-700 dark:text-gray-300">api_key</span> — API key proyek (bisa juga dikirim via header <span class="font-mono">Authorization: Bearer</span>).</p>
+                <p><span class="font-medium text-gray-700 dark:text-gray-300">to</span> — alamat tujuan.</p>
+                <p><span class="font-medium text-gray-700 dark:text-gray-300">subject</span> — subjek email.</p>
+                <p><span class="font-medium text-gray-700 dark:text-gray-300">html</span> — isi email dalam HTML.</p>
+                <p><span class="font-medium text-gray-700 dark:text-gray-300">reply_to</span> — opsional, alamat balasan pelanggan.</p>
+              </div>
             </div>
-
-            <!-- 3. Status Sertifikat SSL -->
-            <div class="py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div class="min-w-0 flex-1">
-                    <h4 class="text-base font-bold text-gray-900 tracking-tight">Status Sertifikat SSL</h4>
-                    <p class="text-sm text-gray-500 mt-1">Sertifikat enkripsi TLS/SSL yang aktif untuk domain Anda</p>
-                </div>
-                <div class="w-full sm:w-80 flex items-center gap-3">
-                    <span id="ssl-status-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/50">
-                        <span id="ssl-status-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                        <span id="ssl-status-text">Memuat...</span>
-                    </span>
-                    <span id="ssl-valid-text" class="text-xs text-gray-500 font-medium">mengambil status...</span>
-                </div>
-            </div>
-
-            <!-- 4. Min TLS Version (Menggunakan Popover Preferensi) -->
-            <div class="py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div class="min-w-0 flex-1">
-                    <h4 class="text-base font-bold text-gray-900 tracking-tight">Versi Minimum TLS</h4>
-                    <p class="text-sm text-gray-500 mt-1">Standar protokol enkripsi minimum yang diizinkan untuk klien</p>
-                </div>
-                <div class="w-full sm:w-80 relative">
-                    <div class="custom-select-trigger flex items-center justify-between w-full px-4 py-3 text-sm rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleDropdown(this, 'tls', ['TLS 1.3 (Direkomendasikan)', 'TLS 1.2'])">
-                        <div class="flex items-center gap-2.5 min-w-0">
-                            <i data-lucide="shield-check" class="w-4 h-4 text-gray-500 shrink-0"></i>
-                            <span id="label-tls" class="font-medium truncate">TLS 1.3 (Direkomendasikan)</span>
-                        </div>
-                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-200 pointer-events-none shrink-0"></i>
-                    </div>
-                </div>
-            </div>
-
+          </div>
         </div>
-    </main>
 
-    <!-- Modal Dialog Sistem -->
-    <div id="system-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeModal()"></div>
-        <div class="bg-white dark:bg-[#0a0a0a] rounded-2xl p-6 w-full max-w-sm relative z-10 shadow-2xl border border-gray-100 dark:border-gray-800">
-            <h3 id="modal-title" class="text-lg font-bold text-gray-900 dark:text-white mb-2"></h3>
-            <p id="modal-message" class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed"></p>
-            <button onclick="closeModal()" class="w-full py-3 bg-black dark:bg-white text-white dark:text-black rounded-xl font-semibold text-sm hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">Tutup</button>
-        </div>
-    </div>
+      </div>
 
-    <script src="../../../js/api.js"></script>
-    
-    <!-- Header Sesuai Preferensi -->
+      <footer class="w-full py-5 text-center text-xs text-gray-400 dark:text-gray-500">
+        Penggunaan Clincoo Email API tunduk pada <a href="https://blog.clincoo.buzz/legal/syarat-ketentuan/" target="_blank" rel="noopener" class="underline hover:text-gray-600 dark:hover:text-gray-300">Syarat &amp; Ketentuan</a> dan <a href="https://blog.clincoo.buzz/legal/kebijakan-privasi/" target="_blank" rel="noopener" class="underline hover:text-gray-600 dark:hover:text-gray-300">Kebijakan Privasi</a> Clincoo.
+      </footer>
 
-    <!-- Modal Dialog Sistem -->
-    <script>
-        // Render Lucide Icons
-        lucide.createIcons();
+</main>
+  </div>
+  <script>
+    let isEdited=false;function showActionButtons(){if(!isEdited){isEdited=true;const c=document.getElementById('action-buttons');c.classList.remove('hidden');c.classList.add('flex');void c.offsetWidth;c.classList.remove('opacity-0');c.classList.add('opacity-100');}}function cancelChanges(){window.location.reload();}function saveChanges(){showActionButtons();}document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('input,textarea,select').forEach(input=>{input.addEventListener('input',showActionButtons);input.addEventListener('change',showActionButtons);});});function toggleSwitch(idPrefix){showActionButtons();const bg=document.getElementById(idPrefix+'-bg');const knob=document.getElementById(idPrefix+'-knob');if(bg.classList.contains('bg-blue-500')){bg.classList.replace('bg-blue-500','bg-gray-200');bg.classList.add('dark:bg-slate-700');knob.classList.remove('translate-x-5');}else{bg.classList.remove('bg-gray-200','dark:bg-slate-700');bg.classList.add('bg-blue-500');knob.classList.add('translate-x-5');}}
+  </script>
+    <script>if (window.lucide) { lucide.createIcons(); }</script>
 
-        // --- Logika Popover Dropdown Preferensi ---
-        function toggleDropdown(element, targetId, optionsArray) {
-            const wrapper = element.parentElement;
-            const existingDropdown = wrapper.querySelector('.custom-dropdown-menu');
-            
-            closeAllDropdowns();
+<script>
+  // ===== Email: pengaturan pengirim, API key, kuota, log — Clincoo Email API =====
+  var API_BASE = (['clincoo-be2.pages.dev','app.clincoo.buzz','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://app.clincoo.buzz/api' : '/api';
+  var _apiToken = '';
+  try { _apiToken = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+  function _pid() { try { return localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) { return ''; } }
+  function _hdrs() { return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _apiToken }; }
 
-            if (existingDropdown) return; 
+  // Cache config per proyek — refresh tampil instan tanpa flash ke empty state.
+  function _emailCacheKey() { return 'clincoo_email_' + _pid(); }
+  function _readEmailCache() { try { return JSON.parse(localStorage.getItem(_emailCacheKey()) || 'null'); } catch (e) { return null; } }
+  function _clearEmailCache() { try { localStorage.removeItem(_emailCacheKey()); } catch (e) {} }
 
-            const labelEl = document.getElementById('label-' + targetId);
-            const currentValue = labelEl ? labelEl.textContent.trim() : '';
-            
-            const dropdown = document.createElement('div');
-            dropdown.className = 'custom-dropdown-menu absolute top-full left-0 w-full mt-1 z-50 bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden flex flex-col fade-in';
-            
-            let optionsHtml = '';
-            optionsArray.forEach(option => {
-                const isActive = option === currentValue;
-                optionsHtml += `
-                    <div class="w-full px-4 py-3 text-left text-sm font-medium transition-colors cursor-pointer flex items-center justify-between ${isActive ? 'bg-gray-50 text-black dark:bg-gray-800 dark:text-white' : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}" onclick="selectOption(event, '${targetId}', '${option}')">
-                        <span>${option}</span>
-                        ${isActive ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}
-                    </div>
-                `;
-            });
-            
-            dropdown.innerHTML = optionsHtml;
-            wrapper.appendChild(dropdown);
-            
-            const chevron = element.querySelector('[data-lucide="chevron-down"]');
-            if(chevron) chevron.classList.add('rotate-180');
-            
-            lucide.createIcons();
+  function emailToast(msg, ok) {
+    var t = document.getElementById('email-toast');
+    if (!t) { return; }
+    t.textContent = msg;
+    t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full text-xs font-medium shadow-lg transition-opacity duration-300 ' + (ok ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-gray-800 text-white dark:bg-slate-700 dark:text-gray-100');
+    t.style.opacity = '1';
+    clearTimeout(window._emailToastT);
+    window._emailToastT = setTimeout(function () { t.style.opacity = '0'; }, 2800);
+  }
 
-            setTimeout(() => {
-                document.addEventListener('click', outsideClickListener);
-            }, 10);
-        }
 
-        function closeAllDropdowns() {
-            const openDropdowns = document.querySelectorAll('.custom-dropdown-menu');
-            openDropdowns.forEach(dropdown => {
-                const chevron = dropdown.parentElement.querySelector('.rotate-180');
-                if(chevron) chevron.classList.remove('rotate-180');
-                dropdown.remove();
-            });
-            document.removeEventListener('click', outsideClickListener);
-        }
+  function renderEmailInactive() {
+    _clearEmailCache();
+    var act = document.getElementById('email-activate-btn');
+    var lg = document.getElementById('email-login-btn');
+    document.getElementById('email-empty-title').textContent = 'Email proyek ini belum aktif';
+    document.getElementById('email-empty-desc').textContent = 'Aktifkan untuk mendapatkan API key per proyek — kuota 1.000 email/bulan, pengirim domain sendiri, dan halaman kirim email.';
+    act.classList.remove('hidden'); act.disabled = false; act.textContent = 'Aktifkan Email';
+    lg.classList.add('hidden');
+    document.getElementById('email-inactive').classList.remove('hidden');
+    var a = document.getElementById('email-active');
+    a.classList.add('hidden'); a.classList.remove('flex');
+  }
 
-        function outsideClickListener(e) {
-            if (!e.target.closest('.custom-select-trigger') && !e.target.closest('.custom-dropdown-menu')) {
-                closeAllDropdowns();
-            }
-        }
+  // 401: belum login di origin ini — tampilkan CTA masuk, bukan tombol aktifkan.
+  function renderEmailLogin() {
+    _clearEmailCache();
+    var act = document.getElementById('email-activate-btn');
+    var lg = document.getElementById('email-login-btn');
+    document.getElementById('email-empty-title').textContent = 'Masuk dulu untuk mengelola email';
+    document.getElementById('email-empty-desc').textContent = 'Pengaturan email terhubung ke akun Clincoo Anda agar API key proyek tetap aman.';
+    act.classList.add('hidden');
+    lg.classList.remove('hidden');
+    lg.href = '/auth/?next=' + encodeURIComponent(location.pathname + location.search);
+    document.getElementById('email-inactive').classList.remove('hidden');
+    var a = document.getElementById('email-active');
+    a.classList.add('hidden'); a.classList.remove('flex');
+  }
 
-        function selectOption(event, targetId, value) {
-            event.stopPropagation();
-            const label = document.getElementById('label-' + targetId);
-            if (label) {
-                label.textContent = value;
-            }
-            closeAllDropdowns();
-            // Simpan versi TLS minimum ke backend
-            if (targetId === 'tls' && typeof ClinqooAPI !== 'undefined' && ClinqooAPI.updateSecurity) {
-                ClinqooAPI.updateSecurity('min_tls', value.indexOf('1.2') !== -1 ? '1.2' : '1.3').catch(e => console.warn('Gagal menyimpan min_tls:', e));
-            }
-        }
+  function renderEmailActive(cfg) {
+    document.getElementById('email-inactive').classList.add('hidden');
+    var a = document.getElementById('email-active');
+    a.classList.remove('hidden'); a.classList.add('flex');
+    if (cfg.from_name) document.getElementById('email-from-name').value = cfg.from_name;
+    if (cfg.contact_to) document.getElementById('email-contact-to').value = cfg.contact_to;
+    document.getElementById('email-sender-email').value = cfg.sender_email || '';
+    document.getElementById('email-sender-key').value = '';
+    document.getElementById('email-custom-status').textContent = cfg.sender_email
+      ? (cfg.has_custom_key ? 'Pengirim kustom aktif dari domainmu sendiri.' : 'Kunci API Brevo belum tersimpan — isi untuk mengaktifkan kirim dari domainmu.')
+      : 'Kosongkan alamat untuk kembali ke pengirim default.';
+    if (cfg.api_key) document.getElementById('email-key-box').textContent = cfg.api_key;
+    document.getElementById('email-docs-key').textContent = cfg.api_key || 'clc_email_••••••••••••';
+    var used = cfg.used || 0, limit = cfg.limit || 1000;
+    document.getElementById('email-quota').textContent = used.toLocaleString('id-ID') + ' / ' + limit.toLocaleString('id-ID');
+    document.getElementById('email-quota-bar').style.width = Math.min(100, Math.round(used / limit * 100)) + '%';
+    try { localStorage.setItem(_emailCacheKey(), JSON.stringify(cfg)); } catch (e) {}
+  }
 
-        // --- Logika Switch Toggle ---
-        // Peta id toggle -> kunci setting di backend
-        const SECURITY_KEYS = { forceHttps: 'force_https', hsts: 'hsts' };
-        function toggleSwitch(idPrefix) {
-            const bg = document.getElementById(idPrefix + '-bg');
-            const knob = document.getElementById(idPrefix + '-knob');
-            
-            const isActive = bg.classList.contains('bg-black') || bg.classList.contains('bg-white');
-            
-            if (isActive) {
-                bg.className = 'w-11 h-6 bg-gray-200 dark:bg-gray-800 rounded-full transition-colors duration-200 ease-in-out';
-                knob.className = 'absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out';
-            } else {
-                bg.className = 'w-11 h-6 bg-black dark:bg-white rounded-full transition-colors duration-200 ease-in-out';
-                knob.className = 'absolute left-0.5 top-0.5 bg-white dark:bg-black w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out translate-x-5';
-            }
-            // Simpan perubahan ke backend (bukan sekadar tampilan)
-            const newActive = !isActive;
-            const key = SECURITY_KEYS[idPrefix];
-            if (key && typeof ClinqooAPI !== 'undefined' && ClinqooAPI.updateSecurity) {
-                ClinqooAPI.updateSecurity(key, newActive ? '1' : '0').catch(e => console.warn('Gagal menyimpan ' + key + ':', e));
-            }
-        }
+  function loadEmailConfig() {
+    var cached = _readEmailCache();
+    if (cached && cached.active) renderEmailActive(cached); // tampil instan dari cache
+    fetch(API_BASE + '/email?action=config&project_id=' + encodeURIComponent(_pid()), { headers: _hdrs() })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(renderEmailActive)
+      .catch(function (e) {
+        var st = (e && typeof e === 'object') ? e.status : e;
+        if (st === 401) { renderEmailLogin(); }
+        else if (st === 404) { renderEmailInactive(); }
+        else if (!cached) { renderEmailInactive(); }
+        // error jaringan lain: pertahankan tampilan cache, jangan jatuh ke empty
+      });
+  }
 
-        // API Integration
-        async function loadSecuritySettings() {
-            try {
-                if (typeof ClinqooAPI !== 'undefined' && ClinqooAPI.getSecurity) {
-                    const data = await ClinqooAPI.getSecurity();
-                    const settings = data.settings || {};
-                    if (settings.force_https === '0') {
-                        const bg = document.getElementById('forceHttps-bg');
-                        const knob = document.getElementById('forceHttps-knob');
-                        bg.className = 'w-11 h-6 bg-gray-200 dark:bg-gray-800 rounded-full transition-colors duration-200 ease-in-out';
-                        knob.className = 'absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out';
-                    }
-                    if (settings.hsts === '1') {
-                        const bg = document.getElementById('hsts-bg');
-                        const knob = document.getElementById('hsts-knob');
-                        bg.className = 'w-11 h-6 bg-black dark:bg-white rounded-full transition-colors duration-200 ease-in-out';
-                        knob.className = 'absolute left-0.5 top-0.5 bg-white dark:bg-black w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out translate-x-5';
-                    }
-                    if (settings.min_tls) {
-                        const label = document.getElementById('label-tls');
-                        if (label) label.textContent = settings.min_tls === '1.2' ? 'TLS 1.2' : 'TLS 1.3 (Direkomendasikan)';
-                    }
-                }
-            } catch (e) { console.error('Security settings load failed:', e); }
-        }
+  function _emailPost(action, body, onOk) {
+    var payload = Object.assign({ action: action, project_id: _pid() }, body || {});
+    return fetch(API_BASE + '/email', { method: 'POST', headers: _hdrs(), body: JSON.stringify(payload) })
+      .then(function (r) {
+        return r.ok ? r.json() : r.json().catch(function () { return {}; }).then(function (j) {
+          return Promise.reject({ status: r.status, error: j.error || '' });
+        });
+      })
+      .then(onOk || function () {});
+  }
 
-        // Modal Helpers
-        function showModal(title, message) {
-        return;
-    }
+  function activateEmail() {
+    var btn = document.getElementById('email-activate-btn');
+    btn.disabled = true; btn.textContent = 'Mengaktifkan…';
+    _emailPost('activate')
+      .then(function () { emailToast('Email proyek ini diaktifkan', true); loadEmailConfig(); })
+      .catch(function (e) {
+        btn.disabled = false; btn.textContent = 'Aktifkan Email';
+        var st = e && e.status ? e : { status: e, error: '' };
+        if (st.status === 401) { renderEmailLogin(); emailToast('Masuk dulu untuk mengaktifkan email', false); }
+        else emailToast(st.error || 'Gagal mengaktifkan email (' + st.status + ')', false);
+      });
+  }
 
-        function closeModal() {
-            const modal = document.getElementById('system-modal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
+  function saveSenderSettings() {
+    var btn = document.getElementById('email-save-btn');
+    btn.disabled = true; btn.textContent = 'Menyimpan…';
+    _emailPost('sender', {
+      from_name: document.getElementById('email-from-name').value.trim(),
+      contact_to: document.getElementById('email-contact-to').value.trim(),
+      sender_email: document.getElementById('email-sender-email').value.trim(),
+      sender_key: document.getElementById('email-sender-key').value.trim()
+    }).then(function () {
+      btn.disabled = false; btn.textContent = 'Simpan Pengirim';
+      emailToast('Pengaturan pengirim tersimpan', true);
+      loadEmailConfig();
+    }).catch(function (e) {
+      btn.disabled = false; btn.textContent = 'Simpan Pengirim';
+      if (e && e.status === 401) { renderEmailLogin(); return; }
+      emailToast(e && e.error ? e.error : 'Gagal menyimpan pengaturan (' + (e && e.status) + ')', false);
+    });
+  }
 
-        loadSecuritySettings();
-        loadSslStatus();
+  function copyEmailKey() {
+    var key = document.getElementById('email-key-box').textContent.trim();
+    if (!key || key.indexOf('clc_email_') !== 0) { emailToast('Belum ada API key aktif', false); return; }
+    navigator.clipboard.writeText(key).then(function () { emailToast('API key disalin', true); });
+  }
 
-        // Status sertifikat SSL dari data deployment nyata (Cloudflare Pages selalu otomatis HTTPS)
-        async function loadSslStatus() {
-            const badge = document.getElementById('ssl-status-badge');
-            const dot = document.getElementById('ssl-status-dot');
-            const text = document.getElementById('ssl-status-text');
-            const valid = document.getElementById('ssl-valid-text');
-            if (!badge || !text || !valid) return;
-            let st = null;
-            try {
-                if (typeof ClinqooAPI !== 'undefined' && ClinqooAPI.getDeployInfo) st = await ClinqooAPI.getDeployInfo();
-            } catch (e) { st = null; }
-            const dep = st && st.last_deployment;
-            const ok = dep && ['success', 'active'].includes(dep.status);
-            const activeDomain = (st && (st.domains || []).find(d => d.status === 'active') || {}).name || '';
-            if (ok) {
-                text.textContent = 'Aktif';
-                valid.textContent = 'Otomatis oleh Cloudflare — ' + (activeDomain || (st.public_url || '').replace(/^https?:\/\//, '').replace(/\/$/, '') || 'domain situs Anda');
-            } else if (st && dep) {
-                badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/50';
-                dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500';
-                text.textContent = 'Menunggu';
-                valid.textContent = 'Deployment terakhir belum aktif — jalankan deploy lagi';
-            } else {
-                badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-gray-800/60 dark:text-gray-400 border border-gray-200/60 dark:border-gray-700/50';
-                dot.className = 'w-1.5 h-1.5 rounded-full bg-gray-400';
-                text.textContent = 'Belum ada situs';
-                valid.textContent = 'Deploy proyek untuk mendapat SSL otomatis';
-            }
-        }
-    </script>
+  function copyDocs() {
+    var pre = document.getElementById('email-docs-pre');
+    if (!pre) return;
+    navigator.clipboard.writeText(pre.innerText).then(function () { emailToast('Dokumentasi disalin', true); });
+  }
+
+  function regenerateEmailKey() {
+    if (!confirm('Buat ulang API key? Kunci lama langsung tidak berlaku.')) return;
+    _emailPost('regenerate').then(function (cfg) {
+      if (cfg.api_key) document.getElementById('email-key-box').textContent = cfg.api_key;
+      document.getElementById('email-docs-key').textContent = cfg.api_key || 'clc_email_••••••••••••';
+      emailToast('API key baru diterbitkan', true);
+    }).catch(function (e) { emailToast(e && e.error ? e.error : 'Gagal membuat ulang key (' + (e && e.status || e) + ')', false); });
+  }
+
+  function revokeEmailKey() {
+    if (!confirm('Cabut API key? Situs deploy-mu akan gagal kirim email.')) return;
+    _emailPost('revoke').then(function () {
+      document.getElementById('email-key-box').textContent = 'clc_email_••••••••••••';
+      document.getElementById('email-docs-key').textContent = 'clc_email_••••••••••••';
+      emailToast('API key dicabut', true);
+    }).catch(function (e) { emailToast(e && e.error ? e.error : 'Gagal mencabut key (' + (e && e.status || e) + ')', false); });
+  }
+
+
+  document.addEventListener('DOMContentLoaded', loadEmailConfig);
+</script>
+
 
     <script>/* clinqoo-sw-register */
     if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../sw.js').catch(function () {}); }); }
@@ -879,5 +888,21 @@ window.chatLivePreview = function () {
   }).catch(function(){});
 })();
 </script>
+
+<div id="withdraw-modal" class="fixed inset-0 z-[70] hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="w-full max-w-sm p-5 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-xl">
+    <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1">Tarik Saldo</h3>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Saldo tersedia: <span id="wd-avail" class="font-semibold text-gray-900 dark:text-white">Rp 0</span></p>
+    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Nominal (min. Rp 10.000)</label>
+    <input id="wd-amount" type="number" min="10000" step="1000" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 mb-4" placeholder="Contoh: 50000">
+    <div class="flex gap-3 justify-end">
+      <button type="button" onclick="closeWithdrawModal()" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer">Batal</button>
+      <button type="button" id="wd-submit" onclick="submitWithdraw()" class="px-4 py-2 text-sm font-semibold text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-xl shadow-sm transition-colors cursor-pointer">Kirim Permintaan</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="email-toast" style="opacity:0" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full text-xs font-medium shadow-lg transition-opacity duration-300 pointer-events-none"></div>
 </body>
 </html>

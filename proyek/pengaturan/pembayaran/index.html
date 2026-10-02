@@ -2,94 +2,59 @@
 <html lang="id">
 <head>
 <script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
-  <script src="../../../js/auth-client.js?v=4"></script>
   <script src="../../../js/accent-init.js"></script>
 <script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
     <link rel="manifest" href="../../../manifest.json">
     <link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
-    <title>Pengaturan: Keamanan HTTPS — Clincoo</title>
-    <meta name="description" content="Pengaturan: Keamanan HTTPS — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+  <title>Pengaturan: Pembayaran — Clincoo</title>
+    <meta name="description" content="Pengaturan: Pembayaran — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
     <meta name="robots" content="noindex">
     <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Clincoo">
-    <meta property="og:title" content="Pengaturan: Keamanan HTTPS — Clincoo">
-    <meta property="og:description" content="Pengaturan: Keamanan HTTPS — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:title" content="Pengaturan: Pembayaran — Clincoo">
+    <meta property="og:description" content="Pengaturan: Pembayaran — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Clincoo">
     <meta property="og:url" content="https://app.clincoo.buzz/">
     <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Pengaturan: Keamanan HTTPS — Clincoo">
-    <meta name="twitter:description" content="Pengaturan: Keamanan HTTPS — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:title" content="Pengaturan: Pembayaran — Clincoo">
+    <meta name="twitter:description" content="Pengaturan: Pembayaran — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
     <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
-    
-    <!-- Dependencies -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <style>
-        /* Base styles */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #ffffff;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        
-        /* Dark Mode Configuration */
-        body.dark-mode { background-color: #000000; color: #ffffff; }
-        body.dark-mode .bg-white { background-color: #0a0a0a !important; }
-        
-        /* Header Buttons Dark Mode */
-        body.dark-mode button[onclick="history.back()"],
-        body.dark-mode header button[onclick]:not(.header-menu-item) {
-            background-color: #000000 !important;
-            border: 1.5px solid rgba(255,255,255,0.4) !important;
-            color: #ffffff !important;
-        }
-        body.dark-mode button[onclick="history.back()"] svg,
-        body.dark-mode header button[onclick]:not(.header-menu-item) svg { stroke: #ffffff !important; }
-        body.dark-mode button[onclick="history.back()"]:hover,
-        body.dark-mode header button[onclick]:not(.header-menu-item):hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
-        
-        /* Typography & Borders Dark Mode */
-        body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #ffffff !important; }
-        body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 { color: #888888 !important; }
-        body.dark-mode .border-gray-100, body.dark-mode .border-gray-200, body.dark-mode .border-gray-300 { border-color: #222222 !important; }
-        body.dark-mode header { background-color: #000000 !important; border-color: #222222 !important; }
-        body.dark-mode .bg-\[#ffffff\], body.dark-mode .bg-gray-50 { background-color: #000000 !important; }
-        body.dark-mode .bg-gray-100 { background-color: #111111 !important; }
-        body.dark-mode .hover\:bg-gray-50:hover, body.dark-mode .hover\:bg-gray-100:hover { background-color: #1a1a1a !important; }
-        
-        /* Inputs & Buttons Custom Dark Mode */
-        body.dark-mode input[type="text"], 
-        body.dark-mode textarea, 
-        body.dark-mode .custom-select-trigger, 
-        body.dark-mode .custom-dropdown-menu { 
-            background-color: #0a0a0a; 
-            color: #ffffff; 
-            border-color: #222222; 
-        }
-        body.dark-mode input[type="text"]:focus, body.dark-mode textarea:focus { border-color: #555555; }
-        body.dark-mode .bg-black.text-white { background-color: #ffffff !important; color: #000000 !important; }
-        body.dark-mode .hover\:bg-gray-800:hover { background-color: #dddddd !important; }
-
-        /* Animation Utilities */
-        .fade-in { animation: fadeIn 0.3s ease-in-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Hide scrollbar */
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    /* auto-dark-fix v1 */
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { display: none; width: 0; height: 0; background: transparent; }
+    * { -ms-overflow-style: none; scrollbar-width: none; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    body.dark-mode { background-color: #000000; color: #e0e0e0; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800 { color: #f0f0f0; }
+    body.dark-mode .text-gray-700 { color: #b0b0b0; }
+    body.dark-mode .text-gray-500, body.dark-mode .text-gray-600 { color: #888888; }
+    body.dark-mode .text-gray-400 { color: #666666; }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode header button[onclick="history.back()"], body.dark-mode header button[aria-label="Kembali"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
+    body.dark-mode header button[onclick="history.back()"] svg, body.dark-mode header button[aria-label="Kembali"] svg { color: #ffffff !important; stroke: #ffffff !important; }
+    body.dark-mode header button[onclick="history.back()"]:hover, body.dark-mode header button[aria-label="Kembali"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
+    body.dark-mode .bg-gray-50 { background-color: #222222 !important; }
+    body.dark-mode .bg-gray-100 { background-color: #222222 !important; }
+    body.dark-mode .border-gray-200, body.dark-mode .border-gray-100 { border-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-200:hover { background-color: #222222 !important; }
+    body.dark-mode input, body.dark-mode select, body.dark-mode textarea { background-color: #0a0a0a; color: #ffffff; border-color: #222222; }
+    body.dark-mode input:focus, body.dark-mode select:focus, body.dark-mode textarea:focus { border-color: #222222; outline: none; }
+    body.dark-mode header { background-color: #000000 !important; }
+    body.dark-mode .bg-black { background-color: #ffffff !important; color: #000000 !important; }
+  /* auto-dark-fix v1 */
     body.dark-mode .bg-gray-50\/80 { background-color: #141414 !important; }
     body.dark-mode .bg-gray-200 { background-color: #262626 !important; }
     body.dark-mode .bg-gray-300 { background-color: #333333 !important; }
@@ -166,7 +131,15 @@
         body.dark-mode .header-menu-item svg { color: #9ca3af; }
         @media (max-width: 384px) { #sidebar-toggle, #header-more-btn { width: 38px; height: 38px; } }
         @media (max-width: 330px) { #sidebar-toggle, #header-more-btn { width: 34px; height: 34px; } .chat-nav-link { padding-left: 0.5rem; padding-right: 0.5rem; } }
+      /* Animasi & skeleton halaman Pembayaran */
+    @keyframes payFadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .pay-fade { animation: payFadeUp .35s ease both; }
+    @keyframes payShimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+    .pay-skel { background: linear-gradient(90deg, rgba(0,0,0,.06) 25%, rgba(0,0,0,.12) 37%, rgba(0,0,0,.06) 63%); background-size: 400% 100%; animation: payShimmer 1.2s ease infinite; }
+    .dark-mode .pay-skel { background: linear-gradient(90deg, rgba(255,255,255,.06) 25%, rgba(255,255,255,.12) 37%, rgba(255,255,255,.06) 63%); background-size: 400% 100%; }
     </style>
+
+  <script>(function(){var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var isDark=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(isDark)document.documentElement.classList.add('dark-mode');})();</script>
 <!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
 <script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';var tm=document.querySelector('meta[name="theme-color"]');if(tm){tm.setAttribute('content','#0a0a0a');}}}catch(e){}})();</script>
 
@@ -185,16 +158,9 @@
 <script src="../../../js/i18n-dict.js" defer></script>
 <script src="../../../js/i18n.js" defer></script>
 </head>
-<body class="min-h-screen flex flex-col text-gray-900 relative hide-scrollbar">
-    <script>
-        (function(){
-            var t=localStorage.getItem("clinqoo_theme");
-            var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);
-            if(isDark){document.body.classList.add("dark-mode");}
-        })();
-    </script>
-    
-    <!-- Header Sesuai Preferensi -->
+<body class="text-gray-900 antialiased h-screen w-full overflow-hidden relative bg-white">
+  <script>(function(){var t=localStorage.getItem("clinqoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+  <div class="w-full h-full overflow-y-auto hide-scrollbar flex flex-col items-center">
     <header class="fixed top-0 left-0 right-0 z-30 px-3 pt-3 pointer-events-none flex justify-between items-center">
         <button id="sidebar-toggle" type="button" class="pointer-events-auto flex-shrink-0 flex items-center justify-center text-[#222222] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:text-black hover:bg-gray-100 transition-all rounded-full w-11 h-11" aria-label="Kembali ke Beranda">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -216,11 +182,6 @@
                 </svg>
             </button>
             <div id="header-more-menu" class="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 p-1.5 flex-col gap-0.5 opacity-0 invisible translate-y-1 pointer-events-none transition-all duration-200 z-50 hidden">
-                <a id="header-live-url" href="/proyek/live/" target="_blank" rel="noopener" onclick="var __pid='';try{__pid=localStorage.getItem('clinqoo_current_project_id')||''}catch(e){}if(__pid){this.href='/proyek/live/?id='+encodeURIComponent(__pid)}" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
-                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path stroke-linecap="round" stroke-linejoin="round" d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                    Live URL proyek
-                    <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg>
-                </a>
                 <button id="header-live-preview" type="button" onclick="chatLivePreview()" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
                     <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2 12a10 10 0 1 0 20 0 10 10 0 0 0-20 0M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"></path></svg>
                     Live preview
@@ -245,9 +206,7 @@
             </div>
         </div>
     </header>
-
-    <!-- Area Utama Konten -->
-    <main class="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 pt-20 pb-24 relative">
+    <main class="w-full max-w-5xl px-4 sm:px-6 pt-20 pb-24">
     <style>
         #settings-menu-pop.open { display: flex; }
         .settings-menu-item { cursor: pointer; }
@@ -262,12 +221,12 @@
     <div class="relative mb-5 -mx-2.5 sm:-mx-[70px] sm:max-w-[860px]" id="settings-menu-wrap">
             <button id="settings-menu-btn" type="button" onclick="toggleSettingsMenu(event)" class="w-full flex items-center justify-between rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-800 shadow-sm transition-all">
                 <span class="flex items-center gap-2.5">
-                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                    Keamanan &amp; HTTPS
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                    Pembayaran
                 </span>
                 <svg id="settings-menu-chev" class="w-4 h-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
             </button>
-            <div id="settings-menu-pop" class="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-12px)] sm:w-[860px] mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-1 flex-col gap-px z-40 hidden">
+            <div id="settings-menu-pop" class="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-12px)] sm:w-[860px] mt-0 bg-white rounded-2xl shadow-xl border border-gray-100 p-1 flex-col gap-px z-40 hidden">
                                 <a href="/proyek/dashboard/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Umum</span><span class="block text-xs text-gray-400 truncate">Nama, deskripsi, dan runtime aplikasi</span></span>
@@ -286,13 +245,13 @@
                 </a>
                 <a href="/proyek/pengaturan/integrasi-webhook/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17H7a5 5 0 1 1 0-10h2M15 7h2a5 5 0 1 1 0 10h-2M8 12h8"></path></svg>
-                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Integrasi &amp; Webhook</span><span class="block text-xs text-gray-400 truncate">Integrasi layanan luar dan webhooks</span></span>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Webhook</span><span class="block text-xs text-gray-400 truncate">Notifikasi event lewat webhook</span></span>
                 </a>
 <a href="/proyek/pengaturan/integrasi-ai/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 5.7a2 2 0 001.4 1.4L21 12l-5.7 1.9a2 2 0 00-1.4 1.4L12 21l-1.9-5.7a2 2 0 00-1.4-1.4L3 12l5.7-1.9a2 2 0 001.4-1.4L12 3z"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Integrasi AI</span><span class="block text-xs text-gray-400 truncate">AI Router: model dan secret per proyek</span></span>
                 </a>
-                <a href="/proyek/pengaturan/server-mcp/" class="settings-menu-item flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left rounded-lg transition-colors text-left">
+                <a href="/proyek/pengaturan/server-mcp/" class="settings-menu-item settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.01M6 18h.01"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Server MCP</span><span class="block text-xs text-gray-400 truncate">Sambungkan proyek ke platform AI lain (MCP)</span></span>
                 </a>
@@ -340,248 +299,561 @@
     })();
     </script>
 
-        <div class="w-full flex flex-col divide-y divide-gray-200 dark:divide-gray-800">
-            
-            <!-- 1. Paksa HTTPS -->
-            <div class="py-6 flex items-center justify-between gap-4">
-                <div class="min-w-0 flex-1">
-                    <h4 class="text-base font-bold text-gray-900 tracking-tight">Paksa HTTPS</h4>
-                    <p class="text-sm text-gray-500 mt-1">Redirect semua permintaan HTTP ke HTTPS secara otomatis</p>
-                </div>
-                <button type="button" onclick="toggleSwitch('forceHttps')" class="relative flex-shrink-0 cursor-pointer focus:outline-none">
-                    <div id="forceHttps-bg" class="w-11 h-6 bg-black dark:bg-white rounded-full transition-colors duration-200 ease-in-out"></div>
-                    <div id="forceHttps-knob" class="absolute left-0.5 top-0.5 bg-white dark:bg-black w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out translate-x-5"></div>
-                </button>
+      <div class="w-full flex flex-col divide-y divide-gray-200 dark:divide-slate-700/60">
+        <div class="py-5">
+          <div class="flex items-start sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <h4 class="text-base font-semibold text-gray-900 dark:text-white">Pembayaran</h4>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Terima pembayaran QRIS di situs deploy-mu — dana masuk otomatis ke saldo ini.</p>
             </div>
+            <span id="pay-status-badge" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 whitespace-nowrap flex-shrink-0">Belum aktif</span>
+          </div>
 
-            <!-- 2. HSTS -->
-            <div class="py-6 flex items-center justify-between gap-4">
-                <div class="min-w-0 flex-1">
-                    <h4 class="text-base font-bold text-gray-900 tracking-tight">HSTS (HTTP Strict Transport Security)</h4>
-                    <p class="text-sm text-gray-500 mt-1">Perlindungan ekstra untuk memaksa browser menggunakan koneksi aman</p>
-                </div>
-                <button type="button" onclick="toggleSwitch('hsts')" class="relative flex-shrink-0 cursor-pointer focus:outline-none">
-                    <div id="hsts-bg" class="w-11 h-6 bg-gray-200 dark:bg-gray-800 rounded-full transition-colors duration-200 ease-in-out"></div>
-                    <div id="hsts-knob" class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out"></div>
-                </button>
+          <!-- Belum aktif (gaya empty state ala Server MCP) -->
+          <div id="pay-inactive" class="py-10 flex flex-col items-center justify-center text-center">
+            <svg class="w-10 h-10 text-gray-300 dark:text-slate-600 mb-3 mx-auto" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="13" rx="2"></rect><path stroke-linecap="round" d="M2 10h20M16 14h.01"></path></svg>
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Pembayaran proyek ini belum aktif</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Aktifkan untuk menerima pembayaran QRIS — saldo, tarik dana, dan riwayat transaksi akan muncul di sini.</p>
+            <button type="button" onclick="activatePay()" id="pay-activate-btn" class="mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Aktifkan Pembayaran</button>
+          </div>
+
+          <!-- Aktif -->
+          <div id="pay-active" class="hidden flex-col gap-5">
+            <div class="flex items-center justify-end">
+              <button type="button" id="pay-withdraw-btn" onclick="openWithdrawModal()" class="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-5-5m5 5l5-5M4 20h16"></path></svg>
+                Tarik Saldo
+              </button>
             </div>
-
-            <!-- 3. Status Sertifikat SSL -->
-            <div class="py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div class="min-w-0 flex-1">
-                    <h4 class="text-base font-bold text-gray-900 tracking-tight">Status Sertifikat SSL</h4>
-                    <p class="text-sm text-gray-500 mt-1">Sertifikat enkripsi TLS/SSL yang aktif untuk domain Anda</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div class="p-4 rounded-xl bg-black dark:bg-white text-white dark:text-black flex flex-col justify-between min-h-[92px]">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="text-xs opacity-70 font-medium">Saldo tersedia</p>
+                  <svg class="w-4 h-4 opacity-60 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h.01M11 15h2m-8-6h14a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a2 2 0 012-2z"></path></svg>
                 </div>
-                <div class="w-full sm:w-80 flex items-center gap-3">
-                    <span id="ssl-status-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/50">
-                        <span id="ssl-status-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                        <span id="ssl-status-text">Memuat...</span>
-                    </span>
-                    <span id="ssl-valid-text" class="text-xs text-gray-500 font-medium">mengambil status...</span>
+                <p id="pay-bal-available" class="text-2xl font-bold mt-1.5 font-mono">Rp 0</p>
+              </div>
+              <div class="p-4 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50/60 dark:bg-slate-800/40 flex flex-col justify-between min-h-[92px]">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Total masuk</p>
+                  <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 13l-5 5m0 0l-5-5m5 5V6"></path></svg>
                 </div>
+                <p id="pay-bal-paid" class="text-xl font-semibold mt-1.5 font-mono text-gray-900 dark:text-white">Rp 0</p>
+              </div>
+              <div class="p-4 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50/60 dark:bg-slate-800/40 flex flex-col justify-between min-h-[92px]">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Total ditarik</p>
+                  <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 11l5-5m0 0l5 5m-5-5v12"></path></svg>
+                </div>
+                <p id="pay-bal-withdrawn" class="text-xl font-semibold mt-1.5 font-mono text-gray-900 dark:text-white">Rp 0</p>
+              </div>
+              <div class="p-4 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50/60 dark:bg-slate-800/40 flex flex-col justify-between min-h-[92px]">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Total transaksi</p>
+                  <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                </div>
+                <p id="pay-bal-count" class="text-xl font-semibold mt-1.5 font-mono text-gray-900 dark:text-white">0</p>
+              </div>
             </div>
-
-            <!-- 4. Min TLS Version (Menggunakan Popover Preferensi) -->
-            <div class="py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div class="min-w-0 flex-1">
-                    <h4 class="text-base font-bold text-gray-900 tracking-tight">Versi Minimum TLS</h4>
-                    <p class="text-sm text-gray-500 mt-1">Standar protokol enkripsi minimum yang diizinkan untuk klien</p>
-                </div>
-                <div class="w-full sm:w-80 relative">
-                    <div class="custom-select-trigger flex items-center justify-between w-full px-4 py-3 text-sm rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleDropdown(this, 'tls', ['TLS 1.3 (Direkomendasikan)', 'TLS 1.2'])">
-                        <div class="flex items-center gap-2.5 min-w-0">
-                            <i data-lucide="shield-check" class="w-4 h-4 text-gray-500 shrink-0"></i>
-                            <span id="label-tls" class="font-medium truncate">TLS 1.3 (Direkomendasikan)</span>
-                        </div>
-                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-200 pointer-events-none shrink-0"></i>
-                    </div>
-                </div>
-            </div>
-
+          </div>
         </div>
+        <div class="py-5" id="pay-key-section" style="display:none">
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Kunci Publik Pembayaran</p>
+          <div class="flex items-center gap-1 p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-[#0f0f0f]">
+            <code id="pay-key-box" class="flex-1 text-xs font-mono text-gray-700 dark:text-gray-300 break-all select-all"></code>
+            <button type="button" id="pay-key-copy" onclick="copyPayKey()" class="p-2 rounded-lg text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex-shrink-0" title="Salin kunci">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2v-2"></path><path stroke-linecap="round" stroke-linejoin="round" d="M16 3h2a2 2 0 012 2v12a2 2 0 01-2 2h-2"></path></svg>
+            </button>
+          </div>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Dipakai situs deploy-mu untuk membuat QR bayar via <span class="font-mono" id="pay-endpoint">/api/pay</span></p>
+        </div>
+        <div id="pay-logs-section" style="display:none">
+        <div class="py-5" id="pay-stats-section" style="display:none">
+          <h4 class="text-base font-semibold text-gray-900 dark:text-white mb-3">Statistik</h4>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <div class="p-4 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50/60 dark:bg-slate-800/40">
+              <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mb-2">Dana masuk per hari · 7 hari terakhir</p>
+              <div class="h-52 relative">
+                <div class="pay-chart-skel pay-skel absolute inset-0 rounded-lg"></div>
+                <canvas id="pay-daily-chart" class="opacity-0 transition-opacity duration-500"></canvas>
+              </div>
+            </div>
+            <div class="p-4 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50/60 dark:bg-slate-800/40">
+              <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mb-2">Tren transaksi · 14 hari terakhir</p>
+              <div class="h-52 relative">
+                <div class="pay-chart-skel pay-skel absolute inset-0 rounded-lg"></div>
+                <canvas id="pay-trend-chart" class="opacity-0 transition-opacity duration-500"></canvas>
+              </div>
+            </div>
+            <div class="p-4 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50/60 dark:bg-slate-800/40">
+              <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mb-2">Status transaksi · jumlah</p>
+              <div class="h-52 relative">
+                <div class="pay-chart-skel pay-skel absolute inset-0 rounded-lg"></div>
+                <canvas id="pay-status-chart" class="opacity-0 transition-opacity duration-500"></canvas>
+              </div>
+            </div>
+            <div class="p-4 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50/60 dark:bg-slate-800/40">
+              <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mb-2">Nominal per status · Rupiah</p>
+              <div class="h-52 relative">
+                <div class="pay-chart-skel pay-skel absolute inset-0 rounded-lg"></div>
+                <canvas id="pay-amount-chart" class="opacity-0 transition-opacity duration-500"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="py-5">
+          <div class="flex items-center justify-between gap-3 flex-wrap mb-3">
+            <h4 class="text-base font-semibold text-gray-900 dark:text-white">Transaksi Masuk</h4>
+            <div class="flex items-center gap-2">
+              <input type="text" id="pay-tx-search" placeholder="Cari deskripsi / order ID" oninput="applyTxFilter('q', this.value.toLowerCase())" class="px-3 py-1.5 text-xs rounded-full border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/40 text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:border-gray-400 dark:focus:border-slate-500 w-44 sm:w-56 transition-colors" />
+              <select id="pay-tx-period" onchange="applyTxFilter('period', this.value)" class="px-3 py-1.5 text-xs rounded-full border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/40 text-gray-700 dark:text-gray-300 focus:outline-none focus:border-gray-400 dark:focus:border-slate-500 cursor-pointer transition-colors">
+                <option value="0">Semua waktu</option>
+                <option value="7">7 hari terakhir</option>
+                <option value="30">30 hari terakhir</option>
+              </select>
+            </div>
+          </div>
+          <div id="pay-tx-pills" class="flex flex-wrap gap-1.5 mb-3">
+            <button type="button" data-st="all" onclick="applyTxFilter('status', 'all')" class="px-3 py-1.5 text-xs font-medium rounded-full bg-black text-white dark:bg-white dark:text-black transition-colors">Semua</button>
+            <button type="button" data-st="paid" onclick="applyTxFilter('status', 'paid')" class="px-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">Berhasil</button>
+            <button type="button" data-st="pending" onclick="applyTxFilter('status', 'pending')" class="px-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">Menunggu</button>
+            <button type="button" data-st="expired" onclick="applyTxFilter('status', 'expired')" class="px-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">Kedaluwarsa</button>
+            <button type="button" data-st="failed" onclick="applyTxFilter('status', 'failed')" class="px-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">Gagal</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                  <th class="py-2 px-3 font-semibold whitespace-nowrap">Deskripsi</th>
+                  <th class="py-2 px-3 font-semibold whitespace-nowrap">Order ID</th>
+                  <th class="py-2 px-3 font-semibold whitespace-nowrap">Tanggal</th>
+                  <th class="py-2 px-3 font-semibold text-right whitespace-nowrap">Jumlah</th>
+                  <th class="py-2 px-3 font-semibold text-right whitespace-nowrap">Status</th>
+                </tr>
+              </thead>
+              <tbody id="pay-tx-rows" class="divide-y divide-gray-200 dark:divide-slate-700/60">
+              <tr><td colspan="5" class="py-3 px-3"><div class="h-3 rounded pay-skel w-2/3"></div></td></tr>
+              <tr><td colspan="5" class="py-3 px-3"><div class="h-3 rounded pay-skel w-1/2"></div></td></tr>
+              <tr><td colspan="5" class="py-3 px-3"><div class="h-3 rounded pay-skel w-3/5"></div></td></tr>
+            </tbody>
+            </table>
+          </div>
+          <p id="pay-tx-empty" class="text-xs text-gray-400 dark:text-gray-500 py-4 text-center">Belum ada transaksi.</p>
+          <p id="pay-tx-nofilter" class="text-xs text-gray-400 dark:text-gray-500 py-4 text-center" style="display:none">Tidak ada transaksi yang cocok dengan filter.</p>
+        </div>
+        <div class="py-5">
+          <h4 class="text-base font-semibold text-gray-900 dark:text-white mb-3">Penarikan Saldo</h4>
+          <div id="pay-wd-list" class="space-y-2"></div>
+          <p id="pay-wd-empty" class="text-xs text-gray-400 dark:text-gray-500 py-4 text-center">Belum ada penarikan.</p>
+        </div>
+        </div>
+      </div>
+      <div id="action-buttons" class="mt-8 pt-6 border-t border-gray-200 dark:border-slate-700/60 hidden justify-end gap-3 opacity-0 transition-opacity duration-300">
+        <button type="button" onclick="cancelChanges()" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors">Batal</button>
+        <button type="button" onclick="saveChanges()" class="px-5 py-2 text-sm font-medium text-white bg-black hover:bg-gray-800 rounded-lg shadow-sm transition-colors focus:outline-none cursor-pointer">Simpan Perubahan</button>
+      </div>
     </main>
+  </div>
+  <script>
+    let isEdited=false;function showActionButtons(){if(!isEdited){isEdited=true;const c=document.getElementById('action-buttons');c.classList.remove('hidden');c.classList.add('flex');void c.offsetWidth;c.classList.remove('opacity-0');c.classList.add('opacity-100');}}function cancelChanges(){window.location.reload();}function saveChanges(){showActionButtons();}document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('input,textarea,select').forEach(input=>{input.addEventListener('input',showActionButtons);input.addEventListener('change',showActionButtons);});});function toggleSwitch(idPrefix){showActionButtons();const bg=document.getElementById(idPrefix+'-bg');const knob=document.getElementById(idPrefix+'-knob');if(bg.classList.contains('bg-blue-500')){bg.classList.replace('bg-blue-500','bg-gray-200');bg.classList.add('dark:bg-slate-700');knob.classList.remove('translate-x-5');}else{bg.classList.remove('bg-gray-200','dark:bg-slate-700');bg.classList.add('bg-blue-500');knob.classList.add('translate-x-5');}}
+  </script>
+    <script>if (window.lucide) { lucide.createIcons(); }</script>
 
-    <!-- Modal Dialog Sistem -->
-    <div id="system-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeModal()"></div>
-        <div class="bg-white dark:bg-[#0a0a0a] rounded-2xl p-6 w-full max-w-sm relative z-10 shadow-2xl border border-gray-100 dark:border-gray-800">
-            <h3 id="modal-title" class="text-lg font-bold text-gray-900 dark:text-white mb-2"></h3>
-            <p id="modal-message" class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed"></p>
-            <button onclick="closeModal()" class="w-full py-3 bg-black dark:bg-white text-white dark:text-black rounded-xl font-semibold text-sm hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">Tutup</button>
-        </div>
-    </div>
+<script>
+  // ===== Pembayaran: saldo, tarik, log — kredensial diterbitkan Clincoo =====
+  var API_BASE = (['clincoo-be2.pages.dev','app.clincoo.buzz','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://app.clincoo.buzz/api' : '/api';
+  var _apiToken = '';
+  try { _apiToken = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+  function _pid() { try { return localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) { return ''; } }
 
-    <script src="../../../js/api.js"></script>
-    
-    <!-- Header Sesuai Preferensi -->
+  var _available = 0;
+  var _origActivateHtml = null;
 
-    <!-- Modal Dialog Sistem -->
-    <script>
-        // Render Lucide Icons
-        lucide.createIcons();
-
-        // --- Logika Popover Dropdown Preferensi ---
-        function toggleDropdown(element, targetId, optionsArray) {
-            const wrapper = element.parentElement;
-            const existingDropdown = wrapper.querySelector('.custom-dropdown-menu');
-            
-            closeAllDropdowns();
-
-            if (existingDropdown) return; 
-
-            const labelEl = document.getElementById('label-' + targetId);
-            const currentValue = labelEl ? labelEl.textContent.trim() : '';
-            
-            const dropdown = document.createElement('div');
-            dropdown.className = 'custom-dropdown-menu absolute top-full left-0 w-full mt-1 z-50 bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden flex flex-col fade-in';
-            
-            let optionsHtml = '';
-            optionsArray.forEach(option => {
-                const isActive = option === currentValue;
-                optionsHtml += `
-                    <div class="w-full px-4 py-3 text-left text-sm font-medium transition-colors cursor-pointer flex items-center justify-between ${isActive ? 'bg-gray-50 text-black dark:bg-gray-800 dark:text-white' : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}" onclick="selectOption(event, '${targetId}', '${option}')">
-                        <span>${option}</span>
-                        ${isActive ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}
-                    </div>
-                `;
-            });
-            
-            dropdown.innerHTML = optionsHtml;
-            wrapper.appendChild(dropdown);
-            
-            const chevron = element.querySelector('[data-lucide="chevron-down"]');
-            if(chevron) chevron.classList.add('rotate-180');
-            
-            lucide.createIcons();
-
-            setTimeout(() => {
-                document.addEventListener('click', outsideClickListener);
-            }, 10);
-        }
-
-        function closeAllDropdowns() {
-            const openDropdowns = document.querySelectorAll('.custom-dropdown-menu');
-            openDropdowns.forEach(dropdown => {
-                const chevron = dropdown.parentElement.querySelector('.rotate-180');
-                if(chevron) chevron.classList.remove('rotate-180');
-                dropdown.remove();
-            });
-            document.removeEventListener('click', outsideClickListener);
-        }
-
-        function outsideClickListener(e) {
-            if (!e.target.closest('.custom-select-trigger') && !e.target.closest('.custom-dropdown-menu')) {
-                closeAllDropdowns();
-            }
-        }
-
-        function selectOption(event, targetId, value) {
-            event.stopPropagation();
-            const label = document.getElementById('label-' + targetId);
-            if (label) {
-                label.textContent = value;
-            }
-            closeAllDropdowns();
-            // Simpan versi TLS minimum ke backend
-            if (targetId === 'tls' && typeof ClinqooAPI !== 'undefined' && ClinqooAPI.updateSecurity) {
-                ClinqooAPI.updateSecurity('min_tls', value.indexOf('1.2') !== -1 ? '1.2' : '1.3').catch(e => console.warn('Gagal menyimpan min_tls:', e));
-            }
-        }
-
-        // --- Logika Switch Toggle ---
-        // Peta id toggle -> kunci setting di backend
-        const SECURITY_KEYS = { forceHttps: 'force_https', hsts: 'hsts' };
-        function toggleSwitch(idPrefix) {
-            const bg = document.getElementById(idPrefix + '-bg');
-            const knob = document.getElementById(idPrefix + '-knob');
-            
-            const isActive = bg.classList.contains('bg-black') || bg.classList.contains('bg-white');
-            
-            if (isActive) {
-                bg.className = 'w-11 h-6 bg-gray-200 dark:bg-gray-800 rounded-full transition-colors duration-200 ease-in-out';
-                knob.className = 'absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out';
-            } else {
-                bg.className = 'w-11 h-6 bg-black dark:bg-white rounded-full transition-colors duration-200 ease-in-out';
-                knob.className = 'absolute left-0.5 top-0.5 bg-white dark:bg-black w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out translate-x-5';
-            }
-            // Simpan perubahan ke backend (bukan sekadar tampilan)
-            const newActive = !isActive;
-            const key = SECURITY_KEYS[idPrefix];
-            if (key && typeof ClinqooAPI !== 'undefined' && ClinqooAPI.updateSecurity) {
-                ClinqooAPI.updateSecurity(key, newActive ? '1' : '0').catch(e => console.warn('Gagal menyimpan ' + key + ':', e));
-            }
-        }
-
-        // API Integration
-        async function loadSecuritySettings() {
-            try {
-                if (typeof ClinqooAPI !== 'undefined' && ClinqooAPI.getSecurity) {
-                    const data = await ClinqooAPI.getSecurity();
-                    const settings = data.settings || {};
-                    if (settings.force_https === '0') {
-                        const bg = document.getElementById('forceHttps-bg');
-                        const knob = document.getElementById('forceHttps-knob');
-                        bg.className = 'w-11 h-6 bg-gray-200 dark:bg-gray-800 rounded-full transition-colors duration-200 ease-in-out';
-                        knob.className = 'absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out';
-                    }
-                    if (settings.hsts === '1') {
-                        const bg = document.getElementById('hsts-bg');
-                        const knob = document.getElementById('hsts-knob');
-                        bg.className = 'w-11 h-6 bg-black dark:bg-white rounded-full transition-colors duration-200 ease-in-out';
-                        knob.className = 'absolute left-0.5 top-0.5 bg-white dark:bg-black w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out translate-x-5';
-                    }
-                    if (settings.min_tls) {
-                        const label = document.getElementById('label-tls');
-                        if (label) label.textContent = settings.min_tls === '1.2' ? 'TLS 1.2' : 'TLS 1.3 (Direkomendasikan)';
-                    }
-                }
-            } catch (e) { console.error('Security settings load failed:', e); }
-        }
-
-        // Modal Helpers
-        function showModal(title, message) {
+  function _payModal(msg, ok) {
+    try {
+      var m = document.getElementById('system-modal');
+      if (m) {
+        document.getElementById('modal-title').innerText = ok ? 'Berhasil' : 'Gagal';
+        document.getElementById('modal-message').innerText = msg;
+        m.classList.remove('hidden'); m.classList.add('flex');
         return;
+      }
+    } catch (e) {}
+    alert(msg);
+  }
+
+  function _rp(n) { return 'Rp ' + Number(n || 0).toLocaleString('id-ID'); }
+
+  // ---- cache lokal: state aktif tidak hilang saat refresh ----
+  function _payCacheKey() { return 'clincoo_pay_' + _pid(); }
+  function readPayCache() { try { return JSON.parse(localStorage.getItem(_payCacheKey()) || 'null'); } catch (e) { return null; } }
+  function writePayCache(d) { try { localStorage.setItem(_payCacheKey(), JSON.stringify(d)); } catch (e) {} }
+  function clearPayCache() { try { localStorage.removeItem(_payCacheKey()); } catch (e) {} }
+
+  // ---- swap animasi antar state ----
+  function swapPayView(showId, hideId, animate) {
+    var show = document.getElementById(showId);
+    var hide = document.getElementById(hideId);
+    if (!animate) {
+      if (hide) { hide.style.display = 'none'; hide.style.opacity = ''; hide.style.transform = ''; }
+      if (show) { show.classList.remove('hidden'); show.classList.add('flex'); show.style.opacity = ''; show.style.transform = ''; }
+      return;
     }
+    function reveal(el) {
+      el.classList.remove('hidden'); el.classList.add('flex');
+      el.style.opacity = '0'; el.style.transform = 'translateY(10px)';
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          el.style.opacity = '1'; el.style.transform = 'translateY(0)';
+          setTimeout(function () { el.style.opacity = ''; el.style.transform = ''; }, 400);
+        });
+      });
+    }
+    if (hide) {
+      hide.style.opacity = '0';
+      hide.style.transform = 'translateY(10px)';
+      setTimeout(function () {
+        hide.style.display = 'none';
+        hide.style.opacity = ''; hide.style.transform = '';
+        if (show) reveal(show);
+      }, 340);
+    } else if (show) { reveal(show); }
+  }
 
-        function closeModal() {
-            const modal = document.getElementById('system-modal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+  function renderPayActive(data, animate) {
+    swapPayView('pay-active', 'pay-inactive', !!animate);
+    ['pay-key-section', 'pay-logs-section'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = '';
+    });
+    _available = data.available || 0;
+    document.getElementById('pay-bal-available').textContent = _rp(data.available);
+    document.getElementById('pay-bal-paid').textContent = _rp(data.total_paid);
+    document.getElementById('pay-bal-withdrawn').textContent = _rp(data.total_withdrawn);
+    var wb = document.getElementById('pay-withdraw-btn');
+    if (wb) wb.disabled = false;
+    var kb = document.getElementById('pay-key-box');
+    if (data.pay_key) kb.textContent = data.pay_key;
+    var badge = document.getElementById('pay-status-badge');
+    if (badge) { badge.textContent = data.gateway_ready === false ? 'Aktif — gateway menyusun' : 'Aktif'; badge.className = 'px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 whitespace-nowrap flex-shrink-0'; }
+  }
+
+  function renderPayInactive() {
+    swapPayView('pay-inactive', 'pay-active', false);
+    ['pay-key-section', 'pay-logs-section'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    var wb = document.getElementById('pay-withdraw-btn');
+    if (wb) wb.disabled = true;
+    var badge = document.getElementById('pay-status-badge');
+    if (badge) { badge.textContent = 'Belum aktif'; badge.className = 'px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 whitespace-nowrap flex-shrink-0'; }
+  }
+
+  async function loadPayConfig() {
+    // 1) render cache dulu supaya state tidak hilang saat refresh
+    var cached = readPayCache();
+    if (cached && cached.active) renderPayActive(cached, false);
+    // 2) sinkronkan dengan server
+    try {
+      var hdrs = _apiToken ? { Authorization: 'Bearer ' + _apiToken } : {};
+      var res = await fetch(API_BASE + '/pay?action=config&project_id=' + encodeURIComponent(_pid()), { headers: hdrs });
+      if (res.ok) {
+        var data = await res.json();
+        if (data.active) {
+          renderPayActive(data, false);
+          writePayCache(data);
+          loadPayTransactions();
+          loadPayWithdrawals();
+        } else {
+          // server memastikan belum aktif → bersihkan cache palsu
+          clearPayCache();
+          renderPayInactive();
         }
+      }
+      // fetch gagal (offline / backend sibuk) → cache tetap dipakai
+    } catch (e) {}
+    var ep = document.getElementById('pay-endpoint');
+    if (ep) ep.textContent = API_BASE + '/pay';
+    var c = document.getElementById('action-buttons');
+    if (c) { c.classList.add('hidden', 'opacity-0'); c.classList.remove('flex', 'opacity-100'); }
+  }
 
-        loadSecuritySettings();
-        loadSslStatus();
+  async function activatePay() {
+    var btn = document.getElementById('pay-activate-btn');
+    if (!btn) return;
+    if (!_origActivateHtml) _origActivateHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg> Mengaktifkan...';
+    try {
+      var res = await fetch(API_BASE + '/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _apiToken },
+        body: JSON.stringify({ action: 'activate', project_id: _pid() })
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok || !data.success) {
+        btn.innerHTML = _origActivateHtml;
+        btn.disabled = false;
+        _payModal(data.message || data.error || 'Gagal mengaktifkan Pembayaran.', false);
+        return;
+      }
+      // simpan cache + transisi smooth ke dashboard saldo
+      var minimal = { active: true, account_id: data.account_id || '', pay_key: data.pay_key || '', available: 0, total_paid: 0, total_withdrawn: 0 };
+      writePayCache(minimal);
+      renderPayActive(minimal, true);
+      loadPayConfig();
+      setTimeout(function () { _payModal('Pembayaran aktif! Situs deploy-mu sekarang bisa menerima pembayaran QRIS.', true); }, 450);
+    } catch (e) {
+      btn.innerHTML = _origActivateHtml;
+      btn.disabled = false;
+      _payModal('Tidak dapat terhubung ke server.', false);
+    }
+  }
 
-        // Status sertifikat SSL dari data deployment nyata (Cloudflare Pages selalu otomatis HTTPS)
-        async function loadSslStatus() {
-            const badge = document.getElementById('ssl-status-badge');
-            const dot = document.getElementById('ssl-status-dot');
-            const text = document.getElementById('ssl-status-text');
-            const valid = document.getElementById('ssl-valid-text');
-            if (!badge || !text || !valid) return;
-            let st = null;
-            try {
-                if (typeof ClinqooAPI !== 'undefined' && ClinqooAPI.getDeployInfo) st = await ClinqooAPI.getDeployInfo();
-            } catch (e) { st = null; }
-            const dep = st && st.last_deployment;
-            const ok = dep && ['success', 'active'].includes(dep.status);
-            const activeDomain = (st && (st.domains || []).find(d => d.status === 'active') || {}).name || '';
-            if (ok) {
-                text.textContent = 'Aktif';
-                valid.textContent = 'Otomatis oleh Cloudflare — ' + (activeDomain || (st.public_url || '').replace(/^https?:\/\//, '').replace(/\/$/, '') || 'domain situs Anda');
-            } else if (st && dep) {
-                badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/50';
-                dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500';
-                text.textContent = 'Menunggu';
-                valid.textContent = 'Deployment terakhir belum aktif — jalankan deploy lagi';
-            } else {
-                badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-gray-800/60 dark:text-gray-400 border border-gray-200/60 dark:border-gray-700/50';
-                dot.className = 'w-1.5 h-1.5 rounded-full bg-gray-400';
-                text.textContent = 'Belum ada situs';
-                valid.textContent = 'Deploy proyek untuk mendapat SSL otomatis';
-            }
-        }
-    </script>
+  function copyPayKey() {
+    var kb = document.getElementById('pay-key-box');
+    var key = (kb.textContent || '').trim();
+    if (!key || key.indexOf('pk_') !== 0) { _payModal('Kunci belum tersedia — aktifkan Pembayaran dulu.', false); return; }
+    try {
+      navigator.clipboard.writeText(key).then(function () {
+        var b = document.getElementById('pay-key-copy');
+        b.classList.add('text-emerald-500');
+        setTimeout(function () { b.classList.remove('text-emerald-500'); }, 1200);
+      }).catch(function () { _payModal(key, true); });
+    } catch (e) { _payModal(key, true); }
+  }
+
+  // ===== Tarik saldo =====
+  function openWithdrawModal() {
+    if (!_available) { _payModal('Saldo belum tersedia untuk ditarik.', false); return; }
+    document.getElementById('wd-avail').textContent = _rp(_available);
+    document.getElementById('wd-amount').value = '';
+    var m = document.getElementById('withdraw-modal');
+    m.classList.remove('hidden'); m.classList.add('flex');
+  }
+  function closeWithdrawModal() {
+    var m = document.getElementById('withdraw-modal');
+    m.classList.add('hidden'); m.classList.remove('flex');
+  }
+  async function submitWithdraw() {
+    var btn = document.getElementById('wd-submit');
+    var amount = Math.floor(Number(document.getElementById('wd-amount').value || 0));
+    if (!amount || amount < 10000) { _payModal('Nominal penarikan minimal Rp 10.000.', false); return; }
+    btn.innerText = 'Mengirim...'; btn.disabled = true;
+    try {
+      var res = await fetch(API_BASE + '/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _apiToken },
+        body: JSON.stringify({ action: 'withdraw', project_id: _pid(), amount: amount })
+      });
+      var data = await res.json().catch(function () { return {}; });
+      btn.innerText = 'Kirim Permintaan'; btn.disabled = false;
+      if (!res.ok || !data.success) { _payModal(data.message || data.error || 'Gagal mengirim permintaan.', false); return; }
+      closeWithdrawModal();
+      _payModal(data.message || 'Permintaan penarikan dikirim — tim Clincoo akan memprosesnya.', true);
+      loadPayConfig();
+    } catch (e) {
+      btn.innerText = 'Kirim Permintaan'; btn.disabled = false;
+      _payModal('Tidak dapat terhubung ke server.', false);
+    }
+  }
+
+  // ===== Log transaksi =====
+  async function loadPayTransactions() {
+    try {
+      var hdrs = _apiToken ? { Authorization: 'Bearer ' + _apiToken } : {};
+      var res = await fetch(API_BASE + '/pay', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, hdrs), body: JSON.stringify({ action: 'transactions', project_id: _pid() }) });
+      if (!res.ok) return;
+      var data = await res.json();
+      var rows = document.getElementById('pay-tx-rows');
+      var empty = document.getElementById('pay-tx-empty');
+      var nofilter = document.getElementById('pay-tx-nofilter');
+      var txs = (data && data.transactions) || [];
+      _payTxs = txs;
+      var cnt = document.getElementById('pay-bal-count');
+      if (cnt) cnt.textContent = String(txs.length);
+      renderPayStats(txs);
+      if (!txs.length) { rows.innerHTML = ''; empty.style.display = 'block'; nofilter.style.display = 'none'; return; }
+      empty.style.display = 'none';
+      renderTxRows();
+    } catch (e) {}
+  }
+
+  // ===== Filter transaksi =====
+  var _payTxs = [];
+  var _txFilter = { status: 'all', q: '', period: '0' };
+  function _txPass(t) {
+    if (_txFilter.status !== 'all' && t.status !== _txFilter.status) return false;
+    if (_txFilter.q && (((t.description || '') + ' ' + (t.order_id || '')).toLowerCase().indexOf(_txFilter.q) === -1)) return false;
+    var p = Number(_txFilter.period) || 0;
+    if (p > 0) {
+      var ts = Date.parse(String(t.created_at || '').replace(' ', 'T') + 'Z');
+      if (!(ts > 0) || ts < Date.now() - p * 86400000) return false;
+    }
+    return true;
+  }
+  function renderTxRows() {
+    var rows = document.getElementById('pay-tx-rows');
+    var nofilter = document.getElementById('pay-tx-nofilter');
+    if (!rows) return;
+    rows.innerHTML = '';
+    var txs = _payTxs.filter(_txPass);
+    if (!txs.length) { if (nofilter) nofilter.style.display = 'block'; return; }
+    if (nofilter) nofilter.style.display = 'none';
+    txs.forEach(function (t, idx) {
+        var stClass = t.status === 'paid' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : (t.status === 'expired' || t.status === 'failed' ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300');
+        var stLabel = t.status === 'paid' ? 'Berhasil' : (t.status === 'expired' ? 'Kedaluwarsa' : (t.status === 'failed' ? 'Gagal' : 'Menunggu'));
+        var tr = document.createElement('tr');
+        tr.className = 'text-sm';
+        tr.className = 'pay-fade';
+        tr.style.animationDelay = Math.min(idx * 40, 400) + 'ms';
+        tr.innerHTML = '<td class="py-2.5 px-3 text-gray-900 dark:text-white font-medium max-w-[220px] truncate">' + (t.description || 'Pembayaran') + '</td>' +
+          '<td class="py-2.5 px-3 text-xs text-gray-400 font-mono whitespace-nowrap">' + t.order_id + '</td>' +
+          '<td class="py-2.5 px-3 text-xs text-gray-400 font-mono whitespace-nowrap">' + (t.created_at || '') + '</td>' +
+          '<td class="py-2.5 px-3 text-right font-semibold text-gray-900 dark:text-white whitespace-nowrap">Rp ' + Number(t.amount || 0).toLocaleString('id-ID') + '</td>' +
+          '<td class="py-2.5 px-3 text-right whitespace-nowrap"><span class="px-2 py-0.5 text-xs font-semibold rounded-full ' + stClass + '">' + stLabel + '</span></td>';
+        rows.appendChild(tr);
+      });
+  }
+  function applyTxFilter(key, val) {
+    _txFilter[key] = (key === 'q') ? String(val || '').toLowerCase() : String(val || '');
+    var pills = document.getElementById('pay-tx-pills');
+    if (pills && key === 'status') {
+      pills.querySelectorAll('button[data-st]').forEach(function (b) {
+        var on = b.getAttribute('data-st') === _txFilter.status;
+        b.className = on ? 'px-3 py-1.5 text-xs font-medium rounded-full bg-black text-white dark:bg-white dark:text-black transition-colors' : 'px-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors';
+      });
+    }
+    renderTxRows();
+  }
+
+  // ===== Statistik (Chart.js) — pola sama dengan halaman Integrasi AI =====
+  var _payChart = { loaded: false, failed: false, insts: [] };
+  function _payDark() { return document.body.classList.contains('dark-mode') || document.documentElement.classList.contains('dark-mode'); }
+  function _loadChartJs(cb) {
+    if (_payChart.loaded) { cb(true); return; }
+    if (_payChart.failed) { cb(false); return; }
+    var sc = document.createElement('script');
+    sc.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
+    sc.onload = function () { _payChart.loaded = true; cb(true); };
+    sc.onerror = function () { _payChart.failed = true; cb(false); };
+    document.head.appendChild(sc);
+  }
+  function _chartReady(id) {
+    var c = document.getElementById(id);
+    if (!c) return;
+    c.classList.remove('opacity-0');
+    var sk = c.parentElement ? c.parentElement.querySelector('.pay-chart-skel') : null;
+    if (sk) sk.remove();
+  }
+  function _destroyPayStats() {
+    _payChart.insts.forEach(function (ch) { try { ch.destroy(); } catch (e) {} });
+    _payChart.insts = [];
+    var sec = document.getElementById('pay-stats-section');
+    if (sec) sec.style.display = 'none';
+  }
+  function renderPayStats(txs) {
+    if (!txs || !txs.length) { _destroyPayStats(); return; }
+    _loadChartJs(function (ok) {
+      var sec = document.getElementById('pay-stats-section');
+      if (!ok || !window.Chart || !sec) return;
+      sec.style.display = 'block';
+      _payChart.insts.forEach(function (ch) { try { ch.destroy(); } catch (e) {} });
+      _payChart.insts = [];
+      var dark = _payDark();
+      var tick = dark ? '#9ca3af' : '#6b7280';
+      var grid = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+      var anim = { duration: 600, easing: 'easeOutQuart' };
+      var rpTip = { callbacks: { label: function (c) { return (c.dataset.label || '') + ' Rp ' + Number(c.parsed.y || 0).toLocaleString('id-ID'); } } };
+      var kTip = { callbacks: { label: function (c) { return (c.dataset.label || '') + ': ' + Number(c.parsed.y || 0); } } };
+      var rpAxis = { ticks: { color: tick, font: { size: 11 }, callback: function (v) { return v >= 1000000 ? (v / 1000000) + 'jt' : (v >= 1000 ? (v / 1000) + 'rb' : v); } }, grid: { color: grid }, beginAtZero: true };
+      var stMap = { paid: ['Berhasil', 'rgba(16,185,129,0.85)'], pending: ['Menunggu', 'rgba(245,158,11,0.85)'], expired: ['Kedaluwarsa', 'rgba(239,68,68,0.85)'], failed: ['Gagal', 'rgba(127,127,127,0.85)'] };
+      var stKeys = ['paid', 'pending', 'expired', 'failed'];
+      var dayKey = function (d) { return d.toISOString().slice(0, 10); };
+      var dayRp = function (key) { return txs.filter(function (t) { return t.status === 'paid' && String(t.created_at || '').slice(0, 10) === key; }).reduce(function (a, t) { return a + Number(t.amount || 0); }, 0); };
+      var dayCnt = function (key) { return txs.filter(function (t) { return String(t.created_at || '').slice(0, 10) === key; }).length; };
+
+      // 1) Bar: dana masuk per hari — 7 hari terakhir
+      var days7 = [], rp7 = [];
+      for (var i = 6; i >= 0; i--) {
+        var d = new Date(Date.now() - i * 86400000);
+        days7.push(d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }));
+        rp7.push(dayRp(dayKey(d)));
+      }
+      _payChart.insts.push(new Chart(document.getElementById('pay-daily-chart'), {
+        type: 'bar',
+        data: { labels: days7, datasets: [{ label: 'Dana masuk', data: rp7, backgroundColor: dark ? 'rgba(255,255,255,0.85)' : 'rgba(17,17,17,0.85)', borderRadius: 6, maxBarThickness: 42 }] },
+        options: { responsive: true, maintainAspectRatio: false, animation: anim, plugins: { legend: { display: false }, tooltip: rpTip }, scales: { x: { ticks: { color: tick, font: { size: 11 } }, grid: { display: false } }, y: rpAxis } }
+      }));
+      _chartReady('pay-daily-chart');
+
+      // 2) Campuran bar+line: dana masuk & jumlah transaksi — 14 hari terakhir
+      var days14 = [], rp14 = [], cnt14 = [];
+      for (var j = 13; j >= 0; j--) {
+        var d2 = new Date(Date.now() - j * 86400000);
+        days14.push(d2.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }));
+        var k2 = dayKey(d2);
+        rp14.push(dayRp(k2)); cnt14.push(dayCnt(k2));
+      }
+      _payChart.insts.push(new Chart(document.getElementById('pay-trend-chart'), {
+        type: 'bar',
+        data: { labels: days14, datasets: [
+          { label: 'Dana masuk', data: rp14, backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 5, maxBarThickness: 24, yAxisID: 'y' },
+          { type: 'line', label: 'Jumlah transaksi', data: cnt14, borderColor: dark ? '#f59e0b' : '#f59e0b', backgroundColor: 'rgba(245,158,11,0.15)', tension: 0.35, pointRadius: 3, borderWidth: 2, fill: true, yAxisID: 'y1' }
+        ] },
+        options: { responsive: true, maintainAspectRatio: false, animation: anim, plugins: { legend: { labels: { color: tick, boxWidth: 10, boxHeight: 10, font: { size: 11 } } }, tooltip: { callbacks: { label: function (c) { return c.dataset.yAxisID === 'y1' ? 'Jumlah transaksi: ' + Number(c.parsed.y || 0) : 'Dana masuk: Rp ' + Number(c.parsed.y || 0).toLocaleString('id-ID'); } } } }, scales: { x: { ticks: { color: tick, font: { size: 10 }, maxRotation: 0, autoSkip: true }, grid: { display: false } }, y: rpAxis, y1: { position: 'right', ticks: { color: tick, font: { size: 11 }, precision: 0 }, grid: { display: false }, beginAtZero: true } } }
+      }));
+      _chartReady('pay-trend-chart');
+
+      // 3) Doughnut: komposisi status (jumlah transaksi)
+      var stCounts = stKeys.map(function (k) { return txs.filter(function (t) { return t.status === k; }).length; });
+      _payChart.insts.push(new Chart(document.getElementById('pay-status-chart'), {
+        type: 'doughnut',
+        data: { labels: stKeys.map(function (k) { return stMap[k][0]; }), datasets: [{ data: stCounts, backgroundColor: stKeys.map(function (k) { return stMap[k][1]; }), borderWidth: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false, animation: anim, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { color: tick, boxWidth: 10, boxHeight: 10, font: { size: 11 } } }, tooltip: kTip } }
+      }));
+      _chartReady('pay-status-chart');
+
+      // 4) Bar horizontal: nominal Rp per status
+      var stRp = stKeys.map(function (k) { return txs.filter(function (t) { return t.status === k; }).reduce(function (a, t) { return a + Number(t.amount || 0); }, 0); });
+      _payChart.insts.push(new Chart(document.getElementById('pay-amount-chart'), {
+        type: 'bar',
+        data: { labels: stKeys.map(function (k) { return stMap[k][0]; }), datasets: [{ label: 'Nominal', data: stRp, backgroundColor: stKeys.map(function (k) { return stMap[k][1]; }), borderRadius: 6, maxBarThickness: 26 }] },
+        options: { responsive: true, maintainAspectRatio: false, animation: anim, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (c) { return 'Rp ' + Number(c.parsed.x || 0).toLocaleString('id-ID'); } } } }, scales: { x: rpAxis, y: { ticks: { color: tick, font: { size: 11 } }, grid: { display: false } } } }
+      }));
+      _chartReady('pay-amount-chart');
+    });
+  }
+
+  // ===== Log penarikan =====
+  async function loadPayWithdrawals() {
+    try {
+      var hdrs = _apiToken ? { Authorization: 'Bearer ' + _apiToken } : {};
+      var res = await fetch(API_BASE + '/pay', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, hdrs), body: JSON.stringify({ action: 'withdrawals', project_id: _pid() }) });
+      if (!res.ok) return;
+      var data = await res.json();
+      var list = document.getElementById('pay-wd-list');
+      var empty = document.getElementById('pay-wd-empty');
+      var wds = (data && data.withdrawals) || [];
+      if (!wds.length) { empty.style.display = 'block'; return; }
+      empty.style.display = 'none';
+      list.innerHTML = '';
+      wds.forEach(function (w) {
+        var stClass = w.status === 'done' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : (w.status === 'rejected' ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300');
+        var stLabel = w.status === 'done' ? 'Selesai' : (w.status === 'rejected' ? 'Ditolak' : 'Diproses');
+        var row = document.createElement('div');
+        row.className = 'flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700';
+        row.innerHTML = '<div class="min-w-0"><p class="text-sm font-medium text-gray-900 dark:text-white">Penarikan saldo</p><p class="text-xs text-gray-400 font-mono">#' + w.id + ' · ' + (w.created_at || '') + '</p></div>' +
+          '<div class="flex items-center gap-2.5 flex-shrink-0"><span class="text-sm font-semibold text-gray-900 dark:text-white">Rp ' + Number(w.amount || 0).toLocaleString('id-ID') + '</span><span class="px-2 py-0.5 text-xs font-semibold rounded-full ' + stClass + '">' + stLabel + '</span></div>';
+        list.appendChild(row);
+      });
+    } catch (e) {}
+  }
+
+  document.addEventListener('DOMContentLoaded', function () { loadPayConfig(); });
+</script>
+
 
     <script>/* clinqoo-sw-register */
     if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../sw.js').catch(function () {}); }); }
@@ -879,5 +1151,19 @@ window.chatLivePreview = function () {
   }).catch(function(){});
 })();
 </script>
+
+<div id="withdraw-modal" class="fixed inset-0 z-[70] hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="w-full max-w-sm p-5 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-xl">
+    <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1">Tarik Saldo</h3>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Saldo tersedia: <span id="wd-avail" class="font-semibold text-gray-900 dark:text-white">Rp 0</span></p>
+    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Nominal (min. Rp 10.000)</label>
+    <input id="wd-amount" type="number" min="10000" step="1000" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 mb-4" placeholder="Contoh: 50000">
+    <div class="flex gap-3 justify-end">
+      <button type="button" onclick="closeWithdrawModal()" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer">Batal</button>
+      <button type="button" id="wd-submit" onclick="submitWithdraw()" class="px-4 py-2 text-sm font-semibold text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-xl shadow-sm transition-colors cursor-pointer">Kirim Permintaan</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
