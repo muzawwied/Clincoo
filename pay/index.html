@@ -42,17 +42,8 @@
       <div class="text-[11px] uppercase tracking-[0.18em] text-slate-400 dark-mode:text-slate-500">Pembayaran QRIS</div>
     </div>
 
-    <!-- Status -->
-    <div class="mt-10 w-full flex items-center justify-between">
-      <div id="st-pill" class="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200 dark-mode:bg-amber-500/10 dark-mode:border-amber-500/30 dark-mode:text-amber-400">
-        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 pulse-soft"></span>
-        <span id="st-label">Menunggu pembayaran</span>
-      </div>
-      <span id="sandbox-badge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-md bg-sky-50 text-sky-600 border border-sky-200 dark-mode:bg-sky-500/10 dark-mode:border-sky-500/30 dark-mode:text-sky-400">SANDBOX</span>
-    </div>
-
     <!-- Total tagihan -->
-    <div class="mt-6 w-full">
+    <div class="mt-10 w-full">
       <div class="text-[13px] text-slate-400 dark-mode:text-slate-500">Total Tagihan</div>
       <div id="amount" class="mt-1 text-[38px] leading-none font-extrabold tracking-tight">…</div>
       <div id="desc" class="mt-2 text-sm text-slate-500 dark-mode:text-slate-400 truncate"></div>
@@ -103,6 +94,15 @@
       </div>
     </div>
 
+    <!-- CTA download Clincoo -->
+    <div id="cta" class="mt-8 w-full divider pt-6 flex flex-col items-center text-center">
+      <div class="text-[13px] text-slate-500 dark-mode:text-slate-400">Punya bisnis sendiri? Bikin situs + terima pembayaran QRIS gampang lewat Clincoo</div>
+      <a href="https://app.clincoo.buzz/" class="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-semibold transition-transform active:scale-95" style="background: var(--accent-color, #000);">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Download Clincoo
+      </a>
+    </div>
+
     <!-- Error -->
     <div id="err" class="hidden mt-10 w-full flex flex-col items-center text-center">
       <div class="text-4xl mb-3">🔍</div>
@@ -126,35 +126,16 @@
   var el = function (id) { return document.getElementById(id); };
   function rp(n) { return 'Rp ' + Number(n || 0).toLocaleString('id-ID'); }
 
-  function setPill(state) {
-    var pill = el('st-pill'), label = el('st-label');
-    pill.className = 'inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full ';
-    if (state === 'pending') {
-      pill.className += 'bg-amber-50 text-amber-600 border border-amber-200 dark-mode:bg-amber-500/10 dark-mode:border-amber-500/30 dark-mode:text-amber-400';
-      label.textContent = 'Menunggu pembayaran';
-    } else if (state === 'paid') {
-      pill.className += 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark-mode:bg-emerald-500/10 dark-mode:border-emerald-500/30 dark-mode:text-emerald-400';
-      label.textContent = 'Lunas';
-    } else {
-      pill.className += 'bg-rose-50 text-rose-600 border border-rose-200 dark-mode:bg-rose-500/10 dark-mode:border-rose-500/30 dark-mode:text-rose-400';
-      label.textContent = 'Kedaluwarsa';
-    }
-  }
-
   function show(state) {
     if (state === 'paid') {
-      el('qr-area').className = 'hidden'; el('howto').className = 'hidden';
+      el('qr-area').className = 'hidden'; el('howto').className = 'hidden'; el('cta').className = 'hidden';
       el('ok-area').className = 'mt-10 w-full flex flex-col items-center text-center';
       el('ok-amount').textContent = rp(AMOUNT);
-      setPill('paid');
       if (timer) { clearInterval(timer); timer = null; }
     } else if (state === 'expired') {
-      el('qr-area').className = 'hidden'; el('howto').className = 'hidden';
+      el('qr-area').className = 'hidden'; el('howto').className = 'hidden'; el('cta').className = 'hidden';
       el('exp-area').className = 'mt-10 w-full flex flex-col items-center text-center';
-      setPill('expired');
       if (timer) { clearInterval(timer); timer = null; }
-    } else {
-      setPill('pending');
     }
   }
 
@@ -190,11 +171,11 @@
   });
 
   if (!key || !orderId) {
-    el('st-pill').className = 'hidden'; el('qr-area').className = 'hidden';
-    el('howto').className = 'hidden'; el('err').classList.remove('hidden');
+    el('qr-area').className = 'hidden'; el('howto').className = 'hidden'; el('cta').className = 'hidden';
+    el('err').classList.remove('hidden');
   } else {
     poll();
-    timer = setInterval(poll, 5000);
+    timer = setInterval(poll, 1000);
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden && timer) poll();
     });
