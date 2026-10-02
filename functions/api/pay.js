@@ -78,8 +78,8 @@ async function requireOwned(env, request, projectId) {
   return { error: json({ error: 'Proyek tidak ditemukan atau bukan milikmu' }, 404) };
 }
 
-function genPayKey() { return 'clc_pk_' + randomHex(14); }
-function genSecret() { return 'cps_' + randomHex(15); }
+function genPayKey() { return 'cno_pk_' + randomHex(14); }
+function genSecret() { return 'cno_ss_' + randomHex(15); }
 function genAccountId() {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let s = 'CPPX';

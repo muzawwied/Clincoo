@@ -641,7 +641,7 @@
   function copyPayKey() {
     var kb = document.getElementById('pay-key-box');
     var key = (kb.textContent || '').trim();
-    if (!key || key.indexOf('clc_pk_') !== 0) { _payModal('Kunci belum tersedia — aktifkan Pembayaran dulu.', false); return; }
+    if (!key || (key.indexOf('cno_pk_') !== 0 && key.indexOf('clc_pk_') !== 0)) { _payModal('Kunci belum tersedia — aktifkan Pembayaran dulu.', false); return; }
     try {
       navigator.clipboard.writeText(key).then(function () {
         var b = document.getElementById('pay-key-copy');

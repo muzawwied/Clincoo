@@ -189,14 +189,26 @@ async function renderDns() {
         return;
     }
     simMode = !!res.simulated;
-    document.getElementById('zone-banner').classList.add('hidden');
     records = res.records || [];
+
+    // Domain tidak dikelola Cloudflare (mis. sudah di akun CF lain) -> mode lokal.
+    // Zona ada tapi masih pending -> record belum aktif sampai nameserver diarahkan.
+    const verifHref = (location.pathname.includes('/kelola/dns/')) ? '../../verifikasi/?domain=' + encodeURIComponent(domain) : 'verifikasi/?domain=' + encodeURIComponent(domain);
+    if (res.managed === false) {
+        banner('<div class="flex items-start gap-3 mt-4 rounded-xl border border-amber-100 bg-amber-50 p-4"><i data-lucide="info" class="w-5 h-5 text-amber-500 shrink-0 mt-0.5"></i><p class="text-[13px] text-amber-700 font-medium leading-relaxed">' + esc(res.message || 'Domain ini tidak dikelola lewat Cloudflare Clincoo. Record tetap tersimpan di Clincoo — salin juga ke penyedia DNS domain-mu agar aktif.') + '</p></div>');
+    } else if (res.zone_status === 'pending') {
+        banner('<div class="flex items-start gap-3 mt-4 rounded-xl border border-amber-100 bg-amber-50 p-4"><i data-lucide="info" class="w-5 h-5 text-amber-500 shrink-0 mt-0.5"></i><p class="text-[13px] text-amber-700 font-medium leading-relaxed">Record tersimpan di Cloudflare Clincoo, tapi belum aktif — arahkan nameserver domain-mu ke Cloudflare, atau salin record berikut ke penyedia DNS domain-mu. <a href="' + verifHref + '" class="underline font-semibold">Lihat nameserver</a></p></div>');
+    } else {
+        document.getElementById('zone-banner').classList.add('hidden');
+    }
 
     const suffix = '.' + domain;
     const shortName = n => n === domain ? '@' : (n.endsWith(suffix) ? n.slice(0, -suffix.length) : n);
-    const meta = r => r.proxied === true
-        ? 'Tersambung ke Cloudflare'
-        : 'TTL ' + (r.ttl === 1 ? 'otomatis' : r.ttl + ' detik');
+    const meta = r => r.local
+        ? 'Tersimpan di Clincoo — terapkan juga di penyedia DNS domain-mu'
+        : (r.proxied === true
+            ? 'Tersambung ke Cloudflare'
+            : 'TTL ' + (r.ttl === 1 ? 'otomatis' : r.ttl + ' detik'));
 
     const sorted = records.length
         ? [...records].sort((a, b) => {
