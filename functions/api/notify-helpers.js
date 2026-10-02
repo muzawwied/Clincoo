@@ -88,6 +88,7 @@ export async function sendEmail(env, opts) {
         to: [opts.toEmail],
         subject: opts.subject,
         html: opts.html,
+        ...(opts.replyTo ? { reply_to: opts.replyTo } : {}),
         ...(attachments.length ? { attachments: attachments } : {})
       })
     });

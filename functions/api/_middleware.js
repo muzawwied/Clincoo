@@ -11,6 +11,7 @@
 //   - /api/template-submissions* (galeri template publik: GET list setuju & track = publik;
 //                                  POST submit memvalidasi Bearer sendiri di handler;
 //                                  review via token unik per pengajuan)
+//   - /api/email*         (Email API: aksi kelola wajib Bearer; action=send publik via api_key per proyek, divalidasi sendiri)
 //   - preflight OPTIONS  (CORS)
 // Respons 401 sama seperti versi production: {"error":"Login diperlukan","need_login":true}
 //
@@ -25,7 +26,7 @@
 //      (data sensitif tidak pernah nempel di cache).
 import { initTables as initAuthTables, getUserByToken, getToken } from './auth/shared.js';
 
-const PUBLIC = [/^\/api\/fn-db(\/|$)/, /^\/api\/beta-claim(\/|$)/, /^\/api\/promo(\/|$)/, /^\/api\/template-submissions(\/|$)/, /^\/api\/auth(\/|$)/, /^\/api\/github-oauth(\/|$)/, /^\/api\/topup(-qris)?(\/|$)/, /^\/api\/wallet(\/|$)/, /^\/api\/scheduled-tasks(\/|$)/, /^\/api\/user-report-sync(\/|$)/, /^\/api\/wallet-sync(\/|$)/, /^\/api\/collab(\/|$)/, /^\/api\/chat(\/|$)/, /^\/api\/prompt-templates(\/|$)/, /^\/api\/wa(\/|$)/];
+const PUBLIC = [/^\/api\/fn-db(\/|$)/, /^\/api\/beta-claim(\/|$)/, /^\/api\/promo(\/|$)/, /^\/api\/template-submissions(\/|$)/, /^\/api\/auth(\/|$)/, /^\/api\/github-oauth(\/|$)/, /^\/api\/topup(-qris)?(\/|$)/, /^\/api\/wallet(\/|$)/, /^\/api\/scheduled-tasks(\/|$)/, /^\/api\/user-report-sync(\/|$)/, /^\/api\/wallet-sync(\/|$)/, /^\/api\/collab(\/|$)/, /^\/api\/chat(\/|$)/, /^\/api\/prompt-templates(\/|$)/, /^\/api\/wa(\/|$)/, /^\/api\/email(\/|$)/];
 
 // ---- 1. RATE LIMIT (anti-DDoS L7 / anti-brute-force) ----
 const _buckets = new Map(); // key -> array timestamp
