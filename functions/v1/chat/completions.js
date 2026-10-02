@@ -76,6 +76,21 @@ const AI_MODELS = {
   'clincoo/laguna-xs': { provider: 'ext', internal: 'poolside/laguna-xs-2.1:free', note: 'Mini — super ringan', free: true },
   'clincoo/north-code': { provider: 'ext', internal: 'cohere/north-mini-code:free', note: 'Fokus kode', free: true },
   'clincoo/space-bunny': { provider: 'ext', internal: 'stealth/space-bunny-alpha', note: 'Eksperimental — multimodal, konteks besar', free: true },
+  // ===== Model generasi baru (dropdown Integrasi AI) — semua di infrastruktur internal, tetap gratis =====
+  'clincoo/deepseek-v4-pro': { provider: 'cf', internal: '@cf/deepseek-ai/deepseek-v4-pro-0813', note: 'Reasoning — konteks 1M token', free: true },
+  'clincoo/glm-5.3': { provider: 'cf', internal: '@cf/zai-org/glm-5.3', note: 'Coding & agentic (otomasi multi-langkah)', free: true },
+  'clincoo/glm-5.3-flash': { provider: 'cf', internal: '@cf/zai-org/glm-5.3-flash', note: 'Cepat — multimodal', free: true },
+  'clincoo/gpt-oss-120b': { provider: 'cf', internal: '@cf/openai/gpt-oss-120b', note: 'Reasoning terbuka — performa tinggi', free: true },
+  'clincoo/gpt-oss-20b': { provider: 'cf', internal: '@cf/openai/gpt-oss-20b', note: 'Ringan & cepat — tugas harian', free: true },
+  'clincoo/kimi-k2.6': { provider: 'cf', internal: '@cf/moonshotai/kimi-k2.6', note: 'Frontier 1T — tugas kompleks', free: true },
+  'clincoo/kimi-k2.7-code': { provider: 'cf', internal: '@cf/moonshotai/kimi-k2.7-code', note: 'Fokus kode & debugging', free: true },
+  'clincoo/llama-4-scout': { provider: 'cf', internal: '@cf/meta/llama-4-scout-17b-16e-instruct', note: 'Multimodal — teks & gambar', free: true },
+  'clincoo/llama-3.3-70b': { provider: 'cf', internal: '@cf/meta/llama-3.3-70b-instruct-fp8-fast', note: 'Serba guna — performa seimbang', free: true },
+  'clincoo/mistral-small-3.1': { provider: 'cf', internal: '@cf/mistralai/mistral-small-3.1-24b-instruct', note: 'Cepat — konteks besar', free: true },
+  'clincoo/qwq-32b': { provider: 'cf', internal: '@cf/qwen/qwq-32b', note: 'Reasoning langkah demi langkah', free: true },
+  'clincoo/qwen-coder-32b': { provider: 'cf', internal: '@cf/qwen/qwen2.5-coder-32b-instruct', note: 'Fokus kode', free: true },
+  'clincoo/granite-4-micro': { provider: 'cf', internal: '@cf/ibm-granite/granite-4.0-h-micro', note: 'Super ringan & hemat', free: true },
+  'clincoo/sea-lion-27b': { provider: 'cf', internal: '@cf/aisingapore/gemma-sea-lion-v4-27b-it', note: 'Bahasa Asia Tenggara', free: true },
   'clincoo/acak': { provider: 'ext', internal: 'openrouter/free', note: 'Pilih otomatis dari jaringan mitra gratis', free: true }
 };
 // Rantai clincoo/auto: infrastruktur internal dulu (3x), lalu mitra gratis

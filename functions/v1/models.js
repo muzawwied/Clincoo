@@ -30,6 +30,20 @@ const MODELS = [
   { id: 'clincoo/laguna-xs', note: 'Mini — super ringan' },
   { id: 'clincoo/north-code', note: 'Fokus kode' },
   { id: 'clincoo/space-bunny', note: 'Eksperimental — multimodal, konteks besar' },
+  { id: 'clincoo/deepseek-v4-pro', note: 'Reasoning — konteks 1M token' },
+  { id: 'clincoo/glm-5.3', note: 'Coding & agentic (otomasi multi-langkah)' },
+  { id: 'clincoo/glm-5.3-flash', note: 'Cepat — multimodal' },
+  { id: 'clincoo/gpt-oss-120b', note: 'Reasoning terbuka — performa tinggi' },
+  { id: 'clincoo/gpt-oss-20b', note: 'Ringan & cepat — tugas harian' },
+  { id: 'clincoo/kimi-k2.6', note: 'Frontier 1T — tugas kompleks' },
+  { id: 'clincoo/kimi-k2.7-code', note: 'Fokus kode & debugging' },
+  { id: 'clincoo/llama-4-scout', note: 'Multimodal — teks & gambar' },
+  { id: 'clincoo/llama-3.3-70b', note: 'Serba guna — performa seimbang' },
+  { id: 'clincoo/mistral-small-3.1', note: 'Cepat — konteks besar' },
+  { id: 'clincoo/qwq-32b', note: 'Reasoning langkah demi langkah' },
+  { id: 'clincoo/qwen-coder-32b', note: 'Fokus kode' },
+  { id: 'clincoo/granite-4-micro', note: 'Super ringan & hemat' },
+  { id: 'clincoo/sea-lion-27b', note: 'Bahasa Asia Tenggara' },
   { id: 'clincoo/acak', note: 'Pilih otomatis dari jaringan mitra gratis' }
 ];
 
