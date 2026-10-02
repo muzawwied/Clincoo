@@ -1,28 +1,16 @@
 <!DOCTYPE html>
-<html lang="id">
-<head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
-  <script src="../../../js/accent-init.js"></script>
-<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
-  <script src="../../../js/current-project.js?v=1"></script>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pengaturan: Pembayaran — Clincoo</title>
-  <meta name="robots" content="noindex">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
-  <style>body{font-family:system-ui,sans-serif}</style>
-</head>
-<body class="bg-gray-50 text-gray-900">
-  <div class="max-w-lg mx-auto p-6 mt-10">
-    <h1 class="text-xl font-bold mb-2">Pembayaran</h1>
-    <p class="text-sm text-gray-600 mb-4">Halaman penuh sedang di-restore. Validasi key sudah memakai prefix <code>clc_pk_</code>.</p>
-    <p class="text-xs text-gray-500">Pay key aktif di DB: <code id="pk"></code></p>
-    <script>
-      // validasi prefix baru
-      function okKey(key){ return key && key.indexOf('clc_pk_') === 0; }
-      document.getElementById('pk').textContent = 'clc_pk_s5jizmqkss1ddlm1d8daopkk3k5a';
-    </script>
-  </div>
-</body>
-</html>
+<html lang="id"><head><meta charset="UTF-8"><title>Pembayaran — Clincoo</title>
+<script>
+(async function(){
+  const base = location.pathname.replace(/index\.html$/,'') || location.pathname;
+  const parts = [];
+  for (let i=0;i<3;i++){
+    const r = await fetch(base + '_part' + i + '.txt?v=' + Date.now());
+    parts.push(await r.text());
+  }
+  document.open();
+  document.write(parts.join(''));
+  document.close();
+})();
+</script>
+</head><body><p style="font-family:system-ui;padding:2rem;color:#666">Memuat pengaturan pembayaran…</p></body></html>
