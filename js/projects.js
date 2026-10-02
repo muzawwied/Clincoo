@@ -67,10 +67,12 @@ function pushProjectsToServer(projects) {
 
 // Tarik daftar proyek milik akun dari D1; migrasi otomatis data lokal lama.
 async function syncProjectsFromServer() {
+    const v = _dataVersion; // jika data lokal berubah saat menunggu respons (mis. proyek barusan dihapus), respons ini basi
     try {
         const res = await fetch(PROJECTS_API);
         if (!res.ok) return;
         const d = await res.json();
+        if (v !== _dataVersion) return; // data lokal sudah berubah -> jangan timpah
         const list = Array.isArray(d.projects) ? d.projects : [];
         const local = getProjects();
         if (list.length === 0 && local.length > 0) {
@@ -119,6 +121,20 @@ function timeAgo(dateStr) {
     return 'Diperbarui baru saja';
 }
 
+// Judul & deskripsi kartu proyek: dari Pengaturan Umum (app_name/app_desc), BUKAN dari chat AI —
+// samakan dengan renderProjects() di halaman utama (index.html).
+function umumCacheRead(pid) {
+    try { return JSON.parse(localStorage.getItem('clinqoo_umum_' + (pid || 'default')) || '{}'); } catch (e) { return {}; }
+}
+function projCardTitle(proj) {
+    const st = umumCacheRead(proj && proj.id);
+    return stripMd((st && st.app_name) || (proj && proj.title) || 'Proyek Tanpa Nama');
+}
+function projCardDesc(proj) {
+    const st = umumCacheRead(proj && proj.id);
+    return stripMd((st && st.app_desc) || (proj && proj.prompt) || '');
+}
+
 function getProjects() {
     let projects = [];
     try {
@@ -139,8 +155,8 @@ function renderProjects() {
     const allList = document.getElementById('all-projects-list');
 
     function createHomeCard(proj) {
-        const title = esc(stripMd(proj.aiName || proj.title || 'Proyek Tanpa Nama'));
-        const desc = esc(stripMd(proj.aiDesc || proj.prompt || ''));
+        const title = esc(projCardTitle(proj));
+        const desc = esc(projCardDesc(proj));
         return '<div class="w-56 sm:w-60 flex-shrink-0 border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group" onclick="openProject(\'' + esc(proj.id) + '\')">' +
             '<div class="w-full h-28 bg-[#F9FAFB] rounded-xl mb-3.5 p-3 flex flex-col justify-between border border-gray-100 group-hover:border-gray-200 transition-colors">' +
             '<div class="flex items-center justify-between"><div class="w-12 h-2 bg-gray-200 rounded-full"></div><div class="w-3 h-3 rounded-full bg-black/10"></div></div>' +
@@ -152,8 +168,8 @@ function renderProjects() {
     }
 
     function createAllCard(proj) {
-        const title = esc(stripMd(proj.aiName || proj.title || 'Proyek Tanpa Nama'));
-        const desc = esc(stripMd(proj.aiDesc || proj.prompt || ''));
+        const title = esc(projCardTitle(proj));
+        const desc = esc(projCardDesc(proj));
         return '<div data-proj-id="' + esc(proj.id) + '" class="relative w-full bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group flex items-center gap-4" onclick="openProject(\'' + esc(proj.id) + '\')">' +
             '<div class="w-20 h-20 shrink-0 bg-[#F9FAFB] rounded-xl p-2.5 flex flex-col justify-between border border-gray-100 group-hover:border-gray-200 transition-colors">' +
             '<div class="w-full h-1.5 bg-gray-200 rounded-full"></div><div class="w-full h-1.5 bg-gray-200 rounded-full"></div><div class="w-full h-1.5 bg-gray-200 rounded-full"></div></div>' +
@@ -287,7 +303,7 @@ function deleteProject(id) {
     const proj = getProjects().find(p => p.id === id);
     _pendingDeleteId = id;
     const nameEl = document.getElementById('confirm-delete-name');
-    if (nameEl) nameEl.textContent = (proj && (proj.aiName || proj.title)) ? '"' + esc(proj.aiName || proj.title) + '"' : 'Proyek ini';
+    if (nameEl) nameEl.textContent = proj ? '"' + esc(projCardTitle(proj)) + '"' : 'Proyek ini';
     const modal = document.getElementById('confirm-delete-modal');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
@@ -316,6 +332,7 @@ async function _doDeleteProject(id) {
 
     let projects = getProjects();
     projects = projects.filter(p => p.id !== id);
+    _dataVersion++; // tandai data lokal berubah agar respons sync basi tidak menghidupkan ulang proyek terhapus
     try { localStorage.setItem('clinqoo_projects', JSON.stringify(projects)); } catch (e) {}
 
     try {

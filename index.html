@@ -2065,6 +2065,11 @@
             } catch (e) {}
         }
         renderProjects();
+        // Perubahan daftar proyek dari tab/halaman lain (mis. hapus proyek di /akun/proyek/)
+        // langsung dirender ulang di sini — tidak perlu reload halaman utama.
+        window.addEventListener('storage', function (ev) {
+            if (ev.key === 'clinqoo_projects') renderProjects();
+        });
         syncProjectsFromServer();
         // Tarik nama & deskripsi aplikasi tiap proyek dari Pengaturan Umum (backend), lalu render ulang kartu.
         (function loadUmumSettings() {
