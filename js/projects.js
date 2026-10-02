@@ -314,7 +314,9 @@ async function _doDeleteProject(id) {
     const hdrs = { 'Content-Type': 'application/json' };
     if (tok) hdrs['Authorization'] = 'Bearer ' + tok;
     const apiRoot = PROJECTS_API.replace(/\/projects$/, '');
-    try { await fetch(apiRoot + '/deploy', { method: 'POST', headers: hdrs, body: JSON.stringify({ project_id: id, action: 'unpublish' }) }); } catch (e) {}
+    // unpublish situs jalan di belakang layar (non-fatal, sama seperti sebelumnya) —
+    // TIDAK di-nunggu lagi: UI hanya menunggu penghapusan proyek, jadi hapus terasa jauh lebih cepat.
+    try { fetch(apiRoot + '/deploy', { method: 'POST', headers: hdrs, body: JSON.stringify({ project_id: id, action: 'unpublish' }) }).catch(function(){}); } catch (e) {}
     let serverOk = true;
     try {
         const res = await fetch(PROJECTS_API, { method: 'POST', headers: hdrs, body: JSON.stringify({ action: 'delete', id: id }) });
