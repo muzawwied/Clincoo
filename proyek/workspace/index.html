@@ -848,9 +848,9 @@
       clearTimeout(wsCloudTimer);
       wsCloudTimer = setTimeout(function() {
         wsCloudTimer = null;
-        const payload = { project_id: pid, files: wsFlatten(projectFilesData) };
-        fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { method: 'DELETE', headers: wsAuthHeaders() })
-          .then(function(r) { return r.ok ? fetch(WS_CLOUD_API, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()), body: JSON.stringify(payload) }) : Promise.reject(); })
+        // Push atomik mode replace: satu POST, tanpa jendela "cloud kosong"
+        const payload = { project_id: pid, files: wsFlatten(projectFilesData), replace: true };
+        fetch(WS_CLOUD_API, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()), body: JSON.stringify(payload) })
           .catch(function() {});
       }, 3000);
     }

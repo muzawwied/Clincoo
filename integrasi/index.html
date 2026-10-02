@@ -2013,5 +2013,18 @@
   });
 })();
 </script>
+<script>
+    // [[PLUGIN:x]] card dari AI chat -> langsung buka modal koneksi plugin terkait
+    (function clinqoo_auto_connect() {
+        try {
+            var k = new URLSearchParams(location.search).get('connect');
+            if (!k) return;
+            k = String(k).toLowerCase();
+            var map = { github: 'openGitHubModal', drive: 'openDriveModal', notion: 'openNotionModal', calendar: 'openCalendarModal' };
+            var fn = map[k];
+            if (fn && typeof window[fn] === 'function') setTimeout(window[fn], 350);
+        } catch (e) {}
+    })();
+    </script>
 </body>
 </html>

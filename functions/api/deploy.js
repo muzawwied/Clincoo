@@ -449,7 +449,18 @@ export async function onRequestGet({ request, env }) {
     const previewDeployed = Array.isArray(logs) && logs.some(l => l && l.status === 'preview');
     const previewLog = (Array.isArray(logs) ? logs.find(l => l && l.status === 'preview') : null);
     const previewUrl = previewLog ? previewLog.url : ('https://' + prvNameFor(name) + PUB_SUFFIX);
-    const _statusBody = { pages_project: name, pages_url: pagesUrl, public_url: publicUrl, deployed, preview_url: previewUrl, preview_deployed: previewDeployed, last_deployment: last, last_deploy_by: lastDeployBy || '', domains, logs, deploy_phase: deployPhase || '', api_rev: 'uniq5' };
+    // Deteksi perubahan kode: MAX(updated_at) berkas vs waktu deploy sukses terakhir.
+    // Dipakai dashboard untuk CTA "Deploy Pembaruan" real-time.
+    let filesChanged = false, filesUpdatedAt = '';
+    try {
+      const fr = await db.prepare(`SELECT MAX(updated_at) AS m FROM ${T.files} WHERE project_id = ?`).bind(projectId).first();
+      filesUpdatedAt = (fr && fr.m) || '';
+      const lastOk = Array.isArray(logs) ? logs.find(l => l && l.status === 'success') : null;
+      const fu = filesUpdatedAt ? Date.parse(String(filesUpdatedAt).replace(' ', 'T') + 'Z') : 0;
+      const ld = lastOk && lastOk.created_at ? Date.parse(String(lastOk.created_at).replace(' ', 'T') + 'Z') : 0;
+      if (fu && fu > ld) filesChanged = true;
+    } catch (e) {}
+    const _statusBody = { pages_project: name, pages_url: pagesUrl, public_url: publicUrl, deployed, preview_url: previewUrl, preview_deployed: previewDeployed, last_deployment: last, last_deploy_by: lastDeployBy || '', domains, logs, deploy_phase: deployPhase || '', files_changed: filesChanged, files_updated_at: filesUpdatedAt, api_rev: 'uniq6' };
     statusCacheSet(projectId, _statusBody);
     return json(_statusBody);
   } catch (err) {

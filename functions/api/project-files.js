@@ -86,13 +86,22 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // Update project's updated_at in projects table if exists
     try { await db.prepare("UPDATE projects SET updated_at = datetime('now') WHERE id = ?").bind(projectId).run(); } catch(e) {}
 
-    // URL PREVIEW OTOMATIS: setiap perubahan kode yang disimpan memicu deploy latar belakang
-    // ke branch 'preview' Cloudflare Pages (URL preview.<project>.pages.dev) — produksi
-    // (alias main) TIDAK tersentuh, hanya berubah lewat tombol Publish manual.
-    // Throttle 20 detik per proyek; hanya berjalan bila proyek pernah di-deploy (punya Pages project).
+    // MODE REPLACE (atomik): upsert semua berkas lalu hapus path yang tidak ada di
+    // payload — SATU request, tanpa jendela "cloud kosong" seperti pola lama
+    // DELETE-then-POST (penyebab berkas hilang saat POST gagal setelah DELETE sukses).
+    if (body.replace === true) {
+      const paths = filesToSave.map(f => f.path);
+      const ph = paths.map(() => '?').join(',');
+      await db.prepare(`DELETE FROM ${T.files} WHERE project_id = ? AND path NOT IN (${ph})`).bind(projectId, ...paths).run();
+    }
+
+    // URL PREVIEW OTOMATIS: setiap perubahan kode yang disimpan memicu deploy latar
+    // belakang ke project Pages terpisah '-prv' (URL <nama>.clinqoo.biz.id) — produksi
+    // TIDAK tersentuh. Preview jalan untuk proyek apa pun yang punya berkas, tanpa perlu
+    // pernah di-deploy (project '-prv' dibuat otomatis saat pertama kali).
+    // Throttle 20 detik per proyek.
     try {
-      const ever = await db.prepare(`SELECT 1 FROM ${T.deployLogs} WHERE project_id = ? AND status IN ('success','preview') LIMIT 1`).bind(projectId).first();
-      if (ever) {
+      {
         const throttleKey = 'preview_last_deployed_at';
         const prev = await db.prepare(`SELECT value FROM ${T.projectSettings} WHERE project_id = ? AND key = ?`).bind(projectId, throttleKey).first();
         const now = Date.now();

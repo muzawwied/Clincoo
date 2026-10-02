@@ -7,6 +7,7 @@
 // Update snapshot: jalankan `node tools/kb-sync.mjs` lalu commit hasilnya.
 
 import { KB_ARTICLES } from './blog-kb-data.js';
+import { PAYMENT_KB } from './payment-kb-data.js';
 
 function tokenize(q) {
   return String(q || '')
@@ -38,6 +39,14 @@ export async function searchClincooBlog(env, query) {
   if (!tokens.length) return { error: 'Query pencarian kosong.' };
 
   const qLower = q.toLowerCase();
+  // --- KB PAYMENT GATEWAY (docs internal, bukan artikel blog) ---
+  const payDocs = PAYMENT_KB.filter(k => {
+    const hay = (k.gateway + ' ' + k.summary + ' ' + (k.keywords || []).join(' ') + ' ' + k.doc).toLowerCase();
+    let sc = 0;
+    for (const t of tokens) if (hay.includes(t)) sc += 2;
+    for (const w of (k.keywords || [])) if (qLower.includes(w)) sc += 10;
+    return sc >= 10;
+  });
   const scored = KB_ARTICLES.map(art => {
     const titleLower = (art.t || '').toLowerCase();
     const descLower = (art.d || '').toLowerCase();
@@ -59,14 +68,22 @@ export async function searchClincooBlog(env, query) {
     return { found: false, message: 'Tidak ada artikel resmi Clincoo yang cocok dengan pertanyaan ini di basis pengetahuan (snapshot blog resmi blog.clincoo.buzz). Jangan mengarang jawaban — sampaikan jujur ke user bahwa infonya belum tersedia di sumber resmi, dan sarankan memeriksa blog.clincoo.buzz atau bertanya ke admin.' };
   }
 
-  return {
-    found: true,
-    results: top.map(({ art }) => ({
-      judul: art.t,
-      kategori: art.cn,
-      url: 'https://blog.clincoo.buzz/#/' + art.c + '/' + art.i,
-      ringkasan: art.d,
-      kutipan_relevan: excerptAround(art.x || '', tokens)
-    }))
-  };
+  const results = top.map(({ art }) => ({
+    judul: art.t,
+    kategori: art.cn,
+    url: 'https://blog.clincoo.buzz/#/' + art.c + '/' + art.i,
+    ringkasan: art.d,
+    kutipan_relevan: excerptAround(art.x || '', tokens)
+  }));
+  // docs payment gateway selalu ditampilkan paling atas bila relevan
+  for (const k of payDocs) {
+    results.unshift({
+      judul: 'Dokumentasi Internal: Integrasi ' + k.gateway,
+      kategori: 'Payment Gateway',
+      url: '',
+      ringkasan: k.summary,
+      kutipan_relevan: k.doc.slice(0, 2000)
+    });
+  }
+  if (results.length) return { found: true, results };
 }
