@@ -130,7 +130,7 @@ async function ensureTables(db) {
     updated_at TEXT DEFAULT (datetime('now'))
   )`).run();
   // migrasi tabel produksi lama (kolom baru)
-  for (const col of ['fee INTEGER DEFAULT 0', 'dest_type TEXT DEFAULT ''', 'dest_account TEXT DEFAULT ''']) {
+  for (const col of ["fee INTEGER DEFAULT 0", "dest_type TEXT DEFAULT ''", "dest_account TEXT DEFAULT ''"]) {
     try { await db.prepare('ALTER TABLE pay_withdrawals ADD COLUMN ' + col).run(); } catch (e) {}
   }
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_pay_wd_project ON pay_withdrawals(project_id)`).run();
