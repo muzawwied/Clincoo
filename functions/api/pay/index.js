@@ -114,7 +114,7 @@ async function ensureTables(db) {
   )`).run();
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_pay_tx_order ON pay_transactions(pay_key, order_id)`).run();
   // Migrasi kolom tambahan untuk halaman checkout hosted (/pay/) — idempotent
-  try { await db.prepare('ALTER TABLE pay_transactions ADD COLUMN qr_string TEXT DEFAULT ''').run(); } catch (e) {}
+  try { await db.prepare("ALTER TABLE pay_transactions ADD COLUMN qr_string TEXT DEFAULT ''").run(); } catch (e) {}
   try { await db.prepare('ALTER TABLE pay_transactions ADD COLUMN total_payment INTEGER').run(); } catch (e) {}
   await db.prepare(`CREATE TABLE IF NOT EXISTS pay_withdrawals (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
