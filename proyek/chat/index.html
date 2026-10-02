@@ -31,8 +31,12 @@
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+    <!-- Self-hosted (same-origin): CDN eksternal (cdnjs) kadang gagal/lambat di
+         jaringan mobile pengguna -> markdown gagal diparse -> chat tampil mentah
+         dengan tanda ** # dsb tidak terformat. File ini mengikuti deploy app.clincoo.buzz
+         sendiri jadi tidak bergantung ketersediaan domain pihak ketiga. -->
+    <script src="/assets/vendor/marked.min.js" onerror="document.write('<script src=\'https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js\'><\/script>')"></script>
+    <script src="/assets/vendor/purify.min.js" onerror="document.write('<script src=\'https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js\'><\/script>')"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
@@ -1345,25 +1349,84 @@ window.chatLivePreview = function () {
                 seg = seg.replace(/(?:^|\n\n)[ \t]*([{[][\s\S]*?[}\]][ \t]*(?=\n\n|$))/g, function (m, json) {
                     return (m.charAt(0) === '\n' ? '\n\n' : '') + '```json\n' + json.trim() + '\n```';
                 });
-                seg = seg.replace(/\*\*[ \t]+([\s\S]*?)[ \t]+\*\*/g, '**$1**');
+                // BUG LAMA: [\s\S]*? lintas baris bisa menyatukan "**" penutup di satu
+                // baris dengan "**" pembuka di baris lain (lintas bullet/paragraf) ->
+                // markdown rusak parah. Dibatasi SATU BARIS ([^\n]*?) karena bold
+                // model AI selalu ditutup di baris yang sama.
+                seg = seg.replace(/\*\*[ \t]+([^\n]*?)[ \t]+\*\*/g, '**$1**');
+                // Model kadang menulis buka 3 bintang tapi tutup 2 (atau sebaliknya),
+                // mis. "***TCP Connect:**" -> normalkan ke "**TCP Connect:**" agar
+                // tidak muncul 1 bintang mentah tersisa saat dirender.
+                seg = seg.replace(/\*{3}([^*\n]+?)\*{2}(?!\*)/g, '**$1**');
+                seg = seg.replace(/(?<!\*)\*{2}([^*\n]+?)\*{3}/g, '**$1**');
                 seg = seg.replace(/(^|[^\w*\\])\*[ \t]+([^*\n]*?)[ \t]+\*(?![*])/g, '$1*$2*');
-                seg = seg.replace(/~~[ \t]+([\s\S]*?)[ \t]+~~/g, '~~$1~~');
+                seg = seg.replace(/~~[ \t]+([^\n]*?)[ \t]+~~/g, '~~$1~~');  // sama: dibatasi satu baris
                 seg = seg.replace(/^[ \t]{1,6}(#{1,6}[ \t])/gm, '$1');
                 parts[i] = seg;
             }
             return parts.join('');
         }
 
+        // Fallback ringan dipakai HANYA bila marked.js (self-hosted + CDN cadangan)
+        // keduanya gagal dimuat (mis. jaringan user memblokir semua skrip eksternal).
+        // Lebih baik tampil rapi dengan parser minimal ini daripada mentah dengan
+        // tanda ** # - dsb terlihat apa adanya (keluhan user). Hanya tag aman
+        // (b,i,code,pre,ul,ol,li,p,br,h1-3) -> tidak perlu DOMPurify untuk output ini.
+        function fallbackMdInline(x) {
+            return escText(x)
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/\*\*\*([^*]+)\*\*\*/g, '<b><i>$1</i></b>')
+                .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+                .replace(/(^|\s)\*([^*\n]+)\*(?!\*)/g, '$1<i>$2</i>')
+                .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+        }
+        function fallbackMarkdownToHtml(md) {
+            const lines = (md || '').split('\n');
+            let html = '', inCode = false, codeBuf = [], listType = null;
+            const closeList = () => { if (listType) { html += (listType === 'ul' ? '</ul>' : '</ol>'); listType = null; } };
+            for (const raw of lines) {
+                if (raw.trim().startsWith('```')) {
+                    if (inCode) { html += '<pre>' + escText(codeBuf.join('\n')) + '</pre>'; codeBuf = []; inCode = false; }
+                    else { closeList(); inCode = true; }
+                    continue;
+                }
+                if (inCode) { codeBuf.push(raw); continue; }
+                const t = raw.trim();
+                if (!t) { closeList(); html += '<br>'; continue; }
+                let m;
+                if ((m = t.match(/^(#{1,3})\s+(.*)$/))) {
+                    closeList();
+                    const h = m[1].length + 1;
+                    html += '<h' + h + '>' + fallbackMdInline(m[2]) + '</h' + h + '>';
+                } else if (/^([-*•])\s+/.test(t)) {
+                    if (listType !== 'ul') { closeList(); html += '<ul>'; listType = 'ul'; }
+                    html += '<li>' + fallbackMdInline(t.replace(/^([-*•])\s+/, '')) + '</li>';
+                } else if (/^\d+\.\s+/.test(t)) {
+                    if (listType !== 'ol') { closeList(); html += '<ol>'; listType = 'ol'; }
+                    html += '<li>' + fallbackMdInline(t.replace(/^\d+\.\s+/, '')) + '</li>';
+                } else if (/^-{3,}$/.test(t)) {
+                    closeList(); html += '<hr>';
+                } else {
+                    closeList();
+                    html += '<p>' + fallbackMdInline(t) + '</p>';
+                }
+            }
+            if (inCode && codeBuf.length) html += '<pre>' + escText(codeBuf.join('\n')) + '</pre>';
+            closeList();
+            return html;
+        }
         function formatMarkdown(text) {
             if (!text) return '';
             try {
+                if (!window.marked) return fallbackMarkdownToHtml(tidyMarkdown(text));
                 const html = marked.parse(tidyMarkdown(text));
                 // Perbaikan keamanan: jika DOMPurify gagal dimuat dari CDN, JANGAN
-                // pernah render HTML mentah (pintu XSS). Render sebagai teks polos.
-                if (!window.DOMPurify) return escText(text);
+                // pernah render HTML mentah (pintu XSS). Pakai fallback aman di atas
+                // (bukan escText polos) supaya tetap terformat rapi.
+                if (!window.DOMPurify) return fallbackMarkdownToHtml(tidyMarkdown(text));
                 return DOMPurify.sanitize(html);
             } catch (e) {
-                return escText(text);
+                try { return fallbackMarkdownToHtml(tidyMarkdown(text)); } catch (e2) { return escText(text); }
             }
         }
 
