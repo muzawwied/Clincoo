@@ -203,6 +203,8 @@ async function historyLog(db, projectId, limit) {
 function configPayload(row, used, log, limit) {
   return {
     active: !!(row && row.active),
+    from_name: (row && row.from_name) || '',
+    sender_email: (row && row.sender_email) || '',
     api_key: (row && row.active && row.api_key) ? row.api_key : '',
     used: used || 0,
     limit: limit || EMAIL_LIMIT_FALLBACK,

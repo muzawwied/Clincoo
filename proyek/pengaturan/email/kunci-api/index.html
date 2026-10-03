@@ -368,6 +368,22 @@
                 </div>
                 <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">Kuota mengikuti paket akunmu (Starter 100, Pro 500, Bisnis 1.000 email/bulan). Bisa kirim ke alamat mana pun — ke email akun Clincoo sendiri lewat jalur Cloudflare, ke luar (Gmail, dll) lewat jalur terverifikasi clincoo.buzz.</p>
               </details>
+
+              <div class="py-3.5">
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">Identitas pengirim</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 mb-3">Nama dan alamat yang tampil di email dari proyek ini. Kosongkan untuk memakai default Clincoo Mail (noreply@clincoo.buzz).</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label for="sender-name" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Nama tampilan</label>
+                    <input id="sender-name" type="text" maxlength="60" placeholder="Nama pengirim" oninput="senderDirty()" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                  </div>
+                  <div>
+                    <label for="sender-email" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Alamat pengirim (harus @clincoo.buzz)</label>
+                    <input id="sender-email" type="email" placeholder="alamat@clincoo.buzz" oninput="senderDirty()" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                  </div>
+                </div>
+                <button type="button" id="sender-save" onclick="saveSender()" class="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors cursor-pointer">Simpan Pengirim</button>
+              </div>
             </div>
           </div>
         </div>
@@ -380,7 +396,7 @@
 <!-- Menu email (pop-up bawah) -->
   </div>
   <script>
-    let isEdited=false;function showActionButtons(){if(!isEdited){isEdited=true;const c=document.getElementById('action-buttons');c.classList.remove('hidden');c.classList.add('flex');void c.offsetWidth;c.classList.remove('opacity-0');c.classList.add('opacity-100');}}function cancelChanges(){window.location.reload();}function saveChanges(){showActionButtons();}document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('input,textarea,select').forEach(input=>{input.addEventListener('input',showActionButtons);input.addEventListener('change',showActionButtons);});});function toggleSwitch(idPrefix){showActionButtons();const bg=document.getElementById(idPrefix+'-bg');const knob=document.getElementById(idPrefix+'-knob');if(bg.classList.contains('bg-blue-500')){bg.classList.replace('bg-blue-500','bg-gray-200');bg.classList.add('dark:bg-slate-700');knob.classList.remove('translate-x-5');}else{bg.classList.remove('bg-gray-200','dark:bg-slate-700');bg.classList.add('bg-blue-500');knob.classList.add('translate-x-5');}}
+    let isEdited=false;function showActionButtons(){if(!isEdited){isEdited=true;const c=document.getElementById('action-buttons');if(!c)return;c.classList.remove('hidden');c.classList.add('flex');void c.offsetWidth;c.classList.remove('opacity-0');c.classList.add('opacity-100');}}function cancelChanges(){window.location.reload();}function saveChanges(){showActionButtons();}document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('input,textarea,select').forEach(input=>{input.addEventListener('input',showActionButtons);input.addEventListener('change',showActionButtons);});});function toggleSwitch(idPrefix){showActionButtons();const bg=document.getElementById(idPrefix+'-bg');const knob=document.getElementById(idPrefix+'-knob');if(bg.classList.contains('bg-blue-500')){bg.classList.replace('bg-blue-500','bg-gray-200');bg.classList.add('dark:bg-slate-700');knob.classList.remove('translate-x-5');}else{bg.classList.remove('bg-gray-200','dark:bg-slate-700');bg.classList.add('bg-blue-500');knob.classList.add('translate-x-5');}}
   </script>
     <script>if (window.lucide) { lucide.createIcons(); }</script>
 
@@ -394,7 +410,48 @@
   function buildCurl(k) {
     return 'curl -X POST https://app.clincoo.buzz/api/email \\\n  -H "Content-Type: application/json" \\\n  -d \'{"action":"send","api_key":"' + (k || 'clc_email_…') + '","to":"penerima@contoh.com","subject":"Halo","html":"<p>Halo!</p>"}\'';
   }
+  function senderDirty() {
+    var el = document.getElementById('sender-name');
+    if (el) el.dataset.dirty = '1';
+    el = document.getElementById('sender-email');
+    if (el) el.dataset.dirty = '1';
+  }
+  function fillSender(cfg) {
+    var sn = document.getElementById('sender-name');
+    var se = document.getElementById('sender-email');
+    if (sn && !sn.dataset.dirty) sn.value = (cfg && cfg.from_name) || '';
+    if (se && !se.dataset.dirty) se.value = (cfg && cfg.sender_email) || '';
+  }
+  function saveSender() {
+    var btn = document.getElementById('sender-save');
+    var name = (document.getElementById('sender-name') || {}).value || '';
+    var email = (document.getElementById('sender-email') || {}).value || '';
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan…';
+    _apiPost('sender', { from_name: name.trim(), sender_email: email.trim() })
+      .then(function (r) {
+        try {
+          var c = JSON.parse(localStorage.getItem('clincoo_email_cfg_' + _pid()) || 'null') || {};
+          c.from_name = (r && r.from_name) || name.trim();
+          c.sender_email = (r && r.sender_email) || email.trim();
+          localStorage.setItem('clincoo_email_cfg_' + _pid(), JSON.stringify(c));
+        } catch (e) {}
+        var sn = document.getElementById('sender-name');
+        var se = document.getElementById('sender-email');
+        if (sn) delete sn.dataset.dirty;
+        if (se) delete se.dataset.dirty;
+        emailToast('Identitas pengirim disimpan', true);
+      })
+      .catch(function (e) {
+        emailToast(e && e.error ? e.error : 'Gagal menyimpan (' + ((e && e.status) || e) + ')', false);
+      })
+      .then(function () {
+        btn.disabled = false;
+        btn.textContent = 'Simpan Pengirim';
+      });
+  }
   function applyCfg(cfg) {
+    fillSender(cfg);
     var k = (cfg && cfg.api_key) || '';
     var el = document.getElementById('key-val');
     if (el) { el.textContent = maskKey(k); el.setAttribute('data-key', k); }
