@@ -403,6 +403,18 @@
               </button>
             </div>
           </div>
+          <div class="flex flex-wrap items-center gap-2 mb-3">
+            <input id="ai-log-search" type="text" oninput="aiLogFilterChanged()" placeholder="Cari model / sumber…" class="flex-1 min-w-[140px] max-w-[240px] px-3 py-1.5 text-xs rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:border-gray-400 transition-colors">
+            <select id="ai-log-status" onchange="aiLogFilterChanged()" class="px-2.5 py-1.5 text-xs rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:outline-none cursor-pointer">
+              <option value="all">Semua status</option>
+              <option value="ok">Sukses</option>
+              <option value="fail">Gagal</option>
+            </select>
+            <span class="flex-1"></span>
+            <span id="ai-log-count" class="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums whitespace-nowrap"></span>
+            <button type="button" onclick="aiExportLogs('csv')" class="px-2.5 py-1.5 text-[11px] font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer" title="Unduh semua log sebagai CSV">CSV</button>
+            <button type="button" onclick="aiExportLogs('json')" class="px-2.5 py-1.5 text-[11px] font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer" title="Salin semua log sebagai JSON">JSON</button>
+          </div>
           <div id="ai-log-list" class="space-y-2"></div>
           <p id="ai-log-empty" class="text-xs text-gray-400 dark:text-gray-500 py-4 text-center">Belum ada log — panggilan lewat Clincoo Open API akan tercatat di sini</p>
         </div>
@@ -960,12 +972,35 @@
     renderAiLogs([]); renderAiAnalytics({});
   }
   var _aiLogsRaw = [];
+  var _aiLogFilter = { q: '', status: 'all' };
+  function aiLogFilterChanged() {
+    var q = document.getElementById('ai-log-search');
+    var st = document.getElementById('ai-log-status');
+    _aiLogFilter.q = (q && q.value ? q.value : '').toLowerCase();
+    _aiLogFilter.status = st ? st.value : 'all';
+    renderAiLogs(_aiLogsRaw);
+  }
+  function _aiLogMatches(lg) {
+    if (!lg) return false;
+    if (_aiLogFilter.status === 'ok' && !lg.ok) return false;
+    if (_aiLogFilter.status === 'fail' && lg.ok) return false;
+    var q = _aiLogFilter.q;
+    if (q) {
+      var hay = (String(lg.m || '') + ' ' + String(lg.s || '') + ' ' + String(lg.err || '')).toLowerCase();
+      if (hay.indexOf(q) === -1) return false;
+    }
+    return true;
+  }
   function renderAiLogs(logs) {
+    var rawCount = (logs || []).length;
     _aiLogsRaw = logs || [];
     renderAiDailyChart();
     renderAiLatencyChart();
     var list = document.getElementById('ai-log-list');
     var empty = document.getElementById('ai-log-empty');
+    var count = document.getElementById('ai-log-count');
+    logs = (logs || []).filter(_aiLogMatches);
+    if (count) count.textContent = rawCount ? (logs.length === rawCount ? logs.length + ' log' : 'menampilkan ' + logs.length + ' dari ' + rawCount) : '';
     if (!list) return;
     if (empty) empty.style.display = logs.length ? 'none' : 'block';
     if (!logs.length) { list.innerHTML = ''; return; }
@@ -996,6 +1031,32 @@
       '<th class="px-3 py-2 text-right font-medium">Kredit</th>' +
       '<th class="px-3 py-2 text-left font-medium">Sumber</th>' +
       '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+  }
+
+  // ===== Ekspor log: unduh CSV / salin JSON (semua log, bukan hanya yang tampil) =====
+  function aiDownloadBlob(blob, name) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+  function aiExportLogs(kind) {
+    var logs = _aiLogsRaw || [];
+    if (!logs.length) { alert('Belum ada log untuk diekspor.'); return; }
+    if (kind === 'json') {
+      var bj = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' });
+      aiDownloadBlob(bj, 'clinqoo-ai-log.json');
+      return;
+    }
+    var esc = function (v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    var head = 'waktu,model,status,latensi_ms,token,kredit,sumber,error';
+    var rows = logs.map(function (lg) {
+      var t = lg.t; try { t = new Date(lg.t).toISOString(); } catch (e) {}
+      return [t, lg.m, lg.ok ? 'sukses' : 'gagal', lg.ms || 0, lg.tok || 0, lg.c || 0, lg.s || 'langsung', lg.err || ''].map(esc).join(',');
+    });
+    var blob = new Blob(['\ufeff' + head + '\n' + rows.join('\n')], { type: 'text/csv' });
+    aiDownloadBlob(blob, 'clinqoo-ai-log.csv');
   }
 
   // ===== Analitik: kotak angka + grafik (Chart.js) =====
