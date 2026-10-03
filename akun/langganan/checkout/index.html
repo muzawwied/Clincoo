@@ -3,7 +3,7 @@
 <head>
 <script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
   <script>/* base dinamis: URL bersih per-step (mis. /topup/qris/) tetap memuat aset dari /topup/ */
-  (function(){var p=location.pathname.replace(/[^/]+\.html$/,'');var m=p.match(/\/(metode|konfirmasi|qris)\/?$/);if(m)p=p.slice(0,m.index);if(!/\/$/.test(p))p+='/';document.write('<base href="'+p+'">');})();</script>
+  (function(){var p=location.pathname.replace(/[^/]+\.html$/,'');var m=p.match(/\/(metode|konfirmasi|qris)\/?$/);if(m)p=p.slice(0,m.index);var m2=p.match(/\/qris\/[^/]+\/?$/);if(m2)p=p.slice(0,m2.index);if(!/\/$/.test(p))p+='/';document.write('<base href="'+p+'">');})();</script>
     <script src="../../../js/accent-init.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -375,7 +375,11 @@
         var CHECKOUT_BILLING = qs.billing || 'Bulanan';
         var CHECKOUT_AMOUNT = parseInt(qs.amount, 10) || PLAN_PRICES[CHECKOUT_PLAN] || 0;
         var CHECKOUT_ORDER_ID = (qs.order_id || '').trim();
-        // ?order_id=... -> deep-link lanjutkan checkout order tertentu sampai kedaluwarsa
+        try {
+            var moid = location.pathname.match(/\/checkout\/qris\/([^/?#]+)\/?$/);
+            if (moid && moid[1] !== 'metode' && moid[1] !== 'konfirmasi') CHECKOUT_ORDER_ID = decodeURIComponent(moid[1]).trim();
+        } catch (e) {}
+        // /checkout/qris/<order_id>/ (atau ?order_id=...) -> deep-link lanjutkan checkout order tertentu sampai kedaluwarsa
         // Tanpa parameter paket -> coba pulihkan order QRIS terakhir user dari server
         // (jalur email pengingat: /akun/langganan/checkout/qris/ tanpa ?plan=...).
         // Kalau tidak ada order, kembali ke halaman upgrade seperti sebelumnya.
@@ -406,7 +410,7 @@
                     .then(function (r) { return r.json(); });
             } catch (e) {}
             if (res && res.need_login) {
-                location.replace('/auth/?next=' + encodeURIComponent(location.origin + '/akun/langganan/checkout/qris/?order_id=' + encodeURIComponent(orderId)));
+                location.replace('/auth/?next=' + encodeURIComponent(location.origin + '/akun/langganan/checkout/qris/' + encodeURIComponent(orderId) + '/'));
                 return;
             }
             if (res && res.success && res.order && res.order.order_id && res.order.amount) {
@@ -483,13 +487,15 @@
             var p = location.pathname.replace(/[^/]+\.html$/, '');
             var m = p.match(/\/(metode|konfirmasi|qris)\/?$/);
             if (m) p = p.slice(0, m.index);
+            var m2 = p.match(/\/qris\/[^/]+\/?$/);
+            if (m2) p = p.slice(0, m2.index);
             if (!/\/$/.test(p)) p += '/';
             return p;
         })();
-        function setStepPath(seg, query) {
+        function setStepPath(seg, orderId) {
             try {
                 var url = TOPUP_BASE + (seg ? seg + '/' : '');
-                if (query) url += '?' + query;
+                if (seg === 'qris' && orderId) url = TOPUP_BASE + 'qris/' + encodeURIComponent(orderId) + '/';
                 if (location.pathname + location.search !== url) history.replaceState(null, '', url);
             } catch (e) {}
         }
@@ -577,7 +583,7 @@
 
         function showQrisStep(res) {
             showStep('step-qris');
-            setStepPath('qris', res && res.order_id ? 'order_id=' + encodeURIComponent(res.order_id) : '');
+            setStepPath('qris', res && res.order_id ? res.order_id : '');
             document.getElementById('qris-order-id').textContent = res.order_id || '';
             document.getElementById('qris-total').textContent = fmtID(res.total_payment || CHECKOUT_AMOUNT);
             var box = document.getElementById('qris-qr-box');

@@ -400,7 +400,7 @@
                 if (status === 'paid') { stTxt = 'Berhasil'; stCls = 'text-emerald-600 dark:text-emerald-400'; }
                 else if (status === 'expired' || status === 'expire') { stTxt = 'Kedaluwarsa'; stCls = 'text-gray-400'; }
                 else if (status === 'failed' || status === 'cancel' || status === 'cancelled') { stTxt = 'Dibatalkan'; stCls = 'text-gray-400'; }
-                const payLink = (status === 'pending') ? '<a href="/akun/langganan/checkout/qris/?order_id=' + encodeURIComponent(idTxt) + '" class="block mt-0.5 text-[11px] font-medium text-gray-900 dark:text-white underline underline-offset-2 hover:text-gray-600 dark:hover:text-gray-300">Lanjutkan Pembayaran</a>' : '';
+                const payLink = (status === 'pending') ? '<a href="/akun/langganan/checkout/qris/' + encodeURIComponent(idTxt) + '" class="block mt-0.5 text-[11px] font-medium text-gray-900 dark:text-white underline underline-offset-2 hover:text-gray-600 dark:hover:text-gray-300">Lanjutkan Pembayaran</a>' : '';
                 return '<tr>' +
                     '<td class="px-3 py-2.5 whitespace-nowrap text-gray-500 dark:text-gray-400">' + tglTxt + '</td>' +
                     '<td class="px-3 py-2.5 whitespace-nowrap"><span class="block font-mono text-[11px] text-gray-500 dark:text-gray-400">' + idTxt + '</span></td>' +
