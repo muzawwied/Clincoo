@@ -23,6 +23,7 @@
 // POST {action:'send', api_key, to, subject, html, reply_to}  → kirim email dari situs deploy  [publik via api_key]
 
 import { guardProject, currentUser } from '../user-scope.js';
+import { getEffectivePlan, getEffectivePlanByUserKey } from '../plan-helpers.js';
 import { getSecret } from '../notify-helpers.js';
 
 const CORS = {
@@ -31,7 +32,32 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization'
 };
 
-const QUOTA_LIMIT = 1000;
+// Kuota email bulanan per paket akun pemilik proyek (Okt 2026): Starter 100 / Pro 500 / Bisnis 1000.
+const PLAN_EMAIL_LIMITS = { Starter: 100, Pro: 500, Bisnis: 1000 };
+const EMAIL_LIMIT_FALLBACK = 100;
+
+// Batas kuota untuk rute auth (config/history/activate) — user = pemilik proyek.
+async function emailQuotaLimitForUser(env, user) {
+  try {
+    if (user && user.id != null) {
+      const eff = await getEffectivePlan(env.DB, user);
+      return PLAN_EMAIL_LIMITS[eff.plan] || EMAIL_LIMIT_FALLBACK;
+    }
+  } catch (e) {}
+  return EMAIL_LIMIT_FALLBACK;
+}
+
+// Batas kuota untuk rute publik (send via api_key): cari pemilik proyek dulu.
+async function emailQuotaLimitForProject(env, projectId) {
+  try {
+    const p = await env.DB.prepare('SELECT user_id FROM user_projects WHERE id = ?').bind(String(projectId)).first();
+    if (p && p.user_id != null) {
+      const eff = await getEffectivePlanByUserKey(env.DB, 'u' + p.user_id);
+      return PLAN_EMAIL_LIMITS[eff.plan] || EMAIL_LIMIT_FALLBACK;
+    }
+  } catch (e) {}
+  return EMAIL_LIMIT_FALLBACK;
+}
 const KEY_PREFIX = 'clc_email_';
 
 // Nama identitas tim — tidak boleh dipakai pengirim proyek (anti penipuan atas nama Clincoo).
@@ -172,12 +198,12 @@ async function historyLog(db, projectId, limit) {
   });
 }
 
-function configPayload(row, used, log) {
+function configPayload(row, used, log, limit) {
   return {
     active: !!(row && row.active),
     api_key: (row && row.active && row.api_key) ? row.api_key : '',
     used: used || 0,
-    limit: QUOTA_LIMIT,
+    limit: limit || EMAIL_LIMIT_FALLBACK,
     log: log || [],
     owner_email: (row && row.owner_email) || '',
     sender: { email: DEFAULT_FROM, name: 'Clincoo Mail', custom: false }
@@ -245,11 +271,12 @@ export async function onRequestGet({ request, env }) {
     const row = await getRow(env.DB, projectId);
     if (!row) return json({ error: 'not_found' }, 404);
     const used = await quotaUsed(env.DB, projectId);
+    const limit = await emailQuotaLimitForUser(env, await currentUser(env, request));
     if (action === 'history') {
-      return json({ used: used, limit: QUOTA_LIMIT, items: await historyLog(env.DB, projectId, 100) });
+      return json({ used: used, limit: limit, items: await historyLog(env.DB, projectId, 100) });
     }
     await ensureOwnerEmail(env, row);
-    return json(configPayload(row, used, await historyLog(env.DB, projectId, 10)));
+    return json(configPayload(row, used, await historyLog(env.DB, projectId, 10), limit));
   }
 
   return json({ error: 'unknown_action' }, 400);
@@ -270,7 +297,7 @@ export async function onRequestPost({ request, env }) {
     const row = await env.DB.prepare('SELECT * FROM email_settings WHERE api_key = ? AND active = 1').bind(apiKey).first();
     if (!row) return json({ error: 'API key tidak valid atau belum aktif' }, 401);
     const used = await quotaUsed(env.DB, row.project_id);
-    if (used >= QUOTA_LIMIT) return json({ error: 'Kuota bulanan habis' }, 429);
+    if (used >= (await emailQuotaLimitForProject(env, row.project_id))) return json({ error: 'Kuota bulanan habis' }, 429);
     await ensureOwnerEmail(env, row);
     const allow = await recipientAllowed(env, row, body.to);
     if (!allow.ok) return json({ error: allow.reason }, 422);
@@ -303,7 +330,7 @@ export async function onRequestPost({ request, env }) {
         .bind(projectId, genApiKey(), ownerEmail).run();
     }
     const row = await getRow(env.DB, projectId);
-    return json(configPayload(row, await quotaUsed(env.DB, projectId), []));
+    return json(configPayload(row, await quotaUsed(env.DB, projectId), [], await emailQuotaLimitForUser(env, user)));
   }
 
 

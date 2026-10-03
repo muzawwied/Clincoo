@@ -37,6 +37,8 @@
     * { -ms-overflow-style: none; scrollbar-width: none; }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes mSpin { to { transform: rotate(360deg); } }
+    .m-spin { animation: mSpin 0.8s linear infinite; }
     body.dark-mode { background-color: #000000; color: #e0e0e0; }
     body.dark-mode .text-gray-900, body.dark-mode .text-gray-800 { color: #f0f0f0; }
     body.dark-mode .text-gray-700 { color: #b0b0b0; }
@@ -322,7 +324,11 @@
           <!-- Aktif: mini-app email -->
           <div id="kirim-active" class="flex-col">
 
-            <div class="flex flex-col">
+            <div id="m-loading" class="flex flex-col items-center justify-center py-14 text-center">
+              <svg class="m-spin" style="width:28px;height:28px;color:#6b7280" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="3"/><path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-3">Memuat metrik pengiriman…</p>
+            </div>
+            <div id="m-content" class="flex flex-col hidden">
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div class="border border-gray-200 dark:border-slate-700 rounded-xl p-4">
                   <p class="text-[11px] text-gray-400 dark:text-gray-500">Terkirim (histori)</p>
@@ -395,6 +401,10 @@
 <script>
 // ===== Email: halaman metrik =====
   function renderStats(data) {
+    var mLoad = document.getElementById('m-loading');
+    var mCont = document.getElementById('m-content');
+    if (mLoad) mLoad.classList.add('hidden');
+    if (mCont) mCont.classList.remove('hidden');
     var sent = 0, fail = 0;
     (data.items || []).forEach(function (r) { if (r.status === 'terkirim') sent++; else if (r.status === 'gagal') fail++; });
     document.getElementById('m-trkirim').textContent = sent.toLocaleString('id-ID');
