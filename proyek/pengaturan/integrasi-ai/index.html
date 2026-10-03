@@ -1516,42 +1516,9 @@
 
 window.chatLivePreview = function () {
     closeHeaderMenu();
+    // Live preview pindah ke halaman khusus (/proyek/preview/) — konsisten desktop & mobile.
     var pid = ''; try { pid = localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) {}
-    if (!pid) { alert('Tidak ada proyek aktif. Buka proyek dari daftar proyek dulu.'); return; }
-    var API = ['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api';
-    var tk = ''; try { tk = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
-    var headers = tk ? { Authorization: 'Bearer ' + tk } : {};
-    var btn = document.getElementById('header-live-preview');
-    function setLoading(on) { if (btn) { btn.disabled = on; btn.style.opacity = on ? '0.55' : ''; btn.style.cursor = on ? 'wait' : ''; } }
-    setLoading(true);
-    fetch(API + '/deploy?project_id=' + encodeURIComponent(pid), { headers: headers })
-        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; }); })
-        .then(function (res) {
-            var st = res.d || {};
-            if (!res.ok || st.error) throw new Error(st.error || 'Gagal memeriksa status situs.');
-            if (st.last_deployment) {
-                var active = (st.domains || []).filter(function (x) { return x.status === 'active'; })[0];
-                var url = (active ? 'https://' + active.name : '') || st.pages_url;
-                setLoading(false);
-                window.open(url, '_blank');
-                return null;
-            }
-            // Belum pernah dipublikasikan ke Cloudflare: deploy dulu, baru buka URL yang sungguh hidup.
-            return fetch(API + '/deploy', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, headers), body: JSON.stringify({ project_id: pid }) })
-                .then(function (r2) { return r2.json().catch(function () { return {}; }).then(function (d2) { return { ok: r2.ok, d: d2 }; }); })
-                .then(function (res2) {
-                    var d = res2.d || {};
-                    if (!res2.ok || d.error) throw new Error(d.error || 'Gagal mempublikasikan situs ke Cloudflare.');
-                    var url = d.public_url || (d.public_domain ? 'https://' + d.public_domain : '') || (d.deployment && d.deployment.url) || d.pages_url || '';
-                    setLoading(false);
-                    if (url) window.open(url, '_blank');
-                    else alert('Situs berhasil dipublikasikan tapi URL pratinjau tidak ditemukan.');
-                });
-        })
-        .catch(function (err) {
-            setLoading(false);
-            alert('Gagal membuka pratinjau: ' + (err && err.message ? err.message : 'periksa koneksi internet lalu coba lagi.'));
-        });
+    location.href = '/proyek/preview/' + (pid ? '?id=' + encodeURIComponent(pid) : '');
 };
     </script>
 <script>/* clinqoo-premium-sheet: bottom sheet daftar paket untuk fitur premium (crown) */
