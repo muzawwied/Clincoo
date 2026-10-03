@@ -130,6 +130,7 @@ async function ensureTables(db) {
   for (const col of ['sender_email', 'sender_key', 'owner_email']) {
     try { await db.prepare(`ALTER TABLE email_settings ADD COLUMN ${col} TEXT DEFAULT ''`).run(); } catch (e) {}
   }
+  try { await db.prepare(`ALTER TABLE email_broadcasts ADD COLUMN recipients TEXT DEFAULT '[]'`).run(); } catch (e) {}
 }
 
 function genApiKey() {
@@ -401,12 +402,13 @@ export async function onRequestGet({ request, env }) {
     if (denied) return denied;
     await ensureTables(env.DB);
     const rows = await env.DB.prepare(
-      'SELECT id, subject, total, sent, failed, failures, created_at FROM email_broadcasts WHERE project_id = ? ORDER BY id DESC LIMIT 25'
+      'SELECT id, subject, total, sent, failed, failures, recipients, created_at FROM email_broadcasts WHERE project_id = ? ORDER BY id DESC LIMIT 25'
     ).bind(projectId).all();
     const items = (rows && rows.results ? rows.results : []).map(function (r) {
-      let f = [];
+      let f = [], rc = [];
       try { f = JSON.parse(r.failures || '[]'); } catch (e) {}
-      return { id: r.id, subject: r.subject, total: r.total, sent: r.sent, failed: r.failed, failures: f.slice(0, 10), created_at: r.created_at };
+      try { rc = JSON.parse(r.recipients || '[]'); } catch (e) {}
+      return { id: r.id, subject: r.subject, total: r.total, sent: r.sent, failed: r.failed, failures: f.slice(0, 10), recipients: rc, created_at: r.created_at };
     });
     return json({ items: items });
   }
@@ -559,8 +561,8 @@ export async function onRequestPost({ request, env }) {
       if (ok) { sent++; await bumpQuota(env.DB, projectId); }
       else failures.push({ to: to, reason: reason || 'Gagal mengirim' });
     }
-    await env.DB.prepare('INSERT INTO email_broadcasts (project_id, subject, total, sent, failed, failures) VALUES (?, ?, ?, ?, ?, ?)')
-      .bind(projectId, subject, targets.length, sent, failures.length, JSON.stringify(failures.slice(0, 50))).run();
+    await env.DB.prepare('INSERT INTO email_broadcasts (project_id, subject, total, sent, failed, failures, recipients) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .bind(projectId, subject, targets.length, sent, failures.length, JSON.stringify(failures.slice(0, 50)), JSON.stringify(targets)).run();
     return json({ ok: true, total: targets.length, sent: sent, failed: failures.length, failures: failures });
   }
 
