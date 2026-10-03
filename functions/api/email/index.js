@@ -200,7 +200,17 @@ async function historyLog(db, projectId, limit) {
   });
 }
 
-function configPayload(row, used, log, limit) {
+async function projectDisplayName(db, row) {
+  const custom = String((row && row.from_name) || '').trim();
+  if (custom) return custom;
+  try {
+    const p = await db.prepare('SELECT title FROM user_projects WHERE id = ?').bind(String(row.project_id)).first();
+    if (p && p.title) return String(p.title).replace(/["<>\r\n]/g, '').slice(0, 60);
+  } catch (e) {}
+  return 'Clincoo Mail';
+}
+
+async function configPayload(env, row, used, log, limit) {
   return {
     active: !!(row && row.active),
     from_name: (row && row.from_name) || '',
@@ -210,7 +220,7 @@ function configPayload(row, used, log, limit) {
     limit: limit || EMAIL_LIMIT_FALLBACK,
     log: log || [],
     owner_email: (row && row.owner_email) || '',
-    sender: { email: (row && row.sender_email) || DEFAULT_FROM, name: (row && row.from_name) || 'Clincoo Mail', custom: !!(row && (row.sender_email || row.from_name)) }
+    sender: { email: (row && row.sender_email) || DEFAULT_FROM, name: await projectDisplayName(env.DB, row), custom: !!(row && (row.sender_email || row.from_name)) }
   };
 }
 
@@ -257,7 +267,7 @@ async function sendViaResend(env, row, opts) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + String(key) },
       body: JSON.stringify({
-        from: '"' + (String(row.from_name || '') || 'Clincoo Mail') + '" <' + (String(row.sender_email || '') || DEFAULT_FROM) + '>',
+        from: '"' + (await projectDisplayName(env.DB, row)) + '" <' + (String(row.sender_email || '') || DEFAULT_FROM) + '>',
         to: [opts.toEmail],
         subject: opts.subject,
         html: opts.html,
@@ -280,7 +290,7 @@ async function sendProjectEmail(env, row, opts) {
   const bridgeKey = await getSecret(env, 'MAIL_BRIDGE_KEY');
   if (!url || !bridgeKey) return { sent: false, via: 'cloudflare', code: 'BRIDGE_BELUM_TERKONFIGURASI', reason: null };
   const fromMail = DEFAULT_FROM;
-  const fromName = String(row.from_name || '') || 'Clincoo Mail';
+  const fromName = await projectDisplayName(env.DB, row);
   try {
     const r = await fetch(String(url).replace(/\/$/, '') + '/', {
       method: 'POST',
@@ -320,7 +330,7 @@ export async function onRequestGet({ request, env }) {
       return json({ used: used, limit: limit, from_name: row.from_name || '', sender_email: row.sender_email || '', items: await historyLog(env.DB, projectId, 100) });
     }
     await ensureOwnerEmail(env, row);
-    return json(configPayload(row, used, await historyLog(env.DB, projectId, 10), limit));
+    return json(await configPayload(env, row, used, await historyLog(env.DB, projectId, 10), limit));
   }
 
   return json({ error: 'unknown_action' }, 400);
@@ -374,7 +384,7 @@ export async function onRequestPost({ request, env }) {
       .bind(v.from_name, v.sender_email, projectId).run();
     const fresh = await getRow(env.DB, projectId);
     const used = await quotaUsed(env.DB, projectId);
-    return json(configPayload(fresh, used, await historyLog(env.DB, projectId, 10), await emailQuotaLimitForUser(env, await currentUser(env, request))));
+    return json(await configPayload(env, fresh, used, await historyLog(env.DB, projectId, 10), await emailQuotaLimitForUser(env, await currentUser(env, request))));
   }
 
   if (action === 'activate') {
@@ -389,7 +399,7 @@ export async function onRequestPost({ request, env }) {
         .bind(projectId, genApiKey(), ownerEmail).run();
     }
     const row = await getRow(env.DB, projectId);
-    return json(configPayload(row, await quotaUsed(env.DB, projectId), [], await emailQuotaLimitForUser(env, user)));
+    return json(await configPayload(env, row, await quotaUsed(env.DB, projectId), [], await emailQuotaLimitForUser(env, user)));
   }
 
 
