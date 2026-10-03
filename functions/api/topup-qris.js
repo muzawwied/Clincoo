@@ -143,6 +143,30 @@ export async function onRequestGet({ request, env }) {
     });
   }
 
+  // Order spesifik milik user yang login (deep-link checkout: /checkout/qris/?order_id=...)
+  // Supaya user bisa melanjutkan checkout order yang sama sampai batas waktu kedaluwarsa,
+  // di perangkat/browser mana pun (QR dipulihkan dari server, bukan localStorage).
+  if (action === 'get') {
+    const orderId = url.searchParams.get('order_id');
+    if (!orderId) return json({ error: 'order_id required' }, 400);
+    const user = await currentUser(env, request);
+    if (!user) return json({ success: false, need_login: true }, 401);
+    let order = null;
+    try { order = await db.prepare('SELECT * FROM topup_orders WHERE id = ? AND (user_id = ? OR user_id = ?)').bind(orderId, String(user.id), String(user.id) + '').first(); } catch (e) {}
+    if (!order) return json({ success: true, order: null });
+    return json({
+      success: true,
+      order: {
+        order_id: order.id,
+        amount: order.amount,
+        status: order.status,
+        qr_image: order.qr_url || null,
+        total_payment: order.bill_total || order.amount,
+        expired_at: order.expires_at || null
+      }
+    });
+  }
+
   if (action === 'status') {
     const orderId = url.searchParams.get('order_id');
     if (!orderId) return json({ error: 'order_id required' }, 400);
