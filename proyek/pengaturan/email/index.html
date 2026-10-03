@@ -389,7 +389,34 @@
   </script>
     <script>if (window.lucide) { lucide.createIcons(); }</script>
 
-<script src="email-core.js"></script>
+<script src="email-core.js?v=3"></script>
+<script>
+// Fallback anti-cache-mati: kalau email-core.js gagal dimuat (cache korup / versi lama),
+// tombol tetap hidup — muat ulang modul dengan versi segar lalu lanjutkan aktivasi.
+(function () {
+  var btn = document.getElementById('email-cta');
+  if (!btn) return;
+  btn.addEventListener('click', function () {
+    if (typeof activateEmail !== 'function') {
+      btn.disabled = true;
+      btn.innerHTML = 'Memuat modul…';
+      var s = document.createElement('script');
+      s.src = 'email-core.js?v=' + Date.now();
+      s.onload = function () {
+        btn.disabled = false;
+        btn.textContent = 'Aktifkan Email';
+        if (typeof activateEmail === 'function') activateEmail();
+      };
+      s.onerror = function () {
+        btn.disabled = false;
+        btn.textContent = 'Aktifkan Email';
+        alert('Gagal memuat modul email. Buka halaman ini di Chrome lalu tarik ke bawah untuk refresh, setelah itu coba lagi.');
+      };
+      document.head.appendChild(s);
+    }
+  });
+})();
+</script>
 <script>
   // ===== Email: halaman utama (log + filter) =====
 var _logRows = [];
