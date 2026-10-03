@@ -26,18 +26,18 @@ export function buildPromoEmail(name, plan) {
     html: flatTemplate(
       'Fitur Email Kini Hadir di Clincoo',
       name || '',
-      '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">Sekarang kamu bisa mengirim email langsung dari proyek Clincoo. Cukup buka salah satu proyek, masuk ke tab <b>Pengaturan &rarr; Email</b> — tanpa setup SMTP, tanpa ribet.</p>' +
-      '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">Broadcast massal ke audiens, email terjadwal otomatis, template siap pakai, hingga pengiriman via API secret key — semuanya terpusat di satu halaman.</p>',
+      '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">Sekarang kamu bisa mengirim email otomatis langsung dari situs yang kamu deploy lewat Clincoo. Cukup buka salah satu proyek, masuk ke tab <b>Pengaturan &rarr; Email</b> — tanpa setup SMTP, tanpa ribet.</p>' +
+      '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">Formulir kontak yang mengirim pesan ke inbox-mu, notifikasi pendaftaran baru, hingga kode verifikasi akun — semua tinggal aktifkan dan situsmu siap mengirim email.</p>',
       [
-        ['Broadcast & Audiens', 'Kirim ke banyak penerima sekaligus'],
-        ['Otomasi & Template', 'Email terjadwal otomatis, template siap pakai'],
-        ['Kunci API', 'Kirim via API secret key, tanpa SMTP'],
-        ['Metrik & Log', 'Pantau terkirim, dibuka, dan sisa kuota'],
-        ['Kuota Paket ' + planName, quota + ' kredit email/bulan']
+        ['Apa Itu', 'Kirim email otomatis dari situs deploy-mu'],
+        ['Contoh Pakai', 'Form kontak, notifikasi, kode verifikasi'],
+        ['Kunci API', 'Diterbitkan per proyek, tinggal tempel di situsmu'],
+        ['Metrik & Log', 'Pantau histori kirim dan sisa kuota bulanan'],
+        ['Kuota Paket ' + planName, quota + ' email/bulan']
       ],
       'Buka Fitur Email',
       'https://app.clincoo.buzz/proyek/pengaturan/email/',
-      'Email ini dikirim untuk memberi tahu fitur baru di Clincoo.'
+      'Catatan: pada mode terbatas saat ini, email hanya terkirim ke alamat email akun Clincoo-mu sendiri. Email ini dikirim untuk memberi tahu fitur baru di Clincoo.'
     )
   };
 }
