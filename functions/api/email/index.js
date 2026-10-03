@@ -147,10 +147,12 @@ async function ensureOwnerEmail(env, row) {
 // Penerima wajib = email akun pemilik proyek (batasan Cloudflare tanpa sending domain).
 async function recipientAllowed(env, row, to) {
   const owner = String((row.owner_email || '')).trim().toLowerCase();
+  if (String(to || '').trim().toLowerCase() === owner) return { ok: true, via: 'cloudflare' };
+  // Penerima luar: lewat Resend (domain clincoo.buzz terverifikasi) bila terpasang.
+  if (await getSecret(env, 'RESEND_API_KEY')) return { ok: true, via: 'resend' };
   // Pemilik tak diketahui (proyek legacy tanpa user): biarkan lewat —
   // mode terbatas Cloudflare tetap membatasi penerima di lapisan pengiriman.
-  if (!owner) return { ok: true, unresolved: true };
-  if (String(to || '').trim().toLowerCase() === owner) return { ok: true };
+  if (!owner) return { ok: true, via: 'cloudflare', unresolved: true };
   return {
     ok: false,
     reason: 'Email Clincoo hanya bisa dikirim ke alamat akun Clincoo kamu (batasan layanan email Cloudflare).'
@@ -226,7 +228,37 @@ function friendlyEmailError(code, reason) {
   if (code === 'BINDING_SEND_EMAIL_BELUM_AKTIF') return 'Layanan email belum aktif di server — hubungi tim Clincoo.';
   if (code === 'BRIDGE_BELUM_TERKONFIGURASI') return 'Layanan email belum dikonfigurasi di server — hubungi tim Clincoo.';
   if (code === 'E_RECIPIENT_NOT_ALLOWED') return 'Penerima belum terverifikasi di Cloudflare — mode terbatas layanan email Clincoo. Hubungi tim Clincoo bila email ini penting.';
+  if (code === 'RESEND_BELUM_TERKONFIGURASI') return 'Layanan email belum dikonfigurasi di server — hubungi tim Clincoo.';
+  if (code === 'RESEND_401' || code === 'RESEND_403') return 'Kunci/domain pengirim email belum valid di server — hubungi tim Clincoo.';
+  if (code === 'RESEND_429') return 'Terlalu banyak email dalam waktu singkat (batas harian Resend) — tunggu sebentar lalu coba lagi.';
+  if (code === 'RESEND_422') return 'Alamat atau isi email ditolak Resend — periksa alamat tujuan.';
+  if (String(code || '').indexOf('RESEND_') === 0) return 'Layanan pengirim email (Resend) sedang bermasalah — coba lagi sebentar.';
   return reason || 'Pengiriman gagal';
+}
+
+// Kirim ke penerima LUAR (non-akun Clincoo) via Resend — domain clincoo.buzz terverifikasi.
+async function sendViaResend(env, row, opts) {
+  const key = await getSecret(env, 'RESEND_API_KEY');
+  if (!key) return { sent: false, via: 'resend', code: 'RESEND_BELUM_TERKONFIGURASI', reason: null };
+  try {
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + String(key) },
+      body: JSON.stringify({
+        from: 'Clincoo Mail <' + DEFAULT_FROM + '>',
+        to: [opts.toEmail],
+        subject: opts.subject,
+        html: opts.html,
+        text: stripHtml(opts.html),
+        ...(opts.replyTo ? { reply_to: opts.replyTo } : {})
+      })
+    });
+    const data = await r.json().catch(function () { return {}; });
+    if (r.ok && (data.id || data.sent)) return { sent: true, via: 'resend', messageId: data.id || null };
+    return { sent: false, via: 'resend', code: 'RESEND_' + r.status, reason: (data && (data.message || data.name)) || ('HTTP ' + r.status) };
+  } catch (e) {
+    return { sent: false, via: 'resend', code: null, reason: String((e && e.message) || e) };
+  }
 }
 
 // Kirim via Cloudflare Email Service, lewat Worker jembatan clincoo-mail
@@ -301,12 +333,15 @@ export async function onRequestPost({ request, env }) {
     await ensureOwnerEmail(env, row);
     const allow = await recipientAllowed(env, row, body.to);
     if (!allow.ok) return json({ error: allow.reason }, 422);
-    const result = await sendProjectEmail(env, row, {
+    const sendOpts = {
       toEmail: body.to,
       subject: String(body.subject).slice(0, 200),
       html: String(body.html),
       replyTo: body.reply_to || row.contact_to || ''
-    });
+    };
+    const result = (allow.via === 'resend')
+      ? await sendViaResend(env, row, sendOpts)
+      : await sendProjectEmail(env, row, sendOpts);
     await env.DB.prepare('INSERT INTO email_log (project_id, to_addr, subject, status) VALUES (?, ?, ?, ?)')
       .bind(row.project_id, body.to, String(body.subject).slice(0, 200), result.sent ? 'terkirim' : 'gagal').run();
     if (result.sent) await bumpQuota(env.DB, row.project_id);
