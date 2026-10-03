@@ -721,18 +721,37 @@
             showModal('Pembayaran Dibatalkan', 'Transaksi QRIS dibatalkan.');
         }
 
-        function downloadQris() {
-            var box = document.getElementById('qris-qr-box');
-            var canvas = box ? box.querySelector('canvas') : null;
-            var img = box ? box.querySelector('img') : null;
-            var src = canvas ? canvas.toDataURL('image/png') : (img ? img.src : null);
-            if (!src) { showModal('Gagal', 'QRIS belum siap untuk diunduh.', true); return; }
+        function triggerQrisDownload(href) {
             var a = document.createElement('a');
-            a.href = src;
+            a.href = href;
             a.download = 'clinqoo-qris-' + (qrisOrder ? qrisOrder.order_id : 'bayar') + '.png';
             document.body.appendChild(a);
             a.click();
             a.remove();
+        }
+
+        async function downloadQris() {
+            var box = document.getElementById('qris-qr-box');
+            var canvas = box ? box.querySelector('canvas') : null;
+            var img = box ? box.querySelector('img') : null;
+            if (canvas) { try { triggerQrisDownload(canvas.toDataURL('image/png')); } catch (e) { showModal('Gagal', 'QRIS belum siap untuk diunduh.', true); } return; }
+            if (img && img.src) {
+                // Gambar QR dari domain BuatQris (cross-origin): atribut download diabaikan browser.
+                // Ambil dulu jadi blob lokal supaya unduhan jalan; gagal (CORS) -> buka tab baru.
+                try {
+                    var resp = await fetch(img.src, { mode: 'cors' });
+                    if (!resp.ok) throw new Error('fetch ' + resp.status);
+                    var blob = await resp.blob();
+                    var url = URL.createObjectURL(blob);
+                    triggerQrisDownload(url);
+                    setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+                } catch (e) {
+                    var w = window.open(img.src, '_blank');
+                    if (!w) showModal('Gagal', 'Browser memblokir unduhan. Tekan lama gambar QRIS lalu pilih simpan gambar.', true);
+                }
+                return;
+            }
+            showModal('Gagal', 'QRIS belum siap untuk diunduh.', true);
         }
 
         function stopQrisTimers() {
