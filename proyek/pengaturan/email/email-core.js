@@ -74,18 +74,23 @@ function renderEmailState(mode) {
 function emailGate(onActive) {
   var cached = null;
   try { cached = JSON.parse(localStorage.getItem('clincoo_email_cfg_' + _pid()) || 'null'); } catch (e) {}
-  if (cached && cached.api_key) { renderEmailState('active'); if (onActive) onActive(cached); }
+  var hasUsableCache = !!(cached && cached.api_key); // cache tanpa api_key gak boleh dianggap valid
+  if (hasUsableCache) { renderEmailState('active'); if (onActive) onActive(cached); }
   fetch(API_BASE + '/email?action=config&project_id=' + encodeURIComponent(_pid()), { headers: _hdrs() })
     .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
     .then(function (cfg) {
       renderEmailState(cfg && cfg.active ? 'active' : 'inactive');
-      try { localStorage.setItem('clincoo_email_cfg_' + _pid(), JSON.stringify(cfg)); } catch (e) {}
+      // cache hanya disimpan kalau config punya api_key — config 'belum aktif' yang kosong
+      // tidak boleh nempel di localStorage (pernah bikin halaman stuck di placeholder '…')
+      if (cfg && cfg.api_key) { try { localStorage.setItem('clincoo_email_cfg_' + _pid(), JSON.stringify(cfg)); } catch (e) {} }
       if (onActive) onActive(cfg);
     })
     .catch(function (st) {
       if (st === 401) { renderEmailState('login'); }
       else if (st === 404) { renderEmailState('inactive'); }
-      else if (!cached) { renderEmailState('inactive'); }
+      // fetch gagal umum (429/500/network/non-JSON): kalau gak ada cache valid, tampilkan
+      // state 'belum aktif' (punya tombol pulih) — jangan dibiarkan mentok di shell '…'
+      else if (!hasUsableCache) { renderEmailState('inactive'); }
     });
 }
 
