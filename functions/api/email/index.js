@@ -21,6 +21,8 @@
 // POST {action:'revoke', project_id}                          → nonaktifkan + hapus API key   [auth]
 // POST {action:'delete_log', project_id, id}                  → hapus entri histori (delete)  [auth]
 // POST {action:'send', api_key, to, subject, html, reply_to}  → kirim email dari situs deploy  [publik via api_key]
+// GET  ?action=broadcast_list&project_id=...               → riwayat broadcast            [auth]
+// POST {action:'broadcast', project_id, to, subject, html}  → kirim massal (maks 50 penerima) [auth]
 
 import { guardProject, currentUser } from '../user-scope.js';
 import { getEffectivePlan, getEffectivePlanByUserKey } from '../plan-helpers.js';
@@ -104,6 +106,17 @@ async function ensureTables(db) {
     created_at TEXT DEFAULT (datetime('now'))
   )`).run();
   await db.prepare('CREATE INDEX IF NOT EXISTS idx_email_log_project ON email_log(project_id, created_at)').run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS email_broadcasts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id TEXT NOT NULL,
+    subject TEXT DEFAULT '',
+    total INTEGER DEFAULT 0,
+    sent INTEGER DEFAULT 0,
+    failed INTEGER DEFAULT 0,
+    failures TEXT DEFAULT '[]',
+    created_at TEXT DEFAULT (datetime('now'))
+  )`).run();
+  await db.prepare('CREATE INDEX IF NOT EXISTS idx_email_bcast_project ON email_broadcasts(project_id, created_at)').run();
   // Kolom baru untuk deployment lama (idempoten).
   for (const col of ['sender_email', 'sender_key', 'owner_email']) {
     try { await db.prepare(`ALTER TABLE email_settings ADD COLUMN ${col} TEXT DEFAULT ''`).run(); } catch (e) {}
@@ -363,6 +376,21 @@ export async function onRequestGet({ request, env }) {
     return json(await configPayload(env, row, used, await historyLog(env.DB, projectId, 10), limit));
   }
 
+  if (action === 'broadcast_list') {
+    const denied = await guardEmail(env, request, projectId);
+    if (denied) return denied;
+    await ensureTables(env.DB);
+    const rows = await env.DB.prepare(
+      'SELECT id, subject, total, sent, failed, failures, created_at FROM email_broadcasts WHERE project_id = ? ORDER BY id DESC LIMIT 25'
+    ).bind(projectId).all();
+    const items = (rows && rows.results ? rows.results : []).map(function (r) {
+      let f = [];
+      try { f = JSON.parse(r.failures || '[]'); } catch (e) {}
+      return { id: r.id, subject: r.subject, total: r.total, sent: r.sent, failed: r.failed, failures: f.slice(0, 10), created_at: r.created_at };
+    });
+    return json({ items: items });
+  }
+
   return json({ error: 'unknown_action' }, 400);
 }
 
@@ -469,6 +497,51 @@ export async function onRequestPost({ request, env }) {
     if (!id) return json({ error: 'id tidak valid' }, 400);
     await env.DB.prepare('DELETE FROM email_log WHERE id = ? AND project_id = ?').bind(id, projectId).run();
     return json({ ok: true });
+  }
+
+  // ---- Broadcast: kirim ke banyak penerima sekaligus (login pemilik proyek) ----
+  if (action === 'broadcast') {
+    const row = await getRow(env.DB, projectId);
+    if (!row) return json({ error: 'Aktifkan email dulu' }, 400);
+    if (!body.subject || !body.html) return json({ error: 'subject dan html wajib diisi' }, 400);
+    const MAX_BCAST = 50; // batas subrequest Cloudflare per request
+    let raw = body.to || body.recipients || [];
+    const parts = Array.isArray(raw) ? raw : String(raw).split(/[\s,;]+/);
+    const seen = {}; const targets = [];
+    for (const t of parts) {
+      const e = String(t || '').trim().toLowerCase();
+      if (e && !seen[e] && validEmail(e)) { seen[e] = 1; targets.push(e); }
+    }
+    if (!targets.length) return json({ error: 'Daftar penerima kosong atau tidak ada alamat valid' }, 422);
+    if (targets.length > MAX_BCAST) return json({ error: 'Maksimal ' + MAX_BCAST + ' penerima per broadcast (batas layanan)' }, 422);
+    const used = await quotaUsed(env.DB, projectId);
+    const limit = await emailQuotaLimitForUser(env, await currentUser(env, request));
+    const sisa = Math.max(0, limit - used);
+    if (targets.length > sisa) return json({ error: 'Kuota bulanan tidak cukup: sisa ' + sisa + ' email, broadcast ini butuh ' + targets.length + '. Kurangi penerima atau tunggu kuota reset bulan depan.' }, 429);
+    await ensureOwnerEmail(env, row);
+    const subject = String(body.subject).slice(0, 200);
+    const html = String(body.html);
+    let sent = 0; const failures = [];
+    for (const to of targets) {
+      let ok = false; let reason = '';
+      try {
+        const allow = await recipientAllowed(env, row, to);
+        if (!allow.ok) reason = allow.reason;
+        else {
+          const opts = { toEmail: to, subject: subject, html: html, replyTo: body.reply_to || '' };
+          const res = (allow.via === 'resend') ? await sendViaResend(env, row, opts) : await sendProjectEmail(env, row, opts);
+          ok = !!res.sent;
+          if (!ok) reason = friendlyEmailError(res.code, res.reason);
+        }
+      } catch (e) { reason = 'Gagal tak terduga saat mengirim'; }
+      await env.DB.prepare('INSERT INTO email_log (project_id, to_addr, subject, status) VALUES (?, ?, ?, ?)')
+        .bind(projectId, to, subject, ok ? 'terkirim' : 'gagal').run();
+      if (ok) { sent++; await bumpQuota(env.DB, projectId); }
+      else failures.push({ to: to, reason: reason || 'Gagal mengirim' });
+    }
+    await env.DB.prepare('INSERT INTO email_broadcasts (project_id, subject, total, sent, failed, failures) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(projectId, subject, targets.length, sent, failures.length, JSON.stringify(failures.slice(0, 50))).run();
+    return json({ ok: true, total: targets.length, sent: sent, failed: failures.length, failures: failures });
   }
 
   return json({ error: 'unknown_action' }, 400);

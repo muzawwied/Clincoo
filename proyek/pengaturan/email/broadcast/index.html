@@ -322,10 +322,57 @@
           <!-- Aktif: mini-app email -->
           <div id="kirim-active" class="flex-col">
 
-            <div class="py-10 flex flex-col items-center justify-center text-center">
-              <svg class="w-10 h-10 text-gray-300 dark:text-slate-600 mb-3 mx-auto" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m3 11 18-5v12L3 14v-3z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path></svg>
-              <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Broadcast</p>
-              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Kirim email massal ke banyak penerima sekaligus. Fitur ini segera hadir.</p>
+            <!-- Form broadcast -->
+            <form id="bcast-form" onsubmit="submitBroadcast(event)" class="flex flex-col gap-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Subjek</label>
+                <input id="bcast-subject" type="text" required maxlength="200" placeholder="Subjek email" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Isi email (HTML)</label>
+                <textarea id="bcast-html" rows="5" required placeholder="&lt;p&gt;Isi email dalam HTML&lt;/p&gt;" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors font-mono"></textarea>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Penerima</label>
+                <textarea id="bcast-to" rows="3" required placeholder="satu@email.com, dua@email.com — pisahkan dengan koma, spasi, atau baris baru" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors"></textarea>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Maksimal 50 penerima per broadcast · tiap penerima terhitung kuota bulanan.</p>
+              </div>
+              <div class="flex items-center gap-3">
+                <button type="submit" id="bcast-btn" class="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Kirim Broadcast</button>
+                <span id="bcast-count" class="text-xs text-gray-400 dark:text-gray-500">0 penerima</span>
+              </div>
+            </form>
+
+            <!-- Hasil broadcast -->
+            <div id="bcast-result" class="hidden mt-4 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
+              <p class="text-sm font-semibold" id="bcast-result-title"></p>
+              <div id="bcast-result-detail" class="text-xs text-gray-500 dark:text-gray-400 mt-1"></div>
+              <div id="bcast-result-fail" class="hidden mt-2 text-xs text-red-500 flex-col gap-1"></div>
+            </div>
+
+            <!-- Riwayat broadcast -->
+            <div class="pt-5 mt-5 border-t border-gray-100 dark:border-slate-800">
+              <div class="flex items-center justify-between gap-3 mb-3">
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">Riwayat broadcast</p>
+                <span class="text-xs text-gray-400 dark:text-gray-500"><span id="bcast-hist-count">…</span></span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr class="text-gray-400 dark:text-gray-500 border-b border-gray-200 dark:border-slate-700">
+                      <th class="py-2 pr-4 font-medium whitespace-nowrap">Waktu</th>
+                      <th class="py-2 pr-4 font-medium">Subjek</th>
+                      <th class="py-2 pr-4 font-medium">Penerima</th>
+                      <th class="py-2 font-medium">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="bcast-list" class="divide-y divide-gray-100 dark:divide-slate-800">
+                    <tr class="animate-pulse"><td colspan="4" class="py-3"><div class="h-2.5 bg-gray-200 dark:bg-slate-700 rounded-full w-1/3"></div></td></tr>
+                    <tr class="animate-pulse"><td colspan="4" class="py-3"><div class="h-2.5 bg-gray-200 dark:bg-slate-700 rounded-full w-2/3"></div></td></tr>
+                    <tr class="animate-pulse"><td colspan="4" class="py-3"><div class="h-2.5 bg-gray-200 dark:bg-slate-700 rounded-full w-1/2"></div></td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -344,7 +391,98 @@
 
 <script src="../email-core.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function () { emailGate(); });
+// --- Broadcast: kirim massal + riwayat real-time ---
+function _bcastParse() {
+  var raw = (document.getElementById('bcast-to') || {}).value || '';
+  var seen = {}, n = 0;
+  raw.split(/[\s,;]+/).forEach(function (t) {
+    var e = String(t || '').trim().toLowerCase();
+    if (e && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && !seen[e]) { seen[e] = 1; n++; }
+  });
+  return n;
+}
+function _bcastCacheKey() { return 'clincoo_email_bcast_' + _pid(); }
+function _bcastTime(iso) {
+  try { return new Date(iso + 'Z').toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return iso || '-'; }
+}
+function _bcastRender(items) {
+  var tb = document.getElementById('bcast-list'); if (!tb) return;
+  var c = document.getElementById('bcast-hist-count');
+  if (c) c.textContent = (items || []).length + ' broadcast';
+  if (!items || !items.length) {
+    tb.innerHTML = '<tr><td colspan="4" class="py-2.5 text-gray-400 dark:text-gray-500">Belum ada broadcast.</td></tr>';
+    return;
+  }
+  tb.innerHTML = items.map(function (b) {
+    var okAll = b.failed === 0, st = okAll
+      ? '<span class="text-green-600">' + b.sent + ' terkirim</span>'
+      : '<span class="text-green-600">' + b.sent + ' terkirim</span> · <span class="text-red-500">' + b.failed + ' gagal</span>';
+    return '<tr>'
+      + '<td class="py-2.5 pr-4 text-gray-400 dark:text-gray-500 whitespace-nowrap">' + _esc(_bcastTime(b.created_at)) + '</td>'
+      + '<td class="py-2.5 pr-4 font-medium">' + _esc(b.subject || '(tanpa subjek)') + '</td>'
+      + '<td class="py-2.5 pr-4 text-gray-500 dark:text-gray-400">' + b.total + '</td>'
+      + '<td class="py-2.5">' + st + '</td>'
+      + '</tr>';
+  }).join('');
+}
+function _bcastRefresh(silent) {
+  if (!silent) { /* biarkan shimmer tetap — fetch cepat */ }
+  return fetch(API_BASE + '/email?action=broadcast_list&project_id=' + encodeURIComponent(_pid()), { headers: _hdrs() })
+    .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function (j) {
+      _bcastRender(j.items || []);
+      try { localStorage.setItem(_bcastCacheKey(), JSON.stringify({ t: Date.now(), items: j.items || [] })); } catch (e) {}
+    })
+    .catch(function () {});
+}
+function _bcastInit() {
+  // render instan dari cache dulu
+  try {
+    var c = JSON.parse(localStorage.getItem(_bcastCacheKey()) || 'null');
+    if (c && c.items) _bcastRender(c.items);
+  } catch (e) {}
+  _bcastRefresh(true);
+  // refresh real-time: 15s saat tab terlihat + saat kembali ke halaman
+  setInterval(function () { if (document.visibilityState === 'visible') _bcastRefresh(true); }, 15000);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') _bcastRefresh(true); });
+  window.addEventListener('pageshow', function () { _bcastRefresh(true); });
+  var to = document.getElementById('bcast-to');
+  if (to) to.addEventListener('input', function () {
+    var n = _bcastParse();
+    document.getElementById('bcast-count').textContent = n + ' penerima';
+  });
+}
+function submitBroadcast(ev) {
+  ev.preventDefault();
+  var btn = document.getElementById('bcast-btn');
+  var to = document.getElementById('bcast-to').value;
+  var subject = document.getElementById('bcast-subject').value;
+  var html = document.getElementById('bcast-html').value;
+  var n = _bcastParse();
+  if (!n) { emailToast('Tidak ada alamat penerima yang valid', false); return; }
+  btn.disabled = true;
+  btn.textContent = 'Mengirim ke ' + n + ' penerima…';
+  _apiPost('broadcast', { to: to, subject: subject, html: html }).then(function (res) {
+    var box = document.getElementById('bcast-result');
+    document.getElementById('bcast-result-title').textContent = res.sent + ' terkirim' + (res.failed ? ' · ' + res.failed + ' gagal' : '');
+    document.getElementById('bcast-result-detail').textContent = 'Subjek: ' + subject;
+    var fail = document.getElementById('bcast-result-fail');
+    if (res.failures && res.failures.length) {
+      fail.classList.remove('hidden'); fail.classList.add('flex');
+      fail.innerHTML = res.failures.map(function (f) { return '<span>' + _esc(f.to) + ' — ' + _esc(f.reason) + '</span>'; }).join('');
+    } else { fail.classList.add('hidden'); fail.classList.remove('flex'); fail.innerHTML = ''; }
+    box.classList.remove('hidden');
+    emailToast('Broadcast selesai: ' + res.sent + ' terkirim, ' + res.failed + ' gagal', !res.failed);
+    try { sessionStorage.setItem('clincoo_email_dirty', '1'); } catch (e) {}
+  }).catch(function (e) {
+    emailToast((e && e.error) ? e.error : 'Broadcast gagal — coba lagi', false);
+  }).finally(function () {
+    btn.disabled = false;
+    btn.textContent = 'Kirim Broadcast';
+    _bcastRefresh(true);
+  });
+}
+document.addEventListener('DOMContentLoaded', function () { emailGate(function () { _bcastInit(); }); });
 </script>
 
 
