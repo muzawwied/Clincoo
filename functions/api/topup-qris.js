@@ -9,10 +9,14 @@
 // Callback URL (di dashboard BuatQris): https://<domain>/api/topup-qris
 // Referensi order ditanam di `description` QRIS ("Clincoo clincoo-pay-xxx") sehingga
 // webhook apa pun formatnya tetap bisa dicocokkan ke order — plus verifikasi HMAC.
+// Callback URL cuma satu (untuk top-up), jadi webhook ClincooPay (order "clincoo-cp-xxx",
+// ditanam di description QRIS oleh /api/pay) juga dilayani di sini: kena HMAC verifikasi
+// yang sama, lalu transaksi ClincooPay ditandai paid/expired + forward ke webhook proyek.
 
 import { currentUser } from './user-scope.js';
 import { creditTopup } from './topup.js';
 import { sendEmail, flatTemplate, formatIDR } from './notify-helpers.js';
+import { forwardPayWebhook } from './pay/index.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -214,30 +218,50 @@ export async function onRequestPost({ request, env }) {
 
     // Cari referensi order kita (ditanam di description QRIS) di mana pun posisinya
     const raw = String(rawBody || '') + ' ' + JSON.stringify(body || {});
-    const m = raw.match(new RegExp(BQ_ORDER_PREFIX + '[A-Za-z0-9-]+'));
-    if (!m) return json({ received: true, matched: false });
-
-    const orderId = m[0];
-    let order = null;
-    try { order = await db.prepare('SELECT * FROM topup_orders WHERE id = ?').bind(orderId).first(); } catch (e) {}
-    if (!order) return json({ received: true, matched: false });
-
-    // Deteksi status dari payload (nama field callback bervariasi — cocokkan fleksibel)
     const low = raw.toLowerCase();
+    // Deteksi status dari payload (nama field callback bervariasi — cocokkan fleksibel)
     const negative = ['pending', 'expire', 'expired', 'failed', 'fail', 'gagal', 'cancel', 'cancelled', 'refund'];
     const positive = ['success', 'paid', 'berhasil', 'complete', 'completed', 'settlement'];
     const isNeg = negative.some(w => low.includes(w));
     const isPos = positive.some(w => low.includes(w));
 
-    if (isPos && !isNeg && order.status === 'pending') {
-      if (await claimOrder(db, order.id)) {
-        const fresh = await db.prepare('SELECT * FROM topup_orders WHERE id = ?').bind(order.id).first();
-        try { await creditTopup(env, fresh); } catch (e) {}
-        try { await db.prepare('INSERT INTO activity_log (action, details, user_id) VALUES (?, ?, ?)')
-          .bind('topup_buatqris_paid', order.id + ' (' + order.amount + ')', order.user_id).run(); } catch (e) {}
+    // ---- Top-up saldo: order "clincoo-pay-xxx" ----
+    const m = raw.match(new RegExp(BQ_ORDER_PREFIX + '[A-Za-z0-9-]+'));
+    if (m) {
+      const orderId = m[0];
+      let order = null;
+      try { order = await db.prepare('SELECT * FROM topup_orders WHERE id = ?').bind(orderId).first(); } catch (e) {}
+      if (order) {
+        if (isPos && !isNeg && order.status === 'pending') {
+          if (await claimOrder(db, order.id)) {
+            const fresh = await db.prepare('SELECT * FROM topup_orders WHERE id = ?').bind(order.id).first();
+            try { await creditTopup(env, fresh); } catch (e) {}
+            try { await db.prepare('INSERT INTO activity_log (action, details, user_id) VALUES (?, ?, ?)')
+              .bind('topup_buatqris_paid', order.id + ' (' + order.amount + ')', order.user_id).run(); } catch (e) {}
+          }
+        }
+        return json({ received: true, matched: true });
       }
     }
-    return json({ received: true, matched: true });
+
+    // ---- ClincooPay: order "clincoo-cp-xxx" (ditanam di description QRIS oleh /api/pay) ----
+    const mcp = raw.match(/clincoo-cp-[A-Za-z0-9]+/);
+    if (mcp) {
+      let tx = null;
+      try { tx = await db.prepare('SELECT * FROM pay_transactions WHERE order_id = ?').bind(mcp[0]).first(); } catch (e) {}
+      if (tx) {
+        let st = tx.status;
+        if (isPos && !isNeg) st = 'paid';
+        else if (['expire', 'expired', 'failed', 'fail', 'gagal', 'cancel', 'cancelled', 'canceled', 'refund'].some(w => low.includes(w))) st = 'expired';
+        if (st !== tx.status) {
+          try { await db.prepare("UPDATE pay_transactions SET status = ?, updated_at = datetime('now') WHERE id = ?").bind(st, tx.id).run(); } catch (e) {}
+        }
+        try { await forwardPayWebhook(db, tx, st); } catch (e) {}
+        return json({ received: true, matched: true });
+      }
+    }
+
+    return json({ received: true, matched: false });
   }
 
   // ---- Batalkan order ----

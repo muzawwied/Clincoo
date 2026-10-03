@@ -1,10 +1,13 @@
 // Pembayaran — Clincoo sebagai payment gateway.
 // Clincoo menerbitkan kredensial ClincooPay sendiri per proyek (account_id + secret + pay_key).
-// Saat pembeli membayar, Clincoo-lah yang memanggil provider QRIS (Pakasir API v2) di belakang layar
-// memakai kredensial gateway (env: PAKASIR_SLUG, PAKASIR_API_KEY).
+// Saat pembeli membayar, Clincoo-lah yang memanggil provider QRIS BuatQris (api.buatqris.site)
+// di belakang layar memakai kredensial gateway global (BUATQRIS_ACCOUNT_ID + BUATQRIS_SECRET_TOKEN,
+// env atau D1 env_vars — sama dengan yang dipakai top-up saldo).
 // User TIDAK pernah tahu/memasukkan kredensial provider.
 //
-// Webhook masuk dari Pakasir ditangani functions/api/pay/webhook.js.
+// Webhook BuatQris (satu callback URL bersama top-up) ditangani functions/api/topup-qris.js:
+// order id ClincooPay ditanam di description QRIS supaya webhook bisa kecocokkan.
+// Webhook era Pakasir (transaksi lama yang masih pending) tetap ditangani functions/api/pay/webhook.js.
 //
 // POST {action:'activate', project_id}                    → aktifkan + terbitkan kredensial  [auth]
 // GET  ?action=config&project_id=...                      → status, pay key, saldo            [auth]
@@ -37,6 +40,27 @@ const PKS_THROTTLE = new Map();
 
 export function gatewayReady(env) { return !!(env.PAKASIR_SLUG && env.PAKASIR_API_KEY); }
 
+// Gateway aktif (era BuatQris): kredensial global tersedia.
+async function bqCreds(env) {
+  const account_id = await getSecret(env, 'BUATQRIS_ACCOUNT_ID');
+  const secret_token = await getSecret(env, 'BUATQRIS_SECRET_TOKEN');
+  return { account_id: account_id || '', secret_token: secret_token || '', ok: !!(account_id && secret_token) };
+}
+
+const BQ_BASE = 'https://api.buatqris.site';
+
+// Panggil API BuatQris (POST form-urlencoded — pola sama dengan topup-qris.js)
+async function bqPost(params) {
+  try {
+    const res = await fetch(BQ_BASE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(params).toString()
+    });
+    return await res.json();
+  } catch { return null; }
+}
+
 export async function pakasirFetch(env, path, init) {
   try {
     const r = await fetch(PAKASIR_API + path, {
@@ -49,7 +73,11 @@ export async function pakasirFetch(env, path, init) {
 }
 
 function qrImageUrl(qrString) {
-  return qrString ? 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=12&data=' + encodeURIComponent(qrString) : '';
+  if (!qrString) return '';
+  // era BuatQris: qr_string berisi URL gambar QR siap tampil — pakai apa adanya.
+  // era Pakasir: string EMV — dibungkus jadi gambar QR.
+  if (/^https?:\/\//i.test(qrString)) return qrString;
+  return 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=12&data=' + encodeURIComponent(qrString);
 }
 
 export function mapPksStatus(st) {
@@ -193,8 +221,9 @@ function randKey(n) {
   return s;
 }
 
+const CP_ORDER_PREFIX = 'clincoo-cp-';
 function genOrderId() {
-  return 'clincoo' + randKey(17);
+  return CP_ORDER_PREFIX + randKey(17);
 }
 
 // ---- Saldo: total masuk (paid) - penarikan (pending + done) ----
@@ -587,11 +616,11 @@ export async function onRequestGet({ request, env }) {
     if (deny) return deny;
     const row = await db.prepare('SELECT * FROM pay_creds WHERE project_id = ?').bind(projectId).first();
     const bal = await calcBalance(db, projectId);
-    if (!row) return json({ success: true, active: false, gateway_ready: gatewayReady(env), ...bal });
+    if (!row) return json({ success: true, active: false, gateway_ready: (await bqCreds(env)).ok, ...bal });
     return json({
       success: true,
       active: true,
-      gateway_ready: gatewayReady(env),
+      gateway_ready: (await bqCreds(env)).ok,
       account_id: row.account_id,
       pay_key: row.pay_key,
       ...bal
@@ -646,7 +675,7 @@ export async function onRequestPost({ request, env }) {
     const deny = await guardPay(env, request, projectId);
     if (deny) return deny;
     const bal = await calcBalance(db, projectId);
-    return json({ success: true, ...bal, gateway_ready: gatewayReady(env) });
+    return json({ success: true, ...bal, gateway_ready: (await bqCreds(env)).ok });
   }
 
   // ===== Tarik saldo → permintaan penarikan (auth) =====
@@ -843,19 +872,30 @@ export async function onRequestPost({ request, env }) {
     if (!amount || amount < 1000 || amount > 100000000) return json({ error: 'Nominal harus Rp 1.000 – Rp 100.000.000' }, 400);
     const creds = await db.prepare('SELECT * FROM pay_creds WHERE pay_key = ?').bind(key).first();
     if (!creds) return json({ error: 'pay key tidak dikenal' }, 404);
-    if (!gatewayReady(env)) {
+    const bq = await bqCreds(env);
+    if (!bq.ok) {
       return json({ success: false, error: 'gateway_not_ready', message: 'Pembayaran QRIS ClincooPay sedang dalam proses aktivasi. Hubungi tim Clincoo.' }, 503);
     }
 
     const orderId = genOrderId();
-    const txn = await pakasirFetch(env,
-      '/api/v2/create-transaction/' + encodeURIComponent(env.PAKASIR_SLUG) + '/' + encodeURIComponent(orderId),
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: 'qris', amount: amount }) });
-    const ok = txn && txn.txn_id;
+    // Order id ditanam di description QRIS supaya webhook BuatQris (satu callback URL bersama
+    // top-up) bisa kecocokkan transaksi ini — sama seperti pola topup-qris.js.
+    const pay = await bqPost({
+      action: 'api_create_qris',
+      account_id: bq.account_id,
+      secret_token: bq.secret_token,
+      amount: String(amount),
+      description: (description ? description + ' ' : '') + orderId,
+      qris_method: creds.qris_method || 'qris_two'
+    });
+    const p = (pay && (pay.qr_url || pay.payment_url || pay.status)) ? pay : (pay && pay.data) || null;
+    const ok = !!(p && p.qr_url);
+    const total = ok ? (parseInt(p.total_amount || p.total || p.total_payment || p.amount || amount, 10) || amount) : amount;
+    const expiredAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
     await db.prepare('INSERT INTO pay_transactions (project_id, pay_key, order_id, trx_ref, amount, description, status, qr_string, total_payment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(creds.project_id, key, orderId, ok ? txn.txn_id : '', amount, description, ok ? 'pending' : 'failed', txn.qr_string || '', txn.total_payment || amount).run();
+      .bind(creds.project_id, key, orderId, '', amount, description, ok ? 'pending' : 'failed', ok ? p.qr_url : '', total).run();
     if (!ok) {
-      return json({ success: false, message: (txn && (txn.message || txn.error)) || 'Gagal membuat QRIS ClincooPay.' }, 502);
+      return json({ success: false, message: (pay && (pay.message || pay.msg)) || 'Gagal membuat QRIS ClincooPay.' }, 502);
     }
     const origin = new URL(request.url).origin;
     return json({
@@ -863,13 +903,13 @@ export async function onRequestPost({ request, env }) {
       order_id: orderId,
       checkout_url: origin + '/pay/?order_id=' + encodeURIComponent(orderId) + '&key=' + encodeURIComponent(key),
       amount: amount,
-      qr_image: qrImageUrl(txn.qr_string),
-      qr_string: txn.qr_string || '',
-      va_number: txn.va_number || '',
-      payment_url: txn.payment_link || '',
-      total_payment: txn.total_payment || amount,
-      expires_at: txn.expired_at || '',
-      is_sandbox: !!txn.is_sandbox
+      qr_image: qrImageUrl(p.qr_url),
+      qr_string: p.qr_url,
+      va_number: '',
+      payment_url: p.payment_url || '',
+      total_payment: total,
+      expires_at: expiredAt,
+      is_sandbox: false
     });
   }
 
