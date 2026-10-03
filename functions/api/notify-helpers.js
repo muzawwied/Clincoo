@@ -68,31 +68,50 @@ export function emailTemplate(title, name, introText, details, ctaText, ctaLink,
   '</div>';
 }
 
-// Template email OTP Clincoo — kode besar + detail + CTA + footer, gaya konsisten emailTemplate.
+// Template email OTP Clincoo — FLAT (tanpa card): konten langsung di latar putih,
+// brand kiri atas ala halaman checkout, kode besar, detail, CTA, footer keamanan.
 // opts: { name, code, purpose, email, minutes, ctaText, ctaLink }
 export function otpEmail(opts) {
   const o = opts || {};
   const code = String(o.code || '000000');
   const minutes = o.minutes || 10;
   const tgl = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
-  const otpBox = '<div style="margin:20px 0 24px;padding:20px 12px;background:#f9fafb;border:1px dashed #d1d5db;border-radius:12px;text-align:center">' +
-      '<span style="font-family:Arial,Helvetica,sans-serif;font-size:34px;font-weight:bold;letter-spacing:12px;color:#0a0a0a">' + code + '</span>' +
-    '</div>';
-  return emailTemplate(
-    'Kode Verifikasi Akun Anda',
-    o.name || '',
-    (o.purpose || 'Gunakan kode berikut untuk menyelesaikan verifikasi akun Clincoo Anda.') +
-      otpBox +
-      '<p style="margin:0;color:#374151;font-size:13px;line-height:1.7"><b style="color:#111827">Penting:</b> jangan bagikan kode ini kepada siapa pun, termasuk pihak yang mengaku dari tim Clincoo. Staf Clincoo tidak akan pernah meminta kode ini.</p>',
-    [
+  const rows = [
       ['Tujuan', o.email || '-'],
       ['Berlaku hingga', minutes + ' menit'],
       ['Dikirim', tgl]
-    ],
-    o.ctaText || 'Verifikasi Sekarang',
-    o.ctaLink || 'https://app.clincoo.buzz/',
-    'Kode ini hanya berlaku ' + minutes + ' menit dan hanya dapat digunakan sekali. Jika Anda tidak meminta kode ini, abaikan email ini — akun Anda tetap aman.'
-  );
+    ]
+    .map(function (d) {
+      return '<tr>' +
+        '<td style="padding:10px 0;border-bottom:1px solid #eceef1;color:#6b7280;font-size:13px">' + d[0] + '</td>' +
+        '<td style="padding:10px 0 10px 16px;border-bottom:1px solid #eceef1;color:#111827;font-size:13px;font-weight:bold;text-align:right">' + d[1] + '</td>' +
+      '</tr>';
+    })
+    .join('');
+  const cta = '<a href="' + (o.ctaLink || 'https://app.clincoo.buzz/') + '" style="display:inline-block;background:#0a0a0a;color:#ffffff;padding:13px 32px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:bold;margin-top:24px">' + (o.ctaText || 'Verifikasi Sekarang') + '</a>';
+  return '<div style="background:#ffffff;padding:36px 24px;font-family:Arial,Helvetica,sans-serif">' +
+    '<div style="max-width:520px;margin:0 auto">' +
+      '<div style="padding-bottom:20px;border-bottom:1px solid #eceef1">' +
+        '<img src="https://base44.app/api/apps/6a8bb7d04e18a36f9c03702c/files/mp/public/6a8bb7d04e18a36f9c03702c/d29b4d44e_clinqoo-logo.png" width="36" height="36" alt="Clincoo" style="display:inline-block;vertical-align:middle;border-radius:10px;margin-right:12px">' +
+        '<span style="font-size:20px;font-weight:bold;letter-spacing:2px;color:#0a0a0a;vertical-align:middle">Clincoo</span>' +
+      '</div>' +
+      '<h1 style="margin:28px 0 6px;font-size:18px;color:#111827;font-weight:bold">Kode Verifikasi Akun Anda</h1>' +
+      '<p style="margin:0 0 18px;color:#9ca3af;font-size:12px">' + tgl + '</p>' +
+      '<p style="margin:0 0 12px;color:#374151;font-size:14px;line-height:1.7">' + (o.name ? 'Halo ' + o.name + ',' : 'Halo,') + '</p>' +
+      '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">' + (o.purpose || 'Gunakan kode berikut untuk menyelesaikan verifikasi akun Clincoo Anda.') + '</p>' +
+      '<div style="margin:0 0 20px;padding:22px 0;border-top:1px solid #eceef1;border-bottom:1px solid #eceef1;text-align:center">' +
+        '<span style="font-size:36px;font-weight:bold;letter-spacing:12px;color:#0a0a0a">' + code + '</span>' +
+      '</div>' +
+      '<p style="margin:0 0 20px;color:#374151;font-size:13px;line-height:1.7"><b style="color:#111827">Penting:</b> jangan bagikan kode ini kepada siapa pun, termasuk pihak yang mengaku dari tim Clincoo. Staf Clincoo tidak akan pernah meminta kode ini.</p>' +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 8px">' + rows + '</table>' +
+      cta +
+      '<div style="margin-top:36px;border-top:1px solid #eceef1;padding-top:16px">' +
+        '<p style="margin:0 0 8px;color:#9ca3af;font-size:12px;line-height:1.6">Kode ini hanya berlaku ' + minutes + ' menit dan hanya dapat digunakan sekali. Jika Anda tidak meminta kode ini, abaikan email ini — akun Anda tetap aman.</p>' +
+        '<p style="margin:0 0 6px;color:#6b7280;font-size:11px;line-height:1.6"><b style="color:#374151">Privasi Anda terlindungi.</b> Clincoo tidak membagikan data pribadi Anda kepada pihak ketiga. Email ini dikirim otomatis oleh sistem Clincoo — mohon jangan dibalas.</p>' +
+        '<p style="margin:0;color:#9ca3af;font-size:11px">&copy; 2026 Clincoo &middot; Semua hak dilindungi</p>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
 }
 
 // Kirim email via Resend. opts: { toEmail, toName, subject, html, attachment }. Hasil: { sent, via, reason }
