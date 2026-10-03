@@ -378,9 +378,9 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
         </div>
         <div class="py-5" id="pay-key-section" style="display:none">
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Kunci Publik Pembayaran</p>
-          <div class="flex items-center gap-1 p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-[#0f0f0f]">
-            <code id="pay-key-box" class="flex-1 text-xs font-mono text-gray-700 dark:text-gray-300 break-all select-all"></code>
-            <button type="button" id="pay-key-copy" onclick="copyPayKey(this)" class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-500 transition-colors cursor-pointer" title="Salin kunci"><svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M5 15.4A2 2 0 0 1 3.6 14V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 1.4"></path></svg><span>Salin</span></button>
+          <div class="relative flex items-center h-11 pr-1 pl-4 rounded-full border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-[#0f0f0f] overflow-hidden">
+            <code id="pay-key-box" class="flex-1 min-w-0 text-xs font-mono text-gray-700 dark:text-gray-300 whitespace-nowrap overflow-hidden select-all" style="-webkit-mask-image: linear-gradient(to right, #000 68%, transparent 100%); mask-image: linear-gradient(to right, #000 68%, transparent 100%);"></code>
+            <button type="button" id="pay-key-copy" onclick="copyPayKey(this)" class="relative z-10 flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-500 transition-colors cursor-pointer" title="Salin kunci" aria-label="Salin kunci"><svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M5 15.4A2 2 0 0 1 3.6 14V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 1.4"></path></svg></button>
           </div>
           <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Dipakai situs deploy-mu untuk membuat QR bayar via <span class="font-mono" id="pay-endpoint">/api/pay</span></p>
         </div>
@@ -702,7 +702,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
     var done = function () {
       if (!btn || !btn.innerHTML) return;
       if (!btn._orig) btn._orig = btn.innerHTML;
-      btn.innerHTML = '<svg class="h-3.5 w-3.5 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg><span>Tersalin</span>';
+      btn.innerHTML = '<svg class="h-3.5 w-3.5 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>';
       if (btn._t) clearTimeout(btn._t);
       btn._t = setTimeout(function () { btn.innerHTML = btn._orig; }, 1600);
     };
@@ -763,7 +763,6 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
   var _payTxs = [];
   var _payTxsSig = '';
   var _payWdsSig = '';
-  var _payWdAdmin = false;
   var _txFilter = { status: 'all', q: '', period: '0' };
   function _txPass(t) {
     if (_txFilter.status !== 'all' && t.status !== _txFilter.status) return false;
@@ -953,8 +952,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
       var list = document.getElementById('pay-wd-list');
       var empty = document.getElementById('pay-wd-empty');
       var wds = (data && data.withdrawals) || [];
-      _payWdAdmin = !!(data && data.is_admin);
-      var sig = JSON.stringify(wds) + (_payWdAdmin ? ':adm' : '');
+      var sig = JSON.stringify(wds);
       if (sig === _payWdsSig) return; // data sama → jangan re-render daftar
       _payWdsSig = sig;
       if (!wds.length) { empty.style.display = 'block'; return; }
@@ -966,50 +964,11 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
         var row = document.createElement('div');
         row.className = 'flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700';
         var _ew = ({ dana: 'DANA', ovo: 'OVO', gopay: 'GoPay', shopeepay: 'ShopeePay', linkaja: 'LinkAja' })[w.dest_type] || '';
-        var isPending = w.status !== 'done' && w.status !== 'rejected';
-        var cta = (_payWdAdmin && isPending)
-          ? '<button type="button" onclick="payWdConfirm(' + w.id + ')" class="px-3 h-8 text-[11px] font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full transition-colors flex-shrink-0 cursor-pointer">Konfirmasi</button>'
-          : '';
         row.innerHTML = '<div class="min-w-0"><p class="text-sm font-medium text-gray-900 dark:text-white">Penarikan saldo' + (_ew ? ' · ' + _ew : '') + '</p><p class="text-xs text-gray-400 font-mono">#' + w.id + (w.dest_account ? ' · ' + w.dest_account : '') + ' · ' + (w.created_at || '') + '</p></div>' +
-          '<div class="flex items-center gap-2.5 flex-shrink-0"><span class="text-sm font-semibold text-gray-900 dark:text-white">Rp ' + Number(w.amount || 0).toLocaleString('id-ID') + '</span>' + (w.fee ? '<span class="text-[11px] text-gray-400 font-mono">+' + Number(w.fee).toLocaleString('id-ID') + '</span>' : '') + cta + '<span class="px-2 py-0.5 text-xs font-semibold rounded-full ' + stClass + '">' + stLabel + '</span></div>';
+          '<div class="flex items-center gap-2.5 flex-shrink-0"><span class="text-sm font-semibold text-gray-900 dark:text-white">Rp ' + Number(w.amount || 0).toLocaleString('id-ID') + '</span>' + (w.fee ? '<span class="text-[11px] text-gray-400 font-mono">+' + Number(w.fee).toLocaleString('id-ID') + '</span>' : '') + '<span class="px-2 py-0.5 text-xs font-semibold rounded-full ' + stClass + '">' + stLabel + '</span></div>';
         list.appendChild(row);
       });
     } catch (e) {}
-  }
-
-  // ===== Popover konfirmasi penarikan (admin) =====
-  function payWdConfirm(id) {
-    document.querySelectorAll('.wd-pop').forEach(function (p) { p.remove(); });
-    var pop = document.createElement('div');
-    pop.className = 'wd-pop fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm';
-    pop.onclick = function (e) { if (e.target === pop) pop.remove(); };
-    pop.innerHTML =
-      '<div class="w-full max-w-xs bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-5 py-5">' +
-        '<p class="text-sm font-semibold text-gray-900 dark:text-white">Konfirmasi penarikan #' + id + '</p>' +
-        '<p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Pastikan dana sudah dikirim ke e-wallet tujuan sebelum menandai selesai.</p>' +
-        '<button type="button" class="wd-ok w-full h-11 mt-4 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-full cursor-pointer">Selesai — Dana Terkirim</button>' +
-        '<button type="button" class="wd-no w-full h-11 mt-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 rounded-full cursor-pointer">Tolak — Kembalikan Saldo</button>' +
-        '<button type="button" class="wd-x w-full h-10 mt-1 text-xs text-gray-400 cursor-pointer">Batal</button>' +
-      '</div>';
-    pop.querySelector('.wd-x').onclick = function () { pop.remove(); };
-    pop.querySelector('.wd-ok').onclick = function () { payWdConfirmRun(id, 'done', pop); };
-    pop.querySelector('.wd-no').onclick = function () { payWdConfirmRun(id, 'rejected', pop); };
-    document.body.appendChild(pop);
-  }
-
-  async function payWdConfirmRun(id, decision, pop) {
-    var btns = pop.querySelectorAll('button');
-    btns.forEach(function (b) { b.disabled = true; });
-    try {
-      var res = await fetch(API_BASE + '/pay', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _apiToken }, body: JSON.stringify({ action: 'wd_confirm', project_id: _pid(), id: id, decision: decision }) });
-      var data = await res.json().catch(function () { return {}; });
-      if (!res.ok || !data.success) { _payToast(data.message || 'Gagal mengonfirmasi.'); pop.remove(); return; }
-      pop.remove();
-      _payWdsSig = '';
-      _payToast(data.message || 'Berhasil');
-      loadPayConfig(); // saldo berubah kalau ditolak
-      loadPayWithdrawals();
-    } catch (e) { _payToast('Tidak dapat terhubung ke server.'); btns.forEach(function (b) { b.disabled = false; }); }
   }
 
   document.addEventListener('DOMContentLoaded', function () { loadPayConfig(); });
