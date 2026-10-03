@@ -253,32 +253,16 @@ function _ensureDeleteModal() {
     const modal = document.getElementById('confirm-delete-modal');
     modal.addEventListener('click', function (e) { if (e.target === modal) _closeDeleteModal(); });
     document.getElementById('confirm-delete-cancel').addEventListener('click', _closeDeleteModal);
-    document.getElementById('confirm-delete-ok').addEventListener('click', async function () {
+    document.getElementById('confirm-delete-ok').addEventListener('click', function () {
         const id = _pendingDeleteId;
         if (!id) { _closeDeleteModal(); return; }
-        const okBtn = document.getElementById('confirm-delete-ok');
-        const cancelBtn = document.getElementById('confirm-delete-cancel');
-        // status menghapus: tombol berputar, kartu proyek diredupkan + spinner
-        okBtn.disabled = true;
-        okBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 inline-block align-[-3px] cc-spin"></i> Menghapus...';
-        if (cancelBtn) cancelBtn.style.visibility = 'hidden';
-        document.querySelectorAll('[data-proj-id="' + id + '"]').forEach(function (el) {
-            el.classList.add('cc-deleting');
-            el.insertAdjacentHTML('beforeend', '<div class="cc-del-overlay absolute inset-0 flex items-center justify-center"><i data-lucide="loader-2" class="w-6 h-6 text-gray-900 cc-spin"></i></div>');
-        });
-        try { lucide.createIcons(); } catch (e) {}
-        let ok = false;
-        try { ok = await _doDeleteProject(id); } catch (e) { ok = false; }
-        if (ok) {
-            _closeDeleteModal();
-            _showToast('Proyek dihapus', 'success');
-        } else {
-            const errEl = document.getElementById('confirm-delete-error');
-            if (errEl) errEl.classList.remove('hidden');
-            if (okBtn) { okBtn.disabled = false; okBtn.innerHTML = 'Coba Lagi'; }
-            document.querySelectorAll('.cc-del-overlay').forEach(function (ov) { ov.remove(); });
-            document.querySelectorAll('.cc-deleting').forEach(function (el) { el.classList.remove('cc-deleting'); });
-        }
+        // Optimistic: proyek langsung lenyap dari daftar & modal langsung tertutup —
+        // penghapusan sungguhan di server (D1 + unpublish) jalan sendiri di latar belakang
+        // (fire-and-forget + retry diam-diam), jadi hapus TERASA instan tanpa menunggu jaringan.
+        _closeDeleteModal();
+        _removeProjectLocally(id);
+        _showToast('Proyek dihapus', 'success');
+        _deleteProjectInBackground(id);
     });
 }
 function _resetDeleteModalUI() {
@@ -308,45 +292,75 @@ function deleteProject(id) {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 }
-async function _doDeleteProject(id) {
-    // tarik publish-an: situs + link publik (Cloudflare Pages) ikut dihapus (non-fatal)
-    const tok = (function () { try { return localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) { return ''; } })();
-    const hdrs = { 'Content-Type': 'application/json' };
-    if (tok) hdrs['Authorization'] = 'Bearer ' + tok;
-    const apiRoot = PROJECTS_API.replace(/\/projects$/, '');
-    // unpublish situs jalan di belakang layar (non-fatal, sama seperti sebelumnya) —
-    // TIDAK di-nunggu lagi: UI hanya menunggu penghapusan proyek, jadi hapus terasa jauh lebih cepat.
-    try { fetch(apiRoot + '/deploy', { method: 'POST', headers: hdrs, body: JSON.stringify({ project_id: id, action: 'unpublish' }) }).catch(function(){}); } catch (e) {}
-    let serverOk = true;
-    try {
-        const res = await fetch(PROJECTS_API, { method: 'POST', headers: hdrs, body: JSON.stringify({ action: 'delete', id: id }) });
-        if (!res.ok) serverOk = false;
-        else { const d = await res.json().catch(() => null); if (d && d.success === false) serverOk = false; }
-    } catch (e) { serverOk = false; }
-    if (!serverOk) return false; // server gagal -> kartu TETAP ada, pelanggan diberi tahu
-
-    // data lokal proyek (chat, file workspace, penunjuk aktif)
+// Hapus proyek dari tampilan & data lokal SEKETIKA (optimistic) — tidak menunggu server sama sekali.
+function _removeProjectLocally(id) {
     try {
         localStorage.removeItem('clinqoo_ls_chat_' + id);
         localStorage.removeItem('clinqoo_workspace_files_' + id);
         if (localStorage.getItem('clinqoo_current_project_id') === id) localStorage.removeItem('clinqoo_current_project_id');
     } catch (e) {}
-
     let projects = getProjects();
     projects = projects.filter(p => p.id !== id);
     _dataVersion++; // tandai data lokal berubah agar respons sync basi tidak menghidupkan ulang proyek terhapus
     try { localStorage.setItem('clinqoo_projects', JSON.stringify(projects)); } catch (e) {}
-
-    try {
-        fetch('https://clincoo-be2.pages.dev/api/activity', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'delete_project', details: 'Proyek dihapus' })
-        }).catch(function(){});
-    } catch(e) {}
-
     renderProjects();
-    return true;
+}
+
+// Antrean retry diam-diam: kalau penghapusan di server gagal (jaringan putus dkk),
+// id-nya disimpan supaya dicoba lagi otomatis saat halaman proyek dibuka lagi.
+// Proyek TIDAK pernah dihidupkan kembali di UI — ini murni membereskan sisa data di server.
+function _getPendingDeletes() {
+    try { return JSON.parse(localStorage.getItem('clinqoo_pending_deletes') || '[]'); } catch (e) { return []; }
+}
+function _setPendingDeletes(list) {
+    try { localStorage.setItem('clinqoo_pending_deletes', JSON.stringify(list)); } catch (e) {}
+}
+function _queuePendingDelete(id) {
+    const list = _getPendingDeletes();
+    if (list.indexOf(id) === -1) { list.push(id); _setPendingDeletes(list); }
+}
+function _unqueuePendingDelete(id) {
+    const list = _getPendingDeletes().filter(x => x !== id);
+    _setPendingDeletes(list);
+}
+
+// Penghapusan sungguhan di server, jalan di latar belakang — tidak pernah mem-block UI.
+// Sampai 3x percobaan (dengan jeda), gagal terus -> masuk antrean retry diam-diam.
+async function _deleteProjectInBackground(id, attempt) {
+    attempt = attempt || 1;
+    const tok = (function () { try { return localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) { return ''; } })();
+    const hdrs = { 'Content-Type': 'application/json' };
+    if (tok) hdrs['Authorization'] = 'Bearer ' + tok;
+    const apiRoot = PROJECTS_API.replace(/\/projects$/, '');
+    // unpublish situs + link publik Cloudflare Pages (non-fatal, fire-and-forget)
+    try { fetch(apiRoot + '/deploy', { method: 'POST', headers: hdrs, body: JSON.stringify({ project_id: id, action: 'unpublish' }) }).catch(function () {}); } catch (e) {}
+    let ok = false;
+    try {
+        const res = await fetch(PROJECTS_API, { method: 'POST', headers: hdrs, body: JSON.stringify({ action: 'delete', id: id }) });
+        if (res.ok) { const d = await res.json().catch(() => null); ok = !d || d.success !== false; }
+    } catch (e) { ok = false; }
+    if (ok) {
+        _unqueuePendingDelete(id);
+        try {
+            fetch('https://clincoo-be2.pages.dev/api/activity', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete_project', details: 'Proyek dihapus' })
+            }).catch(function () {});
+        } catch (e) {}
+        return;
+    }
+    if (attempt < 3) {
+        setTimeout(function () { _deleteProjectInBackground(id, attempt + 1); }, attempt * 2000);
+    } else {
+        _queuePendingDelete(id); // dicoba lagi otomatis lain kali halaman ini dibuka
+    }
+}
+
+// Dipanggil saat halaman dimuat: beresin sisa penghapusan yang gagal sebelumnya, diam-diam.
+function _flushPendingDeletes() {
+    const list = _getPendingDeletes();
+    list.forEach(function (id) { _deleteProjectInBackground(id, 1); });
 }
 
 function duplicateProject(id) {
@@ -411,5 +425,5 @@ function processPromptSubmission() {
 }
 
 // Sinkron dengan database per akun saat halaman dibuka
-document.addEventListener('DOMContentLoaded', function () { syncProjectsFromServer(); });
-if (document.readyState !== 'loading') syncProjectsFromServer();
+document.addEventListener('DOMContentLoaded', function () { syncProjectsFromServer(); _flushPendingDeletes(); });
+if (document.readyState !== 'loading') { syncProjectsFromServer(); _flushPendingDeletes(); }

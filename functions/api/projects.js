@@ -108,11 +108,11 @@ export async function onRequestPost({ request, env }) {
     if (action === 'delete') {
       if (!body.id) return j({ error: 'id required' }, 400);
       await db.prepare('DELETE FROM user_projects WHERE id = ? AND user_id = ?').bind(String(body.id), user.id).run();
-      // Kaskade: hapus SEMUA data proyek (chat, file workspace, settings, env vars, log deploy)
+      // Kaskade: hapus SEMUA data proyek (chat, file workspace, settings, env vars, log deploy).
+      // Dijalankan paralel (bukan satu-satu berurutan) supaya tidak lama/timeout di koneksi lambat.
       try {
-        for (const t of ['chat_sessions', 'chat_messages', 'project_files', 'env_vars', 'project_settings', 'security_settings', 'deploy_logs']) {
-          await db.prepare(`DROP TABLE IF EXISTS ${tableFor(t, String(body.id))}`).run();
-        }
+        await Promise.all(['chat_sessions', 'chat_messages', 'project_files', 'env_vars', 'project_settings', 'security_settings', 'deploy_logs']
+          .map(t => db.prepare(`DROP TABLE IF EXISTS ${tableFor(t, String(body.id))}`).run().catch(() => {})));
       } catch (e) {}
       return j({ success: true });
     }
