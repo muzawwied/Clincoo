@@ -326,7 +326,7 @@
 
                 <div class="w-full max-w-xs mx-auto pt-6 pb-8 mt-auto">
                     <button onclick="downloadQris()" class="w-full py-3.5 rounded-xl font-bold text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white hover:border-gray-900 dark:hover:border-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 mx-auto">
-                        <i data-lucide="download" class="w-4 h-4"></i>Download QR
+                        <i data-lucide="download" class="w-4 h-4"></i>Download QRIS
                     </button>
                     <p class="text-center text-[11px] text-gray-400 dark:text-gray-500 mt-3">Status pembayaran dicek otomatis setiap detik.</p>
                     <p class="text-center mt-1.5"><span onclick="qrisCancelTopup()" class="text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer transition-colors">Batalkan Pembayaran</span></p>
@@ -391,7 +391,7 @@
             if (NEED_ORDER_LOOKUP) { await restoreServerOrder(); return; }
             renderPlanLine();
             qrisRestore();
-            if (!qrisOrder) goToStep1();
+            if (!qrisOrder) showQrisConfirm();
         });
 
         // Pulihkan order QRIS spesifik via ?order_id=... (deep-link dari histori transaksi).
@@ -588,7 +588,7 @@
                 try {
                     new QRCode(box, { text: res.qr_string, width: 220, height: 220, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
                 } catch (e) {
-                    box.innerHTML = '<p class="text-xs text-gray-500 dark:text-gray-400 px-4">Gagal merender QR. Coba lagi.</p>';
+                    box.innerHTML = '<p class="text-xs text-gray-500 dark:text-gray-400 px-4">Gagal merender QRIS. Coba lagi.</p>';
                 }
             }
             try { lucide.createIcons(); } catch (e) {}
@@ -627,7 +627,7 @@
             function tick() {
                 var left = Math.floor((end - Date.now()) / 1000);
                 if (left <= 0) {
-                    el.textContent = 'QR kedaluwarsa \u2014 silakan buat transaksi baru.';
+                    el.textContent = 'QRIS kedaluwarsa \u2014 silakan buat transaksi baru.';
                     stopQrisTimers();
                     return;
                 }
@@ -665,7 +665,7 @@
                 if (data.status === 'failed') {
                     stopQrisTimers();
                     qrisForgetSession();
-                    goToStep1();
+                    showQrisConfirm();
                     showModal('Pembayaran Tidak Selesai', 'Transaksi kedaluwarsa atau dibatalkan.', true);
                 }
             } catch (e) {
@@ -710,7 +710,7 @@
                 });
             } catch (e) {}
             qrisForgetSession();
-            goToStep1();
+            showQrisConfirm();
             showModal('Pembayaran Dibatalkan', 'Transaksi QRIS dibatalkan.');
         }
 
@@ -719,7 +719,7 @@
             var canvas = box ? box.querySelector('canvas') : null;
             var img = box ? box.querySelector('img') : null;
             var src = canvas ? canvas.toDataURL('image/png') : (img ? img.src : null);
-            if (!src) { showModal('Gagal', 'QR belum siap untuk diunduh.', true); return; }
+            if (!src) { showModal('Gagal', 'QRIS belum siap untuk diunduh.', true); return; }
             var a = document.createElement('a');
             a.href = src;
             a.download = 'clinqoo-qris-' + (qrisOrder ? qrisOrder.order_id : 'bayar') + '.png';
