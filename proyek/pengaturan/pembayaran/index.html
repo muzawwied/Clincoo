@@ -388,11 +388,17 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
           <details class="mt-4 pt-4 border-t border-gray-100 dark:border-slate-800">
             <summary class="text-sm font-semibold text-gray-900 dark:text-white cursor-pointer">Contoh pemakaian dari situs deploy</summary>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-3 mb-2">1. Buat transaksi QR — respons berisi <span class="font-mono">checkout_url</span>, <span class="font-mono">qr_image</span> (gambar QR siap embed), dan <span class="font-mono">qr_string</span>:</p>
-            <pre class="text-[11px] font-mono overflow-x-auto bg-gray-50 dark:bg-slate-800 rounded-lg p-3 text-gray-700 dark:text-gray-300">curl -X POST https://app.clincoo.buzz/api/pay \
+            <div class="relative">
+            <pre class="text-[11px] font-mono overflow-x-auto bg-gray-50 dark:bg-slate-800 rounded-lg p-3 pr-11 text-gray-700 dark:text-gray-300">curl -X POST https://app.clincoo.buzz/api/pay \
   -H "Content-Type: application/json" \
-  -d '{"action":"create","key":"clc_pk_…","amount":50000,"description":"Paket Premium"}'</pre>
+  -d '{"action":"create","key":"<span class="pay-usage-key">clc_pk_…</span>","amount":50000,"description":"Paket Premium"}'</pre>
+            <button type="button" onclick="copyUsageCurl(this)" class="absolute top-2 right-2 flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-500 transition-colors cursor-pointer" title="Salin perintah" aria-label="Salin perintah"><svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M5 15.4A2 2 0 0 1 3.6 14V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 1.4"></path></svg></button>
+          </div>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-3 mb-2">2. Cek status pembayaran dari situs deploy-mu (berubah jadi <span class="font-mono">paid</span> setelah dibayar):</p>
-            <pre class="text-[11px] font-mono overflow-x-auto bg-gray-50 dark:bg-slate-800 rounded-lg p-3 text-gray-700 dark:text-gray-300">curl "https://app.clincoo.buzz/api/pay?action=status&amp;key=clc_pk_…&amp;order_id=clincoo…"</pre>
+            <div class="relative">
+            <pre class="text-[11px] font-mono overflow-x-auto bg-gray-50 dark:bg-slate-800 rounded-lg p-3 pr-11 text-gray-700 dark:text-gray-300">curl "https://app.clincoo.buzz/api/pay?action=status&amp;key=<span class="pay-usage-key">clc_pk_…</span>&amp;order_id=clincoo…"</pre>
+            <button type="button" onclick="copyUsageCurl(this)" class="absolute top-2 right-2 flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-500 transition-colors cursor-pointer" title="Salin perintah" aria-label="Salin perintah"><svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M5 15.4A2 2 0 0 1 3.6 14V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 1.4"></path></svg></button>
+          </div>
             <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">Nominal Rp 1.000 – Rp 100.000.000. Biaya QRIS 3,8% ditanggung pembeli. Dana masuk ke saldo ClincooPay proyekmu.</p>
           </details>
         </div>
@@ -636,6 +642,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
     if (wb) wb.disabled = false;
     var kb = document.getElementById('pay-key-box');
     if (data.pay_key) kb.textContent = data.pay_key;
+    if (data.pay_key) document.querySelectorAll('.pay-usage-key').forEach(function (el) { el.textContent = data.pay_key; });
   }
 
   function renderPayInactive() {
@@ -740,6 +747,28 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
   function _payValidKey(k) {
     return k && (k.indexOf('clc_pay_') === 0 || k.indexOf('cno_pk_') === 0 || k.indexOf('clc_pk_') === 0 || k.indexOf('pk_') === 0);
   }
+  function copyUsageCurl(btn) {
+    var pre = btn.parentElement.querySelector('pre');
+    var txt = ((pre && pre.textContent) || '').trim();
+    if (!txt) return;
+    var done = function () {
+      if (!btn || !btn.innerHTML) return;
+      if (!btn._orig) btn._orig = btn.innerHTML;
+      btn.innerHTML = '<svg class="h-3.5 w-3.5 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>';
+      if (btn._t) clearTimeout(btn._t);
+      btn._t = setTimeout(function () { btn.innerHTML = btn._orig; }, 1600);
+    };
+    var fallback = function () {
+      var ta = document.createElement('textarea');
+      ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) {}
+      document.body.removeChild(ta);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, fallback);
+    else fallback();
+  }
+
   function copyPayKey(btn) {
     var kb = document.getElementById('pay-key-box');
     var key = (kb.textContent || '').trim();
