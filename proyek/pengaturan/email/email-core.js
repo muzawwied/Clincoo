@@ -91,15 +91,18 @@ function emailGate(onActive) {
 
 // --- aktivasi sekali-klik (menggantikan halaman pengaturan lama) ---
 window.activateEmail = function () {
-  var btn = document.querySelector('#kirim-inactive button');
-  if (btn) { btn.disabled = true; btn.textContent = 'Mengaktifkan…'; }
+  var btn = document.querySelector('#email-cta') || document.querySelector('#kirim-inactive button');
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.remove('email-cta-float');
+    btn.innerHTML = '<svg class="email-cta-spin" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="3"/><path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
+  }
   _apiPost('activate', {}).then(function (cfg) {
     try { localStorage.setItem('clincoo_email_cfg_' + _pid(), JSON.stringify(cfg)); } catch (e) {}
-    emailToast('Email aktif untuk proyek ini', true);
     renderEmailState('active');
     window.dispatchEvent(new CustomEvent('clincoo:email-activated', { detail: cfg || {} }));
   }).catch(function (e) {
-    if (btn) { btn.disabled = false; btn.textContent = 'Aktifkan Email'; }
+    if (btn) { btn.disabled = false; btn.classList.add('email-cta-float'); btn.textContent = 'Aktifkan Email'; }
     if (e && e.status === 401) { renderEmailState('login'); return; }
     emailToast(e && e.error ? e.error : 'Gagal (' + (e && e.status || e) + ')', false);
   });

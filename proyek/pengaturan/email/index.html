@@ -33,6 +33,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Inter', sans-serif; }
+    @keyframes emailCtaFloat {
+      0%, 100% { transform: translateY(0); box-shadow: 0 6px 14px -4px rgba(0,0,0,0.18); }
+      50% { transform: translateY(-5px); box-shadow: 0 14px 22px -6px rgba(0,0,0,0.24); }
+    }
+    @keyframes emailCtaSpin { to { transform: rotate(360deg); } }
+    .email-cta-float { animation: emailCtaFloat 2.6s ease-in-out infinite; will-change: transform; }
+    @media (prefers-reduced-motion: reduce) { .email-cta-float { animation: none; } }
+    .email-cta-spin { animation: emailCtaSpin 0.8s linear infinite; }
     ::-webkit-scrollbar { display: none; width: 0; height: 0; background: transparent; }
     * { -ms-overflow-style: none; scrollbar-width: none; }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -322,7 +330,7 @@
           <div id="kirim-inactive" class="hidden py-10 flex flex-col items-center justify-center text-center">
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Email proyek ini belum aktif</p>
             <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Aktifkan fitur email untuk proyek ini — sekali klik.</p>
-            <button type="button" onclick="activateEmail()" class="mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Aktifkan Email</button>
+            <button type="button" id="email-cta" onclick="activateEmail()" class="mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer email-cta-float">Aktifkan Email</button>
           </div>
 
           <!-- Aktif: mini-app email -->
@@ -462,7 +470,7 @@ var _logRows = [];
   function hapusLog(id) {
     if (!confirm('Hapus entri histori ini? Kuota bulanan tidak berubah.')) return;
     _apiPost('delete_log', { id: id })
-      .then(function () { emailToast('Entri dihapus', true); _lastFetch = 0; fetchHistory(true); })
+      .then(function () { _lastFetch = 0; fetchHistory(true); })
       .catch(function (e) { emailToast(e && e.error ? e.error : 'Gagal menghapus (' + (e && e.status || e) + ')', false); });
   }
 
