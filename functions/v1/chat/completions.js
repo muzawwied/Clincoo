@@ -310,10 +310,10 @@ async function chargeCredits(db, projectId, model) {
   const cost = estimateCost(model);
   try {
     const pRow = await db.prepare('SELECT user_id FROM user_projects WHERE id = ?').bind(projectId).first();
-    if (!pRow) return { ok: true, cost }; // proyek tanpa pemilik terdaftar -> jangan blokir
+    if (!pRow) return { ok: true, cost, charged: false }; // proyek tanpa pemilik terdaftar -> jangan blokir
     const uid = Number(pRow.user_id);
     const uRow = await db.prepare('SELECT email FROM auth_users WHERE id = ?').bind(uid).first();
-    if (uRow && ADMIN_EMAILS.has(String(uRow.email || '').toLowerCase())) return { ok: true, cost: 0 };
+    if (uRow && ADMIN_EMAILS.has(String(uRow.email || '').toLowerCase())) return { ok: true, cost: 0, charged: false };
     const userKey = 'u' + uid;
     const eff = await getEffectivePlanByUserKey(db, userKey);
     const limits = PLAN_AI_API_CREDITS[eff.plan] || PLAN_AI_API_CREDITS.Starter;
@@ -330,12 +330,13 @@ async function chargeCredits(db, projectId, model) {
       db.prepare('INSERT INTO ai_api_credits (user_key, day, spent) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET spent = spent + ?').bind(userKey, day, cost, cost),
       db.prepare('INSERT INTO ai_api_credits (user_key, day, spent) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET spent = spent + ?').bind(userKey, month, cost, cost)
     ]);
-    return { ok: true, cost };
-  } catch (e) { return { ok: true, cost }; }
+    return { ok: true, cost, charged: true };
+  } catch (e) { return { ok: true, cost, charged: false }; } // fail-open: gagal DB tidak memblokir user
 }
-// Kalau SEMUA model gagal merespons, kredit dikembalikan (user tidak bayar percuma).
-async function refundCredits(db, projectId, model) {
-  const cost = estimateCost(model);
+// Kalau SEMUA model gagal merespons, kredit yang benar-benar dipotong dikembalikan
+// (user tidak bayar percuma). Hanya dipanggil bila chargeCredits melaporkan
+// charged:true — admin (bypass) dan jalur fail-open tidak pernah di-refund.
+async function refundCredits(db, projectId, cost) {
   if (!cost) return;
   try {
     const pRow = await db.prepare('SELECT user_id FROM user_projects WHERE id = ?').bind(projectId).first();
@@ -412,7 +413,7 @@ export async function onRequestPost({ request, env }) {
   const ms = Date.now() - t0;
 
   if (!result || !result.text) {
-    await refundCredits(db, projectId, model); // gagal total -> kredit dikembalikan
+    if (credit.charged) await refundCredits(db, projectId, credit.cost); // gagal total -> kredit dikembalikan
     await logCall(db, projectId, model, 0, ms, 0, 0, src, 'semua model pada rantai gagal merespons');
     // Catatan: pakai 503 (bukan 502) — Cloudflare mengganti body setiap respons
     // berstatus 502/504/52x dengan halaman generik, menutupi pesan JSON ini.
