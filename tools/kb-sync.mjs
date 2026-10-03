@@ -19,11 +19,16 @@ function stripHtml(h) {
   return h.replace(/\s+/g, ' ').trim();
 }
 
-// ambil daftar file data dari loader.js (ikut otomatis kalau ada kategori baru)
+// ambil daftar file data dari loader.js (dukung format lama: var files=[], dan baru: src='data_clinqoo.js?v=N')
 const loaderCode = await fetchWithTimeout(BLOG + '/loader.js');
+let files = [];
 const m = loaderCode.match(/var files\s*=\s*(\[[^\]]*\])/);
-if (!m) { console.error('Gagal baca loader.js blog'); process.exit(1); }
-const files = JSON.parse(m[1]);
+if (m) files = JSON.parse(m[1]);
+for (const mm of loaderCode.matchAll(/['"]([^'"\s]*data_clinqoo\.js[^'"\s]*)['"]/g)) {
+  const f = mm[1].split('?')[0];
+  if (!files.includes(f)) files.push(f);
+}
+if (!files.length) files = ['data_clinqoo.js'];
 console.log('file data blog:', files.length);
 
 // fetch paralel + parse (di Node, new Function aman dipakai)
