@@ -13,6 +13,9 @@
         html[data-dark] body { background: #0a0a0a; color: #e5e7eb; }
 
         /* ===== Bar atas: status real-time + pilih file + live URL ===== */
+        /* Watermark Clincoo — pill kecil pojok kanan bawah, tampil hanya saat situs dirender */
+        #pv-mark { position: fixed; right: 14px; bottom: 14px; display: none; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; background: rgba(0,0,0,0.62); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: #fff; font-size: 11px; font-weight: 600; letter-spacing: 0.2px; pointer-events: none; z-index: 40; }
+        #pv-mark img { width: 14px; height: 14px; display: block; border-radius: 3px; }
         #pv-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid rgba(0,0,0,0.08); flex-shrink: 0; min-height: 44px; }
         html[data-dark] #pv-bar { border-bottom: 1px solid rgba(255,255,255,0.12); }
         @keyframes pv-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
@@ -85,6 +88,7 @@
     </div>
     <iframe id="pv-frame" title="Preview proyek"></iframe>
     <div id="pv-pop" hidden></div>
+    <div id="pv-mark" aria-hidden="true"><img src="../../assets/logo-clinqoo.png" alt="">Clincoo</div>
     <div id="pv-msg">
         <img src="../../assets/logo-clinqoo.png" alt="Clincoo">
         <div class="pv-word">Clincoo</div>
@@ -136,11 +140,13 @@
     }
 
     function splash(text, err) {
+        var _m = document.getElementById('pv-mark'); if (_m) _m.style.display = 'none';
         frame.classList.add('pv-hidden');
         msg.classList.remove('pv-hidden');
         msgText.textContent = text;
     }
-    function showing() { msg.classList.add('pv-hidden'); frame.classList.remove('pv-hidden'); }
+    function showing() {
+        var _m = document.getElementById('pv-mark'); if (_m) _m.style.display = 'flex'; msg.classList.add('pv-hidden'); frame.classList.remove('pv-hidden'); }
 
     // ===== util file & inline (dipakai render dari cache maupun cloud) =====
     function norm(p) { return String(p).replace(/^\//, '').replace(/\/+/g, '/'); }
