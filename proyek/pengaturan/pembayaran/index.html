@@ -796,7 +796,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
     if (!txs.length) { if (nofilter) nofilter.style.display = 'block'; return; }
     if (nofilter) nofilter.style.display = 'none';
     txs.forEach(function (t, idx) {
-        var stClass = t.status === 'paid' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : (t.status === 'expired' || t.status === 'failed' ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300');
+        var stClass = t.status === 'paid' ? 'text-emerald-800 dark:text-emerald-300' : (t.status === 'expired' || t.status === 'failed' ? 'text-red-700 dark:text-red-300' : 'text-orange-600 dark:text-orange-400');
         var stLabel = t.status === 'paid' ? 'Berhasil' : (t.status === 'expired' ? 'Kedaluwarsa' : (t.status === 'failed' ? 'Gagal' : 'Menunggu'));
         var tr = document.createElement('tr');
         tr.className = 'pay-fade text-sm hover:bg-gray-50 dark:hover:bg-slate-800/40';
@@ -805,7 +805,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
           '<td class="py-2.5 px-3 text-xs text-gray-400 font-mono whitespace-nowrap">' + t.order_id + '</td>' +
           '<td class="py-2.5 px-3 text-xs text-gray-400 font-mono whitespace-nowrap">' + (t.created_at || '') + '</td>' +
           '<td class="py-2.5 px-3 text-right font-semibold text-gray-900 dark:text-white whitespace-nowrap">Rp ' + Number(t.amount || 0).toLocaleString('id-ID') + '</td>' +
-          '<td class="py-2.5 px-3 text-right whitespace-nowrap"><span class="px-2 py-0.5 text-xs font-semibold rounded-full ' + stClass + '">' + stLabel + '</span></td>';
+          '<td class="py-2.5 px-3 text-right whitespace-nowrap"><span class="text-xs font-semibold ' + stClass + '">' + stLabel + '</span></td>';
         rows.appendChild(tr);
       });
   }
@@ -971,7 +971,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
       empty.style.display = 'none';
       list.innerHTML = '';
       wds.forEach(function (w, idx) {
-        var stClass = w.status === 'done' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : (w.status === 'rejected' ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300');
+        var stClass = w.status === 'done' ? 'text-emerald-800 dark:text-emerald-300' : (w.status === 'rejected' ? 'text-red-700 dark:text-red-300' : 'text-orange-600 dark:text-orange-400');
         var stLabel = w.status === 'done' ? 'Selesai' : (w.status === 'rejected' ? 'Ditolak' : 'Diproses');
         var _ew = ({ dana: 'DANA', ovo: 'OVO', gopay: 'GoPay', shopeepay: 'ShopeePay', linkaja: 'LinkAja' })[w.dest_type] || '';
         var row = document.createElement('tr');
@@ -981,7 +981,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
           '<td class="py-2.5 px-3 text-xs text-gray-400 font-mono whitespace-nowrap">' + (w.dest_account || '-') + '<span class="block text-[11px]">#' + w.id + '</span></td>' +
           '<td class="py-2.5 px-3 text-xs text-gray-400 font-mono whitespace-nowrap">' + (w.created_at || '') + '</td>' +
           '<td class="py-2.5 px-3 text-right font-semibold text-gray-900 dark:text-white whitespace-nowrap">Rp ' + Number(w.amount || 0).toLocaleString('id-ID') + (w.fee ? '<span class="block text-[11px] font-mono font-normal text-gray-400">+' + Number(w.fee).toLocaleString('id-ID') + '</span>' : '') + '</td>' +
-          '<td class="py-2.5 px-3 text-right whitespace-nowrap"><span class="px-2 py-0.5 text-xs font-semibold rounded-full ' + stClass + '">' + stLabel + '</span></td>';
+          '<td class="py-2.5 px-3 text-right whitespace-nowrap"><span class="text-xs font-semibold ' + stClass + '">' + stLabel + '</span></td>';
         list.appendChild(row);
       });
     } catch (e) {}
