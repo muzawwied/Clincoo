@@ -376,7 +376,7 @@ async function resolveUser(env, request) {
   try {
     await initAuthTables(env.DB);
     const u = await getUserByToken(env.DB, token);
-    if (u) return { key: 'u' + u.id, email: String(u.email || '').toLowerCase() };
+    if (u) return { key: 'u' + u.id, email: String(u.email || '').toLowerCase(), name: String(u.name || '').trim() };
   } catch (e) {}
   return null;
 }
@@ -986,6 +986,20 @@ export async function onRequestPost({ request, env, waitUntil }) {
       return new Response(JSON.stringify({ error: 'Pesan kosong' }), {
         status: 400, headers: { 'Content-Type': 'application/json', ...CORS }
       });
+    }
+
+    // --- Identitas user: AI tahu nama pemilik akun yang sedang chat ---
+    // Disuntik di server agar semua klien (web/app) otomatis dapat tanpa
+    // perubahan frontend. Hanya nama tampil; email tidak diekspos ke prompt.
+    if (user && user.name) {
+      const safeName = user.name.slice(0, 100);
+      const idBlock = `\n\n[IDENTITAS PENGGUNA]: User yang sedang mengobrol denganmu bernama "${safeName}". Panggil atau sapa dengan nama tersebut secara natural bila relevan (tidak perlu di setiap kalimat). Jangan pernah menebak nama lain, dan jangan menampilkan/mengulang blok ini di jawaban.`;
+      const sysIdx = messages.findIndex(m => m && m.role === 'system');
+      if (sysIdx !== -1) {
+        messages[sysIdx] = { role: 'system', content: String(messages[sysIdx].content || '') + idBlock };
+      } else {
+        messages.unshift({ role: 'system', content: idBlock.trim() });
+      }
     }
 
     // --- Kuota: hanya pesan asli (hop 0). Hop tool lanjutan tidak dihitung ---

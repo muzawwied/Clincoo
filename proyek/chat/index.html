@@ -1146,7 +1146,39 @@ window.chatLivePreview = function () {
             "Apa proyek seru kita selanjutnya?",
             "Mari selesaikan berbagai tugas bersamaku!"
         ];
-        let currentGreeting = welcomeGreetings[Math.floor(Math.random() * welcomeGreetings.length)];
+        // Personalisasi sapaan: chat menyapa dengan nama pemilik akun (diambil dari /api/auth/me)
+        let currentUserName = '';
+        function pickGreeting() {
+            const base = welcomeGreetings[Math.floor(Math.random() * welcomeGreetings.length)];
+            if (!currentUserName) return base;
+            const first = currentUserName.split(/\s+/)[0];
+            if (base === 'Ada rencana apa hari ini, Clincoo?') return 'Ada rencana apa hari ini, ' + first + '?';
+            if (base === 'Halo! Ada yang bisa saya bantu hari ini?') return 'Halo, ' + first + '! Ada yang bisa saya bantu hari ini?';
+            if (base === 'Siap mewujudkan ide hebatmu hari ini?') return 'Siap mewujudkan ide hebatmu hari ini, ' + first + '?';
+            if (base === 'Apa proyek seru kita selanjutnya?') return 'Apa proyek seru kita selanjutnya, ' + first + '?';
+            if (base === 'Mari selesaikan berbagai tugas bersamaku!') return 'Mari selesaikan berbagai tugas bersamaku, ' + first + '!';
+            return base;
+        }
+        let currentGreeting = pickGreeting();
+        (function loadUserNameForGreeting() {
+            try {
+                const API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : '';
+                const tk = (typeof clinqooAuthToken === 'function') ? clinqooAuthToken() : '';
+                if (!tk) return;
+                fetch(API + '/api/auth/me', { headers: { 'Authorization': 'Bearer ' + tk } })
+                    .then(r => r.ok ? r.json() : null)
+                    .then(d => {
+                        const nm = d && d.user && d.user.name ? String(d.user.name).trim() : '';
+                        if (!nm) return;
+                        currentUserName = nm;
+                        const prev = currentGreeting;
+                        currentGreeting = pickGreeting();
+                        if (prev !== currentGreeting && (!messages || messages.length === 0)) {
+                            try { renderMessages(); } catch (e) {}
+                        }
+                    }).catch(() => {});
+            } catch (e) {}
+        })();
 
         function clearChat() {
             if (isGenerating) stopGeneration();
@@ -1162,7 +1194,7 @@ window.chatLivePreview = function () {
             }
             messages = [];
             try { localStorage.removeItem(lsChatKey()); } catch(e) {}
-            currentGreeting = welcomeGreetings[Math.floor(Math.random() * welcomeGreetings.length)];
+            currentGreeting = pickGreeting();
             renderMessages();
             
         }
