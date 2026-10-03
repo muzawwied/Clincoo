@@ -229,7 +229,7 @@
         </div>
         <div class="py-5">
           <h4 class="text-base font-semibold text-gray-900 dark:text-white">Histori Transaksi &amp; Langganan</h4>
-          <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5 mb-4">Riwayat top up dan pembayaran langganan Anda</p>
+          <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5 mb-4">Riwayat transaksi dan pembayaran langganan Anda</p>
           <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700/60">
             <table class="w-full text-sm">
               <thead>
@@ -237,11 +237,12 @@
                   <th class="px-3 py-2.5 font-medium">Tanggal</th>
                   <th class="px-3 py-2.5 font-medium">Keterangan</th>
                   <th class="px-3 py-2.5 font-medium">Metode</th>
+                  <th class="px-3 py-2.5 font-medium">Status</th>
                   <th class="px-3 py-2.5 font-medium text-right">Jumlah</th>
                 </tr>
               </thead>
               <tbody id="history-body" class="divide-y divide-gray-100 dark:divide-slate-700/40 text-gray-900 dark:text-white">
-                <tr><td colspan="4" class="px-3 py-3"><span class="clinqoo-shimmer">Memuat…</span></td></tr>
+                <tr><td colspan="5" class="px-3 py-3"><span class="clinqoo-shimmer">Memuat…</span></td></tr>
               </tbody>
             </table>
           </div>
@@ -373,32 +374,41 @@
     loadSubscription();
 
     const WALLET_API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/wallet';
+    const QRIS_ORDER_API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/topup-qris';
     async function loadHistory(){
         const tbody = document.getElementById('history-body');
         if(!tbody) return;
         try {
-            const res = await fetch(WALLET_API + '?action=transactions&full=1&_=' + Date.now(), { headers: authHeaders(), cache: 'no-store' });
+            const res = await fetch(QRIS_ORDER_API + '?action=history', { headers: authHeaders(), cache: 'no-store' });
             const data = await res.json();
-            const txs = (data && data.transactions) || [];
-            if(!txs.length){
-                tbody.innerHTML = '<tr><td colspan="4" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400">Belum ada transaksi</td></tr>';
+            if (data && data.need_login) { tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400">Masuk untuk melihat riwayat transaksi</td></tr>'; return; }
+            const orders = (data && data.orders) || [];
+            if(!orders.length){
+                tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400">Belum ada transaksi</td></tr>';
                 return;
             }
-            tbody.innerHTML = txs.map(function(tx){
-                const isIn = tx.type === 'in';
-                const amt = (isIn ? '+' : '-') + 'Rp' + fmtID(tx.amount || 0);
-                let tglTxt = tx.created_at || '-';
-                try { tglTxt = new Date(String(tx.created_at || '').replace(' ', 'T')).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch(e){}
-                const tglCell = (tx.created_at || '-') === '-' ? '-' : tglTxt;
+            tbody.innerHTML = orders.map(function(o){
+                const plan = (o.amount == 49000) ? 'Pro' : (o.amount == 129000) ? 'Bisnis' : '';
+                const ket = plan ? ('Pembayaran langganan ' + plan) : 'Pembayaran langganan';
+                const idTxt = o.order_id || '-';
+                let tglTxt = o.created_at || '-';
+                try { tglTxt = new Date(String(o.created_at || '').replace(' ', 'T')).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch(e){}
+                let status = String(o.status || '').toLowerCase();
+                if (status === 'pending' && o.expires_at && !isNaN(new Date(o.expires_at).getTime()) && new Date(o.expires_at).getTime() < Date.now()) status = 'expired';
+                let stTxt = 'Menunggu', stCls = 'text-amber-600 dark:text-amber-400';
+                if (status === 'paid') { stTxt = 'Berhasil'; stCls = 'text-emerald-600 dark:text-emerald-400'; }
+                else if (status === 'expired' || status === 'expire') { stTxt = 'Kedaluwarsa'; stCls = 'text-gray-400'; }
+                else if (status === 'failed' || status === 'cancel' || status === 'cancelled') { stTxt = 'Dibatalkan'; stCls = 'text-gray-400'; }
                 return '<tr>' +
-                    '<td class="px-3 py-2.5 whitespace-nowrap text-gray-500 dark:text-gray-400">' + tglCell + '</td>' +
-                    '<td class="px-3 py-2.5">' + (tx.title || '-') + '</td>' +
-                    '<td class="px-3 py-2.5 text-gray-500 dark:text-gray-400">' + (tx.method || '-') + '</td>' +
-                    '<td class="px-3 py-2.5 text-right whitespace-nowrap ' + (isIn ? 'text-emerald-600' : 'text-gray-900 dark:text-white') + '">' + amt + '</td>' +
+                    '<td class="px-3 py-2.5 whitespace-nowrap text-gray-500 dark:text-gray-400">' + tglTxt + '</td>' +
+                    '<td class="px-3 py-2.5"><span class="block">' + ket + '</span><span class="block font-mono text-[11px] text-gray-400 dark:text-gray-500">' + idTxt + '</span></td>' +
+                    '<td class="px-3 py-2.5 text-gray-500 dark:text-gray-400">QRIS</td>' +
+                    '<td class="px-3 py-2.5 whitespace-nowrap ' + stCls + '">' + stTxt + '</td>' +
+                    '<td class="px-3 py-2.5 text-right whitespace-nowrap text-gray-900 dark:text-white">Rp' + fmtID(o.total || o.amount || 0) + '</td>' +
                 '</tr>';
             }).join('');
         } catch(e) {
-            tbody.innerHTML = '<tr><td colspan="4" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400">Gagal memuat riwayat transaksi</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400">Gagal memuat riwayat transaksi</td></tr>';
         }
     }
     loadHistory();

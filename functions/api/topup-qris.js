@@ -90,6 +90,7 @@ async function ensureQrisColumns(db) {
 }
 
 // GET /api/topup-qris?action=ping           -> status konfigurasi (untuk UI)
+// GET /api/topup-qris?action=history  -> riwayat order QRIS user yang login
 // GET /api/topup-qris?action=status&order_id -> status order (webhook = sumber kebenaran)
 export async function onRequestGet({ request, env }) {
   const db = env.DB;
@@ -100,6 +101,22 @@ export async function onRequestGet({ request, env }) {
   if (action === 'ping') {
     const accountId = await getSecret(env, 'BUATQRIS_ACCOUNT_ID');
     return json({ configured: !!(accountId && (await getSecret(env, 'BUATQRIS_SECRET_TOKEN'))), provider: 'buatqris' });
+  }
+
+  // Riwayat order QRIS user (halaman langganan: histori transaksi checkout)
+  if (action === 'history') {
+    const user = await currentUser(env, request);
+    if (!user) return json({ success: false, need_login: true }, 401);
+    let rows = [];
+    try {
+      const r = await db.prepare(
+        "SELECT id, amount, method, status, bill_total, created_at, expires_at FROM topup_orders WHERE user_id = ? OR user_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 25"
+      ).bind(String(user.id), String(user.id) + '').all();
+      rows = (r && r.results) || [];
+    } catch (e) {}
+    return json({ success: true, orders: rows.map(function (o) {
+      return { order_id: o.id, amount: o.amount, method: 'QRIS', status: o.status, total: o.bill_total || o.amount, created_at: o.created_at, expires_at: o.expires_at || null };
+    }) });
   }
 
   // Order terakhir milik user yang login (untuk restore halaman checkout dari email pengingat)
