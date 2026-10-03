@@ -1295,25 +1295,25 @@ window.chatLivePreview = function () {
                         
                         let runButton = '';
                         if (isRunnable && finalLang.toLowerCase() !== 'html') {
-                             runButton = `<button onclick="runCode(this, '${finalLang.toLowerCase()}', '${blockId}')" data-code="${encodedRaw}" data-view="code" class="relative text-gray-400 hover:text-white transition flex items-center justify-center rounded-lg p-1.5 hover:bg-gray-600 pointer-events-auto" title="Jalankan Kode">
+                             runButton = `<button data-action="run-code" data-lang="${finalLang.toLowerCase()}" data-block="${blockId}" data-code="${encodedRaw}" data-view="code" class="relative text-gray-400 hover:text-white transition flex items-center justify-center rounded-lg p-1.5 pointer-events-auto" title="Jalankan Kode">
                                 <i class="ph-bold ph-play text-[18px]"></i>
                             </button>`;
                         } else if (finalLang.toLowerCase() === 'html') {
-                            runButton = `<button onclick="previewHTML(this, '${blockId}')" data-code="${encodedRaw}" data-view="code" class="relative text-gray-400 hover:text-white transition flex items-center justify-center rounded-lg p-1.5 hover:bg-gray-600 pointer-events-auto" title="Preview UI / Animasi">
+                            runButton = `<button data-action="preview-html" data-block="${blockId}" data-code="${encodedRaw}" data-view="code" class="relative text-gray-400 hover:text-white transition flex items-center justify-center rounded-lg p-1.5 pointer-events-auto" title="Preview UI / Animasi">
                                 <i class="ph-bold ph-eye text-[18px]"></i>
                             </button>`;
                         }
 
                         return `
-                            <div class="my-4 bg-[#1e1e1e] rounded-[16px] overflow-hidden shadow-[0_5px_15px_rgba(0,0,0,0.1)] w-full max-w-full border border-gray-800 pointer-events-auto">
-                                <div class="flex items-center justify-between px-4 py-3 bg-[#2d2d2d] border-b border-gray-700">
+                            <div class="my-4 bg-[#1e1e1e] rounded-[20px] overflow-hidden shadow-[0_5px_15px_rgba(0,0,0,0.1)] w-full max-w-full border border-gray-800 pointer-events-auto">
+                                <div class="flex items-center justify-between px-3.5 py-2.5 bg-[#2d2d2d] border-b border-gray-700">
                                     <span class="text-[13px] font-bold text-gray-300 uppercase tracking-wider">${displayLang}</span>
                                     <div class="flex items-center gap-2">
                                         ${runButton}
-                                        <button onclick="downloadCode(this, '${finalLang || 'txt'}')" data-code="${encodedRaw}" class="text-gray-400 hover:text-white transition flex items-center justify-center rounded-lg p-1.5 hover:bg-gray-600 pointer-events-auto" title="Download File">
+                                        <button data-action="download-code" data-lang="${finalLang || 'txt'}" data-code="${encodedRaw}" class="text-gray-400 hover:text-white transition flex items-center justify-center rounded-lg p-1.5 pointer-events-auto" title="Download File">
                                             <i class="ph ph-cloud-arrow-down text-[18px]"></i>
                                         </button>
-                                        <button onclick="copyCodeBlock(this)" data-code="${encodedRaw}" class="relative text-gray-400 hover:text-white transition flex items-center justify-center rounded-lg p-1.5 hover:bg-gray-600 pointer-events-auto" title="Copy">
+                                        <button data-action="copy-code" data-code="${encodedRaw}" class="relative text-gray-400 hover:text-white transition flex items-center justify-center rounded-lg p-1.5 pointer-events-auto" title="Copy">
                                             <i class="ph ph-copy text-[18px]"></i>
                                         </button>
                                     </div>
@@ -1477,6 +1477,22 @@ window.chatLivePreview = function () {
                 setTimeout(() => tooltip.remove(), 200);
             }, 1200);
         }
+
+        // Delegasi klik utk tombol di code-block (run/preview/download/copy). WAJIB
+        // pakai data-action + listener ini, BUKAN onclick inline -- karena HTML pesan
+        // AI melewati DOMPurify.sanitize() yang selalu membuang semua atribut onXXX
+        // (anti-XSS thd konten yang bisa disusupi), jadi onclick di tombol ini pun
+        // ikut hilang walau tombolnya sendiri kita yang generate (dulu ini bug: icon
+        // tampil tapi tak bisa diklik sama sekali).
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            const action = btn.getAttribute('data-action');
+            if (action === 'copy-code') { copyCodeBlock(btn); }
+            else if (action === 'download-code') { downloadCode(btn, btn.getAttribute('data-lang') || 'txt'); }
+            else if (action === 'run-code') { runCode(btn, btn.getAttribute('data-lang') || '', btn.getAttribute('data-block') || ''); }
+            else if (action === 'preview-html') { previewHTML(btn, btn.getAttribute('data-block') || ''); }
+        });
 
         function copyCodeBlock(btnElement) {
             const encodedCode = btnElement.getAttribute('data-code');
