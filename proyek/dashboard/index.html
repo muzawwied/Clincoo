@@ -460,6 +460,14 @@
         function updateLogoInitials() {
             var el = document.getElementById('logo-initials');
             if (!el) return;
+            // FIX: jangan timpa logo asli yang sedang tampil dengan huruf inisial fallback
+            // (bug lama: huruf inisial selalu di-unhide tiap kali nama app berubah / saat
+            // hydrate, numpuk/bocor di tepi lingkaran logo walau logo asli sudah ada).
+            var logoImg = document.getElementById('logo-preview');
+            if (logoImg && !logoImg.classList.contains('hidden') && logoImg.getAttribute('src')) {
+                el.classList.add('hidden');
+                return;
+            }
             var nameEl = document.getElementById('input-app-name');
             var v = ((nameEl && nameEl.value) || '').trim();
             var ini = v.split(/\s+/).filter(Boolean).map(function (w) { return w.charAt(0).toUpperCase(); }).join('').slice(0, 2);
