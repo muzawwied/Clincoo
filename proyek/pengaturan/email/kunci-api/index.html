@@ -326,15 +326,16 @@
                 <p class="text-sm font-semibold text-gray-900 dark:text-white">API key</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 mb-3">Pakai di situs deploy kamu untuk kirim email lewat Clincoo Email API.</p>
                 <div class="flex items-center gap-2">
-                  <div class="flex items-center gap-2 bg-gray-50 dark:bg-slate-800 rounded-lg px-2.5 py-2">
-                    <code id="key-val" class="flex-1 block truncate text-xs font-mono text-gray-800 dark:text-gray-200">…</code>
+                  <div class="relative flex items-center bg-gray-50 dark:bg-slate-800 rounded-lg px-2.5 py-2 max-w-[200px] sm:max-w-[240px]">
+                    <code id="key-val" class="block text-xs font-mono text-gray-800 dark:text-gray-200 whitespace-nowrap overflow-hidden">…</code>
+                    <div class="absolute inset-y-0 right-0 w-14 bg-gradient-to-r from-transparent to-gray-50 dark:to-slate-800 pointer-events-none"></div>
                     <script>
                     try {
                       var _q = new URLSearchParams(location.search).get('id');
                       var _pp = (_q && _q.indexOf('proj_') === 0) ? _q : ((typeof getClinqooProjectId === 'function' && getClinqooProjectId()) || localStorage.getItem('clinqoo_current_project_id') || '');
                       var _cc = JSON.parse(localStorage.getItem('clincoo_email_cfg_' + _pp) || 'null');
                       var _el = document.getElementById('key-val');
-                      if (_cc && _cc.api_key && _el) { var _k = _cc.api_key; _el.textContent = _k.slice(0, 14) + '••••••••' + _k.slice(-4); _el.setAttribute('data-key', _k); }
+                      if (_cc && _cc.api_key && _el) { _el.textContent = _cc.api_key; _el.setAttribute('data-key', _cc.api_key); }
                     } catch (e) {}
                     </script>
                   <button type="button" onclick="copyKey()" title="Salin kunci" aria-label="Salin kunci" class="shrink-0 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
@@ -352,6 +353,18 @@
                   <pre id="curl-example" class="text-[11px] font-mono overflow-x-auto bg-gray-50 dark:bg-slate-800 rounded-lg p-3 pr-11 text-gray-700 dark:text-gray-300">curl -X POST https://app.clincoo.buzz/api/email \
   -H "Content-Type: application/json" \
   -d '{"action":"send","api_key":"clc_email_…","to":"penerima@contoh.com","subject":"Halo","html":"&lt;p&gt;Halo!&lt;/p&gt;"}'</pre>
+                  <script>
+                  // isi contoh curl dari cache sejak paint pertama — template sinkron dgn buildCurl()
+                  try {
+                    var _q2 = new URLSearchParams(location.search).get('id');
+                    var _pp2 = (_q2 && _q2.indexOf('proj_') === 0) ? _q2 : ((typeof getClinqooProjectId === 'function' && getClinqooProjectId()) || localStorage.getItem('clinqoo_current_project_id') || '');
+                    var _cc2 = JSON.parse(localStorage.getItem('clincoo_email_cfg_' + _pp2) || 'null');
+                    var _pre = document.getElementById('curl-example');
+                    if (_cc2 && _cc2.api_key && _pre) {
+                      _pre.textContent = 'curl -X POST https://app.clincoo.buzz/api/email \\\n  -H "Content-Type: application/json" \\\n  -d \'{"action":"send","api_key":"' + _cc2.api_key + '","to":"penerima@contoh.com","subject":"Halo","html":"<p>Halo!</p>"}\'';
+                    }
+                  } catch (e) {}
+                  </script>
                   <button type="button" onclick="copyCurl()" title="Salin contoh curl" aria-label="Salin contoh curl" class="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
                 </div>
                 <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">Kuota 1.000 email/bulan per proyek. Penerima hanya boleh email akun Clincoo kamu (batasan layanan email Cloudflare).</p>
@@ -376,9 +389,8 @@
 <script>
 // ===== Email: kunci API =====
   function maskKey(k) {
-    k = String(k || '');
-    if (!k) return '—';
-    return k.length <= 20 ? k : (k.slice(0, 14) + '••••••••' + k.slice(-4));
+    // key utuh di DOM; ujung kanan ditutup efek fade di chip (tanpa titik2)
+    return String(k || '');
   }
   function buildCurl(k) {
     return 'curl -X POST https://app.clincoo.buzz/api/email \\\n  -H "Content-Type: application/json" \\\n  -d \'{"action":"send","api_key":"' + (k || 'clc_email_…') + '","to":"penerima@contoh.com","subject":"Halo","html":"<p>Halo!</p>"}\'';

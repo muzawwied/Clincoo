@@ -1,5 +1,5 @@
 /* Clincoo service worker — PWA + cache aset CDN (lucide, fonts, tailwind) v31 */
-var CACHE = 'clinqoo-v45';
+var CACHE = 'clinqoo-v46';
 var PRECACHE = [
   './manifest.json',
   './assets/icons/icon-192.png',
