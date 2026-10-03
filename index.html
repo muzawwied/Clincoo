@@ -568,7 +568,9 @@
                 try { projects = JSON.parse(localStorage.getItem('clinqoo_projects') || '[]'); } catch (e) {}
                 var html2 = '';
                 projects.forEach(function (p) {
-                    var name = (p && (p.aiName || p.title)) || 'Tanpa nama';
+                    // Samakan dengan kartu proyek & Pengaturan Umum: nama custom (app_name) > nama AI > judul awal
+                    var _st = {}; try { _st = JSON.parse(localStorage.getItem('clinqoo_umum_' + (p && p.id || 'default')) || '{}'); } catch (e2) {}
+                    var name = (_st && _st.app_name) || (p && (p.aiName || p.title)) || 'Tanpa nama';
                     html2 += '<a href="proyek/workspace/?id=' + encodeURIComponent(p.id) + '" onclick="toggleSidebar(false)" class="sb-sub flex items-center gap-2.5 px-6 py-2 pl-[3.25rem] hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0" data-search="' + esc(name) + '">' +
                         '<i data-lucide="folder" class="w-4 h-4 text-gray-400 shrink-0"></i>' +
                         '<span class="text-sm text-gray-600 truncate">' + esc(name) + '</span></a>';
@@ -1794,7 +1796,7 @@
             }
             function projCardTitle(proj) {
                 const st = umumSettingsMap[proj.id] || umumCacheRead(proj.id);
-                return escCard(stripMdCard((st && st.app_name) || proj.title || 'Proyek Tanpa Nama'));
+                return escCard(stripMdCard((st && st.app_name) || proj.aiName || proj.title || 'Proyek Tanpa Nama'));
             }
             function projCardDesc(proj) {
                 const st = umumSettingsMap[proj.id] || umumCacheRead(proj.id);

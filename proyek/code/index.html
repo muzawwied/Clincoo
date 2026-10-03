@@ -2270,11 +2270,13 @@
 })();
 
 function clinqooLaunchEditor(pid) {
+      // Samakan dengan kartu proyek di halaman utama & Pengaturan Umum: nama custom (app_name) > nama AI > judul awal
       var name = 'Proyek';
       try {
         var ps = JSON.parse(localStorage.getItem('clinqoo_projects') || '[]');
         var p = ps.find(function (x) { return x && x.id === pid; });
-        if (p && p.name) name = p.name; else if (p && p.aiName) name = p.aiName;
+        var st = {}; try { st = JSON.parse(localStorage.getItem('clinqoo_umum_' + pid) || '{}'); } catch (err2) {}
+        name = (st && st.app_name) || (p && p.aiName) || (p && p.title) || 'Proyek';
       } catch (err) {}
       var w = window.open('/proyek/workspace/editor/?id=' + encodeURIComponent(pid) + '&name=' + encodeURIComponent(name), '_blank');
       // Popup diblokir browser (umum setelah async): fallback buka di tab yang sama, jangan diam saja.

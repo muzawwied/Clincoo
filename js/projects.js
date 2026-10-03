@@ -128,7 +128,7 @@ function umumCacheRead(pid) {
 }
 function projCardTitle(proj) {
     const st = umumCacheRead(proj && proj.id);
-    return stripMd((st && st.app_name) || (proj && proj.title) || 'Proyek Tanpa Nama');
+    return stripMd((st && st.app_name) || (proj && proj.aiName) || (proj && proj.title) || 'Proyek Tanpa Nama');
 }
 function projCardDesc(proj) {
     const st = umumCacheRead(proj && proj.id);
