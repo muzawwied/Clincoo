@@ -29,74 +29,171 @@
     body.dark-mode .bg-white { background-color: #0a0a0a; }
     body.dark-mode .border-gray-200, body.dark-mode .border-gray-100 { border-color: #222222; }
     body.dark-mode .bg-gray-50, body.dark-mode .bg-gray-100 { background-color: #1a1a1a; }
+    @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .dest-sheet-in { animation: sheetUp .28s cubic-bezier(.16,1,.3,1); }
+    .dest-fade-in { animation: fadeIn .2s ease-out; }
+    @keyframes destPop { 0% { transform: scale(.96); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    .dest-pop-in { animation: destPop .18s ease-out; }
   </style>
 </head>
 <body class="text-gray-900 antialiased min-h-screen w-full bg-white">
   <script>(function(){var t=localStorage.getItem("clinqoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
 
-  <div class="max-w-md mx-auto px-5 pb-32 pt-5">
+  <div class="max-w-md mx-auto px-5 pb-40 pt-5">
     <!-- Header -->
-    <div class="flex items-center gap-3 mb-7">
+    <div class="flex items-center gap-3 mb-6">
       <a href="../../" class="w-11 h-11 flex-shrink-0 flex items-center justify-center text-[#222222] bg-white dark:bg-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors" aria-label="Kembali">
         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
       </a>
+      <div class="flex-1 min-w-0">
+        <h1 class="text-lg font-semibold text-gray-900 dark:text-white leading-tight">Tujuan Penarikan</h1>
+        <p class="text-xs text-gray-400 dark:text-gray-500">Pilih atau kelola e-wallet tujuan pencairan saldo</p>
+      </div>
+      <div class="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800">
+        <svg class="w-4.5 h-4.5 w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12V7H5a2 2 0 0 1 0-4h14v4M3 5v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5"/><path stroke-linecap="round" stroke-linejoin="round" d="M18 15h-3v3h3z"></path></svg>
+      </div>
+    </div>
+
+    <!-- Banner info & keamanan -->
+    <div class="flex items-start gap-3 px-4 py-3.5 rounded-2xl bg-gray-50 dark:bg-slate-800/40 border border-gray-100 dark:border-slate-700/60 mb-7">
+      <svg class="w-4.5 h-4.5 w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4"></path></svg>
       <div>
-        <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Tujuan Penarikan</h1>
-        <p class="text-xs text-gray-400 dark:text-gray-500">Pilih atau kelola e-wallet tujuan</p>
+        <p class="text-xs font-semibold text-gray-700 dark:text-gray-300">Penarikan aman &amp; cepat</p>
+        <p class="text-[11px] leading-relaxed text-gray-400 dark:text-gray-500 mt-0.5">Dana hanya dikirim ke nomor yang kamu daftarkan di sini. Pastikan nomor e-wallet aktif dan terdaftar atas nama kamu.</p>
       </div>
     </div>
 
     <!-- Skeleton -->
     <div id="dest-loading" class="space-y-3">
-      <div class="h-16 rounded-2xl bg-gray-100 dark:bg-slate-800/60 animate-pulse"></div>
-      <div class="h-16 rounded-2xl bg-gray-100 dark:bg-slate-800/60 animate-pulse"></div>
+      <div class="h-10 w-36 rounded-full bg-gray-100 dark:bg-slate-800/60 animate-pulse"></div>
+      <div class="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-gray-100 dark:border-slate-700/60">
+        <div class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-slate-800/60 animate-pulse"></div>
+        <div class="flex-1 space-y-2"><div class="h-2.5 w-1/3 rounded-full bg-gray-100 dark:bg-slate-800/60 animate-pulse"></div><div class="h-3 w-2/3 rounded-full bg-gray-100 dark:bg-slate-800/60 animate-pulse"></div></div>
+        <div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-800/60 animate-pulse"></div>
+      </div>
+      <div class="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-gray-100 dark:border-slate-700/60">
+        <div class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-slate-800/60 animate-pulse"></div>
+        <div class="flex-1 space-y-2"><div class="h-2.5 w-1/4 rounded-full bg-gray-100 dark:bg-slate-800/60 animate-pulse"></div><div class="h-3 w-1/2 rounded-full bg-gray-100 dark:bg-slate-800/60 animate-pulse"></div></div>
+        <div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-800/60 animate-pulse"></div>
+      </div>
     </div>
 
-    <!-- Daftar tujuan (CRUD table) -->
+    <!-- Error -->
+    <div id="dest-error" class="hidden text-center py-10">
+      <div class="w-12 h-12 mx-auto mb-3 rounded-2xl bg-gray-100 dark:bg-slate-800 flex items-center justify-center">
+        <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4M12 17h.01"></path></svg>
+      </div>
+      <p class="text-sm font-medium text-gray-900 dark:text-white">Gagal memuat tujuan</p>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Periksa koneksi kamu lalu coba lagi</p>
+      <button type="button" onclick="destReload()" class="mt-5 px-6 h-10 text-xs font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full cursor-pointer">Coba Lagi</button>
+    </div>
+
+    <!-- Judul seksi daftar -->
+    <div id="dest-section" class="hidden flex items-center justify-between mb-3">
+      <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">E-wallet Tersimpan</p>
+      <span id="dest-count" class="px-2.5 py-1 text-[11px] font-semibold rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400"></span>
+    </div>
+
+    <!-- Daftar tujuan -->
     <div id="dest-list" class="hidden space-y-2.5"></div>
 
     <!-- Kosong -->
-    <div id="dest-empty" class="hidden text-center py-12">
-      <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gray-100 dark:bg-slate-800 flex items-center justify-center">
-        <svg class="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"></path></svg>
+    <div id="dest-empty" class="hidden text-center py-10">
+      <div class="relative w-16 h-16 mx-auto mb-5">
+        <div class="absolute inset-0 rounded-3xl bg-gray-100 dark:bg-slate-800 rotate-6"></div>
+        <div class="absolute inset-0 rounded-3xl bg-gray-100 dark:bg-slate-700 -rotate-6"></div>
+        <div class="absolute inset-0 rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 flex items-center justify-center shadow-sm">
+          <svg class="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"></path></svg>
+        </div>
       </div>
-      <p class="text-sm font-medium text-gray-900 dark:text-white">Belum ada tujuan tersimpan</p>
-      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Tambahkan e-wallet tujuan penarikanmu</p>
+      <p class="text-sm font-semibold text-gray-900 dark:text-white">Belum ada tujuan tersimpan</p>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5 max-w-[26ch] mx-auto leading-relaxed">Simpan nomor e-wallet kamu sekali saja — penarikan berikutnya tinggal pilih, tanpa isi ulang.</p>
+      <button type="button" onclick="destFormOpen()" class="mt-6 px-6 h-11 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer mx-auto">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        Tambah Tujuan Pertama
+      </button>
     </div>
 
     <!-- Tambah tujuan -->
-    <button type="button" id="dest-add-btn" onclick="destFormOpen()" class="hidden w-full h-12 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">
+    <button type="button" id="dest-add-btn" onclick="destFormOpen()" class="hidden mt-4 w-full h-12 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">
       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
       Tambah Tujuan
     </button>
+  </div>
 
-    <!-- Form tambah/edit -->
-    <div id="dest-form" class="hidden px-4 py-4 rounded-2xl border border-gray-200 dark:border-slate-700 space-y-3.5">
-      <p id="dest-form-title" class="text-sm font-semibold text-gray-900 dark:text-white">Tambah Tujuan</p>
-      <div>
-        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Jenis e-wallet</p>
-        <div id="dest-ew" class="flex flex-wrap gap-1.5"></div>
+  <!-- Toast -->
+  <div id="dest-toast" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 px-5 py-2.5 text-xs font-medium text-white bg-black dark:bg-white dark:text-black rounded-full shadow-lg z-[70] flex items-center gap-2">
+    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+    <span id="dest-toast-text"></span>
+  </div>
+
+  <!-- CTA pilih -->
+  <div id="dest-pick-bar" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 w-[calc(100%-2.5rem)] max-w-md z-40">
+    <div class="px-5 py-3 rounded-t-3xl bg-white dark:bg-slate-900 border-x border-t border-gray-200 dark:border-slate-700 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-full bg-black dark:bg-white flex items-center justify-center flex-shrink-0">
+        <svg class="w-4 h-4 text-white dark:text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12V7H5a2 2 0 0 1 0-4h14v4M3 5v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5"/><path stroke-linecap="round" stroke-linejoin="round" d="M18 15h-3v3h3z"></path></svg>
       </div>
-      <div class="relative">
-        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-mono text-gray-400">62</span>
-        <input id="dest-account" type="tel" inputmode="numeric" placeholder="8123456789" class="w-full pl-11 pr-4 py-2.5 text-sm font-mono rounded-full border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/40 text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:border-gray-400 dark:focus:border-slate-500 transition-colors" />
-      </div>
-      <input id="dest-label" type="text" maxlength="40" placeholder="Label (mis. Dompet utama)" class="w-full px-4 py-2.5 text-sm rounded-full border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/40 text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:border-gray-400 dark:focus:border-slate-500 transition-colors" />
-      <p id="dest-form-err" class="hidden text-xs text-red-500"></p>
-      <div class="flex gap-2 pt-1">
-        <button type="button" onclick="destFormClose()" class="flex-1 h-11 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 rounded-full transition-colors cursor-pointer">Batal</button>
-        <button type="button" id="dest-save" onclick="destFormSave()" class="flex-1 h-11 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full transition-colors cursor-pointer disabled:opacity-40" disabled>Simpan</button>
+      <div class="flex-1 min-w-0">
+        <p class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Tujuan dipilih</p>
+        <p id="dest-pick-name" class="text-xs font-mono font-semibold text-gray-900 dark:text-white truncate"></p>
       </div>
     </div>
+    <button type="button" id="dest-pick-btn" onclick="destPickGo()" class="w-full py-3.5 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-b-3xl rounded-t-none shadow-lg transition-colors flex items-center justify-center gap-2 cursor-pointer">
+      Lanjutkan Penarikan
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+    </button>
+  </div>
 
-    <p id="dest-toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-2.5 text-xs font-medium text-white bg-black dark:bg-white dark:text-black rounded-full shadow-lg z-50"></p>
-
-    <!-- CTA pilih -->
-    <div id="dest-pick-bar" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 w-[calc(100%-2.5rem)] max-w-md">
-      <button type="button" id="dest-pick-btn" onclick="destPickGo()" class="w-full h-13 py-3.5 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full shadow-lg transition-colors flex items-center justify-center gap-2 cursor-pointer">
-        Lanjutkan dengan <span id="dest-pick-name" class="font-mono"></span>
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
-      </button>
+  <!-- Form tambah/edit: bottom sheet -->
+  <div id="dest-form-wrap" class="hidden fixed inset-0 z-[60]">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm dest-fade-in" onclick="destFormClose()" aria-hidden="true"></div>
+    <div class="absolute bottom-0 left-0 right-0 flex justify-center pointer-events-none">
+      <div id="dest-form" class="dest-sheet-in pointer-events-auto w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl" style="max-height:88dvh;overflow-y:auto;padding-bottom:calc(1.25rem + env(safe-area-inset-bottom,0px));">
+        <div class="flex justify-center pt-3 pb-1"><div class="w-10 h-1.5 rounded-full bg-gray-200 dark:bg-slate-700"></div></div>
+        <div class="flex items-center justify-between px-5 pt-1.5 pb-3">
+          <div>
+            <p id="dest-form-title" class="text-base font-semibold text-gray-900 dark:text-white">Tambah Tujuan</p>
+            <p id="dest-form-sub" class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Nomor akan dipakai untuk pencairan saldo</p>
+          </div>
+          <button type="button" onclick="destFormClose()" class="w-8 h-8 rounded-full bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex items-center justify-center transition-colors shrink-0 cursor-pointer" aria-label="Tutup">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6 6 18M6 6l12 12"></path></svg>
+          </button>
+        </div>
+        <div class="px-5 pb-5 space-y-5">
+          <div>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Jenis e-wallet</p>
+            <div id="dest-ew" class="grid grid-cols-3 gap-2"></div>
+          </div>
+          <div>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Nomor e-wallet</p>
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-mono text-gray-400 pointer-events-none">+62</span>
+              <input id="dest-account" type="tel" inputmode="numeric" maxlength="13" placeholder="812 3456 789" class="w-full pl-12 pr-4 h-12 text-sm font-mono rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/40 text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:border-gray-400 dark:focus:border-slate-500 focus:ring-2 focus:ring-gray-200/60 dark:focus:ring-slate-700/60 transition-all" />
+            </div>
+            <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5">Masukkan nomor tanpa awalan 0 — contoh: 8123456789</p>
+          </div>
+          <div>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Label <span class="text-gray-300 dark:text-gray-600">(opsional)</span></p>
+            <div class="relative">
+              <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 dark:text-gray-600 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"></path><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"></circle></svg>
+              <input id="dest-label" type="text" maxlength="40" placeholder="mis. Dompet utama" class="w-full pl-11 pr-4 h-12 text-sm rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/40 text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:border-gray-400 dark:focus:border-slate-500 focus:ring-2 focus:ring-gray-200/60 dark:focus:ring-slate-700/60 transition-all" />
+            </div>
+            <div id="dest-label-chars" class="text-right text-[10px] text-gray-300 dark:text-gray-600 mt-1">0/40</div>
+          </div>
+          <p id="dest-form-err" class="hidden text-xs text-red-500 flex items-start gap-1.5">
+            <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4M12 17h.01"></path></svg>
+            <span id="dest-form-err-text"></span>
+          </p>
+          <div class="flex gap-2 pt-1">
+            <button type="button" onclick="destFormClose()" class="flex-1 h-12 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 rounded-full transition-colors cursor-pointer">Batal</button>
+            <button type="button" id="dest-save" onclick="destFormSave()" class="flex-1 h-12 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full transition-colors cursor-pointer disabled:opacity-40 flex items-center justify-center gap-2" disabled>
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+              Simpan Tujuan
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -108,6 +205,7 @@
   function _sid() { return 'clinqoo_wd_dest_' + _pid(); }
 
   var EW_LABEL = { dana: 'DANA', ovo: 'OVO', gopay: 'GoPay', shopeepay: 'ShopeePay', linkaja: 'LinkAja' };
+  var EW_ABV = { dana: 'DA', ovo: 'OV', gopay: 'GP', shopeepay: 'SP', linkaja: 'LA' };
   var _dests = [];
   var _picked = null;
   var _editing = 0;
@@ -116,10 +214,14 @@
 
   function destToast(msg) {
     var t = document.getElementById('dest-toast');
-    t.textContent = msg;
+    document.getElementById('dest-toast-text').textContent = msg;
     t.classList.remove('hidden');
     clearTimeout(destToast._t);
     destToast._t = setTimeout(function () { t.classList.add('hidden'); }, 2400);
+  }
+
+  function _fmtAccount(a) {
+    return String(a || '').replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ');
   }
 
   function destRender() {
@@ -128,19 +230,22 @@
     _dests.forEach(function (d) {
       var on = _picked && _picked.id === d.id;
       var row = document.createElement('div');
-      row.className = 'relative flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 transition-colors cursor-pointer ' + (on ? 'border-black dark:border-white' : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-500');
+      row.className = 'dest-pop-in relative flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 transition-colors cursor-pointer ' + (on ? 'border-black dark:border-white bg-gray-50 dark:bg-slate-800/40' : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-500');
       row.innerHTML =
+        '<span class="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-black dark:bg-white flex items-center justify-center ' + (on ? '' : 'hidden') + '"><svg class="w-3.5 h-3.5 text-white dark:text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg></span>' +
         '<div class="min-w-0 flex-1" onclick="destPick(' + d.id + ')">' +
-          '<div class="flex items-center gap-2"><span class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300">' + (EW_LABEL[d.ew_type] || d.ew_type) + '</span>' + (d.label ? '<span class="text-xs text-gray-400 dark:text-gray-500 truncate">' + d.label + '</span>' : '') + '</div>' +
-          '<p class="text-sm font-mono font-semibold text-gray-900 dark:text-white mt-1">' + d.account + '</p>' +
+          '<div class="flex items-center gap-2"><span class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300">' + (EW_LABEL[d.ew_type] || d.ew_type) + '</span>' + (d.label ? '<span class="text-[11px] text-gray-400 dark:text-gray-500 truncate max-w-[12ch]">' + d.label + '</span>' : '') + '</div>' +
+          '<p class="text-sm font-mono font-semibold text-gray-900 dark:text-white mt-1.5">' + _fmtAccount(d.account) + '</p>' +
+        '</div>' +
+        '<div class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 ' + (on ? 'bg-black dark:bg-white' : '') + '">' +
+          '<span class="text-[10px] font-bold font-mono ' + (on ? 'text-white dark:text-black' : 'text-gray-500 dark:text-gray-400') + '">' + (EW_ABV[d.ew_type] || 'EW') + '</span>' +
         '</div>' +
         '<button type="button" onclick="destFormOpen(' + d.id + ')" class="w-9 h-9 flex-shrink-0 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors" aria-label="Ubah">' +
           '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>' +
         '</button>' +
         '<button type="button" onclick="destAskDelete(' + d.id + ')" class="w-9 h-9 flex-shrink-0 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors" aria-label="Hapus">' +
           '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>' +
-        '</button>' +
-        (on ? '<span class="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-black dark:bg-white flex items-center justify-center"><svg class="w-3.5 h-3.5 text-white dark:text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg></span>' : '');
+        '</button>';
       list.appendChild(row);
     });
   }
@@ -150,7 +255,7 @@
     destRender();
     var bar = document.getElementById('dest-pick-bar');
     if (_picked) {
-      document.getElementById('dest-pick-name').textContent = (EW_LABEL[_picked.ew_type] || _picked.ew_type) + ' · ' + _picked.account;
+      document.getElementById('dest-pick-name').textContent = (EW_LABEL[_picked.ew_type] || _picked.ew_type) + ' · ' + _fmtAccount(_picked.account);
       bar.classList.remove('hidden');
     } else bar.classList.add('hidden');
   }
@@ -161,33 +266,37 @@
     location.href = '../';
   }
 
-  // ===== Form tambah/edit =====
+  // ===== Form tambah/edit (bottom sheet) =====
   function destFormOpen(id) {
+    var acc = document.getElementById('dest-account');
+    var lab = document.getElementById('dest-label');
     if (id) {
       var d = _dests.find(function (x) { return x.id === id; });
       if (!d) return;
       _editing = id;
       _formEw = d.ew_type;
       document.getElementById('dest-form-title').textContent = 'Ubah Tujuan';
-      document.getElementById('dest-account').value = d.account.replace(/^0/, '');
-      document.getElementById('dest-label').value = d.label || '';
+      document.getElementById('dest-form-sub').textContent = 'Perbarui nomor atau label e-wallet';
+      acc.value = d.account.replace(/^0/, '');
+      lab.value = d.label || '';
     } else {
       _editing = 0; _formEw = '';
       document.getElementById('dest-form-title').textContent = 'Tambah Tujuan';
-      document.getElementById('dest-account').value = '';
-      document.getElementById('dest-label').value = '';
+      document.getElementById('dest-form-sub').textContent = 'Nomor akan dipakai untuk pencairan saldo';
+      acc.value = '';
+      lab.value = '';
     }
     destFormEwRender();
-    document.getElementById('dest-form').classList.remove('hidden');
-    document.getElementById('dest-add-btn').classList.add('hidden');
+    document.getElementById('dest-form-wrap').classList.remove('hidden');
     document.getElementById('dest-form-err').classList.add('hidden');
+    destLabelCount();
     destFormValid();
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    destClearErr();
+    if (!_editing) setTimeout(function () { acc.focus(); }, 350);
   }
 
   function destFormClose() {
-    document.getElementById('dest-form').classList.add('hidden');
-    document.getElementById('dest-add-btn').classList.remove('hidden');
+    document.getElementById('dest-form-wrap').classList.add('hidden');
     _editing = 0;
   }
 
@@ -197,14 +306,29 @@
     Object.keys(EW_LABEL).forEach(function (k) {
       var b = document.createElement('button');
       b.type = 'button';
-      b.textContent = EW_LABEL[k];
-      b.setAttribute('data-ew', k);
-      b.onclick = function () { _formEw = k; destFormEwRender(); destFormValid(); };
-      b.className = (_formEw === k)
-        ? 'px-4 py-2 text-xs font-medium rounded-full bg-black text-white dark:bg-white dark:text-black transition-colors cursor-pointer'
-        : 'px-4 py-2 text-xs font-medium rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors cursor-pointer';
+      var on = _formEw === k;
+      b.className = 'h-16 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer ' +
+        (on ? 'border-black bg-black dark:border-white dark:bg-white' : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/40 hover:border-gray-300 dark:hover:border-slate-600');
+      b.innerHTML =
+        '<span class="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold font-mono ' + (on ? 'bg-white/20 text-white dark:bg-black/20 dark:text-black' : 'bg-gray-200 text-gray-500 dark:bg-slate-700 dark:text-gray-400') + '">' + (EW_ABV[k] || '') + '</span>' +
+        '<span class="text-[11px] font-semibold ' + (on ? 'text-white dark:text-black' : 'text-gray-600 dark:text-gray-400') + '">' + EW_LABEL[k] + '</span>';
+      b.onclick = function () { _formEw = k; destFormEwRender(); destFormValid(); destClearErr(); };
       w.appendChild(b);
     });
+  }
+
+  function destLabelCount() {
+    var v = document.getElementById('dest-label').value;
+    document.getElementById('dest-label-chars').textContent = v.length + '/40';
+  }
+
+  function destShowErr(msg) {
+    var e = document.getElementById('dest-form-err');
+    document.getElementById('dest-form-err-text').textContent = msg;
+    e.classList.remove('hidden');
+  }
+  function destClearErr() {
+    document.getElementById('dest-form-err').classList.add('hidden');
   }
 
   function destFormValid() {
@@ -218,7 +342,9 @@
     if (_busy || !destFormValid()) return;
     _busy = true;
     var btn = document.getElementById('dest-save');
-    btn.disabled = true; btn.textContent = 'Menyimpan...';
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4z"></path></svg> Menyimpan...';
+    var before = _dests.map(function (d) { return d.id; });
     var acc = '0' + document.getElementById('dest-account').value.replace(/\D/g, '');
     var payload = _editing
       ? { action: 'wd_dest_update', id: _editing, ew_type: _formEw, account: acc, label: document.getElementById('dest-label').value }
@@ -231,44 +357,64 @@
       });
       var data = await res.json().catch(function () { return {}; });
       if (!res.ok || !data.success) {
-        var err = document.getElementById('dest-form-err');
-        err.textContent = data.message || data.error || 'Gagal menyimpan.';
-        err.classList.remove('hidden');
-        btn.disabled = false; btn.textContent = 'Simpan';
+        destShowErr(data.message || data.error || 'Gagal menyimpan.');
+        btn.disabled = false;
+        destBtnReset();
         _busy = false;
         return;
       }
       destToast(_editing ? 'Tujuan diperbarui' : 'Tujuan ditambahkan');
       destFormClose();
       await loadDests();
-      btn.disabled = false; btn.textContent = 'Simpan';
+      // pilih otomatis tujuan baru
+      if (!_editing) {
+        var fresh = _dests.find(function (d) { return before.indexOf(d.id) === -1; });
+        if (fresh) destPick(fresh.id);
+      }
+      destBtnReset();
     } catch (e) {
-      btn.disabled = false; btn.textContent = 'Simpan';
-      _busy = false;
+      destShowErr('Tidak dapat terhubung ke server. Coba lagi.');
+      btn.disabled = false;
+      destBtnReset();
     }
     _busy = false;
   }
+  function destBtnReset() {
+    var btn = document.getElementById('dest-save');
+    btn.innerHTML = '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg> Simpan Tujuan';
+  }
 
-  // ===== Hapus (popover konfirmasi kustom) =====
+  // ===== Hapus (modal konfirmasi kustom) =====
   function destAskDelete(id) {
     document.querySelectorAll('.dest-del-pop').forEach(function (p) { p.remove(); });
     var d = _dests.find(function (x) { return x.id === id; });
     if (!d) return;
-    var row = document.querySelector('#dest-list');
     var pop = document.createElement('div');
-    pop.className = 'dest-del-pop fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm';
+    pop.className = 'dest-del-pop fixed inset-0 z-[65] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm dest-fade-in';
     pop.onclick = function (e) { if (e.target === pop) pop.remove(); };
     pop.innerHTML =
-      '<div class="w-full max-w-xs bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-5 py-5 text-center">' +
+      '<div class="dest-pop-in w-full max-w-xs bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-3xl px-5 py-6 text-center">' +
+        '<div class="w-12 h-12 mx-auto mb-4 rounded-2xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center">' +
+          '<svg class="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>' +
+        '</div>' +
         '<p class="text-sm font-semibold text-gray-900 dark:text-white">Hapus tujuan ini?</p>' +
-        '<p class="text-xs text-gray-400 dark:text-gray-500 mt-1 font-mono">' + (EW_LABEL[d.ew_type] || d.ew_type) + ' · ' + d.account + '</p>' +
-        '<div class="flex gap-2 mt-5">' +
-          '<button type="button" class="dest-cancel flex-1 h-10 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 rounded-full cursor-pointer">Batal</button>' +
-          '<button type="button" class="dest-yes flex-1 h-10 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-full cursor-pointer">Hapus</button>' +
+        '<div class="mt-2 px-3 py-2 rounded-xl bg-gray-50 dark:bg-slate-800/60 inline-flex flex-col">' +
+          '<span class="text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">' + (EW_LABEL[d.ew_type] || d.ew_type) + '</span>' +
+          '<span class="text-sm font-mono font-semibold text-gray-900 dark:text-white">' + _fmtAccount(d.account) + '</span>' +
+          (d.label ? '<span class="text-[11px] text-gray-400 dark:text-gray-500">' + d.label + '</span>' : '') +
+        '</div>' +
+        '<p class="text-[11px] text-gray-400 dark:text-gray-500 mt-3">Tindakan ini tidak dapat dibatalkan.</p>' +
+        '<div class="flex gap-2 mt-4">' +
+          '<button type="button" class="dest-cancel flex-1 h-11 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 rounded-full cursor-pointer transition-colors hover:bg-gray-200 dark:hover:bg-slate-700">Batal</button>' +
+          '<button type="button" class="dest-yes flex-1 h-11 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-full cursor-pointer transition-colors flex items-center justify-center gap-1.5">' +
+            '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>Hapus' +
+          '</button>' +
         '</div>' +
       '</div>';
     pop.querySelector('.dest-cancel').onclick = function () { pop.remove(); };
     pop.querySelector('.dest-yes').onclick = async function () {
+      var yes = pop.querySelector('.dest-yes');
+      yes.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4z"></path></svg>';
       try {
         var res = await fetch(API_BASE + '/pay', {
           method: 'POST',
@@ -283,8 +429,18 @@
           await loadDests();
         } else destToast(data.message || 'Gagal menghapus');
       } catch (e) { destToast('Tidak dapat terhubung ke server'); }
+      if (document.body.contains(pop)) {
+        yes.innerHTML = '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>Hapus';
+      }
     };
     document.body.appendChild(pop);
+  }
+
+  // ===== Reload & muat data =====
+  function destReload() {
+    document.getElementById('dest-error').classList.add('hidden');
+    document.getElementById('dest-loading').classList.remove('hidden');
+    loadDests();
   }
 
   async function loadDests() {
@@ -294,25 +450,39 @@
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _apiToken },
         body: JSON.stringify({ action: 'wd_dests' })
       });
-      if (!res.ok) return;
+      if (!res.ok) throw new Error('http ' + res.status);
       var data = await res.json();
       _dests = data.destinations || [];
-    } catch (e) { return; }
-    document.getElementById('dest-loading').classList.add('hidden');
-    if (_dests.length) {
-      document.getElementById('dest-list').classList.remove('hidden');
-      document.getElementById('dest-add-btn').classList.remove('hidden');
-      destRender();
-    } else {
-      document.getElementById('dest-empty').classList.remove('hidden');
-      document.getElementById('dest-add-btn').classList.remove('hidden');
+    } catch (e) {
+      document.getElementById('dest-loading').classList.add('hidden');
+      document.getElementById('dest-error').classList.remove('hidden');
+      return;
     }
+    document.getElementById('dest-loading').classList.add('hidden');
+    document.getElementById('dest-error').classList.add('hidden');
+    var empty = !_dests.length;
+    document.getElementById('dest-section').classList.toggle('hidden', empty);
+    document.getElementById('dest-list').classList.toggle('hidden', empty);
+    document.getElementById('dest-add-btn').classList.toggle('hidden', empty);
+    document.getElementById('dest-empty').classList.toggle('hidden', !empty);
+    document.getElementById('dest-count').textContent = _dests.length + ' tujuan';
+    destRender();
     // pilihan tersimpan? tampilkan
     try {
       var sel = JSON.parse(sessionStorage.getItem(_sid()) || 'null');
       if (sel && _dests.some(function (d) { return d.id === sel.id; })) destPick(sel.id);
+      else if (sel) { try { sessionStorage.removeItem(_sid()); } catch (e) {} }
     } catch (e) {}
   }
+
+  // binding input
+  document.getElementById('dest-account').addEventListener('input', function () { destFormValid(); destClearErr(); });
+  document.getElementById('dest-label').addEventListener('input', destLabelCount);
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    document.querySelectorAll('.dest-del-pop').forEach(function (p) { p.remove(); });
+    document.getElementById('dest-form-wrap').classList.add('hidden');
+  });
 
   if (!_apiToken) location.href = '/akun/';
   else loadDests();
