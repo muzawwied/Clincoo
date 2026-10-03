@@ -419,7 +419,7 @@
     var el = document.getElementById('dom-sender');
     if (el) el.textContent = s.email + (s.name ? ' (' + s.name + ')' : '');
     var tier = document.getElementById('dom-tier');
-    if (tier) tier.textContent = s.custom ? 'Tier domain aktif — kirim ke siapa pun.' : 'Tier default — hanya ke ' + ((cfg && cfg.owner_email) || 'email akun Clincoo kamu') + '.';
+    if (tier) tier.textContent = s.custom ? 'Tier domain aktif — kirim ke siapa pun.' : 'Tier default — hanya ke email akun Clincoo kamu.';
     if (!d.domain) { _show('dom-none'); return; }
     if (d.status !== 'verified') {
       document.getElementById('dom-name-1').textContent = d.domain;
