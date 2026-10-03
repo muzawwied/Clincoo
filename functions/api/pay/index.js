@@ -246,7 +246,7 @@ async function sendWithdrawEmail(env, w, sig, verifyUrl) {
       headers: { 'Content-Type': 'application/json', 'X-Bridge-Key': String(bridgeKey) },
       body: JSON.stringify({
         to,
-        from_email: 'no-reply@clincoo.buzz',
+        from_email: 'noreply@clincoo.buzz',
         from_name: 'Clincoo Pembayaran',
         subject: '[Permintaan Penarikan] Rp ' + Number(w.amount).toLocaleString('id-ID') + ' - ' + (WD_EWALLET_LABEL[w.dest_type] || w.dest_type) + ' ' + w.dest_account + ' - ' + (w.project_title || w.project_id),
         html,
@@ -339,7 +339,7 @@ async function sendOtpEmail(env, toEmail, code, amount, fee, dest) {
     const r = await fetch(String(url).replace(/\/$/, '') + '/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Bridge-Key': String(bridgeKey) },
-      body: JSON.stringify({ to: toEmail, from_email: 'no-reply@clincoo.buzz', from_name: 'Clincoo Pembayaran', subject: 'Verifikasi penarikan saldo - Clincoo', html, text })
+      body: JSON.stringify({ to: toEmail, from_email: 'noreply@clincoo.buzz', from_name: 'Clincoo Pembayaran', subject: 'Verifikasi penarikan saldo - Clincoo', html, text })
     });
     const data = await r.json().catch(() => ({}));
     return r.ok && data.ok;
@@ -375,7 +375,7 @@ async function sendWdResultEmail(env, toEmail, w, status, note) {
     const r = await fetch(String(url).replace(/\/$/, '') + '/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Bridge-Key': String(bridgeKey) },
-      body: JSON.stringify({ to: toEmail, from_email: 'no-reply@clincoo.buzz', from_name: 'Clincoo Pembayaran', subject: ok ? 'Penarikan #' + w.id + ' selesai' : 'Penarikan #' + w.id + ' ditolak', html, text })
+      body: JSON.stringify({ to: toEmail, from_email: 'noreply@clincoo.buzz', from_name: 'Clincoo Pembayaran', subject: ok ? 'Penarikan #' + w.id + ' selesai' : 'Penarikan #' + w.id + ' ditolak', html, text })
     });
     const data = await r.json().catch(() => ({}));
     return r.ok && data.ok;
