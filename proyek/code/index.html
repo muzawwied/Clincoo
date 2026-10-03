@@ -7,7 +7,7 @@
   <script src="../../js/accent-init.js"></script>
 <script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
 <script>/* embed=1: tanpa header (dipakai dalam split view halaman chat) */(function(){try{if(/(^|[?&])embed=1(&|$)/.test(location.search)){document.documentElement.classList.add('embed-mode');}}catch(e){}})();</script>
-<script>/* Desktop (>=900px, termasuk HP mode Situs desktop ~980px): halaman workspace selalu tampil dalam split view chat */(function(){function go(){try{if(window.matchMedia&&window.matchMedia('(pointer: coarse)').matches)return;if(/(^|[?&])embed=1(&|$)/.test(location.search))return;if(!window.matchMedia('(min-width: 900px)').matches)return;var pid='';try{pid=new URLSearchParams(location.search).get('id')||localStorage.getItem('clinqoo_current_project_id')||''}catch(e){}var q='panel=code';if(pid)q+='&id='+encodeURIComponent(pid);location.replace('/proyek/chat/?'+q);}catch(e){}}var mq=window.matchMedia('(min-width: 900px)');go();if(mq.addEventListener)mq.addEventListener('change',go);})();</script>
+<script>/* Desktop (>=900px, termasuk HP mode Situs desktop ~980px): halaman workspace selalu tampil dalam split view chat */(function(){function go(){try{if(/(^|[?&])embed=1(&|$)/.test(location.search))return;if(!window.matchMedia('(min-width: 900px)').matches)return;var pid='';try{pid=new URLSearchParams(location.search).get('id')||localStorage.getItem('clinqoo_current_project_id')||''}catch(e){}var q='panel=code';if(pid)q+='&id='+encodeURIComponent(pid);location.replace('/proyek/chat/?'+q);}catch(e){}}var mq=window.matchMedia('(min-width: 900px)');go();if(mq.addEventListener)mq.addEventListener('change',go);})();</script>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com https://unpkg.com; img-src 'self' https: data: blob:; connect-src 'self' https: blob:;">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -215,8 +215,8 @@
         #chat-nav-pill { display: none; }
         /* FAB Agent (semua ukuran layar): langsung ke halaman chat */
         #chat-fab { position: fixed; right: 16px; bottom: 16px; z-index: 10; display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 20px; border-radius: 9999px; border: none; background: #111111; color: #ffffff; font-size: 14px; font-weight: 600; box-shadow: 0 6px 24px rgba(0,0,0,0.28); cursor: pointer; }
-        /* FAB cuma untuk layar kecil: di desktop (>=1200px) chat lewat split view, FAB dihapus */
-        @media (min-width: 1200px) { #chat-fab { display: none !important; } }
+        /* FAB cuma untuk layar kecil: di desktop (>=900px) chat lewat split view, FAB dihapus */
+        @media (min-width: 900px) { #chat-fab { display: none !important; } }
 
         /* Chat Agent overlay: muncul mulus dari bawah, tanpa reload halaman */
         #agent-sheet { position: fixed; inset: 0; z-index: 80; transform: translateY(102%); transition: transform .35s cubic-bezier(.4,0,.2,1); background: #ffffff; }
