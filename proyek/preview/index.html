@@ -15,9 +15,6 @@
         /* ===== Bar atas: status real-time + pilih file + live URL ===== */
         #pv-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid rgba(0,0,0,0.08); flex-shrink: 0; min-height: 44px; }
         html[data-dark] #pv-bar { border-bottom: 1px solid rgba(255,255,255,0.12); }
-        #pv-dot { width: 8px; height: 8px; border-radius: 50%; background: #eab308; flex-shrink: 0; }
-        #pv-dot.on { background: #22c55e; animation: pv-pulse 2s infinite; }
-        #pv-dot.err { background: #ef4444; animation: none; }
         @keyframes pv-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
         #pv-file-btn { border: none; background: transparent; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600; color: inherit; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 46%; }
         #pv-file-btn:hover { background: rgba(0,0,0,0.05); }
@@ -73,7 +70,6 @@
 </head>
 <body>
     <div id="pv-bar">
-        <div id="pv-dot"></div>
         <button id="pv-file-btn" type="button" aria-haspopup="true" aria-expanded="false">
             <span id="pv-file-label">Pilih file</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -108,7 +104,6 @@
     var frame = document.getElementById('pv-frame');
     var msg = document.getElementById('pv-msg');
     var msgText = document.getElementById('pv-msg-text');
-    var dot = document.getElementById('pv-dot');
     var fileBtn = document.getElementById('pv-file-btn');
     var fileLabel = document.getElementById('pv-file-label');
     var pop = document.getElementById('pv-pop');
@@ -144,7 +139,6 @@
         frame.classList.add('pv-hidden');
         msg.classList.remove('pv-hidden');
         msgText.textContent = text;
-        dot.className = err ? 'err' : '';
     }
     function showing() { msg.classList.add('pv-hidden'); frame.classList.remove('pv-hidden'); }
 
@@ -309,7 +303,6 @@
         blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
         frame.src = blobUrl;
         showing();
-        dot.className = 'on';
         updateFileUI(map, entry);
     }
 
@@ -359,7 +352,6 @@
         curMap = map;
         lastFp = fp;
         if (changed || msg && !msg.classList.contains('pv-hidden')) { try { render(map); } catch (e) {} }
-        if (src === 'cloud') dot.className = 'on';
     }
     function cloudTick() {
         if (document.hidden) return;
