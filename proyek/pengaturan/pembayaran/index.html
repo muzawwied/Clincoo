@@ -312,7 +312,6 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
               <h4 class="text-base font-semibold text-gray-900 dark:text-white">Pembayaran</h4>
               <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Terima pembayaran QRIS di situs deploy-mu — dana masuk otomatis ke saldo ini.</p>
             </div>
-            <span id="pay-status-badge" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 whitespace-nowrap flex-shrink-0">Memuat...</span>
           </div>
 
           <!-- Memuat: skeleton + spinner (jangan tampilkan empty dulu) -->
@@ -610,8 +609,6 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
     if (wb) wb.disabled = false;
     var kb = document.getElementById('pay-key-box');
     if (data.pay_key) kb.textContent = data.pay_key;
-    var badge = document.getElementById('pay-status-badge');
-    if (badge) { badge.textContent = data.gateway_ready === false ? 'Aktif — gateway menyusun' : 'Aktif'; badge.className = 'px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 whitespace-nowrap flex-shrink-0'; }
   }
 
   function renderPayInactive() {
@@ -622,8 +619,6 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
     });
     var wb = document.getElementById('pay-withdraw-btn');
     if (wb) wb.disabled = true;
-    var badge = document.getElementById('pay-status-badge');
-    if (badge) { badge.textContent = 'Belum aktif'; badge.className = 'px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 whitespace-nowrap flex-shrink-0'; }
   }
 
   async function loadPayConfig() {
@@ -820,7 +815,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
     if (nofilter) nofilter.style.display = 'none';
     if (empty) empty.style.display = 'none';
     txs.forEach(function (t, idx) {
-        var stClass = t.status === 'paid' ? 'text-emerald-800 dark:text-emerald-300' : (t.status === 'expired' || t.status === 'failed' ? 'text-red-700 dark:text-red-300' : 'text-orange-600 dark:text-orange-400');
+        var stClass = t.status === 'paid' ? 'text-emerald-600 dark:text-emerald-400' : (t.status === 'expired' || t.status === 'failed' ? 'text-red-600 dark:text-red-400' : 'text-orange-500 dark:text-orange-400');
         var stLabel = t.wlabel || (t.status === 'paid' ? 'Berhasil' : (t.status === 'expired' ? 'Kedaluwarsa' : (t.status === 'failed' ? 'Gagal' : 'Menunggu')));
         var tr = document.createElement('tr');
         tr.className = 'pay-fade text-sm hover:bg-gray-50 dark:hover:bg-slate-800/40';
@@ -1005,7 +1000,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
     if (!list) return;
     list.innerHTML = '';
     wds.forEach(function (w, idx) {
-        var stClass = w.status === 'done' ? 'text-emerald-800 dark:text-emerald-300' : (w.status === 'rejected' ? 'text-red-700 dark:text-red-300' : 'text-orange-600 dark:text-orange-400');
+        var stClass = w.status === 'done' ? 'text-emerald-600 dark:text-emerald-400' : (w.status === 'rejected' ? 'text-red-600 dark:text-red-400' : 'text-orange-500 dark:text-orange-400');
         var stLabel = w.status === 'done' ? 'Selesai' : (w.status === 'rejected' ? 'Ditolak' : 'Diproses');
         var _ew = ({ dana: 'DANA', ovo: 'OVO', gopay: 'GoPay', shopeepay: 'ShopeePay', linkaja: 'LinkAja' })[w.dest_type] || '';
         var row = document.createElement('tr');
