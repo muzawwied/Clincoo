@@ -68,6 +68,33 @@ export function emailTemplate(title, name, introText, details, ctaText, ctaLink,
   '</div>';
 }
 
+// Template email OTP Clincoo — kode besar + detail + CTA + footer, gaya konsisten emailTemplate.
+// opts: { name, code, purpose, email, minutes, ctaText, ctaLink }
+export function otpEmail(opts) {
+  const o = opts || {};
+  const code = String(o.code || '000000');
+  const minutes = o.minutes || 10;
+  const tgl = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
+  const otpBox = '<div style="margin:20px 0 24px;padding:20px 12px;background:#f9fafb;border:1px dashed #d1d5db;border-radius:12px;text-align:center">' +
+      '<span style="font-family:Arial,Helvetica,sans-serif;font-size:34px;font-weight:bold;letter-spacing:12px;color:#0a0a0a">' + code + '</span>' +
+    '</div>';
+  return emailTemplate(
+    'Kode Verifikasi Akun Anda',
+    o.name || '',
+    (o.purpose || 'Gunakan kode berikut untuk menyelesaikan verifikasi akun Clincoo Anda.') +
+      otpBox +
+      '<p style="margin:0;color:#374151;font-size:13px;line-height:1.7"><b style="color:#111827">Penting:</b> jangan bagikan kode ini kepada siapa pun, termasuk pihak yang mengaku dari tim Clincoo. Staf Clincoo tidak akan pernah meminta kode ini.</p>',
+    [
+      ['Tujuan', o.email || '-'],
+      ['Berlaku hingga', minutes + ' menit'],
+      ['Dikirim', tgl]
+    ],
+    o.ctaText || 'Verifikasi Sekarang',
+    o.ctaLink || 'https://app.clincoo.buzz/',
+    'Kode ini hanya berlaku ' + minutes + ' menit dan hanya dapat digunakan sekali. Jika Anda tidak meminta kode ini, abaikan email ini — akun Anda tetap aman.'
+  );
+}
+
 // Kirim email via Resend. opts: { toEmail, toName, subject, html, attachment }. Hasil: { sent, via, reason }
 // attachment format lama Resend [{name, content}] otomatis dinormalisasi ke [{filename, content}] Resend.
 export async function sendEmail(env, opts) {
