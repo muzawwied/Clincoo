@@ -267,25 +267,59 @@ async function sendWithdrawEmail(env, w, sig, verifyUrl) {
   }
 }
 
-async function sendOtpEmail(env, toEmail, amount, dest, viewUrl) {
+async function sendOtpEmail(env, toEmail, amount, fee, dest, viewUrl) {
   const url = await getSecret(env, 'MAIL_BRIDGE_URL');
   const bridgeKey = await getSecret(env, 'MAIL_BRIDGE_KEY');
   if (!url || !bridgeKey || !toEmail) return false;
+  const rp = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+  const ew = WD_EWALLET_LABEL[dest.dest_type] || dest.dest_type;
+  const now = new Date();
+  const waktu = now.toLocaleString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
+  const html = [
+    '<div style="margin:0;padding:24px 12px;background:#f4f4f6;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif;">',
+    '<div style="max-width:400px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;border:1px solid #e8e8ec;">',
+    '<div style="padding:28px 28px 0;text-align:center">',
+    '<span style="display:inline-block;padding:7px 16px;border-radius:999px;background:#111;color:#fff;font-size:11px;font-weight:600;letter-spacing:1.2px">CLINCOO PEMBAYARAN</span>',
+    '<h1 style="margin:18px 0 6px;font-size:21px;font-weight:700;color:#111">Kode Verifikasi Penarikan</h1>',
+    '<p style="margin:0;font-size:13.5px;line-height:1.6;color:#666">Kamu meminta penarikan saldo dari proyek Clincoo. Untuk keamanan, <strong style="color:#111">kode verifikasi tidak dicantumkan di email ini</strong> — lihat kodenya melalui tombol di bawah.</p>',
+    '</div>',
+    '<div style="padding:20px 28px 0"><div style="border:1px solid #ececf0;border-radius:16px;padding:16px 18px">',
+    '<p style="margin:0 0 12px;font-size:11px;font-weight:600;letter-spacing:.8px;color:#999">RINCIAN PENARIKAN</p>',
+    '<p style="display:flex;justify-content:space-between;margin:0 0 8px;font-size:13px"><span style="color:#888">Nominal</span><strong style="color:#111">' + rp(amount) + '</strong></p>',
+    '<p style="display:flex;justify-content:space-between;margin:0 0 8px;font-size:13px"><span style="color:#888">Biaya penarikan</span><strong style="color:#111">' + rp(fee) + '</strong></p>',
+    '<p style="display:flex;justify-content:space-between;margin:0 0 8px;font-size:13px"><span style="color:#888">Total terpotong saldo</span><strong style="color:#111">' + rp(amount + fee) + '</strong></p>',
+    '<p style="display:flex;justify-content:space-between;margin:0 0 8px;font-size:13px"><span style="color:#888">Tujuan</span><strong style="color:#111">' + ew + ' ' + dest.dest_account + '</strong></p>',
+    '<p style="display:flex;justify-content:space-between;margin:0;font-size:13px"><span style="color:#888">Diminta</span><strong style="color:#111">' + waktu + '</strong></p>',
+    '</div></div>',
+    '<div style="padding:22px 28px">',
+    '<a href="' + viewUrl + '" style="display:block;height:48px;line-height:48px;text-align:center;background:#111;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;border-radius:999px">Lihat Kode Verifikasi</a>',
+    '<p style="margin:12px 0 0;font-size:12px;line-height:1.5;color:#999;text-align:center">Kode berlaku 10 menit sejak diminta dan hanya bisa dipakai sekali.</p>',
+    '</div>',
+    '<div style="padding:0 28px 24px">',
+    '<p style="margin:0;padding:12px 14px;background:#f6f6f8;border-radius:12px;font-size:12px;line-height:1.6;color:#777">Untuk keamanan akunmu: jangan bagikan kode atau tautan ini ke siapa pun, termasuk pihak yang mengaku dari Clincoo. Tim Clincoo tidak akan pernah meminta kode verifikasimu.</p>',
+    '</div>',
+    '<div style="padding:16px 28px;border-top:1px solid #f0f0f3;background:#fafafb;text-align:center">',
+    '<p style="margin:0 0 3px;font-size:11.5px;color:#999">Email otomatis dari Clincoo Pembayaran — tidak perlu dibalas.</p>',
+    '<p style="margin:0;font-size:11px;color:#bbb">Kamu menerima email ini karena permintaan penarikan dibuat dengan akunmu. Clincoo 2026</p>',
+    '</div>',
+    '</div></div>'
+  ].join('');
   const text = [
-    'Kode verifikasi penarikan Clincoo',
+    'Kode Verifikasi Penarikan - Clincoo Pembayaran',
     '',
-    'Untuk keamanan, kode OTP tidak dicantumkan di email ini.',
-    'Lihat kode verifikasimu di halaman berikut:',
+    'Kamu meminta penarikan saldo dari proyek Clincoo.',
+    'Untuk keamanan, kode verifikasi tidak dicantumkan di email ini.',
+    'Lihat kodenya melalui tautan berikut (10 menit berlaku):',
     viewUrl,
     '',
-    'Detail permintaan:',
-    'Nominal: Rp ' + Number(amount).toLocaleString('id-ID'),
-    'Tujuan: ' + (WD_EWALLET_LABEL[dest.dest_type] || dest.dest_type) + ' - ' + dest.dest_account,
+    'Nominal: ' + rp(amount),
+    'Biaya: ' + rp(fee),
+    'Total terpotong: ' + rp(amount + fee),
+    'Tujuan: ' + ew + ' - ' + dest.dest_account,
     '',
-    'Kode berlaku 10 menit sejak diminta. JANGAN bagikan tautan atau kode ini ke siapa pun.',
+    'JANGAN bagikan kode atau tautan ini ke siapa pun.',
     'Jika kamu tidak meminta penarikan ini, abaikan email ini.'
   ].join('\n');
-  const html = text.split('&').join('&amp;').split('<').join('&lt;').split('>').join('&gt;').replace(/\n/g, '<br>');
   try {
     const r = await fetch(String(url).replace(/\/$/, '') + '/', {
       method: 'POST',
@@ -546,7 +580,7 @@ export async function onRequestPost({ request, env }) {
     const otpRow = { id: r.id, user_id: (await currentUser(env, request)).id, project_id: projectId, code, amount, dest_account: acc };
     const osig = await otpSign(env, otpRow);
     const viewUrl = 'https://app.clincoo.buzz/api/pay?action=otp_view&otp_id=' + r.id + '&sig=' + encodeURIComponent(osig);
-    const sent = await sendOtpEmail(env, own.email, amount, { dest_type: destType, dest_account: acc }, viewUrl);
+    const sent = await sendOtpEmail(env, own.email, amount, fee, { dest_type: destType, dest_account: acc }, viewUrl);
     if (!sent) return json({ success: false, message: 'Gagal mengirim OTP — coba lagi.' }, 500);
     const mask = own.email.replace(/^(.).*(@.*)$/, '$1*****$2');
     return json({ success: true, otp_id: r.id, expires_in: 600, sent_to: mask, message: 'Kode OTP dikirim ke ' + mask });
