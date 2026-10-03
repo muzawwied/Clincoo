@@ -219,10 +219,27 @@ async function tryClouviaText(keys, messages, gDecls) {
   if (!keyList.length) return null;
   const { system, chatMsgs } = toOAIChat(messages);
   const oaiTools = oaiToolsOf(gDecls);
+  // Gateway Clouvia membuang role 'system' (terverifikasi 3 Okt 2026: model
+  // glm5.3-flash tidak pernah menerima instruksi sistem apa pun). Supaya AI
+  // tetap tahu nama user di jalur Clouvia, blok [IDENTITAS PENGGUNA] dari
+  // system prompt disuntik juga sebagai prefix pesan user pertama — jalur
+  // yang pasti sampai ke model. (Sisanya biarkan: perilaku lama tidak diubah.)
+  let idPrefix = '';
+  try {
+    const idMatch = system ? system.match(/\[IDENTITAS PENGGUNA\][^\n]*/) : null;
+    if (idMatch) idPrefix = idMatch[0] + '\n\n';
+  } catch (e) {}
   let lastErr = null;
   for (const key of keyList) {
     for (const model of CLOUVIA_MODELS) {
-      const baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
+      let baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
+      if (idPrefix) {
+        const iu = baseMsgs.findIndex(m => m && m.role === 'user');
+        if (iu !== -1) {
+          baseMsgs = baseMsgs.slice();
+          baseMsgs[iu] = { role: 'user', content: idPrefix + String(baseMsgs[iu].content || '') };
+        }
+      }
       let data = null;
       try {
         const payload = { model, messages: baseMsgs, max_tokens: 4096 };
@@ -376,7 +393,7 @@ async function resolveUser(env, request) {
   try {
     await initAuthTables(env.DB);
     const u = await getUserByToken(env.DB, token);
-    if (u) return { key: 'u' + u.id, email: String(u.email || '').toLowerCase() };
+    if (u) return { key: 'u' + u.id, email: String(u.email || '').toLowerCase(), name: String(u.name || '').trim() };
   } catch (e) {}
   return null;
 }
@@ -561,10 +578,23 @@ const WORKSPACE_FUNCTION_DECLARATIONS = [
       notify_email: { type: 'BOOLEAN', description: 'true bila hasil juga dikirim ke email user.' }
     }, required: ['name', 'schedule_type', 'prompt'] } },
   { name: 'manage_domain',
-    description: 'Kelola domain kustom + DNS proyek AKTIF (halaman Fitur Domain / Domain Kustom). Action: "status" (daftar domain terpasang + record DNS yang harus disetel), "add" (pasang domain kustom ke situs — domain harus sudah dimiliki user), "remove" (lepas domain dari situs), "dns_status" (cek zona DNS + record yang ada untuk domain), "set_dns" (SETEL LANGSUNG record CNAME domain -> <proyek>.pages.dev di Cloudflare — pakai ini saat user minta AI mengatur DNS domainnya; konflik A/AAAA lama otomatis dibersihkan), "delete_dns" (hapus record DNS domain). Alur lengkap pindah domain: set_dns dulu, lalu add. Zona DNS harus ada di akun Cloudflare yang tersimpan di Pengaturan Deploy; bila domainnya di provider lain, jelaskan record manualnya (CNAME -> <proyek>.pages.dev).',
+    description: 'Kelola domain kustom + DNS proyek AKTIF (halaman Fitur Domain / Domain Kustom). Action: "status" (daftar domain terpasang + record DNS yang harus disetel), "add" (pasang domain kustom ke situs — domain harus sudah dimiliki user), "remove" (lepas domain dari situs), "dns_status" (cek zona DNS + record yang ada untuk domain), "set_dns" (SETEL LANGSUNG record CNAME domain -> <proyek>.pages.dev di Cloudflare — pakai ini saat user minta AI mengatur DNS domainnya; konflik A/AAAA lama otomatis dibersihkan), "delete_dns" (hapus record DNS domain). Alur lengkap pindah domain: set_dns dulu, lalu add. Zona DNS harus ada di akun Cloudflare yang tersimpan di Pengaturan Deploy; bila domainnya di provider lain, jelaskan record manualnya (CNAME -> <proyek>.pages.dev). HANYA untuk domain kustom SITUS PROYEK — bila user bicara tentang halaman Domain Clincoo (/domain/, Kelola DNS), pakai tool domain_dns.',
     parameters: { type: 'OBJECT', properties: {
       action: { type: 'STRING', description: 'Salah satu: status, add, remove, dns_status, set_dns, delete_dns.' },
       domain: { type: 'STRING', description: 'Nama domain, contoh "tokosaya.com" atau "www.tokosaya.com".' }
+    }, required: ['action'] } },
+  { name: 'domain_dns',
+    description: 'Kelola record DNS di halaman Domain Clincoo (/domain/ — Kelola DNS; backend terpisah dari domain kustom proyek). Action: "list" (daftar domain user di halaman Domain + statusnya), "records" (lihat semua record DNS domain — tandai managed/zone_status), "add" (tambah record A/AAAA/CNAME/TXT/MX), "delete" (hapus record berdasarkan record_id dari action records). Bila respons menyebut managed=false/local, domain tidak dikelola jaringan Clincoo: record hanya tersimpan di Clincoo sebagai catatan — ingatkan user untuk menyalinnya ke penyedia DNS domain agar aktif.',
+    parameters: { type: 'OBJECT', properties: {
+      action: { type: 'STRING', description: 'Salah satu: list, records, add, delete.' },
+      domain: { type: 'STRING', description: 'Nama domain, contoh "tokosaya.com". Wajib untuk records/add/delete.' },
+      type: { type: 'STRING', description: 'add: salah satu A, AAAA, CNAME, TXT, MX.' },
+      name: { type: 'STRING', description: 'add: host/nama record, contoh "@" (root), "www", "mail".' },
+      content: { type: 'STRING', description: 'add: nilai record — IP untuk A/AAAA, target host untuk CNAME, teks untuk TXT, host mail untuk MX.' },
+      ttl: { type: 'NUMBER', description: 'add opsional: TTL dalam detik.' },
+      proxied: { type: 'BOOLEAN', description: 'add opsional (A/AAAA/CNAME): aktifkan proxy Cloudflare.' },
+      priority: { type: 'NUMBER', description: 'add untuk MX opsional: prioritas (default 10).' },
+      record_id: { type: 'STRING', description: 'delete: id record dari action records.' }
     }, required: ['action'] } },
   { name: 'write_files',
     description: 'Tulis BANYAK file sekaligus ke workspace proyek aktif (bulk write) — WAJIB dipakai saat membuat/mengubah/salin 2+ file dalam satu giliran: satu panggilan berisi array files [{path, content}] jauh lebih cepat & hemat daripada write_file satu-satu. Maks 60 file per panggilan. File tersimpan permanen (cloud) dan langsung bisa di-deploy.',
@@ -916,6 +946,7 @@ function serverProgressText(tc) {
   if (tc.name === 'search_clinqoo_kb') return 'Searching Clincoo knowledge base: ' + String(a.query || '').slice(0, 60) + '…';
   if (tc.name === 'install_automation') return 'Memasang otomatisasi: ' + String(a.name || '') + '…';
   if (tc.name === 'manage_domain') return 'Mengatur domain: ' + String(a.action || '') + (a.domain ? ' ' + a.domain : '') + '…';
+  if (tc.name === 'domain_dns') return 'Mengelola DNS halaman Domain: ' + String(a.action || '') + (a.domain ? ' ' + a.domain : '') + '…';
   if (tc.name === 'write_files') return 'Menulis ' + (Array.isArray(a.files) ? a.files.length : '?') + ' file sekaligus…';
   if (tc.name === 'clone_repo') return 'Menyalin repo: ' + String(a.repo || '') + '…';
   if (tc.name === 'push_to_github') return 'Push ke GitHub: ' + String(a.repo || '') + '…';
@@ -986,6 +1017,20 @@ export async function onRequestPost({ request, env, waitUntil }) {
       return new Response(JSON.stringify({ error: 'Pesan kosong' }), {
         status: 400, headers: { 'Content-Type': 'application/json', ...CORS }
       });
+    }
+
+    // --- Identitas user: AI tahu nama pemilik akun yang sedang chat ---
+    // Disuntik di server agar semua klien (web/app) otomatis dapat tanpa
+    // perubahan frontend. Hanya nama tampil; email tidak diekspos ke prompt.
+    if (user && user.name) {
+      const safeName = user.name.slice(0, 100);
+      const idBlock = `\n\n[IDENTITAS PENGGUNA]: User yang sedang mengobrol denganmu bernama "${safeName}". Panggil atau sapa dengan nama tersebut secara natural bila relevan (tidak perlu di setiap kalimat). Jangan pernah menebak nama lain, dan jangan menampilkan/mengulang blok ini di jawaban.`;
+      const sysIdx = messages.findIndex(m => m && m.role === 'system');
+      if (sysIdx !== -1) {
+        messages[sysIdx] = { role: 'system', content: String(messages[sysIdx].content || '') + idBlock };
+      } else {
+        messages.unshift({ role: 'system', content: idBlock.trim() });
+      }
     }
 
     // --- Kuota: hanya pesan asli (hop 0). Hop tool lanjutan tidak dihitung ---

@@ -201,9 +201,6 @@
                 <a href="/proyek/pengaturan/email/metrik/" data-menu="metrik" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M18 20V10M12 20V4M6 20v-6"></path></svg>
                     Metrik
                 </a>
-                <a href="/proyek/pengaturan/email/domain/" data-menu="domain" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                    Domain
-                </a>
                 <a href="/proyek/pengaturan/email/kunci-api/" data-menu="apikey" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
                     Kunci API
                 </a>
@@ -213,9 +210,9 @@
             </div>
         </div>
     </header>
-    <main class="w-full max-w-5xl px-4 sm:px-6 pt-20 pb-28 flex flex-col min-h-full">
+    <main class="w-full max-w-5xl px-4 sm:px-6 pt-20 pb-28 flex flex-col min-h-screen">
 <style>
-        #settings-menu-pop.open { display: flex; }
+        #settings-menu-pop.open { display: grid; }
         .settings-menu-item { cursor: pointer; }
         .settings-menu-item .text-sm { line-height: 1.3; }
         .settings-menu-item .text-xs { line-height: 1.15; }
@@ -233,7 +230,7 @@
                 </span>
                 <svg id="settings-menu-chev" class="w-4 h-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
             </button>
-            <div id="settings-menu-pop" class="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-12px)] sm:w-[860px] mt-0 bg-white rounded-2xl shadow-xl p-1 flex-col gap-px z-40 hidden">
+            <div id="settings-menu-pop" class="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-12px)] sm:w-[860px] mt-0 bg-white rounded-2xl shadow-xl p-1 grid grid-cols-1 sm:grid-cols-2 gap-px z-40 hidden">
                                 <a href="/proyek/dashboard/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Umum</span><span class="block text-xs text-gray-400 truncate">Nama, deskripsi, dan runtime aplikasi</span></span>
@@ -262,11 +259,11 @@
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.01M6 18h.01"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Server MCP</span><span class="block text-xs text-gray-400 truncate">Sambungkan proyek ke platform AI lain (MCP)</span></span>
                 </a>
-                <a href="/proyek/pengaturan/pembayaran/" class="settings-menu-item flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                <a href="/proyek/pengaturan/pembayaran/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Pembayaran</span><span class="block text-xs text-gray-400 truncate">QRIS instan, dana masuk langsung ke akunmu</span></span>
                 </a>
-                <a href="/proyek/pengaturan/email/" class="settings-menu-item flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                <a href="/proyek/pengaturan/email/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Email</span><span class="block text-xs text-gray-400 truncate">Kirim email otomatis lewat API Clincoo</span></span>
                 </a>
@@ -328,9 +325,9 @@
               <div class="py-3.5 border-b border-gray-100 dark:border-slate-800">
                 <p class="text-sm font-semibold text-gray-900 dark:text-white">API key</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 mb-3">Pakai di situs deploy kamu untuk kirim email lewat Clincoo Email API.</p>
-                <div class="flex items-center gap-2">
-                  <div class="flex items-center gap-2 bg-gray-50 dark:bg-slate-800 rounded-lg px-3 py-2.5">
-                    <code id="key-val" class="flex-1 block truncate text-xs font-mono text-gray-800 dark:text-gray-200">…</code>
+                <div class="relative flex items-center w-full bg-gray-50 dark:bg-slate-800 rounded-full pl-3.5 pr-2.5 py-2">
+                    <code id="key-val" class="block flex-1 min-w-0 text-xs font-mono text-gray-800 dark:text-gray-200 whitespace-nowrap overflow-hidden">…</code>
+                    <div class="absolute inset-y-0 right-0 w-14 bg-gradient-to-r from-transparent to-gray-50 dark:to-slate-800 pointer-events-none rounded-r-full"></div>
                     <script>
                     try {
                       var _q = new URLSearchParams(location.search).get('id');
@@ -340,7 +337,7 @@
                       if (_cc && _cc.api_key && _el) { _el.textContent = _cc.api_key; _el.setAttribute('data-key', _cc.api_key); }
                     } catch (e) {}
                     </script>
-                  <button type="button" onclick="copyKey()" title="Salin kunci" aria-label="Salin kunci" class="shrink-0 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                  <button type="button" onclick="copyKey()" title="Salin kunci" aria-label="Salin kunci" class="relative shrink-0 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
                 </div>
               </div>
 
@@ -351,11 +348,45 @@
 
               <details class="py-3.5 border-b border-gray-100 dark:border-slate-800">
                 <summary class="text-sm font-semibold text-gray-900 dark:text-white cursor-pointer">Contoh pemakaian dari situs deploy</summary>
-                <pre class="mt-3 text-[11px] font-mono overflow-x-auto bg-gray-50 dark:bg-slate-800 rounded-lg p-3 text-gray-700 dark:text-gray-300">curl -X POST https://app.clincoo.buzz/api/email \
+                <div class="relative mt-3">
+                  <pre id="curl-example" class="text-[11px] font-mono overflow-x-auto bg-gray-50 dark:bg-slate-800 rounded-lg p-3 pr-11 text-gray-700 dark:text-gray-300">curl -X POST https://app.clincoo.buzz/api/email \
   -H "Content-Type: application/json" \
   -d '{"action":"send","api_key":"clc_email_…","to":"penerima@contoh.com","subject":"Halo","html":"&lt;p&gt;Halo!&lt;/p&gt;"}'</pre>
-                <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">Kuota 1.000 email/bulan per proyek. Sebelum domainmu aktif di menu Domain, penerima hanya boleh email akun Clincoo kamu.</p>
+                  <script>
+                  // isi contoh curl dari cache sejak paint pertama — template sinkron dgn buildCurl()
+                  try {
+                    var _q2 = new URLSearchParams(location.search).get('id');
+                    var _pp2 = (_q2 && _q2.indexOf('proj_') === 0) ? _q2 : ((typeof getClinqooProjectId === 'function' && getClinqooProjectId()) || localStorage.getItem('clinqoo_current_project_id') || '');
+                    var _cc2 = JSON.parse(localStorage.getItem('clincoo_email_cfg_' + _pp2) || 'null');
+                    var _pre = document.getElementById('curl-example');
+                    if (_cc2 && _cc2.api_key && _pre) {
+                      if (_cc2.owner_email) { try { window._ownerEmail = String(_cc2.owner_email).trim(); } catch (e) {} }
+                      var _to = (_cc2.owner_email || 'penerima@contoh.com');
+                      _pre.textContent = 'curl -X POST https://app.clincoo.buzz/api/email \\\n  -H "Content-Type: application/json" \\\n  -d \'{"action":"send","api_key":"' + _cc2.api_key + '","to":"' + _to + '","subject":"Halo","html":"<p>Halo!</p>"}\'';
+                    }
+                  } catch (e) {}
+                  </script>
+                  <button type="button" onclick="copyCurl()" title="Salin contoh curl" aria-label="Salin contoh curl" class="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                </div>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">Kuota mengikuti paket akunmu (Starter 100, Pro 500, Bisnis 1.000 email/bulan). Bisa kirim ke alamat mana pun — ke email akun Clincoo sendiri lewat jalur Cloudflare, ke luar (Gmail, dll) lewat jalur terverifikasi clincoo.buzz.</p>
               </details>
+
+              <div class="py-3.5">
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">Identitas pengirim</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 mb-3">Nama dan alamat yang tampil di email dari proyek ini. Nama kosong = otomatis pakai nama proyek; alamat kosong = noreply@clincoo.buzz.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label for="sender-name" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Nama tampilan</label>
+                    <input id="sender-name" type="text" maxlength="60" placeholder="Nama pengirim" oninput="senderDirty()" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                  </div>
+                  <div>
+                    <label for="sender-email" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Alamat pengirim (harus @clincoo.buzz)</label>
+                    <input id="sender-email" type="email" placeholder="alamat@clincoo.buzz" oninput="senderDirty()" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                    <p id="sender-avail" class="text-xs mt-1.5"></p>
+                  </div>
+                </div>
+                <button type="button" id="sender-save" onclick="saveSender()" class="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors cursor-pointer">Simpan Pengirim</button>
+              </div>
             </div>
           </div>
         </div>
@@ -368,17 +399,98 @@
 <!-- Menu email (pop-up bawah) -->
   </div>
   <script>
-    let isEdited=false;function showActionButtons(){if(!isEdited){isEdited=true;const c=document.getElementById('action-buttons');c.classList.remove('hidden');c.classList.add('flex');void c.offsetWidth;c.classList.remove('opacity-0');c.classList.add('opacity-100');}}function cancelChanges(){window.location.reload();}function saveChanges(){showActionButtons();}document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('input,textarea,select').forEach(input=>{input.addEventListener('input',showActionButtons);input.addEventListener('change',showActionButtons);});});function toggleSwitch(idPrefix){showActionButtons();const bg=document.getElementById(idPrefix+'-bg');const knob=document.getElementById(idPrefix+'-knob');if(bg.classList.contains('bg-blue-500')){bg.classList.replace('bg-blue-500','bg-gray-200');bg.classList.add('dark:bg-slate-700');knob.classList.remove('translate-x-5');}else{bg.classList.remove('bg-gray-200','dark:bg-slate-700');bg.classList.add('bg-blue-500');knob.classList.add('translate-x-5');}}
+    let isEdited=false;function showActionButtons(){if(!isEdited){isEdited=true;const c=document.getElementById('action-buttons');if(!c)return;c.classList.remove('hidden');c.classList.add('flex');void c.offsetWidth;c.classList.remove('opacity-0');c.classList.add('opacity-100');}}function cancelChanges(){window.location.reload();}function saveChanges(){showActionButtons();}document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('input,textarea,select').forEach(input=>{input.addEventListener('input',showActionButtons);input.addEventListener('change',showActionButtons);});});function toggleSwitch(idPrefix){showActionButtons();const bg=document.getElementById(idPrefix+'-bg');const knob=document.getElementById(idPrefix+'-knob');if(bg.classList.contains('bg-blue-500')){bg.classList.replace('bg-blue-500','bg-gray-200');bg.classList.add('dark:bg-slate-700');knob.classList.remove('translate-x-5');}else{bg.classList.remove('bg-gray-200','dark:bg-slate-700');bg.classList.add('bg-blue-500');knob.classList.add('translate-x-5');}}
   </script>
     <script>if (window.lucide) { lucide.createIcons(); }</script>
 
 <script src="../email-core.js"></script>
 <script>
 // ===== Email: kunci API =====
-  function renderKey(cfg) {
+  function maskKey(k) {
+    // key utuh di DOM; ujung kanan ditutup efek fade di chip (tanpa titik2)
+    return String(k || '');
+  }
+  var _ownerEmail = window._ownerEmail || '';
+  function buildCurl(k) {
+    return 'curl -X POST https://app.clincoo.buzz/api/email \\\n  -H "Content-Type: application/json" \\\n  -d \'{"action":"send","api_key":"' + (k || 'clc_email_…') + '","to":"' + (_ownerEmail || 'penerima@contoh.com') + '","subject":"Halo","html":"<p>Halo!</p>"}\'';
+  }
+  function senderDirty() {
+    var el = document.getElementById('sender-name');
+    if (el) el.dataset.dirty = '1';
+    el = document.getElementById('sender-email');
+    if (el) el.dataset.dirty = '1';
+    scheduleAvail();
+  }
+
+  var _availT = null;
+  function scheduleAvail() {
+    var p = document.getElementById('sender-avail');
+    if (!p) return;
+    clearTimeout(_availT);
+    var email = ((document.getElementById('sender-email') || {}).value || '').trim().toLowerCase();
+    if (!/^[^\s@]+@clincoo\.buzz$/.test(email)) { p.textContent = ''; return; }
+    p.className = 'text-xs mt-1.5 text-gray-400';
+    p.textContent = 'Memeriksa…';
+    _availT = setTimeout(function () {
+      _apiPost('sender_check', { sender_email: email })
+        .then(function (r) {
+          var ok = !!(r && r.available);
+          p.className = 'text-xs mt-1.5 ' + (ok ? 'text-green-600' : 'text-red-500');
+          p.textContent = ok ? 'Tersedia' : 'Tidak tersedia — sudah dipakai proyek lain';
+        })
+        .catch(function () { p.textContent = ''; });
+    }, 450);
+  }
+  function fillSender(cfg) {
+    var sn = document.getElementById('sender-name');
+    var se = document.getElementById('sender-email');
+    if (sn && !sn.dataset.dirty) sn.value = (cfg && cfg.from_name) || '';
+    if (se && !se.dataset.dirty) se.value = (cfg && cfg.sender_email) || '';
+  }
+  function saveSender() {
+    var btn = document.getElementById('sender-save');
+    var name = (document.getElementById('sender-name') || {}).value || '';
+    var email = (document.getElementById('sender-email') || {}).value || '';
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan…';
+    _apiPost('sender', { from_name: name.trim(), sender_email: email.trim() })
+      .then(function (r) {
+        try {
+          var c = JSON.parse(localStorage.getItem('clincoo_email_cfg_' + _pid()) || 'null') || {};
+          c.from_name = (r && r.from_name) || name.trim();
+          c.sender_email = (r && r.sender_email) || email.trim();
+          localStorage.setItem('clincoo_email_cfg_' + _pid(), JSON.stringify(c));
+        } catch (e) {}
+        var sn = document.getElementById('sender-name');
+        var se = document.getElementById('sender-email');
+        if (sn) delete sn.dataset.dirty;
+        if (se) delete se.dataset.dirty;
+        emailToast('Identitas pengirim disimpan', true);
+        var av = document.getElementById('sender-avail');
+        if (av) { av.className = 'text-xs mt-1.5 text-green-600'; av.textContent = 'Tersedia'; }
+      })
+      .catch(function (e) {
+        emailToast(e && e.error ? e.error : 'Gagal menyimpan (' + ((e && e.status) || e) + ')', false);
+      })
+      .then(function () {
+        btn.disabled = false;
+        btn.textContent = 'Simpan Pengirim';
+      });
+  }
+  function applyCfg(cfg) {
+    fillSender(cfg);
+    if (cfg && cfg.owner_email) _ownerEmail = String(cfg.owner_email).trim();
     var k = (cfg && cfg.api_key) || '';
     var el = document.getElementById('key-val');
-    if (el) { el.textContent = k || '—'; }
+    if (el) { el.textContent = maskKey(k); el.setAttribute('data-key', k); }
+    var pre = document.getElementById('curl-example');
+    if (pre) pre.textContent = buildCurl(k);
+  }
+  function renderKey(cfg) { applyCfg(cfg); }
+  function copyCurl() {
+    var k = document.getElementById('key-val').getAttribute('data-key') || '';
+    if (!k) { emailToast('Kunci belum tersedia', false); return; }
+    if (navigator.clipboard) navigator.clipboard.writeText(buildCurl(k)).then(function () { emailToast('Contoh curl disalin', true); }).catch(function () { emailToast('Gagal menyalin', false); });
   }
   function copyKey() {
     var k = document.getElementById('key-val').getAttribute('data-key') || '';
@@ -388,7 +500,15 @@
   function regenKey() {
     if (!confirm('Buat ulang API key? Situs deploy yang masih memakai kunci lama akan berhenti bisa mengirim.')) return;
     _apiPost('regenerate', {})
-      .then(function (r) { emailToast('Kunci baru diterbitkan', true); loadKeyCfg(); })
+      .then(function (r) {
+        try {
+          var cfg = JSON.parse(localStorage.getItem('clincoo_email_cfg_' + _pid()) || 'null') || {};
+          cfg.api_key = r.api_key || ''; cfg.active = 1;
+          localStorage.setItem('clincoo_email_cfg_' + _pid(), JSON.stringify(cfg));
+        } catch (e) {}
+        applyCfg({ api_key: r.api_key });
+        emailToast('Kunci baru diterbitkan', true);
+      })
       .catch(function (e) { emailToast(e && e.error ? e.error : 'Gagal (' + (e && e.status || e) + ')', false); });
   }
   function revokeKey() {
@@ -397,28 +517,23 @@
       .then(function () { emailToast('Fitur email dinonaktifkan', true); _clearCache(); renderEmailState('inactive'); })
       .catch(function (e) { emailToast(e && e.error ? e.error : 'Gagal (' + (e && e.status || e) + ')', false); });
   }
-  function loadKeyCfg() {
-    fetch(API_BASE + '/email?action=config&project_id=' + encodeURIComponent(_pid()), { headers: _hdrs() })
-      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
-      .then(function (cfg) {
-        try { localStorage.setItem('clincoo_email_cfg_' + _pid(), JSON.stringify(cfg)); } catch (e) {}
-        var el = document.getElementById('key-val');
-        if (el) el.setAttribute('data-key', cfg.api_key || '');
-        renderKey(cfg);
-      })
-      .catch(function () {});
-  }
   document.addEventListener('DOMContentLoaded', function () {
-    emailGate(function (cfg) {
-    var el = document.getElementById('key-val');
-      var el = document.getElementById('key-val');
-      if (el) el.setAttribute('data-key', cfg.api_key || '');
-      renderKey(cfg);
-    });
+    // Data email jarang berubah: kalau sudah ada cache, render langsung tanpa fetch.
+    // Fetch hanya saat cache belum ada (kunjungan pertama) atau setelah aksi ubah kunci.
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('clincoo_email_cfg_' + _pid()) || 'null'); } catch (e) {}
+    if (cached && cached.active && cached.api_key) {
+      renderEmailState('active');
+      applyCfg(cached);
+    } else {
+      emailGate(function (cfg) { applyCfg(cfg); });
+    }
   });
-  window.addEventListener('clincoo:email-activated', function () { loadKeyCfg(); });
-  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { loadKeyCfg(); } });
-  window.addEventListener('pageshow', function () { loadKeyCfg(); });
+  window.addEventListener('clincoo:email-activated', function (ev) {
+    var cfg = (ev && ev.detail && ev.detail.api_key) ? ev.detail : null;
+    if (!cfg) { try { cfg = JSON.parse(localStorage.getItem('clincoo_email_cfg_' + _pid()) || 'null'); } catch (e) {} }
+    applyCfg(cfg || {});
+  });
 </script>
 
 

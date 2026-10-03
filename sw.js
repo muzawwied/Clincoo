@@ -1,5 +1,5 @@
 /* Clincoo service worker — PWA + cache aset CDN (lucide, fonts, tailwind) v31 */
-var CACHE = 'clinqoo-v39';
+var CACHE = 'clinqoo-v56';
 var PRECACHE = [
   './manifest.json',
   './assets/icons/icon-192.png',
@@ -62,7 +62,7 @@ self.addEventListener('fetch', function (e) {
 
   if (req.mode === 'navigate') {
     // Halaman sensitif (login/pembayaran): network-first, fallback cache saat offline.
-    var sensitive = url.pathname.indexOf('/auth') === 0 || url.pathname.indexOf('/pay') === 0;
+    var sensitive = url.pathname.indexOf('/auth') === 0 || url.pathname.indexOf('/pay') === 0 || url.pathname.indexOf('/akun/langganan/checkout') === 0;
     if (sensitive) {
       e.respondWith(
         fetch(req).then(function (res) {

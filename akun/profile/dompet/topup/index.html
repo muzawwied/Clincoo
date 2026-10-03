@@ -2,8 +2,8 @@
 <html lang="id">
 <head>
 <script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
-  <script>/* base dinamis: URL bersih per-step (mis. /topup/qris/) tetap memuat aset dari /topup/ */
-  (function(){var p=location.pathname.replace(/[^/]+\.html$/,'');var m=p.match(/\/(metode|nominal|konfirmasi|qris)\/?$/);if(m)p=p.slice(0,m.index);if(!/\/$/.test(p))p+='/';document.write('<base href="'+p+'">');})();</script>
+  <script>/* base dinamis: pastikan aset dimuat dari folder halaman top-up */
+  (function(){var p=location.pathname.replace(/[^/]+\.html$/,'');if(!/\/$/.test(p))p+='/';document.write('<base href="'+p+'">');})();</script>
   <script src="../../../../js/auth-client.js?v=2"></script>
     <script src="../../../../js/accent-init.js"></script>
     <meta charset="UTF-8">
@@ -550,21 +550,9 @@
         document.addEventListener('DOMContentLoaded', async () => {
             try { lucide.createIcons(); } catch (e) {}
             resetKeypad();
-            var stepSeg = (location.pathname.match(/\/(metode|nominal|konfirmasi|qris)\/?$/) || [])[1] || '';
             goToStep1();
             // Order QRIS aktif? Langsung kembali ke step QR (tahan saat refresh)
             qrisRestore();
-            if (!qrisOrder) {
-                if (stepSeg === 'nominal' || stepSeg === 'konfirmasi') {
-                    var smEl = document.getElementById('step-method');
-                    var saEl = document.getElementById('step-amount');
-                    if (smEl) { smEl.classList.add('hidden'); smEl.classList.remove('flex'); }
-                    if (saEl) { saEl.classList.remove('hidden'); saEl.classList.add('flex'); }
-                    setStepPath('nominal');
-                } else if (stepSeg === 'qris' || stepSeg === 'konfirmasi') {
-                    setStepPath('metode'); // path step tanpa state aktif -> kembali ke metode
-                }
-            }
         });
 
         
@@ -572,28 +560,11 @@
         function closeTopUpPage() { qrisForgetSession(); window.ClinqooBack('../'); }
 
         
-        // Path URL bersih tiap step: /topup/ -> /topup/nominal/ -> /topup/konfirmasi/ -> /topup/qris/
-        // (shareable, tahan refresh via _redirects 200, tanpa menumpuk riwayat back)
-        var TOPUP_BASE = (function () {
-            var p = location.pathname.replace(/[^/]+\.html$/, '');
-            var m = p.match(/\/(metode|nominal|konfirmasi|qris)\/?$/);
-            if (m) p = p.slice(0, m.index);
-            if (!/\/$/.test(p)) p += '/';
-            return p;
-        })();
-        function setStepPath(seg) {
-            try {
-                var url = TOPUP_BASE + (seg ? seg + '/' : '');
-                if (location.pathname !== url) history.replaceState(null, '', url);
-            } catch (e) {}
-        }
-
         function goToStep1() {
             var stepMethod = document.getElementById('step-method');
             var stepAmount = document.getElementById('step-amount');
             if (stepMethod) { stepMethod.classList.remove('hidden'); stepMethod.classList.add('flex'); }
             if (stepAmount) { stepAmount.classList.add('hidden'); stepAmount.classList.remove('flex'); }
-            setStepPath('metode');
         }
 
         function goToStep2() {
@@ -612,7 +583,6 @@
             var stepAmount = document.getElementById('step-amount');
             if (stepMethod) { stepMethod.classList.add('hidden'); stepMethod.classList.remove('flex'); }
             if (stepAmount) { stepAmount.classList.remove('hidden'); stepAmount.classList.add('flex'); }
-            setStepPath('nominal');
             try { lucide.createIcons(); } catch (e) {}
         }
 
@@ -752,7 +722,6 @@
             if (stepMethod) { stepMethod.classList.add('hidden'); stepMethod.classList.remove('flex'); }
             if (stepAmount) { stepAmount.classList.add('hidden'); stepAmount.classList.remove('flex'); }
             st.classList.remove('hidden'); st.classList.add('flex');
-            setStepPath('konfirmasi');
             var fee = qrisFeeEstimate(selectedNominalAmount);
             document.getElementById('qris-confirm-nominal').textContent = 'Rp ' + Number(selectedNominalAmount).toLocaleString('id-ID');
             document.getElementById('qris-confirm-fee').textContent = 'Rp ' + Number(fee).toLocaleString('id-ID');
@@ -768,7 +737,6 @@
             st.classList.add('hidden'); st.classList.remove('flex');
             var stepAmount = document.getElementById('step-amount');
             stepAmount.classList.remove('hidden'); stepAmount.classList.add('flex');
-            setStepPath('nominal');
         }
 
         async function processQRIS() {
@@ -805,7 +773,6 @@
             if (stepAmount) { stepAmount.classList.add('hidden'); stepAmount.classList.remove('flex'); }
             if (stepConfirm) { stepConfirm.classList.add('hidden'); stepConfirm.classList.remove('flex'); }
             st.classList.remove('hidden'); st.classList.add('flex');
-            setStepPath('qris');
             document.getElementById('qris-order-id').textContent = res.order_id || '';
             document.getElementById('qris-total').textContent = 'Rp ' + Number(res.total_payment || 0).toLocaleString('id-ID');
             var box = document.getElementById('qris-qr-box');
