@@ -419,6 +419,7 @@ export async function onRequestPost({ request, env }) {
     if (!id) return json({ success: false, message: 'Tujuan tidak ditemukan.' }, 404);
     if (WD_EWALLETS.indexOf(ew) === -1) return json({ success: false, message: 'Pilih jenis e-wallet.' }, 400);
     if (!/^(?:0|62)8\d{7,12}$/.test(acc)) return json({ success: false, message: 'Nomor e-wallet tidak valid (contoh: 08123456789).' }, 400);
+    const r = await db.prepare("UPDATE pay_wd_dests SET ew_type = ?, account = ?, label = ?, updated_at = datetime('now') WHERE id = ? AND user_id = ?").bind(ew, acc.replace(/^62/, '0'), label, id, user.id).run();
     return (r.meta && r.meta.changes) ? json({ success: true, message: 'Tujuan diperbarui.' }) : json({ success: false, message: 'Tujuan tidak ditemukan.' }, 404);
   }
   if (action === 'wd_dest_delete') {
