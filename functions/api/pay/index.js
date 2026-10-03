@@ -577,6 +577,24 @@ export async function onRequestGet({ request, env }) {
   // verifikasi tanda tangan permintaan penarikan dari email (publik, gerbang = sig HMAC)
   {
     const u = new URL(request.url);
+    if (u.searchParams.get('action') === 'qr_image') {
+      const key = String(u.searchParams.get('key') || '');
+      const orderId = String(u.searchParams.get('order_id') || '');
+      if (!key || !orderId) return json({ error: 'key dan order_id wajib diisi' }, 400);
+      const tx = await env.DB.prepare('SELECT * FROM pay_transactions WHERE pay_key = ? AND order_id = ?').bind(key, orderId).first();
+      if (!tx) return json({ error: 'transaksi tidak ditemukan' }, 404);
+      const img = qrImageUrl(tx.qr_string || '');
+      if (!img) return json({ error: 'QR tidak tersedia untuk transaksi ini' }, 404);
+      try {
+        const r = await fetch(img);
+        if (!r.ok) return json({ error: 'Gagal mengunduh gambar QR' }, 502);
+        const buf = new Uint8Array(await r.arrayBuffer());
+        let bin = '';
+        for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+        const ct = r.headers.get('content-type') || 'image/png';
+        return json({ success: true, data_url: 'data:' + ct + ';base64,' + btoa(bin) });
+      } catch (e) { return json({ error: 'Gagal mengunduh gambar QR' }, 502); }
+    }
     if (u.searchParams.get('action') === 'withdraw_verify') {
       const id = Number(u.searchParams.get('id') || 0);
       const sig = String(u.searchParams.get('sig') || '');
