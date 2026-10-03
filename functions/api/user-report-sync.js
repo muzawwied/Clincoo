@@ -14,7 +14,8 @@
 //
 // Sengiku disimpan di env_vars D1: GITHUB_DATA_TOKEN (akses push repo Clincoo-Data).
 
-import { getSecret } from './notify-helpers.js';
+import { getSecret, sendEmail, flatTemplate, formatIDR, notifyEvent } from './notify-helpers.js';
+import { getUserById } from './user-scope.js';
 
 const GH_REPO = 'muzawwied/Clinqoo-Data';
 const GH_PATH = 'users-live.md';
@@ -224,6 +225,52 @@ export async function syncUserReport(env, opts) {
   return { ok: 1, users: users.length, sha: sha ? 'updated' : 'created' };
 }
 
+
+// ===== Email pengingat order QRIS pending (sekali per order) =====
+// Digerakkan cron user-sync (tiap 15 menit): order pending berusia 1-24 jam
+// dikirim satu email pengingat + notifikasi in-app. Order lama (>24 jam)
+// dianggap kedaluwarsa dan tidak diingatkan lagi.
+async function paymentReminderSweep(env) {
+  const db = env.DB;
+  try { await db.prepare('ALTER TABLE topup_orders ADD COLUMN reminder_sent_at TEXT').run(); } catch (e) {}
+  const old = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
+  const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
+  const rows = await db.prepare(
+    "SELECT id, user_id, amount FROM topup_orders WHERE status = 'pending' AND reminder_sent_at IS NULL AND created_at > ? AND created_at <= ? ORDER BY created_at ASC LIMIT 10"
+  ).bind(old, cutoff).all();
+  let sent = 0;
+  for (const o of (rows && rows.results) || []) {
+    const user = await getUserById(db, o.user_id);
+    // tandai dulu supaya cron berikutnya tidak dobel kirim
+    await db.prepare("UPDATE topup_orders SET reminder_sent_at = datetime('now') WHERE id = ?").bind(o.id).run();
+    if (!user || !user.email) continue;
+    const amt = formatIDR(parseFloat(o.amount) || 0);
+    try {
+      await sendEmail(env, {
+        toEmail: user.email, toName: user.name || '',
+        subject: 'Pesanan pembayaran ' + amt + ' belum selesai',
+        html: flatTemplate(
+          'Selesaikan Pembayaran',
+          user.name || '',
+          '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">Pesanan QRIS Anda sebesar <b>' + amt + '</b> belum kami terima. Kode QRIS kedaluwarsa beberapa menit setelah dibuat — jika ingin melanjutkan, cukup buat ulang transaksinya.</p>' +
+          '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">Jika Anda sudah membayar, abaikan email ini — saldo masuk otomatis begitu pembayaran terkonfirmasi.</p>',
+          [['Nomor Pesanan', o.id], ['Jumlah', amt], ['Metode', 'QRIS'], ['Status', 'Menunggu pembayaran']],
+          'Lanjutkan Pembayaran',
+          'https://app.clincoo.buzz/akun/langganan/checkout/qris/',
+          'Ini pesan pengingat otomatis dari Clincoo.'
+        )
+      });
+      await notifyEvent(db, user, {
+        source: 'Dompet', type: 'payment_reminder',
+        message: 'Pesanan QRIS ' + amt + ' belum selesai. Buka halaman pembayaran untuk melanjutkan atau membuat ulang.',
+        link: 'https://app.clincoo.buzz/akun/langganan/checkout/qris/'
+      });
+      sent++;
+    } catch (e) {}
+  }
+  return sent;
+}
+
 export async function onRequestPost({ request, env }) {
   try {
     const secret = await getSecret(env, 'CRON_SECRET');
@@ -231,7 +278,9 @@ export async function onRequestPost({ request, env }) {
     const provided = request.headers.get('x-cron-secret') || '';
     if (provided !== secret) return new Response(JSON.stringify({ error: 'forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
     const r = await syncUserReport(env);
-    return new Response(JSON.stringify(r), { status: r.ok ? 200 : 500, headers: { 'Content-Type': 'application/json' } });
+    let reminders = 0;
+    try { reminders = await paymentReminderSweep(env); } catch (e) {}
+    return new Response(JSON.stringify({ ...r, payment_reminders: reminders }), { status: r.ok ? 200 : 500, headers: { 'Content-Type': 'application/json' } });
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }

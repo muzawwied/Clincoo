@@ -70,7 +70,7 @@ export function flatTemplate(title, name, intro, details, ctaText, ctaLink, foot
       cta +
       '<div style="margin-top:36px;border-top:1px solid #eceef1;padding-top:16px">' +
         (footerNote ? '<p style="margin:0 0 10px;color:#9ca3af;font-size:12px;line-height:1.6">' + footerNote + '</p>' : '') +
-        '<p style="margin:0 0 10px;color:#9ca3af;font-size:11px;line-height:1.7">Butuh bantuan? Buka pusat bantuan di aplikasi Clincoo atau kunjungi blog.clincoo.buzz.</p>' +
+        '<p style="margin:0 0 10px;color:#9ca3af;font-size:11px;line-height:1.7">Butuh bantuan? Buka <a href="https://blog.clincoo.buzz/bantuan/" target="_blank" rel="noopener" style="color:#9ca3af;text-decoration:underline">Pusat Bantuan Clincoo</a>.</p>' +
         '<p style="margin:0 0 10px;color:#9ca3af;font-size:11px;line-height:1.7">Email ini dikirim otomatis oleh sistem Clincoo. Clincoo tidak membagikan data pribadi Anda kepada pihak ketiga &mdash; mohon jangan dibalas.</p>' +
         '<p style="margin:0;color:#d1d5db;font-size:11px">&copy; 2026 Clincoo &middot; Semua hak dilindungi</p>' +
       '</div>' +
@@ -147,7 +147,7 @@ export function otpEmail(opts) {
       cta +
       '<div style="margin-top:36px;border-top:1px solid #eceef1;padding-top:16px">' +
         '<p style="margin:0 0 8px;color:#9ca3af;font-size:12px;line-height:1.6">Tidak meminta kode ini? Abaikan email ini dan jangan bagikan isinya — akun Anda tetap aman.</p>' +
-        '<p style="margin:0 0 6px;color:#6b7280;font-size:11px;line-height:1.6"><b style="color:#374151">Butuh bantuan?</b> Buka pusat bantuan di aplikasi Clincoo atau kunjungi blog.clincoo.buzz — tim kami siap membantu Anda.</p>' +
+        '<p style="margin:0 0 6px;color:#6b7280;font-size:11px;line-height:1.6"><b style="color:#374151">Butuh bantuan?</b> Buka <a href="https://blog.clincoo.buzz/bantuan/" target="_blank" rel="noopener" style="color:#6b7280;text-decoration:underline">Pusat Bantuan Clincoo</a> — tim kami siap membantu Anda.</p>' +
         '<p style="margin:0 0 6px;color:#6b7280;font-size:11px;line-height:1.6"><b style="color:#374151">Privasi Anda terlindungi.</b> Clincoo tidak membagikan data pribadi Anda kepada pihak ketiga. Email ini dikirim otomatis oleh sistem Clincoo — mohon jangan dibalas.</p>' +
         '<p style="margin:0;color:#9ca3af;font-size:11px">&copy; 2026 Clincoo &middot; Semua hak dilindungi</p>' +
       '</div>' +
