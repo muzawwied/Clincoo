@@ -92,9 +92,9 @@
     <!-- Tujuan terpilih (dari halaman Tujuan Penarikan) -->
     <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2.5">Tujuan Penarikan</p>
     <div class="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-gray-200 dark:border-slate-700 mb-7">
-      <div class="ew-tile w-14 h-9 rounded-lg bg-white border border-gray-100 dark:border-slate-700 flex items-center justify-center flex-shrink-0">
-        <img id="wd-ew-logo" src="" alt="" loading="lazy" class="max-h-5 max-w-[46px] w-auto object-contain" style="display:none">
-        <span id="wd-ew-fallback" class="text-[9px] font-bold text-gray-500">—</span>
+      <div class="ew-tile w-10 h-10 rounded-full bg-white border border-gray-100 dark:border-slate-700 flex items-center justify-center flex-shrink-0">
+        <img id="wd-ew-logo" src="" alt="" loading="lazy" class="max-h-3.5 max-w-[24px] w-auto object-contain" style="display:none">
+        <span id="wd-ew-fallback" class="text-[8px] font-bold text-gray-500">—</span>
       </div>
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2"><span id="wd-ew-badge" class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300">—</span><span id="wd-ew-label" class="text-xs text-gray-400 dark:text-gray-500 truncate"></span></div>
@@ -118,11 +118,6 @@
       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
     </button>
 
-    <!-- Footer minimal -->
-    <div class="mt-10 flex items-start justify-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-600 text-center px-4">
-      <svg class="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4"></path></svg>
-      <p>Dana hanya dikirim ke nomor yang kamu daftarkan — pastikan e-wallet aktif dan atas nama kamu.</p>
-    </div>
   </div>
 
   <script>
@@ -138,7 +133,7 @@
   var _wdSent = false;
   var EW_LABEL = { dana: 'DANA', ovo: 'OVO', gopay: 'GoPay', shopeepay: 'ShopeePay', linkaja: 'LinkAja' };
   // Logo resmi e-wallet dari library eksternal idn-finlogos (npm, via jsDelivr)
-  var EW_LOGO_BASE = 'https://cdn.jsdelivr.net/npm/idn-finlogos@2.5.0/dist/icons/';
+  var EW_LOGO_BASE = '../../../../assets/ewallet/';
   var EW_IMG = { dana: EW_LOGO_BASE + 'dana.svg', ovo: EW_LOGO_BASE + 'ovo.svg', gopay: EW_LOGO_BASE + 'gopay.svg', shopeepay: EW_LOGO_BASE + 'shopeepay.svg', linkaja: EW_LOGO_BASE + 'linkaja.svg' };
   var _wdDest = null;
   try { _wdDest = JSON.parse(sessionStorage.getItem('clinqoo_wd_dest_' + _pid()) || 'null'); } catch (e) {}

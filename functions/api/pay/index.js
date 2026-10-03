@@ -143,6 +143,9 @@ async function ensureTables(db) {
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
   )`).run();
+  for (const col of ["recipient TEXT DEFAULT ''"]) {
+    try { await db.prepare('ALTER TABLE pay_wd_dests ADD COLUMN ' + col).run(); } catch (e) {}
+  }
   await db.prepare(`CREATE TABLE IF NOT EXISTS pay_wd_otp (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -517,7 +520,7 @@ export async function onRequestPost({ request, env }) {
   if (action === 'wd_dests') {
     const user = await currentUser(env, request);
     if (!user) return json({ success: false, message: 'Login diperlukan.' }, 401);
-    const rows = await db.prepare('SELECT id, ew_type, account, label, created_at FROM pay_wd_dests WHERE user_id = ? ORDER BY id DESC').bind(user.id).all();
+    const rows = await db.prepare('SELECT id, ew_type, account, label, recipient, created_at FROM pay_wd_dests WHERE user_id = ? ORDER BY id DESC').bind(user.id).all();
     return json({ success: true, destinations: rows.results || [] });
   }
   if (action === 'wd_dest_add') {
@@ -526,9 +529,11 @@ export async function onRequestPost({ request, env }) {
     const ew = String(body.ew_type || '').toLowerCase();
     const acc = String(body.account || '').replace(/[\s-]/g, '');
     const label = String(body.label || '').slice(0, 40);
+    const recipient = String(body.recipient || '').trim().slice(0, 60);
     if (WD_EWALLETS.indexOf(ew) === -1) return json({ success: false, message: 'Pilih jenis e-wallet.' }, 400);
     if (!/^(?:0|62)8\d{7,12}$/.test(acc)) return json({ success: false, message: 'Nomor e-wallet tidak valid (contoh: 08123456789).' }, 400);
-    await db.prepare('INSERT INTO pay_wd_dests (user_id, ew_type, account, label) VALUES (?, ?, ?, ?)').bind(user.id, ew, acc.replace(/^62/, '0'), label).run();
+    if (recipient.length < 2) return json({ success: false, message: 'Nama penerima wajib diisi.' }, 400);
+    await db.prepare('INSERT INTO pay_wd_dests (user_id, ew_type, account, label, recipient) VALUES (?, ?, ?, ?, ?)').bind(user.id, ew, acc.replace(/^62/, '0'), label, recipient).run();
     return json({ success: true, message: 'Tujuan tersimpan.' });
   }
   if (action === 'wd_dest_update') {
@@ -538,10 +543,12 @@ export async function onRequestPost({ request, env }) {
     const ew = String(body.ew_type || '').toLowerCase();
     const acc = String(body.account || '').replace(/[\s-]/g, '');
     const label = String(body.label || '').slice(0, 40);
+    const recipient = String(body.recipient || '').trim().slice(0, 60);
     if (!id) return json({ success: false, message: 'Tujuan tidak ditemukan.' }, 404);
     if (WD_EWALLETS.indexOf(ew) === -1) return json({ success: false, message: 'Pilih jenis e-wallet.' }, 400);
     if (!/^(?:0|62)8\d{7,12}$/.test(acc)) return json({ success: false, message: 'Nomor e-wallet tidak valid (contoh: 08123456789).' }, 400);
-    const r = await db.prepare("UPDATE pay_wd_dests SET ew_type = ?, account = ?, label = ?, updated_at = datetime('now') WHERE id = ? AND user_id = ?").bind(ew, acc.replace(/^62/, '0'), label, id, user.id).run();
+    if (recipient.length < 2) return json({ success: false, message: 'Nama penerima wajib diisi.' }, 400);
+    const r = await db.prepare("UPDATE pay_wd_dests SET ew_type = ?, account = ?, label = ?, recipient = ?, updated_at = datetime('now') WHERE id = ? AND user_id = ?").bind(ew, acc.replace(/^62/, '0'), label, recipient, id, user.id).run();
     return (r.meta && r.meta.changes) ? json({ success: true, message: 'Tujuan diperbarui.' }) : json({ success: false, message: 'Tujuan tidak ditemukan.' }, 404);
   }
   if (action === 'wd_dest_delete') {
