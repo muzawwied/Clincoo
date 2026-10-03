@@ -420,7 +420,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
         </div>
         <div class="py-5">
           <div class="flex items-center justify-between gap-3 flex-wrap mb-3">
-            <h4 class="text-base font-semibold text-gray-900 dark:text-white">Transaksi Masuk</h4>
+            <h4 class="text-base font-semibold text-gray-900 dark:text-white">Transaksi</h4>
             <div class="flex items-center gap-2">
               <input type="text" id="pay-tx-search" placeholder="Cari deskripsi / order ID" oninput="applyTxFilter('q', this.value.toLowerCase())" class="px-3 py-1.5 text-xs rounded-full border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/40 text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:border-gray-400 dark:focus:border-slate-500 w-44 sm:w-56 transition-colors" />
               <div class="relative" id="pay-period-wrap">
@@ -461,7 +461,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
             </tbody>
             </table>
           </div>
-          <p id="pay-tx-empty" class="text-xs text-gray-400 dark:text-gray-500 py-4 text-center">Belum ada transaksi.</p>
+          <p id="pay-tx-empty" class="text-xs text-gray-400 dark:text-gray-500 py-4 text-center" style="display:none">Belum ada transaksi.</p>
           <p id="pay-tx-nofilter" class="text-xs text-gray-400 dark:text-gray-500 py-4 text-center" style="display:none">Tidak ada transaksi yang cocok dengan filter.</p>
         </div>
         <div class="py-5">
@@ -480,7 +480,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
               <tbody id="pay-wd-list" class="divide-y divide-gray-200 dark:divide-slate-700/60"></tbody>
             </table>
           </div>
-          <p id="pay-wd-empty" class="text-xs text-gray-400 dark:text-gray-500 py-4 text-center">Belum ada penarikan.</p>
+          <p id="pay-wd-empty" class="text-xs text-gray-400 dark:text-gray-500 py-4 text-center" style="display:none">Belum ada penarikan.</p>
         </div>
         </div>
       </div>
@@ -630,6 +630,16 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
     // 1) render cache dulu supaya state tidak hilang saat refresh
     var cached = readPayCache();
     if (cached && cached.active) renderPayActive(cached, false);
+    var ctx = _readLs(_txCacheKey());
+    if (ctx && ctx.length) _payTxs = ctx;
+    var cwd = _readLs(_wdCacheKey());
+    if (cwd && cwd.length) _payWds = cwd;
+    if (_payTxs.length || _payWds.length) {
+      _payBalCount();
+      if (_payTxs.length) renderPayStats(_payTxs);
+      renderTxRows();
+    }
+    if (_payWds.length) renderWdRows();
     // 2) sinkronkan dengan server
     try {
       var hdrs = _apiToken ? { Authorization: 'Bearer ' + _apiToken } : {};
@@ -755,25 +765,28 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
       var res = await fetch(API_BASE + '/pay', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, hdrs), body: JSON.stringify({ action: 'transactions', project_id: _pid() }) });
       if (!res.ok) return;
       var data = await res.json();
-      var rows = document.getElementById('pay-tx-rows');
-      var empty = document.getElementById('pay-tx-empty');
-      var nofilter = document.getElementById('pay-tx-nofilter');
       var txs = (data && data.transactions) || [];
       var sig = JSON.stringify(txs);
       if (sig === _payTxsSig) return; // data sama → jangan re-render tabel/chart
       _payTxsSig = sig;
       _payTxs = txs;
-      var cnt = document.getElementById('pay-bal-count');
-      if (cnt) cnt.textContent = String(txs.length);
+      _writeLs(_txCacheKey(), txs);
+      _payBalCount();
       renderPayStats(txs);
-      if (!txs.length) { rows.innerHTML = ''; empty.style.display = 'block'; nofilter.style.display = 'none'; return; }
-      empty.style.display = 'none';
+      _payDataLoaded = true;
       renderTxRows();
     } catch (e) {}
   }
 
   // ===== Filter transaksi =====
   var _payTxs = [];
+  var _payWds = [];
+  var _payDataLoaded = false;
+  function _txCacheKey() { return 'pay_tx_cache:' + (_pid() || 'none'); }
+  function _wdCacheKey() { return 'pay_wd_cache:' + (_pid() || 'none'); }
+  function _readLs(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+  function _writeLs(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function _payBalCount() { var c = document.getElementById('pay-bal-count'); if (c) c.textContent = String((_payTxs || []).length + (_payWds || []).length); }
   var _payTxsSig = '';
   var _payWdsSig = '';
   var _txFilter = { status: 'all', q: '', period: '0' };
@@ -790,21 +803,32 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
   function renderTxRows() {
     var rows = document.getElementById('pay-tx-rows');
     var nofilter = document.getElementById('pay-tx-nofilter');
+    var empty = document.getElementById('pay-tx-empty');
     if (!rows) return;
     rows.innerHTML = '';
-    var txs = _payTxs.filter(_txPass);
-    if (!txs.length) { if (nofilter) nofilter.style.display = 'block'; return; }
+    var wds = (_payWds || []).map(function (w) {
+      var _ew = ({ dana: 'DANA', ovo: 'OVO', gopay: 'GoPay', shopeepay: 'ShopeePay', linkaja: 'LinkAja' })[w.dest_type] || '';
+      return { out: true, description: 'Penarikan saldo' + (_ew ? ' · ' + _ew : ''), order_id: '#' + w.id, created_at: w.created_at, amount: w.amount, status: w.status === 'done' ? 'paid' : (w.status === 'rejected' ? 'failed' : 'pending'), wlabel: w.status === 'done' ? 'Selesai' : (w.status === 'rejected' ? 'Ditolak' : 'Diproses') };
+    });
+    var txs = _payTxs.concat(wds).sort(function (a, b) { return String(b.created_at || '').localeCompare(String(a.created_at || '')); }).filter(_txPass);
+    var anyFilter = _txFilter.status !== 'all' || !!_txFilter.q || (Number(_txFilter.period) || 0) > 0;
+    if (!txs.length) {
+      if (nofilter) nofilter.style.display = (anyFilter && _payDataLoaded) ? 'block' : 'none';
+      if (empty) empty.style.display = (!anyFilter && _payDataLoaded) ? 'block' : 'none';
+      return;
+    }
     if (nofilter) nofilter.style.display = 'none';
+    if (empty) empty.style.display = 'none';
     txs.forEach(function (t, idx) {
         var stClass = t.status === 'paid' ? 'text-emerald-800 dark:text-emerald-300' : (t.status === 'expired' || t.status === 'failed' ? 'text-red-700 dark:text-red-300' : 'text-orange-600 dark:text-orange-400');
-        var stLabel = t.status === 'paid' ? 'Berhasil' : (t.status === 'expired' ? 'Kedaluwarsa' : (t.status === 'failed' ? 'Gagal' : 'Menunggu'));
+        var stLabel = t.wlabel || (t.status === 'paid' ? 'Berhasil' : (t.status === 'expired' ? 'Kedaluwarsa' : (t.status === 'failed' ? 'Gagal' : 'Menunggu')));
         var tr = document.createElement('tr');
         tr.className = 'pay-fade text-sm hover:bg-gray-50 dark:hover:bg-slate-800/40';
         tr.style.animationDelay = Math.min(idx * 40, 400) + 'ms';
         tr.innerHTML = '<td class="py-2.5 px-3 text-gray-900 dark:text-white font-medium max-w-[220px] truncate">' + (t.description || 'Pembayaran') + '</td>' +
           '<td class="py-2.5 px-3 text-xs text-gray-400 font-mono whitespace-nowrap">' + t.order_id + '</td>' +
           '<td class="py-2.5 px-3 text-xs text-gray-400 font-mono whitespace-nowrap">' + (t.created_at || '') + '</td>' +
-          '<td class="py-2.5 px-3 text-right font-semibold text-gray-900 dark:text-white whitespace-nowrap">Rp ' + Number(t.amount || 0).toLocaleString('id-ID') + '</td>' +
+          '<td class="py-2.5 px-3 text-right font-semibold whitespace-nowrap ' + (t.out ? 'text-red-700 dark:text-red-300' : 'text-gray-900 dark:text-white') + '">' + (t.out ? '- ' : '') + 'Rp ' + Number(t.amount || 0).toLocaleString('id-ID') + '</td>' +
           '<td class="py-2.5 px-3 text-right whitespace-nowrap"><span class="text-xs font-semibold ' + stClass + '">' + stLabel + '</span></td>';
         rows.appendChild(tr);
       });
@@ -961,16 +985,26 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
       var res = await fetch(API_BASE + '/pay', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, hdrs), body: JSON.stringify({ action: 'withdrawals', project_id: _pid() }) });
       if (!res.ok) return;
       var data = await res.json();
-      var list = document.getElementById('pay-wd-list');
-      var empty = document.getElementById('pay-wd-empty');
       var wds = (data && data.withdrawals) || [];
       var sig = JSON.stringify(wds);
       if (sig === _payWdsSig) return; // data sama → jangan re-render daftar
       _payWdsSig = sig;
-      if (!wds.length) { empty.style.display = 'block'; return; }
-      empty.style.display = 'none';
-      list.innerHTML = '';
-      wds.forEach(function (w, idx) {
+      _payWds = wds;
+      _writeLs(_wdCacheKey(), wds);
+      _payBalCount();
+      renderWdRows();
+      renderTxRows();
+    } catch (e) {}
+  }
+  function renderWdRows() {
+    var list = document.getElementById('pay-wd-list');
+    var empty = document.getElementById('pay-wd-empty');
+    var wds = _payWds || [];
+    if (!wds.length) { if (empty) empty.style.display = 'block'; return; }
+    if (empty) empty.style.display = 'none';
+    if (!list) return;
+    list.innerHTML = '';
+    wds.forEach(function (w, idx) {
         var stClass = w.status === 'done' ? 'text-emerald-800 dark:text-emerald-300' : (w.status === 'rejected' ? 'text-red-700 dark:text-red-300' : 'text-orange-600 dark:text-orange-400');
         var stLabel = w.status === 'done' ? 'Selesai' : (w.status === 'rejected' ? 'Ditolak' : 'Diproses');
         var _ew = ({ dana: 'DANA', ovo: 'OVO', gopay: 'GoPay', shopeepay: 'ShopeePay', linkaja: 'LinkAja' })[w.dest_type] || '';
@@ -983,8 +1017,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
           '<td class="py-2.5 px-3 text-right font-semibold text-gray-900 dark:text-white whitespace-nowrap">Rp ' + Number(w.amount || 0).toLocaleString('id-ID') + (w.fee ? '<span class="block text-[11px] font-mono font-normal text-gray-400">+' + Number(w.fee).toLocaleString('id-ID') + '</span>' : '') + '</td>' +
           '<td class="py-2.5 px-3 text-right whitespace-nowrap"><span class="text-xs font-semibold ' + stClass + '">' + stLabel + '</span></td>';
         list.appendChild(row);
-      });
-    } catch (e) {}
+    });
   }
 
   document.addEventListener('DOMContentLoaded', function () { loadPayConfig(); });
