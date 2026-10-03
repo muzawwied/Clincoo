@@ -12,6 +12,7 @@
 
 import { currentUser } from './user-scope.js';
 import { creditTopup } from './topup.js';
+import { sendEmail, flatTemplate, formatIDR } from './notify-helpers.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -300,6 +301,34 @@ export async function onRequestPost({ request, env }) {
       .bind('topup_qris_created', orderId + ' (' + amount + ') via BuatQris', tpUser.id).run();
   } catch (e) {}
 
+  // Email detail langganan + CTA bayar (khusus order paket: Pro / Bisnis)
+  const expiredAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  const planName = (amount === 49000) ? 'Pro' : (amount === 129000) ? 'Bisnis' : '';
+  if (planName && tpUser && tpUser.email) {
+    try {
+      const expWib = new Date(expiredAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
+      const ctaBase = new URL(request.url).origin;
+      await sendEmail(env, {
+        toEmail: tpUser.email, toName: tpUser.name || '',
+        subject: 'Detail Langganan Clincoo ' + planName + ' — Bayar via QRIS',
+        html: flatTemplate(
+          'Detail Langganan ' + planName,
+          tpUser.name || '',
+          'Order pembayaran langganan Anda sudah dibuat. Selesaikan pembayaran QRIS sebelum batas waktu di bawah supaya paket langsung aktif.',
+          [
+            ['Paket', planName],
+            ['Harga', formatIDR(amount) + ' / bulan'],
+            ['Order ID', orderId],
+            ['Metode', 'QRIS'],
+            ['Bayar Sebelum', expWib]
+          ],
+          'Bayar Sekarang',
+          ctaBase + '/akun/langganan/checkout/qris/?order_id=' + encodeURIComponent(orderId)
+        )
+      });
+    } catch (e) {}
+  }
+
   return json({
     success: true,
     order_id: orderId,
@@ -309,7 +338,7 @@ export async function onRequestPost({ request, env }) {
     amount: amount,
     fee: 0,
     total_payment: total,
-    expired_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+    expired_at: expiredAt,
     provider: 'buatqris'
   });
 }

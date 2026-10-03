@@ -207,7 +207,7 @@
         <div class="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div class="min-w-0 flex-1">
             <h4 class="text-base font-semibold text-gray-900 dark:text-white">Metode Pembayaran</h4>
-            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kartu kredit yang terhubung</p>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Bayar langganan via QRIS</p>
           </div>
           <div class="w-full sm:w-80 flex items-center gap-2">
             <span id="payment-method" class="clinqoo-shimmer text-sm font-mono text-gray-600 dark:text-gray-400">••••</span>
@@ -347,7 +347,7 @@
                 '<button type="button" onclick="selectBilling(\'' + tahunan + '\')" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-t border-gray-100 dark:border-slate-700/60">' + tahunan + '</button>';
         }
         setVal('billing-text', (d.billingCycle === 'Tahunan') ? tahunan : bulanan);
-        setVal('payment-method', d.paymentMethod || 'Saldo Dompet');
+        setVal('payment-method', d.paymentMethod || 'QRIS');
         let nbText = '-';
         try { nbText = new Date(d.nextBillingDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }); } catch(e){}
         setVal('next-billing', nbText);
@@ -369,7 +369,7 @@
             try { localStorage.setItem('clinqoo_subscription_cache', JSON.stringify({ plan: subData.plan || 'Starter', billingCycle: subData.billingCycle || 'Bulanan', ts: Date.now() })); } catch(e) {}
         } catch(e) {
             console.error('Gagal memuat langganan:', e);
-            fillSubscription({ plan: 'Starter', projectCount: 0, projectLimit: 3, storageUsed: 0, storageLimit: 5, bandwidthUsed: 0, bandwidthLimit: 10, collaboratorCount: 0, collaboratorLimit: 1, price: 0, billingCycle: 'Bulanan', nextBillingDate: new Date(Date.now() + 30 * 86400000).toISOString(), paymentMethod: 'Saldo Dompet' });
+            fillSubscription({ plan: 'Starter', projectCount: 0, projectLimit: 3, storageUsed: 0, storageLimit: 5, bandwidthUsed: 0, bandwidthLimit: 10, collaboratorCount: 0, collaboratorLimit: 1, price: 0, billingCycle: 'Bulanan', nextBillingDate: new Date(Date.now() + 30 * 86400000).toISOString(), paymentMethod: 'QRIS' });
         }
     }
     loadSubscription();
