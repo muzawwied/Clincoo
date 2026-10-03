@@ -145,6 +145,7 @@
         _wdSaldo = data.available || 0;
         info.textContent = 'Saldo tersedia Rp ' + _rp(_wdSaldo);
         if (!data.active) location.href = '../';
+        wdUpdate(); // saldo baru datang — refresh pesan error & status tombol yang mungkin masih berdasar saldo lama (0)
         return;
       } catch (e) {
         if (i === 2) {
