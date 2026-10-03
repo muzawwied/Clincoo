@@ -56,7 +56,7 @@
     <!-- Nominal -->
     <p id="wd-amount-preview" class="text-center text-3xl font-bold font-mono text-gray-900 dark:text-white mb-2">Rp 0</p>
     <div class="text-center mb-8">
-      <p id="wd-saldo-info" class="text-[11px] text-gray-400 dark:text-gray-500">Saldo tersedia Rp 0</p>
+      <p id="wd-saldo-info" class="text-[11px] text-gray-400 dark:text-gray-500">Memuat saldo…</p>
       <p id="wd-error" class="hidden text-xs text-red-500 mt-1"></p>
     </div>
 
@@ -135,16 +135,25 @@
   (async function () {
     if (!_apiToken) { location.href = '/akun/'; return; }
     if (!_wdDest || !_wdDest.ew_type || !_wdDest.account) { location.href = 'tujuan/'; return; }
-    try {
-      var res = await fetch(API_BASE + '/pay?action=config&project_id=' + encodeURIComponent(_pid()), { headers: { Authorization: 'Bearer ' + _apiToken } });
-      if (res.ok) {
+    var info = document.getElementById('wd-saldo-info');
+    wdRenderDigits();
+    for (var i = 0; i < 3; i++) {
+      try {
+        var res = await fetch(API_BASE + '/pay?action=config&project_id=' + encodeURIComponent(_pid()), { headers: { Authorization: 'Bearer ' + _apiToken } });
+        if (!res.ok) throw new Error('http ' + res.status);
         var data = await res.json();
         _wdSaldo = data.available || 0;
-        document.getElementById('wd-saldo-info').textContent = 'Saldo tersedia Rp ' + _rp(_wdSaldo);
+        info.textContent = 'Saldo tersedia Rp ' + _rp(_wdSaldo);
         if (!data.active) location.href = '../';
+        return;
+      } catch (e) {
+        if (i === 2) {
+          info.textContent = 'Saldo gagal dimuat \u2014 ketuk untuk coba lagi';
+          info.className = 'text-[11px] text-red-500 cursor-pointer';
+          info.onclick = function () { location.reload(); };
+        } else await new Promise(function (r) { setTimeout(r, 900); });
       }
-    } catch (e) {}
-    wdRenderDigits();
+    }
   })();
   </script>
 </body>

@@ -127,12 +127,19 @@
     }
     document.getElementById('cf-time').textContent = new Date().toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-    var saldo = 0;
-    try {
-      var res = await fetch(API_BASE + '/pay?action=config&project_id=' + encodeURIComponent(_draft.project_id || _pid()), { headers: { Authorization: 'Bearer ' + _apiToken } });
-      if (res.ok) { var data = await res.json(); saldo = data.available || 0; }
-    } catch (e) {}
-    if (_draft.amount + (_draft.fee || 0) > saldo) {
+    var saldo = 0, saldoOk = false;
+    for (var i = 0; i < 3; i++) {
+      try {
+        var res = await fetch(API_BASE + '/pay?action=config&project_id=' + encodeURIComponent(_draft.project_id || _pid()), { headers: { Authorization: 'Bearer ' + _apiToken } });
+        if (!res.ok) throw new Error('http ' + res.status);
+        var data = await res.json();
+        saldo = data.available || 0;
+        saldoOk = true;
+        break;
+      } catch (e) { if (i < 2) await new Promise(function (r) { setTimeout(r, 900); }); }
+    }
+    // cek saldo hanya bila berhasil dimuat; bila gagal, biarkan server yang memvalidasi saat minta OTP
+    if (saldoOk && _draft.amount + (_draft.fee || 0) > saldo) {
       cfShow('cf-insufficient');
       return;
     }
