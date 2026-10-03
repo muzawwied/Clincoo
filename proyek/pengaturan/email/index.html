@@ -346,10 +346,10 @@
                   <table class="w-full text-xs text-left border-collapse">
                     <thead>
                       <tr class="text-gray-400 dark:text-gray-500 border-b border-gray-200 dark:border-slate-700">
-                        <th class="py-2 pr-3 font-medium whitespace-nowrap">Waktu</th>
-                        <th class="py-2 pr-3 font-medium">Subjek</th>
-                        <th class="py-2 pr-3 font-medium">Penerima</th>
-                        <th class="py-2 pr-3 font-medium">Status</th>
+                        <th class="py-2 pr-5 font-medium whitespace-nowrap">Waktu</th>
+                        <th class="py-2 pr-5 font-medium">Subjek</th>
+                        <th class="py-2 pr-5 font-medium">Penerima</th>
+                        <th class="py-2 pr-5 font-medium">Status</th>
                         <th class="py-2 font-medium text-right">Aksi</th>
                       </tr>
                     </thead>
@@ -430,10 +430,10 @@ var _logRows = [];
     } else {
       tb.innerHTML = rows.map(function (r) {
         return '<tr>' +
-          '<td class="py-2.5 pr-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">' + _esc(r.time) + '</td>' +
-          '<td class="py-2.5 pr-3 text-gray-800 dark:text-gray-200">' + _esc(r.subject) + '</td>' +
-          '<td class="py-2.5 pr-3 text-gray-500 dark:text-gray-400">' + _esc(r.to) + '</td>' +
-          '<td class="py-2.5 pr-3 font-medium ' + (r.status === 'terkirim' ? 'text-green-600' : 'text-red-500') + '">' + _esc(r.status) + '</td>' +
+          '<td class="py-2.5 pr-5 text-gray-500 dark:text-gray-400 whitespace-nowrap">' + _esc(r.time) + '</td>' +
+          '<td class="py-2.5 pr-5 text-gray-800 dark:text-gray-200 max-w-[220px] truncate" title="' + _esc(r.subject) + '">' + _esc(r.subject) + '</td>' +
+          '<td class="py-2.5 pr-5 text-gray-500 dark:text-gray-400 whitespace-nowrap">' + _esc(r.to) + '</td>' +
+          '<td class="py-2.5 pr-5 font-medium whitespace-nowrap ' + (r.status === 'terkirim' ? 'text-green-600' : 'text-red-500') + '">' + _esc(r.status) + '</td>' +
           '<td class="py-2.5 text-right"><button type="button" onclick="hapusLog(' + r.id + ')" class="text-red-500 hover:underline font-medium">Hapus</button></td></tr>';
       }).join('');
     }
