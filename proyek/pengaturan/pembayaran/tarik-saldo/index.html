@@ -55,7 +55,10 @@
 
     <!-- Nominal -->
     <p id="wd-amount-preview" class="text-center text-3xl font-bold font-mono text-gray-900 dark:text-white mb-2">Rp 0</p>
-    <p class="text-center text-[11px] text-gray-400 dark:text-gray-500 mb-8">Min Rp 10.000</p>
+    <div class="text-center mb-8">
+      <p id="wd-saldo-info" class="text-[11px] text-gray-400 dark:text-gray-500">Saldo tersedia Rp 0</p>
+      <p id="wd-error" class="hidden text-xs text-red-500 mt-1"></p>
+    </div>
 
     <!-- Keyboard kustom Clincoo -->
     <div class="grid grid-cols-3 gap-3 max-w-[300px] mx-auto mb-9">
@@ -75,7 +78,6 @@
       </button>
     </div>
 
-    <p id="wd-error" class="hidden text-center text-xs text-red-500 mb-4"></p>
     <button type="button" id="wd-next" onclick="wdNext()" disabled class="w-full h-12 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer">
       Lanjutkan
       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
@@ -138,6 +140,7 @@
       if (res.ok) {
         var data = await res.json();
         _wdSaldo = data.available || 0;
+        document.getElementById('wd-saldo-info').textContent = 'Saldo tersedia Rp ' + _rp(_wdSaldo);
         if (!data.active) location.href = '../';
       }
     } catch (e) {}
