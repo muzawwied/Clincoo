@@ -274,6 +274,42 @@ async function sendOtpEmail(env, toEmail, code, amount, dest) {
   } catch (e) { return false; }
 }
 
+async function wdAdminCheck(env, request) {
+  const user = await currentUser(env, request);
+  if (!user) return { user: null, isAdmin: false };
+  const adminEmail = await getSecret(env, 'WITHDRAW_NOTIFY_EMAIL');
+  const isAdmin = !!(adminEmail && String(adminEmail).toLowerCase() === String(user.email || '').toLowerCase());
+  return { user, isAdmin };
+}
+
+async function sendWdResultEmail(env, toEmail, w, status, note) {
+  const url = await getSecret(env, 'MAIL_BRIDGE_URL');
+  const bridgeKey = await getSecret(env, 'MAIL_BRIDGE_KEY');
+  if (!url || !bridgeKey || !toEmail) return false;
+  const ok = status === 'done';
+  const lines = [
+    ok ? 'Penarikan saldo kamu selesai' : 'Penarikan saldo kamu ditolak',
+    '',
+    'ID penarikan: #' + w.id,
+    'Nominal: Rp ' + Number(w.amount).toLocaleString('id-ID'),
+    'Biaya: Rp ' + Number(w.fee || 0).toLocaleString('id-ID'),
+    'Tujuan: ' + (WD_EWALLET_LABEL[w.dest_type] || w.dest_type) + ' - ' + w.dest_account,
+    ok ? 'Dana sudah dikirim ke e-wallet tujuanmu.' : 'Saldo (nominal + biaya) sudah dikembalikan ke saldo proyekmu.',
+    (note ? 'Catatan admin: ' + note : '')
+  ].filter(Boolean);
+  const text = lines.join('\n');
+  const html = text.split('&').join('&amp;').split('<').join('&lt;').split('>').join('&gt;').replace(/\n/g, '<br>');
+  try {
+    const r = await fetch(String(url).replace(/\/$/, '') + '/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Bridge-Key': String(bridgeKey) },
+      body: JSON.stringify({ to: toEmail, from_email: 'noreply@clincoo.buzz', from_name: 'Clincoo Pembayaran', subject: ok ? 'Penarikan #' + w.id + ' selesai' : 'Penarikan #' + w.id + ' ditolak', html, text })
+    });
+    const data = await r.json().catch(() => ({}));
+    return r.ok && data.ok;
+  } catch (e) { return false; }
+}
+
 async function calcBalance(db, projectId) {
   const paid = await db.prepare(`SELECT COALESCE(SUM(amount),0) AS total FROM pay_transactions WHERE project_id = ? AND status = 'paid'`).bind(projectId).first();
   const wd = await db.prepare(`SELECT COALESCE(SUM(amount + COALESCE(fee, 0)), 0) AS total FROM pay_withdrawals WHERE project_id = ? AND status != 'rejected'`).bind(projectId).first();
@@ -510,7 +546,28 @@ export async function onRequestPost({ request, env }) {
     const deny = await guardPay(env, request, projectId);
     if (deny) return deny;
     const rows = await db.prepare('SELECT id, amount, fee, dest_type, dest_account, status, note, created_at FROM pay_withdrawals WHERE project_id = ? ORDER BY id DESC LIMIT 25').bind(projectId).all();
-    return json({ success: true, withdrawals: rows.results || [] });
+    const { isAdmin } = await wdAdminCheck(env, request);
+    return json({ success: true, withdrawals: rows.results || [], is_admin: isAdmin });
+  }
+
+  // ===== Konfirmasi penarikan (admin saja) =====
+  if (action === 'wd_confirm') {
+    const deny = await guardPay(env, request, projectId);
+    if (deny) return deny;
+    const { user, isAdmin } = await wdAdminCheck(env, request);
+    if (!isAdmin) return json({ success: false, message: 'Hanya admin Clincoo yang bisa konfirmasi penarikan.' }, 403);
+    const id = Number(body.id || 0);
+    const decision = String(body.decision || '');
+    if (!id || (decision !== 'done' && decision !== 'rejected')) return json({ success: false, message: 'Keputusan tidak valid.' }, 400);
+    const w = await db.prepare('SELECT * FROM pay_withdrawals WHERE id = ? AND project_id = ?').bind(id, projectId).first();
+    if (!w) return json({ success: false, message: 'Penarikan tidak ditemukan.' }, 404);
+    if (w.status !== 'pending') return json({ success: false, message: 'Penarikan ini sudah dikonfirmasi sebelumnya.' }, 400);
+    const note = String(body.note || '').slice(0, 200);
+    await db.prepare("UPDATE pay_withdrawals SET status = ?, note = ?, updated_at = datetime('now') WHERE id = ?").bind(decision, note, id).run();
+    // beri tahu pemilik proyek
+    const own = await db.prepare('SELECT a.email FROM auth_users a JOIN user_projects p ON p.user_id = a.id WHERE p.id = ?').bind(projectId).first();
+    const sent = own ? await sendWdResultEmail(env, own.email, w, decision, note) : false;
+    return json({ success: true, status: decision, refunded: decision === 'rejected', email_sent: sent, message: decision === 'done' ? 'Penarikan dikonfirmasi selesai.' : 'Penarikan ditolak, saldo dikembalikan.' });
   }
 
   // ===== Buat transaksi (PUBLIK via pay_key — dipanggil situs deploy user) =====
