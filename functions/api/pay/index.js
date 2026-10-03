@@ -16,7 +16,7 @@
 // POST {action:'callback', ...}                          → notifikasi dari provider → forward ke webhook proyek [callback secret]
 
 import { guardProject, currentUser } from '../user-scope.js';
-import { getSecret, flatTemplate } from '../notify-helpers.js';
+import { getSecret, flatTemplate, sendEmail } from '../notify-helpers.js';
 
 // Semua aksi ClincooPay wajib login + project_id — tidak ada jalur legacy global.
 async function guardPay(env, request, projectId) {
@@ -346,6 +346,9 @@ async function sendOtpEmail(env, toEmail, code, amount, fee, dest) {
     'Jangan bagikan kode ini kepada siapa pun, termasuk pihak yang mengaku dari tim Clincoo — kami tidak akan pernah memintanya. Jika Anda tidak meminta penarikan ini, abaikan email ini; saldo Anda tidak akan berubah.',
     code
   );
+  // utama: Resend (bisa ke semua alamat). fallback: bridge CF (hanya penerima terverifikasi).
+  const viaResend = await sendEmail(env, { toEmail: toEmail, subject: 'Kode OTP Penarikan Dana: ' + code + ' — Clincoo', html: html });
+  if (viaResend.sent) return true;
   try {
     const r = await fetch(String(url).replace(/\/$/, '') + '/', {
       method: 'POST',
@@ -490,6 +493,8 @@ async function sendDestOtpEmail(env, toEmail, code, dest) {
     'Jangan bagikan kode ini kepada siapa pun. Jika Anda tidak meminta ini, segera amankan akun Anda dengan mengganti kata sandi.',
     code
   );
+  const viaResend = await sendEmail(env, { toEmail: toEmail, subject: 'Kode OTP Verifikasi Tujuan: ' + code + ' — Clincoo', html: html });
+  if (viaResend.sent) return true;
   try {
     const r = await fetch(String(url).replace(/\/$/, '') + '/', {
       method: 'POST',
