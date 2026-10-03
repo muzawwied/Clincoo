@@ -7,7 +7,7 @@
 //   BUATQRIS_WEBHOOK_SECRET (opsional) — kunci tanda tangan webhook; jika kosong pakai secret_token
 //   BUATQRIS_METHOD         (opsional) — metode qris: qris_one..qris_four, default 'qris_two'
 // Callback URL (di dashboard BuatQris): https://<domain>/api/topup-qris
-// Referensi order ditanam di `description` QRIS ("Clincoo TOPUPQ-xxx") sehingga
+// Referensi order ditanam di `description` QRIS ("Clincoo clincoo-pay-xxx") sehingga
 // webhook apa pun formatnya tetap bisa dicocokkan ke order — plus verifikasi HMAC.
 
 import { currentUser } from './user-scope.js';
@@ -37,7 +37,7 @@ async function getSecret(env, key) {
 }
 
 const BQ_BASE = 'https://api.buatqris.site';
-const BQ_ORDER_PREFIX = 'TOPUPQ-';
+const BQ_ORDER_PREFIX = 'clincoo-pay-';
 
 // Panggil API BuatQris (POST, form-urlencoded seperti contoh resmi mereka)
 async function bqPost(params) {
