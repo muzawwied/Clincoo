@@ -34,11 +34,8 @@
     body.dark-mode button[onclick="history.back()"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
     body.dark-mode button[onclick="history.back()"] svg { stroke: #ffffff !important; }
     body.dark-mode button[onclick="history.back()"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
-    /* Tile logo e-wallet: selalu putih termasuk dark mode */
-    body.dark-mode .ew-tile { background-color: #ffffff !important; border-color: #e5e7eb !important; }
     .wd-key { -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
     .wd-key:active { transform: scale(0.94); }
-    .wd-box { transition: border-color 120ms ease, background-color 120ms ease; }
   </style>
 </head>
 <body class="text-gray-900 antialiased min-h-screen w-full bg-white pt-16">
@@ -65,42 +62,26 @@
       <p id="wd-saldo" class="text-sm font-semibold font-mono text-gray-900 dark:text-white">Rp 0</p>
     </div>
 
-    <!-- Nominal: gaya input PIN -->
-    <p class="text-center text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Nominal Penarikan</p>
-    <div id="wd-digits" class="flex items-center justify-center gap-2 mb-2"></div>
-    <p id="wd-amount-preview" class="text-center text-2xl font-bold font-mono text-gray-900 dark:text-white mb-1">Rp 0</p>
-    <p class="text-center text-[11px] text-gray-400 dark:text-gray-500 mb-7">Min Rp 10.000</p>
+    <!-- Nominal -->
+    <p id="wd-amount-preview" class="text-center text-3xl font-bold font-mono text-gray-900 dark:text-white mb-2">Rp 0</p>
+    <p class="text-center text-[11px] text-gray-400 dark:text-gray-500 mb-8">Min Rp 10.000</p>
 
     <!-- Keyboard kustom Clincoo -->
-    <div class="grid grid-cols-3 gap-2.5 max-w-[260px] mx-auto mb-9">
-      <button type="button" onclick="wdKey('1')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">1</button>
-      <button type="button" onclick="wdKey('2')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">2</button>
-      <button type="button" onclick="wdKey('3')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">3</button>
-      <button type="button" onclick="wdKey('4')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">4</button>
-      <button type="button" onclick="wdKey('5')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">5</button>
-      <button type="button" onclick="wdKey('6')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">6</button>
-      <button type="button" onclick="wdKey('7')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">7</button>
-      <button type="button" onclick="wdKey('8')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">8</button>
-      <button type="button" onclick="wdKey('9')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">9</button>
-      <button type="button" onclick="wdKey('C')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-base font-semibold text-gray-400 dark:text-gray-500">C</button>
-      <button type="button" onclick="wdKey('0')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">0</button>
-      <button type="button" onclick="wdKey('del')" class="wd-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 flex items-center justify-center text-gray-400 dark:text-gray-500" aria-label="Hapus">
+    <div class="grid grid-cols-3 gap-3 max-w-[300px] mx-auto mb-9">
+      <button type="button" onclick="wdKey('1')" class="wd-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">1</button>
+      <button type="button" onclick="wdKey('2')" class="wd-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">2</button>
+      <button type="button" onclick="wdKey('3')" class="wd-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">3</button>
+      <button type="button" onclick="wdKey('4')" class="wd-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">4</button>
+      <button type="button" onclick="wdKey('5')" class="wd-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">5</button>
+      <button type="button" onclick="wdKey('6')" class="wd-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">6</button>
+      <button type="button" onclick="wdKey('7')" class="wd-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">7</button>
+      <button type="button" onclick="wdKey('8')" class="wd-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">8</button>
+      <button type="button" onclick="wdKey('9')" class="wd-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">9</button>
+      <button type="button" onclick="wdKey('C')" class="wd-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 dark:bg-slate-800 text-base font-semibold text-gray-400 dark:text-gray-500">C</button>
+      <button type="button" onclick="wdKey('0')" class="wd-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">0</button>
+      <button type="button" onclick="wdKey('del')" class="wd-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-gray-500" aria-label="Hapus">
         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 9l2-2h12l4 4-9 9-9-9z"></path></svg>
       </button>
-    </div>
-
-    <!-- Tujuan terpilih (dari halaman Tujuan Penarikan) -->
-    <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2.5">Tujuan Penarikan</p>
-    <div class="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-gray-200 dark:border-slate-700 mb-7">
-      <div class="ew-tile w-10 h-10 rounded-full bg-white border border-gray-100 dark:border-slate-700 flex items-center justify-center flex-shrink-0">
-        <img id="wd-ew-logo" src="" alt="" loading="lazy" class="max-h-3.5 max-w-[24px] w-auto object-contain" style="display:none">
-        <span id="wd-ew-fallback" class="text-[8px] font-bold text-gray-500">—</span>
-      </div>
-      <div class="min-w-0 flex-1">
-        <div class="flex items-center gap-2"><span id="wd-ew-badge" class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300">—</span><span id="wd-ew-label" class="text-xs text-gray-400 dark:text-gray-500 truncate"></span></div>
-        <p id="wd-ew-account" class="text-sm font-mono font-semibold text-gray-900 dark:text-white mt-1">—</p>
-      </div>
-      <a href="tujuan/" class="text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white underline underline-offset-2 flex-shrink-0">Ubah</a>
     </div>
 
     <!-- Ringkasan biaya -->
@@ -131,24 +112,10 @@
   var _wdFee = 2500;
   var _wdSaldo = 0;
   var _wdSent = false;
-  var EW_LABEL = { dana: 'DANA', ovo: 'OVO', gopay: 'GoPay', shopeepay: 'ShopeePay', linkaja: 'LinkAja' };
-  // Logo resmi e-wallet dari library eksternal idn-finlogos (npm, via jsDelivr)
-  var EW_LOGO_BASE = '../../../../assets/ewallet/';
-  var EW_IMG = { dana: EW_LOGO_BASE + 'dana.svg', ovo: EW_LOGO_BASE + 'ovo.svg', gopay: EW_LOGO_BASE + 'gopay.svg', shopeepay: EW_LOGO_BASE + 'shopeepay.svg', linkaja: EW_LOGO_BASE + 'linkaja.svg' };
   var _wdDest = null;
   try { _wdDest = JSON.parse(sessionStorage.getItem('clinqoo_wd_dest_' + _pid()) || 'null'); } catch (e) {}
 
   function wdRenderDigits() {
-    var wrap = document.getElementById('wd-digits');
-    var n = Math.min(8, Math.max(6, _wdAmount.length));
-    var html = '';
-    for (var i = 0; i < n; i++) {
-      var ch = _wdAmount[i] || '';
-      var active = i === _wdAmount.length;
-      html += '<div class="wd-box w-10 h-12 rounded-xl border-2 flex items-center justify-center text-lg font-bold font-mono ' +
-        (ch ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white' : (active ? 'border-gray-400 dark:border-slate-500 bg-gray-50 dark:bg-slate-800/40' : 'border-gray-200 dark:border-slate-700')) + '">' + (ch || '') + '</div>';
-    }
-    wrap.innerHTML = html;
     document.getElementById('wd-amount-preview').textContent = 'Rp ' + _rp(Number(_wdAmount || 0));
   }
 
@@ -187,17 +154,6 @@
   (async function () {
     if (!_apiToken) { location.href = '/akun/'; return; }
     if (!_wdDest || !_wdDest.ew_type || !_wdDest.account) { location.href = 'tujuan/'; return; }
-    // tampilkan tujuan dengan logo asli
-    var name = EW_LABEL[_wdDest.ew_type] || _wdDest.ew_type;
-    var img = document.getElementById('wd-ew-logo');
-    img.src = EW_IMG[_wdDest.ew_type] || '';
-    img.alt = name;
-    img.style.display = '';
-    img.onerror = function () { img.style.display = 'none'; document.getElementById('wd-ew-fallback').textContent = name; };
-    document.getElementById('wd-ew-fallback').style.display = 'none';
-    document.getElementById('wd-ew-badge').textContent = name;
-    document.getElementById('wd-ew-label').textContent = _wdDest.label || '';
-    document.getElementById('wd-ew-account').textContent = _wdDest.account;
     try {
       var res = await fetch(API_BASE + '/pay?action=config&project_id=' + encodeURIComponent(_pid()), { headers: { Authorization: 'Bearer ' + _apiToken } });
       if (res.ok) {
