@@ -53,6 +53,7 @@ function clientIp(request) {
 // ditampilkan ke user, baik di daftar model, cURL, maupun pesan error) =====
 // provider: 'cf' = infrastruktur internal Clincoo (binding AI) — tanpa biaya tambahan.
 // provider: 'ext' = jaringan mitra model gratis Clincoo — alokasi gratis juga.
+// provider: 'gemini' = Google AI Studio (kunci milik Clincoo) — alokasi gratis.
 const AI_MODELS = {
   // --- infrastruktur internal Clincoo ---
   'clincoo/glm-5.2': { provider: 'cf', internal: '@cf/zai-org/glm-5.2', note: 'Flagship — reasoning & kode', free: true },
@@ -63,19 +64,18 @@ const AI_MODELS = {
   'clincoo/reasoning-550b': { provider: 'ext', internal: 'nvidia/nemotron-3-ultra-550b-a55b:free', note: 'Model terbesar — konteks 1M token', free: true },
   'clincoo/lightning': { provider: 'ext', internal: 'nvidia/nemotron-3.5-lightning:free', note: 'Ringan & cepat — konteks 1M token', free: true },
   'clincoo/omni-nano': { provider: 'ext', internal: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', note: 'Multimodal — teks, gambar, audio', free: true },
-  'clincoo/vision-31b': { provider: 'ext', internal: 'google/gemma-4-31b-it:free', note: 'Serba guna — teks & gambar', free: true },
-  'clincoo/vision-26b': { provider: 'ext', internal: 'google/gemma-4-26b-a4b-it:free', note: 'Ringan — teks & gambar', free: true },
   'clincoo/multimodal-27b': { provider: 'ext', internal: 'qwen/qwen3.8-27b:free', note: 'Multimodal — teks, gambar, video', free: true },
   'clincoo/reasoning-mini': { provider: 'ext', internal: 'apodex/apodex-1.1-mini:free', note: 'Reasoning — riset & analisis panjang', free: true },
   'clincoo/ling-flash': { provider: 'ext', internal: 'inclusionai/ling-3.0-flash-sante:free', note: 'Cepat & ringan', free: true },
   'clincoo/dots-note': { provider: 'ext', internal: 'dots-studio/dots-3-note-preview:free', note: 'Multimodal — teks & gambar', free: true },
   'clincoo/lfm-mini': { provider: 'ext', internal: 'liquid/lfm-2.5-2.6b:free', note: 'Mini — super ringan & cepat', free: true },
-  'clincoo/inkling': { provider: 'ext', internal: 'thinkingmachines/inkling:free', note: 'Multimodal — teks, gambar, audio', free: true },
-  'clincoo/inkling-small': { provider: 'ext', internal: 'thinkingmachines/inkling-small:free', note: 'Multimodal ringan', free: true },
   'clincoo/laguna-s': { provider: 'ext', internal: 'poolside/laguna-s-2.1:free', note: 'Serba guna', free: true },
-  'clincoo/laguna-xs': { provider: 'ext', internal: 'poolside/laguna-xs-2.1:free', note: 'Mini — super ringan', free: true },
   'clincoo/north-code': { provider: 'ext', internal: 'cohere/north-mini-code:free', note: 'Fokus kode', free: true },
-  'clincoo/space-bunny': { provider: 'ext', internal: 'stealth/space-bunny-alpha', note: 'Eksperimental — multimodal, konteks besar', free: true },
+  // --- Google AI Studio (Gemini) — kunci milik Clincoo, teruji per 3 Okt 2026 ---
+  'clincoo/gemini-3.8-flash': { provider: 'gemini', internal: 'gemini-3.8-flash', note: 'Cepat — reasoning & multimodal', free: true },
+  'clincoo/gemini-3.6-flash': { provider: 'gemini', internal: 'gemini-3.6-flash', note: 'Seimbang — tugas umum', free: true },
+  'clincoo/gemini-3.5-flash': { provider: 'gemini', internal: 'gemini-3.5-flash', note: 'Multimodal — teks & gambar', free: true },
+  'clincoo/gemini-3.1-flash-lite': { provider: 'gemini', internal: 'gemini-3.1-flash-lite', note: 'Super ringan & cepat', free: true },
   // ===== Model generasi baru (dropdown Integrasi AI) — semua di infrastruktur internal, tetap gratis =====
   'clincoo/deepseek-v4-pro': { provider: 'cf', internal: '@cf/deepseek-ai/deepseek-v4-pro-0813', note: 'Reasoning — konteks 1M token', free: true },
   'clincoo/glm-5.3': { provider: 'cf', internal: '@cf/zai-org/glm-5.3', note: 'Coding & agentic (otomasi multi-langkah)', free: true },
@@ -97,7 +97,7 @@ const AI_MODELS = {
 // paling stabil sebagai cadangan.
 const AUTO_CHAIN = [
   'clincoo/glm-5.2', 'clincoo/deepseek-v4-flash', 'clincoo/glm-4.7-flash',
-  'clincoo/reasoning-550b', 'clincoo/vision-31b', 'clincoo/acak'
+  'clincoo/reasoning-550b', 'clincoo/gemini-3.8-flash', 'clincoo/acak'
 ];
 const ALL_MODELS = [...Object.keys(AI_MODELS), 'clincoo/auto'];
 
@@ -183,10 +183,56 @@ async function tryExtModel(env, publicId, internal, messages) {
   return { error: `Model ${publicId} sedang tidak tersedia` };
 }
 
+// ===== Gemini (Google AI Studio) — kunci utama + cadangan, sumber sama dgn /api/ai =====
+async function getGeminiKeys(env) {
+  const keys = [];
+  const seen = new Set();
+  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
+  add(env.GEMINI_API_KEY);
+  if (env.DB) {
+    try {
+      const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('GEMINI_API_KEY','GEMINI_API_KEY_2','GEMINI_API_KEY_3','GEMINI_API_KEY_4','GEMINI_API_KEY_5','GEMINI_API_KEY_6')").all();
+      for (const r of rows.results || []) add(r.value);
+    } catch (e) {}
+  }
+  return keys;
+}
+
+async function tryGeminiModel(env, publicId, internal, messages) {
+  const keys = await getGeminiKeys(env);
+  if (!keys.length) return { error: `Model ${publicId} sedang tidak tersedia` };
+  const sys = messages.filter(m => m.role === 'system').map(m => m.content).join('\n');
+  const contents = messages.filter(m => m.role !== 'system').map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
+  if (!contents.length) return { error: `Model ${publicId} sedang tidak tersedia` };
+  for (const key of keys) {
+    try {
+      const payload = { contents };
+      if (sys) payload.systemInstruction = { parts: [{ text: sys }] };
+      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(internal) + ':generateContent?key=' + encodeURIComponent(key), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) continue;
+      let text = '';
+      for (const c of (data && data.candidates) || []) {
+        for (const p of (c && c.content && c.content.parts) || []) if (p && p.text) text += p.text;
+      }
+      if (!text) continue;
+      const tokens = (data && data.usageMetadata && data.usageMetadata.totalTokenCount) || Math.ceil((messages.map(m => m.content).join(' ').length + text.length) / 4);
+      return { text, model: publicId, tokens };
+    } catch (e) { /* coba kunci berikutnya */ }
+  }
+  return { error: `Model ${publicId} sedang tidak tersedia` };
+}
+
 async function tryModel(env, publicId, messages) {
   const cfg = AI_MODELS[publicId];
   if (!cfg) return { error: `Model ${publicId} tidak dikenal` };
-  return cfg.provider === 'cf' ? tryCfModel(env, publicId, cfg.internal, messages) : tryExtModel(env, publicId, cfg.internal, messages);
+  if (cfg.provider === 'cf') return tryCfModel(env, publicId, cfg.internal, messages);
+  if (cfg.provider === 'gemini') return tryGeminiModel(env, publicId, cfg.internal, messages);
+  return tryExtModel(env, publicId, cfg.internal, messages);
 }
 
 // ===== Log ke D1 (tabel ai_router_logs) =====
