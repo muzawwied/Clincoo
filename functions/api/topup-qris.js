@@ -307,7 +307,13 @@ export async function onRequestPost({ request, env }) {
   if (planName && tpUser && tpUser.email) {
     try {
       const expWib = new Date(expiredAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
-      const ctaBase = new URL(request.url).origin;
+      // Domain kustom untuk CTA email: host pages.dev diganti app.clincoo.buzz
+      // supaya penerima tidak dibawa ke domain internal pages.dev.
+      let ctaBase = 'https://app.clincoo.buzz';
+      try {
+        const host = new URL(request.url).hostname;
+        if (!/(^|\.)pages\.dev$/.test(host)) ctaBase = new URL(request.url).origin;
+      } catch (e) {}
       await sendEmail(env, {
         toEmail: tpUser.email, toName: tpUser.name || '',
         subject: 'Detail Langganan Clincoo ' + planName + ' — Bayar via QRIS',
