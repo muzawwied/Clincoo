@@ -346,8 +346,11 @@
             <p class="text-xs text-gray-400 dark:text-gray-500">Memuat secret…</p>
           </div>
           <div id="ai-secret-error" style="display:none" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <p class="text-xs text-red-500 dark:text-red-400">Gagal memuat secret — cek koneksi lalu coba lagi.</p>
-            <button type="button" onclick="loadAiSecret()" class="px-4 py-2 text-xs font-medium text-blue-600 border border-blue-200 dark:text-blue-300 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors cursor-pointer flex-shrink-0">Muat Ulang</button>
+            <p id="ai-secret-error-text" class="text-xs text-red-500 dark:text-red-400">Gagal memuat secret — cek koneksi lalu coba lagi.</p>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <a id="ai-secret-relogin-btn" href="/auth/" style="display:none" class="px-4 py-2 text-xs font-medium text-white bg-black dark:bg-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors cursor-pointer">Login Ulang</a>
+              <button type="button" onclick="loadAiSecret()" class="px-4 py-2 text-xs font-medium text-blue-600 border border-blue-200 dark:text-blue-300 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors cursor-pointer">Muat Ulang</button>
+            </div>
           </div>
           <div id="ai-secret-empty" style="display:none" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <p class="text-xs text-gray-400 dark:text-gray-500">Belum ada secret — buat secret baru untuk mulai memakai Clincoo Open API.</p>
@@ -779,36 +782,65 @@
   }
 
   // ===== Secret API per proyek =====
+  async function _aiSecretFetchOnce() {
+    var res = await fetch(AI_API_BASE + '/ai/v1/secret?project_id=' + encodeURIComponent(_aiPid()), { headers: _aiHdrs(false) });
+    if (res.status === 401) { var e401 = new Error('HTTP 401'); e401.isAuth = true; throw e401; }
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }
   async function loadAiSecret() {
     // tampilkan status memuat dulu — JANGAN tampilkan CTA "belum ada secret"
     // sebelum data benar-benar sampai (dulu: CTA muncul duluan lalu secret
     // tiba-tiba muncul setelah fetch selesai).
     var _loading = document.getElementById('ai-secret-loading');
     var _err = document.getElementById('ai-secret-error');
+    var _errText = document.getElementById('ai-secret-error-text');
+    var _reloginBtn = document.getElementById('ai-secret-relogin-btn');
     var _empty = document.getElementById('ai-secret-empty');
     var _active = document.getElementById('ai-secret-active');
     if (_loading) _loading.style.display = '';
     if (_err) _err.style.display = 'none';
+    if (_reloginBtn) _reloginBtn.style.display = 'none';
     if (_empty) _empty.style.display = 'none';
     if (_active) _active.classList.add('hidden');
-    try {
-      var res = await fetch(AI_API_BASE + '/ai/v1/secret?project_id=' + encodeURIComponent(_aiPid()), { headers: _aiHdrs(false) });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      var data = await res.json();
-      if (data && data.exists && data.secret) {
-        _aiSecret = data.secret;
-        renderAiSecret(data);
-      } else {
-        _aiSecret = '';
-        renderAiSecret(null);
+    // Hiccup jaringan/D1 sesaat itu umum (bukan berarti sesi mati) — coba lagi diam-diam
+    // sebelum nunjukin error ke user. Sesi benar-benar berakhir (401) TIDAK di-retry,
+    // ngulang fetch dgn token yg sama-sama kadaluarsa cuma buang waktu.
+    var attempts = 3, delayMs = 700;
+    for (var i = 0; i < attempts; i++) {
+      try {
+        var data = await _aiSecretFetchOnce();
+        if (data && data.exists && data.secret) {
+          _aiSecret = data.secret;
+          renderAiSecret(data);
+        } else {
+          _aiSecret = '';
+          renderAiSecret(null);
+        }
+        renderAiCurl();
+        return;
+      } catch (e) {
+        if (e && e.isAuth) {
+          // sesi berakhir — bukan masalah koneksi, retry tidak akan membantu
+          if (_loading) _loading.style.display = 'none';
+          if (_empty) _empty.style.display = 'none';
+          if (_active) _active.classList.add('hidden');
+          if (_errText) _errText.textContent = 'Sesi login sudah berakhir — silakan login ulang untuk melihat secret.';
+          if (_reloginBtn) { try { _reloginBtn.href = '/auth/?next=' + encodeURIComponent(location.href); } catch (e2) {} _reloginBtn.style.display = ''; }
+          if (_err) _err.style.display = '';
+          renderAiCurl();
+          return;
+        }
+        if (i < attempts - 1) { await new Promise(function (r) { setTimeout(r, delayMs); }); delayMs *= 2; continue; }
+        // gagal memuat setelah beberapa percobaan BUKAN berarti belum ada secret —
+        // tampilkan error + muat ulang, jangan tampilkan CTA buat secret baru
+        // (bisa bikin user bikin dua kali).
+        if (_loading) _loading.style.display = 'none';
+        if (_empty) _empty.style.display = 'none';
+        if (_active) _active.classList.add('hidden');
+        if (_errText) _errText.textContent = 'Gagal memuat secret — cek koneksi lalu coba lagi.';
+        if (_err) _err.style.display = '';
       }
-    } catch (e) {
-      // gagal memuat BUKAN berarti belum ada secret — tampilkan error + muat ulang,
-      // jangan tampilkan CTA buat secret baru (bisa bikin user bikin dua kali).
-      if (_loading) _loading.style.display = 'none';
-      if (_empty) _empty.style.display = 'none';
-      if (_active) _active.classList.add('hidden');
-      if (_err) _err.style.display = '';
     }
     renderAiCurl();
   }
