@@ -360,7 +360,9 @@
                     var _cc2 = JSON.parse(localStorage.getItem('clincoo_email_cfg_' + _pp2) || 'null');
                     var _pre = document.getElementById('curl-example');
                     if (_cc2 && _cc2.api_key && _pre) {
-                      _pre.textContent = 'curl -X POST https://app.clincoo.buzz/api/email \\\n  -H "Content-Type: application/json" \\\n  -d \'{"action":"send","api_key":"' + _cc2.api_key + '","to":"penerima@contoh.com","subject":"Halo","html":"<p>Halo!</p>"}\'';
+                      if (_cc2.owner_email) { try { window._ownerEmail = String(_cc2.owner_email).trim(); } catch (e) {} }
+                      var _to = (_cc2.owner_email || 'penerima@contoh.com');
+                      _pre.textContent = 'curl -X POST https://app.clincoo.buzz/api/email \\\n  -H "Content-Type: application/json" \\\n  -d \'{"action":"send","api_key":"' + _cc2.api_key + '","to":"' + _to + '","subject":"Halo","html":"<p>Halo!</p>"}\'';
                     }
                   } catch (e) {}
                   </script>
@@ -407,8 +409,9 @@
     // key utuh di DOM; ujung kanan ditutup efek fade di chip (tanpa titik2)
     return String(k || '');
   }
+  var _ownerEmail = window._ownerEmail || '';
   function buildCurl(k) {
-    return 'curl -X POST https://app.clincoo.buzz/api/email \\\n  -H "Content-Type: application/json" \\\n  -d \'{"action":"send","api_key":"' + (k || 'clc_email_…') + '","to":"penerima@contoh.com","subject":"Halo","html":"<p>Halo!</p>"}\'';
+    return 'curl -X POST https://app.clincoo.buzz/api/email \\\n  -H "Content-Type: application/json" \\\n  -d \'{"action":"send","api_key":"' + (k || 'clc_email_…') + '","to":"' + (_ownerEmail || 'penerima@contoh.com') + '","subject":"Halo","html":"<p>Halo!</p>"}\'';
   }
   function senderDirty() {
     var el = document.getElementById('sender-name');
@@ -452,6 +455,7 @@
   }
   function applyCfg(cfg) {
     fillSender(cfg);
+    if (cfg && cfg.owner_email) _ownerEmail = String(cfg.owner_email).trim();
     var k = (cfg && cfg.api_key) || '';
     var el = document.getElementById('key-val');
     if (el) { el.textContent = maskKey(k); el.setAttribute('data-key', k); }
