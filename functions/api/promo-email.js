@@ -37,7 +37,7 @@ export function buildPromoEmail(name, plan) {
       ],
       'Buka Fitur Email',
       'https://app.clincoo.buzz/proyek/pengaturan/email/',
-      'Catatan: pada mode terbatas saat ini, email hanya terkirim ke alamat email akun Clincoo-mu sendiri. Email ini dikirim untuk memberi tahu fitur baru di Clincoo.'
+      'Email ini dikirim untuk memberi tahu fitur baru di Clincoo.'
     )
   };
 }
