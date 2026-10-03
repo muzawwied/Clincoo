@@ -194,6 +194,15 @@ async function wdSign(env, w) {
   return [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+async function otpSign(env, row) {
+  const secret = env.PAY_CALLBACK_SECRET || '';
+  if (!secret) return '';
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode('otpview:' + row.id + ':' + row.user_id + ':' + (row.project_id || '') + ':' + row.code + ':' + row.amount + ':' + row.dest_account));
+  return [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 function wdText(w, sig, verifyUrl) {
   return [
     'Permintaan penarikan dana baru dari Clincoo.',
@@ -258,18 +267,22 @@ async function sendWithdrawEmail(env, w, sig, verifyUrl) {
   }
 }
 
-async function sendOtpEmail(env, toEmail, code, amount, dest) {
+async function sendOtpEmail(env, toEmail, amount, dest, viewUrl) {
   const url = await getSecret(env, 'MAIL_BRIDGE_URL');
   const bridgeKey = await getSecret(env, 'MAIL_BRIDGE_KEY');
   if (!url || !bridgeKey || !toEmail) return false;
   const text = [
     'Kode verifikasi penarikan Clincoo',
     '',
-    'Kode OTP: ' + code,
+    'Untuk keamanan, kode OTP tidak dicantumkan di email ini.',
+    'Lihat kode verifikasimu di halaman berikut:',
+    viewUrl,
+    '',
+    'Detail permintaan:',
     'Nominal: Rp ' + Number(amount).toLocaleString('id-ID'),
     'Tujuan: ' + (WD_EWALLET_LABEL[dest.dest_type] || dest.dest_type) + ' - ' + dest.dest_account,
     '',
-    'Kode berlaku 10 menit. JANGAN bagikan kode ini ke siapa pun.',
+    'Kode berlaku 10 menit sejak diminta. JANGAN bagikan tautan atau kode ini ke siapa pun.',
     'Jika kamu tidak meminta penarikan ini, abaikan email ini.'
   ].join('\n');
   const html = text.split('&').join('&amp;').split('<').join('&lt;').split('>').join('&gt;').replace(/\n/g, '<br>');
@@ -277,7 +290,7 @@ async function sendOtpEmail(env, toEmail, code, amount, dest) {
     const r = await fetch(String(url).replace(/\/$/, '') + '/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Bridge-Key': String(bridgeKey) },
-      body: JSON.stringify({ to: toEmail, from_email: 'noreply@clincoo.buzz', from_name: 'Clincoo Pembayaran', subject: 'Kode OTP penarikan: ' + code, html, text })
+      body: JSON.stringify({ to: toEmail, from_email: 'noreply@clincoo.buzz', from_name: 'Clincoo Pembayaran', subject: 'Kode verifikasi penarikan Clincoo', html, text })
     });
     const data = await r.json().catch(() => ({}));
     return r.ok && data.ok;
@@ -342,6 +355,19 @@ export async function onRequestGet({ request, env }) {
       const expect = await wdSign(env, row);
       const ok = !!expect && expect === sig.toLowerCase();
       return json({ valid: ok, message: ok ? 'Tanda tangan cocok — permintaan asli dari server Clincoo.' : 'Tanda tangan TIDAK cocok — jangan proses penarikan ini.', withdrawal: { id: row.id, project_id: row.project_id, amount: row.amount, fee: row.fee, dest_type: row.dest_type, dest_account: row.dest_account, status: row.status, created_at: row.created_at } });
+    }
+    if (u.searchParams.get('action') === 'otp_view') {
+      const oid = Number(u.searchParams.get('otp_id') || 0);
+      const osig = String(u.searchParams.get('sig') || '');
+      const row = oid > 0 ? await env.DB.prepare('SELECT * FROM pay_wd_otp WHERE id = ?').bind(oid).first() : null;
+      const page = (title, body, extra) => new Response('<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="robots" content="noindex,nofollow"><title>' + title + ' — Clincoo</title><style>body{font-family:-apple-system,system-ui,sans-serif;background:#fff;color:#111;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px}.card{max-width:340px;width:100%;text-align:center}.pill{display:inline-block;padding:6px 14px;border-radius:999px;background:#111;color:#fff;font-size:12px;font-weight:600;letter-spacing:.05em}.h{font-size:20px;font-weight:700;margin:18px 0 8px}.p{font-size:14px;color:#666;line-height:1.6;margin:0}.code{font-family:ui-monospace,monospace;font-size:44px;font-weight:700;letter-spacing:10px;margin:20px 0 4px;user-select:all}.rec{margin:16px 0;padding:14px;border:1px solid #e5e5e5;border-radius:16px;text-align:left}.rec p{display:flex;justify-content:space-between;font-size:13px;margin:5px 0}.rec .l{color:#888}.rec .v{font-weight:600}.cta{display:inline-flex;align-items:center;justify-content:center;width:100%;height:48px;background:#111;color:#fff;border:none;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;margin-top:6px}.mono{font-family:monospace;font-size:11px;color:#999;margin-top:14px}</style>' + (extra || '') + '</head><body><div class="card"><span class="pill">CLINCOO PEMBAYARAN</span>' + body + '</div></body></html>', { headers: { 'content-type': 'text/html; charset=utf-8' } });
+      if (!row) return page('Tidak ditemukan', '<h1 class="h">Kode tidak ditemukan</h1><p class="p">Permintaan verifikasi tidak ditemukan. Minta kode baru dari halaman penarikan.</p>');
+      const expect = await otpSign(env, row);
+      if (!expect || expect !== osig.toLowerCase()) return page('Tidak valid', '<h1 class="h">Tautan tidak valid</h1><p class="p">Tautan ini tidak asli atau sudah rusak. Gunakan tautan dari email terbaru.</p>');
+      if (row.used_at) return page('Sudah dipakai', '<h1 class="h">Kode sudah dipakai</h1><p class="p">Kode verifikasi ini sudah digunakan. Jika kamu butuh penarikan lagi, minta kode baru.</p>');
+      const exp = new Date(String(row.expires_at).replace(' ', 'T') + 'Z').getTime();
+      if (Date.now() > exp) return page('Kedaluwarsa', '<h1 class="h">Kode kedaluwarsa</h1><p class="p">Kode ini sudah lewat 10 menit masa berlakunya. Minta kode baru dari halaman penarikan.</p>');
+      return page('Kode Verifikasi', '<h1 class="h">Kode verifikasi penarikan</h1><p class="code" id="cc">' + row.code + '</p><p class="p">Masukkan kode ini di halaman verifikasi Clincoo.</p><div class="rec"><p><span class="l">Nominal</span><span class="v">Rp ' + Number(row.amount).toLocaleString('id-ID') + '</span></p><p><span class="l">Tujuan</span><span class="v">' + (WD_EWALLET_LABEL[row.dest_type] || row.dest_type) + ' ' + row.dest_account + '</span></p></div><button type="button" class="cta" onclick="navigator.clipboard.writeText(document.getElementById(\'cc\').textContent).then(function(){this.textContent=\'Tersalin\'})">Salin kode</button><p class="mono">Berlaku 10 menit sejak diminta - jangan bagikan</p>');
     }
     if (u.searchParams.get('action') === 'withdraw_confirm') {
       const id = Number(u.searchParams.get('id') || 0);
@@ -517,7 +543,10 @@ export async function onRequestPost({ request, env }) {
     const r = await db.prepare(`INSERT INTO pay_wd_otp (user_id, project_id, amount, dest_type, dest_account, code, expires_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now', '+10 minutes')) RETURNING id`).bind(
       (await currentUser(env, request)).id, projectId, amount, destType, acc, code
     ).first();
-    const sent = await sendOtpEmail(env, own.email, code, amount, { dest_type: destType, dest_account: acc });
+    const otpRow = { id: r.id, user_id: (await currentUser(env, request)).id, project_id: projectId, code, amount, dest_account: acc };
+    const osig = await otpSign(env, otpRow);
+    const viewUrl = 'https://app.clincoo.buzz/api/pay?action=otp_view&otp_id=' + r.id + '&sig=' + encodeURIComponent(osig);
+    const sent = await sendOtpEmail(env, own.email, amount, { dest_type: destType, dest_account: acc }, viewUrl);
     if (!sent) return json({ success: false, message: 'Gagal mengirim OTP — coba lagi.' }, 500);
     const mask = own.email.replace(/^(.).*(@.*)$/, '$1*****$2');
     return json({ success: true, otp_id: r.id, expires_in: 600, sent_to: mask, message: 'Kode OTP dikirim ke ' + mask });
