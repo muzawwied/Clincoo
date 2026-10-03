@@ -2037,7 +2037,11 @@
             try {
                 fetch(PROJECTS_API).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
                     if (!d || !Array.isArray(d.projects)) return;
-                    const list = d.projects;
+                    // Proyek yang sedang di antrean hapus (penghapusan server belum/berulah gagal)
+                    // TIDAK boleh di-restore balik dari server — kalau tidak, card yang sudah
+                    // dihapus akan terus muncul lagi setiap sinkronisasi.
+                    const pend = getPendingDeletes();
+                    const list = pend.length ? d.projects.filter(sp => pend.indexOf(sp.id) === -1) : d.projects;
                     let local = [];
                     try { const st = localStorage.getItem('clinqoo_projects'); if (st) local = JSON.parse(st); } catch(e) {}
                     // MERGE DUA ARAH (aman dari kehilangan data):

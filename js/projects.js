@@ -73,7 +73,10 @@ async function syncProjectsFromServer() {
         if (!res.ok) return;
         const d = await res.json();
         if (v !== _dataVersion) return; // data lokal sudah berubah -> jangan timpah
-        const list = Array.isArray(d.projects) ? d.projects : [];
+        // Proyek yang sedang di antrean hapus (penghapusan server belum berhasil) tidak boleh
+        // di-restore balik dari server — kalau tidak, kartu yang sudah dihapus terus muncul lagi.
+        const _pend = _getPendingDeletes();
+        const list = (Array.isArray(d.projects) ? d.projects : []).filter(sp => _pend.indexOf(sp.id) === -1);
         const local = getProjects();
         if (list.length === 0 && local.length > 0) {
             // migrasi pertama: dorong proyek lokal ke akun yang login
