@@ -657,10 +657,11 @@
         }
         if (!Object.keys(readCache()).length) showSkeletons(true);
 
-        async function loadUmum() {
+        async function loadUmum(fresh) {
             try {
                 // pakai preflight yang sudah berjalan sejak <head> — hemat ratusan ms (Tailwind belum selesai pun data sudah jalan)
-                let data = (window.__clincooPrefetch && window.__clincooPrefetch.settings) ? await window.__clincooPrefetch.settings : null;
+                // (fresh=true saat refresh diam-diam: preflight sudah basi, ambil langsung dari server)
+                let data = (!fresh && window.__clincooPrefetch && window.__clincooPrefetch.settings) ? await window.__clincooPrefetch.settings : null;
                 if (!data) { const res = await fetch(API + '/project-settings?project_id=' + encodeURIComponent(pid()), { headers: authHeaders() }); data = await res.json(); }
                 if (data.error) return;
                 const st = data;
@@ -671,7 +672,7 @@
                 const projectID = pid();
                 let proj = null;
                 try {
-                    let prData = (window.__clincooPrefetch && window.__clincooPrefetch.projects) ? await window.__clincooPrefetch.projects : null;
+                    let prData = (!fresh && window.__clincooPrefetch && window.__clincooPrefetch.projects) ? await window.__clincooPrefetch.projects : null;
                     if (!prData) { const r = await fetch(API + '/projects', { headers: authHeaders() }); if (r.ok) prData = await r.json(); }
                     const list = (prData && prData.projects) || [];
                     proj = list.find(function (p) { return p && String(p.id) === String(projectID); }) || null;
@@ -785,11 +786,20 @@
         }
 
         loadUmum();
+        // Data selalu segar tanpa refresh manual: cek halus tiap 45 detik,
+        // plus setiap kali tab kembali terlihat (balik dari app lain / unlock HP).
+        function silentRefresh() {
+            if (document.visibilityState !== 'visible') return;
+            loadUmum(true);
+            syncRuntimeFromWorkspace(true);
+        }
+        document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') silentRefresh(); });
+        setInterval(silentRefresh, 45000);
 
         // ---- Lingkungan Runtime dibaca dari isi Workspace (bukan pilihan statis) ----
-        async function syncRuntimeFromWorkspace() {
+        async function syncRuntimeFromWorkspace(fresh) {
             try {
-                let data = (window.__clincooPrefetch && window.__clincooPrefetch.paths) ? await window.__clincooPrefetch.paths : null;
+                let data = (!fresh && window.__clincooPrefetch && window.__clincooPrefetch.paths) ? await window.__clincooPrefetch.paths : null;
                 if (!data) {
                     const res = await fetch(API + '/project-files?project_id=' + encodeURIComponent(pid()) + '&meta=1', { headers: authHeaders() });
                     if (!res.ok) return;

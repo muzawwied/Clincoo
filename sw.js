@@ -1,5 +1,5 @@
-/* Clincoo service worker — PWA + cache aset CDN (lucide, fonts, tailwind) v2 */
-var CACHE = 'clinqoo-v27';
+/* Clincoo service worker — PWA + cache aset CDN (lucide, fonts, tailwind) v28 */
+var CACHE = 'clinqoo-v28';
 var PRECACHE = [
   './manifest.json',
   './assets/icons/icon-192.png',
@@ -61,16 +61,23 @@ self.addEventListener('fetch', function (e) {
   if (url.pathname.indexOf('/api/') !== -1) return; // backend/functions: selalu network
 
   if (req.mode === 'navigate') {
-    // halaman: network-first, fallback cache saat offline
-    e.respondWith(
-      fetch(req).then(function (res) {
-        var copy = res.clone();
-        caches.open(CACHE).then(function (c) { c.put(req, copy); });
-        return res;
-      }).catch(function () {
-        return caches.match(req).then(function (m) { return m || caches.match('./'); });
-      })
-    );
+    // Halaman sensitif (login/pembayaran): network-first, fallback cache saat offline.
+    var sensitive = url.pathname.indexOf('/auth') === 0 || url.pathname.indexOf('/pay') === 0;
+    if (sensitive) {
+      e.respondWith(
+        fetch(req).then(function (res) {
+          var copy = res.clone();
+          caches.open(CACHE).then(function (c) { c.put(req, copy); });
+          return res;
+        }).catch(function () {
+          return caches.match(req).then(function (m) { return m || caches.match('./'); });
+        })
+      );
+      return;
+    }
+    // Halaman lain: stale-while-revalidate — pernah dibuka = tampil INSTAN dari cache,
+    // versi terbaru diunduh diam-diam di latar untuk kunjungan berikutnya.
+    e.respondWith(swr(req));
     return;
   }
 
