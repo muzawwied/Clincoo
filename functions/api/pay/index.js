@@ -216,7 +216,17 @@ function wdText(w, sig, verifyUrl) {
     'Tanda tangan (HMAC-SHA256): ' + (sig || 'TIDAK TERKONFIGURASI (set PAY_CALLBACK_SECRET)'),
     '',
     'Verifikasi cepat:',
-    verifyUrl
+    verifyUrl,
+    '',
+    '=== KONFIRMASI PENARIKAN (klik salah satu) ===',
+    '',
+    '1. Selesai - dana sudah kamu kirim ke e-wallet:',
+    verifyUrl.replace('action=withdraw_verify', 'action=withdraw_confirm&decision=done'),
+    '',
+    '2. Tolak - batalkan dan kembalikan saldo proyek:',
+    verifyUrl.replace('action=withdraw_verify', 'action=withdraw_confirm&decision=rejected'),
+    '',
+    'Tautan di atas bertanda tangan digital dan hanya berlaku untuk penarikan ini.'
   ].join('\n');
 }
 
@@ -332,6 +342,23 @@ export async function onRequestGet({ request, env }) {
       const expect = await wdSign(env, row);
       const ok = !!expect && expect === sig.toLowerCase();
       return json({ valid: ok, message: ok ? 'Tanda tangan cocok — permintaan asli dari server Clincoo.' : 'Tanda tangan TIDAK cocok — jangan proses penarikan ini.', withdrawal: { id: row.id, project_id: row.project_id, amount: row.amount, fee: row.fee, dest_type: row.dest_type, dest_account: row.dest_account, status: row.status, created_at: row.created_at } });
+    }
+    if (u.searchParams.get('action') === 'withdraw_confirm') {
+      const id = Number(u.searchParams.get('id') || 0);
+      const sig = String(u.searchParams.get('sig') || '');
+      const decision = String(u.searchParams.get('decision') || '');
+      const row = id > 0 ? await env.DB.prepare('SELECT * FROM pay_withdrawals WHERE id = ?').bind(id).first() : null;
+      const fail = (title, msg) => new Response('<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>' + title + ' — Clincoo</title><style>body{font-family:-apple-system,system-ui,sans-serif;background:#fff;color:#111;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px}.card{max-width:340px;width:100%;text-align:center}.pill{display:inline-block;padding:6px 14px;border-radius:999px;background:#111;color:#fff;font-size:12px;font-weight:600;letter-spacing:.05em}.h{font-size:20px;font-weight:700;margin:18px 0 8px}.p{font-size:14px;color:#666;line-height:1.6;margin:0}.mono{font-family:monospace;font-size:12px;color:#999;margin-top:10px}</style></head><body><div class="card"><span class="pill">CLINCOO PEMBAYARAN</span><h1 class="h">' + title + '</h1><p class="p">' + msg + '</p></div></body></html>', { headers: { 'content-type': 'text/html; charset=utf-8' } });
+      if (!row) return fail('Tidak ditemukan', 'Permintaan penarikan tidak ditemukan.');
+      const expect = await wdSign(env, row);
+      if (!expect || expect !== sig.toLowerCase()) return fail('Tanda tangan tidak valid', 'Tautan konfirmasi ini tidak asli. Jangan diproses.');
+      if (decision !== 'done' && decision !== 'rejected') return fail('Keputusan tidak valid', 'Gunakan tautan dari email notifikasi.');
+      if (row.status !== 'pending') return fail('Sudah dikonfirmasi', 'Penarikan #' + row.id + ' sudah diproses sebelumnya dengan status: ' + row.status + '.');
+      await env.DB.prepare("UPDATE pay_withdrawals SET status = ?, updated_at = datetime('now') WHERE id = ?").bind(decision, id).run();
+      const own = await env.DB.prepare('SELECT a.email FROM auth_users a JOIN user_projects p ON p.user_id = a.id WHERE p.id = ?').bind(row.project_id).first();
+      if (own && own.email) await sendWdResultEmail(env, own.email, row, decision, '');
+      const done = decision === 'done';
+      return new Response('<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Konfirmasi Berhasil — Clincoo</title><style>body{font-family:-apple-system,system-ui,sans-serif;background:#fff;color:#111;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px}.card{max-width:340px;width:100%;text-align:center}.pill{display:inline-block;padding:6px 14px;border-radius:999px;background:#111;color:#fff;font-size:12px;font-weight:600;letter-spacing:.05em}.check{width:64px;height:64px;border-radius:50%;background:#111;margin:22px auto 0;display:flex;align-items:center;justify-content:center}.check svg{width:32px;height:32px}.h{font-size:20px;font-weight:700;margin:18px 0 8px}.p{font-size:14px;color:#666;line-height:1.6;margin:0}.rec{margin:18px 0;padding:16px;border:1px solid #e5e5e5;border-radius:16px;text-align:left}.rec p{display:flex;justify-content:space-between;font-size:13px;margin:6px 0}.rec .l{color:#888}.rec .v{font-weight:600}.mono{font-family:monospace;font-size:11px;color:#999;margin-top:14px}</style></head><body><div class="card"><span class="pill">CLINCOO PEMBAYARAN</span><div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div><h1 class="h">' + (done ? 'Penarikan dikonfirmasi selesai' : 'Penarikan ditolak') + '</h1><p class="p">' + (done ? 'Status penarikan sudah menjadi Selesai. Pemilik proyek diberi tahu via email.' : 'Penarikan dibatalkan dan saldo (nominal + biaya) dikembalikan ke proyek. Pemilik proyek diberi tahu via email.') + '</p><div class="rec"><p><span class="l">ID</span><span class="v mono">#' + row.id + '</span></p><p><span class="l">Nominal</span><span class="v">Rp ' + Number(row.amount).toLocaleString('id-ID') + '</span></p><p><span class="l">Tujuan</span><span class="v">' + (WD_EWALLET_LABEL[row.dest_type] || row.dest_type) + ' ' + row.dest_account + '</span></p><p><span class="l">Status</span><span class="v">' + (done ? 'Selesai' : 'Ditolak') + '</span></p></div><p class="mono">Tanda tangan terverifikasi — aksi ini dicatat sistem</p></div></body></html>', { headers: { 'content-type': 'text/html; charset=utf-8' } });
     }
   }
   const db = env.DB;
