@@ -54,9 +54,11 @@
         ? api('/api/domains').then(d => d.domains || [])
         : []);
     },
+    // Respons penuh (bukan cuma .domain) supaya UI bisa deteksi otp_required
+    // saat backend menilai penambahan domain sebagai aktivitas mencurigakan.
     create(name) {
       return probe.then(() => apiMode
-        ? api('/api/domains', { method: 'POST', body: JSON.stringify({ name }) }).then(d => d.domain)
+        ? api('/api/domains', { method: 'POST', body: JSON.stringify({ name }) })
         : (() => {
             const l = lsList();
             let row = l.find(x => x.name === name);
@@ -66,6 +68,11 @@
             }
             return row;
           })());
+    },
+    createWithOtp(name, otp) {
+      return probe.then(() => apiMode
+        ? api('/api/domains', { method: 'POST', body: JSON.stringify({ name: name, otp: String(otp || '') }) })
+        : (function () { const l = lsList(); let row = l.find(x => x.name === name); if (!row) { row = { id: uid(), name: name, note: '', status: 'pending', created: new Date().toISOString() }; l.push(row); lsSave(l); } return { ok: true, exists: false, domain: row }; })());
     },
     zoneInfo(domain) {
       return probe.then(() => apiMode

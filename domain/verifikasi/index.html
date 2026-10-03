@@ -75,6 +75,17 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
     </div>
 
     <div class="px-7">
+        <!-- Gerbang OTP: hanya muncul saat backend menilai aktivitas mencurigakan -->
+        <div id="panel-otp" class="mt-5 hidden">
+            <p class="text-[13px] text-gray-500 leading-relaxed">Aktivitas penambahan domain yang tidak biasa terdeteksi di akunmu. Untuk keamanan, masukkan kode verifikasi yang kami kirim ke <span id="otp-email-hint" class="font-semibold text-gray-900">email akunmu</span> untuk melanjutkan.</p>
+            <label for="otp-input" class="text-[12px] font-bold text-gray-400 uppercase tracking-wider mt-5 block">Kode Verifikasi</label>
+            <input id="otp-input" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••"
+                class="mono w-full bg-gray-50 border border-gray-200 rounded-full px-5 py-2.5 text-[16px] tracking-[8px] font-semibold text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 transition-colors text-center">
+            <p id="otp-error" class="hidden text-[12px] text-red-600 font-medium mt-1.5"></p>
+            <p class="text-[12px] text-gray-500 leading-relaxed mt-2.5">Kode berlaku 10 menit. Tidak menerima emailnya? Periksa folder spam, atau kirim ulang kodenya.</p>
+            <button id="otp-resend" class="text-[12px] font-semibold text-gray-700 underline underline-offset-2 mt-1.5 cursor-pointer disabled:opacity-40" onclick="resendOtp()">Kirim ulang kode</button>
+        </div>
+
         <!-- Metode verifikasi: Nameserver -->
         <div id="panel-ns" class="mt-5">
             <p class="text-[13px] text-gray-500 leading-relaxed">Ganti nameserver di registrar domain-mu menjadi:</p>
@@ -104,6 +115,9 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
     <!-- CTA -->
     <div class="fixed bottom-0 inset-x-0 z-40 pointer-events-none">
         <div id="cta-bar-bg" class="max-w-2xl mx-auto px-5 pb-5 pt-8 bg-gradient-to-t from-white via-white/90 to-transparent pointer-events-auto">
+            <button id="cta-otp" onclick="submitOtp()" class="hidden w-full bg-accent text-white rounded-full py-3 text-[15px] font-bold hover:bg-accent-hover transition-all active:scale-[0.98] cursor-pointer shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                Verifikasi Kode
+            </button>
             <button id="cta-check" onclick="checkVerification()" class="w-full bg-accent text-white rounded-full py-3 text-[15px] font-bold hover:bg-accent-hover transition-all active:scale-[0.98] cursor-pointer shadow-md hover:shadow-lg flex items-center justify-center gap-2">
                 <span id="cta-label">Periksa Verifikasi</span>
             </button>
@@ -173,12 +187,94 @@ function checkVerification() {
 
 function skipVerification() { location.href = '../'; }
 
-/* Init: buat/ambil domain, pasang token TXT */
-if (!domain || !store.validDomain(domain)) { location.replace('../'); }
-else {
-    document.getElementById('v-domain').textContent = domain;
-    // Pastikan baris domain ada di server (token TXT tetap dibuat sbg fallback sisi server)
-    store.create(domain).catch(() => {});
+/* ===== Gerbang OTP: tampil hanya bila backend menilai aktivitas mencurigakan ===== */
+let otpPending = false, otpVerifying = false, otpTimer = null;
+
+function otpShow(res) {
+    otpPending = true;
+    document.getElementById('panel-otp').classList.remove('hidden');
+    document.getElementById('panel-ns').classList.add('hidden');
+    document.getElementById('cta-check').classList.add('hidden');
+    document.getElementById('cta-otp').classList.remove('hidden');
+    document.getElementById('cta-skip').classList.add('hidden');
+    const hint = document.getElementById('otp-email-hint');
+    if (res && res.email_hint) hint.textContent = res.email_hint;
+    if (res && res.message) {
+        const e = document.getElementById('otp-error');
+        e.textContent = res.message; e.classList.remove('hidden');
+        setTimeout(() => { e.classList.add('hidden'); }, 6000);
+    }
+    if (res && res.otp_sent) startOtpCooldown();
+    document.getElementById('otp-input').focus();
+}
+
+function startOtpCooldown() {
+    const btn = document.getElementById('otp-resend');
+    let left = 60;
+    btn.disabled = true;
+    btn.textContent = 'Kirim ulang kode (' + left + ' detik)';
+    clearInterval(otpTimer);
+    otpTimer = setInterval(() => {
+        left--;
+        if (left <= 0) { clearInterval(otpTimer); btn.disabled = false; btn.textContent = 'Kirim ulang kode'; }
+        else btn.textContent = 'Kirim ulang kode (' + left + ' detik)';
+    }, 1000);
+}
+
+function resendOtp() {
+    if (otpVerifying) return;
+    store.create(domain).then(res => {
+        if (res && res.otp_required) {
+            if (res.otp_sent) startOtpCooldown();
+            const e = document.getElementById('otp-error');
+            e.textContent = res.message || 'Kode verifikasi dikirim ulang.';
+            e.classList.remove('hidden');
+            e.classList.remove('text-red-600'); e.classList.add('text-emerald-600');
+            setTimeout(() => { e.classList.add('hidden'); e.classList.remove('text-emerald-600'); e.classList.add('text-red-600'); }, 5000);
+        }
+    }).catch(() => {});
+}
+
+function submitOtp() {
+    if (otpVerifying) return;
+    const code = (document.getElementById('otp-input').value || '').trim();
+    const e = document.getElementById('otp-error');
+    if (!/^\d{6}$/.test(code)) { e.textContent = 'Masukkan 6 digit kode verifikasi dari emailmu.'; e.classList.remove('hidden'); return; }
+    otpVerifying = true;
+    const btn = document.getElementById('cta-otp');
+    const old = btn.innerHTML;
+    btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 spin"></i> Memeriksa kode…';
+    btn.style.pointerEvents = 'none';
+    lucide.createIcons();
+    store.createWithOtp(domain, code).then(res => {
+        otpVerifying = false; btn.innerHTML = old; btn.style.pointerEvents = '';
+        lucide.createIcons();
+        if (res && res.ok && res.domain) {
+            otpPending = false;
+            clearInterval(otpTimer);
+            document.getElementById('panel-otp').classList.add('hidden');
+            document.getElementById('panel-ns').classList.remove('hidden');
+            document.getElementById('cta-check').classList.remove('hidden');
+            document.getElementById('cta-otp').classList.add('hidden');
+            document.getElementById('cta-skip').classList.remove('hidden');
+            domainReady();
+        } else {
+            e.textContent = (res && res.message) || 'Kode verifikasi salah. Periksa kembali kode di emailmu.';
+            e.classList.remove('hidden');
+        }
+    }).catch(() => {
+        otpVerifying = false; btn.innerHTML = old; btn.style.pointerEvents = '';
+        e.textContent = 'Gagal memeriksa kode — koneksi terputus. Coba lagi.';
+        e.classList.remove('hidden');
+    });
+}
+
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && otpPending && document.activeElement && document.activeElement.id === 'otp-input') submitOtp();
+});
+
+/* ===== Init: buat/ambil domain (gerbang OTP bila perlu), lalu pasang NS ===== */
+function domainReady() {
     // Ambil pasangan nameserver asli yang ditugaskan utk domain ini
     store.ensureZone(domain).then(r => {
         const ns0 = (r && r.name_servers) || [];
@@ -200,6 +296,17 @@ else {
     setInterval(() => { if (!verified && !checking && document.visibilityState === 'visible') checkVerification(); }, 30000);
     // Cek pertama saat halaman dibuka (delay agar create() sempat selesai)
     setTimeout(() => { if (!verified && !checking) checkVerification(); }, 1500);
+}
+
+if (!domain || !store.validDomain(domain)) { location.replace('../'); }
+else {
+    document.getElementById('v-domain').textContent = domain;
+    // Pastikan baris domain ada di server. Respons otp_required = minta kode OTP via
+    // email (hanya terjadi bila pola tambah domain dinilai mencurigakan, bukan tiap kali).
+    store.create(domain).then(res => {
+        if (res && res.otp_required) otpShow(res);
+        else domainReady();
+    }).catch(() => { /* offline/simulasi: lanjut tanpa OTP */ domainReady(); });
     lucide.createIcons();
 }
 </script>
