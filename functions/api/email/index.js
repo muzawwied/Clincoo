@@ -192,7 +192,7 @@ async function recipientAllowed(env, row, to) {
   if (String(to || '').trim().toLowerCase() === owner) return { ok: true, dom: dom };
   return {
     ok: false, dom: dom,
-    reason: 'Sebelum domainmu aktif, email hanya bisa dikirim ke alamat akun Clincoo kamu (' + owner + '). Tambahkan & verifikasi domain di menu Domain untuk membuka pengiriman bebas.'
+    reason: 'Sebelum domainmu aktif, email hanya bisa dikirim ke alamat akun Clincoo kamu. Tambahkan & verifikasi domain di menu Domain untuk membuka pengiriman bebas.'
   };
 }
 
