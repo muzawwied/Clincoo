@@ -395,6 +395,13 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
               </div>
             </div>
             <div class="p-4 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50/60 dark:bg-slate-800/40">
+              <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mb-2">Dana keluar per hari · 7 hari terakhir</p>
+              <div class="h-52 relative">
+                <div class="pay-chart-skel pay-skel absolute inset-0 rounded-lg"></div>
+                <canvas id="pay-out-chart" class="opacity-0 transition-opacity duration-500"></canvas>
+              </div>
+            </div>
+            <div class="p-4 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50/60 dark:bg-slate-800/40">
               <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mb-2">Tren transaksi · 14 hari terakhir</p>
               <div class="h-52 relative">
                 <div class="pay-chart-skel pay-skel absolute inset-0 rounded-lg"></div>
@@ -413,6 +420,13 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
               <div class="h-52 relative">
                 <div class="pay-chart-skel pay-skel absolute inset-0 rounded-lg"></div>
                 <canvas id="pay-amount-chart" class="opacity-0 transition-opacity duration-500"></canvas>
+              </div>
+            </div>
+            <div class="p-4 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50/60 dark:bg-slate-800/40" id="pay-ew-card">
+              <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mb-2">Penarikan per e-wallet · jumlah</p>
+              <div class="h-52 relative">
+                <div class="pay-chart-skel pay-skel absolute inset-0 rounded-lg"></div>
+                <canvas id="pay-ew-chart" class="opacity-0 transition-opacity duration-500"></canvas>
               </div>
             </div>
           </div>
@@ -920,6 +934,8 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
       var dayKey = function (d) { return d.toISOString().slice(0, 10); };
       var dayRp = function (key) { return txs.filter(function (t) { return t.status === 'paid' && String(t.created_at || '').slice(0, 10) === key; }).reduce(function (a, t) { return a + Number(t.amount || 0); }, 0); };
       var dayCnt = function (key) { return txs.filter(function (t) { return String(t.created_at || '').slice(0, 10) === key; }).length; };
+      var wdsAll = _payWds || [];
+      var dayOut = function (key) { return wdsAll.filter(function (w) { return w.status !== 'rejected' && String(w.created_at || '').slice(0, 10) === key; }).reduce(function (a, w) { return a + Number(w.amount || 0); }, 0); };
 
       // 1) Bar: dana masuk per hari — 7 hari terakhir
       var days7 = [], rp7 = [];
@@ -934,6 +950,18 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
         options: { responsive: true, maintainAspectRatio: false, animation: anim, plugins: { legend: { display: false }, tooltip: rpTip }, scales: { x: { ticks: { color: tick, font: { size: 11 } }, grid: { display: false } }, y: rpAxis } }
       }));
       _chartReady('pay-daily-chart');
+
+      // 1b) Bar: dana keluar (penarikan) per hari — 7 hari terakhir
+      var out7 = [];
+      for (var o = 6; o >= 0; o--) {
+        out7.push(dayOut(dayKey(new Date(Date.now() - o * 86400000))));
+      }
+      _payChart.insts.push(new Chart(document.getElementById('pay-out-chart'), {
+        type: 'bar',
+        data: { labels: days7, datasets: [{ label: 'Dana keluar', data: out7, backgroundColor: 'rgba(239,68,68,0.78)', borderRadius: 6, maxBarThickness: 42 }] },
+        options: { responsive: true, maintainAspectRatio: false, animation: anim, plugins: { legend: { display: false }, tooltip: rpTip }, scales: { x: { ticks: { color: tick, font: { size: 11 } }, grid: { display: false } }, y: rpAxis } }
+      }));
+      _chartReady('pay-out-chart');
 
       // 2) Campuran bar+line: dana masuk & jumlah transaksi — 14 hari terakhir
       var days14 = [], rp14 = [], cnt14 = [];
@@ -970,6 +998,20 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
         options: { responsive: true, maintainAspectRatio: false, animation: anim, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (c) { return 'Rp ' + Number(c.parsed.x || 0).toLocaleString('id-ID'); } } } }, scales: { x: rpAxis, y: { ticks: { color: tick, font: { size: 11 } }, grid: { display: false } } } }
       }));
       _chartReady('pay-amount-chart');
+
+      // 5) Doughnut: komposisi penarikan per e-wallet
+      var ewCard = document.getElementById('pay-ew-card');
+      var ewAll = { dana: ['DANA', 'rgba(18,74,234,0.85)'], ovo: ['OVO', 'rgba(108,77,248,0.85)'], gopay: ['GoPay', 'rgba(0,158,6,0.85)'], shopeepay: ['ShopeePay', 'rgba(239,68,68,0.85)'], linkaja: ['LinkAja', 'rgba(245,158,11,0.85)'] };
+      var ewRows = Object.keys(ewAll).map(function (k) { return { key: k, label: ewAll[k][0], color: ewAll[k][1], n: wdsAll.filter(function (w) { return w.dest_type === k; }).length }; }).filter(function (r) { return r.n > 0; });
+      if (ewCard) ewCard.style.display = ewRows.length ? '' : 'none';
+      if (ewRows.length) {
+        _payChart.insts.push(new Chart(document.getElementById('pay-ew-chart'), {
+          type: 'doughnut',
+          data: { labels: ewRows.map(function (r) { return r.label; }), datasets: [{ data: ewRows.map(function (r) { return r.n; }), backgroundColor: ewRows.map(function (r) { return r.color; }), borderWidth: 0 }] },
+          options: { responsive: true, maintainAspectRatio: false, animation: anim, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { color: tick, boxWidth: 10, boxHeight: 10, font: { size: 11 } } }, tooltip: kTip } }
+        }));
+        _chartReady('pay-ew-chart');
+      }
     });
   }
 
@@ -989,6 +1031,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
       _payBalCount();
       renderWdRows();
       renderTxRows();
+      if (_payTxs && _payTxs.length) renderPayStats(_payTxs);
     } catch (e) {}
   }
   function renderWdRows() {
