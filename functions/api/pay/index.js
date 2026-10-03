@@ -141,6 +141,22 @@ async function ensureTables(db) {
     }
   } catch (e) {}
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_pay_wd_project ON pay_withdrawals(project_id)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS pay_dest_otp (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    code TEXT NOT NULL,
+    status TEXT DEFAULT 'pending',
+    attempts INTEGER DEFAULT 0,
+    expires_at TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  )`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS pay_dest_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    ip TEXT DEFAULT '',
+    kind TEXT DEFAULT 'add',
+    created_at TEXT DEFAULT (datetime('now'))
+  )`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS pay_wd_dests (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -407,6 +423,84 @@ function wdMakeRef(idOrRandom, dateStr) {
   return 'WD-' + ymd + '-' + suffix;
 }
 
+// ===== OTP tujuan penarikan: hanya saat aktivitas mencurigakan =====
+async function destVerifyOtp(db, userId, otpId, otpCode) {
+  if (!otpId || otpCode.length !== 6) return { ok: false, message: 'Masukkan kode OTP dari email.' };
+  const otp = await db.prepare('SELECT * FROM pay_dest_otp WHERE id = ?').bind(otpId).first();
+  if (!otp || otp.user_id !== userId) return { ok: false, message: 'Kode OTP tidak dikenal — coba lagi.' };
+  if (otp.status !== 'pending') return { ok: false, message: 'Kode OTP sudah dipakai — minta kode baru.' };
+  if (otp.attempts >= 5) { await db.prepare(`UPDATE pay_dest_otp SET status = 'failed' WHERE id = ?`).bind(otpId).run(); return { ok: false, message: 'Terlalu banyak percobaan — minta kode baru.' }; }
+  const exp = await db.prepare(`SELECT (datetime('now') > expires_at) e FROM pay_dest_otp WHERE id = ?`).bind(otpId).first();
+  if (exp && exp.e) { await db.prepare(`UPDATE pay_dest_otp SET status = 'failed' WHERE id = ?`).bind(otpId).run(); return { ok: false, message: 'Kode OTP kedaluwarsa — minta kode baru.' }; }
+  if (otp.code !== otpCode) {
+    await db.prepare('UPDATE pay_dest_otp SET attempts = attempts + 1 WHERE id = ?').bind(otpId).run();
+    const left = 5 - (otp.attempts + 1);
+    return { ok: false, message: 'Kode OTP salah' + (left > 0 ? ' — sisa percobaan: ' + left : ' — minta kode baru.') + '.' };
+  }
+  await db.prepare(`UPDATE pay_dest_otp SET status = 'used' WHERE id = ?`).bind(otpId).run();
+  return { ok: true };
+}
+function ipNetwork(ip) {
+  ip = String(ip || '');
+  if (ip.includes('.')) return ip.split('.').slice(0, 3).join('.');
+  if (ip.includes(':')) return ip.split(':').slice(0, 4).join(':');
+  return ip;
+}
+
+async function destSuspicious(db, userId, ip) {
+  const net = ipNetwork(ip);
+  // sinyal 1: tambah/ubah tujuan terlalu cepat (event lain < 30 menit lalu)
+  const rapid = await db.prepare(`SELECT COUNT(*) c FROM pay_dest_events WHERE user_id = ? AND created_at > datetime('now', '-30 minutes')`).bind(userId).first();
+  if ((rapid.c || 0) > 0) return true;
+  // sinyal 2: 3+ event tambah dalam 24 jam
+  const freq = await db.prepare(`SELECT COUNT(*) c FROM pay_dest_events WHERE user_id = ? AND kind = 'add' AND created_at > datetime('now', '-24 hours')`).bind(userId).first();
+  if ((freq.c || 0) >= 2) return true;
+  // sinyal 3: jaringan/IP belum pernah dipakai tambah tujuan dalam 30 hari terakhir (tapi akun sudah punya histori)
+  const known = await db.prepare(`SELECT COUNT(*) c FROM pay_dest_events WHERE user_id = ? AND ip != '' AND ip != ? AND created_at > datetime('now', '-30 days')`).bind(userId, net).first();
+  if ((known.c || 0) > 0) return true;
+  return false;
+}
+
+async function sendDestOtpEmail(env, toEmail, code, dest) {
+  const url = await getSecret(env, 'MAIL_BRIDGE_URL');
+  const bridgeKey = await getSecret(env, 'MAIL_BRIDGE_KEY');
+  if (!url || !bridgeKey || !toEmail) return false;
+  const ew = WD_EWALLET_LABEL[dest.ew_type] || dest.ew_type;
+  const text = [
+    'Kode OTP Tambah Tujuan Penarikan - Clincoo',
+    '',
+    'Kami mendeteksi aktivitas yang tidak biasa pada akun Anda, jadi kami meminta verifikasi tambahan.',
+    'Kode OTP Anda: ' + code,
+    '',
+    'Tujuan yang ditambahkan: ' + ew + ' - ' + dest.account,
+    '',
+    'Kode ini berlaku 10 menit dan hanya bisa dipakai satu kali.',
+    'Jangan bagikan kode ini kepada siapa pun.',
+    '',
+    'Email otomatis dari sistem Clincoo. Mohon jangan dibalas.'
+  ].join('\n');
+  const html = flatTemplate(
+    'Kode OTP Verifikasi Tujuan',
+    null,
+    '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">Kami mendeteksi aktivitas yang tidak biasa saat menambahkan tujuan penarikan baru. Untuk keamanan akun Anda, masukkan kode 6 digit di bawah ini.</p>' +
+      '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">Kode ini berlaku <b>10 menit</b> dan hanya bisa dipakai satu kali.</p>',
+    [['Tujuan', ew + ' - ' + dest.account]],
+    null,
+    null,
+    'Jangan bagikan kode ini kepada siapa pun. Jika Anda tidak meminta ini, segera amankan akun Anda dengan mengganti kata sandi.',
+    code
+  );
+  try {
+    const r = await fetch(String(url).replace(/\/$/, '') + '/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Bridge-Key': String(bridgeKey) },
+      body: JSON.stringify({ to: toEmail, from_email: 'noreply@clincoo.buzz', from_name: 'Clincoo', subject: 'Kode OTP Verifikasi Tujuan: ' + code + ' — Clincoo', html, text })
+    });
+    const data = await r.json().catch(() => ({}));
+    return r.ok && data.ok;
+  } catch (e) { return false; }
+}
+
 async function calcBalance(db, projectId) {
   const paid = await db.prepare(`SELECT COALESCE(SUM(amount),0) AS total FROM pay_transactions WHERE project_id = ? AND status = 'paid'`).bind(projectId).first();
   const wd = await db.prepare(`SELECT COALESCE(SUM(amount + COALESCE(fee, 0)), 0) AS total FROM pay_withdrawals WHERE project_id = ? AND status != 'rejected'`).bind(projectId).first();
@@ -548,6 +642,26 @@ export async function onRequestPost({ request, env }) {
     const rows = await db.prepare('SELECT id, ew_type, account, label, recipient, created_at FROM pay_wd_dests WHERE user_id = ? ORDER BY id DESC').bind(user.id).all();
     return json({ success: true, destinations: rows.results || [] });
   }
+  if (action === 'wd_dest_precheck') {
+    const user = await currentUser(env, request);
+    if (!user) return json({ success: false, message: 'Login diperlukan.' }, 401);
+    const ew = String(body.ew_type || '').toLowerCase();
+    const acc = String(body.account || '').replace(/[\s-]/g, '');
+    if (WD_EWALLETS.indexOf(ew) === -1) return json({ success: false, message: 'Pilih jenis e-wallet.' }, 400);
+    if (!/^(?:0|62)8\d{7,12}$/.test(acc)) return json({ success: false, message: 'Nomor e-wallet tidak valid.' }, 400);
+    const ip = (request.headers.get('CF-Connecting-IP') || '').trim();
+    if (!(await destSuspicious(db, user.id, ip))) return json({ success: true, otp_required: false });
+    const emailRow = await db.prepare('SELECT email FROM auth_users WHERE id = ?').bind(user.id).first();
+    if (!emailRow || !emailRow.email) return json({ success: false, message: 'Email akun tidak ditemukan.' }, 400);
+    const digits = new Uint8Array(6);
+    crypto.getRandomValues(digits);
+    const code = [...digits].map(d => String(d % 10)).join('');
+    const r = await db.prepare(`INSERT INTO pay_dest_otp (user_id, code, expires_at) VALUES (?, ?, datetime('now', '+10 minutes')) RETURNING id`).bind(user.id, code).first();
+    const sent = await sendDestOtpEmail(env, emailRow.email, code, { ew_type: ew, account: acc.replace(/^62/, '0') });
+    if (!sent) return json({ success: false, message: 'Gagal mengirim OTP — coba lagi.' }, 500);
+    const mask = emailRow.email.replace(/^(.).*(@.*)$/, '$1*****$2');
+    return json({ success: true, otp_required: true, otp_id: r.id, sent_to: mask, expires_in: 600 });
+  }
   if (action === 'wd_dest_add') {
     const user = await currentUser(env, request);
     if (!user) return json({ success: false, message: 'Login diperlukan.' }, 401);
@@ -558,7 +672,13 @@ export async function onRequestPost({ request, env }) {
     if (WD_EWALLETS.indexOf(ew) === -1) return json({ success: false, message: 'Pilih jenis e-wallet.' }, 400);
     if (!/^(?:0|62)8\d{7,12}$/.test(acc)) return json({ success: false, message: 'Nomor e-wallet tidak valid (contoh: 08123456789).' }, 400);
     if (recipient.length < 2) return json({ success: false, message: 'Nama penerima wajib diisi.' }, 400);
+    const ip = (request.headers.get('CF-Connecting-IP') || '').trim();
+    if (await destSuspicious(db, user.id, ip)) {
+      const otpOk = await destVerifyOtp(db, user.id, Number(body.otp_id || 0), String(body.otp_code || '').replace(/\D/g, ''));
+      if (!otpOk.ok) return json({ success: false, need_otp: true, message: otpOk.message }, 403);
+    }
     await db.prepare('INSERT INTO pay_wd_dests (user_id, ew_type, account, label, recipient) VALUES (?, ?, ?, ?, ?)').bind(user.id, ew, acc.replace(/^62/, '0'), label, recipient).run();
+    await db.prepare(`INSERT INTO pay_dest_events (user_id, ip, kind) VALUES (?, ?, 'add')`).bind(user.id, ipNetwork(ip)).run();
     return json({ success: true, message: 'Tujuan tersimpan.' });
   }
   if (action === 'wd_dest_update') {
@@ -573,7 +693,17 @@ export async function onRequestPost({ request, env }) {
     if (WD_EWALLETS.indexOf(ew) === -1) return json({ success: false, message: 'Pilih jenis e-wallet.' }, 400);
     if (!/^(?:0|62)8\d{7,12}$/.test(acc)) return json({ success: false, message: 'Nomor e-wallet tidak valid (contoh: 08123456789).' }, 400);
     if (recipient.length < 2) return json({ success: false, message: 'Nama penerima wajib diisi.' }, 400);
-    const r = await db.prepare("UPDATE pay_wd_dests SET ew_type = ?, account = ?, label = ?, recipient = ?, updated_at = datetime('now') WHERE id = ? AND user_id = ?").bind(ew, acc.replace(/^62/, '0'), label, recipient, id, user.id).run();
+    const cur = await db.prepare('SELECT account FROM pay_wd_dests WHERE id = ? AND user_id = ?').bind(id, user.id).first();
+    const accNorm = acc.replace(/^62/, '0');
+    if (cur && cur.account !== accNorm) {
+      const ip = (request.headers.get('CF-Connecting-IP') || '').trim();
+      if (await destSuspicious(db, user.id, ip)) {
+        const otpOk = await destVerifyOtp(db, user.id, Number(body.otp_id || 0), String(body.otp_code || '').replace(/\D/g, ''));
+        if (!otpOk.ok) return json({ success: false, need_otp: true, message: otpOk.message }, 403);
+      }
+      await db.prepare(`INSERT INTO pay_dest_events (user_id, ip, kind) VALUES (?, ?, 'add')`).bind(user.id, ipNetwork(ip)).run();
+    }
+    const r = await db.prepare("UPDATE pay_wd_dests SET ew_type = ?, account = ?, label = ?, recipient = ?, updated_at = datetime('now') WHERE id = ? AND user_id = ?").bind(ew, accNorm, label, recipient, id, user.id).run();
     return (r.meta && r.meta.changes) ? json({ success: true, message: 'Tujuan diperbarui.' }) : json({ success: false, message: 'Tujuan tidak ditemukan.' }, 404);
   }
   if (action === 'wd_dest_delete') {
