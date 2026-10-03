@@ -823,7 +823,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
         tr.innerHTML = '<td class="py-2.5 px-3 text-gray-900 dark:text-white font-medium max-w-[220px] truncate">' + (t.description || 'Pembayaran') + '</td>' +
           '<td class="py-2.5 px-3 text-xs text-gray-400 font-mono whitespace-nowrap">' + t.order_id + '</td>' +
           '<td class="py-2.5 px-3 text-xs text-gray-400 font-mono whitespace-nowrap">' + (t.created_at || '') + '</td>' +
-          '<td class="py-2.5 px-3 text-right font-semibold whitespace-nowrap ' + (t.out ? 'text-red-700 dark:text-red-300' : 'text-gray-900 dark:text-white') + '">' + (t.out ? '- ' : '') + 'Rp ' + Number(t.amount || 0).toLocaleString('id-ID') + '</td>' +
+          '<td class="py-2.5 px-3 text-right font-semibold whitespace-nowrap ' + (t.out ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white') + '">' + (t.out ? '- ' : '') + 'Rp ' + Number(t.amount || 0).toLocaleString('id-ID') + '</td>' +
           '<td class="py-2.5 px-3 text-right whitespace-nowrap"><span class="text-xs font-semibold ' + stClass + '">' + stLabel + '</span></td>';
         rows.appendChild(tr);
       });
@@ -1009,7 +1009,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
         row.innerHTML = '<td class="py-2.5 px-3 text-gray-900 dark:text-white font-medium max-w-[220px] truncate">Penarikan saldo' + (_ew ? ' · ' + _ew : '') + '</td>' +
           '<td class="py-2.5 px-3 text-xs text-gray-400 font-mono whitespace-nowrap">' + (w.dest_account || '-') + '<span class="block text-[11px]">#' + w.id + '</span></td>' +
           '<td class="py-2.5 px-3 text-xs text-gray-400 font-mono whitespace-nowrap">' + (w.created_at || '') + '</td>' +
-          '<td class="py-2.5 px-3 text-right font-semibold text-gray-900 dark:text-white whitespace-nowrap">Rp ' + Number(w.amount || 0).toLocaleString('id-ID') + (w.fee ? '<span class="block text-[11px] font-mono font-normal text-gray-400">+' + Number(w.fee).toLocaleString('id-ID') + '</span>' : '') + '</td>' +
+          '<td class="py-2.5 px-3 text-right font-semibold text-red-600 dark:text-red-400 whitespace-nowrap">Rp ' + Number(w.amount || 0).toLocaleString('id-ID') + (w.fee ? '<span class="block text-[11px] font-mono font-normal text-gray-400">+' + Number(w.fee).toLocaleString('id-ID') + '</span>' : '') + '</td>' +
           '<td class="py-2.5 px-3 text-right whitespace-nowrap"><span class="text-xs font-semibold ' + stClass + '">' + stLabel + '</span></td>';
         list.appendChild(row);
     });
