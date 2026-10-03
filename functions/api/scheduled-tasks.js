@@ -9,7 +9,7 @@
 // prompt tugas -> hasil disimpan ke task_results -> notifikasi in-app -> email opsional (Brevo).
 
 import { currentUser } from './user-scope.js';
-import { getSecret, emailTemplate, sendEmail, notifyEvent } from './notify-helpers.js';
+import { getSecret, flatTemplate, sendEmail, notifyEvent } from './notify-helpers.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -183,12 +183,18 @@ async function runTask(env, db, task) {
         await sendEmail(env, {
           toEmail: user.email, toName: user.name || '',
           subject: 'Tugas Terjadwal Clincoo — ' + (task.name || 'Hasil Tugas'),
-          html: emailTemplate(
+          html: flatTemplate(
             'Tugas Terjadwal Selesai',
             user.name || '',
-            `Tugas “${task.name || 'Tugas'}” baru saja dijalankan otomatis oleh Clincoo. Berikut hasilnya:`,
-            [['Hasil', toEmailHtml(output.length > 800 ? output.slice(0, 800) + '…' : output)], ['Jadwal', escHtml(task.when_description || (task.schedule_type === 'interval_minutes' ? 'setiap ' + (task.interval_minutes || 15) + ' menit' : 'setiap hari ' + (task.time_wib || '') + ' WIB'))]],
-            'Lihat tugas', 'https://clincoo.pages.dev/akun/tugas-terjadwal.html',
+            '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">Tugas <b>&quot;' + escHtml(task.name || 'Tugas') + '&quot;</b> baru saja dijalankan otomatis oleh Clincoo sesuai jadwal yang Anda atur. Sistem menyelesaikan seluruh langkah tanpa kendala, dan hasilnya dapat dilihat pada rincian di bawah ini.</p>' +
+              '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">Anda menerima email ini karena notifikasi email sedang aktif pada tugas ini. Untuk mengubah jadwal, mengganti isi tugas, atau mematikan notifikasi, buka halaman Tugas Terjadwal di akun Anda kapan saja.</p>',
+            [
+              ['Tugas', escHtml(task.name || 'Tugas')],
+              ['Hasil', toEmailHtml(output.length > 800 ? output.slice(0, 800) + '…' : output)],
+              ['Jadwal', escHtml(task.when_description || (task.schedule_type === 'interval_minutes' ? 'setiap ' + (task.interval_minutes || 15) + ' menit' : 'setiap hari ' + (task.time_wib || '') + ' WIB'))],
+              ['Selesai', new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB']
+            ],
+            'Lihat tugas', 'https://app.clincoo.buzz/akun/tugas-terjadwal.html',
             'Email ini dikirim otomatis karena Anda mengaktifkan notifikasi email pada tugas ini.'
           )
         });

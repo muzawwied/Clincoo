@@ -51,37 +51,41 @@ function isValidCode(s) {
 // yang rapi, baris rincian, CTA, dan footer.
 function flatEmail(o) {
   const tgl = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
-  const rows = (o.details || []).map(d =>
-    '<tr>' +
-      '<td style="padding:9px 0;border-bottom:1px solid #eceef1;color:#6b7280;font-size:13px;white-space:nowrap">' + esc(d[0]) + '</td>' +
-      '<td style="padding:9px 0 9px 16px;border-bottom:1px solid #eceef1;color:#111827;font-size:13px;font-weight:bold;text-align:right">' + esc(d[1]) + '</td>' +
-    '</tr>').join('');
+  const rows = (o.details || []).map((d, i) => {
+    const border = i < (o.details.length - 1) ? 'border-bottom:1px solid #eceef1;' : '';
+    return '<tr>' +
+      '<td style="padding:12px 0;' + border + 'color:#9ca3af;font-size:11px;font-weight:bold;letter-spacing:1px;text-transform:uppercase">' + esc(d[0]) + '</td>' +
+      '<td style="padding:12px 0 12px 16px;' + border + 'color:#111827;font-size:13px;font-weight:bold;text-align:right;word-break:break-word">' + esc(d[1]) + '</td>' +
+    '</tr>';
+  }).join('');
   const codeBlock = o.code
-    ? '<div style="margin:22px 0;padding:16px 0;border-top:2px solid #111827;border-bottom:2px solid #111827;text-align:center">' +
-        '<span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:34px;font-weight:bold;letter-spacing:10px;color:#111827">' + esc(o.code) + '</span>' +
+    ? '<div style="margin:0 0 20px;padding:22px 0;border-top:1px solid #eceef1;border-bottom:1px solid #eceef1;text-align:center">' +
+        '<span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:34px;font-weight:bold;letter-spacing:10px;color:#0a0a0a">' + esc(o.code) + '</span>' +
       '</div>'
     : '';
   const cta = o.ctaText && o.ctaLink
-    ? '<a href="' + esc(o.ctaLink) + '" style="display:inline-block;background:#0a0a0a;color:#ffffff;padding:12px 28px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:bold;margin-top:24px">' + esc(o.ctaText) + '</a>'
+    ? '<a href="' + esc(o.ctaLink) + '" style="display:inline-block;background:#0a0a0a;color:#ffffff;padding:13px 32px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:bold;margin-top:24px">' + esc(o.ctaText) + '</a>'
     : '';
   return '' +
-  '<div style="background:#ffffff;padding:36px 20px;font-family:Arial,Helvetica,sans-serif">' +
-    '<div style="max-width:560px;margin:0 auto">' +
-      '<div style="padding:0 0 18px;margin-bottom:24px;border-bottom:2px solid #0a0a0a">' +
-        '<span style="color:#0a0a0a;font-size:20px;font-weight:bold;letter-spacing:2px">Clincoo</span>' +
+  '<div style="background:#ffffff;padding:36px 24px;font-family:Arial,Helvetica,sans-serif">' +
+    '<div style="max-width:520px;margin:0 auto">' +
+      '<div style="padding-bottom:20px;border-bottom:1px solid #eceef1">' +
+        '<img src="https://app.clincoo.buzz/assets/logo-clinqoo.png" width="36" height="36" alt="Clincoo" style="display:inline-block;vertical-align:middle;border-radius:10px;margin-right:12px">' +
+        '<span style="font-size:20px;font-weight:bold;letter-spacing:2px;color:#0a0a0a;vertical-align:middle">Clincoo</span>' +
       '</div>' +
-      '<p style="margin:0 0 10px;color:#111827;font-size:15px;line-height:1.7;font-weight:bold">' + esc(o.greeting) + '</p>' +
-      '<h2 style="margin:0 0 6px;color:#111827;font-size:20px;font-weight:bold">' + esc(o.title) + '</h2>' +
-      '<p style="margin:0 0 22px;color:#9ca3af;font-size:12px">' + tgl + '</p>' +
-      '<p style="margin:0 0 14px;color:#374151;font-size:14px;line-height:1.8">' + o.intro + '</p>' +
+      '<h1 style="margin:28px 0 6px;font-size:18px;color:#111827;font-weight:bold">' + esc(o.title) + '</h1>' +
+      '<p style="margin:0 0 18px;color:#9ca3af;font-size:12px">' + tgl + '</p>' +
+      '<p style="margin:0 0 12px;color:#374151;font-size:14px;line-height:1.7">' + esc(o.greeting) + '</p>' +
+      '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">' + o.intro + '</p>' +
       codeBlock +
-      '<p style="margin:0 0 22px;color:#374151;font-size:14px;line-height:1.8">' + o.body + '</p>' +
-      (rows ? '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 8px">' + rows + '</table><div style="height:16px"></div>' : '') +
+      '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">' + o.body + '</p>' +
+      (rows ? '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 24px">' + rows + '</table>' : '') +
       cta +
-      '<div style="margin-top:36px;padding-top:18px;border-top:1px solid #eceef1">' +
-        '<p style="margin:0 0 8px;color:#6b7280;font-size:12px;line-height:1.7">' + (o.footerNote || '') + '</p>' +
-        '<p style="margin:0 0 6px;color:#9ca3af;font-size:11px;line-height:1.6"><b style="color:#374151">Email ini dikirim otomatis oleh sistem Clincoo</b> sebagai bagian dari pemberitahuan keamanan dan aktivitas domain akunmu. Mohon jangan dibalas.</p>' +
-        '<p style="margin:0;color:#9ca3af;font-size:11px">&copy; 2026 Clincoo &middot; Semua hak dilindungi</p>' +
+      '<div style="margin-top:36px;border-top:1px solid #eceef1;padding-top:16px">' +
+        (o.footerNote ? '<p style="margin:0 0 10px;color:#9ca3af;font-size:12px;line-height:1.6">' + o.footerNote + '</p>' : '') +
+        '<p style="margin:0 0 10px;color:#9ca3af;font-size:11px;line-height:1.7">Butuh bantuan? Buka pusat bantuan di aplikasi Clincoo atau kunjungi blog.clincoo.buzz.</p>' +
+        '<p style="margin:0 0 10px;color:#9ca3af;font-size:11px;line-height:1.7">Email ini dikirim otomatis oleh sistem Clincoo. Clincoo tidak membagikan data pribadi Anda kepada pihak ketiga &mdash; mohon jangan dibalas.</p>' +
+        '<p style="margin:0;color:#d1d5db;font-size:11px">&copy; 2026 Clincoo &middot; Semua hak dilindungi</p>' +
       '</div>' +
     '</div>' +
   '</div>';
@@ -100,11 +104,11 @@ function buildMessage(type, domain, code, user, email) {
     subject: 'Kode Verifikasi Tambah Domain — ' + domain,
     email: true,
     title: 'Kode Verifikasi Tambah Domain',
-    intro: 'Kami mendeteksi aktivitas penambahan domain yang <b>tidak biasa</b> di akun Clincoo-mu. Untuk keamanan, kami meminta konfirmasi lewat email ini sebelum domain <b>' + dEsc + '</b> ditambahkan ke akunmu.',
+    intro: 'Kami menerima permintaan untuk menambahkan domain <b>' + dEsc + '</b> ke akun Clincoo Anda. Sebagai langkah keamanan, masukkan kode verifikasi di bawah ini pada halaman verifikasi domain untuk memastikan hanya Anda, pemilik sah akun, yang dapat menautkan domain ini.',
     code: isValidCode(code) ? code : null,
-    body: 'Masukkan kode di atas di halaman verifikasi domain untuk melanjutkan. Kode ini berlaku <b>10 menit</b> dan hanya bisa dipakai sekali.',
+    body: 'Kode ini berlaku <b>10 menit</b> dan hanya bisa dipakai satu kali. Jangan bagikan kode ini kepada siapa pun, termasuk pihak yang mengaku dari tim Clincoo — kami tidak akan pernah memintanya.',
     details: [['Domain', domain], ['Diminta oleh', (user && user.email) || 'akunmu']],
-    footerNote: 'Jika kamu tidak merasa menambahkan domain ini, abaikan email ini — tanpa kode di atas, domain tidak akan pernah ditambahkan ke akunmu. Tidak ada tindakan lebih lanjut yang diperlukan.'
+    footerNote: 'Jika Anda tidak meminta penambahan domain ini, abaikan email ini — tanpa kode di atas, domain tidak akan pernah ditambahkan ke akun Anda. Tidak ada tindakan lebih lanjut yang diperlukan.'
   };
   t.domain_added = {
     subject: 'Domain Baru Ditambahkan — ' + domain,
@@ -121,8 +125,8 @@ function buildMessage(type, domain, code, user, email) {
     subject: 'Domain Aktif — ' + domain,
     email: true,
     title: 'Domain Kamu Sudah Aktif',
-    intro: 'Kabar baik. Verifikasi kepemilikan domain <b>' + dEsc + '</b> berhasil. Nameserver domain-mu sudah mengarah ke jaringan kami, dan domain sekarang berstatus <b>Aktif</b>.',
-    body: 'Mulai sekarang kamu bisa mengelola record DNS (A, CNAME, TXT, dan lainnya), memantau status SSL, serta mengatur pengaturan zone domain ini dari dashboard Domain Clincoo. Tidak ada langkah lain yang diperlukan.',
+    intro: 'Kabar baik — verifikasi kepemilikan domain <b>' + dEsc + '</b> berhasil. Nameserver domain Anda sudah mengarah ke jaringan kami, dan domain kini berstatus <b>Aktif</b> dan siap dipakai untuk situs Anda.',
+    body: 'Mulai sekarang Anda dapat mengelola record DNS (A, CNAME, TXT, dan lainnya), memantau status SSL, serta mengatur pengaturan zone domain ini dari dashboard Domain Clincoo — tanpa langkah tambahan. Jika suatu saat nameserver domain ini diubah ke nameserver lain, sistem kami akan mendeteksinya secara otomatis.',
     details: [['Domain', domain], ['Status', 'Aktif'], ['Metode verifikasi', 'Nameserver']],
     ctaText: 'Kelola Domain',
     ctaLink: domainDetail(domain),

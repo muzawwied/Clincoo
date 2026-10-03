@@ -1,6 +1,6 @@
 import { currentUser, scopedKey, rowScope } from './user-scope.js';
 import { getCpConnection, mirroredBalance, mirrorDelta } from './clincoopay-helpers.js';
-import { emailTemplate, formatIDR, sendEmail, notifyEvent } from './notify-helpers.js';
+import { flatTemplate, formatIDR, sendEmail, notifyEvent } from './notify-helpers.js';
 
 // Cloudflare Pages Functions - Subscription Backend
 // Stores subscription plan data in D1 (real-time, interconnected between pages)
@@ -190,20 +190,22 @@ export async function onRequestPost({ request, env }) {
               await sendEmail(env, {
                 toEmail: user.email, toName: user.name || '',
                 subject: 'Langganan Clincoo Aktif — ' + validPlan,
-                html: emailTemplate(
+                html: flatTemplate(
                   'Langganan Aktif',
                   user.name || '',
-                  'Langganan ' + validPlan + ' Anda telah berhasil diaktifkan. Total pembayaran telah dipotong dari Saldo Dompet Anda. Berikut rinciannya:',
+                  '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">Langganan <b>' + validPlan + '</b> Anda telah berhasil diaktifkan. Pembayaran dilakukan langsung melalui <b>QRIS</b> dan sudah terkonfirmasi oleh sistem. Mulai sekarang, seluruh fitur ' + validPlan + ' dapat Anda gunakan sesuai paket.</p>' +
+                    '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">Berikut rincian langganan Anda. Kwitansi pembayaran dapat dilihat kapan saja dari halaman Langganan di akun Anda.</p>',
                   [
                     ['Paket', validPlan],
                     ['Siklus Tagihan', billing],
-                    ['Total Pembayaran', formatIDR(totalPrice) + ' (Saldo Dompet)'],
+                    ['Metode Pembayaran', 'QRIS'],
+                    ['Total Pembayaran', formatIDR(totalPrice)],
                     ['Tanggal Aktif', new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB'],
-                    ['Saldo Dompet Tersisa', formatIDR(newBalance)]
+                    ['Berlaku hingga', new Date(Date.now() + (billing === 'Tahunan' ? 365 : 30) * 86400000).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric' })]
                   ],
                   'Lihat Detail Langganan',
-                  'https://muzawwied.github.io/Clincoo./akun/langganan/',
-                  'Rincian langganan dapat dilihat di halaman Langganan pada akun Clincoo Anda.'
+                  'https://app.clincoo.buzz/akun/langganan/',
+                  'Pengingat perpanjangan akan dikirim otomatis sebelum masa aktif berakhir.'
                 )
               });
             } catch (e3) {}

@@ -1,5 +1,5 @@
 import { currentUser } from './user-scope.js';
-import { sendEmail, emailTemplate, getUserByEmail, notifyEvent, getSecret } from './notify-helpers.js';
+import { sendEmail, flatTemplate, getUserByEmail, notifyEvent, getSecret } from './notify-helpers.js';
 
 // Cloudflare Pages Functions — Laporan Bug
 // POST /api/bug-report — simpan laporan ke D1, kirim email ke pemilik (Brevo), + notifikasi in-app.
@@ -106,18 +106,18 @@ export async function onRequestPost({ request, env }) {
       toEmail: ownerEmail,
       toName: 'Admin Clincoo',
       subject: '[Laporan Bug] ' + categoryLabel + (reportId ? ' #' + reportId : '') + ' — Clincoo',
-      html: emailTemplate(
-        'Laporan Bug Baru',
-        'Admin',
-        'Ada laporan bug baru yang masuk melalui halaman Laporkan Bug Clincoo. Rincian laporan:' +
-          '<div style="margin:16px 0;padding:14px 16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;color:#374151;font-size:14px;line-height:1.7">' + esc(description) + '</div>' +
-          (attachments.length ? '<p style="margin:0 0 4px;color:#6b7280;font-size:12px">' + attachments.length + ' tangkapan layar dilampirkan di email ini.</p>' : ''),
-        details,
-        null,
-        null,
-        'Laporan ini juga tersimpan otomatis di database Clincoo. Email ini dikirim otomatis — mohon jangan dibalas.'
-      ),
-      attachment: attachments.map(function (dataUrl, i) {
+      html: flatTemplate(
+            'Laporan Bug Baru',
+            'Admin',
+            '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">Ada laporan bug baru yang masuk melalui halaman Laporkan Bug Clincoo. Laporan ini otomatis tersimpan di database Clincoo dengan nomor <b>' + (reportId ? '#' + esc(reportId) : 'baru') + '</b> dan masuk ke antrian peninjauan tim.</p>' +
+              '<div style="margin:0 0 20px;padding:14px 16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;color:#374151;font-size:14px;line-height:1.7">' + esc(description) + '</div>' +
+              (attachments.length ? '<p style="margin:0 0 20px;color:#6b7280;font-size:12px">' + attachments.length + ' tangkapan layar dilampirkan di email ini.</p>' : '') +
+              '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">Mohon lakukan peninjauan dan tindak lanjut sesegera mungkin. Jika memerlukan klarifikasi tambahan dari pelapor, Anda bisa menghubunginya langsung melalui email yang tercantum pada rincian laporan.</p>',
+            details,
+            null,
+            null,
+            'Laporan ini juga tersimpan otomatis di database Clincoo.'
+          ),      attachment: attachments.map(function (dataUrl, i) {
         return { name: 'laporan-' + (reportId || 'x') + '-' + (i + 1) + '.jpg', content: dataUrl.split(',')[1] };
       })
     });

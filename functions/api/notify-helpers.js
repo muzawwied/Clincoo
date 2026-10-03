@@ -26,6 +26,52 @@ export async function getUserByEmail(db, email) {
 }
 
 // Template email profesional Clincoo (logo + rincian + CTA + footer privasi)
+// Template email FLAT resmi Clincoo (disetujui 3 Okt 2026): logo kiri atas, judul,
+// tanggal WIB, sapaan, intro (string atau HTML), detail label kapital kecil,
+// CTA kapsul opsional, kode opsional (blok monospace besar), footer seragam.
+export function flatTemplate(title, name, intro, details, ctaText, ctaLink, footerNote, code) {
+  const sapaan = name ? ('Halo ' + name + ',') : 'Halo,';
+  const tgl = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
+  const introIsRaw = /^\s*<(p|div)/i.test(intro || '');
+  const introHtml = intro ? (introIsRaw ? intro : '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">' + intro + '</p>') : '';
+  const rows = (details || []).map(function (d, i) {
+    var border = i < details.length - 1 ? 'border-bottom:1px solid #eceef1;' : '';
+    return '<tr>' +
+      '<td style="padding:12px 0;' + border + 'color:#9ca3af;font-size:11px;font-weight:bold;letter-spacing:1px;text-transform:uppercase">' + d[0] + '</td>' +
+      '<td style="padding:12px 0 12px 16px;' + border + 'color:#111827;font-size:13px;font-weight:bold;text-align:right;word-break:break-word">' + d[1] + '</td>' +
+    '</tr>';
+  }).join('');
+  const codeBlock = code
+    ? '<div style="margin:0 0 20px;padding:22px 0;border-top:1px solid #eceef1;border-bottom:1px solid #eceef1;text-align:center">' +
+        '<span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:34px;font-weight:bold;letter-spacing:10px;color:#0a0a0a">' + code + '</span>' +
+      '</div>'
+    : '';
+  const cta = ctaText && ctaLink
+    ? '<a href="' + ctaLink + '" style="display:inline-block;background:#0a0a0a;color:#ffffff;padding:13px 32px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:bold;margin-top:24px">' + ctaText + '</a>'
+    : '';
+  return '<div style="background:#ffffff;padding:36px 24px;font-family:Arial,Helvetica,sans-serif">' +
+    '<div style="max-width:520px;margin:0 auto">' +
+      '<div style="padding-bottom:20px;border-bottom:1px solid #eceef1">' +
+        '<img src="https://app.clincoo.buzz/assets/logo-clinqoo.png" width="36" height="36" alt="Clincoo" style="display:inline-block;vertical-align:middle;border-radius:10px;margin-right:12px">' +
+        '<span style="font-size:20px;font-weight:bold;letter-spacing:2px;color:#0a0a0a;vertical-align:middle">Clincoo</span>' +
+      '</div>' +
+      '<h1 style="margin:28px 0 6px;font-size:18px;color:#111827;font-weight:bold">' + title + '</h1>' +
+      '<p style="margin:0 0 18px;color:#9ca3af;font-size:12px">' + tgl + '</p>' +
+      '<p style="margin:0 0 12px;color:#374151;font-size:14px;line-height:1.7">' + sapaan + '</p>' +
+      introHtml +
+      codeBlock +
+      (rows ? '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 24px">' + rows + '</table>' : '') +
+      cta +
+      '<div style="margin-top:36px;border-top:1px solid #eceef1;padding-top:16px">' +
+        (footerNote ? '<p style="margin:0 0 10px;color:#9ca3af;font-size:12px;line-height:1.6">' + footerNote + '</p>' : '') +
+        '<p style="margin:0 0 10px;color:#9ca3af;font-size:11px;line-height:1.7">Butuh bantuan? Buka pusat bantuan di aplikasi Clincoo atau kunjungi blog.clincoo.buzz.</p>' +
+        '<p style="margin:0 0 10px;color:#9ca3af;font-size:11px;line-height:1.7">Email ini dikirim otomatis oleh sistem Clincoo. Clincoo tidak membagikan data pribadi Anda kepada pihak ketiga &mdash; mohon jangan dibalas.</p>' +
+        '<p style="margin:0;color:#d1d5db;font-size:11px">&copy; 2026 Clincoo &middot; Semua hak dilindungi</p>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
 export function emailTemplate(title, name, introText, details, ctaText, ctaLink, footerNote) {
   const sapaan = name ? ('Halo ' + name + ',') : 'Halo,';
   const tgl = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';

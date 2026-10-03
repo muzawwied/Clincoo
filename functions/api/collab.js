@@ -5,7 +5,7 @@
 // dengan email yang sama dengan yang diundang. Undangan kedaluwarsa 24 jam.
 import { currentUser, getUserById } from './user-scope.js';
 import { getEffectivePlan, countProjectMembers, countPendingInvites } from './plan-helpers.js';
-import { emailTemplate, sendEmail, notifyEvent, getUserByEmail } from './notify-helpers.js';
+import { flatTemplate, sendEmail, notifyEvent, getUserByEmail } from './notify-helpers.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -295,10 +295,10 @@ export async function onRequestPost({ env, request }) {
         const inviteeUser = await getUserByEmail(db, email);
         const berlakuHingga = new Date(Date.now() + INVITE_MAX_AGE_HOURS * 3600000)
           .toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
-        const html = emailTemplate(
+        const html = flatTemplate(
           'Undangan Kolaborasi Proyek',
           inviteeUser ? inviteeUser.name : '',
-          inviterName + ' mengundang Anda untuk berkolaborasi di proyek <b>&quot;' + projTitle + '&quot;</b> dengan peran <b>' + role + '</b>. Klik tombol di bawah untuk melihat undangan — berlaku ' + INVITE_MAX_AGE_HOURS + ' jam.',
+          inviterName + ' mengundang Anda untuk berkolaborasi di proyek <b>&quot;' + projTitle + '&quot;</b> dengan peran <b>' + role + '</b>. Dengan peran ini Anda dapat langsung ikut membangun proyek bersama tim, sementara pengaturan penting proyek tetap dikendalikan oleh pemiliknya. Klik tombol di bawah untuk melihat detail undangan dan menerimanya — undangan berlaku selama ' + INVITE_MAX_AGE_HOURS + ' jam, setelah itu Anda perlu meminta tautan baru dari pengundang.',
           [
             ['Proyek', projTitle],
             ['Peran', role],
@@ -307,7 +307,7 @@ export async function onRequestPost({ env, request }) {
           ],
           'Lihat Undangan',
           url,
-          'Jika Anda tidak merasa diundang, abaikan email ini.'
+          'Jika Anda tidak merasa diundang, abaikan email ini — tidak ada akun atau data Anda yang berubah.'
         );
         const res = await sendEmail(env, {
           toEmail: email,
