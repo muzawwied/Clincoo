@@ -130,9 +130,16 @@ async function ensureTables(db) {
     updated_at TEXT DEFAULT (datetime('now'))
   )`).run();
   // migrasi tabel produksi lama (kolom baru)
-  for (const col of ["fee INTEGER DEFAULT 0", "dest_type TEXT DEFAULT ''", "dest_account TEXT DEFAULT ''"]) {
+  for (const col of ["fee INTEGER DEFAULT 0", "dest_type TEXT DEFAULT ''", "dest_account TEXT DEFAULT ''", "ref TEXT DEFAULT ''"]) {
     try { await db.prepare('ALTER TABLE pay_withdrawals ADD COLUMN ' + col).run(); } catch (e) {}
   }
+  // backfill referensi utk penarikan lama yang belum punya ref
+  try {
+    const missing = await db.prepare(`SELECT id, created_at FROM pay_withdrawals WHERE ref IS NULL OR ref = '' LIMIT 50`).all();
+    for (const row of (missing.results || [])) {
+      await db.prepare('UPDATE pay_withdrawals SET ref = ? WHERE id = ?').bind(wdMakeRef(row.id, (row.created_at || '')), row.id).run();
+    }
+  } catch (e) {}
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_pay_wd_project ON pay_withdrawals(project_id)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS pay_wd_dests (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -201,7 +208,7 @@ function wdText(w, sig, verifyUrl) {
   return [
     'Permintaan penarikan dana baru dari Clincoo.',
     '',
-    'ID: wd-' + w.id,
+    'ID: ' + (w.ref || 'wd-' + w.id),
     'Proyek: ' + (w.project_title || w.project_id),
     'Pemilik proyek: ' + (w.owner_email || '-'),
     '',
@@ -247,7 +254,7 @@ async function sendWithdrawEmail(env, w, sig, verifyUrl) {
     '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">Ada permintaan penarikan dana baru dari ClincooPay yang menunggu verifikasi Anda. Permintaan ini dibuat otomatis oleh server dan bertanda tangan digital — <b>jangan proses penarikan tanpa verifikasi tanda tangan</b> berikut.</p>' +
       '<p style="margin:0 0 20px;color:#9ca3af;font-size:11px;line-height:1.7">Tanda tangan digital (HMAC-SHA256): <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all">' + (sig || 'TIDAK TERKONFIGURASI') + '</span></p>',
     [
-      ['ID Penarikan', 'wd-' + w.id],
+      ['ID Penarikan', w.ref || 'wd-' + w.id],
       ['Proyek', w.project_title || w.project_id],
       ['Pemilik proyek', w.owner_email || '-'],
       ['Nominal', rp(w.amount)],
@@ -387,6 +394,19 @@ async function sendWdResultEmail(env, toEmail, w, status, note) {
   } catch (e) { return false; }
 }
 
+async // referensi penarikan panjang: WD-YYYYMMDD-XXXXXX (deterministik dari id utk backfill)
+function wdMakeRef(idOrRandom, dateStr) {
+  const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let ymd;
+  if (dateStr && typeof dateStr === 'string') ymd = dateStr.slice(0, 10).replace(/-/g, '');
+  else { const n = new Date(); ymd = '' + n.getUTCFullYear() + String(n.getUTCMonth() + 1).padStart(2, '0') + String(n.getUTCDate()).padStart(2, '0'); }
+  let seed = (Number(idOrRandom) || Date.now()) >>> 0;
+  seed = (seed ^ 0x9e3779b9) >>> 0;
+  let suffix = '';
+  for (let i = 0; i < 6; i++) { seed = (Math.imul(seed, 1103515245) + 12345) >>> 0; suffix += abc[seed % abc.length]; }
+  return 'WD-' + ymd + '-' + suffix;
+}
+
 async function calcBalance(db, projectId) {
   const paid = await db.prepare(`SELECT COALESCE(SUM(amount),0) AS total FROM pay_transactions WHERE project_id = ? AND status = 'paid'`).bind(projectId).first();
   const wd = await db.prepare(`SELECT COALESCE(SUM(amount + COALESCE(fee, 0)), 0) AS total FROM pay_withdrawals WHERE project_id = ? AND status != 'rejected'`).bind(projectId).first();
@@ -408,7 +428,7 @@ export async function onRequestGet({ request, env }) {
       if (!row) return json({ valid: false, message: 'Permintaan tidak ditemukan.' }, 404);
       const expect = await wdSign(env, row);
       const ok = !!expect && expect === sig.toLowerCase();
-      return json({ valid: ok, message: ok ? 'Tanda tangan cocok — permintaan asli dari server Clincoo.' : 'Tanda tangan TIDAK cocok — jangan proses penarikan ini.', withdrawal: { id: row.id, project_id: row.project_id, amount: row.amount, fee: row.fee, dest_type: row.dest_type, dest_account: row.dest_account, status: row.status, created_at: row.created_at } });
+      return json({ valid: ok, message: ok ? 'Tanda tangan cocok — permintaan asli dari server Clincoo.' : 'Tanda tangan TIDAK cocok — jangan proses penarikan ini.', withdrawal: { id: row.id, ref: row.ref, project_id: row.project_id, amount: row.amount, fee: row.fee, dest_type: row.dest_type, dest_account: row.dest_account, status: row.status, created_at: row.created_at } });
     }
     if (u.searchParams.get('action') === 'withdraw_confirm') {
       const id = Number(u.searchParams.get('id') || 0);
@@ -621,14 +641,15 @@ export async function onRequestPost({ request, env }) {
     const fee = await wdFee(env);
     const bal = await calcBalance(db, projectId);
     if (amount + fee > bal.available) return json({ success: false, message: 'Saldo tersedia tidak cukup (nominal + biaya ' + (amount + fee).toLocaleString('id-ID') + ' > saldo ' + bal.available.toLocaleString('id-ID') + ').' }, 400);
-    const row = await db.prepare(`INSERT INTO pay_withdrawals (project_id, amount, fee, dest_type, dest_account, status) VALUES (?, ?, ?, ?, ?, 'pending') RETURNING *`).bind(projectId, amount, fee, destType, acc).first();
+    const ref = wdMakeRef(Date.now() + Math.floor(Math.random() * 1e9));
+    const row = await db.prepare(`INSERT INTO pay_withdrawals (project_id, amount, fee, dest_type, dest_account, ref, status) VALUES (?, ?, ?, ?, ?, ?, 'pending') RETURNING *`).bind(projectId, amount, fee, destType, acc, ref).first();
     const proj = await db.prepare('SELECT title FROM user_projects WHERE id = ?').bind(projectId).first();
     const own = await db.prepare('SELECT a.email FROM auth_users a JOIN user_projects p ON p.user_id = a.id WHERE p.id = ?').bind(projectId).first();
     const w = { ...row, project_title: (proj && proj.title) || projectId, owner_email: (own && own.email) || '' };
     const sig = await wdSign(env, w);
     const verifyUrl = 'https://app.clincoo.buzz/api/pay?action=withdraw_verify&id=' + row.id + '&sig=' + encodeURIComponent(sig);
     const mail = await sendWithdrawEmail(env, w, sig, verifyUrl);
-    return json({ success: true, id: row.id, fee: fee, deducted: amount + fee, sig: sig, email_sent: !!mail.sent, message: 'Permintaan penarikan dikirim — tim Clincoo akan memprosesnya.' + (mail.sent ? '' : ' (email notifikasi gagal dikirim, cek log)') });
+    return json({ success: true, id: row.id, ref: row.ref, fee: fee, deducted: amount + fee, sig: sig, email_sent: !!mail.sent, message: 'Permintaan penarikan dikirim — tim Clincoo akan memprosesnya.' + (mail.sent ? '' : ' (email notifikasi gagal dikirim, cek log)') });
   }
 
   // ===== Log transaksi (auth) =====
@@ -643,7 +664,7 @@ export async function onRequestPost({ request, env }) {
   if (action === 'withdrawals') {
     const deny = await guardPay(env, request, projectId);
     if (deny) return deny;
-    const rows = await db.prepare('SELECT id, amount, fee, dest_type, dest_account, status, note, created_at FROM pay_withdrawals WHERE project_id = ? ORDER BY id DESC LIMIT 25').bind(projectId).all();
+    const rows = await db.prepare('SELECT id, ref, amount, fee, dest_type, dest_account, status, note, created_at FROM pay_withdrawals WHERE project_id = ? ORDER BY id DESC LIMIT 25').bind(projectId).all();
     const { isAdmin } = await wdAdminCheck(env, request);
     return json({ success: true, withdrawals: rows.results || [], is_admin: isAdmin });
   }

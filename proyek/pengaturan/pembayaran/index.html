@@ -803,7 +803,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
     rows.innerHTML = '';
     var wds = (_payWds || []).map(function (w) {
       var _ew = ({ dana: 'DANA', ovo: 'OVO', gopay: 'GoPay', shopeepay: 'ShopeePay', linkaja: 'LinkAja' })[w.dest_type] || '';
-      return { out: true, description: 'Penarikan saldo' + (_ew ? ' · ' + _ew : ''), order_id: '#' + w.id, created_at: w.created_at, amount: w.amount, status: w.status === 'done' ? 'paid' : (w.status === 'rejected' ? 'failed' : 'pending'), wlabel: w.status === 'done' ? 'Selesai' : (w.status === 'rejected' ? 'Ditolak' : 'Diproses') };
+      return { out: true, description: 'Penarikan saldo' + (_ew ? ' · ' + _ew : ''), order_id: w.ref || ('#' + w.id), created_at: w.created_at, amount: w.amount, status: w.status === 'done' ? 'paid' : (w.status === 'rejected' ? 'failed' : 'pending'), wlabel: w.status === 'done' ? 'Selesai' : (w.status === 'rejected' ? 'Ditolak' : 'Diproses') };
     });
     var txs = _payTxs.concat(wds).sort(function (a, b) { return String(b.created_at || '').localeCompare(String(a.created_at || '')); }).filter(_txPass);
     var anyFilter = _txFilter.status !== 'all' || !!_txFilter.q || (Number(_txFilter.period) || 0) > 0;
@@ -1007,7 +1007,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
         row.className = 'pay-fade text-sm hover:bg-gray-50 dark:hover:bg-slate-800/40';
         row.style.animationDelay = Math.min(idx * 40, 400) + 'ms';
         row.innerHTML = '<td class="py-2.5 px-3 text-gray-900 dark:text-white font-medium max-w-[220px] truncate">Penarikan saldo' + (_ew ? ' · ' + _ew : '') + '</td>' +
-          '<td class="py-2.5 px-3 text-xs text-gray-400 font-mono whitespace-nowrap">' + (w.dest_account || '-') + '<span class="block text-[11px]">#' + w.id + '</span></td>' +
+          '<td class="py-2.5 px-3 text-xs text-gray-400 font-mono whitespace-nowrap">' + (w.dest_account || '-') + '<span class="block text-[11px]">' + (w.ref || '#' + w.id) + '</span></td>' +
           '<td class="py-2.5 px-3 text-xs text-gray-400 font-mono whitespace-nowrap">' + (w.created_at || '') + '</td>' +
           '<td class="py-2.5 px-3 text-right font-semibold text-red-600 dark:text-red-400 whitespace-nowrap">Rp ' + Number(w.amount || 0).toLocaleString('id-ID') + (w.fee ? '<span class="block text-[11px] font-mono font-normal text-gray-400">+' + Number(w.fee).toLocaleString('id-ID') + '</span>' : '') + '</td>' +
           '<td class="py-2.5 px-3 text-right whitespace-nowrap"><span class="text-xs font-semibold ' + stClass + '">' + stLabel + '</span></td>';

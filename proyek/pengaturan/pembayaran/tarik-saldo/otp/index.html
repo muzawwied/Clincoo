@@ -53,12 +53,9 @@
     <div class="w-10"></div>
   </header>
 
-  <div class="max-w-md mx-auto px-5 pb-24 pt-6">
-    <p class="text-xs text-gray-400 dark:text-gray-500 mb-8">Kode dikirim ke <span id="otp-to" class="font-mono">&mdash;</span></p>
-
+  <div class="max-w-md mx-auto px-5 pb-24 pt-8">
     <!-- Input OTP -->
-    <p class="text-center text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Masukkan 6 digit kode</p>
-    <div id="otp-digits" class="flex items-center justify-center gap-2 mb-6"></div>
+    <div id="otp-digits" class="flex items-center justify-center gap-2 mb-8"></div>
 
     <!-- Keyboard kustom Clincoo -->
     <div id="otp-pad" class="grid grid-cols-3 gap-3 max-w-[300px] mx-auto mb-7">
@@ -123,8 +120,9 @@
     for (var i = 0; i < 6; i++) {
       var ch = _code[i] || '';
       var active = i === _code.length;
-      html += '<div class="w-11 h-13 py-3.5 rounded-xl border-2 flex items-center justify-center text-xl font-bold font-mono ' +
-        (ch ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white' : (active ? 'border-gray-400 dark:border-slate-500 bg-gray-50 dark:bg-slate-800/40' : 'border-gray-200 dark:border-slate-700')) + '">' + (ch || '') + '</div>';
+      html += '<div class="w-12 h-12 rounded-full border flex items-center justify-center text-xl font-bold font-mono ' +
+        (ch ? 'border-transparent text-gray-900 dark:text-white' : (active ? 'border-gray-400 dark:border-slate-500' : 'border-gray-200 dark:border-slate-700')) + '">' +
+        (ch ? ch : '<span class="w-2 h-2 rounded-full bg-gray-300 dark:bg-slate-600"></span>') + '</div>';
     }
     wrap.innerHTML = html;
     document.getElementById('otp-slide-wrap').classList.toggle('hidden', _code.length !== 6);
@@ -164,7 +162,6 @@
       if (res.ok && data.success) {
         _otp = { otp_id: data.otp_id, sent_to: data.sent_to, expires_in: data.expires_in, ts: Date.now() };
         try { sessionStorage.setItem('clinqoo_wd_otp_' + _pid(), JSON.stringify(_otp)); } catch (e) {}
-        document.getElementById('otp-to').textContent = data.sent_to;
         _code = '';
         otpRender();
         otpCooldown(60);
@@ -251,7 +248,7 @@
         sessionStorage.removeItem('clinqoo_wd_draft_' + _pid());
         sessionStorage.removeItem('clinqoo_wd_otp_' + _pid());
       } catch (e) {}
-      document.getElementById('otp-wd-id').textContent = 'wd-' + (data.id || '—');
+      document.getElementById('otp-wd-id').textContent = data.ref || ('wd-' + (data.id || '—'));
       document.getElementById('otp-digits').classList.add('hidden');
       document.getElementById('otp-pad').classList.add('hidden');
       document.getElementById('otp-slide-wrap').classList.add('hidden');
@@ -268,7 +265,6 @@
   if (!_apiToken) { location.href = '/akun/'; }
   else if (!_draft || !_otp) { location.href = '../'; }
   else {
-    document.getElementById('otp-to').textContent = _otp.sent_to || 'email akunmu';
     if (Date.now() - (_otp.ts || 0) < 60000) otpCooldown(Math.ceil(60 - (Date.now() - (_otp.ts || 0)) / 1000));
     otpRender();
   }
