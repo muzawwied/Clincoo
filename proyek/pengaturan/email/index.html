@@ -456,7 +456,7 @@ var _logRows = [];
     _logReady = true;
     _logRows = (data.items && data.items.length) ? data.items : [];
     var qc = document.getElementById('log-quota');
-    if (qc) qc.textContent = (data.used || 0).toLocaleString('id-ID') + '/' + (data.limit || 1000).toLocaleString('id-ID') + ' terpakai bulan ini';
+    if (qc) qc.textContent = (data.used || 0).toLocaleString('id-ID') + '/' + (data.limit || 100).toLocaleString('id-ID') + ' terpakai bulan ini';
     applyLogFilter();
     try { data._t = Date.now(); localStorage.setItem(_cacheKey(), JSON.stringify(data)); } catch (e) {}
   }
@@ -492,11 +492,12 @@ var _logRows = [];
     var si = document.getElementById('log-search');
     if (si) si.addEventListener('input', applyLogFilter);
     loadHistory();
-    // histori nambah tanpa refresh: cek halus tiap 15 detik saat halaman terlihat
-    setInterval(autoRefresh, 15000);
+    // histori nambah tanpa refresh: cek halus tiap 60 detik saat halaman terlihat
+    // (15 detik terlalu boros API; 60 detik masih terasa hidup)
+    setInterval(autoRefresh, 60000);
   });
   function autoRefresh() {
-    if (Date.now() - _lastFetch < 8000) return; // jangan spam
+    if (Date.now() - _lastFetch < 45000) return; // jangan spam
     var akt = document.getElementById('kirim-active');
     if (document.visibilityState === 'visible' && akt && !akt.classList.contains('hidden')) fetchHistory(true);
   }

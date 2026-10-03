@@ -63,6 +63,14 @@ const KEY_PREFIX = 'clc_email_';
 // Nama identitas tim — tidak boleh dipakai pengirim proyek (anti penipuan atas nama Clincoo).
 const BANNED_NAME_PATTERNS = [/clin\s*coo/i, /clin\s*qoo/i, /tim\s+clin/i];
 const BANNED_EMAIL_DOMAINS = ['clincoo.buzz', 'clinqoo.com', 'clincoo.com'];
+// Local part @clincoo.buzz yang dilarang diklaim proyek (kesan resmi/official → phishing).
+const RESERVED_LOCALS = ['noreply','no-reply','donotreply','support','admin','administrator',
+  'security','official','staff','team','billing','finance','help','helpdesk','info','contact','hello',
+  'mail','email','root','postmaster','webmaster','service','cs','legal','privacy'];
+function senderAddrAllowed(addr) {
+  const local = String(addr || '').split('@')[0].trim().toLowerCase().replace(/[^a-z0-9.-]/g, '');
+  return RESERVED_LOCALS.indexOf(local) === -1;
+}
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', ...CORS } });
@@ -163,11 +171,12 @@ async function recipientAllowed(env, row, to) {
 // inisialisasi SEKALI dari histori bulan berjalan, lalu lepas dari histori
 // (hapus entri log tidak mengurangi kuota: email sudah benar-benar terkirim).
 async function quotaUsed(db, projectId) {
-  const month = new Date().toISOString().slice(0, 7);
+  // Label bulan dalam WIB (UTC+7) — konsisten dengan waktu histori yang tampil WIB.
+  const month = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 7);
   const row = await db.prepare('SELECT quota_used, quota_month FROM email_settings WHERE project_id = ?').bind(projectId).first();
   if (row && row.quota_month === month && row.quota_used !== null && row.quota_used !== undefined) return row.quota_used;
   const r = await db.prepare(
-    "SELECT COUNT(*) AS c FROM email_log WHERE project_id = ? AND status = 'terkirim' AND created_at >= datetime('now', 'start of month')"
+    "SELECT COUNT(*) AS c FROM email_log WHERE project_id = ? AND status = 'terkirim' AND created_at >= datetime('now', '-7 hours', 'start of month')"
   ).bind(projectId).first();
   const used = (r && r.c) || 0;
   try {
@@ -193,7 +202,8 @@ async function guardEmail(env, request, projectId) {
 }
 
 async function historyLog(db, projectId, limit) {
-  const r = await db.prepare('SELECT id, to_addr as "to", subject, status, created_at as time FROM email_log WHERE project_id = ? ORDER BY id DESC LIMIT ?')
+  // Waktu disimpan UTC di D1; tampilkan dalam WIB (UTC+7) agar log & grafik akurat untuk pengguna Indonesia.
+  const r = await db.prepare("SELECT id, to_addr as \"to\", subject, status, strftime('%Y-%m-%d %H:%M', created_at, '+7 hours') as time FROM email_log WHERE project_id = ? ORDER BY id DESC LIMIT ?")
     .bind(projectId, limit || 100).all();
   return (r.results || []).map(function (x) {
     return { id: x.id, to: x.to, subject: x.subject, status: x.status, time: (x.time || '').replace('T', ' ').slice(0, 16) };
@@ -205,7 +215,12 @@ async function projectDisplayName(db, row) {
   if (custom) return custom;
   try {
     const p = await db.prepare('SELECT title FROM user_projects WHERE id = ?').bind(String(row.project_id)).first();
-    if (p && p.title) return String(p.title).replace(/["<>\r\n]/g, '').slice(0, 60);
+    if (p && p.title) {
+      const t = String(p.title).replace(/["<>\r\n]/g, '').slice(0, 60);
+      // Judul proyek pun tidak boleh meng-impersonasi tim Clincoo di email keluar.
+      const ok = senderNameAllowed(t);
+      if (ok.ok && ok.name) return ok.name;
+    }
   } catch (e) {}
   return 'Clincoo Mail';
 }
@@ -227,7 +242,11 @@ async function configPayload(env, row, used, log, limit) {
 const DEFAULT_FROM = 'noreply@clincoo.buzz';
 
 function sanitizeSender(body) {
-  const from_name = String((body && body.from_name) || '').trim().replace(/["<>\r\n]/g, '').slice(0, 60);
+  let from_name = String((body && body.from_name) || '').trim().replace(/["<>\r\n]/g, '').slice(0, 60);
+  // Anti-impersonasi: nama pengirim dilarang menyertakan identitas tim Clincoo/Clinqoo.
+  const nameOk = senderNameAllowed(from_name);
+  if (!nameOk.ok) return { error: nameOk.reason };
+  from_name = nameOk.name;
   const sender_email = String((body && body.sender_email) || '').trim().toLowerCase();
   if (sender_email) {
     if (!validEmail(sender_email)) return { error: 'Alamat pengirim tidak valid' };
@@ -263,11 +282,12 @@ async function sendViaResend(env, row, opts) {
   const key = await getSecret(env, 'RESEND_API_KEY');
   if (!key) return { sent: false, via: 'resend', code: 'RESEND_BELUM_TERKONFIGURASI', reason: null };
   try {
+    const fromAddr = senderAddrAllowed(row.sender_email) ? (String(row.sender_email || '') || DEFAULT_FROM) : DEFAULT_FROM;
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + String(key) },
       body: JSON.stringify({
-        from: '"' + (await projectDisplayName(env.DB, row)) + '" <' + (String(row.sender_email || '') || DEFAULT_FROM) + '>',
+        from: '"' + (await projectDisplayName(env.DB, row)) + '" <' + fromAddr + '>',
         to: [opts.toEmail],
         subject: opts.subject,
         html: opts.html,
@@ -289,7 +309,8 @@ async function sendProjectEmail(env, row, opts) {
   const url = await getSecret(env, 'MAIL_BRIDGE_URL');
   const bridgeKey = await getSecret(env, 'MAIL_BRIDGE_KEY');
   if (!url || !bridgeKey) return { sent: false, via: 'cloudflare', code: 'BRIDGE_BELUM_TERKONFIGURASI', reason: null };
-  const customAddr = String(row.sender_email || '').trim();
+  let customAddr = String(row.sender_email || '').trim();
+  if (customAddr && !senderAddrAllowed(customAddr)) customAddr = ''; // alamat reserved legacy → pakai default
   const fromName = await projectDisplayName(env.DB, row);
   async function attempt(fromAddr) {
     const r = await fetch(String(url).replace(/\/$/, '') + '/', {
@@ -387,6 +408,7 @@ export async function onRequestPost({ request, env }) {
   if (action === 'sender_check') {
     const email = String(body.sender_email || '').trim().toLowerCase();
     if (!email) return json({ available: true });
+    if (!senderAddrAllowed(email)) return json({ available: false, reserved: true });
     const dup = await env.DB.prepare('SELECT project_id FROM email_settings WHERE sender_email = ? AND project_id != ?').bind(email, projectId).first();
     return json({ available: !dup });
   }
@@ -397,6 +419,7 @@ export async function onRequestPost({ request, env }) {
     const row = await getRow(env.DB, projectId);
     if (!row) return json({ error: 'not_found' }, 404);
     if (v.sender_email) {
+      if (!senderAddrAllowed(v.sender_email)) return json({ error: 'Alamat pengirim itu dipesan untuk sistem Clincoo — pilih alamat lain' }, 422);
       const dup = await env.DB.prepare('SELECT project_id FROM email_settings WHERE sender_email = ? AND project_id != ?').bind(v.sender_email, projectId).first();
       if (dup) return json({ error: 'Alamat pengirim sudah dipakai proyek lain' }, 409);
     }

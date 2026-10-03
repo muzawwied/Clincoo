@@ -409,7 +409,7 @@
     document.getElementById('m-trkirim').textContent = sent.toLocaleString('id-ID');
     document.getElementById('m-gagal').textContent = fail.toLocaleString('id-ID');
     document.getElementById('m-kuota').textContent = (data.used || 0).toLocaleString('id-ID');
-    document.getElementById('m-sisa').textContent = Math.max(0, (data.limit || 1000) - (data.used || 0)).toLocaleString('id-ID');
+    document.getElementById('m-sisa').textContent = Math.max(0, (data.limit || 100) - (data.used || 0)).toLocaleString('id-ID');
 
     renderEmailAnalytics(data);
   }
