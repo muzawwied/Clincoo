@@ -2055,7 +2055,7 @@ window.chatLivePreview = function () {
                 delete_item: 'ph-trash', search_items: 'ph-magnifying-glass',
                 run_command: 'ph-terminal-window', read_web_page: 'ph-globe', web_search: 'ph-magnifying-glass',
                 search_clinqoo_kb: 'ph-brain', rename_project: 'ph-pencil-simple', set_project_info: 'ph-note-pencil',
-                deploy_project: 'ph-rocket-launch', add_env_var: 'ph-key', list_env_vars: 'ph-key', test_secret: 'ph-shield-check', cloudflare_request: 'ph-cloud', manage_domain: 'ph-globe-hemisphere-west',
+                deploy_project: 'ph-rocket-launch', add_env_var: 'ph-key', list_env_vars: 'ph-key', test_secret: 'ph-shield-check', cloudflare_request: 'ph-cloud', manage_domain: 'ph-globe-hemisphere-west', domain_dns: 'ph-globe',
                 create_backend_function: 'ph-function', call_backend_function: 'ph-function',
                 github_request: 'ph-github-logo', drive_request: 'ph-google-logo', calendar_request: 'ph-calendar-blank', notion_request: 'ph-notebook',
                 delete_backend_function: 'ph-function', list_backend_functions: 'ph-function',
@@ -3672,6 +3672,7 @@ window.chatLivePreview = function () {
                     case 'set_project_info': return await toolSetProjectInfo(args);
                     case 'deploy_project': return await toolDeployProject(args);
                     case 'manage_domain': return await toolManageDomain(args);
+                    case 'domain_dns': return await toolDomainDns(args);
                     case 'add_env_var': return await toolAddEnvVar(args);
                     case 'list_env_vars': return await toolListEnvVars(args);
                     case 'test_secret': return await toolTestSecret(args);
@@ -3858,6 +3859,61 @@ window.chatLivePreview = function () {
                 already_ok: !!d.already_ok,
                 note: d.note || ''
             };
+        }
+
+        // domain_dns: AI kelola record DNS halaman Domain Clincoo (/domain/ — backend domain-exp)
+        const DOMAIN_DNS_API = 'https://clincoo-domain.pages.dev/api';
+        async function toolDomainDns(args) {
+            const action = String((args && args.action) || '').trim().toLowerCase();
+            const domain = args && args.domain ? String(args.domain).trim().toLowerCase() : '';
+            const tk = clinqooAuthToken();
+            if (!tk) return { success: false, error: 'Belum login Clincoo.' };
+            const hdrs = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tk };
+            const enc = encodeURIComponent;
+            if (action === 'list') {
+                const res = await fetch(DOMAIN_DNS_API + '/domains', { headers: hdrs });
+                const d = await res.json().catch(() => ({}));
+                if (!res.ok || d.error) return { success: false, error: (d && d.error) || ('Gagal mengambil daftar domain (HTTP ' + res.status + ').') };
+                const doms = (d.domains || []).map(function (x) { return { name: x.name, status: x.status }; });
+                return { success: true, domains: doms, message: doms.length ? ('Domain di halaman Domain: ' + doms.map(function (x) { return x.name + ' (' + x.status + ')'; }).join(', ') + '. Lanjutkan dengan action records/add/delete.') : 'Belum ada domain di halaman Domain.' };
+            }
+            if (['records', 'add', 'delete'].indexOf(action) !== -1 && !domain) {
+                return { success: false, error: 'Parameter domain wajib untuk action ' + action + '.' };
+            }
+            if (action === 'records') {
+                const res = await fetch(DOMAIN_DNS_API + '/domains/' + enc(domain) + '/dns', { headers: hdrs });
+                const d = await res.json().catch(() => ({}));
+                if (!res.ok || d.error) return { success: false, error: (d && d.error === 'not_found') ? 'Domain ' + domain + ' tidak ditemukan di halaman Domain akunmu.' : ((d && d.error) || 'Gagal mengambil record DNS.') };
+                return {
+                    success: true, managed: !!d.managed, zone_status: d.zone_status || '',
+                    records: d.records || [], local_records: d.local_records || [],
+                    message: d.message || ''
+                };
+            }
+            if (action === 'add') {
+                const type = String(args.type || '').trim().toUpperCase();
+                if (['A', 'AAAA', 'CNAME', 'TXT', 'MX'].indexOf(type) === -1) return { success: false, error: 'Tipe record tidak valid: ' + (type || '(kosong)') + '. Pakai A, AAAA, CNAME, TXT, atau MX.' };
+                const name = String(args.name || '').trim();
+                const content = String(args.content || '').trim();
+                if (!name || !content) return { success: false, error: 'Parameter name dan content wajib untuk add.' };
+                const body = { type: type, name: name, content: content };
+                if (args.ttl) body.ttl = args.ttl;
+                if (type === 'A' || type === 'AAAA' || type === 'CNAME') body.proxied = args.proxied === true;
+                if (type === 'MX') body.priority = args.priority;
+                const res = await fetch(DOMAIN_DNS_API + '/domains/' + enc(domain) + '/dns', { method: 'POST', headers: hdrs, body: JSON.stringify(body) });
+                const d = await res.json().catch(() => ({}));
+                if (!res.ok || d.error) return { success: false, error: (d && d.error === 'not_found') ? 'Domain ' + domain + ' tidak ditemukan di halaman Domain akunmu.' : ((d && d.error) || 'Record gagal ditambahkan.') };
+                return { success: true, managed: !!d.managed, record: d.record || null, message: d.message || ('Record ' + type + ' ' + name + ' -> ' + content + ' ditambahkan.') };
+            }
+            if (action === 'delete') {
+                const rid = String(args.record_id || '').trim();
+                if (!rid) return { success: false, error: 'Parameter record_id wajib untuk delete (ambil dari action records).' };
+                const res = await fetch(DOMAIN_DNS_API + '/domains/' + enc(domain) + '/dns/' + enc(rid), { method: 'DELETE', headers: hdrs });
+                const d = await res.json().catch(() => ({}));
+                if (!res.ok || d.error) return { success: false, error: (d && d.error === 'not_found') ? 'Domain atau record tidak ditemukan.' : ((d && d.error ? d.error + (d.message ? ': ' + d.message : '') : '') || 'Record gagal dihapus.') };
+                return { success: true, record_id: rid, message: 'Record ' + rid + ' pada ' + domain + ' dihapus.' };
+            }
+            return { success: false, error: 'Action tidak dikenal: ' + (action || '(kosong)') + '. Pakai: list, records, add, delete.' };
         }
 
         async function toolAddEnvVar(args) {
