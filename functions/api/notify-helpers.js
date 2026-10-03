@@ -29,7 +29,7 @@ export async function getUserByEmail(db, email) {
 // Template email FLAT resmi Clincoo (disetujui 3 Okt 2026): logo kiri atas, judul,
 // tanggal WIB, sapaan, intro (string atau HTML), detail label kapital kecil,
 // CTA kapsul opsional, kode opsional (blok monospace besar), footer seragam.
-export function flatTemplate(title, name, intro, details, ctaText, ctaLink, footerNote, code) {
+export function flatTemplate(title, name, intro, details, ctaText, ctaLink, footerNote, code, extraCtas) {
   const sapaan = name ? ('Halo ' + name + ',') : 'Halo,';
   const tgl = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
   const introIsRaw = /^\s*<(p|div)/i.test(intro || '');
@@ -46,9 +46,15 @@ export function flatTemplate(title, name, intro, details, ctaText, ctaLink, foot
         '<span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:34px;font-weight:bold;letter-spacing:10px;color:#0a0a0a">' + code + '</span>' +
       '</div>'
     : '';
-  const cta = ctaText && ctaLink
+  const extras = (extraCtas || []).map(function (c) {
+    const st = c.kind === 'danger'
+      ? 'background:#ffffff;color:#b91c1c;border:2px solid #b91c1c;'
+      : 'background:#ffffff;color:#0a0a0a;border:2px solid #0a0a0a;';
+    return '<a href="' + c.link + '" style="display:inline-block;' + st + 'padding:11px 30px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:bold;margin:12px 12px 0 0">' + c.text + '</a>';
+  }).join('');
+  const cta = (ctaText && ctaLink
     ? '<a href="' + ctaLink + '" style="display:inline-block;background:#0a0a0a;color:#ffffff;padding:13px 32px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:bold;margin-top:24px">' + ctaText + '</a>'
-    : '';
+    : '') + extras;
   return '<div style="background:#ffffff;padding:36px 24px;font-family:Arial,Helvetica,sans-serif">' +
     '<div style="max-width:520px;margin:0 auto">' +
       '<div style="padding-bottom:20px;border-bottom:1px solid #eceef1">' +
