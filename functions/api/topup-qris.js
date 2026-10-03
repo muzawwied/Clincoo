@@ -102,6 +102,30 @@ export async function onRequestGet({ request, env }) {
     return json({ configured: !!(accountId && (await getSecret(env, 'BUATQRIS_SECRET_TOKEN'))), provider: 'buatqris' });
   }
 
+  // Order terakhir milik user yang login (untuk restore halaman checkout dari email pengingat)
+  if (action === 'pending') {
+    const user = await currentUser(env, request);
+    if (!user) return json({ success: false, need_login: true }, 401);
+    let order = null;
+    try {
+      order = await db.prepare(
+        "SELECT * FROM topup_orders WHERE (user_id = ? OR user_id = ?) AND datetime(created_at) >= datetime('now', '-48 hours') ORDER BY created_at DESC, rowid DESC LIMIT 1"
+      ).bind(String(user.id), String(user.id) + '').first();
+    } catch (e) {}
+    if (!order) return json({ success: true, order: null });
+    return json({
+      success: true,
+      order: {
+        order_id: order.id,
+        amount: order.amount,
+        status: order.status,
+        qr_image: order.qr_url || null,
+        total_payment: order.bill_total || order.amount,
+        expired_at: order.expires_at || null
+      }
+    });
+  }
+
   if (action === 'status') {
     const orderId = url.searchParams.get('order_id');
     if (!orderId) return json({ error: 'order_id required' }, 400);

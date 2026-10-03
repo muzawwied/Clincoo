@@ -386,22 +386,63 @@
         var CHECKOUT_PLAN = (qs.plan === 'Pro' || qs.plan === 'Bisnis') ? qs.plan : '';
         var CHECKOUT_BILLING = qs.billing || 'Bulanan';
         var CHECKOUT_AMOUNT = parseInt(qs.amount, 10) || PLAN_PRICES[CHECKOUT_PLAN] || 0;
+        // Tanpa parameter paket -> coba pulihkan order QRIS terakhir user dari server
+        // (jalur email pengingat: /akun/langganan/checkout/qris/ tanpa ?plan=...).
+        // Kalau tidak ada order, kembali ke halaman upgrade seperti sebelumnya.
+        var NEED_ORDER_LOOKUP = false;
         if (!CHECKOUT_PLAN || !CHECKOUT_AMOUNT || CHECKOUT_AMOUNT < 1000) {
-            // Tanpa paket valid -> kembali ke halaman upgrade
-            window.location.replace('../upgrade/');
+            CHECKOUT_PLAN = ''; CHECKOUT_AMOUNT = 0; NEED_ORDER_LOOKUP = true;
         }
         function fmtID(n) { return 'Rp ' + Number(n || 0).toLocaleString('id-ID'); }
 
         document.addEventListener('DOMContentLoaded', async function () {
             try { lucide.createIcons(); } catch (e) {}
+            if (NEED_ORDER_LOOKUP) { await restoreServerOrder(); return; }
             renderPlanLine();
             qrisRestore();
             if (!qrisOrder) goToStep1();
         });
 
+        // Pulihkan order QRIS terakhir milik akun yang login (dari server, bukan localStorage),
+        // supaya tautan pengingat tetap menampilkan QR walaupun dibuka di perangkat/browser lain.
+        async function restoreServerOrder() {
+            var token = '';
+            try { token = localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) {}
+            var res = null;
+            try {
+                res = await fetch(QRIS_API + '?action=pending', { headers: { 'Authorization': 'Bearer ' + token } })
+                    .then(function (r) { return r.json(); });
+            } catch (e) {}
+            if (res && res.success && res.order && res.order.order_id && res.order.amount) {
+                var o = res.order;
+                CHECKOUT_AMOUNT = o.amount;
+                CHECKOUT_PLAN = (PLAN_PRICES.Pro === o.amount) ? 'Pro' : (PLAN_PRICES.Bisnis === o.amount) ? 'Bisnis' : '';
+                renderPlanLine();
+                var expMs = o.expired_at ? new Date(o.expired_at).getTime() : 0;
+                if (o.status === 'pending' && expMs > Date.now()) {
+                    // QR masih hidup -> langsung tampilkan
+                    o.__plan = CHECKOUT_PLAN; o.__billing = CHECKOUT_BILLING;
+                    qrisOrder = o;
+                    showQrisStep(o);
+                    return;
+                }
+                // Order lama sudah kedaluwarsa -> tawarkan buat ulang dengan nominal sama
+                showQrisConfirm();
+                return;
+            }
+            if (res && res.need_login) {
+                location.replace('/auth/?next=' + encodeURIComponent(location.origin + '/akun/langganan/checkout/qris/'));
+                return;
+            }
+            // Tidak ada order -> ke halaman upgrade seperti semula
+            location.replace('../upgrade/');
+        }
+
         function renderPlanLine() {
             var el = document.getElementById('checkout-plan-line');
-            if (el) el.textContent = 'Paket ' + CHECKOUT_PLAN + ' \u00b7 ' + fmtID(CHECKOUT_AMOUNT) + ' / ' + (CHECKOUT_BILLING === 'Tahunan' ? 'bln (tahunan)' : 'bulan');
+            if (!el) return;
+            if (!CHECKOUT_PLAN) { el.textContent = ''; return; }
+            el.textContent = 'Paket ' + CHECKOUT_PLAN + ' \u00b7 ' + fmtID(CHECKOUT_AMOUNT) + ' / ' + (CHECKOUT_BILLING === 'Tahunan' ? 'bln (tahunan)' : 'bulan');
         }
 
         function closeTopUpPage() { qrisForgetSession(); window.ClinqooBack('../'); }
