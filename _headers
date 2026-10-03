@@ -7,3 +7,9 @@
 # Jangan publish halaman debug ke produksi (audit #9) — folder tetap di repo untuk pengujian lokal
 /debug/* X-Robots-Tag: noindex
 /debug-notif/* X-Robots-Tag: noindex
+
+
+# Service worker harus selalu dicek ulang (bukan cache 4 jam default Pages)
+# — SW lama membuat halaman checkout tayang versi basi (landing ke step metode)
+/sw.js
+  Cache-Control: no-cache, must-revalidate
