@@ -111,7 +111,7 @@ function buildMessage(type, domain, code, user, email) {
     email: true,
     title: 'Domain Berhasil Ditambahkan',
     intro: 'Domain <b>' + dEsc + '</b> baru saja ditambahkan ke akun Clincoo-mu' + (email === 'otp' ? ' setelah melewati verifikasi kode email (aktivitas dianggap tidak biasa)' : '') + '.',
-    body: 'Selanjutnya, verifikasi kepemilikan domain dengan mengarahkan nameserver-nya ke Cloudflare. Domain baru akan aktif setelah nameservernya terdeteksi benar. Kamu bisa mengelola record DNS, SSL, dan pengaturan zone lewat halaman detail domain.',
+    body: 'Selanjutnya, verifikasi kepemilikan domain dengan mengarahkan nameserver-nya ke nameserver Clincoo yang tertera di halaman verifikasi. Domain baru akan aktif setelah nameservernya terdeteksi benar. Kamu bisa mengelola record DNS, SSL, dan pengaturan zone lewat halaman detail domain.',
     details: [['Domain', domain], ['Status awal', 'Menunggu verifikasi'], ['Langkah berikutnya', 'Atur nameserver di registrar']],
     ctaText: 'Buka Halaman Verifikasi',
     ctaLink: DOMAIN_HOME + 'verifikasi/?domain=' + encodeURIComponent(domain),
@@ -121,12 +121,12 @@ function buildMessage(type, domain, code, user, email) {
     subject: 'Domain Aktif — ' + domain,
     email: true,
     title: 'Domain Kamu Sudah Aktif',
-    intro: 'Kabar baik. Verifikasi kepemilikan domain <b>' + dEsc + '</b> berhasil. Nameserver domain-mu sudah mengarah ke Cloudflare, dan domain sekarang berstatus <b>Aktif</b>.',
+    intro: 'Kabar baik. Verifikasi kepemilikan domain <b>' + dEsc + '</b> berhasil. Nameserver domain-mu sudah mengarah ke jaringan kami, dan domain sekarang berstatus <b>Aktif</b>.',
     body: 'Mulai sekarang kamu bisa mengelola record DNS (A, CNAME, TXT, dan lainnya), memantau status SSL, serta mengatur pengaturan zone domain ini dari dashboard Domain Clincoo. Tidak ada langkah lain yang diperlukan.',
-    details: [['Domain', domain], ['Status', 'Aktif'], ['Metode verifikasi', 'Nameserver Cloudflare']],
+    details: [['Domain', domain], ['Status', 'Aktif'], ['Metode verifikasi', 'Nameserver']],
     ctaText: 'Kelola Domain',
     ctaLink: domainDetail(domain),
-    footerNote: 'Catatan: jika di kemudian hari nameserver domain ini diubah dari Cloudflare ke penyedia lain, sistem kami akan mendeteksinya dan status domain akan kembali menjadi menunggu verifikasi.'
+    footerNote: 'Catatan: jika di kemudian hari nameserver domain ini diubah ke nameserver lain, sistem kami akan mendeteksinya dan status domain akan kembali menjadi menunggu verifikasi.'
   };
   t.domain_deleted = {
     subject: 'Domain Dihapus — ' + domain,
@@ -142,9 +142,9 @@ function buildMessage(type, domain, code, user, email) {
   t.domain_ns_lost = {
     subject: 'Domain Terlepas dari Nameserver — ' + domain,
     email: true,
-    title: 'Domain Terlepas dari Nameserver Cloudflare',
-    intro: 'Pemeriksaan otomatis kami menemukan bahwa nameserver domain <b>' + dEsc + '</b> tidak lagi mengarah ke Cloudflare. Status domain ini dikembalikan menjadi <b>Menunggu Verifikasi</b>.',
-    body: 'Ini biasanya terjadi karena nameserver diubah di registrar domain (IDWebhost, Namecheap, dan lainnya), atau karena ada pihak lain yang mengendalikan domain-mu. Untuk mengembalikan status domain menjadi aktif: buka panel registrar domain-mu, arahkan kembali nameserver-nya ke pasangan Cloudflare yang tertera di halaman verifikasi, tunggu propagasi (beberapa menit hingga 24 jam), lalu ketuk Periksa Verifikasi.',
+    title: 'Domain Terlepas dari Nameserver Clincoo',
+    intro: 'Pemeriksaan otomatis kami menemukan bahwa nameserver domain <b>' + dEsc + '</b> tidak lagi mengarah ke nameserver Clincoo. Status domain ini dikembalikan menjadi <b>Menunggu Verifikasi</b>.',
+    body: 'Ini biasanya terjadi karena nameserver diubah di penyedia tempat domain-mu dibeli (registrar), atau karena ada pihak lain yang mengendalikan domain-mu. Untuk mengembalikan status domain menjadi aktif: buka panel registrar domain-mu, arahkan kembali nameserver-nya ke pasangan nameserver Clincoo yang tertera di halaman verifikasi, tunggu propagasi (beberapa menit hingga 24 jam), lalu ketuk Periksa Verifikasi.',
     details: [['Domain', domain], ['Status sekarang', 'Menunggu Verifikasi'], ['Penyebab umum', 'Nameserver diganti di registrar']],
     ctaText: 'Buka Halaman Verifikasi',
     ctaLink: DOMAIN_HOME + 'verifikasi/?domain=' + encodeURIComponent(domain),
@@ -159,7 +159,7 @@ const IN_APP_TEXT = {
   domain_added: d => 'Domain ' + d + ' ditambahkan ke akunmu. Selesaikan verifikasi nameserver untuk mengaktifkannya.',
   domain_verified: d => 'Domain ' + d + ' sekarang aktif. Verifikasi nameserver berhasil.',
   domain_deleted: d => 'Domain ' + d + ' telah dihapus dari akunmu.',
-  domain_ns_lost: d => 'Domain ' + d + ' terlepas dari nameserver Cloudflare. Status kembali ke menunggu verifikasi.'
+  domain_ns_lost: d => 'Domain ' + d + ' terlepas dari nameserver Clincoo. Status kembali ke menunggu verifikasi.'
 };
 
 export async function onRequestPost({ request, env, waitUntil }) {

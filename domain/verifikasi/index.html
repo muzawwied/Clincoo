@@ -166,7 +166,7 @@ function checkVerification() {
             label.textContent = 'Selesai';
             document.getElementById('cta-skip').classList.add('hidden');
         } else {
-            const msg = (res && res.message) || 'Nameserver domain-mu belum terdeteksi mengarah ke Cloudflare. Pastikan nameserver di registrar sudah diganti sesuai daftar di atas, tunggu propagasi, lalu periksa lagi.';
+            const msg = (res && res.message) || 'Nameserver domain-mu belum terdeteksi mengarah ke nameserver yang ditugaskan. Pastikan nameserver di registrar sudah diganti sesuai daftar di atas, tunggu propagasi, lalu periksa lagi.';
             setResult('fail', '<i data-lucide="alert-circle" class="w-5 h-5 text-red-500 shrink-0 mt-0.5"></i><p class="text-[13px] text-red-700 font-medium leading-relaxed"></p>');
             document.querySelector('#check-result p').textContent = msg;
             label.textContent = 'Periksa Lagi';
