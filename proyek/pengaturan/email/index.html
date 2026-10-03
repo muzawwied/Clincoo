@@ -458,7 +458,7 @@ var _logRows = [];
     var qc = document.getElementById('log-quota');
     if (qc) qc.textContent = (data.used || 0).toLocaleString('id-ID') + '/' + (data.limit || 1000).toLocaleString('id-ID') + ' terpakai bulan ini';
     applyLogFilter();
-    try { localStorage.setItem(_cacheKey(), JSON.stringify(data)); } catch (e) {}
+    try { data._t = Date.now(); localStorage.setItem(_cacheKey(), JSON.stringify(data)); } catch (e) {}
   }
 
   var _lastFetch = 0;
@@ -477,6 +477,7 @@ var _logRows = [];
   function loadHistory() {
     var cached = _readCache();
     if (cached && cached.items) { renderEmailState('active'); renderHistory(cached); }
+    if (cached && cached.items && (Date.now() - (cached._t || 0)) < 300000) return; // cache hangat: tak fetch tiap refresh
     return fetchHistory(!!cached);
   }
 

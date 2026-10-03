@@ -382,6 +382,7 @@
                   <div>
                     <label for="sender-email" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Alamat pengirim (harus @clincoo.buzz)</label>
                     <input id="sender-email" type="email" placeholder="alamat@clincoo.buzz" oninput="senderDirty()" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                    <p id="sender-avail" class="text-xs mt-1.5"></p>
                   </div>
                 </div>
                 <button type="button" id="sender-save" onclick="saveSender()" class="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors cursor-pointer">Simpan Pengirim</button>
@@ -418,6 +419,27 @@
     if (el) el.dataset.dirty = '1';
     el = document.getElementById('sender-email');
     if (el) el.dataset.dirty = '1';
+    scheduleAvail();
+  }
+
+  var _availT = null;
+  function scheduleAvail() {
+    var p = document.getElementById('sender-avail');
+    if (!p) return;
+    clearTimeout(_availT);
+    var email = ((document.getElementById('sender-email') || {}).value || '').trim().toLowerCase();
+    if (!/^[^\s@]+@clincoo\.buzz$/.test(email)) { p.textContent = ''; return; }
+    p.className = 'text-xs mt-1.5 text-gray-400';
+    p.textContent = 'Memeriksa…';
+    _availT = setTimeout(function () {
+      _apiPost('sender_check', { sender_email: email })
+        .then(function (r) {
+          var ok = !!(r && r.available);
+          p.className = 'text-xs mt-1.5 ' + (ok ? 'text-green-600' : 'text-red-500');
+          p.textContent = ok ? 'Tersedia' : 'Tidak tersedia — sudah dipakai proyek lain';
+        })
+        .catch(function () { p.textContent = ''; });
+    }, 450);
   }
   function fillSender(cfg) {
     var sn = document.getElementById('sender-name');
@@ -444,6 +466,8 @@
         if (sn) delete sn.dataset.dirty;
         if (se) delete se.dataset.dirty;
         emailToast('Identitas pengirim disimpan', true);
+        var av = document.getElementById('sender-avail');
+        if (av) { av.className = 'text-xs mt-1.5 text-green-600'; av.textContent = 'Tersedia'; }
       })
       .catch(function (e) {
         emailToast(e && e.error ? e.error : 'Gagal menyimpan (' + ((e && e.status) || e) + ')', false);

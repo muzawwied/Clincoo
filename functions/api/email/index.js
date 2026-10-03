@@ -289,15 +289,15 @@ async function sendProjectEmail(env, row, opts) {
   const url = await getSecret(env, 'MAIL_BRIDGE_URL');
   const bridgeKey = await getSecret(env, 'MAIL_BRIDGE_KEY');
   if (!url || !bridgeKey) return { sent: false, via: 'cloudflare', code: 'BRIDGE_BELUM_TERKONFIGURASI', reason: null };
-  const fromMail = DEFAULT_FROM;
+  const customAddr = String(row.sender_email || '').trim();
   const fromName = await projectDisplayName(env.DB, row);
-  try {
+  async function attempt(fromAddr) {
     const r = await fetch(String(url).replace(/\/$/, '') + '/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Bridge-Key': String(bridgeKey) },
       body: JSON.stringify({
         to: opts.toEmail,
-        from_email: fromMail,
+        from_email: fromAddr,
         from_name: fromName,
         subject: opts.subject,
         html: opts.html,
@@ -308,6 +308,15 @@ async function sendProjectEmail(env, row, opts) {
     const data = await r.json().catch(function () { return {}; });
     if (r.ok && data.ok) return { sent: true, via: 'cloudflare', messageId: data.messageId || null };
     return { sent: false, via: 'cloudflare', code: data.code || null, reason: data.error || ('HTTP ' + r.status) };
+  }
+  try {
+    const res = await attempt(customAddr || DEFAULT_FROM);
+    // Alamat kustom ditolak bridge? coba sekali lagi dengan default noreply.
+    if (!res.sent && customAddr && customAddr !== DEFAULT_FROM) {
+      const retry = await attempt(DEFAULT_FROM);
+      if (retry.sent) return retry;
+    }
+    return res;
   } catch (e) {
     return { sent: false, via: 'cloudflare', code: null, reason: String((e && e.message) || e) };
   }
@@ -375,11 +384,22 @@ export async function onRequestPost({ request, env }) {
   if (denied) return denied;
   await ensureTables(env.DB);
 
+  if (action === 'sender_check') {
+    const email = String(body.sender_email || '').trim().toLowerCase();
+    if (!email) return json({ available: true });
+    const dup = await env.DB.prepare('SELECT project_id FROM email_settings WHERE sender_email = ? AND project_id != ?').bind(email, projectId).first();
+    return json({ available: !dup });
+  }
+
   if (action === 'sender') {
     const v = sanitizeSender(body);
     if (v.error) return json({ error: v.error }, 422);
     const row = await getRow(env.DB, projectId);
     if (!row) return json({ error: 'not_found' }, 404);
+    if (v.sender_email) {
+      const dup = await env.DB.prepare('SELECT project_id FROM email_settings WHERE sender_email = ? AND project_id != ?').bind(v.sender_email, projectId).first();
+      if (dup) return json({ error: 'Alamat pengirim sudah dipakai proyek lain' }, 409);
+    }
     await env.DB.prepare("UPDATE email_settings SET from_name = ?, sender_email = ?, updated_at = datetime('now') WHERE project_id = ?")
       .bind(v.from_name, v.sender_email, projectId).run();
     const fresh = await getRow(env.DB, projectId);
