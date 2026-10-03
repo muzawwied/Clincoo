@@ -558,6 +558,11 @@ async function handlePayStatus(env, db, key, orderId) {
     created_at: tx.created_at || ''
   };
   if (tx.status === 'paid') return json({ success: true, status: 'paid', amount: tx.amount, ...det });
+  // QRIS kedaluwarsa 15 menit — tandai otomatis supaya histori jujur (webhook tetap bisa menandai paid bila terlanjur dibayar)
+  if (tx.status === 'pending' && tx.created_at && (Date.now() - Date.parse(String(tx.created_at).replace(' ', 'T') + 'Z')) > 15 * 60 * 1000) {
+    await db.prepare("UPDATE pay_transactions SET status = 'expired', updated_at = datetime('now') WHERE id = ?").bind(tx.id).run();
+    return json({ success: true, status: 'expired', amount: tx.amount, ...det });
+  }
   if (!tx.trx_ref) return json({ success: true, status: tx.status, amount: tx.amount, ...det });
   // hormati rate limit Pakasir: 4 detik per transaksi
   const last = PKS_THROTTLE.get(tx.id) || 0;
@@ -848,6 +853,8 @@ export async function onRequestPost({ request, env }) {
   if (action === 'transactions') {
     const deny = await guardPay(env, request, projectId);
     if (deny) return deny;
+    // sapu otomatis: QRIS pending lebih dari 15 menit → kedaluwarsa
+    try { await db.prepare("UPDATE pay_transactions SET status = 'expired', updated_at = datetime('now') WHERE project_id = ? AND status = 'pending' AND created_at < datetime('now', '-15 minutes')").bind(projectId).run(); } catch (e) {}
     const rows = await db.prepare('SELECT order_id, amount, description, status, created_at FROM pay_transactions WHERE project_id = ? ORDER BY id DESC LIMIT 25').bind(projectId).all();
     return json({ success: true, transactions: rows.results || [] });
   }

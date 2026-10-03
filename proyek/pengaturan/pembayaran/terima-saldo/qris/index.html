@@ -10,8 +10,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" sizes="64x64" href="../../../../assets/favicon.png">
     <link rel="manifest" href="../../../../manifest.json">
-  <title>Kode QRIS — Terima Pembayaran Clincoo</title>
-    <meta name="description" content="Kode QRIS terima pembayaran — Clincoo.">
+  <title>Clincoo - Kode QRIS</title>
+    <meta name="description" content="Kode QRIS terima pembayaran — Clincoo."
+    <meta property="og:title" content="Clincoo - Kode QRIS">
+    <meta property="og:description" content="Kode QRIS terima pembayaran — Clincoo.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/proyek/pengaturan/pembayaran/terima-saldo/qris/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Clincoo - Kode QRIS">
+    <meta name="twitter:description" content="Kode QRIS terima pembayaran — Clincoo.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">>
     <meta name="robots" content="noindex">
     <meta name="theme-color" content="#ffffff">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -53,9 +63,9 @@
     </div>
 
     <div id="qr-body" class="hidden">
-      <!-- Nominal -->
-      <p class="text-center text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Nominal tagihan</p>
-      <p id="qr-amount" class="text-center text-3xl font-bold font-mono text-gray-900 dark:text-white mb-1">Rp 0</p>
+      <!-- Total dibayar (fee langsung dihitung) -->
+      <p class="text-center text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Total dibayar</p>
+      <p id="qr-total-big" class="text-center text-3xl font-bold font-mono text-gray-900 dark:text-white mb-1">Rp 0</p>
       <p id="qr-status" class="text-center text-xs text-amber-500 dark:text-amber-400 font-medium mb-5">Menunggu pembayaran…</p>
 
       <!-- QR -->
@@ -64,7 +74,8 @@
       </div>
 
       <div class="space-y-2.5 text-xs mb-6">
-        <div class="flex items-center justify-between"><p class="text-gray-500 dark:text-gray-400">Total dibayar</p><p id="qr-total" class="font-semibold font-mono text-gray-900 dark:text-white">Rp 0</p></div>
+        <div class="flex items-center justify-between"><p class="text-gray-500 dark:text-gray-400">Nominal</p><p id="qr-amount" class="font-semibold font-mono text-gray-900 dark:text-white">Rp 0</p></div>
+        <div class="flex items-center justify-between"><p class="text-gray-500 dark:text-gray-400">Biaya layanan</p><p id="qr-fee" class="font-semibold font-mono text-gray-900 dark:text-white">Rp 0</p></div>
         <div class="flex items-center justify-between"><p class="text-gray-500 dark:text-gray-400">Berlaku hingga</p><p id="qr-exp" class="font-mono text-gray-900 dark:text-white">&mdash;</p></div>
         <div class="flex items-center justify-between"><p class="text-gray-500 dark:text-gray-400">ID transaksi</p><p id="qr-order" class="font-mono text-gray-900 dark:text-white">&mdash;</p></div>
       </div>
@@ -125,8 +136,7 @@
   async function qrInit() {
     if (!_tx || !_tx.order_id || !_tx.key) { qrShow('qr-missing'); return; }
     // render instan dari sesi, lalu segarkan dengan data server
-    document.getElementById('qr-amount').textContent = 'Rp ' + _rp(_tx.amount);
-    document.getElementById('qr-total').textContent = 'Rp ' + _rp(_tx.total || _tx.amount);
+    qrRenderAmount(_tx.amount, _tx.total || _tx.amount);
     document.getElementById('qr-order').textContent = _tx.order_id;
     if (_tx.qr_image) document.getElementById('qr-img').src = _tx.qr_image;
     qrShow('qr-body');
@@ -137,6 +147,13 @@
       _timer = setInterval(qrPoll, 1000); // muat ulang status otomatis tiap detik
       document.addEventListener('visibilitychange', function () { if (!document.hidden) qrPoll(); });
     }
+  }
+
+  function qrRenderAmount(amount, total) {
+    var amt = Number(amount || 0), tot = Number(total || amount || 0);
+    document.getElementById('qr-total-big').textContent = 'Rp ' + _rp(tot);
+    document.getElementById('qr-amount').textContent = 'Rp ' + _rp(amt);
+    document.getElementById('qr-fee').textContent = 'Rp ' + _rp(Math.max(0, tot - amt));
   }
 
   function qrRenderExp() {
@@ -154,7 +171,7 @@
       var data = await res.json().catch(function () { return {}; });
       if (res.ok && data.success) {
         if (data.qr_image) document.getElementById('qr-img').src = data.qr_image;
-        if (data.total_payment != null) document.getElementById('qr-total').textContent = 'Rp ' + _rp(data.total_payment);
+        if (data.total_payment != null || data.amount != null) qrRenderAmount(data.amount, data.total_payment);
         if (data.created_at) {
           var c = new Date(data.created_at.replace(' ', 'T') + 'Z').getTime();
           if (!isNaN(c)) _expAt = c + 15 * 60 * 1000;
