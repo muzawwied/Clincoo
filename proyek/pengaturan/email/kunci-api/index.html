@@ -330,8 +330,8 @@
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 mb-3">Pakai di situs deploy kamu untuk kirim email lewat Clincoo Email API.</p>
                 <div class="flex items-center gap-2">
                   <code id="key-val" class="flex-1 block truncate text-xs font-mono bg-gray-50 dark:bg-slate-800 rounded-lg px-3 py-2.5 text-gray-800 dark:text-gray-200">…</code>
-                  <button type="button" id="key-toggle" onclick="toggleKey()" class="px-3.5 py-2.5 text-xs font-medium border border-gray-200 dark:border-slate-700 rounded-full hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">Lihat</button>
-                  <button type="button" onclick="copyKey()" class="px-3.5 py-2.5 text-xs font-medium border border-gray-200 dark:border-slate-700 rounded-full hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">Salin</button>
+                  <button type="button" id="key-toggle" onclick="toggleKey()" title="Lihat kunci" aria-label="Lihat kunci" class="w-9 h-9 shrink-0 flex items-center justify-center border border-gray-200 dark:border-slate-700 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                  <button type="button" onclick="copyKey()" title="Salin kunci" aria-label="Salin kunci" class="w-9 h-9 shrink-0 flex items-center justify-center border border-gray-200 dark:border-slate-700 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
                 </div>
               </div>
 
@@ -367,16 +367,18 @@
 <script>
 // ===== Email: kunci API =====
   var _keyShown = false;
+        var _eyeSvg = '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+        var _eyeOffSvg = '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path stroke-linecap="round" stroke-linejoin="round" d="m1 1 22 22"/></svg>';
+        function _setEyeBtn(shown) { var tg = document.getElementById('key-toggle'); if (tg) { tg.innerHTML = shown ? _eyeOffSvg : _eyeSvg; tg.title = shown ? 'Sembunyikan kunci' : 'Lihat kunci'; tg.setAttribute('aria-label', shown ? 'Sembunyikan kunci' : 'Lihat kunci'); } }
   function _mask(k) { return k ? k.slice(0, 12) + '••••••••' + k.slice(-4) : '—'; }
   function renderKey(cfg) {
     var k = (cfg && cfg.api_key) || '';
     var el = document.getElementById('key-val');
     if (el) { el.textContent = _keyShown ? k : _mask(k); }
     var tg = document.getElementById('key-toggle');
-    if (tg && k) { tg.textContent = _keyShown ? 'Sembunyikan' : 'Lihat'; }
-    else if (tg) { tg.classList.add('hidden'); }
+    if (tg && k) { _setEyeBtn(_keyShown); } else if (tg) { tg.classList.add('hidden'); }
   }
-  function toggleKey() { _keyShown = !_keyShown; var el = document.getElementById('key-val'); var k = el.getAttribute('data-key') || ''; if (_keyShown && k) { el.textContent = k; document.getElementById('key-toggle').textContent = 'Sembunyikan'; } else { el.textContent = _mask(k); document.getElementById('key-toggle').textContent = 'Lihat'; } }
+  function toggleKey() { _keyShown = !_keyShown; var el = document.getElementById('key-val'); var k = el.getAttribute('data-key') || ''; if (_keyShown && k) { el.textContent = k; _setEyeBtn(true); } else { el.textContent = _mask(k); _setEyeBtn(false); } }
   function copyKey() {
     var k = document.getElementById('key-val').getAttribute('data-key') || '';
     if (!k) { emailToast('Kunci belum tersedia', false); return; }
