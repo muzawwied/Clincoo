@@ -486,10 +486,11 @@
             if (!/\/$/.test(p)) p += '/';
             return p;
         })();
-        function setStepPath(seg) {
+        function setStepPath(seg, query) {
             try {
                 var url = TOPUP_BASE + (seg ? seg + '/' : '');
-                if (location.pathname !== url) history.replaceState(null, '', url);
+                if (query) url += '?' + query;
+                if (location.pathname + location.search !== url) history.replaceState(null, '', url);
             } catch (e) {}
         }
 
@@ -576,7 +577,7 @@
 
         function showQrisStep(res) {
             showStep('step-qris');
-            setStepPath('qris');
+            setStepPath('qris', res && res.order_id ? 'order_id=' + encodeURIComponent(res.order_id) : '');
             document.getElementById('qris-order-id').textContent = res.order_id || '';
             document.getElementById('qris-total').textContent = fmtID(res.total_payment || CHECKOUT_AMOUNT);
             var box = document.getElementById('qris-qr-box');
