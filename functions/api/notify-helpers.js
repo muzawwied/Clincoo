@@ -69,33 +69,13 @@ export function emailTemplate(title, name, introText, details, ctaText, ctaLink,
 }
 
 // Template email OTP Clincoo — FLAT (tanpa card): konten langsung di latar putih,
-// brand kiri atas ala halaman checkout, kode besar, detail lengkap, CTA, footer keamanan.
+// brand kiri atas ala halaman checkout, kode besar, CTA, footer keamanan.
 // opts: { name, code, purpose, email, minutes, ctaText, ctaLink }
 export function otpEmail(opts) {
   const o = opts || {};
   const code = String(o.code || '000000');
   const minutes = o.minutes || 10;
-  const now = new Date();
-  const fmt = function (d) {
-    return d.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
-  };
-  const tgl = fmt(now);
-  const berlakuHingga = fmt(new Date(now.getTime() + minutes * 60000));
-  const ref = 'OTP-' + Math.random().toString(36).slice(2, 8).toUpperCase();
-  const rows = [
-      ['Jenis permintaan', o.purpose || 'Verifikasi akun'],
-      ['Email tujuan', o.email || '-'],
-      ['Berlaku hingga', berlakuHingga],
-      ['Kode referensi', ref]
-    ]
-    .map(function (d, i) {
-      var border = i < 3 ? 'border-bottom:1px solid #eceef1;' : '';
-      return '<tr>' +
-        '<td style="padding:12px 0;' + border + 'color:#9ca3af;font-size:11px;font-weight:bold;letter-spacing:1px;text-transform:uppercase">' + d[0] + '</td>' +
-        '<td style="padding:12px 0 12px 16px;' + border + 'color:#111827;font-size:13px;font-weight:bold;text-align:right;word-break:break-all">' + d[1] + '</td>' +
-      '</tr>';
-    })
-    .join('');
+  const tgl = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
   const cta = '<a href="' + (o.ctaLink || 'https://app.clincoo.buzz/') + '" style="display:inline-block;background:#0a0a0a;color:#ffffff;padding:13px 32px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:bold;margin-top:24px">' + (o.ctaText || 'Verifikasi Sekarang') + '</a>';
   return '<div style="background:#ffffff;padding:36px 24px;font-family:Arial,Helvetica,sans-serif">' +
     '<div style="max-width:520px;margin:0 auto">' +
@@ -110,7 +90,6 @@ export function otpEmail(opts) {
       '<div style="margin:0 0 20px;padding:22px 0;border-top:1px solid #eceef1;border-bottom:1px solid #eceef1;text-align:center">' +
         '<span style="font-size:36px;font-weight:bold;letter-spacing:12px;color:#0a0a0a">' + code + '</span>' +
       '</div>' +
-      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 20px">' + rows + '</table>' +
       '<p style="margin:0 0 24px;color:#9ca3af;font-size:12px;line-height:1.7">Kode ini otomatis hangus dalam ' + minutes + ' menit dan hanya bisa dipakai satu kali. Jika sudah kedaluwarsa, silakan minta kode baru di aplikasi.</p>' +
       '<p style="margin:0 0 24px;color:#374151;font-size:13px;line-height:1.7"><b style="color:#111827">Jaga keamanan kode ini.</b> Jangan bagikan kepada siapa pun, termasuk pihak yang mengaku dari tim Clincoo — kami tidak akan pernah meminta kode Anda.</p>' +
       cta +
