@@ -2,15 +2,15 @@
 <html lang="id">
 <head>
 <script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
-  <script src="../../../../js/accent-init.js"></script>
+  <script src="../../../../../js/accent-init.js"></script>
 <script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
-  <script src="../../../../js/current-project.js?v=1"></script>
+  <script src="../../../../../js/current-project.js?v=1"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" sizes="64x64" href="../../../../assets/favicon.png">
-    <link rel="manifest" href="../../../../manifest.json">
-    <link rel="apple-touch-icon" href="../../../../assets/icons/apple-touch-icon.png">
-  <title>Broadcast — Clincoo Email</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="../../../../../assets/favicon.png">
+    <link rel="manifest" href="../../../../../manifest.json">
+    <link rel="apple-touch-icon" href="../../../../../assets/icons/apple-touch-icon.png">
+  <title>Kirim Broadcast — Clincoo Email</title>
     <meta name="description" content="Pengaturan: Email — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
     <meta name="robots" content="noindex">
     <meta name="theme-color" content="#ffffff">
@@ -156,8 +156,8 @@
   gtag('config', 'G-KMQ8WBZF6E');
 </script>
 <!-- End Google tag -->
-<script src="../../../../js/i18n-dict.js" defer></script>
-<script src="../../../../js/i18n.js" defer></script>
+<script src="../../../../../js/i18n-dict.js" defer></script>
+<script src="../../../../../js/i18n.js" defer></script>
 </head>
 <body class="text-gray-900 antialiased h-screen w-full overflow-hidden relative bg-white">
   <script>(function(){var t=localStorage.getItem("clinqoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
@@ -301,9 +301,10 @@
         <div class="py-5">
           <div class="flex items-start sm:items-center justify-between gap-3 mb-4">
             <div>
-              <h4 id="sec-title" class="text-base font-semibold text-gray-900 dark:text-white">Broadcast</h4>
+              <h4 id="sec-title" class="text-base font-semibold text-gray-900 dark:text-white">Kirim Broadcast</h4>
               <p id="sec-sub" class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kirim email massal ke banyak penerima sekaligus.</p>
             </div>
+            <a href="#" id="bcast-back" class="text-xs text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 underline underline-offset-2 transition-colors">← Riwayat broadcast</a>
           </div>
 
           <!-- Butuh login -->
@@ -322,36 +323,37 @@
           <!-- Aktif: mini-app email -->
           <div id="kirim-active" class="flex-col">
 
-            <!-- CTA kirim broadcast -->
-            <div class="flex items-center gap-3">
-              <a href="kirim/" id="bcast-cta" class="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors inline-flex items-center justify-center gap-2 cursor-pointer">Kirim Broadcast</a>
-              <span class="text-xs text-gray-400 dark:text-gray-500">Maks. 50 penerima · tiap penerima terhitung kuota bulanan.</span>
+            <!-- Form broadcast -->
+            <form id="bcast-form" onsubmit="submitBroadcast(event)" class="flex flex-col gap-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Subjek</label>
+                <input id="bcast-subject" type="text" required maxlength="200" placeholder="Subjek email" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Isi email (HTML)</label>
+                <textarea id="bcast-html" rows="5" required placeholder="&lt;p&gt;Isi email dalam HTML&lt;/p&gt;" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors font-mono"></textarea>
+              </div>
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400">Penerima</label>
+                  <button type="button" id="bcast-import" class="text-xs text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 underline underline-offset-2 transition-colors cursor-pointer">Impor dari Audiens</button>
+                </div>
+                <textarea id="bcast-to" rows="3" required placeholder="satu@email.com, dua@email.com — pisahkan dengan koma, spasi, atau baris baru" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors"></textarea>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Maksimal 50 penerima per broadcast · tiap penerima terhitung kuota bulanan.</p>
+              </div>
+              <div class="flex items-center gap-3">
+                <button type="submit" id="bcast-btn" class="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Kirim Broadcast</button>
+                <span id="bcast-count" class="text-xs text-gray-400 dark:text-gray-500">0 penerima</span>
+              </div>
+            </form>
+
+            <!-- Hasil broadcast -->
+            <div id="bcast-result" class="hidden mt-4 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
+              <p class="text-sm font-semibold" id="bcast-result-title"></p>
+              <div id="bcast-result-detail" class="text-xs text-gray-500 dark:text-gray-400 mt-1"></div>
+              <div id="bcast-result-fail" class="hidden mt-2 text-xs text-red-500 flex-col gap-1"></div>
             </div>
 
-            <!-- Riwayat broadcast -->
-            <div class="pt-5 mt-5 border-t border-gray-100 dark:border-slate-800">
-              <div class="flex items-center justify-between gap-3 mb-3">
-                <p class="text-sm font-semibold text-gray-900 dark:text-white">Riwayat broadcast</p>
-                <span class="text-xs text-gray-400 dark:text-gray-500"><span id="bcast-hist-count">…</span></span>
-              </div>
-              <div class="overflow-x-auto">
-                <table class="w-full text-xs text-left border-collapse">
-                  <thead>
-                    <tr class="text-gray-400 dark:text-gray-500 border-b border-gray-200 dark:border-slate-700">
-                      <th class="py-2.5 pr-6 font-medium whitespace-nowrap">Waktu</th>
-                      <th class="py-2.5 pr-6 font-medium whitespace-nowrap">Subjek</th>
-                      <th class="py-2.5 pr-6 font-medium whitespace-nowrap">Penerima</th>
-                      <th class="py-2.5 font-medium whitespace-nowrap">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody id="bcast-list" class="divide-y divide-gray-100 dark:divide-slate-800">
-                    <tr class="animate-pulse"><td colspan="4" class="py-3"><div class="h-2.5 bg-gray-200 dark:bg-slate-700 rounded-full w-1/3"></div></td></tr>
-                    <tr class="animate-pulse"><td colspan="4" class="py-3"><div class="h-2.5 bg-gray-200 dark:bg-slate-700 rounded-full w-2/3"></div></td></tr>
-                    <tr class="animate-pulse"><td colspan="4" class="py-3"><div class="h-2.5 bg-gray-200 dark:bg-slate-700 rounded-full w-1/2"></div></td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -367,65 +369,99 @@
   </script>
     <script>if (window.lucide) { lucide.createIcons(); }</script>
 
-<script src="../email-core.js"></script>
+<script src="../../email-core.js"></script>
 <script>
-// --- Broadcast: daftar riwayat (form kirim ada di halaman kirim/) ---
-function _bcastCacheKey() { return 'clincoo_email_bcast_' + _pid(); }
-function _bcastTime(iso) {
-  try { return new Date(iso + 'Z').toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return iso || '-'; }
+// --- Kirim Broadcast: form doang; riwayat ada di halaman sebelumnya ---
+function _bcastParse() {
+  var raw = (document.getElementById('bcast-to') || {}).value || '';
+  var seen = {}, n = 0;
+  raw.split(/[\s,;]+/).forEach(function (t) {
+    var e = String(t || '').trim().toLowerCase();
+    if (e && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && !seen[e]) { seen[e] = 1; n++; }
+  });
+  return n;
 }
-function _bcastRender(items) {
-  var tb = document.getElementById('bcast-list'); if (!tb) return;
-  var c = document.getElementById('bcast-hist-count');
-  if (c) c.textContent = (items || []).length + ' broadcast';
-  if (!items || !items.length) {
-    tb.innerHTML = '<tr><td colspan="4" class="py-2.5 text-gray-400 dark:text-gray-500">Belum ada broadcast.</td></tr>';
-    return;
-  }
-  tb.innerHTML = items.map(function (b) {
-    var okAll = b.failed === 0, st = okAll
-      ? '<span class="text-green-600">' + b.sent + ' terkirim</span>'
-      : '<span class="text-green-600">' + b.sent + ' terkirim</span> · <span class="text-red-500">' + b.failed + ' gagal</span>';
-    return '<tr>'
-      + '<td class="py-3.5 pr-6 text-gray-400 dark:text-gray-500 whitespace-nowrap">' + _esc(_bcastTime(b.created_at)) + '</td>'
-      + '<td class="py-3.5 pr-6 font-medium max-w-[11rem] sm:max-w-[16rem] truncate whitespace-nowrap">' + _esc(b.subject || '(tanpa subjek)') + '</td>'
-      + '<td class="py-3.5 pr-6 text-gray-500 dark:text-gray-400 whitespace-nowrap">' + b.total + '</td>'
-      + '<td class="py-3.5 whitespace-nowrap">' + st + '</td>'
-      + '</tr>';
-  }).join('');
+function _bcastCount() {
+  document.getElementById('bcast-count').textContent = _bcastParse() + ' penerima';
 }
-function _bcastRefresh(silent) {
-  if (!silent) { /* biarkan shimmer tetap — fetch cepat */ }
-  return fetch(API_BASE + '/email?action=broadcast_list&project_id=' + encodeURIComponent(_pid()), { headers: _hdrs() })
+function submitBroadcast(ev) {
+  ev.preventDefault();
+  var btn = document.getElementById('bcast-btn');
+  var to = document.getElementById('bcast-to').value;
+  var subject = document.getElementById('bcast-subject').value;
+  var html = document.getElementById('bcast-html').value;
+  var n = _bcastParse();
+  if (!n) { emailToast('Tidak ada alamat penerima yang valid', false); return; }
+  if (n > 50) { emailToast('Maksimal 50 penerima per broadcast', false); return; }
+  btn.disabled = true;
+  btn.textContent = 'Mengirim ke ' + n + ' penerima…';
+  _apiPost('broadcast', { to: to, subject: subject, html: html }).then(function (res) {
+    var box = document.getElementById('bcast-result');
+    document.getElementById('bcast-result-title').textContent = res.sent + ' terkirim' + (res.failed ? ' · ' + res.failed + ' gagal' : '');
+    document.getElementById('bcast-result-detail').textContent = 'Subjek: ' + subject;
+    var fail = document.getElementById('bcast-result-fail');
+    if (res.failures && res.failures.length) {
+      fail.classList.remove('hidden'); fail.classList.add('flex');
+      fail.innerHTML = res.failures.map(function (f) { return '<span>' + _esc(f.to) + ' — ' + _esc(f.reason) + '</span>'; }).join('');
+    } else { fail.classList.add('hidden'); fail.classList.remove('flex'); fail.innerHTML = ''; }
+    box.classList.remove('hidden');
+    emailToast('Broadcast selesai: ' + res.sent + ' terkirim, ' + res.failed + ' gagal', !res.failed);
+    try { sessionStorage.setItem('clincoo_email_dirty', '1'); } catch (e) {}
+    try { localStorage.removeItem('clincoo_email_bcast_' + _pid()); } catch (e) {}
+    document.getElementById('bcast-form').reset();
+    _bcastCount();
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }).catch(function (e) {
+    emailToast((e && e.error) ? e.error : 'Broadcast gagal — coba lagi', false);
+  }).finally(function () {
+    btn.disabled = false;
+    btn.textContent = 'Kirim Broadcast';
+  });
+}
+function importAudiens() {
+  var btn = document.getElementById('bcast-import');
+  if (!btn || btn.disabled) return;
+  btn.disabled = true;
+  fetch(API_BASE + '/email?action=audience_list&project_id=' + encodeURIComponent(_pid()), { headers: _hdrs() })
     .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
     .then(function (j) {
-      _bcastRender(j.items || []);
-      try { localStorage.setItem(_bcastCacheKey(), JSON.stringify({ t: Date.now(), items: j.items || [] })); } catch (e) {}
+      var items = j.items || [];
+      if (!items.length) { emailToast('Belum ada kontak di Audiens — tambahkan dulu di halaman Audiens', false); return; }
+      var ta = document.getElementById('bcast-to');
+      var cur = ta.value.split(/[\s,;]+/).map(function (t) { return t.trim().toLowerCase(); }).filter(Boolean);
+      var seen = {}; cur.forEach(function (e) { seen[e] = 1; });
+      var added = 0, skipped = 0;
+      items.forEach(function (it) {
+        var e = (it.email || '').trim().toLowerCase();
+        if (!e || seen[e]) { if (e) skipped++; return; }
+        if (cur.length + added >= 50) { skipped++; return; }
+        seen[e] = 1; cur.push(e); added++;
+      });
+      ta.value = cur.join(', ');
+      _bcastCount();
+      if (added) emailToast(added + ' kontak diimpor dari Audiens' + (skipped ? ' · ' + skipped + ' dilewati (sudah ada / melebihi batas 50)' : ''), true);
+      else emailToast('Semua kontak Audiens sudah ada di daftar penerima', false);
     })
-    .catch(function () {});
-}
-function _bcastInit() {
-  // render instan dari cache dulu
-  try {
-    var c = JSON.parse(localStorage.getItem(_bcastCacheKey()) || 'null');
-    if (c && c.items) _bcastRender(c.items);
-  } catch (e) {}
-  _bcastRefresh(true);
-  // refresh real-time: 15s saat tab terlihat + saat kembali ke halaman
-  setInterval(function () { if (document.visibilityState === 'visible') _bcastRefresh(true); }, 15000);
-  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') _bcastRefresh(true); });
-  window.addEventListener('pageshow', function () { _bcastRefresh(true); });
+    .catch(function () { emailToast('Gagal memuat Audiens — coba lagi', false); })
+    .finally(function () { btn.disabled = false; });
 }
 document.addEventListener('DOMContentLoaded', function () {
-  var cta = document.getElementById('bcast-cta');
-  if (cta) cta.href = 'kirim/' + location.search;
-  emailGate(function () { _bcastInit(); });
+  var back = document.getElementById('bcast-back');
+  if (back) back.href = '../' + location.search;
+  emailGate(function () {
+    var to = document.getElementById('bcast-to');
+    if (to) to.addEventListener('input', _bcastCount);
+  });
+  try {
+    var bm = document.querySelector('#header-more-menu a[data-menu="broadcast"]');
+    if (bm) bm.classList.add('font-semibold');
+  } catch (e) {}
 });
 </script>
 
 
     <script>/* clinqoo-sw-register */
-    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../../sw.js').catch(function () {}); }); }
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../../../sw.js').catch(function () {}); }); }
     </script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
 <script>

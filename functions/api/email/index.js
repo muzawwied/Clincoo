@@ -22,6 +22,7 @@
 // POST {action:'delete_log', project_id, id}                  → hapus entri histori (delete)  [auth]
 // POST {action:'send', api_key, to, subject, html, reply_to}  → kirim email dari situs deploy  [publik via api_key]
 // GET  ?action=broadcast_list&project_id=...               → riwayat broadcast            [auth]
+// GET  ?action=audience_list&project_id=...                → daftar kontak audiens        [auth]
 // POST {action:'broadcast', project_id, to, subject, html}  → kirim massal (maks 50 penerima) [auth]
 
 import { guardProject, currentUser } from '../user-scope.js';
@@ -117,6 +118,14 @@ async function ensureTables(db) {
     created_at TEXT DEFAULT (datetime('now'))
   )`).run();
   await db.prepare('CREATE INDEX IF NOT EXISTS idx_email_bcast_project ON email_broadcasts(project_id, created_at)').run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS email_audience (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id TEXT NOT NULL,
+    email TEXT NOT NULL,
+    name TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now'))
+  )`).run();
+  await db.prepare('CREATE UNIQUE INDEX IF NOT EXISTS idx_email_audience_project_email ON email_audience(project_id, email)').run();
   // Kolom baru untuk deployment lama (idempoten).
   for (const col of ['sender_email', 'sender_key', 'owner_email']) {
     try { await db.prepare(`ALTER TABLE email_settings ADD COLUMN ${col} TEXT DEFAULT ''`).run(); } catch (e) {}
@@ -374,6 +383,17 @@ export async function onRequestGet({ request, env }) {
     }
     await ensureOwnerEmail(env, row);
     return json(await configPayload(env, row, used, await historyLog(env.DB, projectId, 10), limit));
+  }
+
+  if (action === 'audience_list') {
+    const denied = await guardEmail(env, request, projectId);
+    if (denied) return denied;
+    await ensureTables(env.DB);
+    const rows = await env.DB.prepare(
+      'SELECT email, name FROM email_audience WHERE project_id = ? ORDER BY id DESC LIMIT 200'
+    ).bind(projectId).all();
+    const items = (rows && rows.results ? rows.results : []).map(function (r) { return { email: r.email, name: r.name || '' }; });
+    return json({ items: items });
   }
 
   if (action === 'broadcast_list') {
