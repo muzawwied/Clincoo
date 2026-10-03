@@ -1,3 +1,5 @@
+import { PLAN_AI_API_CREDITS, ADMIN_EMAILS, getEffectivePlanByUserKey } from '../../api/plan-helpers.js';
+
 // Cloudflare Pages Function — /v1/chat/completions "Clincoo Open API" (SELF-CONTAINED)
 // Endpoint AI kompatibel OpenAI untuk proyek user. Secret di keluarkan per proyek
 // lewat /api/ai/v1/secret. Model: infrastruktur AI Clincoo (white-label — nama
@@ -101,8 +103,36 @@ const AUTO_CHAIN = [
 ];
 const ALL_MODELS = [...Object.keys(AI_MODELS), 'clincoo/auto'];
 
-// Estimasi biaya (kredit) per panggilan — seluruh model alokasi gratis = 0.
-function estimateCost(modelId, tokens) { return 0; }
+// ===== Harga per model (kredit Open API) — mikro-dolar per PANGGILAN =====
+// 1 unit = $0.000001 ($1 = 1.000.000 unit). Harga flat per request: mudah
+// dipahami user & prediktabel. Tier: super ringan 10, ringan 15, standar 25,
+// pro 50, ultra 80. clincoo/auto = 25 (harga tetap, apa pun model internal
+// yang merespons — billing prediktabel, biaya internal bukan urusan user).
+const MODEL_PRICES = {
+  'clincoo/auto': 25,
+  // super ringan ($0.000010)
+  'clincoo/lightning': 10, 'clincoo/ling-flash': 10, 'clincoo/lfm-mini': 10,
+  'clincoo/granite-4-micro': 10, 'clincoo/gemini-3.1-flash-lite': 10,
+  // ringan ($0.000015)
+  'clincoo/glm-4.7-flash': 15, 'clincoo/deepseek-v4-flash': 15, 'clincoo/gpt-oss-20b': 15,
+  'clincoo/dots-note': 15, 'clincoo/north-code': 15, 'clincoo/laguna-s': 15,
+  'clincoo/reasoning-mini': 15,
+  // standar ($0.000025)
+  'clincoo/glm-5.2': 25, 'clincoo/gemini-3.8-flash': 25, 'clincoo/gemini-3.6-flash': 25,
+  'clincoo/gemini-3.5-flash': 25, 'clincoo/llama-4-scout': 25, 'clincoo/llama-3.3-70b': 25,
+  'clincoo/mistral-small-3.1': 25, 'clincoo/multimodal-27b': 25, 'clincoo/sea-lion-27b': 25,
+  'clincoo/qwq-32b': 25, 'clincoo/qwen-coder-32b': 25, 'clincoo/omni-nano': 25,
+  'clincoo/acak': 20,
+  // pro ($0.000050)
+  'clincoo/glm-5.3': 50, 'clincoo/glm-5.3-flash': 50, 'clincoo/deepseek-v4-pro': 50,
+  'clincoo/gpt-oss-120b': 50, 'clincoo/kimi-k2.6': 50, 'clincoo/kimi-k2.7-code': 50,
+  'clincoo/reasoning-120b': 50,
+  // ultra ($0.000080)
+  'clincoo/reasoning-550b': 80
+};
+const DEFAULT_PRICE = 25;
+// Harga model yang DIMINTA (bukan model internal yang merespons) — prediktabel.
+function estimateCost(modelId) { return MODEL_PRICES[modelId] || DEFAULT_PRICE; }
 
 function normalizeMessages(messages) {
   const out = [];
@@ -265,6 +295,63 @@ async function initSecretTable(db) {
   await db.prepare('CREATE TABLE IF NOT EXISTS ai_router_secrets (project_id TEXT PRIMARY KEY, secret TEXT NOT NULL, created_at TEXT, last_used TEXT)').run();
 }
 
+// ===== Kredit API per pemilik proyek (harga per model, sesuai paket) =====
+// Tabel terpisah dari ai_quota (chat app) supaya satuan tidak tercampur:
+// satuan di sini = mikro-dolar ($0.000001) per panggilan.
+let _creditsTableReady = false;
+async function initCreditsTable(db) {
+  if (_creditsTableReady) return;
+  await db.prepare('CREATE TABLE IF NOT EXISTS ai_api_credits (user_key TEXT, day TEXT, spent INTEGER, PRIMARY KEY (user_key, day))').run();
+  _creditsTableReady = true;
+}
+// Potong kredit pemilik proyek SEBELUM model dipanggil (pre-check + deduct sekali jalan).
+// Fail-open: gagal DB tidak memblokir user (kebijakan sama dengan /api/chat).
+async function chargeCredits(db, projectId, model) {
+  const cost = estimateCost(model);
+  try {
+    const pRow = await db.prepare('SELECT user_id FROM user_projects WHERE id = ?').bind(projectId).first();
+    if (!pRow) return { ok: true, cost }; // proyek tanpa pemilik terdaftar -> jangan blokir
+    const uid = Number(pRow.user_id);
+    const uRow = await db.prepare('SELECT email FROM auth_users WHERE id = ?').bind(uid).first();
+    if (uRow && ADMIN_EMAILS.has(String(uRow.email || '').toLowerCase())) return { ok: true, cost: 0 };
+    const userKey = 'u' + uid;
+    const eff = await getEffectivePlanByUserKey(db, userKey);
+    const limits = PLAN_AI_API_CREDITS[eff.plan] || PLAN_AI_API_CREDITS.Starter;
+    const now = new Date();
+    const day = now.toISOString().slice(0, 10);
+    const month = now.toISOString().slice(0, 7);
+    await initCreditsTable(db);
+    const rows = await db.prepare('SELECT day, spent FROM ai_api_credits WHERE user_key = ? AND day IN (?, ?)').bind(userKey, day, month).all();
+    let d = 0, m = 0;
+    for (const r of rows.results || []) { if (r.day === day) d = r.spent || 0; if (r.day === month) m = r.spent || 0; }
+    if (m + cost > limits.monthly) return { ok: false, scope: 'monthly', used: m, limit: limits.monthly, plan: eff.plan };
+    if (d + cost > limits.daily) return { ok: false, scope: 'daily', used: d, limit: limits.daily, plan: eff.plan };
+    await db.batch([
+      db.prepare('INSERT INTO ai_api_credits (user_key, day, spent) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET spent = spent + ?').bind(userKey, day, cost, cost),
+      db.prepare('INSERT INTO ai_api_credits (user_key, day, spent) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET spent = spent + ?').bind(userKey, month, cost, cost)
+    ]);
+    return { ok: true, cost };
+  } catch (e) { return { ok: true, cost }; }
+}
+// Kalau SEMUA model gagal merespons, kredit dikembalikan (user tidak bayar percuma).
+async function refundCredits(db, projectId, model) {
+  const cost = estimateCost(model);
+  if (!cost) return;
+  try {
+    const pRow = await db.prepare('SELECT user_id FROM user_projects WHERE id = ?').bind(projectId).first();
+    if (!pRow) return;
+    const userKey = 'u' + Number(pRow.user_id);
+    const now = new Date();
+    const day = now.toISOString().slice(0, 10);
+    const month = now.toISOString().slice(0, 7);
+    await initCreditsTable(db);
+    await db.batch([
+      db.prepare('INSERT INTO ai_api_credits (user_key, day, spent) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET spent = MAX(0, spent - ?)').bind(userKey, day, 0, cost),
+      db.prepare('INSERT INTO ai_api_credits (user_key, day, spent) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET spent = MAX(0, spent - ?)').bind(userKey, month, 0, cost)
+    ]);
+  } catch (e) {}
+}
+
 export async function onRequestPost({ request, env }) {
   const ip = clientIp(request);
   if (!rateLimitOk(ip)) return json({ error: { message: 'Terlalu banyak permintaan. Coba lagi sebentar.', type: 'rate_limit', code: 429 } }, 429);
@@ -305,6 +392,15 @@ export async function onRequestPost({ request, env }) {
     return json({ error: { message: 'Model tidak dikenal. Lihat daftar model di /v1/models.', type: 'invalid_request', code: 400 } }, 400);
   }
 
+  // --- Kredit API pemilik proyek (harga per model, sesuai paket langganan) ---
+  const credit = await chargeCredits(db, projectId, model);
+  if (!credit.ok) {
+    const pesan = credit.scope === 'daily'
+      ? 'Kredit API Clincoo hari ini sudah habis (paket ' + credit.plan + '). Reset otomatis besok — upgrade paket di menu Profil untuk jatah lebih besar.'
+      : 'Kredit API Clincoo bulan ini sudah habis (paket ' + credit.plan + '). Reset otomatis awal bulan depan — upgrade paket di menu Profil untuk jatah lebih besar.';
+    return json({ error: { message: pesan, type: 'insufficient_credits', code: 429, plan: credit.plan, scope: credit.scope, used: credit.used, limit: credit.limit } }, 429);
+  }
+
   const src = originOf(request);
   const t0 = Date.now();
   const chain = model === 'clincoo/auto' ? AUTO_CHAIN : [model];
@@ -316,13 +412,14 @@ export async function onRequestPost({ request, env }) {
   const ms = Date.now() - t0;
 
   if (!result || !result.text) {
+    await refundCredits(db, projectId, model); // gagal total -> kredit dikembalikan
     await logCall(db, projectId, model, 0, ms, 0, 0, src, 'semua model pada rantai gagal merespons');
     // Catatan: pakai 503 (bukan 502) — Cloudflare mengganti body setiap respons
     // berstatus 502/504/52x dengan halaman generik, menutupi pesan JSON ini.
     return json({ error: { message: 'Model sedang penuh/tidak tersedia sementara. Coba model lain atau ulangi beberapa saat lagi.', type: 'server', code: 503 } }, 503);
   }
 
-  const cost = estimateCost(result.model, result.tokens);
+  const cost = credit.cost; // harga model yang diminta (billing prediktabel)
   await logCall(db, projectId, result.model, 1, ms, result.tokens, cost, src, '');
 
   const completion = {
