@@ -300,8 +300,7 @@
         /* Mobile: rapatkan jarak antar menu di kapsul (Agent | Workspace | Dashboard) — pakai !important krn class Tailwind px-2.5 disuntik CDN belakangan & menang cascade tanpa ini */
         @media (max-width: 384px) { #sidebar-toggle, #header-more-btn { width: 38px; height: 38px; } }
         @media (max-width: 330px) { #sidebar-toggle, #header-more-btn { width: 34px; height: 34px; } .chat-nav-link { padding-left: 0.5rem; padding-right: 0.5rem; } }
-        /* ===== Mobile: chat jadi bottom sheet + FAB Agent; panel workspace jadi latar penuh ===== */
-        #chat-fab { display: none; }
+        /* ===== Mobile: chat jadi bottom sheet (buka lagi via tab Agent); panel workspace jadi latar penuh ===== */
         @media (max-width: 899.98px) {
             #chat-ws-panel { display: block !important; left: 0 !important; }
             #chat-sheet { position: fixed; left: 0; right: 0; bottom: 0; top: 76px; z-index: 15; display: flex; flex-direction: column; background: #ffffff; border-radius: 22px 22px 0 0; box-shadow: 0 -8px 32px rgba(0,0,0,0.18); transform: translateY(0); transition: transform .3s cubic-bezier(.4,0,.2,1); }
@@ -312,15 +311,11 @@
             #chat-container { padding-top: 10px !important; flex: 1 1 0; min-height: 0; }
             body.sheet-closed #chat-sheet { transform: translateY(115%); }
             body.sheet-closed #chat-input-footer { display: none; }
-            #chat-fab { position: fixed; right: 16px; bottom: 16px; z-index: 10; display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 20px; border-radius: 9999px; border: none; background: #111111; color: #ffffff; font-size: 14px; font-weight: 600; box-shadow: 0 6px 24px rgba(0,0,0,0.28); cursor: pointer; }
-            body:not(.sheet-closed) #chat-fab { display: none; }
         }
         @media (min-width: 900px) { #chat-sheet { display: contents; } #chat-sheet-handle { display: none; } }
-        .chat-nav-link[data-nav="agent"] { display: none !important; } /* Agent via FAB, bukan kapsul */
         /* embed=1 (chat dalam sheet overlay halaman lain): penuhi layar, tanpa header/ws/FAB */
         html.embed-mode body > header { display: none !important; }
         html.embed-mode #chat-ws-panel { display: none !important; }
-        html.embed-mode #chat-fab { display: none !important; }
         html.embed-mode #chat-sheet { position: fixed !important; top: 0 !important; left: 0; right: 0; bottom: 0; border-radius: 0 !important; box-shadow: none !important; z-index: 15; }
         html.embed-mode #chat-container { padding-top: 10px !important; }
         html.embed-mode #chat-input-footer { padding-bottom: 14px; }
@@ -755,10 +750,6 @@
         </div>
     </footer>
     </div>
-    <button id="chat-fab" type="button" onclick="chatSheetOpen()" aria-label="Buka chat Agent">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 5.7a2 2 0 0 0 1.3 1.3L21 12l-5.8 2a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.7a2 2 0 0 0-1.3-1.3L3 12l5.8-2a2 2 0 0 0 1.3-1.3L12 3z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M19 3v.01M5 19v.01"></path></svg>
-        Agent
-    </button>
 
     <script>
         if (typeof window !== 'undefined') {
@@ -847,6 +838,15 @@
         chatNavLinks.forEach(x => x.classList.remove('is-active'));
         let chatNavActive = chatNavLinks.find(l => l.dataset.nav === initPanel) || chatNavLinks.find(l => l.dataset.nav === 'code') || chatNavLinks[0];
         if (chatNavActive) chatNavActive.classList.add('is-active');
+        // Mobile + URL membawa ?panel= (Workspace/Dashboard/Live preview): mulai dengan sheet chat
+        // tertutup supaya panel tampil penuh — refresh tidak membuka bagian chat lagi.
+        // Kembali ke chat lewat tab Agent di kapsul atas.
+        try {
+            var _initPanelParam = new URLSearchParams(location.search).get('panel');
+            if (_initPanelParam && !document.documentElement.classList.contains('embed-mode') && window.matchMedia('(max-width: 899.98px)').matches) {
+                document.body.classList.add('sheet-closed');
+            }
+        } catch (e) {}
         function chatNavMovePill(el) {
             if (!el) return;
             chatNavPill.style.top = el.offsetTop + 'px';
@@ -871,12 +871,16 @@
             l.addEventListener('click', (e) => {
                 var nav = l.dataset.nav;
                 var isDesk = window.matchMedia('(min-width: 900px)').matches;
-                if (splitNavSrc[nav]) {
+                if (nav === 'agent') {
+                    // Tab Agent: buka lagi sheet chat di mobile (pengganti FAB), tanpa navigasi ulang
+                    e.preventDefault();
+                    if (typeof window.chatSheetOpen === 'function') window.chatSheetOpen();
+                } else if (splitNavSrc[nav]) {
                     e.preventDefault();
                     if (wsFrame) { wsFrame.dataset.src = splitNavSrc[nav]; wsFrame.src = splitNavSrc[nav]; }
                     chatNavActive = l;
                     try { history.pushState({ panel: nav }, '', chatNavUrl(nav)); } catch (err) {}
-                    // mobile: tutup sheet agent biar panel kelihatan (balik ke chat via FAB Agent)
+                    // mobile: tutup sheet agent biar panel kelihatan (balik ke chat via tab Agent)
                     if (!isDesk && typeof window.chatSheetClose === 'function') window.chatSheetClose();
                 }
                 chatNavLinks.forEach(x => x.classList.remove('is-active')); l.classList.add('is-active'); chatNavMovePill(l);
@@ -902,7 +906,7 @@
         function closeHeaderMenu() {
             headerMoreMenu.classList.remove('open');
         }
-        // Bottom sheet chat (mobile): buka/tutup via FAB Agent & handle
+        // Bottom sheet chat (mobile): buka/tutup via tab Agent & handle
         var _sheetEl = document.getElementById('chat-sheet');
         var _chatEmbed = document.documentElement.classList.contains('embed-mode');
         window.chatSheetOpen = function () { document.body.classList.remove('sheet-closed'); if (_sheetEl) _sheetEl.style.transform = ''; };
