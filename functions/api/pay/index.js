@@ -34,9 +34,9 @@ const PAKASIR_API = 'https://app.pakasir.com';
 // throttle cek status: Pakasir membatasi 4 detik per transaksi
 const PKS_THROTTLE = new Map();
 
-function gatewayReady(env) { return !!(env.PAKASIR_SLUG && env.PAKASIR_API_KEY); }
+export function gatewayReady(env) { return !!(env.PAKASIR_SLUG && env.PAKASIR_API_KEY); }
 
-async function pakasirFetch(env, path, init) {
+export async function pakasirFetch(env, path, init) {
   try {
     const r = await fetch(PAKASIR_API + path, {
       ...init,
@@ -51,7 +51,7 @@ function qrImageUrl(qrString) {
   return qrString ? 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=12&data=' + encodeURIComponent(qrString) : '';
 }
 
-function mapPksStatus(st) {
+export function mapPksStatus(st) {
   st = String(st || '').toLowerCase();
   if (st === 'completed') return 'paid';
   if (st === 'canceled' || st === 'cancelled' || st === 'expired') return 'expired';

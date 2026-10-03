@@ -1,7 +1,7 @@
 // Webhook dari Pakasir (API v2): POST /api/pay/webhook
 // Body: {txn_id, order_id, amount, is_sandbox, status, completed_at} + header X-Secret.
 // URL ini diisi di halaman detail proyek Pakasir (kolom Webhook URL).
-import { forwardPayWebhook } from './index.js';
+import { forwardPayWebhook, pakasirFetch, mapPksStatus, gatewayReady } from './index.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -44,6 +44,17 @@ export async function onRequestPost({ request, env }) {
   }
 
   const st = String(body.status || '').toLowerCase() === 'completed' ? 'paid' : 'pending';
+
+  // KEAMANAN: jangan percaya body webhook mentah. Sebelum menandai 'paid' (saldo masuk),
+  // wajib verifikasi ulang ke Pakasir dengan API key — kredisi tanpa konfirmasi provider DITOLAK.
+  if (st === 'paid') {
+    if (!gatewayReady(env)) return new Response(JSON.stringify({ error: 'gateway tidak aktif — kredisi ditolak' }), { status: 503, headers: { 'Content-Type': 'application/json', ...CORS } });
+    if (!tx.trx_ref) return new Response(JSON.stringify({ error: 'trx_ref kosong — kredisi ditolak' }), { status: 400, headers: { 'Content-Type': 'application/json', ...CORS } });
+    const d = await pakasirFetch(env, '/api/v2/transaction-status/' + encodeURIComponent(env.PAKASIR_SLUG) + '/' + encodeURIComponent(tx.trx_ref), { method: 'GET' });
+    if (d.error) return new Response(JSON.stringify({ error: 'verifikasi provider gagal — kredisi ditunda', message: d.message || '' }), { status: 502, headers: { 'Content-Type': 'application/json', ...CORS } });
+    if (mapPksStatus(d.status) !== 'paid') return new Response(JSON.stringify({ error: 'provider belum completed — kredisi ditolak', provider_status: d.status || '' }), { status: 409, headers: { 'Content-Type': 'application/json', ...CORS } });
+  }
+
   if (st !== tx.status) {
     await db.prepare('UPDATE pay_transactions SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').bind(st, tx.id).run();
   }
