@@ -13,6 +13,7 @@
 // POST {action:'withdrawals', project_id}                → log penarikan                    [auth]
 // POST {action:'create', key, amount, description}       → buat transaksi QRIS              [publik via pay_key]
 // GET  ?action=status&key=...&order_id=...               → cek status transaksi              [publik via pay_key]
+// POST {action:'status', key, order_id}                  → cek status transaksi (body)        [publik via pay_key]
 // POST {action:'callback', ...}                          → notifikasi dari provider → forward ke webhook proyek [callback secret]
 
 import { guardProject, currentUser } from '../user-scope.js';
@@ -515,6 +516,33 @@ async function calcBalance(db, projectId) {
 }
 
 
+// Cek status transaksi QRIS — dipakai bersama oleh GET (action via query param)
+// dan POST (action via body), agar caller dengan salah satu gaya pun tetap jalan.
+async function handlePayStatus(env, db, key, orderId) {
+  if (!key || !orderId) return json({ error: 'key dan order_id wajib diisi' }, 400);
+  const tx = await db.prepare('SELECT * FROM pay_transactions WHERE pay_key = ? AND order_id = ?').bind(key, orderId).first();
+  if (!tx) return json({ error: 'transaksi tidak ditemukan' }, 404);
+  const det = {
+    order_id: tx.order_id, description: tx.description || '',
+    qr_image: qrImageUrl(tx.qr_string || ''),
+    total_payment: (tx.total_payment != null ? tx.total_payment : tx.amount),
+    created_at: tx.created_at || ''
+  };
+  if (tx.status === 'paid') return json({ success: true, status: 'paid', amount: tx.amount, ...det });
+  if (!tx.trx_ref) return json({ success: true, status: tx.status, amount: tx.amount, ...det });
+  // hormati rate limit Pakasir: 4 detik per transaksi
+  const last = PKS_THROTTLE.get(tx.id) || 0;
+  if (Date.now() - last < 4000) return json({ success: true, status: tx.status, amount: tx.amount, ...det });
+  PKS_THROTTLE.set(tx.id, Date.now());
+  const d = await pakasirFetch(env, '/api/v2/transaction-status/' + encodeURIComponent(env.PAKASIR_SLUG) + '/' + encodeURIComponent(tx.trx_ref), { method: 'GET' });
+  if (d.error) return json({ success: true, status: tx.status, amount: tx.amount, message: d.message || '', ...det });
+  const st = mapPksStatus(d.status);
+  if (st !== tx.status) {
+    await db.prepare('UPDATE pay_transactions SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').bind(st, tx.id).run();
+  }
+  return json({ success: true, status: st, amount: tx.amount, message: d.message || '', ...det });
+}
+
 // ---- GET ----
 export async function onRequestGet({ request, env }) {
   // verifikasi tanda tangan permintaan penarikan dari email (publik, gerbang = sig HMAC)
@@ -571,30 +599,7 @@ export async function onRequestGet({ request, env }) {
   }
 
   if (action === 'status') {
-    const key = url.searchParams.get('key') || '';
-    const orderId = url.searchParams.get('order_id') || '';
-    if (!key || !orderId) return json({ error: 'key dan order_id wajib diisi' }, 400);
-    const tx = await db.prepare('SELECT * FROM pay_transactions WHERE pay_key = ? AND order_id = ?').bind(key, orderId).first();
-    if (!tx) return json({ error: 'transaksi tidak ditemukan' }, 404);
-    const det = {
-      order_id: tx.order_id, description: tx.description || '',
-      qr_image: qrImageUrl(tx.qr_string || ''),
-      total_payment: (tx.total_payment != null ? tx.total_payment : tx.amount),
-      created_at: tx.created_at || ''
-    };
-    if (tx.status === 'paid') return json({ success: true, status: 'paid', amount: tx.amount, ...det });
-    if (!tx.trx_ref) return json({ success: true, status: tx.status, amount: tx.amount, ...det });
-    // hormati rate limit Pakasir: 4 detik per transaksi
-    const last = PKS_THROTTLE.get(tx.id) || 0;
-    if (Date.now() - last < 4000) return json({ success: true, status: tx.status, amount: tx.amount, ...det });
-    PKS_THROTTLE.set(tx.id, Date.now());
-    const d = await pakasirFetch(env, '/api/v2/transaction-status/' + encodeURIComponent(env.PAKASIR_SLUG) + '/' + encodeURIComponent(tx.trx_ref), { method: 'GET' });
-    if (d.error) return json({ success: true, status: tx.status, amount: tx.amount, message: d.message || '', ...det });
-    const st = mapPksStatus(d.status);
-    if (st !== tx.status) {
-      await db.prepare('UPDATE pay_transactions SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').bind(st, tx.id).run();
-    }
-    return json({ success: true, status: st, amount: tx.amount, message: d.message || '', ...det });
+    return handlePayStatus(env, db, url.searchParams.get('key') || '', url.searchParams.get('order_id') || '');
   }
 
   return json({ error: 'action tidak dikenal' }, 400);
@@ -610,6 +615,11 @@ export async function onRequestPost({ request, env }) {
   try { body = await request.json(); } catch (e) { return json({ error: 'body JSON tidak valid' }, 400); }
   const action = body.action || '';
   const projectId = body.project_id || '';
+
+  // ===== Cek status transaksi (publik via pay_key) — juga tersedia via GET ?action=status =====
+  if (action === 'status') {
+    return handlePayStatus(env, db, String(body.key || ''), String(body.order_id || ''));
+  }
 
   // ===== Aktifkan ClincooPay + terbitkan kredensial (auth) =====
   if (action === 'activate') {
