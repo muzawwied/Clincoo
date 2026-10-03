@@ -391,10 +391,16 @@
 
         <!-- 6. Log Pemakaian -->
         <div class="py-5">
-          <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center justify-between mb-4 gap-2">
             <div>
               <h4 class="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">Log Pemakaian</h4>
               <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Riwayat panggilan Clincoo Open API untuk proyek ini</p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="hidden sm:inline-flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500"><span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span><span id="ai-updated-at">memuat…</span></span>
+              <button type="button" onclick="aiRefreshNow(event)" class="p-1.5 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 hover:text-gray-800 dark:hover:text-gray-200 transition-colors cursor-pointer" aria-label="Muat ulang data sekarang" title="Muat ulang data sekarang">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+              </button>
             </div>
           </div>
           <div id="ai-log-list" class="space-y-2"></div>
@@ -421,14 +427,18 @@
               <p id="ai-stat-cost" class="text-base sm:text-xl font-bold text-gray-900 dark:text-white mt-0.5">0</p>
             </div>
           </div>
-          <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             <div>
               <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Status permintaan (Sukses vs Gagal)</p>
-              <div id="ai-status-chart-wrap" class="relative w-full h-[200px] rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 overflow-hidden p-2"><canvas id="ai-status-chart"></canvas></div>
+              <div id="ai-status-chart-wrap" class="relative w-full h-[220px] rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 overflow-hidden p-2"><canvas id="ai-status-chart"></canvas></div>
             </div>
             <div>
               <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Pemakaian harian (14 hari terakhir)</p>
-              <div id="ai-daily-chart-wrap" class="relative w-full h-[200px] rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 overflow-hidden p-2"><canvas id="ai-daily-usage-chart"></canvas></div>
+              <div id="ai-daily-chart-wrap" class="relative w-full h-[220px] rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 overflow-hidden p-2"><canvas id="ai-daily-usage-chart"></canvas></div>
+            </div>
+            <div>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Latensi rata-rata per model</p>
+              <div id="ai-latency-chart-wrap" class="relative w-full h-[220px] rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 overflow-hidden p-2"><canvas id="ai-latency-chart"></canvas></div>
             </div>
           </div>
           <div class="mt-5">
@@ -908,6 +918,27 @@
     var p = function (n) { return ('0' + n).slice(-2); };
     return p(t.getDate()) + '/' + p(t.getMonth() + 1) + ' ' + p(t.getHours()) + ':' + p(t.getMinutes()) + ':' + p(t.getSeconds());
   }
+  // ===== Cache lokal: data log terakhir disimpan di perangkat supaya buka/refresh
+  // halaman instan (render cache dulu, data segar menyusul otomatis tiap 5 detik) =====
+  function _aiCacheKey() { return 'clinqoo_ai_cache_' + (_aiPid() || 'default'); }
+  function aiCacheSave(logs, stats) {
+    try { localStorage.setItem(_aiCacheKey(), JSON.stringify({ ts: Date.now(), logs: logs, stats: stats })); } catch (e) {}
+  }
+  function aiCacheLoad() {
+    try { var s = localStorage.getItem(_aiCacheKey()); return s ? JSON.parse(s) : null; } catch (e) { return null; }
+  }
+  function _aiUpdatedAt(ts, cached) {
+    var el = document.getElementById('ai-updated-at');
+    if (!el) return;
+    var t = new Date(ts || Date.now());
+    if (isNaN(t.getTime())) return;
+    var p = function (n) { return ('0' + n).slice(-2); };
+    el.textContent = (cached ? 'tersimpan · ' : 'real-time · ') + p(t.getHours()) + ':' + p(t.getMinutes()) + ':' + p(t.getSeconds());
+  }
+  function aiRefreshNow(e) {
+    if (e && e.currentTarget) { var b = e.currentTarget; b.classList.add('animate-spin'); setTimeout(function () { b.classList.remove('animate-spin'); }, 700); }
+    loadAiLogs();
+  }
   async function loadAiLogs() {
     try {
       var res = await fetch(AI_API_BASE + '/ai/v1/logs?project_id=' + encodeURIComponent(_aiPid()), { headers: _aiHdrs(false) });
@@ -915,7 +946,9 @@
       var data = await res.json();
       renderAiLogs((data && data.logs) || []);
       renderAiAnalytics((data && data.stats) || {});
-    } catch (e) { /* pertahankan tampilan terakhir */ }
+      aiCacheSave((data && data.logs) || [], (data && data.stats) || {});
+      _aiUpdatedAt(Date.now(), false);
+    } catch (e) { /* pertahankan tampilan terakhir (cache tetap tampil saat offline) */ }
   }
   function startAiLiveLogs() {
     setInterval(function () { if (!document.hidden) loadAiLogs(); }, 5000);
@@ -930,6 +963,7 @@
   function renderAiLogs(logs) {
     _aiLogsRaw = logs || [];
     renderAiDailyChart();
+    renderAiLatencyChart();
     var list = document.getElementById('ai-log-list');
     var empty = document.getElementById('ai-log-empty');
     if (!list) return;
@@ -1006,7 +1040,7 @@
     var est = document.getElementById('ai-est-cost');
     if (est) {
       est.textContent = ((stats && stats.total) || 0)
-        ? 'Log diperbarui otomatis setiap 5 detik (real-time). Log server dibatasi 500 baris terakhir per proyek.'
+        ? 'Log diperbarui otomatis setiap 5 detik (real-time) tanpa perlu refresh halaman. Data terakhir disimpan di perangkat ini supaya buka ulang halaman terasa instan. Log server dibatasi 500 baris terakhir per proyek.'
         : '';
     }
     renderAiChart(perModel);
@@ -1106,6 +1140,17 @@
               pointRadius: 2.5,
               pointHoverRadius: 4,
               borderWidth: 2
+            }, {
+              label: 'Token',
+              data: days.map(function (x) { return x.tok; }),
+              borderColor: dark ? '#60a5fa' : '#3b82f6',
+              backgroundColor: 'transparent',
+              fill: false,
+              tension: 0.35,
+              pointRadius: 2.5,
+              pointHoverRadius: 4,
+              borderWidth: 2,
+              yAxisID: 'y1'
             }]
           },
           options: {
@@ -1114,15 +1159,66 @@
             animation: { duration: 300 },
             interaction: { mode: 'index', intersect: false },
             plugins: {
-              legend: { display: false },
+              legend: { display: true, position: 'bottom', labels: { color: tick, boxWidth: 10, boxHeight: 10, font: { size: 10 }, padding: 10 } },
               tooltip: { callbacks: { label: function (ctx) {
                 var x = days[ctx.dataIndex];
-                return x.n + 'x · ' + x.tok + ' token · kredit ' + x.c;
+                return ctx.dataset.label + ': ' + (ctx.datasetIndex === 0 ? x.n + 'x · ' + x.tok + ' token · kredit ' + x.c : x.tok + ' token');
               } } }
             },
             scales: {
               x: { ticks: { color: tick, font: { size: 10 }, maxRotation: 0, autoSkip: true }, grid: { display: false } },
-              y: { beginAtZero: true, ticks: { color: tick, precision: 0 }, grid: { color: grid } }
+              y: { beginAtZero: true, ticks: { color: tick, precision: 0 }, grid: { color: grid } },
+              y1: { position: 'right', beginAtZero: true, ticks: { color: tick, font: { size: 10 } }, grid: { drawOnChartArea: false } }
+            }
+          }
+        });
+      } catch (e) { wrap.classList.add('hidden'); }
+    });
+  }
+
+  // --- Grafik latensi rata-rata per model (Chart.js) ---
+  var _aiLatencyChart = { inst: null };
+  function renderAiLatencyChart() {
+    var wrap = document.getElementById('ai-latency-chart-wrap');
+    if (!wrap) return;
+    var logs = (_aiLogsRaw || []).filter(function (lg) { return lg.ok && (lg.ms || 0) > 0; });
+    loadChartJs(function (okLoad) {
+      if (!okLoad || !window.Chart) { wrap.classList.add('hidden'); return; }
+      wrap.classList.remove('hidden');
+      var agg = {};
+      logs.forEach(function (lg) {
+        var m = String(lg.m || '-');
+        if (!agg[m]) agg[m] = { m: m, n: 0, ms: 0 };
+        agg[m].n += 1;
+        agg[m].ms += (lg.ms || 0);
+      });
+      var rows = Object.keys(agg).map(function (k) { return agg[k]; });
+      rows.sort(function (a, b) { return b.n - a.n; });
+      rows = rows.slice(0, 6);
+      rows.sort(function (a, b) { return (b.ms / b.n) - (a.ms / a.n); });
+      var labels = rows.map(function (x) { var v = x.m.replace('clincoo/', ''); return v.length > 22 ? v.slice(0, 21) + '…' : v; });
+      var vals = rows.map(function (x) { return Math.round(x.ms / x.n); });
+      if (_aiLatencyChart.inst) { _aiLatencyChart.inst.destroy(); _aiLatencyChart.inst = null; }
+      var dark = _aiDark();
+      var tick = dark ? '#9ca3af' : '#6b7280';
+      var grid = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+      var bar = dark ? '#60a5fa' : '#3b82f6';
+      try {
+        _aiLatencyChart.inst = new Chart(document.getElementById('ai-latency-chart'), {
+          type: 'bar',
+          data: { labels: labels, datasets: [{ label: 'Rata-rata (ms)', data: vals, backgroundColor: bar, borderRadius: 4, maxBarThickness: 16 }] },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 300 },
+            plugins: {
+              legend: { display: false },
+              tooltip: { callbacks: { label: function (ctx) { var x = rows[ctx.dataIndex]; return ' ' + vals[ctx.dataIndex] + ' ms · ' + x.n + 'x panggilan'; } } }
+            },
+            scales: {
+              x: { beginAtZero: true, ticks: { color: tick, font: { size: 10 } }, grid: { color: grid } },
+              y: { ticks: { color: tick, font: { size: 10 } }, grid: { display: false } }
             }
           }
         });
@@ -1241,6 +1337,16 @@
     } catch (e) {}
   }
   document.addEventListener('DOMContentLoaded', function () {
+    // Tampilkan data tersimpan (cache lokal) lebih dulu — halaman terasa instan
+    // tanpa menunggu jaringan; data segar menyusul otomatis (real-time tiap 5 detik).
+    try {
+      var _cached = aiCacheLoad();
+      if (_cached && _cached.logs && _cached.logs.length) {
+        renderAiLogs(_cached.logs);
+        renderAiAnalytics(_cached.stats || {});
+        _aiUpdatedAt(_cached.ts, true);
+      }
+    } catch (e) {}
     loadAiSettings();
   });
 </script>
