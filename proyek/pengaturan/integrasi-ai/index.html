@@ -1402,6 +1402,9 @@
   async function loadAiSettings() {
     // render awal dulu — jangan tergantung sukses/tidaknya fetch
     renderAiModelOptions();
+    aiModelApplyUi(); // isi ikon dropdown dari _aiModelValue default SEKARANG —
+    // sebelum ini ikon kosong sampai fetch /project-settings selesai (tombol
+    // tampil tanpa logo lalu logo "muncul" telat begitu fetch kelar).
     updateAiRateHint();
     renderAiCurl();
     try {
