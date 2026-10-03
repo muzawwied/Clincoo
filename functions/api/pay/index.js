@@ -194,15 +194,6 @@ async function wdSign(env, w) {
   return [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function otpSign(env, row) {
-  const secret = env.PAY_CALLBACK_SECRET || '';
-  if (!secret) return '';
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const sig = await crypto.subtle.sign('HMAC', key, enc.encode('otpview:' + row.id + ':' + row.user_id + ':' + (row.project_id || '') + ':' + row.code + ':' + row.amount + ':' + row.dest_account));
-  return [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
 function wdText(w, sig, verifyUrl) {
   return [
     'Permintaan penarikan dana baru dari Clincoo.',
@@ -267,7 +258,7 @@ async function sendWithdrawEmail(env, w, sig, verifyUrl) {
   }
 }
 
-async function sendOtpEmail(env, toEmail, amount, fee, dest, viewUrl) {
+async function sendOtpEmail(env, toEmail, code, amount, fee, dest) {
   const url = await getSecret(env, 'MAIL_BRIDGE_URL');
   const bridgeKey = await getSecret(env, 'MAIL_BRIDGE_KEY');
   if (!url || !bridgeKey || !toEmail) return false;
@@ -275,56 +266,77 @@ async function sendOtpEmail(env, toEmail, amount, fee, dest, viewUrl) {
   const ew = WD_EWALLET_LABEL[dest.dest_type] || dest.dest_type;
   const now = new Date();
   const waktu = now.toLocaleString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
+  const row = (l, v) => '<tr><td style="padding:7px 0;font-size:13px;color:#888888">' + l + '</td><td style="padding:7px 0;font-size:13px;color:#111111;font-weight:600;text-align:right">' + v + '</td></tr>';
   const html = [
     '<div style="margin:0;padding:24px 12px;background:#f4f4f6;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif;">',
-    '<div style="max-width:400px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;border:1px solid #e8e8ec;">',
-    '<div style="padding:28px 28px 0;text-align:center">',
-    '<span style="display:inline-block;padding:7px 16px;border-radius:999px;background:#111;color:#fff;font-size:11px;font-weight:600;letter-spacing:1.2px">CLINCOO PEMBAYARAN</span>',
-    '<h1 style="margin:18px 0 6px;font-size:21px;font-weight:700;color:#111">Kode Verifikasi Penarikan</h1>',
-    '<p style="margin:0;font-size:13.5px;line-height:1.6;color:#666">Kamu meminta penarikan saldo dari proyek Clincoo. Untuk keamanan, <strong style="color:#111">kode verifikasi tidak dicantumkan di email ini</strong> — lihat kodenya melalui tombol di bawah.</p>',
-    '</div>',
-    '<div style="padding:20px 28px 0"><div style="border:1px solid #ececf0;border-radius:16px;padding:16px 18px">',
-    '<p style="margin:0 0 12px;font-size:11px;font-weight:600;letter-spacing:.8px;color:#999">RINCIAN PENARIKAN</p>',
-    '<p style="display:flex;justify-content:space-between;margin:0 0 8px;font-size:13px"><span style="color:#888">Nominal</span><strong style="color:#111">' + rp(amount) + '</strong></p>',
-    '<p style="display:flex;justify-content:space-between;margin:0 0 8px;font-size:13px"><span style="color:#888">Biaya penarikan</span><strong style="color:#111">' + rp(fee) + '</strong></p>',
-    '<p style="display:flex;justify-content:space-between;margin:0 0 8px;font-size:13px"><span style="color:#888">Total terpotong saldo</span><strong style="color:#111">' + rp(amount + fee) + '</strong></p>',
-    '<p style="display:flex;justify-content:space-between;margin:0 0 8px;font-size:13px"><span style="color:#888">Tujuan</span><strong style="color:#111">' + ew + ' ' + dest.dest_account + '</strong></p>',
-    '<p style="display:flex;justify-content:space-between;margin:0;font-size:13px"><span style="color:#888">Diminta</span><strong style="color:#111">' + waktu + '</strong></p>',
-    '</div></div>',
-    '<div style="padding:22px 28px">',
-    '<a href="' + viewUrl + '" style="display:block;height:48px;line-height:48px;text-align:center;background:#111;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;border-radius:999px">Lihat Kode Verifikasi</a>',
-    '<p style="margin:12px 0 0;font-size:12px;line-height:1.5;color:#999;text-align:center">Kode berlaku 10 menit sejak diminta dan hanya bisa dipakai sekali.</p>',
-    '</div>',
-    '<div style="padding:0 28px 24px">',
-    '<p style="margin:0;padding:12px 14px;background:#f6f6f8;border-radius:12px;font-size:12px;line-height:1.6;color:#777">Untuk keamanan akunmu: jangan bagikan kode atau tautan ini ke siapa pun, termasuk pihak yang mengaku dari Clincoo. Tim Clincoo tidak akan pernah meminta kode verifikasimu.</p>',
-    '</div>',
-    '<div style="padding:16px 28px;border-top:1px solid #f0f0f3;background:#fafafb;text-align:center">',
-    '<p style="margin:0 0 3px;font-size:11.5px;color:#999">Email otomatis dari Clincoo Pembayaran — tidak perlu dibalas.</p>',
-    '<p style="margin:0;font-size:11px;color:#bbb">Kamu menerima email ini karena permintaan penarikan dibuat dengan akunmu. Clincoo 2026</p>',
-    '</div>',
-    '</div></div>'
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center">',
+    '<table role="presentation" width="400" cellpadding="0" cellspacing="0" border="0" style="max-width:400px;width:100%;background:#ffffff;border-radius:20px;border:1px solid #e8e8ec;overflow:hidden">',
+    '<tr><td style="padding:26px 28px 0" align="center">',
+    '<span style="display:inline-block;padding:7px 16px;border-radius:999px;background:#111111;color:#ffffff;font-size:11px;font-weight:600;letter-spacing:1.2px">CLINCOO PEMBAYARAN</span>',
+    '<h1 style="margin:16px 0 0;font-size:21px;font-weight:700;color:#111111">Verifikasi Penarikan Saldo</h1>',
+    '</td></tr>',
+    '<tr><td style="padding:14px 28px 0">',
+    '<p style="margin:0 0 10px;font-size:14px;line-height:1.7;color:#444444">Halo, permintaan penarikan saldo baru saja dibuat dari proyek Clincoo milik akunmu. Untuk memastikan permintaan ini benar dari kamu, masukkan <strong style="color:#111111">kode verifikasi 6 digit</strong> di bawah ini ke halaman verifikasi di aplikasi.</p>',
+    '<p style="margin:0;font-size:14px;line-height:1.7;color:#444444">Kode hanya berlaku <strong style="color:#111111">10 menit</strong> sejak email ini dikirim dan hanya bisa dipakai satu kali. Kalau kamu tidak merasa meminta penarikan ini, abaikan saja email ini — tidak ada dana yang terpotong tanpa kode yang benar.</p>',
+    '</td></tr>',
+    '<tr><td style="padding:22px 28px" align="center">',
+    '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>',
+    '<td style="background:#fafafb;border:1px dashed #c9c9d0;border-radius:16px;padding:18px 30px;text-align:center">',
+    '<p style="margin:0 0 6px;font-size:10px;font-weight:600;letter-spacing:1px;color:#999999">KODE VERIFIKASI</p>',
+    '<p style="margin:0;font-family:ui-monospace,Consolas,monospace;font-size:38px;font-weight:700;letter-spacing:8px;color:#111111">' + code + '</p>',
+    '</td></tr></table>',
+    '<p style="margin:12px 0 0;font-size:12px;color:#999999">Masukkan kode ini di halaman verifikasi Clincoo.</p>',
+    '</td></tr>',
+    '<tr><td style="padding:0 28px">',
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #ececf0;border-radius:16px;padding:14px 18px">',
+    '<tr><td colspan="2" style="padding:0 0 8px;font-size:10px;font-weight:600;letter-spacing:1px;color:#999999">RINCIAN PENARIKAN</td></tr>',
+    row('Nominal', rp(amount)),
+    row('Biaya penarikan', rp(fee)),
+    row('Total terpotong saldo', rp(amount + fee)),
+    row('Tujuan', ew + ' ' + dest.dest_account),
+    row('Diminta', waktu),
+    '</table>',
+    '</td></tr>',
+    '<tr><td style="padding:16px 28px 0">',
+    '<p style="margin:0;padding:12px 14px;background:#f6f6f8;border-radius:12px;font-size:12px;line-height:1.6;color:#777777">Catatan keamanan: jangan bagikan kode ini ke siapa pun, termasuk pihak yang mengaku dari tim Clincoo. Tim Clincoo tidak akan pernah meminta kode verifikasimu.</p>',
+    '</td></tr>',
+    '<tr><td style="padding:22px 28px 0" align="center">',
+    '<p style="margin:0 0 4px;font-size:11.5px;color:#999999">Email otomatis dari Clincoo Pembayaran — tidak perlu dibalas.</p>',
+    '<p style="margin:0;font-size:11px;color:#bbbbbb">Clincoo 2026</p>',
+    '</td></tr>',
+    '<tr><td style="height:26px"></td></tr>',
+    '</table></td></tr></table></div>'
   ].join('');
   const text = [
-    'Kode Verifikasi Penarikan - Clincoo Pembayaran',
+    'Verifikasi Penarikan Saldo - Clincoo Pembayaran',
     '',
-    'Kamu meminta penarikan saldo dari proyek Clincoo.',
-    'Untuk keamanan, kode verifikasi tidak dicantumkan di email ini.',
-    'Lihat kodenya melalui tautan berikut (10 menit berlaku):',
-    viewUrl,
+    'Halo, permintaan penarikan saldo baru saja dibuat dari proyek Clincoo milik akunmu.',
+    'Masukkan kode verifikasi di bawah ini ke halaman verifikasi di aplikasi.',
+    'Kode berlaku 10 menit dan hanya bisa dipakai satu kali.',
     '',
+    '===== KODE VERIFIKASI =====',
+    '',
+    '    ' + code,
+    '',
+    '================================',
+    '',
+    'Rincian penarikan:',
     'Nominal: ' + rp(amount),
     'Biaya: ' + rp(fee),
     'Total terpotong: ' + rp(amount + fee),
     'Tujuan: ' + ew + ' - ' + dest.dest_account,
+    'Diminta: ' + waktu,
     '',
-    'JANGAN bagikan kode atau tautan ini ke siapa pun.',
-    'Jika kamu tidak meminta penarikan ini, abaikan email ini.'
+    'Jika kamu tidak merasa meminta penarikan ini, abaikan email ini.',
+    'JANGAN bagikan kode ini ke siapa pun.',
+    '',
+    'Email otomatis dari Clincoo Pembayaran. Clincoo 2026'
   ].join('\n');
   try {
     const r = await fetch(String(url).replace(/\/$/, '') + '/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Bridge-Key': String(bridgeKey) },
-      body: JSON.stringify({ to: toEmail, from_email: 'noreply@clincoo.buzz', from_name: 'Clincoo Pembayaran', subject: 'Kode verifikasi penarikan Clincoo', html, text })
+      body: JSON.stringify({ to: toEmail, from_email: 'noreply@clincoo.buzz', from_name: 'Clincoo Pembayaran', subject: 'Verifikasi penarikan saldo - Clincoo', html, text })
     });
     const data = await r.json().catch(() => ({}));
     return r.ok && data.ok;
@@ -389,19 +401,6 @@ export async function onRequestGet({ request, env }) {
       const expect = await wdSign(env, row);
       const ok = !!expect && expect === sig.toLowerCase();
       return json({ valid: ok, message: ok ? 'Tanda tangan cocok — permintaan asli dari server Clincoo.' : 'Tanda tangan TIDAK cocok — jangan proses penarikan ini.', withdrawal: { id: row.id, project_id: row.project_id, amount: row.amount, fee: row.fee, dest_type: row.dest_type, dest_account: row.dest_account, status: row.status, created_at: row.created_at } });
-    }
-    if (u.searchParams.get('action') === 'otp_view') {
-      const oid = Number(u.searchParams.get('otp_id') || 0);
-      const osig = String(u.searchParams.get('sig') || '');
-      const row = oid > 0 ? await env.DB.prepare('SELECT * FROM pay_wd_otp WHERE id = ?').bind(oid).first() : null;
-      const page = (title, body, extra) => new Response('<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="robots" content="noindex,nofollow"><title>' + title + ' — Clincoo</title><style>body{font-family:-apple-system,system-ui,sans-serif;background:#fff;color:#111;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px}.card{max-width:340px;width:100%;text-align:center}.pill{display:inline-block;padding:6px 14px;border-radius:999px;background:#111;color:#fff;font-size:12px;font-weight:600;letter-spacing:.05em}.h{font-size:20px;font-weight:700;margin:18px 0 8px}.p{font-size:14px;color:#666;line-height:1.6;margin:0}.code{font-family:ui-monospace,monospace;font-size:44px;font-weight:700;letter-spacing:10px;margin:20px 0 4px;user-select:all}.rec{margin:16px 0;padding:14px;border:1px solid #e5e5e5;border-radius:16px;text-align:left}.rec p{display:flex;justify-content:space-between;font-size:13px;margin:5px 0}.rec .l{color:#888}.rec .v{font-weight:600}.cta{display:inline-flex;align-items:center;justify-content:center;width:100%;height:48px;background:#111;color:#fff;border:none;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;margin-top:6px}.mono{font-family:monospace;font-size:11px;color:#999;margin-top:14px}</style>' + (extra || '') + '</head><body><div class="card"><span class="pill">CLINCOO PEMBAYARAN</span>' + body + '</div></body></html>', { headers: { 'content-type': 'text/html; charset=utf-8' } });
-      if (!row) return page('Tidak ditemukan', '<h1 class="h">Kode tidak ditemukan</h1><p class="p">Permintaan verifikasi tidak ditemukan. Minta kode baru dari halaman penarikan.</p>');
-      const expect = await otpSign(env, row);
-      if (!expect || expect !== osig.toLowerCase()) return page('Tidak valid', '<h1 class="h">Tautan tidak valid</h1><p class="p">Tautan ini tidak asli atau sudah rusak. Gunakan tautan dari email terbaru.</p>');
-      if (row.used_at) return page('Sudah dipakai', '<h1 class="h">Kode sudah dipakai</h1><p class="p">Kode verifikasi ini sudah digunakan. Jika kamu butuh penarikan lagi, minta kode baru.</p>');
-      const exp = new Date(String(row.expires_at).replace(' ', 'T') + 'Z').getTime();
-      if (Date.now() > exp) return page('Kedaluwarsa', '<h1 class="h">Kode kedaluwarsa</h1><p class="p">Kode ini sudah lewat 10 menit masa berlakunya. Minta kode baru dari halaman penarikan.</p>');
-      return page('Kode Verifikasi', '<h1 class="h">Kode verifikasi penarikan</h1><p class="code" id="cc">' + row.code + '</p><p class="p">Masukkan kode ini di halaman verifikasi Clincoo.</p><div class="rec"><p><span class="l">Nominal</span><span class="v">Rp ' + Number(row.amount).toLocaleString('id-ID') + '</span></p><p><span class="l">Tujuan</span><span class="v">' + (WD_EWALLET_LABEL[row.dest_type] || row.dest_type) + ' ' + row.dest_account + '</span></p></div><button type="button" class="cta" onclick="navigator.clipboard.writeText(document.getElementById(\'cc\').textContent).then(function(){this.textContent=\'Tersalin\'})">Salin kode</button><p class="mono">Berlaku 10 menit sejak diminta - jangan bagikan</p>');
     }
     if (u.searchParams.get('action') === 'withdraw_confirm') {
       const id = Number(u.searchParams.get('id') || 0);
@@ -577,10 +576,7 @@ export async function onRequestPost({ request, env }) {
     const r = await db.prepare(`INSERT INTO pay_wd_otp (user_id, project_id, amount, dest_type, dest_account, code, expires_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now', '+10 minutes')) RETURNING id`).bind(
       (await currentUser(env, request)).id, projectId, amount, destType, acc, code
     ).first();
-    const otpRow = { id: r.id, user_id: (await currentUser(env, request)).id, project_id: projectId, code, amount, dest_account: acc };
-    const osig = await otpSign(env, otpRow);
-    const viewUrl = 'https://app.clincoo.buzz/api/pay?action=otp_view&otp_id=' + r.id + '&sig=' + encodeURIComponent(osig);
-    const sent = await sendOtpEmail(env, own.email, amount, fee, { dest_type: destType, dest_account: acc }, viewUrl);
+    const sent = await sendOtpEmail(env, own.email, code, amount, fee, { dest_type: destType, dest_account: acc });
     if (!sent) return json({ success: false, message: 'Gagal mengirim OTP — coba lagi.' }, 500);
     const mask = own.email.replace(/^(.).*(@.*)$/, '$1*****$2');
     return json({ success: true, otp_id: r.id, expires_in: 600, sent_to: mask, message: 'Kode OTP dikirim ke ' + mask });
