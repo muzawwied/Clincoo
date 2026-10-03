@@ -341,7 +341,15 @@
               <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Secret dikeluarkan Clincoo khusus untuk proyek ini — setiap proyek punya secret berbeda</p>
             </div>
           </div>
-          <div id="ai-secret-empty" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div id="ai-secret-loading" class="flex items-center gap-2 py-1">
+            <svg class="animate-spin h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+            <p class="text-xs text-gray-400 dark:text-gray-500">Memuat secret…</p>
+          </div>
+          <div id="ai-secret-error" style="display:none" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <p class="text-xs text-red-500 dark:text-red-400">Gagal memuat secret — cek koneksi lalu coba lagi.</p>
+            <button type="button" onclick="loadAiSecret()" class="px-4 py-2 text-xs font-medium text-blue-600 border border-blue-200 dark:text-blue-300 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors cursor-pointer flex-shrink-0">Muat Ulang</button>
+          </div>
+          <div id="ai-secret-empty" style="display:none" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <p class="text-xs text-gray-400 dark:text-gray-500">Belum ada secret — buat secret baru untuk mulai memakai Clincoo Open API.</p>
             <button type="button" id="ai-secret-create-btn" onclick="createAiSecret()" class="px-4 py-2 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-lg transition-colors cursor-pointer flex-shrink-0">Buat Secret Baru</button>
           </div>
@@ -582,7 +590,7 @@
     var chip = 'w-7 h-7 rounded-full flex items-center justify-center shrink-0 overflow-hidden border border-gray-200 dark:border-slate-600';
     if (logo) {
       return '<span class="' + chip + ' bg-white ai-logo-chip-bg">' +
-        '<img src="' + logo + '" alt="' + aiModelLabel(id) + '" class="w-5 h-5 object-contain" loading="lazy" onerror="if(!this.dataset.f){this.dataset.f=1;this.src=AI_LOGO_FALLBACK;}else{this.style.display=&#39;none&#39;;}">' +
+        '<img src="' + logo + '" alt="' + aiModelLabel(id) + '" class="w-5 h-5 object-contain" loading="eager" decoding="async" onerror="if(!this.dataset.f){this.dataset.f=1;this.src=AI_LOGO_FALLBACK;}else{this.style.display=&#39;none&#39;;}">' +
         '</span>';
     }
     var ch = (aiModelLabel(id) || '?').trim().charAt(0).toUpperCase();
@@ -772,9 +780,20 @@
 
   // ===== Secret API per proyek =====
   async function loadAiSecret() {
+    // tampilkan status memuat dulu — JANGAN tampilkan CTA "belum ada secret"
+    // sebelum data benar-benar sampai (dulu: CTA muncul duluan lalu secret
+    // tiba-tiba muncul setelah fetch selesai).
+    var _loading = document.getElementById('ai-secret-loading');
+    var _err = document.getElementById('ai-secret-error');
+    var _empty = document.getElementById('ai-secret-empty');
+    var _active = document.getElementById('ai-secret-active');
+    if (_loading) _loading.style.display = '';
+    if (_err) _err.style.display = 'none';
+    if (_empty) _empty.style.display = 'none';
+    if (_active) _active.classList.add('hidden');
     try {
       var res = await fetch(AI_API_BASE + '/ai/v1/secret?project_id=' + encodeURIComponent(_aiPid()), { headers: _aiHdrs(false) });
-      if (!res.ok) return;
+      if (!res.ok) throw new Error('HTTP ' + res.status);
       var data = await res.json();
       if (data && data.exists && data.secret) {
         _aiSecret = data.secret;
@@ -783,10 +802,21 @@
         _aiSecret = '';
         renderAiSecret(null);
       }
-    } catch (e) {}
+    } catch (e) {
+      // gagal memuat BUKAN berarti belum ada secret — tampilkan error + muat ulang,
+      // jangan tampilkan CTA buat secret baru (bisa bikin user bikin dua kali).
+      if (_loading) _loading.style.display = 'none';
+      if (_empty) _empty.style.display = 'none';
+      if (_active) _active.classList.add('hidden');
+      if (_err) _err.style.display = '';
+    }
     renderAiCurl();
   }
   function renderAiSecret(data) {
+    var loadingEl = document.getElementById('ai-secret-loading');
+    if (loadingEl) loadingEl.style.display = 'none';
+    var errEl = document.getElementById('ai-secret-error');
+    if (errEl) errEl.style.display = 'none';
     var emptyWrap = document.getElementById('ai-secret-empty');
     var activeWrap = document.getElementById('ai-secret-active');
     var input = document.getElementById('ai-secret-value');
