@@ -29,6 +29,7 @@ var _PJBASE = _isGHPages && _pjSeg && _pjKnown.indexOf(_pjSeg) === -1 ? '/' + _p
 // Token Bearer diinjeksi otomatis oleh js/auth-client.js pada semua call /api/.
 const PROJECTS_API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/projects';
 let _pushTimer = null;
+let _dataVersion = 0; // versi data lokal — naik tiap perubahan lokal (hapus/duplikat), dipakai sync untuk membuang respons basi
 
 // Modal batas proyek per paket langganan (server menolak sinkronisasi karena limit)
 function showPlanLimitModal(d) {
