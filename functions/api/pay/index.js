@@ -394,7 +394,7 @@ async function sendWdResultEmail(env, toEmail, w, status, note) {
   } catch (e) { return false; }
 }
 
-async // referensi penarikan panjang: WD-YYYYMMDD-XXXXXX (deterministik dari id utk backfill)
+// referensi penarikan panjang: WD-YYYYMMDD-XXXXXX (deterministik dari id utk backfill)
 function wdMakeRef(idOrRandom, dateStr) {
   const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let ymd;
