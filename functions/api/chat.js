@@ -192,6 +192,65 @@ async function tryOpenRouterText(keys, messages, gDecls) {
   return lastErr ? { error: lastErr } : null;
 }
 
+// ===== Kunci Clouvia (router.clouvia.id — gateway AI lokal, kompatibel OpenAI) =====
+async function getClouviaKeys(env) {
+  const keys = [];
+  const seen = new Set();
+  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
+  add(env.CLOUVIA_API_KEY);
+  if (!env.DB) return keys;
+  try {
+    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('CLOUVIA_API_KEY','CLOUVIA_API_KEY_2')").all();
+    for (const r of rows.results || []) add(r.value);
+  } catch {}
+  return keys;
+}
+
+// ===== Provider cadangan #1: Clouvia Router (setelah OpenRouter, sebelum Workers AI) =====
+// Router AI Indonesia (router.clouvia.id/v1) — API kompatibel penuh OpenAI.
+// Dipakai saat OpenRouter gagal (limit/kredit) supaya chat tidak langsung jatuh
+// ke GLM 4.7 Flash (Workers AI) yang kualitas formatnya jauh lebih rendah.
+const CLOUVIA_MODELS = ['glm5.3-flash', 'coding-high-flash'];
+
+async function tryClouviaText(keys, messages, gDecls) {
+  const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
+  if (!keyList.length) return null;
+  const { system, chatMsgs } = toOAIChat(messages);
+  const oaiTools = oaiToolsOf(gDecls);
+  let lastErr = null;
+  for (const key of keyList) {
+    for (const model of CLOUVIA_MODELS) {
+      const baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
+      let data = null;
+      try {
+        const payload = { model, messages: baseMsgs, max_tokens: 4096 };
+        if (oaiTools) payload.tools = oaiTools;
+        const res = await fetch('https://router.clouvia.id/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+          body: JSON.stringify(payload)
+        });
+        data = await res.json().catch(() => ({}));
+        if (!res.ok) { lastErr = `Clouvia ${model}: HTTP ${res.status}`; continue; }
+      } catch (e) { lastErr = `Clouvia ${model}: ${e && e.message}`; continue; }
+      const msg = data && data.choices && data.choices[0] && data.choices[0].message;
+      const text = (msg && msg.content) || '';
+      const tcs = msg && Array.isArray(msg.tool_calls) ? msg.tool_calls : null;
+      if (tcs && tcs.length) {
+        const norm = [];
+        for (const c of tcs) {
+          let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
+          if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
+        }
+        if (norm.length) return { tool_calls: norm, text, model: model + ' (Clouvia)' };
+      }
+      if (text) return { text, model: model + ' (Clouvia)' };
+      lastErr = `Clouvia ${model}: respons kosong`;
+    }
+  }
+  return lastErr ? { error: lastErr } : null;
+}
+
 async function tryWorkersAIText(env, messages, gDecls) {
   if (!env || !env.AI) return null;
   const { system, chatMsgs } = toOAIChat(messages);
@@ -922,8 +981,9 @@ export async function onRequestPost({ request, env, waitUntil }) {
 
     const apiKey = await getGeminiKeys(env); // array kunci Gemini (cadangan + jalur vision)
     const orKeysEarly = await getOpenRouterKeys(env); // kunci OpenRouter (GLM 5.3 — utama)
+    const cvKeysEarly = await getClouviaKeys(env); // kunci Clouvia Router — cadangan #1
 
-    if (!orKeysEarly.length && !apiKey.length && !env.AI) {
+    if (!orKeysEarly.length && !cvKeysEarly.length && !apiKey.length && !env.AI) {
       return new Response(JSON.stringify({ error: 'Kunci AI belum dikonfigurasi. Tambahkan lewat Pengaturan → Environment (global).' }), {
         status: 500, headers: { 'Content-Type': 'application/json', ...CORS }
       });
@@ -974,6 +1034,10 @@ export async function onRequestPost({ request, env, waitUntil }) {
       if (orKeys.length && !hasImages) {
         const o = await withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls), 25000, 'OpenRouter').catch(e => ({ error: e.message }));
         if (o) r = o;
+      }
+      if ((!r || r.error) && cvKeysEarly.length && !hasImages) {
+        const c = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls), 25000, 'Clouvia').catch(e => ({ error: e.message }));
+        if (c) r = c;
       }
       if ((!r || r.error) && aiMain) {
         const w = await withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 25000, 'Workers AI').catch(e => ({ error: e.message }));
