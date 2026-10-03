@@ -394,7 +394,7 @@ function submitBroadcast(ev) {
   if (!n) { emailToast('Tidak ada alamat penerima yang valid', false); return; }
   if (n > 50) { emailToast('Maksimal 50 penerima per broadcast', false); return; }
   btn.disabled = true;
-  btn.textContent = 'Mengirim ke ' + n + ' penerima…';
+  btn.innerHTML = '<svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-80" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v3a5 5 0 0 0-5 5H4z"></path></svg>';
   _apiPost('broadcast', { to: to, subject: subject, html: html }).then(function (res) {
     var box = document.getElementById('bcast-result');
     document.getElementById('bcast-result-title').textContent = res.sent + ' terkirim' + (res.failed ? ' · ' + res.failed + ' gagal' : '');
