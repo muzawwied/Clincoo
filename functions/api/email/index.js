@@ -208,11 +208,21 @@ function configPayload(row, used, log, limit) {
     limit: limit || EMAIL_LIMIT_FALLBACK,
     log: log || [],
     owner_email: (row && row.owner_email) || '',
-    sender: { email: DEFAULT_FROM, name: 'Clincoo Mail', custom: false }
+    sender: { email: (row && row.sender_email) || DEFAULT_FROM, name: (row && row.from_name) || 'Clincoo Mail', custom: !!(row && (row.sender_email || row.from_name)) }
   };
 }
 
 const DEFAULT_FROM = 'noreply@clincoo.buzz';
+
+function sanitizeSender(body) {
+  const from_name = String((body && body.from_name) || '').trim().replace(/["<>\r\n]/g, '').slice(0, 60);
+  const sender_email = String((body && body.sender_email) || '').trim().toLowerCase();
+  if (sender_email) {
+    if (!validEmail(sender_email)) return { error: 'Alamat pengirim tidak valid' };
+    if (sender_email.slice(-13) !== '@clincoo.buzz') return { error: 'Alamat pengirim harus di domain @clincoo.buzz' };
+  }
+  return { from_name: from_name, sender_email: sender_email };
+}
 
 function stripHtml(h) {
   return String(h || '').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ')
@@ -245,7 +255,7 @@ async function sendViaResend(env, row, opts) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + String(key) },
       body: JSON.stringify({
-        from: 'Clincoo Mail <' + DEFAULT_FROM + '>',
+        from: '"' + (String(row.from_name || '') || 'Clincoo Mail') + '" <' + (String(row.sender_email || '') || DEFAULT_FROM) + '>',
         to: [opts.toEmail],
         subject: opts.subject,
         html: opts.html,
@@ -268,7 +278,7 @@ async function sendProjectEmail(env, row, opts) {
   const bridgeKey = await getSecret(env, 'MAIL_BRIDGE_KEY');
   if (!url || !bridgeKey) return { sent: false, via: 'cloudflare', code: 'BRIDGE_BELUM_TERKONFIGURASI', reason: null };
   const fromMail = DEFAULT_FROM;
-  const fromName = 'Clincoo Mail';
+  const fromName = String(row.from_name || '') || 'Clincoo Mail';
   try {
     const r = await fetch(String(url).replace(/\/$/, '') + '/', {
       method: 'POST',
@@ -305,7 +315,7 @@ export async function onRequestGet({ request, env }) {
     const used = await quotaUsed(env.DB, projectId);
     const limit = await emailQuotaLimitForUser(env, await currentUser(env, request));
     if (action === 'history') {
-      return json({ used: used, limit: limit, items: await historyLog(env.DB, projectId, 100) });
+      return json({ used: used, limit: limit, from_name: row.from_name || '', sender_email: row.sender_email || '', items: await historyLog(env.DB, projectId, 100) });
     }
     await ensureOwnerEmail(env, row);
     return json(configPayload(row, used, await historyLog(env.DB, projectId, 10), limit));
@@ -352,6 +362,18 @@ export async function onRequestPost({ request, env }) {
   const denied = await guardEmail(env, request, projectId);
   if (denied) return denied;
   await ensureTables(env.DB);
+
+  if (action === 'sender') {
+    const v = sanitizeSender(body);
+    if (v.error) return json({ error: v.error }, 422);
+    const row = await getRow(env.DB, projectId);
+    if (!row) return json({ error: 'not_found' }, 404);
+    await env.DB.prepare("UPDATE email_settings SET from_name = ?, sender_email = ?, updated_at = datetime('now') WHERE project_id = ?")
+      .bind(v.from_name, v.sender_email, projectId).run();
+    const fresh = await getRow(env.DB, projectId);
+    const used = await quotaUsed(env.DB, projectId);
+    return json(configPayload(fresh, used, await historyLog(env.DB, projectId, 10), await emailQuotaLimitForUser(env, await currentUser(env, request))));
+  }
 
   if (action === 'activate') {
     const user = await currentUser(env, request);

@@ -326,6 +326,28 @@
           <!-- Aktif: mini-app email -->
           <div id="kirim-active" class="flex-col">
 
+            <!-- Identitas pengirim -->
+            <div id="sec-sender" class="flex flex-col mb-6">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">Identitas pengirim</p>
+                <span class="text-xs text-gray-400 dark:text-gray-500">Kosongkan = Clincoo Mail (noreply@clincoo.buzz)</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label for="sender-name" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Nama tampilan</label>
+                  <input id="sender-name" type="text" maxlength="60" placeholder="Contoh: Tim Suniti" oninput="senderDirty()" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                </div>
+                <div>
+                  <label for="sender-email" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Alamat pengirim (harus @clincoo.buzz)</label>
+                  <input id="sender-email" type="email" placeholder="Contoh: hello@clincoo.buzz" oninput="senderDirty()" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" id="sender-save" onclick="saveSender()" class="px-4 py-2 text-sm font-semibold text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-xl shadow-sm transition-colors cursor-pointer">Simpan Pengirim</button>
+                <span class="text-xs text-gray-400 dark:text-gray-500">Berlaku untuk semua email dari proyek ini</span>
+              </div>
+            </div>
+
             <!-- Email (utama): log + filter -->
             <div id="sec-email" class="flex flex-col">
               <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
@@ -452,8 +474,40 @@ var _logRows = [];
     applyLogFilter();
   }
 
+  var _senderDirty = false;
+  function senderDirty() { _senderDirty = true; }
+
+  function fillSender(data) {
+    if (_senderDirty) return;
+    var sn = document.getElementById('sender-name');
+    var se = document.getElementById('sender-email');
+    if (sn) sn.value = data.from_name || '';
+    if (se) se.value = data.sender_email || '';
+  }
+
+  function saveSender() {
+    var btn = document.getElementById('sender-save');
+    var name = (document.getElementById('sender-name') || {}).value || '';
+    var email = (document.getElementById('sender-email') || {}).value || '';
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan…';
+    _apiPost('sender', { from_name: name.trim(), sender_email: email.trim() })
+      .then(function () {
+        _senderDirty = false;
+        emailToast('Identitas pengirim disimpan', true);
+      })
+      .catch(function (e) {
+        emailToast(e && e.error ? e.error : 'Gagal menyimpan (' + ((e && e.status) || e) + ')', false);
+      })
+      .then(function () {
+        btn.disabled = false;
+        btn.textContent = 'Simpan Pengirim';
+      });
+  }
+
   function renderHistory(data) {
     _logReady = true;
+    fillSender(data || {});
     _logRows = (data.items && data.items.length) ? data.items : [];
     var qc = document.getElementById('log-quota');
     if (qc) qc.textContent = (data.used || 0).toLocaleString('id-ID') + '/' + (data.limit || 1000).toLocaleString('id-ID') + ' terpakai bulan ini';
