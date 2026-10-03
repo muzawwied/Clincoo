@@ -2,7 +2,7 @@
 // Kredensial (API key) diterbitkan per proyek, tersimpan di D1, terisolasi antar proyek.
 //
 // Pengiriman via Cloudflare Email Service (Worker jembatan clincoo-mail):
-//   1. Default  : dari noreply@clincoo.buzz, nama pengirim proyek TIDAK boleh menyertakan
+//   1. Default  : dari no-reply@clincoo.buzz, nama pengirim proyek TIDAK boleh menyertakan
 //                 identitas tim Clincoo/Clinqoo (anti penipuan).
 //   2. Kustom   : dari alamat domain kustom pengguna (domain harus ter-onboard di akun
 //                 Cloudflare Clincoo / terhubung lewat Zona Domain Kustom).
@@ -11,7 +11,7 @@
 // naik saat kirim sukses, TIDAK turun saat entri histori dihapus.
 //
 // Tier pengiriman:
-//   0. Tanpa domain terverifikasi : pengirim default noreply@clincoo.buzz ("Clincoo Mail"),
+//   0. Tanpa domain terverifikasi : pengirim default no-reply@clincoo.buzz ("Clincoo Mail"),
 //      penerima HANYA email akun Clincoo pemilik proyek (mode terbatas Cloudflare).
 //   1. Domain terverifikasi      : pengirim kustom nama@domainmilikpengguna + nama tampilan,
 //      penerima bebas (routing selesai setelah domain di-onboard di dashboard Cloudflare).
@@ -255,7 +255,7 @@ function configPayload(row, used, log, dom) {
   };
 }
 
-const DEFAULT_FROM = 'noreply@clincoo.buzz';
+const DEFAULT_FROM = 'no-reply@clincoo.buzz';
 
 function stripHtml(h) {
   return String(h || '').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ')
