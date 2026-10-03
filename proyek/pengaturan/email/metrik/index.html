@@ -324,9 +324,8 @@
           <!-- Aktif: mini-app email -->
           <div id="kirim-active" class="flex-col">
 
-            <div id="m-loading" class="flex flex-col items-center justify-center py-14 text-center">
+            <div id="m-loading" class="flex flex-col items-center justify-center py-14">
               <svg class="m-spin" style="width:28px;height:28px;color:#6b7280" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="3"/><path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-3">Memuat metrik pengiriman…</p>
             </div>
             <div id="m-content" class="flex flex-col hidden">
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -585,21 +584,35 @@
   }
 
   var _mLast = 0;
-  function mRefresh() {
-    if (Date.now() - _mLast < 8000) return;
-    _mLast = Date.now();
+  var _mLastJson = '';
+  var _mTimer = null;
+  // Ambil data otomatis tiap detik saat tab terlihat — grafik & kartu diperbarui
+  // HANYA kalau payload berubah (chart gak berkedip, hemat kerja browser).
+  function mRefresh(force) {
+    var now = Date.now();
+    if (!force && now - _mLast < 1000) return;
+    _mLast = now;
     fetch(API_BASE + '/email?action=history&project_id=' + encodeURIComponent(_pid()), { headers: _hdrs() })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
-      .then(function (data) { renderEmailState('active'); renderStats(data); try { localStorage.setItem(_cacheKey(), JSON.stringify(data)); } catch (e) {} })
+      .then(function (data) {
+        var raw = JSON.stringify(data);
+        if (raw === _mLastJson) return;
+        _mLastJson = raw;
+        renderEmailState('active');
+        renderStats(data);
+        try { localStorage.setItem(_cacheKey(), raw); } catch (e) {}
+      })
       .catch(function (st) {
-        if (st === 401) { renderEmailState('login'); }
-        else if (st === 404) { renderEmailState('inactive'); }
+        if (st === 401) { renderEmailState('login'); if (_mTimer) { clearInterval(_mTimer); _mTimer = null; } }
+        else if (st === 404) { renderEmailState('inactive'); if (_mTimer) { clearInterval(_mTimer); _mTimer = null; } }
       });
   }
   document.addEventListener('DOMContentLoaded', function () {
+    // Cache-first: refresh halaman = langsung tampil data terakhir, tanpa spinner.
     var cached = _readCache();
-    if (cached && cached.items) { renderEmailState('active'); renderStats(cached); }
-    mRefresh();
+    if (cached && cached.items) { renderEmailState('active'); renderStats(cached); _mLastJson = JSON.stringify(cached); }
+    mRefresh(true);
+    _mTimer = setInterval(function () { if (document.visibilityState === 'visible') mRefresh(true); }, 1000);
   });
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') mRefresh(); });
   window.addEventListener('pageshow', function () { mRefresh(); });
