@@ -26,8 +26,6 @@
 // POST {action:'delete_domain', project_id}                   → hapus domain → kembali tier 0   [auth]
 // POST {action:'regenerate', project_id}                      → terbitkan API key baru        [auth]
 // POST {action:'revoke', project_id}                          → nonaktifkan + hapus API key   [auth]
-// POST {action:'test', project_id, to, subject, html,
-//        reply_to}                                            → kirim email (CRUD: create)    [auth]
 // POST {action:'delete_log', project_id, id}                  → hapus entri histori (delete)  [auth]
 // POST {action:'send', api_key, to, subject, html, reply_to}  → kirim email dari situs deploy  [publik via api_key]
 
@@ -447,31 +445,6 @@ export async function onRequestPost({ request, env }) {
     return json({ ok: true });
   }
 
-  if (action === 'test') {
-    const row = await getRow(env.DB, projectId);
-    if (!row || !row.active) return json({ error: 'Aktifkan email dulu' }, 400);
-    if (!body.to) return json({ error: 'Alamat tujuan diperlukan' }, 400);
-    if (!validEmail(body.to)) return json({ error: 'Alamat email tujuan tidak valid' }, 400);
-    const used = await quotaUsed(env.DB, projectId);
-    if (used >= QUOTA_LIMIT) return json({ error: 'Kuota bulanan habis' }, 429);
-    await ensureOwnerEmail(env, row);
-    const allow = await recipientAllowed(env, row, body.to);
-    if (!allow.ok) return json({ error: allow.reason }, 422);
-    const subject = String(body.subject || 'Email dari aplikasimu').slice(0, 200);
-    const html = body.html ? String(body.html) : '<p>Ini email dari proyekmu di Clincoo. Jika kamu menerima email ini, pengaturan pengirimmu sudah bekerja.</p>';
-    const result = await sendProjectEmail(env, row, {
-      toEmail: body.to,
-      subject: subject,
-      html: html,
-      replyTo: body.reply_to || row.contact_to || ''
-    });
-    await env.DB.prepare('INSERT INTO email_log (project_id, to_addr, subject, status) VALUES (?, ?, ?, ?)')
-      .bind(projectId, body.to, subject, result.sent ? 'terkirim' : 'gagal').run();
-    if (result.sent) await bumpQuota(env.DB, projectId);
-    // Status bukan 5xx: Cloudflare mengganti body 5xx dengan halaman errornya sendiri.
-    if (!result.sent) return json({ error: 'Gagal mengirim: ' + friendlyEmailError(result.code, result.reason) }, 422);
-    return json({ ok: true });
-  }
 
   if (action === 'delete_log') {
     const row = await getRow(env.DB, projectId);
