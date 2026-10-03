@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../../../../js/auth-client.js?v=6"></script>
+  <script src="../../../../../js/accent-init.js"></script>
+<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
+  <script src="../../../../../js/current-project.js?v=4"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../../../../assets/favicon.png">
+    <link rel="manifest" href="../../../../../manifest.json">
+  <title>Tujuan Penarikan — Clincoo Pembayaran</title>
+    <meta name="description" content="Kelola tujuan penarikan e-wallet — Clincoo.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { display: none; width: 0; height: 0; background: transparent; }
+    * { -ms-overflow-style: none; scrollbar-width: none; }
+    body.dark-mode { background-color: #000000; color: #e0e0e0; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800 { color: #f0f0f0; }
+    body.dark-mode .text-gray-700 { color: #b0b0b0; }
+    body.dark-mode .text-gray-500, body.dark-mode .text-gray-600 { color: #888888; }
+    body.dark-mode .text-gray-400 { color: #666666; }
+    body.dark-mode .bg-white { background-color: #0a0a0a; }
+    body.dark-mode .border-gray-200, body.dark-mode .border-gray-100 { border-color: #222222; }
+    body.dark-mode .bg-gray-50, body.dark-mode .bg-gray-100 { background-color: #1a1a1a; }
+  </style>
+</head>
+<body class="text-gray-900 antialiased min-h-screen w-full bg-white">
+  <script>(function(){var t=localStorage.getItem("clinqoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+
+  <div class="max-w-md mx-auto px-5 pb-32 pt-5">
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-7">
+      <a href="../../" class="w-11 h-11 flex-shrink-0 flex items-center justify-center text-[#222222] bg-white dark:bg-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors" aria-label="Kembali">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
+      </a>
+      <div>
+        <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Tujuan Penarikan</h1>
+        <p class="text-xs text-gray-400 dark:text-gray-500">Pilih atau kelola e-wallet tujuan</p>
+      </div>
+    </div>
+
+    <!-- Skeleton -->
+    <div id="dest-loading" class="space-y-3">
+      <div class="h-16 rounded-2xl bg-gray-100 dark:bg-slate-800/60 animate-pulse"></div>
+      <div class="h-16 rounded-2xl bg-gray-100 dark:bg-slate-800/60 animate-pulse"></div>
+    </div>
+
+    <!-- Daftar tujuan (CRUD table) -->
+    <div id="dest-list" class="hidden space-y-2.5"></div>
+
+    <!-- Kosong -->
+    <div id="dest-empty" class="hidden text-center py-12">
+      <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gray-100 dark:bg-slate-800 flex items-center justify-center">
+        <svg class="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"></path></svg>
+      </div>
+      <p class="text-sm font-medium text-gray-900 dark:text-white">Belum ada tujuan tersimpan</p>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Tambahkan e-wallet tujuan penarikanmu</p>
+    </div>
+
+    <!-- Tambah tujuan -->
+    <button type="button" id="dest-add-btn" onclick="destFormOpen()" class="hidden w-full h-12 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+      Tambah Tujuan
+    </button>
+
+    <!-- Form tambah/edit -->
+    <div id="dest-form" class="hidden px-4 py-4 rounded-2xl border border-gray-200 dark:border-slate-700 space-y-3.5">
+      <p id="dest-form-title" class="text-sm font-semibold text-gray-900 dark:text-white">Tambah Tujuan</p>
+      <div>
+        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Jenis e-wallet</p>
+        <div id="dest-ew" class="flex flex-wrap gap-1.5"></div>
+      </div>
+      <div class="relative">
+        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-mono text-gray-400">62</span>
+        <input id="dest-account" type="tel" inputmode="numeric" placeholder="8123456789" class="w-full pl-11 pr-4 py-2.5 text-sm font-mono rounded-full border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/40 text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:border-gray-400 dark:focus:border-slate-500 transition-colors" />
+      </div>
+      <input id="dest-label" type="text" maxlength="40" placeholder="Label (mis. Dompet utama)" class="w-full px-4 py-2.5 text-sm rounded-full border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/40 text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:border-gray-400 dark:focus:border-slate-500 transition-colors" />
+      <p id="dest-form-err" class="hidden text-xs text-red-500"></p>
+      <div class="flex gap-2 pt-1">
+        <button type="button" onclick="destFormClose()" class="flex-1 h-11 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 rounded-full transition-colors cursor-pointer">Batal</button>
+        <button type="button" id="dest-save" onclick="destFormSave()" class="flex-1 h-11 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full transition-colors cursor-pointer disabled:opacity-40" disabled>Simpan</button>
+      </div>
+    </div>
+
+    <p id="dest-toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-2.5 text-xs font-medium text-white bg-black dark:bg-white dark:text-black rounded-full shadow-lg z-50"></p>
+
+    <!-- CTA pilih -->
+    <div id="dest-pick-bar" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 w-[calc(100%-2.5rem)] max-w-md">
+      <button type="button" id="dest-pick-btn" onclick="destPickGo()" class="w-full h-13 py-3.5 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full shadow-lg transition-colors flex items-center justify-center gap-2 cursor-pointer">
+        Lanjutkan dengan <span id="dest-pick-name" class="font-mono"></span>
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+      </button>
+    </div>
+  </div>
+
+  <script>
+  var API_BASE = (['clincoo-be2.pages.dev','app.clincoo.buzz','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://app.clincoo.buzz/api' : '/api';
+  var _apiToken = '';
+  try { _apiToken = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+  function _pid() { try { return localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) { return ''; } }
+  function _sid() { return 'clinqoo_wd_dest_' + _pid(); }
+
+  var EW_LABEL = { dana: 'DANA', ovo: 'OVO', gopay: 'GoPay', shopeepay: 'ShopeePay', linkaja: 'LinkAja' };
+  var _dests = [];
+  var _picked = null;
+  var _editing = 0;
+  var _formEw = '';
+  var _busy = false;
+
+  function destToast(msg) {
+    var t = document.getElementById('dest-toast');
+    t.textContent = msg;
+    t.classList.remove('hidden');
+    clearTimeout(destToast._t);
+    destToast._t = setTimeout(function () { t.classList.add('hidden'); }, 2400);
+  }
+
+  function destRender() {
+    var list = document.getElementById('dest-list');
+    list.innerHTML = '';
+    _dests.forEach(function (d) {
+      var on = _picked && _picked.id === d.id;
+      var row = document.createElement('div');
+      row.className = 'relative flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 transition-colors cursor-pointer ' + (on ? 'border-black dark:border-white' : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-500');
+      row.innerHTML =
+        '<div class="min-w-0 flex-1" onclick="destPick(' + d.id + ')">' +
+          '<div class="flex items-center gap-2"><span class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300">' + (EW_LABEL[d.ew_type] || d.ew_type) + '</span>' + (d.label ? '<span class="text-xs text-gray-400 dark:text-gray-500 truncate">' + d.label + '</span>' : '') + '</div>' +
+          '<p class="text-sm font-mono font-semibold text-gray-900 dark:text-white mt-1">' + d.account + '</p>' +
+        '</div>' +
+        '<button type="button" onclick="destFormOpen(' + d.id + ')" class="w-9 h-9 flex-shrink-0 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors" aria-label="Ubah">' +
+          '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>' +
+        '</button>' +
+        '<button type="button" onclick="destAskDelete(' + d.id + ')" class="w-9 h-9 flex-shrink-0 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors" aria-label="Hapus">' +
+          '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>' +
+        '</button>' +
+        (on ? '<span class="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-black dark:bg-white flex items-center justify-center"><svg class="w-3.5 h-3.5 text-white dark:text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg></span>' : '');
+      list.appendChild(row);
+    });
+  }
+
+  function destPick(id) {
+    _picked = _dests.find(function (d) { return d.id === id; }) || null;
+    destRender();
+    var bar = document.getElementById('dest-pick-bar');
+    if (_picked) {
+      document.getElementById('dest-pick-name').textContent = (EW_LABEL[_picked.ew_type] || _picked.ew_type) + ' · ' + _picked.account;
+      bar.classList.remove('hidden');
+    } else bar.classList.add('hidden');
+  }
+
+  function destPickGo() {
+    if (!_picked) return;
+    try { sessionStorage.setItem(_sid(), JSON.stringify({ id: _picked.id, ew_type: _picked.ew_type, account: _picked.account, label: _picked.label || '' })); } catch (e) {}
+    location.href = '../';
+  }
+
+  // ===== Form tambah/edit =====
+  function destFormOpen(id) {
+    if (id) {
+      var d = _dests.find(function (x) { return x.id === id; });
+      if (!d) return;
+      _editing = id;
+      _formEw = d.ew_type;
+      document.getElementById('dest-form-title').textContent = 'Ubah Tujuan';
+      document.getElementById('dest-account').value = d.account.replace(/^0/, '');
+      document.getElementById('dest-label').value = d.label || '';
+    } else {
+      _editing = 0; _formEw = '';
+      document.getElementById('dest-form-title').textContent = 'Tambah Tujuan';
+      document.getElementById('dest-account').value = '';
+      document.getElementById('dest-label').value = '';
+    }
+    destFormEwRender();
+    document.getElementById('dest-form').classList.remove('hidden');
+    document.getElementById('dest-add-btn').classList.add('hidden');
+    document.getElementById('dest-form-err').classList.add('hidden');
+    destFormValid();
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  }
+
+  function destFormClose() {
+    document.getElementById('dest-form').classList.add('hidden');
+    document.getElementById('dest-add-btn').classList.remove('hidden');
+    _editing = 0;
+  }
+
+  function destFormEwRender() {
+    var w = document.getElementById('dest-ew');
+    w.innerHTML = '';
+    Object.keys(EW_LABEL).forEach(function (k) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = EW_LABEL[k];
+      b.setAttribute('data-ew', k);
+      b.onclick = function () { _formEw = k; destFormEwRender(); destFormValid(); };
+      b.className = (_formEw === k)
+        ? 'px-4 py-2 text-xs font-medium rounded-full bg-black text-white dark:bg-white dark:text-black transition-colors cursor-pointer'
+        : 'px-4 py-2 text-xs font-medium rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors cursor-pointer';
+      w.appendChild(b);
+    });
+  }
+
+  function destFormValid() {
+    var acc = document.getElementById('dest-account').value.replace(/\D/g, '');
+    var ok = _formEw && /^8\d{7,12}$/.test(acc);
+    document.getElementById('dest-save').disabled = !ok;
+    return ok;
+  }
+
+  async function destFormSave() {
+    if (_busy || !destFormValid()) return;
+    _busy = true;
+    var btn = document.getElementById('dest-save');
+    btn.disabled = true; btn.textContent = 'Menyimpan...';
+    var acc = '0' + document.getElementById('dest-account').value.replace(/\D/g, '');
+    var payload = _editing
+      ? { action: 'wd_dest_update', id: _editing, ew_type: _formEw, account: acc, label: document.getElementById('dest-label').value }
+      : { action: 'wd_dest_add', ew_type: _formEw, account: acc, label: document.getElementById('dest-label').value };
+    try {
+      var res = await fetch(API_BASE + '/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _apiToken },
+        body: JSON.stringify(payload)
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok || !data.success) {
+        var err = document.getElementById('dest-form-err');
+        err.textContent = data.message || data.error || 'Gagal menyimpan.';
+        err.classList.remove('hidden');
+        btn.disabled = false; btn.textContent = 'Simpan';
+        _busy = false;
+        return;
+      }
+      destToast(_editing ? 'Tujuan diperbarui' : 'Tujuan ditambahkan');
+      destFormClose();
+      await loadDests();
+      btn.disabled = false; btn.textContent = 'Simpan';
+    } catch (e) {
+      btn.disabled = false; btn.textContent = 'Simpan';
+      _busy = false;
+    }
+    _busy = false;
+  }
+
+  // ===== Hapus (popover konfirmasi kustom) =====
+  function destAskDelete(id) {
+    document.querySelectorAll('.dest-del-pop').forEach(function (p) { p.remove(); });
+    var d = _dests.find(function (x) { return x.id === id; });
+    if (!d) return;
+    var row = document.querySelector('#dest-list');
+    var pop = document.createElement('div');
+    pop.className = 'dest-del-pop fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm';
+    pop.onclick = function (e) { if (e.target === pop) pop.remove(); };
+    pop.innerHTML =
+      '<div class="w-full max-w-xs bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-5 py-5 text-center">' +
+        '<p class="text-sm font-semibold text-gray-900 dark:text-white">Hapus tujuan ini?</p>' +
+        '<p class="text-xs text-gray-400 dark:text-gray-500 mt-1 font-mono">' + (EW_LABEL[d.ew_type] || d.ew_type) + ' · ' + d.account + '</p>' +
+        '<div class="flex gap-2 mt-5">' +
+          '<button type="button" class="dest-cancel flex-1 h-10 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 rounded-full cursor-pointer">Batal</button>' +
+          '<button type="button" class="dest-yes flex-1 h-10 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-full cursor-pointer">Hapus</button>' +
+        '</div>' +
+      '</div>';
+    pop.querySelector('.dest-cancel').onclick = function () { pop.remove(); };
+    pop.querySelector('.dest-yes').onclick = async function () {
+      try {
+        var res = await fetch(API_BASE + '/pay', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _apiToken },
+          body: JSON.stringify({ action: 'wd_dest_delete', id: id })
+        });
+        var data = await res.json().catch(function () { return {}; });
+        if (res.ok && data.success) {
+          pop.remove();
+          if (_picked && _picked.id === id) { _picked = null; document.getElementById('dest-pick-bar').classList.add('hidden'); }
+          destToast('Tujuan dihapus');
+          await loadDests();
+        } else destToast(data.message || 'Gagal menghapus');
+      } catch (e) { destToast('Tidak dapat terhubung ke server'); }
+    };
+    document.body.appendChild(pop);
+  }
+
+  async function loadDests() {
+    try {
+      var res = await fetch(API_BASE + '/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _apiToken },
+        body: JSON.stringify({ action: 'wd_dests' })
+      });
+      if (!res.ok) return;
+      var data = await res.json();
+      _dests = data.destinations || [];
+    } catch (e) { return; }
+    document.getElementById('dest-loading').classList.add('hidden');
+    if (_dests.length) {
+      document.getElementById('dest-list').classList.remove('hidden');
+      document.getElementById('dest-add-btn').classList.remove('hidden');
+      destRender();
+    } else {
+      document.getElementById('dest-empty').classList.remove('hidden');
+      document.getElementById('dest-add-btn').classList.remove('hidden');
+    }
+    // pilihan tersimpan? tampilkan
+    try {
+      var sel = JSON.parse(sessionStorage.getItem(_sid()) || 'null');
+      if (sel && _dests.some(function (d) { return d.id === sel.id; })) destPick(sel.id);
+    } catch (e) {}
+  }
+
+  if (!_apiToken) location.href = '/akun/';
+  else loadDests();
+  </script>
+</body>
+</html>

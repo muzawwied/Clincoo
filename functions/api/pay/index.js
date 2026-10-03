@@ -15,7 +15,7 @@
 // GET  ?action=status&key=...&order_id=...               → cek status transaksi              [publik via pay_key]
 // POST {action:'callback', ...}                          → notifikasi dari provider → forward ke webhook proyek [callback secret]
 
-import { guardProject } from '../user-scope.js';
+import { guardProject, currentUser } from '../user-scope.js';
 import { getSecret } from '../notify-helpers.js';
 
 // Semua aksi ClincooPay wajib login + project_id — tidak ada jalur legacy global.
@@ -134,6 +134,28 @@ async function ensureTables(db) {
     try { await db.prepare('ALTER TABLE pay_withdrawals ADD COLUMN ' + col).run(); } catch (e) {}
   }
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_pay_wd_project ON pay_withdrawals(project_id)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS pay_wd_dests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    ew_type TEXT NOT NULL,
+    account TEXT NOT NULL,
+    label TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  )`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS pay_wd_otp (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    project_id TEXT NOT NULL,
+    amount INTEGER NOT NULL,
+    dest_type TEXT NOT NULL,
+    dest_account TEXT NOT NULL,
+    code TEXT NOT NULL,
+    status TEXT DEFAULT 'pending',
+    attempts INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    expires_at TEXT NOT NULL
+  )`).run();
 }
 
 function randKey(n) {
@@ -224,6 +246,32 @@ async function sendWithdrawEmail(env, w, sig, verifyUrl) {
   } catch (e) {
     return { sent: false, reason: String((e && e.message) || e) };
   }
+}
+
+async function sendOtpEmail(env, toEmail, code, amount, dest) {
+  const url = await getSecret(env, 'MAIL_BRIDGE_URL');
+  const bridgeKey = await getSecret(env, 'MAIL_BRIDGE_KEY');
+  if (!url || !bridgeKey || !toEmail) return false;
+  const text = [
+    'Kode verifikasi penarikan Clincoo',
+    '',
+    'Kode OTP: ' + code,
+    'Nominal: Rp ' + Number(amount).toLocaleString('id-ID'),
+    'Tujuan: ' + (WD_EWALLET_LABEL[dest.dest_type] || dest.dest_type) + ' - ' + dest.dest_account,
+    '',
+    'Kode berlaku 10 menit. JANGAN bagikan kode ini ke siapa pun.',
+    'Jika kamu tidak meminta penarikan ini, abaikan email ini.'
+  ].join('\n');
+  const html = text.split('&').join('&amp;').split('<').join('&lt;').split('>').join('&gt;').replace(/\n/g, '<br>');
+  try {
+    const r = await fetch(String(url).replace(/\/$/, '') + '/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Bridge-Key': String(bridgeKey) },
+      body: JSON.stringify({ to: toEmail, from_email: 'noreply@clincoo.buzz', from_name: 'Clincoo Pembayaran', subject: 'Kode OTP penarikan: ' + code, html, text })
+    });
+    const data = await r.json().catch(() => ({}));
+    return r.ok && data.ok;
+  } catch (e) { return false; }
 }
 
 async function calcBalance(db, projectId) {
@@ -343,7 +391,48 @@ export async function onRequestPost({ request, env }) {
   }
 
   // ===== Tarik saldo → permintaan penarikan (auth) =====
-  if (action === 'withdraw') {
+  // ===== Tujuan penarikan tersimpan (CRUD e-wallet, per-akun) =====
+  if (action === 'wd_dests') {
+    const user = await currentUser(env, request);
+    if (!user) return json({ success: false, message: 'Login diperlukan.' }, 401);
+    const rows = await db.prepare('SELECT id, ew_type, account, label, created_at FROM pay_wd_dests WHERE user_id = ? ORDER BY id DESC').bind(user.id).all();
+    return json({ success: true, destinations: rows.results || [] });
+  }
+  if (action === 'wd_dest_add') {
+    const user = await currentUser(env, request);
+    if (!user) return json({ success: false, message: 'Login diperlukan.' }, 401);
+    const ew = String(body.ew_type || '').toLowerCase();
+    const acc = String(body.account || '').replace(/[\s-]/g, '');
+    const label = String(body.label || '').slice(0, 40);
+    if (WD_EWALLETS.indexOf(ew) === -1) return json({ success: false, message: 'Pilih jenis e-wallet.' }, 400);
+    if (!/^(?:0|62)8\d{7,12}$/.test(acc)) return json({ success: false, message: 'Nomor e-wallet tidak valid (contoh: 08123456789).' }, 400);
+    await db.prepare('INSERT INTO pay_wd_dests (user_id, ew_type, account, label) VALUES (?, ?, ?, ?)').bind(user.id, ew, acc.replace(/^62/, '0'), label).run();
+    return json({ success: true, message: 'Tujuan tersimpan.' });
+  }
+  if (action === 'wd_dest_update') {
+    const user = await currentUser(env, request);
+    if (!user) return json({ success: false, message: 'Login diperlukan.' }, 401);
+    const id = Number(body.id || 0);
+    const ew = String(body.ew_type || '').toLowerCase();
+    const acc = String(body.account || '').replace(/[\s-]/g, '');
+    const label = String(body.label || '').slice(0, 40);
+    if (!id) return json({ success: false, message: 'Tujuan tidak ditemukan.' }, 404);
+    if (WD_EWALLETS.indexOf(ew) === -1) return json({ success: false, message: 'Pilih jenis e-wallet.' }, 400);
+    if (!/^(?:0|62)8\d{7,12}$/.test(acc)) return json({ success: false, message: 'Nomor e-wallet tidak valid (contoh: 08123456789).' }, 400);
+    const r = await db.prepare('UPDATE pay_wd_dests SET ew_type = ?, account = ?, label = ?, updated_at = datetime('now') WHERE id = ? AND user_id = ?').bind(ew, acc.replace(/^62/, '0'), label, id, user.id).run();
+    return (r.meta && r.meta.changes) ? json({ success: true, message: 'Tujuan diperbarui.' }) : json({ success: false, message: 'Tujuan tidak ditemukan.' }, 404);
+  }
+  if (action === 'wd_dest_delete') {
+    const user = await currentUser(env, request);
+    if (!user) return json({ success: false, message: 'Login diperlukan.' }, 401);
+    const id = Number(body.id || 0);
+    if (!id) return json({ success: false, message: 'Tujuan tidak ditemukan.' }, 404);
+    const r = await db.prepare('DELETE FROM pay_wd_dests WHERE id = ? AND user_id = ?').bind(id, user.id).run();
+    return (r.meta && r.meta.changes) ? json({ success: true, message: 'Tujuan dihapus.' }) : json({ success: false, message: 'Tujuan tidak ditemukan.' }, 404);
+  }
+
+  // ===== Kirim OTP penarikan ke email pemilik proyek =====
+  if (action === 'withdraw_otp') {
     const deny = await guardPay(env, request, projectId);
     if (deny) return deny;
     const amount = Math.floor(Number(body.amount || 0));
@@ -351,8 +440,50 @@ export async function onRequestPost({ request, env }) {
     const destAccount = String(body.dest_account || '').replace(/[\s-]/g, '');
     if (!amount || amount < 10000) return json({ success: false, message: 'Penarikan minimal Rp 10.000.' }, 400);
     if (WD_EWALLETS.indexOf(destType) === -1) return json({ success: false, message: 'Pilih tujuan e-wallet.' }, 400);
-    if (!/^(?:0|62)8\d{7,12}$/.test(destAccount)) return json({ success: false, message: 'Nomor e-wallet tidak valid (contoh: 08123456789).' }, 400);
+    if (!/^(?:0|62)8\d{7,12}$/.test(destAccount)) return json({ success: false, message: 'Nomor e-wallet tidak valid.' }, 400);
     const acc = destAccount.replace(/^62/, '0');
+    const fee = await wdFee(env);
+    const bal = await calcBalance(db, projectId);
+    if (amount + fee > bal.available) return json({ success: false, message: 'Saldo tersedia tidak cukup.' }, 400);
+    // kirim OTP ke email pemilik proyek
+    const own = await db.prepare('SELECT a.email FROM auth_users a JOIN user_projects p ON p.user_id = a.id WHERE p.id = ?').bind(projectId).first();
+    if (!own || !own.email) return json({ success: false, message: 'Email pemilik proyek tidak ditemukan.' }, 400);
+    const digits = new Uint8Array(6);
+    crypto.getRandomValues(digits);
+    const code = [...digits].map(d => String(d % 10)).join('');
+    const r = await db.prepare(`INSERT INTO pay_wd_otp (user_id, project_id, amount, dest_type, dest_account, code, expires_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now', '+10 minutes')) RETURNING id`).bind(
+      (await currentUser(env, request)).id, projectId, amount, destType, acc, code
+    ).first();
+    const sent = await sendOtpEmail(env, own.email, code, amount, { dest_type: destType, dest_account: acc });
+    if (!sent) return json({ success: false, message: 'Gagal mengirim OTP — coba lagi.' }, 500);
+    const mask = own.email.replace(/^(.).*(@.*)$/, '$1*****$2');
+    return json({ success: true, otp_id: r.id, expires_in: 600, sent_to: mask, message: 'Kode OTP dikirim ke ' + mask });
+  }
+
+  if (action === 'withdraw') {
+    const deny = await guardPay(env, request, projectId);
+    if (deny) return deny;
+    const user = await currentUser(env, request);
+    // ===== verifikasi OTP dulu =====
+    const otpId = Number(body.otp_id || 0);
+    const otpCode = String(body.otp_code || '').replace(/\D/g, '');
+    if (!otpId || otpCode.length !== 6) return json({ success: false, message: 'Masukkan kode OTP dari email.' }, 400);
+    const otp = otpId > 0 ? await db.prepare('SELECT * FROM pay_wd_otp WHERE id = ?').bind(otpId).first() : null;
+    if (!otp || otp.user_id !== user.id || otp.project_id !== projectId) return json({ success: false, message: 'Kode OTP tidak dikenal — mulai ulang penarikan.' }, 400);
+    if (otp.status !== 'pending') return json({ success: false, message: 'Kode OTP sudah dipakai — minta kode baru.' }, 400);
+    if (otp.attempts >= 5) { await db.prepare(`UPDATE pay_wd_otp SET status = 'failed' WHERE id = ?`).bind(otpId).run(); return json({ success: false, message: 'Terlalu banyak percobaan — minta kode baru.' }, 400); }
+    const nowRow = await db.prepare(`SELECT (datetime('now') > expires_at) AS exp FROM pay_wd_otp WHERE id = ?`).bind(otpId).first();
+    if (nowRow && nowRow.exp) { await db.prepare(`UPDATE pay_wd_otp SET status = 'failed' WHERE id = ?`).bind(otpId).run(); return json({ success: false, message: 'Kode OTP kedaluwarsa — minta kode baru.' }, 400); }
+    if (otp.code !== otpCode) {
+      await db.prepare('UPDATE pay_wd_otp SET attempts = attempts + 1 WHERE id = ?').bind(otpId).run();
+      const left = 5 - (otp.attempts + 1);
+      return json({ success: false, message: 'Kode OTP salah' + (left > 0 ? ' — sisa percobaan: ' + left : ' — minta kode baru.') + '.' }, 400);
+    }
+    await db.prepare(`UPDATE pay_wd_otp SET status = 'used' WHERE id = ?`).bind(otpId).run();
+    // data dari baris OTP = sumber kebenaran
+    const amount = otp.amount;
+    const destType = otp.dest_type;
+    const acc = otp.dest_account;
     const fee = await wdFee(env);
     const bal = await calcBalance(db, projectId);
     if (amount + fee > bal.available) return json({ success: false, message: 'Saldo tersedia tidak cukup (nominal + biaya ' + (amount + fee).toLocaleString('id-ID') + ' > saldo ' + bal.available.toLocaleString('id-ID') + ').' }, 400);

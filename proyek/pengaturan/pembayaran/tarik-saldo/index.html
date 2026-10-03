@@ -79,18 +79,13 @@
       </button>
     </div>
 
-    <!-- Tujuan e-wallet -->
-    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2.5">Tujuan penarikan <span class="text-gray-400">(e-wallet saja)</span></p>
-    <div id="wd-wallets" class="flex flex-wrap gap-1.5 mb-4">
-      <button type="button" data-ew="dana" onclick="wdPickWallet(this)" class="px-4 py-2 text-xs font-medium rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">DANA</button>
-      <button type="button" data-ew="ovo" onclick="wdPickWallet(this)" class="px-4 py-2 text-xs font-medium rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">OVO</button>
-      <button type="button" data-ew="gopay" onclick="wdPickWallet(this)" class="px-4 py-2 text-xs font-medium rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">GoPay</button>
-      <button type="button" data-ew="shopeepay" onclick="wdPickWallet(this)" class="px-4 py-2 text-xs font-medium rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">ShopeePay</button>
-      <button type="button" data-ew="linkaja" onclick="wdPickWallet(this)" class="px-4 py-2 text-xs font-medium rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">LinkAja</button>
-    </div>
-    <div class="relative mb-5">
-      <span class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-mono text-gray-400">62</span>
-      <input id="wd-phone" type="tel" inputmode="numeric" placeholder="8123456789 (nomor e-wallet)" oninput="wdUpdate()" class="w-full pl-11 pr-4 py-2.5 text-sm font-mono rounded-full border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/40 text-gray-700 dark:text-gray-300 placeholder-gray-400 placeholder-font-sans focus:outline-none focus:border-gray-400 dark:focus:border-slate-500 transition-colors" />
+    <!-- Tujuan terpilih (dari halaman Tujuan Penarikan) -->
+    <div class="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-gray-200 dark:border-slate-700 mb-7">
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-2"><span id="wd-ew-badge" class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300">—</span><span id="wd-ew-label" class="text-xs text-gray-400 dark:text-gray-500 truncate"></span></div>
+        <p id="wd-ew-account" class="text-sm font-mono font-semibold text-gray-900 dark:text-white mt-1">—</p>
+      </div>
+      <a href="tujuan/" class="text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white underline underline-offset-2 flex-shrink-0">Ubah</a>
     </div>
 
     <!-- Ringkasan biaya -->
@@ -115,10 +110,12 @@
   function _rp(n) { return Number(n || 0).toLocaleString('id-ID'); }
 
   var _wdAmount = '';
-  var _wdWallet = '';
   var _wdFee = 2500;
   var _wdSaldo = 0;
   var _wdSent = false;
+  var EW_LABEL = { dana: 'DANA', ovo: 'OVO', gopay: 'GoPay', shopeepay: 'ShopeePay', linkaja: 'LinkAja' };
+  var _wdDest = null;
+  try { _wdDest = JSON.parse(sessionStorage.getItem('clinqoo_wd_dest_' + _pid()) || 'null'); } catch (e) {}
 
   function wdRenderDigits() {
     var wrap = document.getElementById('wd-digits');
@@ -142,29 +139,16 @@
     wdUpdate();
   }
 
-  function wdPickWallet(btn) {
-    _wdWallet = btn.getAttribute('data-ew');
-    document.querySelectorAll('#wd-wallets button').forEach(function (b) {
-      var on = b === btn;
-      b.className = on
-        ? 'px-4 py-2 text-xs font-medium rounded-full bg-black text-white dark:bg-white dark:text-black transition-colors cursor-pointer'
-        : 'px-4 py-2 text-xs font-medium rounded-full bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors cursor-pointer';
-    });
-    wdUpdate();
-  }
-
   function wdUpdate() {
     var amount = Number(_wdAmount || 0);
     document.getElementById('wd-fee').textContent = _rp(_wdFee);
     document.getElementById('wd-total').textContent = _rp(amount ? amount + _wdFee : 0);
-    var phone = document.getElementById('wd-phone').value.replace(/\D/g, '');
     var err = document.getElementById('wd-error');
     var msg = '';
     if (amount && amount < 10000) msg = 'Nominal minimal Rp 10.000.';
     else if (amount + _wdFee > _wdSaldo) msg = 'Nominal + biaya melebihi saldo tersedia.';
-    else if (_wdWallet && phone && !/^8\d{7,12}$/.test(phone)) msg = 'Nomor e-wallet tidak valid (contoh: 8123456789).';
     if (msg) { err.textContent = msg; err.classList.remove('hidden'); } else { err.classList.add('hidden'); }
-    var ok = !msg && amount >= 10000 && amount + _wdFee <= _wdSaldo && _wdWallet && /^8\d{7,12}$/.test(phone);
+    var ok = !msg && amount >= 10000 && amount + _wdFee <= _wdSaldo && !!_wdDest;
     document.getElementById('wd-next').disabled = !ok;
     return ok;
   }
@@ -173,14 +157,17 @@
     if (_wdSent || !wdUpdate()) return;
     _wdSent = true;
     var amount = Number(_wdAmount || 0);
-    var phone = '0' + document.getElementById('wd-phone').value.replace(/\D/g, '');
-    var draft = { project_id: _pid(), amount: amount, fee: _wdFee, dest_type: _wdWallet, dest_account: phone, ts: Date.now() };
+    var draft = { project_id: _pid(), amount: amount, fee: _wdFee, dest_type: _wdDest.ew_type, dest_account: _wdDest.account, dest_label: _wdDest.label || '', ts: Date.now() };
     try { sessionStorage.setItem('clinqoo_wd_draft_' + _pid(), JSON.stringify(draft)); } catch (e) {}
     location.href = 'konfirmasi/';
   }
 
   (async function () {
     if (!_apiToken) { location.href = '/akun/'; return; }
+    if (!_wdDest || !_wdDest.ew_type || !_wdDest.account) { location.href = 'tujuan/'; return; }
+    document.getElementById('wd-ew-badge').textContent = EW_LABEL[_wdDest.ew_type] || _wdDest.ew_type;
+    document.getElementById('wd-ew-label').textContent = _wdDest.label || '';
+    document.getElementById('wd-ew-account').textContent = _wdDest.account;
     try {
       var res = await fetch(API_BASE + '/pay?action=config&project_id=' + encodeURIComponent(_pid()), { headers: { Authorization: 'Bearer ' + _apiToken } });
       if (res.ok) {

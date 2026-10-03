@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clinqoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../../../../js/auth-client.js?v=6"></script>
+  <script src="../../../../../js/accent-init.js"></script>
+<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
+  <script src="../../../../../js/current-project.js?v=4"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../../../../assets/favicon.png">
+    <link rel="manifest" href="../../../../../manifest.json">
+  <title>Verifikasi OTP — Clincoo Pembayaran</title>
+    <meta name="description" content="Verifikasi OTP penarikan saldo — Clincoo.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { display: none; width: 0; height: 0; background: transparent; }
+    * { -ms-overflow-style: none; scrollbar-width: none; }
+    body.dark-mode { background-color: #000000; color: #e0e0e0; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800 { color: #f0f0f0; }
+    body.dark-mode .text-gray-700 { color: #b0b0b0; }
+    body.dark-mode .text-gray-500, body.dark-mode .text-gray-600 { color: #888888; }
+    body.dark-mode .text-gray-400 { color: #666666; }
+    body.dark-mode .bg-white { background-color: #0a0a0a; }
+    body.dark-mode .border-gray-200, body.dark-mode .border-gray-100 { border-color: #222222; }
+    body.dark-mode .bg-gray-50, body.dark-mode .bg-gray-100 { background-color: #1a1a1a; }
+    .otp-key { -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+    .otp-key:active { transform: scale(0.94); }
+    #otp-knob { touch-action: none; }
+    .otp-track { -webkit-tap-highlight-color: transparent; }
+  </style>
+</head>
+<body class="text-gray-900 antialiased min-h-screen w-full bg-white">
+  <script>(function(){var t=localStorage.getItem("clinqoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+
+  <div class="max-w-md mx-auto px-5 pb-24 pt-5">
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-8">
+      <a href="../" class="w-11 h-11 flex-shrink-0 flex items-center justify-center text-[#222222] bg-white dark:bg-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors" aria-label="Kembali">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
+      </a>
+      <div>
+        <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Verifikasi OTP</h1>
+        <p class="text-xs text-gray-400 dark:text-gray-500">Kode dikirim ke <span id="otp-to" class="font-mono">—</span></p>
+      </div>
+    </div>
+
+    <!-- Input OTP -->
+    <p class="text-center text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-4">Masukkan 6 digit kode</p>
+    <div id="otp-digits" class="flex items-center justify-center gap-2 mb-6"></div>
+
+    <!-- Keyboard kustom Clincoo -->
+    <div id="otp-pad" class="grid grid-cols-3 gap-2.5 max-w-[260px] mx-auto mb-6">
+      <button type="button" onclick="otpKey('1')" class="otp-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">1</button>
+      <button type="button" onclick="otpKey('2')" class="otp-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">2</button>
+      <button type="button" onclick="otpKey('3')" class="otp-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">3</button>
+      <button type="button" onclick="otpKey('4')" class="otp-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">4</button>
+      <button type="button" onclick="otpKey('5')" class="otp-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">5</button>
+      <button type="button" onclick="otpKey('6')" class="otp-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">6</button>
+      <button type="button" onclick="otpKey('7')" class="otp-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">7</button>
+      <button type="button" onclick="otpKey('8')" class="otp-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">8</button>
+      <button type="button" onclick="otpKey('9')" class="otp-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">9</button>
+      <button type="button" onclick="otpKey('C')" class="otp-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-base font-semibold text-gray-400 dark:text-gray-500">C</button>
+      <button type="button" onclick="otpKey('0')" class="otp-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 text-xl font-semibold text-gray-900 dark:text-white">0</button>
+      <button type="button" onclick="otpKey('del')" class="otp-key h-14 rounded-2xl bg-gray-100 dark:bg-slate-800 flex items-center justify-center text-gray-400 dark:text-gray-500" aria-label="Hapus">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 9l2-2h12l4 4-9 9-9-9z"></path></svg>
+      </button>
+    </div>
+
+    <p class="text-center text-xs text-gray-400 dark:text-gray-500 mb-2">Tidak menerima kode?</p>
+    <p class="text-center mb-6"><button type="button" id="otp-resend" onclick="otpResend()" class="text-xs font-semibold text-gray-900 dark:text-white underline underline-offset-2 disabled:opacity-40 disabled:no-underline cursor-pointer">Kirim ulang kode</button></p>
+
+    <p id="otp-error" class="hidden text-center text-xs text-red-500 mb-5"></p>
+
+    <!-- Geser untuk konfirmasi -->
+    <div id="otp-slide-wrap" class="hidden mx-auto max-w-[300px]">
+      <div id="otp-slide" class="otp-track relative h-14 rounded-full bg-black dark:bg-white overflow-hidden select-none">
+        <p class="absolute inset-0 flex items-center justify-center text-sm font-semibold text-white dark:text-black pointer-events-none" id="otp-slide-text">Geser untuk konfirmasi</p>
+        <div id="otp-knob" class="absolute left-1 top-1 w-12 h-12 rounded-full bg-white dark:bg-black shadow-md flex items-center justify-center cursor-grab" style="transform: translateX(0)">
+          <svg class="w-5 h-5 text-black dark:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sukses -->
+    <div id="otp-done" class="hidden mx-auto max-w-[300px] text-center">
+      <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-black dark:bg-white flex items-center justify-center">
+        <svg class="w-7 h-7 text-white dark:text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+      </div>
+      <p class="text-sm font-semibold text-gray-900 dark:text-white">Permintaan terkirim</p>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">ID penarikan <span id="otp-wd-id" class="font-mono">—</span></p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-3 leading-relaxed">Permintaan penarikan dikirim ke email tim Clincoo dengan tanda tangan digital. Dana akan diterima di e-walletmu setelah diverifikasi.</p>
+      <a href="../../../" class="inline-flex items-center gap-2 px-6 h-11 mt-6 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full transition-colors">
+        Kembali ke Pembayaran
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+      </a>
+    </div>
+  </div>
+
+  <script>
+  var API_BASE = (['clincoo-be2.pages.dev','app.clincoo.buzz','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://app.clincoo.buzz/api' : '/api';
+  var _apiToken = '';
+  try { _apiToken = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+  function _pid() { try { return localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) { return ''; } }
+
+  var _draft = null, _otp = null;
+  try { _draft = JSON.parse(sessionStorage.getItem('clinqoo_wd_draft_' + _pid()) || 'null'); } catch (e) {}
+  try { _otp = JSON.parse(sessionStorage.getItem('clinqoo_wd_otp_' + _pid()) || 'null'); } catch (e) {}
+  var _code = '';
+  var _submitted = false;
+  var _resending = false;
+
+  function otpRender() {
+    var wrap = document.getElementById('otp-digits');
+    var html = '';
+    for (var i = 0; i < 6; i++) {
+      var ch = _code[i] || '';
+      var active = i === _code.length;
+      html += '<div class="w-11 h-13 py-3.5 rounded-xl border-2 flex items-center justify-center text-xl font-bold font-mono ' +
+        (ch ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white' : (active ? 'border-gray-400 dark:border-slate-500 bg-gray-50 dark:bg-slate-800/40' : 'border-gray-200 dark:border-slate-700')) + '">' + (ch || '') + '</div>';
+    }
+    wrap.innerHTML = html;
+    document.getElementById('otp-slide-wrap').classList.toggle('hidden', _code.length !== 6);
+    document.getElementById('otp-pad').style.opacity = _code.length === 6 ? '0.5' : '1';
+  }
+
+  function otpKey(k) {
+    if (k === 'C') _code = '';
+    else if (k === 'del') _code = _code.slice(0, -1);
+    else if (_code.length < 6) _code += k;
+    document.getElementById('otp-error').classList.add('hidden');
+    otpRender();
+    if (_code.length === 6) slideBounds();
+  }
+
+  function otpErr(msg) {
+    var e = document.getElementById('otp-error');
+    e.textContent = msg;
+    e.classList.remove('hidden');
+    _code = '';
+    otpRender();
+  }
+
+  // ===== Kirim ulang =====
+  async function otpResend() {
+    if (_resending || !_draft) return;
+    _resending = true;
+    var btn = document.getElementById('otp-resend');
+    btn.disabled = true;
+    try {
+      var res = await fetch(API_BASE + '/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _apiToken },
+        body: JSON.stringify({ action: 'withdraw_otp', project_id: _draft.project_id || _pid(), amount: _draft.amount, dest_type: _draft.dest_type, dest_account: _draft.dest_account })
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (res.ok && data.success) {
+        _otp = { otp_id: data.otp_id, sent_to: data.sent_to, expires_in: data.expires_in, ts: Date.now() };
+        try { sessionStorage.setItem('clinqoo_wd_otp_' + _pid(), JSON.stringify(_otp)); } catch (e) {}
+        document.getElementById('otp-to').textContent = data.sent_to;
+        _code = '';
+        otpRender();
+        otpCooldown(60);
+      } else otpErr(data.message || data.error || 'Gagal mengirim ulang.');
+    } catch (e) { otpErr('Tidak dapat terhubung ke server.'); }
+    _resending = false;
+    if (!btn.dataset.cool) btn.disabled = false;
+  }
+
+  function otpCooldown(sec) {
+    var btn = document.getElementById('otp-resend');
+    btn.dataset.cool = '1';
+    var t = sec;
+    btn.disabled = true;
+    btn.textContent = 'Kirim ulang dalam ' + t + ' detik';
+    clearInterval(otpCooldown._i);
+    otpCooldown._i = setInterval(function () {
+      t--;
+      if (t <= 0) {
+        clearInterval(otpCooldown._i);
+        delete btn.dataset.cool;
+        btn.disabled = false;
+        btn.textContent = 'Kirim ulang kode';
+      } else btn.textContent = 'Kirim ulang dalam ' + t + ' detik';
+    }, 1000);
+  }
+
+  // ===== Geser untuk konfirmasi =====
+  var _slideMax = 0, _slideX = 0, _dragging = false, _startX = 0;
+  function slideBounds() {
+    var slide = document.getElementById('otp-slide');
+    var knob = document.getElementById('otp-knob');
+    _slideMax = slide.clientWidth - knob.clientWidth - 8;
+  }
+  function slideSet(v) {
+    var knob = document.getElementById('otp-knob');
+    var text = document.getElementById('otp-slide-text');
+    _slideX = Math.max(0, Math.min(v, _slideMax));
+    knob.style.transform = 'translateX(' + _slideX + 'px)';
+    text.style.opacity = String(Math.max(0.15, 1 - (_slideX / _slideMax) * 1.1));
+  }
+  function slideBack() {
+    _slideX = 0;
+    var knob = document.getElementById('otp-knob');
+    var text = document.getElementById('otp-slide-text');
+    knob.style.transform = 'translateX(0)';
+    text.style.opacity = '1';
+  }
+  (function () {
+    var knob = document.getElementById('otp-knob');
+    knob.addEventListener('pointerdown', function (e) {
+      if (_submitted || _code.length !== 6) return;
+      slideBounds(); _dragging = true; _startX = e.clientX - _slideX;
+      knob.setPointerCapture(e.pointerId);
+    });
+    knob.addEventListener('pointermove', function (e) { if (_dragging) slideSet(e.clientX - _startX); });
+    function rel() {
+      if (!_dragging) return;
+      _dragging = false;
+      if (_slideX >= _slideMax * 0.8) { slideSet(_slideMax); otpSubmit(); }
+      else slideBack();
+    }
+    knob.addEventListener('pointerup', rel);
+    knob.addEventListener('pointercancel', rel);
+  })();
+
+  async function otpSubmit() {
+    if (_submitted) return;
+    _submitted = true;
+    try {
+      var res = await fetch(API_BASE + '/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _apiToken },
+        body: JSON.stringify({ action: 'withdraw', project_id: _draft.project_id || _pid(), otp_id: _otp.otp_id, otp_code: _code })
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok || !data.success) {
+        _submitted = false;
+        slideBack();
+        otpErr(data.message || data.error || 'Gagal mengirim permintaan.');
+        return;
+      }
+      try {
+        sessionStorage.removeItem('clinqoo_wd_draft_' + _pid());
+        sessionStorage.removeItem('clinqoo_wd_otp_' + _pid());
+      } catch (e) {}
+      document.getElementById('otp-wd-id').textContent = 'wd-' + (data.id || '—');
+      document.getElementById('otp-digits').classList.add('hidden');
+      document.getElementById('otp-pad').classList.add('hidden');
+      document.getElementById('otp-slide-wrap').classList.add('hidden');
+      var p = document.querySelector('#otp-resend').parentElement.previousElementSibling;
+      if (p) p.classList.add('hidden');
+      document.getElementById('otp-resend').classList.add('hidden');
+      document.getElementById('otp-done').classList.remove('hidden');
+    } catch (e) {
+      _submitted = false;
+      slideBack();
+      otpErr('Tidak dapat terhubung ke server.');
+    }
+  }
+
+  // ===== Init =====
+  if (!_apiToken) { location.href = '/akun/'; }
+  else if (!_draft || !_otp) { location.href = '../'; }
+  else {
+    document.getElementById('otp-to').textContent = _otp.sent_to || 'email akunmu';
+    if (Date.now() - (_otp.ts || 0) < 60000) otpCooldown(Math.ceil(60 - (Date.now() - (_otp.ts || 0)) / 1000));
+    otpRender();
+  }
+  </script>
+</body>
+</html>
