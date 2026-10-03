@@ -596,6 +596,17 @@ const WORKSPACE_FUNCTION_DECLARATIONS = [
       priority: { type: 'NUMBER', description: 'add untuk MX opsional: prioritas (default 10).' },
       record_id: { type: 'STRING', description: 'delete: id record dari action records.' }
     }, required: ['action'] } },
+  { name: 'build_apk',
+    description: 'Buat file APK Android dari sebuah website/aplikasi web yang sudah live (fondasi PressForge — build dijalankan di GitHub Actions, butuh konektor GitHub terhubung). WAJIB dipakai setiap kali user minta "jadikan APK", "bikin aplikasi Android dari situs ini", "convert ke APK", dsb. Alur WAJIB: (1) action "start" — kirim url situs (WAJIB http/https lengkap, mis. https://app.clincoo.buzz; situs proyek Clincoo harus sudah di-deploy dulu dengan deploy_project bila belum), app_name opsional, package_id opsional (default otomatis dari domain), orientation opsional "portrait"/"landscape" (default portrait), fullscreen opsional default true -> balasan berisi build_id. (2) TUNGGU: panggil action "status" dengan build_id berkala (setiap beberapa detik, sambil memberi update singkat ke user) sampai status done/failed. (3) kalau done, panggil action "download" dengan build_id -> file APK OTOMATIS terunduh ke perangkat user (beri tahu nama file & cara izinkan instalasi "aplikasi tidak dikenal"). Jangan panggil download sebelum done. Kalau hasilnya success:false, sampaikan error aslinya apa adanya.',
+    parameters: { type: 'OBJECT', properties: {
+      action: { type: 'STRING', description: 'Salah satu: start (mulai build), status (cek progres build), download (kirim APK ke user).' },
+      url: { type: 'STRING', description: 'start: URL lengkap website yang mau dijadikan APK, contoh "https://app.clincoo.buzz".' },
+      app_name: { type: 'STRING', description: 'start opsional: nama aplikasi (maks 40 karakter, default dari domain).' },
+      package_id: { type: 'STRING', description: 'start opsional: package Android, contoh "com.tokosaya.app" (default otomatis).' },
+      orientation: { type: 'STRING', description: 'start opsional: "portrait" (default) atau "landscape".' },
+      fullscreen: { type: 'BOOLEAN', description: 'start opsional: true = mode fullscreen (default).' },
+      build_id: { type: 'STRING', description: 'status/download: id build dari hasil start.' }
+    }, required: ['action'] } },
   { name: 'write_files',
     description: 'Tulis BANYAK file sekaligus ke workspace proyek aktif (bulk write) — WAJIB dipakai saat membuat/mengubah/salin 2+ file dalam satu giliran: satu panggilan berisi array files [{path, content}] jauh lebih cepat & hemat daripada write_file satu-satu. Maks 60 file per panggilan. File tersimpan permanen (cloud) dan langsung bisa di-deploy.',
     parameters: { type: 'OBJECT', properties: {
@@ -947,6 +958,7 @@ function serverProgressText(tc) {
   if (tc.name === 'install_automation') return 'Memasang otomatisasi: ' + String(a.name || '') + '…';
   if (tc.name === 'manage_domain') return 'Mengatur domain: ' + String(a.action || '') + (a.domain ? ' ' + a.domain : '') + '…';
   if (tc.name === 'domain_dns') return 'Mengelola DNS halaman Domain: ' + String(a.action || '') + (a.domain ? ' ' + a.domain : '') + '…';
+  if (tc.name === 'build_apk') return 'Membangun APK Android (' + String(a.action || 'start') + (a.build_id ? ': ' + a.build_id : '') + ')…';
   if (tc.name === 'write_files') return 'Menulis ' + (Array.isArray(a.files) ? a.files.length : '?') + ' file sekaligus…';
   if (tc.name === 'clone_repo') return 'Menyalin repo: ' + String(a.repo || '') + '…';
   if (tc.name === 'push_to_github') return 'Push ke GitHub: ' + String(a.repo || '') + '…';

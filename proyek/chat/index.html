@@ -2106,7 +2106,7 @@ window.chatLivePreview = function () {
                 delete_item: 'ph-trash', search_items: 'ph-magnifying-glass',
                 run_command: 'ph-terminal-window', read_web_page: 'ph-globe', web_search: 'ph-magnifying-glass',
                 search_clinqoo_kb: 'ph-brain', rename_project: 'ph-pencil-simple', set_project_info: 'ph-note-pencil',
-                deploy_project: 'ph-rocket-launch', add_env_var: 'ph-key', list_env_vars: 'ph-key', test_secret: 'ph-shield-check', cloudflare_request: 'ph-cloud', manage_domain: 'ph-globe-hemisphere-west', domain_dns: 'ph-globe',
+                deploy_project: 'ph-rocket-launch', add_env_var: 'ph-key', list_env_vars: 'ph-key', test_secret: 'ph-shield-check', cloudflare_request: 'ph-cloud', manage_domain: 'ph-globe-hemisphere-west', domain_dns: 'ph-globe', build_apk: 'ph-android-logo',
                 create_backend_function: 'ph-function', call_backend_function: 'ph-function',
                 github_request: 'ph-github-logo', drive_request: 'ph-google-logo', calendar_request: 'ph-calendar-blank', notion_request: 'ph-notebook',
                 delete_backend_function: 'ph-function', list_backend_functions: 'ph-function',
@@ -3610,6 +3610,7 @@ window.chatLivePreview = function () {
                 case 'notion_request': return 'Accessing Notion connector…';
                 case 'write_files': return 'Writing ' + (Array.isArray(a.files) ? a.files.length : '?') + ' files…';
                 case 'clone_repo': return 'Cloning repo: ' + String(a.repo || '') + '…';
+                case 'build_apk': return 'Building Android APK (' + String(a.action || 'start') + (a.build_id ? ': ' + a.build_id : '') + ')…';
                 case 'push_to_github': return 'Pushing to GitHub: ' + String(a.repo || '') + '…';
                 default: return 'Processing: ' + tc.name + '…';
             }
@@ -3724,6 +3725,7 @@ window.chatLivePreview = function () {
                     case 'deploy_project': return await toolDeployProject(args);
                     case 'manage_domain': return await toolManageDomain(args);
                     case 'domain_dns': return await toolDomainDns(args);
+                    case 'build_apk': return await toolBuildApk(args);
                     case 'add_env_var': return await toolAddEnvVar(args);
                     case 'list_env_vars': return await toolListEnvVars(args);
                     case 'test_secret': return await toolTestSecret(args);
@@ -4033,6 +4035,60 @@ window.chatLivePreview = function () {
             } catch (e) {
                 return { success: false, error: 'Gagal memanggil GitHub API: ' + (e && e.message ? e.message : String(e)) };
             }
+        }
+        // ===== TOOL build_apk: buat APK Android dari website (fondasi PressForge) =====
+        // Build jalan di GitHub Actions repo pressforge-builds milik user. Token GitHub
+        // konektor diambil otomatis dari localStorage — user tidak pernah menempel token.
+        // action download: file APK diunduh OTOMATIS ke perangkat; hasil base64 TIDAK
+        // pernah dimasukkan ke konteks AI (hanya ringkasan kecil yang dikirim ke model).
+        async function toolBuildApk(args) {
+            let token = '';
+            try { token = localStorage.getItem('clincoo_gh_token') || ''; } catch (e) {}
+            if (!token) return { success: false, error: 'GitHub belum terhubung. Buka menu Integrasi di sidebar kiri, hubungkan GitHub, lalu coba lagi.' };
+            const a = args || {};
+            const buildAction = String(a.action || 'start').toLowerCase();
+            const payload = {
+                action: 'build_apk',
+                token: token,
+                build_action: buildAction,
+                url: a.url || '',
+                app_name: a.app_name || '',
+                package_id: a.package_id || '',
+                orientation: a.orientation || 'portrait',
+                fullscreen: a.fullscreen === false ? false : true,
+                build_id: a.build_id || '',
+                icon_base64: a.icon_base64 || ''
+            };
+            let res, d;
+            try {
+                res = await fetch(TOOL_API_BASE + '/api/ai-tools', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clinqooAuthToken() }, body: JSON.stringify(payload) });
+                d = await res.json().catch(function () { return {}; });
+            } catch (e) {
+                return { success: false, error: 'Gagal menghubungi server build APK: ' + (e && e.message ? e.message : String(e)) };
+            }
+            if (!res.ok || d.ok === false || d.error) return { success: false, error: d.error || ('Gagal build APK (HTTP ' + res.status + ').') };
+            if (buildAction === 'download') {
+                if (!d.apk_base64) return { success: false, error: 'APK belum tersedia — pastikan build sudah done (cek dengan action status).' };
+                try {
+                    const bin = atob(d.apk_base64);
+                    const u8 = new Uint8Array(bin.length);
+                    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+                    const blob = new Blob([u8], { type: 'application/vnd.android.package-archive' });
+                    const url = URL.createObjectURL(blob);
+                    const el = document.createElement('a');
+                    el.href = url;
+                    el.download = d.filename || ('app-' + (d.build_id || 'apk') + '.apk');
+                    document.body.appendChild(el);
+                    el.click();
+                    el.remove();
+                    setTimeout(function () { URL.revokeObjectURL(url); }, 15000);
+                    return { success: true, build_id: d.build_id || a.build_id, filename: d.filename, size_kb: Math.round(bin.length / 1024), downloaded: true, message: 'File APK sudah otomatis terunduh ke perangkat user. Sampaikan bahwa file bernama ' + (d.filename || 'app.apk') + ' (' + Math.round(bin.length / 1024) + ' KB) dan cara aktifkannya: buka file, izinkan instalasi aplikasi tidak dikenal jika diminta.' };
+                } catch (e) {
+                    return { success: false, error: 'Gagal menyiapkan unduhan APK: ' + (e && e.message ? e.message : String(e)) };
+                }
+            }
+            // start / status: bentuk sudah ringkas, teruskan ke AI
+            return d;
         }
         // ===== TOOL write_files: bulk write — satu load + satu save untuk semua file =====
         function wsWriteFilesBatch(args) {
