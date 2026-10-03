@@ -236,7 +236,7 @@ async function paymentReminderSweep(env) {
   const old = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
   const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
   const rows = await db.prepare(
-    "SELECT id, user_id, amount FROM topup_orders WHERE status = 'pending' AND reminder_sent_at IS NULL AND created_at > ? AND created_at <= ? ORDER BY created_at ASC LIMIT 10"
+    "SELECT id, user_id, amount, bill_total FROM topup_orders WHERE status = 'pending' AND reminder_sent_at IS NULL AND created_at > ? AND created_at <= ? ORDER BY created_at ASC LIMIT 10"
   ).bind(old, cutoff).all();
   let sent = 0;
   for (const o of (rows && rows.results) || []) {
@@ -244,7 +244,9 @@ async function paymentReminderSweep(env) {
     // tandai dulu supaya cron berikutnya tidak dobel kirim
     await db.prepare("UPDATE topup_orders SET reminder_sent_at = datetime('now') WHERE id = ?").bind(o.id).run();
     if (!user || !user.email) continue;
-    const amt = formatIDR(parseFloat(o.amount) || 0);
+    // Nominal = tagihan asli dari penyedia QRIS (harga + biaya layanan), bukan harga paket saja
+    const billAmt = parseFloat(o.bill_total) > 0 ? parseFloat(o.bill_total) : (parseFloat(o.amount) || 0);
+    const amt = formatIDR(billAmt);
     try {
       await sendEmail(env, {
         toEmail: user.email, toName: user.name || '',
@@ -256,14 +258,14 @@ async function paymentReminderSweep(env) {
           '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">Jika Anda sudah membayar, abaikan email ini — saldo masuk otomatis begitu pembayaran terkonfirmasi.</p>',
           [['Nomor Pesanan', o.id], ['Jumlah', amt], ['Metode', 'QRIS'], ['Status', 'Menunggu pembayaran']],
           'Lanjutkan Pembayaran',
-          'https://app.clincoo.buzz/akun/langganan/checkout/qris/',
+          'https://app.clincoo.buzz/akun/langganan/checkout/qris/' + encodeURIComponent(o.id) + '/',
           'Ini pesan pengingat otomatis dari Clincoo.'
         )
       });
       await notifyEvent(db, user, {
         source: 'Dompet', type: 'payment_reminder',
         message: 'Pesanan QRIS ' + amt + ' belum selesai. Buka halaman pembayaran untuk melanjutkan atau membuat ulang.',
-        link: 'https://app.clincoo.buzz/akun/langganan/checkout/qris/'
+        link: 'https://app.clincoo.buzz/akun/langganan/checkout/qris/' + encodeURIComponent(o.id) + '/'
       });
       sent++;
     } catch (e) {}

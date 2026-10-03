@@ -324,10 +324,13 @@ export async function onRequestPost({ request, env }) {
           [
             ['Paket', planName],
             ['Harga', formatIDR(amount) + ' / bulan'],
+            ['Biaya Layanan', formatIDR(total - amount)]
+          ].concat((total > amount) ? [['Total Tagihan', formatIDR(total)]] : [])
+           .concat([
             ['Order ID', orderId],
             ['Metode', 'QRIS'],
             ['Bayar Sebelum', expWib]
-          ],
+          ]),
           'Bayar Sekarang',
           ctaBase + '/akun/langganan/checkout/qris/?order_id=' + encodeURIComponent(orderId)
         )
