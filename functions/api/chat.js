@@ -210,7 +210,9 @@ async function getClouviaKeys(env) {
 // Router AI Indonesia (router.clouvia.id/v1) — API kompatibel penuh OpenAI.
 // Dipakai saat OpenRouter gagal (limit/kredit) supaya chat tidak langsung jatuh
 // ke GLM 4.7 Flash (Workers AI) yang kualitas formatnya jauh lebih rendah.
-const CLOUVIA_MODELS = ['glm5.3-flash', 'coding-high-flash'];
+const CLOUVIA_MODELS = ['glm5.3-flash', 'coding-high-flash', 'free-model'];
+// 'free-model' = lapis terakhir Clouvia: tidak menguras saldo berbayar (pakai
+// kuota free_balance), jadi chat tetap hidup walau 50M+ token balance habis.
 
 async function tryClouviaText(keys, messages, gDecls) {
   const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
