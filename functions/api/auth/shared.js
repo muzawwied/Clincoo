@@ -104,7 +104,7 @@ export async function getUserByToken(db, token) {
   }
   const user = await db.prepare('SELECT * FROM auth_users WHERE id = ?').bind(sess.user_id).first();
   if (!user) return null;
-  if (user.suspended) {
+  if (user.status === 'suspended') {
     try { await db.prepare('DELETE FROM auth_sessions WHERE token = ?').bind(token).run(); } catch (e) {}
     return null;
   }
@@ -120,7 +120,7 @@ export async function upsertOauthUser(db, provider, providerAccountId, email, na
     user = await db.prepare('SELECT * FROM auth_users WHERE id = ?').bind(link.user_id).first();
   } else {
     user = email ? await db.prepare('SELECT * FROM auth_users WHERE email = ?').bind(email.toLowerCase()).first() : null;
-    if (user && user.suspended) throw new Error('Akun ini sedang ditangguhkan.');
+    if (user && user.status === 'suspended') throw new Error('Akun ini sedang ditangguhkan.');
     if (!user) {
       await db.prepare('INSERT INTO auth_users (name, email, password_hash, avatar_url) VALUES (?, ?, \'\', ?)')
         .bind(name || '', email ? email.toLowerCase() : null, avatarUrl || '').run();

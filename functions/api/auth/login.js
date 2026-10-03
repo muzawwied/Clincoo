@@ -12,7 +12,7 @@ export async function onRequestPost({ request, env }) {
     const password = String(body.password || '');
     const user = await db.prepare('SELECT * FROM auth_users WHERE email = ?').bind(email).first();
     if (!user) return json({ error: 'Email atau kata sandi salah' }, 401);
-    if (user.suspended) return json({ error: 'Akun ini sedang ditangguhkan. Hubungi tim Clincoo bila ini keliru.' }, 403);
+    if (user.status === 'suspended') return json({ error: 'Akun ini sedang ditangguhkan. Hubungi tim Clincoo bila ini keliru.' }, 403);
     const ok = await verifyPassword(password, user.password_hash);
     if (!ok) return json({ error: 'Email atau kata sandi salah' }, 401);
     const token = await createSession(db, user.id);
