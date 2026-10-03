@@ -219,10 +219,27 @@ async function tryClouviaText(keys, messages, gDecls) {
   if (!keyList.length) return null;
   const { system, chatMsgs } = toOAIChat(messages);
   const oaiTools = oaiToolsOf(gDecls);
+  // Gateway Clouvia membuang role 'system' (terverifikasi 3 Okt 2026: model
+  // glm5.3-flash tidak pernah menerima instruksi sistem apa pun). Supaya AI
+  // tetap tahu nama user di jalur Clouvia, blok [IDENTITAS PENGGUNA] dari
+  // system prompt disuntik juga sebagai prefix pesan user pertama — jalur
+  // yang pasti sampai ke model. (Sisanya biarkan: perilaku lama tidak diubah.)
+  let idPrefix = '';
+  try {
+    const idMatch = system ? system.match(/\[IDENTITAS PENGGUNA\][^\n]*/) : null;
+    if (idMatch) idPrefix = idMatch[0] + '\n\n';
+  } catch (e) {}
   let lastErr = null;
   for (const key of keyList) {
     for (const model of CLOUVIA_MODELS) {
-      const baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
+      let baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
+      if (idPrefix) {
+        const iu = baseMsgs.findIndex(m => m && m.role === 'user');
+        if (iu !== -1) {
+          baseMsgs = baseMsgs.slice();
+          baseMsgs[iu] = { role: 'user', content: idPrefix + String(baseMsgs[iu].content || '') };
+        }
+      }
       let data = null;
       try {
         const payload = { model, messages: baseMsgs, max_tokens: 4096 };
