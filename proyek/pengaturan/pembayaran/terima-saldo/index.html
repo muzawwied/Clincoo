@@ -56,7 +56,6 @@
     <!-- Nominal -->
     <p id="rc-amount-preview" class="text-center text-3xl font-bold font-mono text-gray-900 dark:text-white mb-2">Rp 0</p>
     <div class="text-center mb-8">
-      <p id="rc-info" class="text-[11px] text-gray-400 dark:text-gray-500">Memuat pembayaran…</p>
       <p id="rc-error" class="hidden text-xs text-red-500 mt-1"></p>
     </div>
 
@@ -121,31 +120,25 @@
 
   function rcNext() {
     if (document.getElementById('rc-next').disabled) return;
-    try {
-      sessionStorage.setItem('clinqoo_rc_draft_' + _pid(), JSON.stringify({ amount: Number(_rcAmount), ts: Date.now() }));
-    } catch (e) {}
-    location.href = '../terima-saldo/konfirmasi/';
+    location.href = '../terima-saldo/konfirmasi/?amount=' + Number(_rcAmount);
   }
 
   async function rcInit() {
     // tanpa login → ke halaman akun
     if (!_apiToken) { location.href = '/akun/'; return; }
-    var info = document.getElementById('rc-info');
     for (var i = 0; i < 3; i++) {
       try {
         var res = await fetch(API_BASE + '/pay?action=config&project_id=' + encodeURIComponent(_pid()), { headers: { Authorization: 'Bearer ' + _apiToken } });
         var data = await res.json();
         if (res.ok && data.success) {
-          if (!data.active) { info.textContent = 'Pembayaran proyek ini belum aktif.'; return; }
+          if (!data.active) return; // pembayaran belum aktif → tombol tetap terkunci, tanpa teks status
           _rcActive = true;
-          info.textContent = data.gateway_ready ? 'QRIS ClincooPay · aktif' : 'Metode QRIS';
           rcUpdate();
           return;
         }
       } catch (e) {}
       if (i < 2) await new Promise(function (r) { setTimeout(r, 900); });
     }
-    info.textContent = 'Tidak dapat memuat status pembayaran.';
   }
 
   rcInit();

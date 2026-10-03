@@ -74,7 +74,7 @@
     </div>
 
     <div id="rc-done" class="hidden mx-auto max-w-[300px] text-center">
-      <a href="../../" class="inline-flex items-center justify-center px-6 h-12 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full transition-colors">Kembali ke Pembayaran</a>
+      <a href="../" class="inline-flex items-center justify-center px-6 h-12 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full transition-colors">Kembali ke Nominal</a>
     </div>
   </div>
 
@@ -86,7 +86,11 @@
   function _rp(n) { return Number(n || 0).toLocaleString('id-ID'); }
 
   var _draft = null;
-  try { _draft = JSON.parse(sessionStorage.getItem('clinqoo_rc_draft_' + _pid()) || 'null'); } catch (e) {}
+  try {
+    var __amt = Number(new URLSearchParams(location.search).get('amount') || 0);
+    if (__amt >= 1000 && __amt <= 100000000) _draft = { amount: __amt, ts: Date.now() };
+  } catch (e) {}
+  if (!_draft) { try { _draft = JSON.parse(sessionStorage.getItem('clinqoo_rc_draft_' + _pid()) || 'null'); } catch (e) {} }
   var _payKey = '';
   var _submitted = false;
 
@@ -99,10 +103,13 @@
   }
 
   async function rcInit() {
-    if (!_draft || !_draft.amount) { location.href = '../'; return; }
+    if (!_draft || !_draft.amount) {
+      document.getElementById('rc-error').textContent = 'Nominal tidak ditemukan. Mulai ulang dari halaman nominal.';
+      document.getElementById('rc-error').classList.remove('hidden');
+      rcShow('rc-done');
+      return;
+    }
     if (!_apiToken) { location.href = '/akun/'; return; }
-    // draft kadaluarsa 15 menit → mulai ulang
-    if (Date.now() - (_draft.ts || 0) > 15 * 60 * 1000) { try { sessionStorage.removeItem('clinqoo_rc_draft_' + _pid()); } catch (e) {} location.href = '../'; return; }
     document.getElementById('rc-amount').textContent = 'Rp ' + _rp(_draft.amount);
     document.getElementById('rc-time').textContent = new Date().toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
@@ -154,13 +161,7 @@
         err.classList.remove('hidden');
         return;
       }
-      try {
-        sessionStorage.setItem('clinqoo_rc_tx_' + _pid(), JSON.stringify({
-          order_id: data.order_id, key: _payKey, amount: data.amount, total: data.total_payment || data.amount,
-          qr_image: data.qr_image || '', ts: Date.now()
-        }));
-      } catch (e) {}
-      location.href = '../qris/';
+      location.href = '../qris/?order_id=' + encodeURIComponent(data.order_id) + '&key=' + encodeURIComponent(_payKey) + '&amount=' + Number(data.amount) + '&total=' + Number(data.total_payment || data.amount) + '&img=' + encodeURIComponent(data.qr_image || '');
     } catch (e) {
       _submitted = false;
       btn.disabled = false; btn.textContent = 'Buat Kode QRIS';

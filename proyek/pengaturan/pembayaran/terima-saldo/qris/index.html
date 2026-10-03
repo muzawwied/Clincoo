@@ -109,7 +109,11 @@
   function _rp(n) { return Number(n || 0).toLocaleString('id-ID'); }
 
   var _tx = null;
-  try { _tx = JSON.parse(sessionStorage.getItem('clinqoo_rc_tx_' + _pid()) || 'null'); } catch (e) {}
+  try {
+    var __q = new URLSearchParams(location.search);
+    if (__q.get('order_id') && __q.get('key')) _tx = { order_id: __q.get('order_id'), key: __q.get('key'), amount: Number(__q.get('amount') || 0), total: Number(__q.get('total') || __q.get('amount') || 0), qr_image: __q.get('img') || '', ts: Date.now() };
+  } catch (e) {}
+  if (!_tx) { try { _tx = JSON.parse(sessionStorage.getItem('clinqoo_rc_tx_' + _pid()) || 'null'); } catch (e) {} }
   var _pollBusy = false, _timer = null, _paid = false, _expired = false, _expAt = 0;
 
   function pad(n) { return (n < 10 ? '0' : '') + n; }
