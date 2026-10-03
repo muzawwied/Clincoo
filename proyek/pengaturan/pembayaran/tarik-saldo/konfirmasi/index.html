@@ -65,6 +65,7 @@
         <div class="border-t border-dashed border-gray-200 dark:border-slate-700 my-1"></div>
         <div class="flex items-center justify-between"><p class="text-gray-500 dark:text-gray-400">Total potong saldo</p><p id="cf-total" class="font-bold font-mono text-gray-900 dark:text-white">Rp 0</p></div>
         <div class="flex items-center justify-between"><p class="text-gray-500 dark:text-gray-400">Tujuan</p><p id="cf-dest" class="font-semibold text-gray-900 dark:text-white">&mdash;</p></div>
+        <div id="cf-recipient-row" class="hidden flex items-center justify-between"><p class="text-gray-500 dark:text-gray-400">Penerima</p><p id="cf-recipient" class="font-semibold text-gray-900 dark:text-white">&mdash;</p></div>
         <div class="flex items-center justify-between"><p class="text-gray-500 dark:text-gray-400">Metode</p><p class="font-semibold text-gray-900 dark:text-white">E-wallet</p></div>
         <div class="flex items-center justify-between"><p class="text-gray-500 dark:text-gray-400">Waktu</p><p id="cf-time" class="font-mono text-gray-900 dark:text-white">&mdash;</p></div>
       </div>
@@ -120,6 +121,10 @@
     document.getElementById('cf-fee').textContent = 'Rp ' + _rp(_draft.fee || 0);
     document.getElementById('cf-total').textContent = 'Rp ' + _rp(_draft.amount + (_draft.fee || 0));
     document.getElementById('cf-dest').textContent = (EW_LABEL[_draft.dest_type] || _draft.dest_type) + ' · ' + _draft.dest_account;
+    if (_draft.dest_recipient) {
+      document.getElementById('cf-recipient').textContent = _draft.dest_recipient;
+      document.getElementById('cf-recipient-row').classList.remove('hidden');
+    }
     document.getElementById('cf-time').textContent = new Date().toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
     var saldo = 0;

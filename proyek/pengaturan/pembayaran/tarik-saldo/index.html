@@ -125,7 +125,7 @@
     if (_wdSent || !wdUpdate()) return;
     _wdSent = true;
     var amount = Number(_wdAmount || 0);
-    var draft = { project_id: _pid(), amount: amount, fee: _wdFee, dest_type: _wdDest.ew_type, dest_account: _wdDest.account, dest_label: _wdDest.label || '', ts: Date.now() };
+    var draft = { project_id: _pid(), amount: amount, fee: _wdFee, dest_type: _wdDest.ew_type, dest_account: _wdDest.account, dest_label: _wdDest.label || '', dest_recipient: _wdDest.recipient || '', ts: Date.now() };
     try { sessionStorage.setItem('clinqoo_wd_draft_' + _pid(), JSON.stringify(draft)); } catch (e) {}
     location.href = 'konfirmasi/';
   }
