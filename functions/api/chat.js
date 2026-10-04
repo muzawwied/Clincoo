@@ -169,7 +169,7 @@ async function tryOpenRouterText(keys, messages, gDecls) {
         contMsgs.push({ role: 'user', content: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' });
         let dc = null;
         try {
-          const p3 = { model, messages: contMsgs, max_tokens: 4096 };
+          const p3 = { model, messages: contMsgs, max_tokens: 8192 };
           if (oaiTools) p3.tools = oaiTools;
           const rc = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
@@ -248,7 +248,7 @@ async function tryClouviaText(keys, messages, gDecls) {
       }
       let data = null;
       try {
-        const payload = { model, messages: baseMsgs, max_tokens: 4096 };
+        const payload = { model, messages: baseMsgs, max_tokens: 8192 };
         if (oaiTools) payload.tools = oaiTools;
         const res = await fetch('https://router.clouvia.id/v1/chat/completions', {
           method: 'POST',

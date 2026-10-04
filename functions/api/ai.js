@@ -157,7 +157,7 @@ async function tryOpenRouter(keys, messages, stream) {
   for (const key of keyList) {
   for (const model of OPENROUTER_MODELS) {
     try {
-      const payload = { model, messages: sys ? [{ role: 'system', content: sys }, ...chatMsgs] : chatMsgs, max_tokens: 4096 };
+      const payload = { model, messages: sys ? [{ role: 'system', content: sys }, ...chatMsgs] : chatMsgs, max_tokens: 16384 };
       if (stream) payload.stream = true;
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
@@ -184,7 +184,7 @@ async function tryOpenRouter(keys, messages, stream) {
             const rc = await fetch('https://openrouter.ai/api/v1/chat/completions', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.pages.dev', 'X-Title': 'Clincoo' },
-              body: JSON.stringify({ model, messages: contMsgs, max_tokens: 4096 })
+              body: JSON.stringify({ model, messages: contMsgs, max_tokens: 8192 })
             });
             dc = await rc.json().catch(() => ({}));
           } catch (e2) { dc = null; }
