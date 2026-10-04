@@ -824,6 +824,7 @@
     </main>
 
     <footer id="chat-input-footer" class="fixed bottom-0 left-0 right-0 w-full bg-transparent px-4 py-4 z-20 pointer-events-none flex flex-col justify-end">
+        <div id="prompt-chips" class="hidden w-full max-w-4xl mx-auto overflow-x-auto hide-scrollbar gap-2 px-1 pb-2 pointer-events-auto"></div>
         <div id="chat-input-card" class="w-full bg-white rounded-[26px] shadow-[0_4px_24px_rgba(0,0,0,0.10)] p-4 sm:p-5 transition-all text-left border border-gray-100/80 pointer-events-auto max-w-4xl mx-auto">
             <div id="quota-banner" class="hidden items-center justify-between gap-3 mb-2 rounded-xl bg-gray-50 px-3 py-2">
                 <p id="quota-banner-text" class="text-[11px] sm:text-xs text-gray-500 leading-snug flex-1">Kredit habis — upgrade untuk lanjut.</p>
@@ -1192,6 +1193,64 @@ window.chatLivePreview = function () {
         
         let messages = [];
 
+        const PROMPT_CHIP_LIB = [
+            { keys: ['domain', 'dns', 'subdomain', 'tld'], chips: ['Hubungkan domain kustom ke situsku', 'Atur DNS domain-ku', 'Cek status domain yang terhubung'] },
+            { keys: ['bayar', 'pembayaran', 'qris', 'checkout', 'top-up', 'topup', 'saldo', 'langganan', 'harga', 'paket'], chips: ['Aktifkan pembayaran QRIS di situsku', 'Buat order pembayaran demo Rp 25.000', 'Cek status order pembayaran'] },
+            { keys: ['deploy', 'production', 'publish', 'deployment'], chips: ['Deploy perubahan terakhir ke production', 'Tampilkan riwayat deployment', 'Cek status situs yang sudah live'] },
+            { keys: ['email', 'smtp', 'mail'], chips: ['Kirim email dari situsku', 'Panduan setup email di Clincoo'] },
+            { keys: ['database', 'entitas', 'entity', 'tabel', 'crud'], chips: ['Bikin fungsi backend CRUD', 'Baca data di database proyekku'] },
+            { keys: ['login', 'auth', 'akun', 'password', 'registrasi'], chips: ['Bikin halaman login dan registrasi', 'Tambah proteksi halaman khusus admin'] },
+            { keys: ['blog', 'artikel', 'dokumentasi', 'seo'], chips: ['Cari artikel dokumentasi Clincoo', 'Optimalkan SEO situsku'] },
+            { keys: ['apk', 'android'], chips: ['Build APK dari situsku'] },
+            { keys: ['error', 'bug', 'gagal', 'rusak', 'tidak jalan'], chips: ['Cek log error dan benerin bug-nya', 'Tes ulang fitur yang tadi gagal'] },
+            { keys: ['github', 'repo', 'commit'], chips: ['Push kode proyekku ke GitHub', 'Clone repo GitHub ke proyek ini'] },
+            { keys: ['api', 'endpoint', 'webhook', 'fungsi backend'], chips: ['Bikin endpoint API baru', 'Tes endpoint API yang sudah ada'] },
+            { keys: ['otomasi', 'jadwal', 'cron', 'terjadwal'], chips: ['Bikin automasi harian sederhana'] }
+        ];
+        const PROMPT_CHIP_DEFAULTS = ['Apa saja yang bisa kamu bantu?', 'Deploy situs pertamaku ke production', 'Aktifkan pembayaran QRIS', 'Hubungkan domain kustom'];
+        let promptChipsTimer = null;
+        function schedulePromptChips() {
+            if (promptChipsTimer) clearTimeout(promptChipsTimer);
+            promptChipsTimer = setTimeout(buildPromptChips, 120);
+        }
+        function buildPromptChips() {
+            const wrap = document.getElementById('prompt-chips');
+            if (!wrap) return;
+            if (isGenerating || (typeof quotaLocked !== 'undefined' && quotaLocked)) { wrap.classList.add('hidden'); return; }
+            const vis = messages.filter(m => m && !m.isHidden && !m.silent && m.text);
+            let txt = '';
+            for (let i = Math.max(0, vis.length - 10); i < vis.length; i++) txt += ' ' + String(vis[i].text).toLowerCase();
+            let best = null, bestScore = 0;
+            PROMPT_CHIP_LIB.forEach(topic => {
+                let score = 0;
+                topic.keys.forEach(k => { if (txt.indexOf(k) !== -1) score += 1; });
+                if (score > bestScore) { bestScore = score; best = topic; }
+            });
+            const chips = (best ? best.chips : PROMPT_CHIP_DEFAULTS).slice(0, 4);
+            const sig = chips.join('|');
+            if (wrap.getAttribute('data-sig') === sig) { wrap.classList.remove('hidden'); return; }
+            wrap.setAttribute('data-sig', sig);
+            wrap.innerHTML = '';
+            chips.forEach(c => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'shrink-0 whitespace-nowrap rounded-full bg-gray-100 px-3.5 py-1.5 text-[12px] text-gray-600 hover:bg-gray-200 hover:text-black transition-colors cursor-pointer dark:bg-gray-800 dark:text-gray-300 dark:hover:text-white';
+                b.textContent = c;
+                b.onclick = () => {
+                    if (isGenerating) return;
+                    const userMsg = { id: generateId(), role: 'user', text: c };
+                    messages.push(userMsg);
+                    silentRounds = 0;
+                    renderMessages();
+                    pinMessageToTop(userMsg.id);
+                    wrap.classList.add('hidden');
+                    fetchAIResponse();
+                };
+                wrap.appendChild(b);
+            });
+            wrap.classList.remove('hidden');
+        }
+
         // ===== MODE LOCALSTORAGE: riwayat chat per-proyek disimpan di browser =====
         const LS_CHAT_PREFIX = 'clinqoo_ls_chat_';
         function lsChatKey() {
@@ -1230,8 +1289,9 @@ window.chatLivePreview = function () {
                 const raw = localStorage.getItem(lsChatKey());
                 if (!raw) return false;
                 const log = JSON.parse(raw);
-                if (Array.isArray(log) && log.length > 0) { messages = log; return true; }
+                if (Array.isArray(log) && log.length > 0) { messages = log; schedulePromptChips(); return true; }
             } catch(e) {}
+            schedulePromptChips();
             return false;
         }
         // ===== SINKRONISASI RIWAYAT CHAT ANTAR PERANGKAT (1 akun, 1 proyek) =====
@@ -3447,6 +3507,7 @@ window.chatLivePreview = function () {
             } else {
                 btnAction.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>`;
             }
+            schedulePromptChips();
         }
 
         function stopGeneration() {
