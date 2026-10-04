@@ -234,13 +234,37 @@
                 if (!r.ok) throw new Error('HTTP ' + r.status);
                 return r.json();
             })
-            .then(function (d) {
+            .then(async function (d) {
                 var files = (d && d.files) || [];
                 var map = {};
+                var bigs = [];
                 files.forEach(function (f) {
                     if (!f || !f.path || String(f.path).slice(-1) === '/') return;
+                    if (f.is_big) { bigs.push(f); return; }
                     map[norm(f.path)] = { type: 'file', name: String(f.path).split('/').pop(), path: f.path, content: f.content || '' };
                 });
+                // FILE BESAR: isinya tidak ikut di daftar (hemat kuota) — ambil satu per
+                // satu supaya pratinjau tetap utuh (gambar/video/css/js ikut ke-render).
+                var fetched = 0;
+                for (var i = 0; i < bigs.length; i++) {
+                    var bf = bigs[i];
+                    if (fetched >= 10) break;
+                    if ((bf.size || 0) > 12 * 1024 * 1024) continue;
+                    try {
+                        var r2 = await fetch(PV_API + '/project-files?project_id=' + encodeURIComponent(pid) + '&path=' + encodeURIComponent(bf.path) + '&content=1', { headers: authHeaders() });
+                        if (!r2.ok) continue;
+                        var d2 = await r2.json();
+                        var content = '';
+                        if (typeof d2.content_b64 === 'string') {
+                            var bin = atob(d2.content_b64);
+                            var bytes = new Uint8Array(bin.length);
+                            for (var j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
+                            content = new TextDecoder('utf-8').decode(bytes);
+                        } else if (typeof d2.content === 'string') content = d2.content;
+                        map[norm(bf.path)] = { type: 'file', name: String(bf.path).split('/').pop(), path: bf.path, content: content };
+                        fetched++;
+                    } catch (e) {}
+                }
                 return map;
             });
     }

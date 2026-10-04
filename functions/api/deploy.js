@@ -4,7 +4,7 @@
 // POST /api/deploy {project_id} = deploy; action 'unpublish' = hapus situs;
 // action 'add_domain'/'remove_domain' = kelola domain kustom; GET = status situs.
 
-import { getProjectTables } from './_tables.js';
+import { getProjectTables, tableFor } from './_tables.js';
 import { guardProject, currentUser } from './user-scope.js';
 import { getEffectivePlan, getMonthlyDeployCount, bumpMonthlyDeployCount, ADMIN_EMAILS } from './plan-helpers.js';
 
@@ -33,6 +33,15 @@ function json(data, status = 200) {
 
 function b64(str) {
   return btoa(unescape(encodeURIComponent(String(str || ''))));
+}
+
+// base64 -> string asli (file besar disimpan sebagai chunk base64 dari string
+// asli — bisa teks murni atau data-URL gambar — jadi didecode kembali ke string)
+function unb64(b64Str) {
+  const bin = atob(String(b64Str || ''));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder('utf-8').decode(bytes);
 }
 
 function slugify(s) {
@@ -345,8 +354,22 @@ async function ensurePagesProject(creds, name) {
 
 async function readFiles(db, table, projectId) {
   try {
-    const { results } = await db.prepare(`SELECT path, content FROM ${table} WHERE project_id = ?`).bind(projectId).all();
-    return results || [];
+    // kolom is_big wajib ada sebelum dipakai (proyek lama belum punya kolom ini)
+    try { await db.prepare(`ALTER TABLE ${table} ADD COLUMN is_big INTEGER DEFAULT 0`).run(); } catch (e) {}
+    const { results } = await db.prepare(`SELECT path, content, is_big FROM ${table} WHERE project_id = ?`).bind(projectId).all();
+    const rows = results || [];
+    const bigs = rows.filter(r => r.is_big);
+    if (!bigs.length) return rows;
+    // File besar: konten utuh dibangun ulang dari chunk di p_<pid>_file_chunks
+    const chunksTable = tableFor('file_chunks', projectId);
+    for (const r of bigs) {
+      try {
+        const ch = await db.prepare(`SELECT chunk FROM ${chunksTable} WHERE path = ? ORDER BY idx ASC`).bind(r.path).all();
+        const b64Str = (ch.results || []).map(c => c.chunk || '').join('');
+        r.content = b64Str ? unb64(b64Str) : '';
+      } catch (e) { r.content = ''; }
+    }
+    return rows;
   } catch (e) { return []; }
 }
 
@@ -745,7 +768,7 @@ export async function onRequestPost({ request, env }) {
       let value;
       const raw = String(f.content || '');
       const dm = raw.startsWith('data:') && /^data:([a-z0-9.+-]+\/\/[a-z0-9.+-]+)?;base64,([A-Za-z0-9+/=]+)$/i.exec(raw);
-      if (dm && raw.length < 3_000_000) {
+      if (dm && raw.length < 34_000_000) {
         value = dm[2];
       } else {
         value = b64(f.content);

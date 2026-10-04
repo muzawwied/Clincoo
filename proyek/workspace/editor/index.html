@@ -738,7 +738,7 @@ function showMediaPreview(path){
   const img=$('#mp-img'),vid=$('#mp-video'),aud=$('#mp-audio');
   img.style.display='none';vid.style.display='none';aud.style.display='none';
   img.src='';vid.src='';aud.src='';
-  const src=project[path]||'';
+  const src=bigMediaContent[path]||project[path]||'';
   if(kind==='image'){img.src=src;img.style.display='block';}
   else if(kind==='video'){vid.src=src;vid.style.display='block';}
   else if(kind==='audio'){aud.src=src;aud.style.display='block';}
@@ -940,6 +940,46 @@ const _QP=new URLSearchParams(location.search);
 const LINK_PID=_QP.get('id')||_QP.get('pid')||'';
 const LINK_NAME=_QP.get('name')||'Proyek';
 const WS_API='https://clincoo-be2.pages.dev/api/project-files';
+
+// ===== FILE BESAR: isi di cloud (D1) — localStorage hanya penanda =====
+// Kuota browser ~5MB membuat file 10MB+ mustahil tersimpan lokal. File besar
+// diunggah ke /api/project-files (ter-chunk di server); pohon lokal hanya
+// menyimpan penanda. bigFiles = peta penanda, bigFileCache = isi hasil unduhan.
+const WS_BIG_LIMIT=600_000;
+const bigFiles={};
+const bigFileCache={};
+const bigMediaContent={};
+function wsB64EncodeEditor(str){return btoa(unescape(encodeURIComponent(String(str||''))));}
+function wsB64DecodeEditor(b64Str){
+  const bin=atob(String(b64Str||''));
+  const bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  return new TextDecoder('utf-8').decode(bytes);
+}
+async function editorCloudSaveBig(path,content){
+  if(!LINK_PID)return {ok:false,error:'Proyek tidak aktif.'};
+  try{
+    const res=await fetch(WS_API,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},ccAuthHeaders()),
+      body:JSON.stringify({project_id:LINK_PID,files:[{path,content_b64:wsB64EncodeEditor(content)}]})});
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok||d.error)return {ok:false,error:d.error||'Gagal menyimpan file besar ke cloud.'};
+    return {ok:true};
+  }catch(e){return {ok:false,error:'Gagal terhubung ke cloud.'};}
+}
+async function editorCloudFetchBig(path){
+  if(!LINK_PID)return null;
+  if(bigFileCache[path]!==undefined)return {content:bigFileCache[path]};
+  try{
+    const res=await fetch(WS_API+'?project_id='+encodeURIComponent(LINK_PID)+'&path='+encodeURIComponent(path)+'&content=1',{headers:ccAuthHeaders()});
+    if(!res.ok)return null;
+    const d=await res.json();
+    let content='';
+    if(typeof d.content_b64==='string')content=wsB64DecodeEditor(d.content_b64);
+    else if(typeof d.content==='string')content=d.content;
+    bigFileCache[path]=content;
+    return {content};
+  }catch(e){return null;}
+}
 let linkedEmptyFolders=[],cloudTimer=null,cloudOk=null;
 function wsFilesKey(){return 'clinqoo_workspace_files_'+LINK_PID;}
 function ccAuthHeaders(){const t=localStorage.getItem('clinqoo_auth_token')||localStorage.getItem('clinqoo_token')||'';return t?{'Authorization':'Bearer '+t}:{};}
@@ -949,7 +989,12 @@ function wsToFlat(data){
   Object.keys(data||{}).forEach(fk=>{
     (data[fk]||[]).forEach(it=>{
       if(!it||!it.path)return;
-      if(it.type==='file')files[it.path]=it.content||'';
+      if(it.type==='file'){
+        if(it.cloud&&!it.content){ // penanda file besar dari cloud/workspace
+          files[it.path]='';
+          bigFiles[it.path]={size:it.cloudSize||0};
+        } else files[it.path]=it.content||'';
+      }
       else if(it.type==='folder'){
         const hasKids=Object.keys(data).some(k=>k===it.path||k.startsWith(it.path+'/'));
         if(!hasKids)emptyFolders.push(it.path);
@@ -979,8 +1024,14 @@ function flatToWs(){
     const fk=parts.length?parts.join('/'):'root';
     ensureChain(fk);
     if(!Array.isArray(data[fk]))data[fk]=[];
-    if(!data[fk].some(i=>i.path===p))
-      data[fk].push({type:'file',name:nm,path:p,content:project[p],size:ccSizeLabel(project[p]),previewText:(project[p]||'').slice(0,60)});
+    if(!data[fk].some(i=>i.path===p)){
+      if(bigFiles[p]){ // penanda file besar: isi tetap di cloud, cache lokal tanpa konten
+        const sz=bigFiles[p].size||0;
+        data[fk].push({type:'file',name:nm,path:p,content:'',cloud:true,cloudSize:sz,size:sz?ccBytesLabel(sz):'besar',previewText:'Berkas besar — tersimpan di cloud'});
+      } else {
+        data[fk].push({type:'file',name:nm,path:p,content:project[p],size:ccSizeLabel(project[p]),previewText:(project[p]||'').slice(0,60)});
+      }
+    }
   });
   linkedEmptyFolders.forEach(fp=>ensureChain(fp));
   return data;
@@ -1005,6 +1056,12 @@ function loadProject(){
   return JSON.parse(JSON.stringify(FILES));
 }
 function wsDirtyKey(){return 'clinqoo_ws_dirty_'+(LINK_PID||'global');}
+function ccBytesLabel(b){
+  const n=Number(b)||0;
+  if(n>1024*1024)return (n/1024/1024).toFixed(2)+' MB';
+  if(n>1024)return (n/1024).toFixed(1)+' KB';
+  return n+' B';
+}
 function wsDirtySet(on){try{if(on)localStorage.setItem(wsDirtyKey(),'1');else localStorage.removeItem(wsDirtyKey());}catch(e){}}
 function wsDirtyIs(){try{return !!localStorage.getItem(wsDirtyKey());}catch(e){return false;}}
 function persist(){
@@ -1027,7 +1084,11 @@ function linkedCloudPushNow(attempt,keepalive){
   cloudTimer=null;
   if(!LINK_PID)return;
   const files=[];
-  Object.keys(project).forEach(p=>files.push({path:p,content:project[p]}));
+  Object.keys(project).forEach(p=>{
+    if(bigFiles[p]){ // isi sudah ada di server — penanda saja, jangan timpa chunk
+      files.push({path:p,cloud:1,size:bigFiles[p].size||0});
+    } else files.push({path:p,content:project[p]});
+  });
   linkedEmptyFolders.forEach(f=>files.push({path:f+'/',content:''}));
   const H=Object.assign({'Content-Type':'application/json'},ccAuthHeaders());
   const opt={method:'POST',headers:H,body:JSON.stringify({project_id:LINK_PID,files,replace:true})};
@@ -1070,6 +1131,11 @@ function linkedCloudPull(){
       if(!files.length)return;
       files.forEach(f=>{
         if(String(f.path).slice(-1)==='/'){linkedEmptyFolders.push(String(f.path).slice(0,-1));return;}
+        if(f.is_big){ // file besar: isi di cloud, pohon lokal hanya penanda
+          project[f.path]='';
+          bigFiles[f.path]={size:f.size||0};
+          return;
+        }
         project[f.path]=f.content||'';
       });
       try{localStorage.setItem(wsFilesKey(),JSON.stringify(flatToWs()));}catch(e){}
@@ -1116,7 +1182,9 @@ function cloudFirstSync(){
           const path=String(f.path);
           if(path.slice(-1)==='/'){const folder=path.slice(0,-1);let k='root';const parts=folder.split('/');while(parts.length){k=parts.join('/');ws[k]=ws[k]||[];ws[k].push({type:'folder',name:parts.pop(),path:folder,content:'',size:'-',previewText:''});parts=folder.split('/').slice(0,parts.length);}return;}
           const parts=path.split('/');const nm=parts.pop();const fk=parts.length?parts.join('/'):'root';
-          ws[fk]=ws[fk]||[];ws[fk].push({type:'file',name:nm,path:path,content:f.content||'',size:ccSizeLabel(f.content||''),previewText:(f.content||'').slice(0,60)});
+          ws[fk]=ws[fk]||[];
+          if(f.is_big){ws[fk].push({type:'file',name:nm,path:path,content:'',cloud:true,cloudSize:f.size||0,size:ccBytesLabel(f.size||0),previewText:'Berkas besar — tersimpan di cloud'});}
+          else ws[fk].push({type:'file',name:nm,path:path,content:f.content||'',size:ccSizeLabel(f.content||''),previewText:(f.content||'').slice(0,60)});
         });
         return ws;
       })());
@@ -1140,6 +1208,7 @@ function linkedCloudPullForce(){
       if(!files.length){termPrint('git pull: tidak ada berkas di cloud.','dim');return;}
       files.forEach(f=>{
         if(String(f.path).slice(-1)==='/'){if(!linkedEmptyFolders.includes(String(f.path).slice(0,-1)))linkedEmptyFolders.push(String(f.path).slice(0,-1));return;}
+        if(f.is_big){project[f.path]='';bigFiles[f.path]={size:f.size||0};return;}
         project[f.path]=f.content||'';
       });
       persist();renderAll();
@@ -1241,8 +1310,17 @@ function startCoding(){
 }
 
 /* ---------- Tabs ---------- */
-function openFile(path,focus=true){
+async function openFile(path,focus=true){
   if(!(path in project)){toast('Berkas tidak ditemukan: '+path);return;}
+  if(bigFiles[path]){ // berkas besar: isi di cloud — muat sesuai permintaan
+    if(mediaKindOf(path)){
+      const got=await editorCloudFetchBig(path);
+      if(got){bigMediaContent[path]=got.content;showMediaPreview(path);}else{toast('Gagal mengambil berkas besar dari cloud');}
+    }else{
+      toast('Berkas besar ('+ccBytesLabel(bigFiles[path].size||0)+') tersimpan di cloud — buka lewat menu unduh.');
+    }
+    return;
+  }
   if(!tabs.includes(path))tabs.push(path);
   activePath=path;
   if(mediaKindOf(path)){
@@ -2056,21 +2134,21 @@ function downloadFile(name,content){
 /* ---------- Import berkas dari perangkat (nyata via FileReader) ---------- */
 const IMG_EXTS=['png','jpg','jpeg','gif','webp','bmp','ico'];
 function importFiles(){const inp=$('#import-input');inp.value='';inp.click();}
-function importHandleFiles(fileList){
+async function importHandleFiles(fileList){
   const files=[...(fileList||[])];
   if(!files.length)return;
   let done=0,skipped=0,left=files.length;
   const finish=()=>{
     if(done){persist();renderTree();toast('Import selesai: '+done+' berkas'+(skipped?' ('+skipped+' dilewati)':''));}
-    else toast(skipped?'Tidak ada yang diimport (nama sudah ada / >5MB)':'Tidak ada berkas yang diimport');
+    else toast(skipped?'Tidak ada yang diimport (nama sudah ada / >25MB)':'Tidak ada berkas yang diimport');
   };
   files.forEach(f=>{
     const path=f.name.replace(/[\/\\]/g,'_');
     if(project[path]!==undefined){skipped++;if(--left===0)finish();return;}
-    if(f.size>5*1024*1024){skipped++;if(--left===0)finish();return;}
+    if(f.size>25*1024*1024){skipped++;if(--left===0)finish();return;}
     const ext=(path.split('.').pop()||'').toLowerCase();
     const fr=new FileReader();
-    fr.onload=()=>{project[path]=String(fr.result||'');done++;if(--left===0)finish();};
+    fr.onload=async()=>{const content=String(fr.result||'');if(content.length>WS_BIG_LIMIT){const up=await editorCloudSaveBig(path,content);if(up.ok){project[path]='';bigFiles[path]={size:f.size};bigFileCache[path]=content;done++;renderTree();}else{skipped++;toast('Gagal mengunggah '+f.name+': '+up.error);}}else{project[path]=content;if(bigFiles[path]){delete bigFiles[path];delete bigFileCache[path];}done++;}if(--left===0)finish();};
     fr.onerror=()=>{skipped++;if(--left===0)finish();};
     if(ext==='svg')fr.readAsText(f);
     else if(IMG_EXTS.includes(ext)||MEDIA_AUDIO.includes(ext)||MEDIA_VIDEO.includes(ext))fr.readAsDataURL(f);
@@ -2114,11 +2192,18 @@ function buildZip(entries){
   let pos=0;all.forEach(x=>{out.set(x,pos);pos+=x.length;});
   return out;
 }
-function downloadZip(){
+async function downloadZip(){
   const names=Object.keys(project);
   if(!names.length){toast('Proyek kosong — tidak ada yang diunduh');return;}
   const enc=new TextEncoder();
-  const entries=names.map(p=>({name:p,data:enc.encode(project[p])}));
+  // berkas besar: isi aslinya di cloud — unduh dulu supaya zip lengkap
+  for(const p of names){
+    if(bigFiles[p]&&bigFileCache[p]===undefined){
+      const got=await editorCloudFetchBig(p);
+      if(got)bigFileCache[p]=got.content;
+    }
+  }
+  const entries=names.map(p=>({name:p,data:enc.encode(bigFiles[p]?(bigFileCache[p]||''):project[p])}));
   const zip=buildZip(entries);
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([zip],{type:'application/zip'}));
@@ -2211,7 +2296,10 @@ function buildPreview(){
     if(!firstHtml)return null;
     html=liveVal(firstHtml);
   }
-  const liveAll={};Object.keys(project).forEach(p=>liveAll[p]=liveVal(p));
+  const liveAll={};Object.keys(project).forEach(p=>{
+    if(bigFiles[p]&&bigFileCache[p]!==undefined)liveAll[p]=bigFileCache[p];
+    else liveAll[p]=liveVal(p);
+  });
   html=html.replace(/<link[^>]*href=["']([^"']+\.css)["'][^>]*>/gi,(m,href)=>{
     if(/^(https?:)?\/\//i.test(href))return m; // stylesheet eksternal (mis. Google Fonts) — biarkan, akan diambil via jaringan
     const f=resolveLocalAsset(href,liveAll);
@@ -2261,7 +2349,19 @@ function phPreset(sz){
   phState.w=Math.min(p.w,innerWidth-16);phState.h=Math.min(p.h,innerHeight-16);
   phApply();phSaveState();phRefresh();
 }
-function runPreview(){
+async function runPreview(){
+  // Aset file besar (css/js/gambar dataURL) hidup di cloud — muat dulu
+  // supaya pratinjau tetap lengkap (batas wajar: 10 berkas / 12MB total).
+  try{
+    let fetched=0;
+    for(const p of Object.keys(bigFiles)){
+      if(fetched>=10)break;
+      const sz=bigFiles[p].size||0;
+      if(sz>12*1024*1024)continue;
+      const got=await editorCloudFetchBig(p);
+      if(got){bigFileCache[p]=got.content;fetched++;}
+    }
+  }catch(e){}
   const html=buildPreview();
   if(html===null){toast('Tidak ada berkas HTML untuk pratinjau');return;}
   const pv=$('#phone-preview');

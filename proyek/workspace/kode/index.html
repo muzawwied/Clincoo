@@ -402,7 +402,25 @@ html.embed-mode body{padding-top:76px}
           var base = String(p).replace(/\/$/, '').split('/').pop();
           if (base === fname) { hit = files[i]; if (p === want) break; }
         }
-        if (hit && typeof hit.content === 'string') {
+        if (hit && hit.is_big) {
+          // FILE BESAR: isinya di chunk cloud — ambil utuh lalu tampilkan
+          elSub.textContent = 'Memuat berkas besar dari cloud…';
+          fetch(WS_API2 + '?project_id=' + encodeURIComponent(pid) + '&path=' + encodeURIComponent(hit.path) + '&content=1', { headers: h2 })
+            .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+            .then(function (d2) {
+              var content = '';
+              if (typeof d2.content_b64 === 'string') {
+                var bin = atob(d2.content_b64);
+                var bytes = new Uint8Array(bin.length);
+                for (var j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
+                content = new TextDecoder('utf-8').decode(bytes);
+              } else if (typeof d2.content === 'string') content = d2.content;
+              item = { name: fname, path: hit.path, content: content, _cloudOnly: true };
+              render();
+              if (mediaKind(extOf(item.name)) === 'code') initMonaco();
+            })
+            .catch(function () { showEmpty(); });
+        } else if (hit && typeof hit.content === 'string') {
           item = { name: fname, path: hit.path, content: hit.content, _cloudOnly: true };
           render();
           if (mediaKind(extOf(item.name)) === 'code') initMonaco();

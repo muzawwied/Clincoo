@@ -793,6 +793,52 @@
       try { return localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) { return ''; }
     }
 
+    // ===== FILE BESAR: isi di cloud (D1), localStorage hanya penanda {content:'', cloud:true} =====
+    // localStorage ~5MB per origin — file 10MB+ mustahil. Isi file besar hidup di
+    // /api/project-files (ter-chunk di server), klien mengunduhnya saat dibutuhkan.
+    const WS_BIG_LIMIT = 600_000;
+    function wsB64Encode(str) { return btoa(unescape(encodeURIComponent(String(str || '')))); }
+    function wsB64Decode(b64Str) {
+      const bin = atob(String(b64Str || ''));
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new TextDecoder('utf-8').decode(bytes);
+    }
+    function wsBytesLabel(bytes) {
+      const b = Number(bytes) || 0;
+      if (b > 1024 * 1024) return (b / (1024 * 1024)).toFixed(2) + ' MB';
+      if (b > 1024) return (b / 1024).toFixed(1) + ' KB';
+      return b + ' B';
+    }
+    async function wsCloudSaveBig(path, content) {
+      const pid = wsProjectId();
+      if (!pid) return { ok: false, error: 'File besar memerlukan proyek aktif.' };
+      try {
+        const res = await fetch(WS_CLOUD_API, {
+          method: 'POST',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()),
+          body: JSON.stringify({ project_id: pid, files: [{ path: path, content_b64: wsB64Encode(content) }] })
+        });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok || d.error) return { ok: false, error: d.error || 'Gagal menyimpan file besar ke cloud.' };
+        return { ok: true };
+      } catch (e) {
+        return { ok: false, error: 'Gagal terhubung ke cloud: ' + (e && e.message ? e.message : String(e)) };
+      }
+    }
+    async function wsCloudFetchBig(path) {
+      const pid = wsProjectId();
+      if (!pid) return null;
+      try {
+        const res = await fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&path=' + encodeURIComponent(path) + '&content=1', { headers: wsAuthHeaders() });
+        if (!res.ok) return null;
+        const d = await res.json();
+        if (d && typeof d.content_b64 === 'string') return { content: wsB64Decode(d.content_b64), size: d.size || 0 };
+        if (d && typeof d.content === 'string') return { content: d.content, size: d.size || 0 };
+        return null;
+      } catch (e) { return null; }
+    }
+
     // Rata-ratakan {folder: [item]} menjadi daftar {path, content}
     function wsFlatten(data) {
       const files = [];
@@ -800,7 +846,12 @@
         (data[folderKey] || []).forEach(function(it) {
           if (!it || !it.path) return;
           if (it.type === 'file') {
-            files.push({ path: it.path, content: it.content || '' });
+            if (it.cloud && !it.content) {
+              // file besar: isinya sudah di server — kirim penanda agar baris + chunk-nya dipertahankan
+              files.push({ path: it.path, content: '', cloud: 1, size: it.cloudSize || 0 });
+            } else {
+              files.push({ path: it.path, content: it.content || '' });
+            }
           } else if (it.type === 'folder') {
             const hasChildren = Object.keys(data).some(function(k) { return k === it.path || k.startsWith(it.path + '/'); });
             if (!hasChildren) files.push({ path: it.path + '/', content: '' }); // penanda folder kosong
@@ -837,6 +888,8 @@
       (files || []).forEach(function(f) {
         const p = String((f && f.path) || '').trim();
         const content = (f && f.content) || '';
+        const isBig = !!(f && f.is_big);
+        const szBytes = Number(f && f.size) || 0;
         if (p.slice(-1) === '/') { ensureChain(p.slice(0, -1)); return; }
         const parts = p.split('/').filter(Boolean);
         const name = parts.pop();
@@ -845,7 +898,8 @@
         ensureChain(folderKey);
         if (!Array.isArray(data[folderKey])) data[folderKey] = [];
         if (!data[folderKey].some(function(i) { return i.path.toLowerCase() === p.toLowerCase(); })) {
-          data[folderKey].push({ type: 'file', name: name, size: wsSizeLabel(content), path: p, content: content });
+          // file besar dari cloud: penanda tanpa isi — cache lokal tetap ringan
+          data[folderKey].push({ type: 'file', name: name, size: isBig ? (szBytes ? wsBytesLabel(szBytes) : 'besar') : wsSizeLabel(content), path: p, content: isBig ? '' : content, cloud: isBig ? true : undefined, cloudSize: szBytes || undefined });
         }
       });
       return data;
@@ -2029,16 +2083,35 @@
       const reader = new FileReader();
       reader.onload = function(event) {
         const content = event.target.result;
-        let sizeStr = '0,00 B';
-        if (file.size > 1024 * 1024) sizeStr = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
-        else if (file.size > 1024) sizeStr = (file.size / 1024).toFixed(1) + ' KB';
-        else if (file.size > 0) sizeStr = file.size + ' B';
-
+        const sizeStr = formatBytes(file.size);
         const filePath = targetPath === 'root' ? file.name : targetPath + '/' + file.name;
         const existingIndex = projectFilesData[targetPath].findIndex(i => i.name === file.name && i.type === 'file');
-        
+
+        // FILE BESAR (>600 ribu karakter / ~10MB+ di data-URL): isi TIDAK masuk
+        // localStorage (kuota browser ~5MB) — unggah ke cloud, simpan penanda saja.
+        if (content.length > WS_BIG_LIMIT) {
+          wsCloudSaveBig(filePath, content).then(function (up) {
+            if (!up.ok) {
+              try { addNotification('Workspace', 'Gagal mengunggah berkas besar ' + file.name + ': ' + up.error); } catch (e) {}
+              return;
+            }
+            if (existingIndex !== -1) {
+              projectFilesData[targetPath][existingIndex].content = '';
+              projectFilesData[targetPath][existingIndex].cloud = true;
+              projectFilesData[targetPath][existingIndex].cloudSize = file.size;
+              projectFilesData[targetPath][existingIndex].size = sizeStr;
+            } else {
+              projectFilesData[targetPath].push({ type: 'file', name: file.name, size: sizeStr, path: filePath, content: '', cloud: true, cloudSize: file.size });
+            }
+            saveData();
+            if (targetPath === currentFolderPath || targetPath.startsWith(currentFolderPath)) renderFileList();
+          });
+          return;
+        }
+
         if (existingIndex !== -1) {
           projectFilesData[targetPath][existingIndex].content = content;
+          projectFilesData[targetPath][existingIndex].cloud = false;
           projectFilesData[targetPath][existingIndex].size = sizeStr;
         } else {
           projectFilesData[targetPath].push({ type: 'file', name: file.name, size: sizeStr, path: filePath, content: content });
@@ -2144,16 +2217,23 @@
        return mimeTypes[ext] || 'application/octet-stream';
     }
 
-    function triggerDownload() {
+    async function triggerDownload() {
       const menu = document.getElementById('item-action-menu');
       if (menu) menu.classList.add('hidden');
       const item = (projectFilesData[currentFolderPath] || []).find(i => i.name === activeItemName);
       if(!item || item.type !== 'file') return;
+      let content = item.content;
+      if (!content && item.cloud) {
+        // file besar: isi aslinya di cloud — ambil dulu, lalu unduh
+        const got = await wsCloudFetchBig(item.path);
+        if (!got) { try { addNotification('Workspace', 'Gagal mengambil berkas besar dari cloud.'); } catch (e) {} return; }
+        content = got.content;
+      }
       const a = document.createElement('a');
-      if (item.content.startsWith('http') || item.content.startsWith('data:') || item.content.startsWith('blob:')) {
-        a.href = item.content;
+      if (content.startsWith('http') || content.startsWith('data:') || content.startsWith('blob:')) {
+        a.href = content;
       } else {
-        const blob = new Blob([item.content], { type: 'text/plain' });
+        const blob = new Blob([content], { type: 'text/plain' });
         a.href = URL.createObjectURL(blob);
       }
       a.download = item.name;
@@ -2171,8 +2251,17 @@
       const zip = new JSZip();
       if (item.type === 'file') {
         let contentData = item.content;
-        if (contentData.startsWith('http') || contentData.startsWith('blob:') || contentData.startsWith('data:')) {
+        if (!contentData && item.cloud) {
+          const got = await wsCloudFetchBig(item.path);
+          contentData = got ? got.content : '';
+        }
+        if (contentData && contentData.startsWith('http')) {
           try { const response = await fetch(contentData); contentData = await response.blob(); } catch (e) {}
+        } else if (contentData && contentData.startsWith('data:')) {
+          try {
+            const res = await fetch(contentData);
+            contentData = await res.blob();
+          } catch (e) {}
         }
         zip.file(item.name, contentData);
       } else if (item.type === 'folder') {
@@ -2194,7 +2283,11 @@
       for (let child of items) {
         if (child.type === 'file') {
           let contentData = child.content;
-          if (contentData.startsWith('http') || contentData.startsWith('blob:') || contentData.startsWith('data:')) {
+          if (!contentData && child.cloud) {
+            const got = await wsCloudFetchBig(child.path);
+            contentData = got ? got.content : '';
+          }
+          if (contentData && (contentData.startsWith('http') || contentData.startsWith('blob:') || contentData.startsWith('data:'))) {
             try { const response = await fetch(contentData); contentData = await response.blob(); } catch(e){}
           }
           zipFolder.file(child.name, contentData);
@@ -2645,10 +2738,28 @@ function clinqooLaunchEditor(pid) {
     // Gabungkan file cloud (D1) supaya SEMUA berkas Workspace ikut terekspor.
     fetch(WS_API + '?project_id=' + encodeURIComponent(pid), { headers: headers })
         .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
-        .then(function (resp) {
-            ((resp && resp.files) || []).forEach(function (f) {
-                if (f && f.path && !(f.path in byPath)) byPath[f.path] = f.content || '';
-            });
+        .then(async function (resp) {
+            var files = (resp && resp.files) || [];
+            // File besar (is_big): konten tidak ikut di daftar — ambil satu per satu
+            // supaya zip tetap lengkap (data-URL gambar/video juga ikut utuh).
+            for (var i = 0; i < files.length; i++) {
+                var f = files[i];
+                if (!f || !f.path) continue;
+                if (f.is_big) {
+                    try {
+                        var r2 = await fetch(WS_API + '?project_id=' + encodeURIComponent(pid) + '&path=' + encodeURIComponent(f.path) + '&content=1', { headers: headers });
+                        if (!r2.ok) continue;
+                        var d2 = await r2.json();
+                        var bin2 = atob(d2.content_b64 || '');
+                        var bytes2 = new Uint8Array(bin2.length);
+                        for (var j = 0; j < bin2.length; j++) bytes2[j] = bin2.charCodeAt(j);
+                        var str2 = new TextDecoder('utf-8').decode(bytes2);
+                        byPath[f.path] = str2;
+                    } catch (e) {}
+                    continue;
+                }
+                if (!(f.path in byPath)) byPath[f.path] = f.content || '';
+            }
             finish(filesFromMap());
         })
         .catch(function () { finish(filesFromMap()); });

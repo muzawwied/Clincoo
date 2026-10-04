@@ -3543,13 +3543,69 @@ window.chatLivePreview = function () {
             try { return (typeof currentProjectId !== 'undefined' && currentProjectId) ? String(currentProjectId) : ''; } catch (e) { return ''; }
         }
 
+        // ===== FILE BESAR: isi file hidup di cloud (D1), localStorage hanya penanda =====
+        // localStorage browser ~5MB — file 10MB+ mustahil masuk. Klien menyimpan
+        // {content:'', cloud:true} di pohon workspace; isi aslinya di /api/project-files.
+        const WS_BIG_LIMIT = 600_000; // konten > 600.000 karakter -> simpan di cloud
+        function wsB64Encode(str) {
+            return btoa(unescape(encodeURIComponent(String(str || ''))));
+        }
+        function wsB64Decode(b64Str) {
+            const bin = atob(String(b64Str || ''));
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            return new TextDecoder('utf-8').decode(bytes);
+        }
+        function wsBytesLabel(bytes) {
+            const b = Number(bytes) || 0;
+            if (b > 1024 * 1024) return (b / (1024 * 1024)).toFixed(2) + ' MB';
+            if (b > 1024) return (b / 1024).toFixed(1) + ' KB';
+            return b + ' B';
+        }
+        // Unggah satu file besar ke cloud (chunk base64 ditangani server). Tanpa replace.
+        async function wsCloudSaveBig(path, content) {
+            const pid = wsProjectId();
+            if (!pid) return { ok: false, error: 'File besar memerlukan proyek aktif (cloud storage).' };
+            try {
+                const res = await fetch(WS_CLOUD_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ project_id: pid, files: [{ path: path, content_b64: wsB64Encode(content) }] })
+                });
+                const d = await res.json().catch(() => ({}));
+                if (!res.ok || d.error) return { ok: false, error: d.error || 'Gagal menyimpan file besar ke cloud.' };
+                return { ok: true, size: wsB64Decode(wsB64Encode(content)).length };
+            } catch (e) {
+                return { ok: false, error: 'Gagal terhubung ke cloud: ' + (e && e.message ? e.message : String(e)) };
+            }
+        }
+        // Ambil isi satu file besar dari cloud (dipakai wsReadFile saat penanda ditemukan).
+        async function wsCloudFetchBig(path) {
+            const pid = wsProjectId();
+            if (!pid) return null;
+            try {
+                const res = await fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&path=' + encodeURIComponent(path) + '&content=1');
+                if (!res.ok) return null;
+                const d = await res.json();
+                if (d && typeof d.content_b64 === 'string') return { content: wsB64Decode(d.content_b64), size: d.size || 0 };
+                if (d && typeof d.content === 'string') return { content: d.content, size: d.size || 0 };
+                return null;
+            } catch (e) { return null; }
+        }
+
         function wsFlatten(data) {
             const files = [];
             Object.keys(data || {}).forEach(function(folderKey) {
                 (data[folderKey] || []).forEach(function(it) {
                     if (!it || !it.path) return;
                     if (it.type === 'file') {
-                        files.push({ path: it.path, content: it.content || '' });
+                        if (it.cloud && !it.content) {
+                            // file besar: isinya sudah di cloud — kirim penanda agar
+                            // server mempertahankan baris + chunk-nya (tidak menimpa dgn kosong)
+                            files.push({ path: it.path, content: '', cloud: 1, size: it.cloudSize || 0 });
+                        } else {
+                            files.push({ path: it.path, content: it.content || '' });
+                        }
                     } else if (it.type === 'folder') {
                         const hasChildren = Object.keys(data).some(function(k) { return k === it.path || k.startsWith(it.path + '/'); });
                         if (!hasChildren) files.push({ path: it.path + '/', content: '' });
@@ -3585,6 +3641,8 @@ window.chatLivePreview = function () {
             (files || []).forEach(function(f) {
                 const p = String((f && f.path) || '').trim();
                 const content = (f && f.content) || '';
+                const isBig = !!(f && f.is_big);
+                const szBytes = Number(f && f.size) || 0;
                 if (p.slice(-1) === '/') { ensureChain(p.slice(0, -1)); return; }
                 const parts = p.split('/').filter(Boolean);
                 const name = parts.pop();
@@ -3593,7 +3651,8 @@ window.chatLivePreview = function () {
                 ensureChain(folderKey);
                 if (!Array.isArray(data[folderKey])) data[folderKey] = [];
                 if (!data[folderKey].some(function(i) { return i.path.toLowerCase() === p.toLowerCase(); })) {
-                    data[folderKey].push({ type: 'file', name: name, size: wsSizeLabel(content), path: p, content: content });
+                    // file besar dari cloud: penanda tanpa isi — localStorage tetap ringan
+                    data[folderKey].push({ type: 'file', name: name, size: isBig ? (szBytes ? wsBytesLabel(szBytes) : 'besar') : wsSizeLabel(content), path: p, content: isBig ? '' : content, cloud: isBig ? true : undefined, cloudSize: szBytes || undefined });
                 }
             });
             return data;
@@ -3607,9 +3666,10 @@ window.chatLivePreview = function () {
             clearTimeout(wsCloudTimer);
             wsCloudTimer = setTimeout(function() {
                 wsCloudTimer = null;
-                const payload = { project_id: pid, files: wsFlatten(wsLoad()) };
-                fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { method: 'DELETE' })
-                    .then(function() { return fetch(WS_CLOUD_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); })
+                // replace:true (bukan DELETE-dulu): chunk file besar TIDAK ikut terhapus,
+                // dan tidak ada jendela "cloud kosong" bila POST-nya gagal.
+                const payload = { project_id: pid, files: wsFlatten(wsLoad()), replace: true };
+                fetch(WS_CLOUD_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
                     .catch(function() {});
             }, 3000);
         }
@@ -3719,7 +3779,7 @@ window.chatLivePreview = function () {
             };
         }
 
-        function wsReadFile(args) {
+        async function wsReadFile(args) {
             const path = args && args.path;
             if (!path) return { success: false, error: 'Parameter path wajib.' };
             const data = wsLoad();
@@ -3727,6 +3787,14 @@ window.chatLivePreview = function () {
             if (!found) return { success: false, error: 'File "' + path + '" tidak ditemukan.' };
             if (found.item.type !== 'file') return { success: false, error: '"' + path + '" adalah folder, bukan file.' };
             let content = found.item.content || '';
+            let isCloud = false;
+            if (!content && found.item.cloud) {
+                // file besar: isi aslinya di cloud (D1) — ambil sesuai permintaan
+                const got = await wsCloudFetchBig(found.item.path);
+                if (!got) return { success: false, error: 'File besar "' + path + '" gagal diambil dari cloud.' };
+                content = got.content;
+                isCloud = true;
+            }
             let truncated = false;
             if (content.length > 60000) { content = content.substring(0, 60000); truncated = true; }
             return {
@@ -3736,18 +3804,44 @@ window.chatLivePreview = function () {
                 size: found.item.size || '',
                 truncated: truncated,
                 content: content,
+                cloud: isCloud || undefined,
                 note: truncated ? 'Isi file dipotong 60.000 karakter pertama.' : undefined
             };
         }
 
-        function wsWriteFile(args) {
+        async function wsWriteFile(args) {
             const path = args && args.path;
             const content = args && typeof args.content === 'string' ? args.content : '';
             if (!path) return { success: false, error: 'Parameter path wajib.' };
-            const data = wsLoad();
             const info = wsParentInfo(path);
             if (!info) return { success: false, error: 'Path file tidak valid: ' + path };
             if (info.name.includes('/')) return { success: false, error: 'Nama file tidak boleh mengandung "/".' };
+
+            // File besar: isi diunggah ke cloud, pohon lokal hanya menyimpan penanda.
+            // localStorage tetap kecil; file 10MB+ jadi bisa tersimpan.
+            if (content.length > WS_BIG_LIMIT) {
+                const up = await wsCloudSaveBig(info.itemPath, content);
+                if (!up.ok) return { success: false, error: up.error };
+                const data = wsLoad();
+                wsEnsureFolderChain(data, info.folderKey);
+                if (!Array.isArray(data[info.folderKey])) data[info.folderKey] = [];
+                const sizeStr = wsBytesLabel(new Blob([content]).size);
+                const existingIdx = data[info.folderKey].findIndex(function(i) {
+                    return i && i.type === 'file' && i.name.toLowerCase() === info.name.toLowerCase();
+                });
+                if (existingIdx !== -1) {
+                    data[info.folderKey][existingIdx].content = '';
+                    data[info.folderKey][existingIdx].cloud = true;
+                    data[info.folderKey][existingIdx].size = sizeStr;
+                } else {
+                    data[info.folderKey].push({ type: 'file', name: info.name, size: sizeStr, path: info.itemPath, content: '', cloud: true });
+                }
+                const err = wsSave(data);
+                if (err) return err;
+                return { success: true, action: existingIdx !== -1 ? 'overwritten' : 'created', path: info.itemPath, size: sizeStr, cloud: true };
+            }
+
+            const data = wsLoad();
             wsEnsureFolderChain(data, info.folderKey);
             if (!Array.isArray(data[info.folderKey])) data[info.folderKey] = [];
             const sizeStr = wsSizeStr(content);
@@ -3757,6 +3851,7 @@ window.chatLivePreview = function () {
             let created;
             if (existingIdx !== -1) {
                 data[info.folderKey][existingIdx].content = content;
+                data[info.folderKey][existingIdx].cloud = false;
                 data[info.folderKey][existingIdx].size = sizeStr;
                 created = false;
             } else {
@@ -4433,7 +4528,7 @@ window.chatLivePreview = function () {
             return d;
         }
         // ===== TOOL write_files: bulk write — satu load + satu save untuk semua file =====
-        function wsWriteFilesBatch(args) {
+        async function wsWriteFilesBatch(args) {
             const files = args && Array.isArray(args.files) ? args.files : [];
             if (!files.length) return { success: false, error: 'Parameter files wajib array [{path, content}].' };
             const data = wsLoad();
@@ -4447,15 +4542,27 @@ window.chatLivePreview = function () {
                 if (!info || info.name.includes('/')) { results.push({ path: path, ok: false, error: 'path tidak valid' }); continue; }
                 wsEnsureFolderChain(data, info.folderKey);
                 if (!Array.isArray(data[info.folderKey])) data[info.folderKey] = [];
-                const sizeStr = wsSizeStr(content);
-                const idx = data[info.folderKey].findIndex(function(i) { return i && i.type === 'file' && i.name.toLowerCase() === info.name.toLowerCase(); });
-                if (idx !== -1) {
-                    data[info.folderKey][idx].content = content;
-                    data[info.folderKey][idx].size = sizeStr;
-                } else {
-                    data[info.folderKey].push({ type: 'file', name: info.name, size: sizeStr, path: info.itemPath, content: content });
+                const isBig = content.length > WS_BIG_LIMIT;
+                let okSave = true;
+                if (isBig) {
+                    // file besar: unggah isi ke cloud, simpan penanda saja di pohon
+                    const up = await wsCloudSaveBig(info.itemPath, content);
+                    if (!up.ok) okSave = false;
                 }
-                results.push({ path: info.itemPath, ok: true });
+                if (okSave) {
+                    const sizeStr = isBig ? wsBytesLabel(new Blob([content]).size) : wsSizeStr(content);
+                    const idx = data[info.folderKey].findIndex(function(i) { return i && i.type === 'file' && i.name.toLowerCase() === info.name.toLowerCase(); });
+                    if (idx !== -1) {
+                        data[info.folderKey][idx].content = isBig ? '' : content;
+                        data[info.folderKey][idx].cloud = isBig ? true : false;
+                        data[info.folderKey][idx].size = sizeStr;
+                    } else {
+                        data[info.folderKey].push({ type: 'file', name: info.name, size: sizeStr, path: info.itemPath, content: isBig ? '' : content, cloud: isBig ? true : undefined });
+                    }
+                    results.push({ path: info.itemPath, ok: true, cloud: isBig ? true : undefined });
+                } else {
+                    results.push({ path: info.itemPath, ok: false, error: 'gagal unggah file besar ke cloud' });
+                }
             }
             const err = wsSave(data);
             if (err) return err;
@@ -4637,8 +4744,9 @@ window.chatLivePreview = function () {
             const target = String((args && args.target) || 'workspace');
             let folder = String((args && args.folder) || '').replace(/^\/+|\/$|^\.\.+\/+/g, '').replace(/\/+$/g, '');
             if (!folder) {
-                try { folder = new URL(rawUrl).hostname.replace(/^www\./, '').replace(/[^\w.-]/g, ''); } catch (e) {}
-                if (!folder) folder = 'site';
+                // folder netral — BUKAN nama domain situs (dulu: clone resend.com
+                // bikin subfolder "resend.com/" yang gak diminta user)
+                folder = 'site';
             }
 
             // 1) unduh HTML utama lewat proxy server (bypass CORS)
