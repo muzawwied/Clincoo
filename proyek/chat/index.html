@@ -4185,20 +4185,34 @@ window.chatLivePreview = function () {
             // Diproxy di server (/api/e2b-run, mode command): API key E2B tidak pernah
             // diunduh ke browser (perbaikan keamanan; dulu key dibagikan mentah).
             // reset:true -> buang sesi lama dulu, lalu command jalan di Linux baru.
+            // FIX (bug "muter terus, tombol Stop tidak ngaruh"): fetch ini dulu TANPA
+            // signal & TANPA timeout — kalau sandbox E2B hang (mis. command download
+            // banyak URL berurutan yang nyangkut), promise ini tidak pernah selesai,
+            // tombol Stop (yang hanya abort fetch utama) tidak bisa menyentuhnya, dan
+            // kartu "Running..." muter selamanya. Sekarang: ikut abortController utama
+            // (Stop benar-benar membatalkan) + timeout keras 90 detik sendiri supaya
+            // sandbox yang hang tidak pernah menggantung tanpa batas.
+            const toolTimeoutMs = 90000;
+            const timeoutCtrl = new AbortController();
+            const onMainAbort = () => timeoutCtrl.abort();
+            if (abortController) abortController.signal.addEventListener('abort', onMainAbort);
+            const timeoutId = setTimeout(() => timeoutCtrl.abort(), toolTimeoutMs);
             try {
                 if (wantReset) {
                     try {
                         await fetch(TOOL_API_BASE + '/api/e2b-run', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ mode: 'reset_session' })
+                            body: JSON.stringify({ mode: 'reset_session' }),
+                            signal: timeoutCtrl.signal
                         });
                     } catch (e) {}
                 }
                 const res = await fetch(TOOL_API_BASE + '/api/e2b-run', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mode: 'command', command: cmd })
+                    body: JSON.stringify({ mode: 'command', command: cmd }),
+                    signal: timeoutCtrl.signal
                 });
                 const d = await res.json().catch(() => null);
                 if (!d) return { success: false, error: 'Respons sandbox tidak valid.' };
@@ -4211,7 +4225,14 @@ window.chatLivePreview = function () {
                     stderr: errText
                 };
             } catch (e) {
+                if (e && e.name === 'AbortError') {
+                    if (abortController && abortController.signal && abortController.signal.aborted) throw e; // Stop ditekan user -> hentikan loop generasi juga
+                    return { success: false, error: 'Perintah dibatalkan: sandbox tidak merespons dalam 90 detik (kemungkinan hang/jaringan sandbox bermasalah).' };
+                }
                 return { success: false, error: 'Sandbox eksekusi tidak tersedia: ' + (e && e.message ? e.message : 'galat tak dikenal') };
+            } finally {
+                clearTimeout(timeoutId);
+                if (abortController) abortController.signal.removeEventListener('abort', onMainAbort);
             }
         }
 
