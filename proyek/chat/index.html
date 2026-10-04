@@ -2462,6 +2462,7 @@ window.chatLivePreview = function () {
                     sending: false,
                     plan: null,
                     planKnown: false,
+                    planResolving: false,
                     splash: true,
                     splashForced: false,
                     splashTouched: false
@@ -2690,8 +2691,11 @@ window.chatLivePreview = function () {
         function renderApkSetupCard(msg) {
             if (!msg.apkSetup) return '';
             const st = apkSetupStateOf(msg);
-            if (!st.planKnown) apkResolvePlan(msg);
             if (st.sent) return '';
+            // Sekali per kartu, bukan tiap render — render terjadi berkali-kali per detik saat
+            // animasi mengetik/polling; tanpa guard ini tiap render memicu fetch baru ke
+            // /api/subscription sebelum cache terisi, membanjiri endpoint (429).
+            if (!st.planKnown && !st.planResolving) { st.planResolving = true; apkResolvePlan(msg); }
             const iconHtml = st.iconB64
                 ? '<img src="data:image/png;base64,' + st.iconB64 + '" alt="logo">'
                 : '<i class="ph-bold ph-plus"></i>';
