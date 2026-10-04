@@ -1260,7 +1260,10 @@
       '  "https://app.clincoo.buzz/v1/chat/completions" \\\n' +
       '  -H "Authorization: Bearer ' + secret + '" \\\n' +
       '  -H "Content-Type: application/json" \\\n' +
-      '  -d \'{ "model": "' + model + '", "messages": [{ "role": "user", "content": "Halo!" }] }\'';
+      '  -d \'{ "model": "' + model + '", "messages": [{ "role": "user", "content": "Halo!" }] }\'\n\n' +
+      '# Streaming (SSE): tambahkan "stream": true\n' +
+      '# Vision (model multimodal, mis. ' + (model.indexOf('omni') !== -1 || model.indexOf('gemini') !== -1 || model.indexOf('multimodal') !== -1 ? model : 'clincoo/omni-nano') + '):\n' +
+      '# "content": [{ "type": "text", "text": "gambar apa ini?" }, { "type": "image_url", "image_url": { "url": "data:image/png;base64,..." } }]';
   }
   function copyAiCurl() {
     var txt = document.getElementById('ai-curl');
