@@ -1039,7 +1039,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     }
     // Pesan kosong TIDAK lagi dibalas HTTP 400 (menampilkan error di UI) —
     // balas 200 dengan teks ramah supaya percakapan tetap berjalan normal.
-    if (messages.length === 0) {
+    if (!messages.some(m => m && m.role === 'user')) {
       return new Response(JSON.stringify({
         text: 'Sepertinya pesannya belum ikut terkirim. Coba tulis ulang pertanyaanmu ya — aku siap bantu. 😊',
         model: 'assistant',
