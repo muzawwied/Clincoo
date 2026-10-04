@@ -45,12 +45,12 @@ export async function onRequestPost({ request }) {
         signal: AbortSignal.timeout(12000)
       });
     } catch (e) {
-      return jsonOut({ error: 'Gagal terhubung ke situs: ' + (e && e.message ? e.message : String(e)) }, 502);
+      return jsonOut({ error: 'Gagal terhubung ke situs: ' + (e && e.message ? e.message : String(e)) }, 400);
     }
-    if (!res.ok) return jsonOut({ error: 'Situs menolak permintaan (HTTP ' + res.status + ').' }, 502);
+    if (!res.ok) return jsonOut({ error: 'Situs menolak permintaan (HTTP ' + res.status + ').' }, 400);
 
     const buf = await res.arrayBuffer().catch(() => null);
-    if (!buf || !buf.byteLength) return jsonOut({ error: 'Respons situs kosong.' }, 502);
+    if (!buf || !buf.byteLength) return jsonOut({ error: 'Respons situs kosong.' }, 400);
     const truncated = buf.byteLength > MAX_BYTES;
     const bytes = new Uint8Array(truncated ? buf.slice(0, MAX_BYTES) : buf);
 
@@ -71,6 +71,6 @@ export async function onRequestPost({ request }) {
       truncated: truncated
     }, 200);
   } catch (e) {
-    return jsonOut({ error: 'Proxy gagal: ' + (e && e.message ? e.message : String(e)) }, 500);
+    return jsonOut({ error: 'Proxy gagal: ' + (e && e.message ? e.message : String(e)) }, 400);
   }
 }

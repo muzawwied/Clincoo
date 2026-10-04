@@ -5505,7 +5505,9 @@ window.chatLivePreview = function () {
                         hasReceivedData = true;
                         clearTimeout(apiTimeout);
                         clearInterval(statusInterval);
-                        try { await continueSilently(aiMsgObj, 'Progres tersimpan — melanjutkan sisa tugas secara otomatis…'); } catch (e2) {}
+                        // tanpa bubbleText: tidak ada teks sistem yang menyela — kartu tool sudah
+                        // menampilkan status lanjutan ("Partially done — continuing…")
+                        try { await continueSilently(aiMsgObj, ''); } catch (e2) {}
                         return;
                     }
 
