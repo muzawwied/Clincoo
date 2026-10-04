@@ -564,6 +564,12 @@
         .apk-bar { margin-top: 0.75rem; height: 6px; border-radius: 999px; background: #f3f4f6; overflow: hidden; }
         .apk-bar-fill { height: 100%; border-radius: 999px; background: #111827; transition: width 0.6s ease; }
         .apk-build-status { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; font-size: 12px; color: #6b7280; }
+        /* Pembatas "Dihentikan" — teks kecil rapi di tengah, garis tipis kiri-kanan */
+        .stopped-divider { display: flex; align-items: center; gap: 0.75rem; width: 100%; margin-top: 0.5rem; }
+        .stopped-divider .stopped-line { flex: 1; height: 1px; background: #e5e7eb; min-width: 1.5rem; }
+        .stopped-divider .stopped-text { font-size: 11px; color: #9ca3af; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; white-space: nowrap; }
+        body.dark-mode .stopped-divider .stopped-line { background: #2c2c33; }
+        body.dark-mode .stopped-divider .stopped-text { color: #71717a; }
         .apk-dot { flex-shrink: 0; width: 7px; height: 7px; border-radius: 999px; background: #f59e0b; animation: apkPulse 1.2s ease-in-out infinite; }
         .apk-dot.ok { background: #16a34a; animation: none; }
         .apk-dot.fail { background: #dc2626; animation: none; }
@@ -2915,8 +2921,10 @@ window.chatLivePreview = function () {
                                     </button>
                                 ` : ''}
                                 ${(msg.stoppedByUser && !msg.isProcessing && !msg.isTyping) ? `
-                                    <div class="flex items-center gap-1.5 mt-0.5 text-[11px] text-gray-400 fade-in select-none">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span> Pesan dihentikan
+                                    <div class="stopped-divider fade-in select-none">
+                                        <span class="stopped-line"></span>
+                                        <span class="stopped-text">Dihentikan</span>
+                                        <span class="stopped-line"></span>
                                     </div>
                                 ` : ''}
                                 <div class="flex items-center gap-3 mt-1 pointer-events-auto" id="action-bar-${msg.id}" style="${(msg.isProcessing || msg.isTyping || msg.midPhase) ? 'display: none;' : ''}">
