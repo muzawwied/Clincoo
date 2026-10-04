@@ -390,11 +390,20 @@ export async function onRequestGet({ request, env }) {
     const denied = await guardEmail(env, request, projectId);
     if (denied) return denied;
     await ensureTables(env.DB);
-    const rows = await env.DB.prepare(
-      'SELECT email, name FROM email_audience WHERE project_id = ? ORDER BY id DESC LIMIT 200'
-    ).bind(projectId).all();
-    const items = (rows && rows.results ? rows.results : []).map(function (r) { return { email: r.email, name: r.name || '' }; });
-    return json({ items: items });
+    const q = String(url.searchParams.get('q') || '').trim().toLowerCase();
+    const total = await env.DB.prepare('SELECT COUNT(*) AS c FROM email_audience WHERE project_id = ?').bind(projectId).first();
+    let rows;
+    if (q) {
+      rows = await env.DB.prepare(
+        "SELECT email, name, created_at FROM email_audience WHERE project_id = ? AND (LOWER(email) LIKE ? OR LOWER(COALESCE(name,'')) LIKE ?) ORDER BY id DESC LIMIT 500"
+      ).bind(projectId, '%' + q + '%', '%' + q + '%').all();
+    } else {
+      rows = await env.DB.prepare(
+        'SELECT email, name, created_at FROM email_audience WHERE project_id = ? ORDER BY id DESC LIMIT 500'
+      ).bind(projectId).all();
+    }
+    const items = (rows && rows.results ? rows.results : []).map(function (r) { return { email: r.email, name: r.name || '', created_at: r.created_at || '' }; });
+    return json({ items: items, total: (total && total.c) || 0 });
   }
 
   if (action === 'broadcast_list') {
@@ -522,6 +531,75 @@ export async function onRequestPost({ request, env }) {
   }
 
   // ---- Broadcast: kirim ke banyak penerima sekaligus (login pemilik proyek) ----
+  // ---- Audiens: kelola daftar kontak penerima (halaman /pengaturan/email/audiens/) ----
+  const AUDIENCE_MAX = 1000; // batas total kontak per proyek
+
+  if (action === 'audience_add') {
+    const email = String(body.email || '').trim().toLowerCase();
+    const name = String(body.name || '').trim().slice(0, 100);
+    if (!validEmail(email)) return json({ error: 'Alamat email tidak valid' }, 422);
+    const cnt = await env.DB.prepare('SELECT COUNT(*) AS c FROM email_audience WHERE project_id = ?').bind(projectId).first();
+    if ((cnt && cnt.c || 0) >= AUDIENCE_MAX) return json({ error: 'Audiens penuh: maksimal ' + AUDIENCE_MAX + ' kontak per proyek' }, 422);
+    const dup = await env.DB.prepare('SELECT id FROM email_audience WHERE project_id = ? AND email = ?').bind(projectId, email).first();
+    if (dup) return json({ added: 0, duplicate: true });
+    await env.DB.prepare('INSERT INTO email_audience (project_id, email, name) VALUES (?, ?, ?)').bind(projectId, email, name).run();
+    return json({ added: 1, duplicate: false });
+  }
+
+  if (action === 'audience_import') {
+    // Terima array atau teks mentah (dipisah koma/titik-koma/baris/tab).
+    // Tiap entri boleh "email" atau "Nama <email>" (format Gmail-style export).
+    const raw = body.list;
+    const parts = Array.isArray(raw) ? raw : String(raw || '').split(/[\r\n\t,;]+/);
+    const seen = {}; let invalid = 0;
+    const targets = [];
+    for (const t of parts) {
+      let piece = String(t || '').trim();
+      if (!piece) continue;
+      let email = piece, name = '';
+      const m = piece.match(/^(.*?)[<\s]*([^<\s]+@[^>\s]+)[>\s]*$/);
+      if (m) { name = (m[1] || '').trim().replace(/["']/g, '').slice(0, 100); email = m[2].toLowerCase(); }
+      else email = piece.toLowerCase();
+      if (!validEmail(email)) { invalid++; continue; }
+      if (!seen[email]) { seen[email] = 1; targets.push({ email: email, name: name }); }
+    }
+    if (!targets.length) return json({ error: 'Tidak ada alamat valid untuk diimpor' }, 422);
+    const cnt = await env.DB.prepare('SELECT COUNT(*) AS c FROM email_audience WHERE project_id = ?').bind(projectId).first();
+    const existing = await env.DB.prepare('SELECT email FROM email_audience WHERE project_id = ?').bind(projectId).all();
+    const have = {};
+    (existing && existing.results ? existing.results : []).forEach(function (r) { have[String(r.email).toLowerCase()] = 1; });
+    let added = 0, duplicates = 0, overflow = 0;
+    let room = AUDIENCE_MAX - ((cnt && cnt.c) || 0);
+    for (const t of targets) {
+      if (have[t.email]) { duplicates++; continue; }
+      if (room <= 0) { overflow++; continue; }
+      await env.DB.prepare('INSERT INTO email_audience (project_id, email, name) VALUES (?, ?, ?)').bind(projectId, t.email, t.name).run();
+      have[t.email] = 1; added++; room--;
+    }
+    return json({ added: added, duplicates: duplicates, invalid: invalid, overflow: overflow });
+  }
+
+  if (action === 'audience_update') {
+    const email = String(body.email || '').trim().toLowerCase();
+    const name = String(body.name || '').trim().slice(0, 100);
+    if (!validEmail(email)) return json({ error: 'Alamat email tidak valid' }, 422);
+    await env.DB.prepare("UPDATE email_audience SET name = ? WHERE project_id = ? AND email = ?").bind(name, projectId, email).run();
+    return json({ ok: true });
+  }
+
+  if (action === 'audience_delete') {
+    const email = String(body.email || '').trim().toLowerCase();
+    if (!validEmail(email)) return json({ error: 'Alamat email tidak valid' }, 422);
+    await env.DB.prepare('DELETE FROM email_audience WHERE project_id = ? AND email = ?').bind(projectId, email).run();
+    return json({ ok: true });
+  }
+
+  if (action === 'audience_delete_all') {
+    if (body.confirm !== 'HAPUS SEMUA') return json({ error: 'Konfirmasi diperlukan: kirim confirm="HAPUS SEMUA"' }, 422);
+    await env.DB.prepare('DELETE FROM email_audience WHERE project_id = ?').bind(projectId).run();
+    return json({ ok: true });
+  }
+
   if (action === 'broadcast') {
     const row = await getRow(env.DB, projectId);
     if (!row) return json({ error: 'Aktifkan email dulu' }, 400);
