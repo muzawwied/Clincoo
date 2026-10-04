@@ -172,7 +172,10 @@
       if (res.ok && data.success) {
         if (data.qr_image) document.getElementById('qr-img').src = data.qr_image;
         if (data.total_payment != null || data.amount != null) qrRenderAmount(data.amount, data.total_payment);
-        if (data.created_at) {
+        // hitungan mundur ikut data provider (expires_in detik dari expired_at BuatQris)
+        if (data.expires_in != null) {
+          _expAt = Date.now() + Number(data.expires_in) * 1000;
+        } else if (data.created_at) {
           var c = new Date(data.created_at.replace(' ', 'T') + 'Z').getTime();
           if (!isNaN(c)) _expAt = c + 15 * 60 * 1000;
         }

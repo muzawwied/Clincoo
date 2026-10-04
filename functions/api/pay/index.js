@@ -149,6 +149,7 @@ async function ensureTables(db) {
   try { await db.prepare("ALTER TABLE pay_transactions ADD COLUMN bq_txn_id TEXT DEFAULT ''").run(); } catch (e) {}
   try { await db.prepare('ALTER TABLE pay_transactions ADD COLUMN gateway_fee INTEGER').run(); } catch (e) {}
   try { await db.prepare('ALTER TABLE pay_transactions ADD COLUMN credit_amount INTEGER').run(); } catch (e) {}
+  try { await db.prepare('ALTER TABLE pay_transactions ADD COLUMN expired_at TEXT').run(); } catch (e) {}
   await db.prepare(`CREATE TABLE IF NOT EXISTS pay_withdrawals (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id TEXT NOT NULL,
@@ -548,17 +549,44 @@ async function calcBalance(db, projectId) {
 }
 
 
+// expired_at dari BuatQris berformat WIB ("2026-10-04 10:54:16") → konversi ke UTC agar konsisten dengan created_at
+function bqExpiredUtc(str) {
+  try {
+    const m = String(str || '').match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+    if (!m) return null;
+    const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4] - 7, +m[5], +m[6]));
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString().slice(0, 19).replace('T', ' ');
+  } catch (e) { return null; }
+}
+
+// kedaluwarsa bila lewat expired_at dari provider; fallback 15 menit utk transaksi lama
+function txStale(tx) {
+  if (tx.expired_at) {
+    const e = Date.parse(String(tx.expired_at).replace(' ', 'T') + 'Z');
+    if (!isNaN(e)) return Date.now() > e;
+  }
+  return !!(tx.created_at && (Date.now() - Date.parse(String(tx.created_at).replace(' ', 'T') + 'Z')) > 15 * 60 * 1000);
+}
+
 // Cek status transaksi QRIS — dipakai bersama oleh GET (action via query param)
 // dan POST (action via body), agar caller dengan salah satu gaya pun tetap jalan.
 async function handlePayStatus(env, db, key, orderId) {
   if (!key || !orderId) return json({ error: 'key dan order_id wajib diisi' }, 400);
   const tx = await db.prepare('SELECT * FROM pay_transactions WHERE pay_key = ? AND order_id = ?').bind(key, orderId).first();
   if (!tx) return json({ error: 'transaksi tidak ditemukan' }, 404);
+  let expLeft = null;
+  if (tx.expired_at) {
+    const e = Date.parse(String(tx.expired_at).replace(' ', 'T') + 'Z');
+    if (!isNaN(e)) expLeft = Math.max(0, Math.round((e - Date.now()) / 1000));
+  }
   const det = {
     order_id: tx.order_id, description: tx.description || '',
     qr_image: qrImageUrl(tx.qr_string || ''),
     total_payment: (tx.total_payment != null ? tx.total_payment : tx.amount),
-    created_at: tx.created_at || ''
+    created_at: tx.created_at || '',
+    expires_at: tx.expired_at || '',
+    expires_in: expLeft
   };
   if (tx.status === 'paid') return json({ success: true, status: 'paid', amount: tx.amount, ...det });
   // ==== BuatQris: cek langsung ke provider (sumber kebenaran) — terbayar terdeteksi dalam hitungan detik ====
@@ -586,15 +614,15 @@ async function handlePayStatus(env, db, key, orderId) {
         await db.prepare("UPDATE pay_transactions SET status = ?, updated_at = datetime('now') WHERE id = ?").bind(st, tx.id).run();
         return json({ success: true, status: st, amount: tx.amount, ...det });
       }
-      if (tx.status === 'pending' && tx.created_at && (Date.now() - Date.parse(String(tx.created_at).replace(' ', 'T') + 'Z')) > 15 * 60 * 1000) {
+      if (tx.status === 'pending' && txStale(tx)) {
         await db.prepare("UPDATE pay_transactions SET status = 'expired', updated_at = datetime('now') WHERE id = ?").bind(tx.id).run();
         return json({ success: true, status: 'expired', amount: tx.amount, ...det });
       }
       return json({ success: true, status: tx.status, amount: tx.amount, ...det });
     }
   }
-  // QRIS kedaluwarsa 15 menit (transaksi lama tanpa ID BuatQris) — histori tetap jujur
-  if (tx.status === 'pending' && tx.created_at && (Date.now() - Date.parse(String(tx.created_at).replace(' ', 'T') + 'Z')) > 15 * 60 * 1000) {
+  // QRIS kedaluwarsa (transaksi lama tanpa ID BuatQris) — histori tetap jujur
+  if (tx.status === 'pending' && txStale(tx)) {
     await db.prepare("UPDATE pay_transactions SET status = 'expired', updated_at = datetime('now') WHERE id = ?").bind(tx.id).run();
     return json({ success: true, status: 'expired', amount: tx.amount, ...det });
   }
@@ -889,7 +917,7 @@ export async function onRequestPost({ request, env }) {
     const deny = await guardPay(env, request, projectId);
     if (deny) return deny;
     // sapu otomatis: QRIS pending lebih dari 15 menit → kedaluwarsa
-    try { await db.prepare("UPDATE pay_transactions SET status = 'expired', updated_at = datetime('now') WHERE project_id = ? AND status = 'pending' AND created_at < datetime('now', '-15 minutes')").bind(projectId).run(); } catch (e) {}
+    try { await db.prepare("UPDATE pay_transactions SET status = 'expired', updated_at = datetime('now') WHERE project_id = ? AND status = 'pending' AND (CASE WHEN expired_at IS NOT NULL AND expired_at != '' THEN expired_at < datetime('now') ELSE created_at < datetime('now', '-15 minutes') END)").bind(projectId).run(); } catch (e) {}
     const rows = await db.prepare('SELECT order_id, amount, description, status, created_at FROM pay_transactions WHERE project_id = ? ORDER BY id DESC LIMIT 25').bind(projectId).all();
     return json({ success: true, transactions: rows.results || [] });
   }
@@ -952,8 +980,9 @@ export async function onRequestPost({ request, env }) {
     const ok = !!(p && p.qr_url);
     const total = ok ? (parseInt(p.total_amount || p.total || p.total_payment || p.amount || amount, 10) || amount) : amount;
     const expiredAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-    await db.prepare('INSERT INTO pay_transactions (project_id, pay_key, order_id, trx_ref, amount, description, status, qr_string, total_payment, bq_txn_id, gateway_fee, credit_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(creds.project_id, key, orderId, '', amount, description, ok ? 'pending' : 'failed', ok ? p.qr_url : '', total, ok ? (p.transaction_id || '') : '', ok ? (parseInt(p.admin_fee, 10) || 0) : 0, ok ? (parseInt(p.credit_amount, 10) || amount) : amount).run();
+    const expUtc = (ok ? bqExpiredUtc(p.expired_at) : null) || new Date(Date.now() + 15 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
+    await db.prepare('INSERT INTO pay_transactions (project_id, pay_key, order_id, trx_ref, amount, description, status, qr_string, total_payment, bq_txn_id, gateway_fee, credit_amount, expired_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(creds.project_id, key, orderId, '', amount, description, ok ? 'pending' : 'failed', ok ? p.qr_url : '', total, ok ? (p.transaction_id || '') : '', ok ? (parseInt(p.admin_fee, 10) || 0) : 0, ok ? (parseInt(p.credit_amount, 10) || amount) : amount, expUtc).run();
     if (!ok) {
       return json({ success: false, message: (pay && (pay.message || pay.msg)) || 'Gagal membuat QRIS ClincooPay.' }, 502);
     }
