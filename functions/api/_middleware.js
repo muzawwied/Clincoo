@@ -70,7 +70,7 @@ function tooMany(retryAfter) {
 //  b) strictOriginOk — KETAT: untuk mutasi /api/auth dan /api/admin. HANYA host milik
 //     Clincoo sendiri. Sebelumnya regex menerima SEMUA subdomain *.pages.dev /
 //     *.workers.dev milik siapa pun (halaman phising siapa pun lolos cek ini).
-const ORIGIN_ALLOW = /^(^[^.:]+\.pages\.dev$)|(^muzawwied\.github\.io$)|(^[^.:]+\.workers\.dev$)|(^([\w-]+\.)*clincoo\.buzz$)|(^([\w-]+\.)*clinqoo\.biz\.id$)/;
+const ORIGIN_ALLOW = /^(^[^.:]+\.pages\.dev$)|(^muzawwied\.github\.io$)|(^[^.:]+\.workers\.dev$)|(^([\w-]+\.)*clincoo\.buzz$)|(^([\w-]+\.)*clinqoo\.biz\.id$)|(^([\w-]+\.)*clincoo\.biz\.id$)/;
 const ORIGIN_STRICT = /^(^clincoo-be2\.pages\.dev$)|(^clinqoo\.pages\.dev$)|(^muzawwied\.github\.io$)|(^([\w-]+\.)*clincoo\.buzz$)|(^localhost(:\d+)?$)/;
 function originOk(request) {
   const origin = request.headers.get('origin');
