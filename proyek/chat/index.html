@@ -5482,22 +5482,33 @@ window.chatLivePreview = function () {
             let charIndex = 0;
             let hasReceivedData = false;
 
-            const apiTimeout = setTimeout(() => {
-                if (!hasReceivedData) {
-                    if (!aiMsgObj._retried) {
-                        aiMsgObj._retried = true;
-                        stopGeneration();
-                        setTimeout(() => retryGeneration(aiMsgObj.id), 500);
-                    } else {
-                        const index = messages.findIndex(m => m.id === aiMsgObj.id);
-                        if (index !== -1) {
-                            messages[index].text = `Sedang memuat... <span onclick="retryGeneration('${aiMsgObj.id}')" class="cursor-pointer underline font-medium" style="text-underline-offset: 3px;">ketuk untuk melanjutkan</span>`;
-                            messages[index].isError = true;
-                        }
-                        stopGeneration();
-                    }
+            // Watchdog 120s tanpa data -> retry. FIX BACKGROUNDING: dulu timer ini tetap
+            // dihitung saat halaman di-background (timer dibekukan OS lalu menumpuk & meledak
+            // begitu user balik) sehingga begitu dibuka lagi watchdog LANGSUNG menembak:
+            // stopGeneration + restart dari nol padahal request asli masih hidup / hanya
+            // perlu reconnect. Sekarang: saat halaman tersembunyi, cek dijadwalkan ulang
+            // (timer beku saat background, jadi efektif "pause"); watchdog hanya boleh
+            // menembak saat halaman BENAR-BENAR terlihat oleh user.
+            const apiTimeoutTick = () => {
+                if (hasReceivedData) return;
+                if (document.visibilityState === 'hidden') {
+                    setTimeout(apiTimeoutTick, 15000); // pause: tunggu halaman terlihat lagi
+                    return;
                 }
-            }, 120000); 
+                if (!aiMsgObj._retried) {
+                    aiMsgObj._retried = true;
+                    stopGeneration();
+                    setTimeout(() => retryGeneration(aiMsgObj.id), 500);
+                } else {
+                    const index = messages.findIndex(m => m.id === aiMsgObj.id);
+                    if (index !== -1) {
+                        messages[index].text = `Sedang memuat... <span onclick="retryGeneration('${aiMsgObj.id}')" class="cursor-pointer underline font-medium" style="text-underline-offset: 3px;">ketuk untuk melanjutkan</span>`;
+                        messages[index].isError = true;
+                    }
+                    stopGeneration();
+                }
+            };
+            const apiTimeout = setTimeout(apiTimeoutTick, 120000); 
 
             if (requiresImage) {
                 try {
@@ -5693,6 +5704,56 @@ window.chatLivePreview = function () {
                     // tunggu & ulangi diam-diam, jangan langsung putus tugas panjang.
                     const readStreamWithBusyRetry = async function (response0) {
                         let busyTry = 0;
+                        let netTry = 0;
+                        // FIX BACKGROUNDING: saat user pindah app lain (mis. WhatsApp),
+                        // OS mobile membekukan halaman & memutus koneksi stream. Saat
+                        // kembali, stream mati tanpa event final -> error "Koneksi AI
+                        // terputus" -> tugas gagal padahal tool call sudah setengah jalan.
+                        // Solusi: gangguan jaringan (bukan user stop, bukan kuota) ->
+                        // RECONNECT diam-diam: kirim ulang request DENGAN riwayat tool
+                        // yang sudah jalan (apiMessagesWithTools), server lanjut tugas
+                        // dari titik terhenti — user gak perlu minta "lanjut" manual.
+                        const reconnectStream = async function (streamErr) {
+                            netTry++;
+                            setAiStatus(netTry === 1 ? 'Koneksi terputus sesaat — menyambung ulang…' : 'Menyambung ulang tugas…');
+                            await new Promise(r => setTimeout(r, netTry === 1 ? 1500 : 4000));
+                            if (!isGenerating) throw new DOMException('Aborted', 'AbortError');
+                            // buang delta parsial hop ini agar re-stream tidak dobel teks
+                            deltaStreamed = deltaStreamed.slice(0, deltaBaseLen);
+                            streamingBuffer = deltaStreamed;
+                            response0 = await fetch(GEMINI_PROXY_URL, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    messages: apiMessagesWithTools,
+                                    session_id: currentSessionId || undefined,
+                                    project_id: currentProjectId || undefined,
+                                    workspace_tools: true,
+                                    premium: AI_PREMIUM_MODEL,
+                                    save_user_message: false,
+
+                                    stream: true
+                                }),
+                                signal: abortController.signal
+                            });
+                            if (!response0.ok) {
+                                // error definitif dari server (mis. kuota) -> parse agar
+                                // penanganan tengah-tugas (checkpoint/auto-lanjut) jalan
+                                try {
+                                    const ej = await response0.json();
+                                    if (ej && ej.error) {
+                                        const er = new Error('__QUOTA__');
+                                        er.quotaMsg = ej.error;
+                                        if (ej.context_overflow) er.ctxOverflow = true;
+                                        if (!ej.quota_exhausted && !ej.context_overflow) throw streamErr;
+                                        throw er;
+                                    }
+                                } catch (e2) { if (e2 && e2.message === '__QUOTA__') throw e2; }
+                                throw streamErr; // fallback menangani
+                            }
+                        };
+                        const isNetDrop = (e) => e && e.name !== 'AbortError' && e.message !== '__QUOTA__' && !e.providerBusy;
+                        const deltaBaseLen = deltaStreamed.length; // basis delta hop ini (utk reset saat reconnect)
                         for (;;) {
                             try {
                                 return await readNdjsonStream(response0, (evt) => {
@@ -5721,12 +5782,18 @@ window.chatLivePreview = function () {
                                             workspace_tools: true,
                                             premium: AI_PREMIUM_MODEL,
                                             save_user_message: false,
-                                           
+
                                             stream: true
                                         }),
                                         signal: abortController.signal
                                     });
                                     if (!response0.ok) throw streamErr; // definitif -> fallback menangani
+                                    continue;
+                                }
+                                // GANGGUAN JARINGAN (termasuk app di-background lalu dibuka lagi):
+                                // reconnect sampai 2x — tugas dilanjutkan, bukan error merah.
+                                if (isNetDrop(streamErr) && netTry < 2 && isGenerating) {
+                                    await reconnectStream(streamErr);
                                     continue;
                                 }
                                 throw streamErr;
