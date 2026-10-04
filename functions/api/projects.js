@@ -4,6 +4,8 @@
 // DELETE /api/projects?id=<id>    -> hapus satu proyek (tanpa id = semua milik user)
 // Semua aksi wajib Bearer token (per akun, terisolasi lewat user_id).
 import { currentUser } from './user-scope.js';
+import { getToken } from './auth/shared.js';
+import { getSecret, flatTemplate, sendEmail } from './notify-helpers.js';
 import { getEffectivePlan } from './plan-helpers.js';
 import { tableFor } from './_tables.js';
 
@@ -42,6 +44,79 @@ function rowToProject(r) {
   };
 }
 
+
+// ===== Konfirmasi hapus proyek =====
+// 1) Ketik nama proyek persis -> tombol Hapus aktif (frontend).
+// 2) Sesi baru (< 15 menit sejak login) dianggap mencurigakan -> wajib OTP email.
+const DELETE_SESSION_FRESH_MIN = 15;
+
+// Sesi login masih "segar" (baru dibuat)? Pola pembajakan akun: login lalu langsung hapus proyek.
+async function sessionFresh(db, request) {
+  try {
+    const row = await db.prepare('SELECT created_at FROM auth_sessions WHERE token = ?').bind(getToken(request)).first();
+    if (!row || !row.created_at) return false;
+    const t = Date.parse(String(row.created_at).replace(' ', 'T') + 'Z');
+    return !isNaN(t) && (Date.now() - t) < DELETE_SESSION_FRESH_MIN * 60 * 1000;
+  } catch (e) { return false; }
+}
+
+async function ensureDeleteOtpTable(db) {
+  await db.prepare(`CREATE TABLE IF NOT EXISTS project_delete_otps (
+    user_id INTEGER PRIMARY KEY,
+    code_hash TEXT,
+    expires_at TEXT,
+    attempts INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  )`).run();
+}
+
+async function sha256hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Kirim kode OTP 6 digit ke email akun (rate limit 1x/menit, berlaku 10 menit, hash saja yang disimpan).
+async function sendDeleteOtp(env, db, user) {
+  await ensureDeleteOtpTable(db);
+  const last = await db.prepare('SELECT created_at FROM project_delete_otps WHERE user_id = ?').bind(user.id).first();
+  if (last && last.created_at) {
+    const t = Date.parse(String(last.created_at).replace(' ', 'T') + 'Z');
+    if (!isNaN(t) && Date.now() - t < 60 * 1000) return j({ success: false, error: 'Tunggu 1 menit sebelum minta kode OTP baru.' }, 429);
+  }
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const codeHash = await sha256hex(user.id + ':' + code);
+  await db.prepare(`INSERT INTO project_delete_otps (user_id, code_hash, expires_at) VALUES (?, ?, datetime('now', '+10 minutes'))
+    ON CONFLICT(user_id) DO UPDATE SET code_hash = excluded.code_hash, expires_at = excluded.expires_at, attempts = 0, created_at = datetime('now')`)
+    .bind(user.id, codeHash).run();
+  const sent = await sendEmail(env, {
+    toEmail: user.email,
+    subject: 'Kode OTP Hapus Proyek — Clincoo',
+    html: flatTemplate('Kode OTP Hapus Proyek', null,
+      '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">Anda baru mengonfirmasi penghapusan proyek di Clincoo dari sesi login yang masih baru. Untuk keamanan, masukkan kode 6 digit di bawah ini untuk melanjutkan penghapusan.</p>' +
+      '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">Kode ini berlaku <b>10 menit</b> dan hanya bisa dipakai satu kali. Kalau ini bukan Anda, jangan bagikan kode ini dan segera amankan akun Anda.</p>',
+      null, null, null, null, code)
+  });
+  if (!sent || !sent.sent) return j({ success: false, error: 'Kode OTP gagal dikirim ke email. Coba lagi sebentar.' }, 500);
+  return j({ success: true, sent: true });
+}
+
+// Verifikasi kode OTP hapus (maks 5 percobaan, sekali pakai, kadaluarsa 10 menit).
+async function verifyDeleteOtp(db, user, otp) {
+  try {
+    await ensureDeleteOtpTable(db);
+    const row = await db.prepare('SELECT code_hash, expires_at, attempts FROM project_delete_otps WHERE user_id = ?').bind(user.id).first();
+    if (!row || !otp) return { ok: false, error: 'Kode OTP diperlukan. Minta kode baru lalu coba lagi.' };
+    if (Date.parse(String(row.expires_at).replace(' ', 'T') + 'Z') < Date.now()) return { ok: false, error: 'Kode OTP sudah kadaluarsa. Minta kode baru.' };
+    if ((row.attempts || 0) >= 5) return { ok: false, error: 'Terlalu banyak percobaan salah. Minta kode baru.' };
+    const hash = await sha256hex(user.id + ':' + String(otp));
+    if (hash !== row.code_hash) {
+      await db.prepare('UPDATE project_delete_otps SET attempts = attempts + 1 WHERE user_id = ?').bind(user.id).run();
+      return { ok: false, error: 'Kode OTP salah.' };
+    }
+    await db.prepare('DELETE FROM project_delete_otps WHERE user_id = ?').bind(user.id).run();
+    return { ok: true };
+  } catch (e) { return { ok: false, error: 'Verifikasi OTP gagal. Coba lagi.' }; }
+}
 
 // Guard hapus proyek: proyek dengan ClincooPay aktif yang masih punya saldo /
 // penarikan sedang diproses TIDAK boleh dihapus (saldo bisa lenyap tanpa jejak).
@@ -92,7 +167,8 @@ export async function onRequestGet({ request, env }) {
       const own = await db.prepare('SELECT id FROM user_projects WHERE id = ? AND user_id = ?').bind(checkId, user.id).first();
       if (!own) return j({ blocked: true, reason: 'Proyek tidak ditemukan atau bukan milik akun ini.' }, 404);
       const g = await payDeleteGuard(db, checkId);
-      return j(g.ok ? { ok: true } : { blocked: true, reason: g.reason, available: g.available, pending_withdrawals: g.pending_withdrawals });
+      const otpRequired = await sessionFresh(db, request);
+      return j(g.ok ? { ok: true, otp_required: otpRequired } : { blocked: true, otp_required: otpRequired, reason: g.reason, available: g.available, pending_withdrawals: g.pending_withdrawals });
     }
     const res = await db.prepare(
       'SELECT * FROM user_projects WHERE user_id = ? ORDER BY COALESCE(updated_at, created_at) DESC'
@@ -136,10 +212,15 @@ export async function onRequestPost({ request, env }) {
       }
       return j({ success: true });
     }
+    if (action === 'delete_otp_send') return await sendDeleteOtp(env, db, user);
     if (action === 'delete') {
       if (!body.id) return j({ error: 'id required' }, 400);
       const g = await payDeleteGuard(db, String(body.id));
       if (!g.ok) return j({ success: false, guarded: true, error: g.reason, available: g.available, pending_withdrawals: g.pending_withdrawals }, 400);
+      if (await sessionFresh(db, request)) {
+        const v = await verifyDeleteOtp(db, user, body.otp);
+        if (!v.ok) return j({ success: false, need_otp: true, error: v.error }, 400);
+      }
       await db.prepare('DELETE FROM user_projects WHERE id = ? AND user_id = ?').bind(String(body.id), user.id).run();
       // Kaskade: hapus SEMUA data proyek (chat, file workspace, settings, env vars, log deploy).
       // Dijalankan paralel (bukan satu-satu berurutan) supaya tidak lama/timeout di koneksi lambat.
@@ -154,6 +235,10 @@ export async function onRequestPost({ request, env }) {
       let blocked = 0;
       for (const r of (rows.results || [])) { const g = await payDeleteGuard(db, r.id); if (!g.ok) blocked++; }
       if (blocked > 0) return j({ success: false, guarded: true, error: blocked + ' proyek masih punya saldo ClincooPay / penarikan berjalan. Tarik/cairkan dulu sebelum menghapus.' }, 400);
+      if (await sessionFresh(db, request)) {
+        const v = await verifyDeleteOtp(db, user, body.otp);
+        if (!v.ok) return j({ success: false, need_otp: true, error: v.error + ' Hapus satu per satu lewat halaman proyek untuk bisa memasukkan OTP.' }, 400);
+      }
       await db.prepare('DELETE FROM user_projects WHERE user_id = ?').bind(user.id).run();
       return j({ success: true });
     }
@@ -197,12 +282,14 @@ export async function onRequestDelete({ request, env }) {
     if (id) {
       const g = await payDeleteGuard(db, id);
       if (!g.ok) return j({ success: false, guarded: true, error: g.reason, available: g.available, pending_withdrawals: g.pending_withdrawals }, 400);
+      if (await sessionFresh(db, request)) return j({ success: false, need_otp: true, error: 'Sesi login masih baru: hapus proyek lewat halaman proyek dengan konfirmasi OTP.' }, 400);
       await db.prepare('DELETE FROM user_projects WHERE id = ? AND user_id = ?').bind(id, user.id).run();
     } else {
       const rows = await db.prepare('SELECT id FROM user_projects WHERE user_id = ?').bind(user.id).all();
       let blocked = 0;
       for (const r of (rows.results || [])) { const g = await payDeleteGuard(db, r.id); if (!g.ok) blocked++; }
       if (blocked > 0) return j({ success: false, guarded: true, error: blocked + ' proyek masih punya saldo ClincooPay / penarikan berjalan. Tarik/cairkan dulu sebelum menghapus.' }, 400);
+      if (await sessionFresh(db, request)) return j({ success: false, need_otp: true, error: 'Sesi login masih baru: hapus proyek lewat halaman proyek dengan konfirmasi OTP.' }, 400);
       await db.prepare('DELETE FROM user_projects WHERE user_id = ?').bind(user.id).run();
     }
     return j({ success: true });

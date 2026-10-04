@@ -261,40 +261,156 @@ function _ensureDeleteModal() {
         '<h3 class="text-base font-semibold text-gray-900">Hapus proyek ini?</h3>' +
         '<p id="confirm-delete-name" class="text-sm text-gray-500 mt-1 px-2 truncate"></p>' +
         '<p class="text-[13px] text-gray-400 mt-2 leading-snug">Semua data proyek akan dihapus, <span class="text-gray-500">termasuk situs yang sudah dipublish dan link publiknya</span>.</p>' +
+        '<input id="confirm-delete-name-input" type="text" autocomplete="off" spellcheck="false" placeholder="Ketik nama proyek untuk konfirmasi" class="w-full mt-3 px-3 py-2 text-sm text-center border border-gray-200 rounded-md focus:outline-none focus:border-gray-400" />' +
         '<p id="confirm-delete-error" class="text-xs text-red-600 mt-2 hidden">Gagal menghapus proyek. Periksa koneksi lalu coba lagi.</p>' +
+        '<div id="confirm-delete-otp-step" class="hidden mt-3">' +
+        '<p class="text-[13px] text-gray-500 leading-snug">Sesi login kamu masih baru. Kode OTP 6 digit sudah dikirim ke email akunmu.</p>' +
+        '<input id="confirm-delete-otp-input" type="text" inputmode="numeric" maxlength="6" placeholder="Kode OTP" class="w-full mt-2 px-3 py-2 text-sm text-center tracking-[0.3em] border border-gray-200 rounded-md focus:outline-none focus:border-gray-400" />' +
+        '<p id="confirm-delete-otp-error" class="text-xs text-red-600 mt-2 hidden"></p>' +
+        '</div>' +
         '<div class="flex items-center justify-center gap-10 mt-5">' +
         '<button type="button" id="confirm-delete-cancel" class="text-sm font-medium text-gray-400 hover:text-gray-900 transition-colors px-1 py-0.5">Batal</button>' +
-        '<button type="button" id="confirm-delete-ok" class="text-sm font-semibold text-red-600 hover:text-red-700 transition-colors px-1 py-0.5">Hapus</button>' +
+        '<button type="button" id="confirm-delete-ok" disabled class="text-sm font-semibold text-red-600 hover:text-red-700 transition-colors px-1 py-0.5 opacity-40">Hapus</button>' +
         '</div></div></div>';
     document.body.appendChild(div.firstElementChild);
     const modal = document.getElementById('confirm-delete-modal');
     modal.addEventListener('click', function (e) { if (e.target === modal) _closeDeleteModal(); });
     document.getElementById('confirm-delete-cancel').addEventListener('click', _closeDeleteModal);
+    // Aktif/nonaktif tombol Hapus: harus ketik nama proyek persis (atau OTP 6 digit di step 2).
+    function _syncDeleteOkBtn() {
+        const okBtn = document.getElementById('confirm-delete-ok');
+        if (!okBtn) return;
+        if (okBtn.dataset.step === 'otp') {
+            const otpEl = document.getElementById('confirm-delete-otp-input');
+            okBtn.disabled = !(otpEl && /^\d{6}$/.test((otpEl.value || '').trim()));
+        } else {
+            const nameEl = document.getElementById('confirm-delete-name-input');
+            const proj = getProjects().find(function (p) { return p.id === _pendingDeleteId; });
+            const expected = proj ? String(projCardTitle(proj) || '').trim().toLowerCase() : '';
+            okBtn.disabled = !expected || !nameEl || (nameEl.value || '').trim().toLowerCase() !== expected;
+        }
+        okBtn.classList.toggle('opacity-40', okBtn.disabled);
+    }
+    document.getElementById('confirm-delete-name-input').addEventListener('input', function () {
+        this.classList.remove('border-red-300');
+        const errEl = document.getElementById('confirm-delete-error');
+        if (errEl) errEl.classList.add('hidden');
+        _syncDeleteOkBtn();
+    });
+    document.getElementById('confirm-delete-otp-input').addEventListener('input', function () {
+        const otpErr = document.getElementById('confirm-delete-otp-error');
+        if (otpErr) otpErr.classList.add('hidden');
+        _syncDeleteOkBtn();
+    });
     document.getElementById('confirm-delete-ok').addEventListener('click', async function () {
         const id = _pendingDeleteId;
         if (!id) { _closeDeleteModal(); return; }
         const okBtn = document.getElementById('confirm-delete-ok');
         const errEl = document.getElementById('confirm-delete-error');
+        const otpErr = document.getElementById('confirm-delete-otp-error');
+        const otpEl = document.getElementById('confirm-delete-otp-input');
+        const tok = (function () { try { return localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) { return ''; } })();
+        const hdrs = { 'Content-Type': 'application/json', ...(tok ? { Authorization: 'Bearer ' + tok } : {}) };
+        const apiRoot = PROJECTS_API.replace(/\/projects$/, '');
+
+        // STEP OTP: konfirmasi terakhir dengan kode 6 digit dari email.
+        if (okBtn.dataset.step === 'otp') {
+            const otp = (otpEl.value || '').trim();
+            if (!/^\d{6}$/.test(otp)) return;
+            okBtn.disabled = true;
+            okBtn.classList.add('cc-spin');
+            okBtn.innerHTML = 'Menghapus...';
+            try {
+                // unpublish situs (non-fatal, fire-and-forget) lalu hapus terverifikasi OTP secara sinkron
+                try { fetch(apiRoot + '/deploy', { method: 'POST', headers: hdrs, body: JSON.stringify({ project_id: id, action: 'unpublish' }) }).catch(function () {}); } catch (e) {}
+                const res = await fetch(PROJECTS_API, { method: 'POST', headers: hdrs, body: JSON.stringify({ action: 'delete', id: id, otp: otp }) });
+                const d = await res.json().catch(function () { return null; });
+                if (res.ok && d && d.success) {
+                    okBtn.classList.remove('cc-spin');
+                    _closeDeleteModal();
+                    _removeProjectLocally(id);
+                    _showToast('Proyek dihapus', 'success');
+                    return;
+                }
+                okBtn.classList.remove('cc-spin');
+                okBtn.innerHTML = 'Konfirmasi Hapus';
+                if (d && d.guarded) {
+                    // race: saldo masuk setelah OTP — balik ke step nama
+                    okBtn.dataset.step = '';
+                    document.getElementById('confirm-delete-otp-step').classList.add('hidden');
+                    if (errEl) { errEl.textContent = d.error || 'Proyek ini tidak bisa dihapus dulu.'; errEl.classList.remove('hidden'); }
+                    _syncDeleteOkBtn();
+                    return;
+                }
+                if (otpErr) { otpErr.textContent = (d && d.error) || 'Kode OTP salah atau kadaluarsa.'; otpErr.classList.remove('hidden'); }
+                _syncDeleteOkBtn();
+            } catch (e) {
+                okBtn.classList.remove('cc-spin');
+                okBtn.innerHTML = 'Konfirmasi Hapus';
+                if (otpErr) { otpErr.textContent = 'Koneksi gagal. Coba lagi.'; otpErr.classList.remove('hidden'); }
+                _syncDeleteOkBtn();
+            }
+            return;
+        }
+
+        // STEP 1: nama proyek harus cocok persis.
+        const nameEl = document.getElementById('confirm-delete-name-input');
+        const proj = getProjects().find(function (p) { return p.id === id; });
+        const expected = proj ? String(projCardTitle(proj) || '').trim().toLowerCase() : '';
+        if (!nameEl || (nameEl.value || '').trim().toLowerCase() !== expected) {
+            nameEl.classList.add('border-red-300');
+            nameEl.focus();
+            return;
+        }
         okBtn.disabled = true;
         okBtn.classList.add('cc-spin');
         okBtn.innerHTML = 'Memeriksa...';
         if (errEl) errEl.classList.add('hidden');
-        // Pre-check guard server: proyek dengan saldo ClincooPay / penarikan berjalan diblokir.
+        // Pre-check guard server: saldo ClincooPay diblokir; sesi baru -> minta OTP email.
+        let check = null;
         try {
-            const tok = (function () { try { return localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) { return ''; } })();
-            const res = await fetch(PROJECTS_API + '?delete_check=' + encodeURIComponent(id), { headers: tok ? { Authorization: 'Bearer ' + tok } : {} });
-            const d = await res.json().catch(function () { return null; });
-            if (d && d.blocked) {
-                okBtn.disabled = false;
-                okBtn.classList.remove('cc-spin');
-                okBtn.innerHTML = 'Hapus';
-                if (errEl) { errEl.textContent = d.reason || 'Proyek ini tidak bisa dihapus dulu.'; errEl.classList.remove('hidden'); }
-                return;
-            }
-        } catch (e) { /* jaringan gagal: lanjut optimistik — guard di server tetap jadi pengaman terakhir */ }
-        okBtn.disabled = false;
+            const res = await fetch(PROJECTS_API + '?delete_check=' + encodeURIComponent(id), { headers: hdrs });
+            check = await res.json().catch(function () { return null; });
+        } catch (e) { check = null; }
         okBtn.classList.remove('cc-spin');
         okBtn.innerHTML = 'Hapus';
+        if (check && check.blocked) {
+            if (errEl) { errEl.textContent = check.reason || 'Proyek ini tidak bisa dihapus dulu.'; errEl.classList.remove('hidden'); }
+            _syncDeleteOkBtn();
+            return;
+        }
+        if (check && check.otp_required) {
+            // masuk step OTP: kirim kode ke email akun
+            okBtn.dataset.step = 'otp';
+            okBtn.innerHTML = 'Konfirmasi Hapus';
+            okBtn.disabled = true;
+            okBtn.classList.add('cc-spin');
+            okBtn.innerHTML = 'Mengirim OTP...';
+            if (errEl) errEl.classList.add('hidden');
+            const otpStep = document.getElementById('confirm-delete-otp-step');
+            if (otpStep) otpStep.classList.remove('hidden');
+            const nameWrap = document.getElementById('confirm-delete-name-input');
+            if (nameWrap) nameWrap.classList.add('hidden');
+            try {
+                const r2 = await fetch(PROJECTS_API, { method: 'POST', headers: hdrs, body: JSON.stringify({ action: 'delete_otp_send' }) });
+                const d2 = await r2.json().catch(function () { return null; });
+                okBtn.classList.remove('cc-spin');
+                if (!d2 || !d2.success) {
+                    if (otpErr) { otpErr.textContent = (d2 && d2.error) || 'Kode OTP gagal dikirim. Tutup modal lalu coba lagi.'; otpErr.classList.remove('hidden'); }
+                    okBtn.innerHTML = 'Konfirmasi Hapus';
+                    return;
+                }
+                okBtn.innerHTML = 'Konfirmasi Hapus';
+                if (otpEl) otpEl.focus();
+                _syncDeleteOkBtn();
+            } catch (e) {
+                okBtn.classList.remove('cc-spin');
+                okBtn.innerHTML = 'Konfirmasi Hapus';
+                if (otpErr) { otpErr.textContent = 'Kode OTP gagal dikirim. Coba lagi.'; otpErr.classList.remove('hidden'); }
+            }
+            return;
+        }
+        // tanpa OTP: lanjut alur lama (optimistic + hapus di latar belakang)
         // Optimistic: proyek langsung lenyap dari daftar & modal langsung tertutup —
         // penghapusan sungguhan di server (D1 + unpublish) jalan sendiri di latar belakang
         // (fire-and-forget + retry diam-diam), jadi hapus TERASA instan tanpa menunggu jaringan.
@@ -308,9 +424,17 @@ function _resetDeleteModalUI() {
     const okBtn = document.getElementById('confirm-delete-ok');
     const cancelBtn = document.getElementById('confirm-delete-cancel');
     const errEl = document.getElementById('confirm-delete-error');
-    if (okBtn) { okBtn.disabled = false; okBtn.innerHTML = 'Hapus'; }
+    const nameEl = document.getElementById('confirm-delete-name-input');
+    const otpStep = document.getElementById('confirm-delete-otp-step');
+    const otpEl = document.getElementById('confirm-delete-otp-input');
+    const otpErr = document.getElementById('confirm-delete-otp-error');
+    if (okBtn) { okBtn.disabled = true; okBtn.dataset.step = ''; okBtn.classList.remove('cc-spin'); okBtn.innerHTML = 'Hapus'; okBtn.classList.add('opacity-40'); }
     if (cancelBtn) cancelBtn.style.visibility = '';
     if (errEl) errEl.classList.add('hidden');
+    if (nameEl) { nameEl.value = ''; nameEl.classList.remove('border-red-300'); nameEl.classList.remove('hidden'); }
+    if (otpStep) otpStep.classList.add('hidden');
+    if (otpEl) otpEl.value = '';
+    if (otpErr) otpErr.classList.add('hidden');
     document.querySelectorAll('.cc-del-overlay').forEach(function (ov) { ov.remove(); });
     document.querySelectorAll('.cc-deleting').forEach(function (el) { el.classList.remove('cc-deleting'); });
 }
@@ -379,7 +503,7 @@ async function _deleteProjectInBackground(id, attempt) {
         if (res.ok) { const d = await res.json().catch(() => null); ok = !d || d.success !== false; }
         else {
             const d = await res.json().catch(() => null);
-            if (d && d.guarded) { _unqueuePendingDelete(id); return; } // diblokir guard saldo: jangan retry diam-diam
+            if (d && (d.guarded || d.need_otp)) { _unqueuePendingDelete(id); return; } // diblokir guard saldo / butuh OTP: jangan retry diam-diam
         }
     } catch (e) { ok = false; }
     if (ok) {
