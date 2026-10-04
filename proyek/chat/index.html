@@ -1306,6 +1306,9 @@ window.chatLivePreview = function () {
                     }))
                 }));
                 localStorage.setItem(lsChatKey(), JSON.stringify(log));
+                // FIX: session_id ikut dipersist per proyek — setelah reload/error,
+                // auto-lanjut memakai SESI YANG SAMA, bukan sesi baru dari server.
+                if (currentSessionId) { try { localStorage.setItem(lsChatKey() + '_session', currentSessionId); } catch(e) {} }
                 lastSavedLog = log;
                 syncChatLogOut(log, false);
             } catch(e) {}
@@ -1315,7 +1318,13 @@ window.chatLivePreview = function () {
                 const raw = localStorage.getItem(lsChatKey());
                 if (!raw) return false;
                 const log = JSON.parse(raw);
-                if (Array.isArray(log) && log.length > 0) { messages = log; schedulePromptChips(); return true; }
+                if (Array.isArray(log) && log.length > 0) {
+                    messages = log;
+                    // FIX: pulihkan session_id proyek ini (kalau ada) supaya lanjutan
+                    // percakapan tetap di SESI LAMA, bukan sesi baru tiap reload.
+                    if (!currentSessionId) { try { currentSessionId = localStorage.getItem(lsChatKey() + '_session') || null; } catch(e) {} }
+                    schedulePromptChips(); return true;
+                }
             } catch(e) {}
             schedulePromptChips();
             return false;
@@ -1409,6 +1418,7 @@ window.chatLivePreview = function () {
             }
             messages = [];
             try { localStorage.removeItem(lsChatKey()); } catch(e) {}
+            try { localStorage.removeItem(lsChatKey() + '_session'); } catch(e) {}
             currentGreeting = pickGreeting();
             renderMessages();
             
@@ -6036,7 +6046,7 @@ window.chatLivePreview = function () {
                             const fbRes = await fetch(TOOL_API_BASE + '/api/ai', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json', ...(fbTok ? { Authorization: 'Bearer ' + fbTok } : {}) },
-                                body: JSON.stringify({ messages: apiMessages })
+                                body: JSON.stringify({ messages: apiMessages, session_id: currentSessionId || undefined })
                             });
                             if (fbRes.ok) {
                                 const fbJson = await fbRes.json();
