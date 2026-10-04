@@ -285,7 +285,7 @@ export async function onRequestGet({ request, env }) {
   if (deny) return deny;
   const action = url.searchParams.get('action');
   const db = env.DB;
-  const T = getProjectTables(db, projectId);
+  const T = await getProjectTables(db, projectId);
 
   if (action === 'download') {
     const runId = (url.searchParams.get('run_id') || '').replace(/\D/g, '');
@@ -409,7 +409,7 @@ export async function onRequestPost({ request, env }) {
 
     // keystore tetap per proyek: dipakai ulang tiap build supaya sertifikat konsisten
     // (APK bisa diupdate langsung tanpa uninstall; reputasi Play Protect tidak reset tiap build)
-    const T = getProjectTables(db, projectId);
+    const T = await getProjectTables(db, projectId);
     let ksB64 = '';
     try {
       const row = await db.prepare(`SELECT value FROM ${T.projectSettings} WHERE project_id = ? AND key = 'apk_keystore'`).bind(projectId).first();
