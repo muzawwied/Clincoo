@@ -270,7 +270,7 @@ function _ensureDeleteModal() {
         '</div>' +
         '<div class="flex items-center justify-center gap-10 mt-5">' +
         '<button type="button" id="confirm-delete-cancel" class="text-sm font-medium text-gray-400 hover:text-gray-900 transition-colors px-1 py-0.5">Batal</button>' +
-        '<button type="button" id="confirm-delete-ok" disabled class="text-sm font-semibold text-red-600 hover:text-red-700 transition-colors px-1 py-0.5 opacity-40">Hapus</button>' +
+        '<button type="button" id="confirm-delete-ok" disabled class="inline-flex items-center justify-center min-w-[64px] text-sm font-semibold text-red-600 hover:text-red-700 transition-colors px-1 py-0.5 opacity-40">Hapus</button>' +
         '</div></div></div>';
     document.body.appendChild(div.firstElementChild);
     const modal = document.getElementById('confirm-delete-modal');
@@ -318,8 +318,7 @@ function _ensureDeleteModal() {
             const otp = (otpEl.value || '').trim();
             if (!/^\d{6}$/.test(otp)) return;
             okBtn.disabled = true;
-            okBtn.classList.add('cc-spin');
-            okBtn.innerHTML = 'Menghapus...';
+            okBtn.innerHTML = '<svg class="w-4 h-4 cc-spin inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2a10 10 0 1 0 10 10"></path></svg>';
             try {
                 // unpublish situs (non-fatal, fire-and-forget) lalu hapus terverifikasi OTP secara sinkron
                 try { fetch(apiRoot + '/deploy', { method: 'POST', headers: hdrs, body: JSON.stringify({ project_id: id, action: 'unpublish' }) }).catch(function () {}); } catch (e) {}
@@ -363,8 +362,7 @@ function _ensureDeleteModal() {
             return;
         }
         okBtn.disabled = true;
-        okBtn.classList.add('cc-spin');
-        okBtn.innerHTML = 'Memeriksa...';
+        okBtn.innerHTML = '<svg class="w-4 h-4 cc-spin inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2a10 10 0 1 0 10 10"></path></svg>';
         if (errEl) errEl.classList.add('hidden');
         // Pre-check guard server: saldo ClincooPay diblokir; sesi baru -> minta OTP email.
         let check = null;
@@ -382,10 +380,8 @@ function _ensureDeleteModal() {
         if (check && check.otp_required) {
             // masuk step OTP: kirim kode ke email akun
             okBtn.dataset.step = 'otp';
-            okBtn.innerHTML = 'Konfirmasi Hapus';
             okBtn.disabled = true;
-            okBtn.classList.add('cc-spin');
-            okBtn.innerHTML = 'Mengirim OTP...';
+            okBtn.innerHTML = '<svg class="w-4 h-4 cc-spin inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2a10 10 0 1 0 10 10"></path></svg>';
             if (errEl) errEl.classList.add('hidden');
             const otpStep = document.getElementById('confirm-delete-otp-step');
             if (otpStep) otpStep.classList.remove('hidden');
