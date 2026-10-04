@@ -471,7 +471,7 @@
                 <i data-lucide="crown" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
                 <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Upgrade</span>
             </a>
-            <a href="https://blog.clincoo.buzz/panduan/" target="_blank" rel="noopener" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="pusat bantuan help">
+            <a href="https://blog.clincoo.buzz/bantuan/" target="_blank" rel="noopener" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="pusat bantuan help">
                 <i data-lucide="circle-help" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
                 <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Pusat Bantuan</span>
             </a>
@@ -571,8 +571,12 @@
                     // Samakan dengan kartu proyek & Pengaturan Umum: nama custom (app_name) > nama AI > judul awal
                     var _st = {}; try { _st = JSON.parse(localStorage.getItem('clinqoo_umum_' + (p && p.id || 'default')) || '{}'); } catch (e2) {}
                     var name = (_st && _st.app_name) || (p && (p.aiName || p.title)) || 'Tanpa nama';
+                    // Logo proyek (Pengaturan Umum > app_logo): tampil bundar ukuran ikon; tanpa logo pakai ikon folder
+                    var _lg = '';
+                    try { _lg = (window.umumSettingsMap && window.umumSettingsMap[p.id] && window.umumSettingsMap[p.id].app_logo) || (_st && _st.app_logo) || ''; } catch (e3) {}
+                    if (typeof _lg !== 'string' || !/^(data:image\/|https?:\/\/|\/)/.test(_lg)) _lg = '';
                     html2 += '<a href="proyek/workspace/?id=' + encodeURIComponent(p.id) + '" onclick="toggleSidebar(false)" class="sb-sub flex items-center gap-2.5 px-6 py-2 pl-[3.25rem] hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0" data-search="' + esc(name) + '">' +
-                        '<i data-lucide="folder" class="w-4 h-4 text-gray-400 shrink-0"></i>' +
+                        (_lg ? '<img src="' + esc(_lg) + '" alt="Logo" class="w-4 h-4 rounded-full object-cover shrink-0 border border-gray-200 dark:border-[#2f2f2f] bg-white">' : '<i data-lucide="folder" class="w-4 h-4 text-gray-400 shrink-0"></i>') +
                         '<span class="text-sm text-gray-600 truncate">' + esc(name) + '</span></a>';
                 });
                 if (!html2) html2 = '<p class="sb-sub px-6 py-2 pl-[3.25rem] text-xs text-gray-400">Belum ada proyek</p>';
@@ -607,7 +611,7 @@
                     { label: 'Template', icon: 'layout-template', act: function () { location.href = 'templates/'; } },
                     { label: 'Notifikasi', icon: 'bell', act: function () { location.href = 'akun/notifikasi/'; } },
                     { label: 'Upgrade', icon: 'crown', act: function () { location.href = 'akun/langganan/upgrade/'; } },
-                    { label: 'Pusat Bantuan', icon: 'circle-help', act: function () { window.open('https://blog.clincoo.buzz/panduan/', '_blank', 'noopener'); } },
+                    { label: 'Pusat Bantuan', icon: 'circle-help', act: function () { window.open('https://blog.clincoo.buzz/bantuan/', '_blank', 'noopener'); } },
                     { label: 'Template Favorit', icon: 'heart', act: function () { sbOpenSection('sidebar-fav-list'); } },
                     { label: 'Daftar Proyek', icon: 'layers', act: function () { sbOpenSection('sidebar-proj-list'); } }
                 ] },
@@ -1791,6 +1795,7 @@
 
             // === Judul & deskripsi kartu proyek: dari Pengaturan Umum (app_name/app_desc), BUKAN dari chat AI ===
             const umumSettingsMap = {};
+            window.umumSettingsMap = umumSettingsMap;
             function umumCacheRead(pid) {
                 try { return JSON.parse(localStorage.getItem('clinqoo_umum_' + (pid || 'default')) || '{}'); } catch (e) { return {}; }
             }
@@ -1808,17 +1813,22 @@
             }
 
             function createHomeCard(proj) {
+                // Kartu vertikal seperti semula; area placeholder kotak di atas kini menampilkan logo proyek
+                // (tanpa logo = skeleton abu-abu seperti dulu).
                 const title = projCardTitle(proj);
                 const desc = projCardDesc(proj);
                 const logo = projCardLogo(proj);
-                const avatarHtml = logo ? '<img src="' + escCard(logo) + '" class="w-6 h-6 rounded-lg object-cover shrink-0 border border-gray-100" alt="Logo">' : '';
-                return '<div data-proj-id="'+proj.id+'" class="relative w-56 sm:w-60 flex-shrink-0 border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20" tabindex="0" onclick="openProject(\''+proj.id+'\')" onkeydown="if(event.key===\'Enter\') openProject(\''+proj.id+'\')">' +
-                    '<div class="w-full h-28 bg-[#F9FAFB] rounded-xl mb-3.5 p-3 flex flex-col justify-between border border-gray-100 group-hover:border-gray-200 transition-colors">' +
+                // Logo bundat agak besar, tanpa kotak, posisi kartu tetap vertikal.
+                // Proyek tanpa logo tetap pakai skeleton placeholder seperti dulu.
+                const thumbHtml = logo
+                    ? '<div class="w-16 h-16 mx-auto mb-3.5"><img src="' + escCard(logo) + '" class="w-full h-full rounded-full object-cover border border-gray-100" alt="Logo"></div>'
+                    : ('<div class="w-full h-28 bg-[#F9FAFB] rounded-xl mb-3.5 p-3 flex flex-col justify-between border border-gray-100 group-hover:border-gray-200 transition-colors overflow-hidden">' +
                     '<div class="flex items-center justify-between"><div class="w-12 h-2 bg-gray-200 rounded-full"></div><div class="w-3 h-3 rounded-full bg-black/10"></div></div>' +
                     '<div class="grid grid-cols-2 gap-2 my-auto"><div class="h-10 rounded-lg border border-gray-100 p-1.5 flex flex-col justify-between"><div class="w-6 h-1.5 bg-gray-200 rounded"></div><div class="w-10 h-2 bg-gray-900 rounded"></div></div><div class="h-10 rounded-lg border border-gray-100 p-1.5 flex flex-col justify-between"><div class="w-6 h-1.5 bg-gray-200 rounded"></div><div class="w-8 h-2 bg-gray-400 rounded"></div></div></div>' +
-                    '<div class="w-full h-1.5 bg-gray-200 rounded-full"></div>' +
-                    '</div>' +
-                    '<div class="flex items-center gap-2">'+avatarHtml+'<h3 class="font-semibold text-gray-900 text-sm group-hover:text-black truncate">'+title+'</h3></div>' +
+                    '<div class="w-full h-1.5 bg-gray-200 rounded-full"></div></div>');
+                return '<div data-proj-id="'+proj.id+'" class="relative w-56 sm:w-60 flex-shrink-0 border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20" tabindex="0" onclick="openProject(\''+proj.id+'\')" onkeydown="if(event.key===\'Enter\') openProject(\''+proj.id+'\')">' +
+                    thumbHtml +
+                    '<h3 class="font-semibold text-gray-900 text-sm group-hover:text-black truncate">'+title+'</h3>' +
                     '<p class="text-[11px] text-gray-500 mt-0.5 truncate">'+desc.substring(0, 40)+'</p>' +
                     '<p class="text-xs text-gray-400 mt-1.5">'+timeAgo(proj.updatedAt)+'</p>' +
                     '</div>';
@@ -1828,10 +1838,10 @@
                 const title = projCardTitle(proj);
                 const desc = projCardDesc(proj);
                 const logo = projCardLogo(proj);
-                const thumbHtml = logo ? '<img src="' + escCard(logo) + '" class="w-full h-full rounded-xl object-cover" alt="Logo">' :
+                const thumbHtml = logo ? '<img src="' + escCard(logo) + '" class="w-full h-full rounded-full object-cover" alt="Logo">' :
                     ('<div class="w-full h-1.5 bg-gray-200 rounded-full"></div><div class="w-full h-1.5 bg-gray-200 rounded-full"></div><div class="w-full h-1.5 bg-gray-200 rounded-full"></div>');
                 return '<div data-proj-id="'+proj.id+'" class="relative w-full bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group flex items-center gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20" tabindex="0" onclick="openProject(\''+proj.id+'\')" onkeydown="if(event.key===\'Enter\') openProject(\''+proj.id+'\')">' +
-                    '<div class="w-20 h-20 shrink-0 bg-[#F9FAFB] rounded-xl p-2.5 flex flex-col justify-between border border-gray-100 group-hover:border-gray-200 transition-colors overflow-hidden">' +
+                    '<div class="w-20 h-20 shrink-0 bg-[#F9FAFB] ' + (logo ? 'rounded-full' : 'rounded-xl') + ' p-2.5 flex flex-col justify-between border border-gray-100 group-hover:border-gray-200 transition-colors overflow-hidden">' +
                     thumbHtml +
                     '</div>' +
                     '<div class="flex-1 min-w-0"><h3 class="font-semibold text-gray-900 text-base group-hover:text-black truncate">'+title+'</h3>' +
@@ -1905,13 +1915,37 @@
             _pendingDeleteId = null;
             resetDeleteModalUI();
         }
+        function syncDeleteOkBtn() {
+            const okBtn = document.getElementById('confirm-delete-ok');
+            if (!okBtn) return;
+            if (okBtn.dataset.step === 'otp') {
+                const otpEl = document.getElementById('confirm-delete-otp-input');
+                okBtn.disabled = !(otpEl && /^\d{6}$/.test((otpEl.value || '').trim()));
+            } else {
+                const nameEl = document.getElementById('confirm-delete-name-input');
+                let projects = [];
+                try { const stored = localStorage.getItem('clinqoo_projects'); if (stored) projects = JSON.parse(stored); } catch(e) {}
+                const proj = projects.find(function (p) { return p.id === _pendingDeleteId; });
+                const expected = proj ? String(projCardTitle(proj) || '').trim().toLowerCase() : '';
+                okBtn.disabled = !expected || !nameEl || (nameEl.value || '').trim().toLowerCase() !== expected;
+            }
+            okBtn.classList.toggle('opacity-40', okBtn.disabled);
+        }
         function resetDeleteModalUI() {
             const okBtn = document.getElementById('confirm-delete-ok');
             const cancelBtn = document.getElementById('confirm-delete-cancel');
             const errEl = document.getElementById('confirm-delete-error');
-            if (okBtn) { okBtn.disabled = false; okBtn.innerHTML = 'Hapus'; okBtn.classList.remove('cc-spin'); }
+            const nameEl = document.getElementById('confirm-delete-name-input');
+            const otpStep = document.getElementById('confirm-delete-otp-step');
+            const otpEl = document.getElementById('confirm-delete-otp-input');
+            const otpErr = document.getElementById('confirm-delete-otp-error');
+            if (okBtn) { okBtn.disabled = true; okBtn.dataset.step = ''; okBtn.classList.remove('cc-spin'); okBtn.innerHTML = 'Hapus'; okBtn.classList.add('opacity-40'); }
             if (cancelBtn) cancelBtn.style.visibility = '';
             if (errEl) errEl.classList.add('hidden');
+            if (nameEl) { nameEl.value = ''; nameEl.classList.remove('border-red-300'); nameEl.classList.remove('hidden'); }
+            if (otpStep) otpStep.classList.add('hidden');
+            if (otpEl) otpEl.value = '';
+            if (otpErr) otpErr.classList.add('hidden');
             document.querySelectorAll('.cc-del-overlay').forEach(function (ov) { ov.remove(); });
             document.querySelectorAll('.cc-deleting').forEach(function (el) { el.classList.remove('cc-deleting'); });
         }
@@ -1956,6 +1990,10 @@
             try {
                 const res = await fetch(PROJECTS_API, { method: 'POST', headers: authHdr, body: JSON.stringify({ action: 'delete', id: id }) });
                 if (res.ok) { const d = await res.json().catch(() => null); ok = !d || d.success !== false; }
+                else {
+                    const d = await res.json().catch(() => null);
+                    if (d && (d.guarded || d.need_otp)) { unqueuePendingDelete(id); return; } // diblokir guard saldo / butuh OTP: jangan retry diam-diam
+                }
             } catch (e) { ok = false; }
             if (ok) { unqueuePendingDelete(id); return; }
             if (attempt < 3) setTimeout(function () { deleteProjectInBackground(id, attempt + 1); }, attempt * 2000);
@@ -1971,9 +2009,125 @@
             if (!modal) return;
             modal.addEventListener('click', function (e) { if (e.target === modal) closeDeleteModal(); });
             document.getElementById('confirm-delete-cancel').addEventListener('click', closeDeleteModal);
-            document.getElementById('confirm-delete-ok').addEventListener('click', function () {
+            const nameInput = document.getElementById('confirm-delete-name-input');
+            if (nameInput) nameInput.addEventListener('input', function () {
+                this.classList.remove('border-red-300');
+                const errEl = document.getElementById('confirm-delete-error');
+                if (errEl) errEl.classList.add('hidden');
+                syncDeleteOkBtn();
+            });
+            const otpInput = document.getElementById('confirm-delete-otp-input');
+            if (otpInput) otpInput.addEventListener('input', function () {
+                const otpErr = document.getElementById('confirm-delete-otp-error');
+                if (otpErr) otpErr.classList.add('hidden');
+                syncDeleteOkBtn();
+            });
+            document.getElementById('confirm-delete-ok').addEventListener('click', async function () {
                 const id = _pendingDeleteId;
                 if (!id) { closeDeleteModal(); return; }
+                const okBtn = document.getElementById('confirm-delete-ok');
+                const errEl = document.getElementById('confirm-delete-error');
+                const otpErr = document.getElementById('confirm-delete-otp-error');
+                const otpEl = document.getElementById('confirm-delete-otp-input');
+                const tok = localStorage.getItem('clinqoo_auth_token') || '';
+                const authHdr = { 'Content-Type': 'application/json', ...(tok ? { Authorization: 'Bearer ' + tok } : {}) };
+                const API_ROOT = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api');
+
+                // STEP OTP: konfirmasi terakhir dengan kode 6 digit dari email.
+                if (okBtn.dataset.step === 'otp') {
+                    const otp = (otpEl.value || '').trim();
+                    if (!/^\d{6}$/.test(otp)) return;
+                    okBtn.disabled = true;
+                    okBtn.classList.add('cc-spin');
+                    okBtn.innerHTML = 'Menghapus...';
+                    try {
+                        try { fetch(API_ROOT + '/deploy', { method: 'POST', headers: authHdr, body: JSON.stringify({ project_id: id, action: 'unpublish' }) }).catch(function () {}); } catch (e) {}
+                        const res = await fetch(PROJECTS_API, { method: 'POST', headers: authHdr, body: JSON.stringify({ action: 'delete', id: id, otp: otp }) });
+                        const d = await res.json().catch(function () { return null; });
+                        if (res.ok && d && d.success) {
+                            okBtn.classList.remove('cc-spin');
+                            closeDeleteModal();
+                            removeProjectLocally(id);
+                            showToast('Proyek dihapus', 'success');
+                            return;
+                        }
+                        okBtn.classList.remove('cc-spin');
+                        okBtn.innerHTML = 'Konfirmasi Hapus';
+                        if (d && d.guarded) {
+                            okBtn.dataset.step = '';
+                            document.getElementById('confirm-delete-otp-step').classList.add('hidden');
+                            if (errEl) { errEl.textContent = d.error || 'Proyek ini tidak bisa dihapus dulu.'; errEl.classList.remove('hidden'); }
+                            syncDeleteOkBtn();
+                            return;
+                        }
+                        if (otpErr) { otpErr.textContent = (d && d.error) || 'Kode OTP salah atau kadaluarsa.'; otpErr.classList.remove('hidden'); }
+                        syncDeleteOkBtn();
+                    } catch (e) {
+                        okBtn.classList.remove('cc-spin');
+                        okBtn.innerHTML = 'Konfirmasi Hapus';
+                        if (otpErr) { otpErr.textContent = 'Koneksi gagal. Coba lagi.'; otpErr.classList.remove('hidden'); }
+                        syncDeleteOkBtn();
+                    }
+                    return;
+                }
+
+                // STEP 1: nama proyek harus cocok persis.
+                let projects = [];
+                try { const stored = localStorage.getItem('clinqoo_projects'); if (stored) projects = JSON.parse(stored); } catch(e) {}
+                const proj = projects.find(function (p) { return p.id === id; });
+                const expected = proj ? String(projCardTitle(proj) || '').trim().toLowerCase() : '';
+                if (!nameInput || (nameInput.value || '').trim().toLowerCase() !== expected) {
+                    nameInput.classList.add('border-red-300');
+                    nameInput.focus();
+                    return;
+                }
+                okBtn.disabled = true;
+                okBtn.classList.add('cc-spin');
+                okBtn.innerHTML = 'Memeriksa...';
+                if (errEl) errEl.classList.add('hidden');
+                // Pre-check guard server: saldo ClincooPay diblokir; sesi baru -> minta OTP email.
+                let check = null;
+                try {
+                    const res = await fetch(PROJECTS_API + '?delete_check=' + encodeURIComponent(id), { headers: tok ? { Authorization: 'Bearer ' + tok } : {} });
+                    check = await res.json().catch(function () { return null; });
+                } catch (e) { check = null; }
+                okBtn.classList.remove('cc-spin');
+                okBtn.innerHTML = 'Hapus';
+                if (check && check.blocked) {
+                    if (errEl) { errEl.textContent = check.reason || 'Proyek ini tidak bisa dihapus dulu.'; errEl.classList.remove('hidden'); }
+                    syncDeleteOkBtn();
+                    return;
+                }
+                if (check && check.otp_required) {
+                    // masuk step OTP: kirim kode ke email akun
+                    okBtn.dataset.step = 'otp';
+                    okBtn.disabled = true;
+                    okBtn.classList.add('cc-spin');
+                    okBtn.innerHTML = 'Mengirim OTP...';
+                    if (errEl) errEl.classList.add('hidden');
+                    const otpStep = document.getElementById('confirm-delete-otp-step');
+                    if (otpStep) otpStep.classList.remove('hidden');
+                    if (nameInput) nameInput.classList.add('hidden');
+                    try {
+                        const r2 = await fetch(PROJECTS_API, { method: 'POST', headers: authHdr, body: JSON.stringify({ action: 'delete_otp_send' }) });
+                        const d2 = await r2.json().catch(function () { return null; });
+                        okBtn.classList.remove('cc-spin');
+                        if (!d2 || !d2.success) {
+                            if (otpErr) { otpErr.textContent = (d2 && d2.error) || 'Kode OTP gagal dikirim. Tutup modal lalu coba lagi.'; otpErr.classList.remove('hidden'); }
+                            okBtn.innerHTML = 'Konfirmasi Hapus';
+                            return;
+                        }
+                        okBtn.innerHTML = 'Konfirmasi Hapus';
+                        if (otpEl) otpEl.focus();
+                        syncDeleteOkBtn();
+                    } catch (e) {
+                        okBtn.classList.remove('cc-spin');
+                        okBtn.innerHTML = 'Konfirmasi Hapus';
+                        if (otpErr) { otpErr.textContent = 'Kode OTP gagal dikirim. Coba lagi.'; otpErr.classList.remove('hidden'); }
+                    }
+                    return;
+                }
+                // tanpa OTP: lanjut alur lama (optimistic + hapus di latar belakang)
                 // Optimistic: proyek langsung lenyap & modal langsung tertutup — penghapusan
                 // sungguhan di server jalan sendiri di latar belakang (fire-and-forget + retry diam-diam).
                 closeDeleteModal();
@@ -2095,7 +2249,7 @@
                                 umumSettingsMap[proj.id] = { app_name: d.app_name || '', app_desc: d.app_desc || '', app_logo: d.app_logo || '' };
                             }
                         }).catch(function () {});
-                })).then(function () { try { renderProjects(); } catch (e) {} });
+                })).then(function () { try { renderProjects(); } catch (e) {} try { renderSidebarDynamic(); } catch (e2) {} });
             } catch (e) {}
         })();
 
@@ -2113,10 +2267,16 @@
     <h3 class="text-base font-semibold text-gray-900">Hapus proyek ini?</h3>
     <p id="confirm-delete-name" class="text-sm text-gray-500 mt-1 px-2 truncate"></p>
     <p class="text-[13px] text-gray-400 mt-2 leading-snug">Semua data proyek akan dihapus, <span class="text-gray-500">termasuk situs yang sudah dipublish dan link publiknya</span>.</p>
+    <input id="confirm-delete-name-input" type="text" autocomplete="off" spellcheck="false" placeholder="Ketik nama proyek untuk konfirmasi" class="w-full mt-3 px-3 py-2 text-sm text-center border border-gray-200 rounded-md focus:outline-none focus:border-gray-400" />
     <p id="confirm-delete-error" class="text-xs text-red-600 mt-2 hidden">Gagal menghapus proyek. Periksa koneksi lalu coba lagi.</p>
+    <div id="confirm-delete-otp-step" class="hidden mt-3">
+      <p class="text-[13px] text-gray-500 leading-snug">Sesi login kamu masih baru. Kode OTP 6 digit sudah dikirim ke email akunmu.</p>
+      <input id="confirm-delete-otp-input" type="text" inputmode="numeric" maxlength="6" placeholder="Kode OTP" class="w-full mt-2 px-3 py-2 text-sm text-center tracking-[0.3em] border border-gray-200 rounded-md focus:outline-none focus:border-gray-400" />
+      <p id="confirm-delete-otp-error" class="text-xs text-red-600 mt-2 hidden"></p>
+    </div>
     <div class="flex items-center justify-center gap-10 mt-5">
       <button type="button" id="confirm-delete-cancel" class="text-sm font-medium text-gray-400 hover:text-gray-900 transition-colors px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20 rounded-sm">Batal</button>
-      <button type="button" id="confirm-delete-ok" class="text-sm font-semibold text-red-600 hover:text-red-700 transition-colors px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30 rounded-sm">Hapus</button>
+      <button type="button" id="confirm-delete-ok" disabled class="text-sm font-semibold text-red-600 hover:text-red-700 transition-colors px-1 py-0.5 opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30 rounded-sm">Hapus</button>
     </div>
   </div>
 </div>

@@ -257,6 +257,28 @@
             color: #d4d4d8;
             border: 1px solid #2c2c31;
         }
+        /* Link URL yg dulu ketulis dlm backtick (lihat codespan renderer) --
+           visual tetap seperti code-chip, cuma skrg beneran bisa diklik (<a>). */
+        a.codespan-link {
+            background-color: #eef0f3;
+            color: #2563eb;
+            padding: 0.125rem 0.375rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            font-family: monospace;
+            word-break: break-all;
+            border: 1px solid #e2e4e8;
+            text-decoration: underline;
+            text-decoration-color: rgba(37,99,235,0.4);
+            display: inline-block;
+            max-width: 100%;
+        }
+        a.codespan-link:hover { text-decoration-color: rgba(37,99,235,0.9); }
+        body.dark-mode a.codespan-link {
+            background-color: #1c1c1f;
+            border: 1px solid #2c2c31;
+            color: #60a5fa;
+        }
         .md-content pre { margin: 0; }
         .md-content blockquote { border-left: 4px solid #d1d5db; padding-left: 1rem; color: #4b5563; font-style: italic; margin-bottom: 1rem; }
         .md-content a { color: #111827; text-decoration: underline; text-decoration-color: rgba(17,24,39,0.35); text-decoration-thickness: 1px; text-underline-offset: 2px; font-weight: 500; transition: text-decoration-color 0.15s ease; }
@@ -304,7 +326,7 @@
         /* ===== Mobile: chat jadi bottom sheet (buka lagi via tab Agent / FAB Agent); panel workspace jadi latar penuh ===== */
         @media (max-width: 899.98px) {
             #chat-ws-panel { display: block !important; left: 0 !important; }
-            #chat-sheet { position: fixed; left: 0; right: 0; bottom: 0; top: 76px; z-index: 15; display: flex; flex-direction: column; background: #ffffff; border-radius: 22px 22px 0 0; box-shadow: 0 -8px 32px rgba(0,0,0,0.18); transform: translateY(0); transition: transform .3s cubic-bezier(.4,0,.2,1); }
+            #chat-sheet { position: fixed; left: 0; right: 0; bottom: 0; top: 0; z-index: 15; display: flex; flex-direction: column; background: #ffffff; border-radius: 0; box-shadow: none; transform: translateY(0); transition: transform .3s cubic-bezier(.4,0,.2,1); }
             body.dark-mode #chat-sheet { background: #0a0a0a; }
             #chat-sheet-handle { display: flex; justify-content: center; align-items: center; padding: 10px 0 8px; height: 40px; flex-shrink: 0; touch-action: none; cursor: grab; }
             #chat-sheet-close { display: block; width: 112px; height: 6px; border-radius: 9999px; background: #d1d5db; border: none; padding: 0; cursor: pointer; }
@@ -312,8 +334,10 @@
             #chat-container { padding-top: 10px !important; flex: 1 1 0; min-height: 0; }
             body.sheet-closed #chat-sheet { transform: translateY(115%); }
             body.sheet-closed #chat-input-footer { display: none; }
+            body:not(.sheet-closed) > header { display: none; }
             #chat-fab { position: fixed; right: 16px; bottom: 16px; z-index: 10; display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 20px; border-radius: 9999px; border: none; background: #111111; color: #ffffff; font-size: 14px; font-weight: 600; box-shadow: 0 6px 24px rgba(0,0,0,0.28); cursor: pointer; }
             body:not(.sheet-closed) #chat-fab { display: none; }
+            body.chat-panel-dashboard #chat-fab { display: none; }
         }
         @media (min-width: 900px) { #chat-sheet { display: contents; } #chat-sheet-handle { display: none; } }
         /* embed=1 (chat dalam sheet overlay halaman lain): penuhi layar, tanpa header/ws/FAB */
@@ -507,6 +531,94 @@
         body.dark-mode .poll-opt-letter { background: #222226; border-color: #3f3f46; color: #9ca3af; }
         body.dark-mode .poll-ans { color: #2fbf71; }
         body.dark-mode .poll-card-hint { color: #6b7280; }
+        /* Kartu SETUP APK & BUILD APK — kapsul input, ikon bulat, popover pengaturan.
+           Netral ala poll-card (abu/hitam), tanpa biru default. */
+        .apk-card { margin-top: 0.375rem; border: 1px solid #e5e7eb; border-radius: 14px; background: #ffffff; padding: 0.875rem; }
+        .apk-card-head { display: flex; align-items: center; gap: 0.5rem; font-size: 12.5px; font-weight: 700; color: #111827; margin-bottom: 0.75rem; }
+        .apk-card-head i { font-size: 15px; }
+        .apk-icon-wrap { display: flex; align-items: center; gap: 0.875rem; }
+        .apk-icon-btn { position: relative; flex-shrink: 0; width: 64px; height: 64px; border-radius: 999px; border: 1.5px dashed #d1d5db; background: #f9fafb; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; padding: 0; transition: border-color 0.15s ease; }
+        .apk-icon-btn:hover { border-color: #111827; }
+        .apk-icon-btn.has-icon { border-style: solid; }
+        .apk-icon-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .apk-icon-btn i { font-size: 22px; color: #9ca3af; }
+        .apk-icon-hint { font-size: 11.5px; color: #6b7280; line-height: 1.5; }
+        /* Langkah LOGO — flat, tanpa kotak/card, sentris: bulatan di tengah, "Lewati" di bawahnya */
+        .apk-logo-row { display: flex; flex-direction: column; align-items: center; gap: 0.625rem; margin: 0.75rem 0; }
+        .apk-logo-row .apk-icon-btn { width: 72px; height: 72px; }
+        .apk-logo-row .apk-icon-btn i { font-size: 26px; }
+        .apk-logo-skip { background: none; border: none; padding: 0; font-size: 12px; color: #6b7280; text-decoration: underline; cursor: pointer; font-family: inherit; }
+        .apk-logo-skip:hover { color: #111827; }
+        body.dark-mode .apk-logo-skip { color: #9ca3af; }
+        body.dark-mode .apk-logo-skip:hover { color: #e5e7eb; }
+        .apk-name-row { display: flex; gap: 0.5rem; margin-top: 0.75rem; align-items: center; }
+        .apk-name-input { flex: 1; min-width: 0; border: 1px solid #d1d5db; border-radius: 999px; background: #ffffff; color: #1f2937; font-size: 13px; padding: 0.5rem 0.9rem; outline: none; transition: border-color 0.15s ease; font-family: inherit; }
+        .apk-name-input:focus { border-color: #111827; }
+        .apk-pill-btn { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 999px; background: #111827; color: #ffffff; font-size: 12px; font-weight: 600; padding: 0.5rem 0.95rem; cursor: pointer; transition: opacity 0.15s ease; font-family: inherit; }
+        .apk-pill-btn:hover { opacity: 0.88; }
+        .apk-pill-btn.secondary { background: #f3f4f6; color: #111827; border: 1px solid #e5e7eb; }
+        .apk-set-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.625rem; flex-wrap: wrap; }
+        .apk-set-chip { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 11.5px; font-weight: 500; color: #4b5563; border: 1px solid #e5e7eb; background: #f9fafb; border-radius: 999px; padding: 0.3rem 0.7rem; cursor: pointer; font-family: inherit; }
+        .apk-set-chip i { font-size: 13px; }
+        .apk-pop-wrap { position: relative; }
+        .apk-popover { position: absolute; z-index: 60; top: calc(100% + 6px); left: 0; min-width: 235px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff; box-shadow: 0 8px 24px rgba(15,23,42,0.10); padding: 0.75rem; display: flex; flex-direction: column; gap: 0.625rem; }
+        .apk-pop-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 12.5px; color: #1f2937; }
+        .apk-seg { display: inline-flex; border: 1px solid #e5e7eb; border-radius: 999px; overflow: hidden; }
+        .apk-seg button { border: none; background: #ffffff; color: #6b7280; font-size: 11.5px; font-weight: 600; padding: 0.32rem 0.7rem; cursor: pointer; font-family: inherit; }
+        .apk-seg button.on { background: #111827; color: #ffffff; }
+        .apk-toggle { position: relative; width: 36px; height: 20px; border-radius: 999px; background: #d1d5db; border: none; cursor: pointer; transition: background 0.15s ease; flex-shrink: 0; }
+        .apk-toggle.on { background: #111827; }
+        .apk-toggle span { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 999px; background: #ffffff; transition: left 0.15s ease; }
+        .apk-toggle.on span { left: 18px; }
+        .apk-card-hint { font-size: 11.5px; color: #9ca3af; }
+        .apk-build-top { display: flex; align-items: center; gap: 0.75rem; }
+        .apk-build-icon { width: 44px; height: 44px; border-radius: 12px; border: 1px solid #e5e7eb; background: #f3f4f6; overflow: hidden; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
+        .apk-build-icon img { width: 100%; height: 100%; object-fit: cover; }
+        .apk-build-icon i { font-size: 20px; color: #9ca3af; }
+        .apk-build-name { font-size: 13.5px; font-weight: 600; color: #1f2937; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .apk-build-sub { font-size: 11px; color: #9ca3af; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .apk-bar { margin-top: 0.75rem; height: 6px; border-radius: 999px; background: #f3f4f6; overflow: hidden; }
+        .apk-bar-fill { height: 100%; border-radius: 999px; background: #111827; transition: width 0.6s ease; }
+        .apk-build-status { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; font-size: 12px; color: #6b7280; }
+        /* Pembatas "Dihentikan" — teks kecil rapi di tengah, garis tipis kiri-kanan */
+        .stopped-divider { display: flex; align-items: center; gap: 0.75rem; width: 100%; margin-top: 0.5rem; }
+        .stopped-divider .stopped-line { flex: 1; height: 1px; background: #e5e7eb; min-width: 1.5rem; }
+        .stopped-divider .stopped-text { font-size: 11px; color: #9ca3af; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; white-space: nowrap; }
+        body.dark-mode .stopped-divider .stopped-line { background: #2c2c33; }
+        body.dark-mode .stopped-divider .stopped-text { color: #71717a; }
+        .apk-dot { flex-shrink: 0; width: 7px; height: 7px; border-radius: 999px; background: #f59e0b; animation: apkPulse 1.2s ease-in-out infinite; }
+        .apk-dot.ok { background: #16a34a; animation: none; }
+        .apk-dot.fail { background: #dc2626; animation: none; }
+        @keyframes apkPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+        .apk-cta-row { display: flex; gap: 0.5rem; margin-top: 0.75rem; align-items: center; flex-wrap: wrap; }
+        .apk-dl-btn { display: inline-flex; align-items: center; gap: 0.5rem; border: none; border-radius: 999px; background: #111827; color: #ffffff; font-size: 12.5px; font-weight: 600; padding: 0.55rem 1.1rem; cursor: pointer; font-family: inherit; }
+        .apk-dl-btn:hover { opacity: 0.88; }
+        .apk-dl-btn:disabled { opacity: 0.5; cursor: wait; }
+        body.dark-mode .apk-card { background: #18181b; border-color: #2c2c33; }
+        body.dark-mode .apk-card-head { color: #e5e7eb; }
+        body.dark-mode .apk-icon-btn { background: #222226; border-color: #3f3f46; }
+        body.dark-mode .apk-icon-btn:hover { border-color: #e5e7eb; }
+        body.dark-mode .apk-icon-hint { color: #9ca3af; }
+        body.dark-mode .apk-name-input { background: #18181b; border-color: #3f3f46; color: #e5e7eb; }
+        body.dark-mode .apk-name-input:focus { border-color: #e5e7eb; }
+        body.dark-mode .apk-pill-btn { background: #e5e7eb; color: #18181b; }
+        body.dark-mode .apk-pill-btn.secondary { background: #222226; color: #e5e7eb; border-color: #3f3f46; }
+        body.dark-mode .apk-set-chip { background: #222226; border-color: #3f3f46; color: #9ca3af; }
+        body.dark-mode .apk-popover { background: #222226; border-color: #3f3f46; box-shadow: 0 8px 24px rgba(0,0,0,0.40); }
+        body.dark-mode .apk-pop-row { color: #e5e7eb; }
+        body.dark-mode .apk-seg { border-color: #3f3f46; }
+        body.dark-mode .apk-seg button { background: #18181b; color: #9ca3af; }
+        body.dark-mode .apk-seg button.on { background: #e5e7eb; color: #18181b; }
+        body.dark-mode .apk-toggle { background: #3f3f46; }
+        body.dark-mode .apk-toggle.on { background: #e5e7eb; }
+        body.dark-mode .apk-toggle.on span { background: #18181b; }
+        body.dark-mode .apk-build-icon { background: #222226; border-color: #3f3f46; }
+        body.dark-mode .apk-build-icon i { color: #6b7280; }
+        body.dark-mode .apk-build-name { color: #e5e7eb; }
+        body.dark-mode .apk-bar { background: #222226; }
+        body.dark-mode .apk-bar-fill { background: #e5e7eb; }
+        body.dark-mode .apk-build-status { color: #9ca3af; }
+        body.dark-mode .apk-dl-btn { background: #e5e7eb; color: #18181b; }
         /* Chip di atas komposer saat user pilih "Lainnya…" — jawaban diketik di chat */
         #poll-answer-chip { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 12px; background: #111827; color: #ffffff; font-size: 12.5px; line-height: 1.4; }
         #poll-answer-chip .poll-chip-x { margin-left: auto; flex-shrink: 0; width: 22px; height: 22px; border-radius: 999px; border: none; background: rgba(255,255,255,0.14); color: #ffffff; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
@@ -708,7 +820,7 @@
     <!-- Mobile: chat sebagai bottom sheet (dibuka/tutup via FAB Agent); desktop: wrapper transparan -->
     <div id="chat-sheet">
         <div id="chat-sheet-handle"><button id="chat-sheet-close" type="button" onclick="chatSheetClose()" aria-label="Tutup chat"></button></div>
-        <main id="chat-container" class="flex-1 overflow-y-auto px-4 pt-[80px] pb-32 space-y-6 w-full relative z-10">
+        <main id="chat-container" class="flex-1 overflow-y-auto px-4 pt-[80px] pb-32 space-y-3 w-full relative z-10">
     </main>
 
     <footer id="chat-input-footer" class="fixed bottom-0 left-0 right-0 w-full bg-transparent px-4 py-4 z-20 pointer-events-none flex flex-col justify-end">
@@ -861,6 +973,7 @@
         chatNavLinks.forEach(x => x.classList.remove('is-active'));
         let chatNavActive = chatNavLinks.find(l => l.dataset.nav === initPanel) || chatNavLinks.find(l => l.dataset.nav === 'code') || chatNavLinks[0];
         if (chatNavActive) chatNavActive.classList.add('is-active');
+        document.body.classList.toggle('chat-panel-dashboard', initPanel === 'dashboard');
         // Mobile + URL membawa ?panel= (Workspace/Dashboard/Live preview): mulai dengan sheet chat
         // tertutup supaya panel tampil penuh — refresh tidak membuka bagian chat lagi.
         // Kembali ke chat lewat tab Agent di kapsul atas.
@@ -902,6 +1015,7 @@
                     e.preventDefault();
                     if (wsFrame) { wsFrame.dataset.src = splitNavSrc[nav]; wsFrame.src = splitNavSrc[nav]; }
                     chatNavActive = l;
+                    document.body.classList.toggle('chat-panel-dashboard', nav === 'dashboard');
                     try { history.pushState({ panel: nav }, '', chatNavUrl(nav)); } catch (err) {}
                     // mobile: tutup sheet agent biar panel kelihatan (balik ke chat via tab Agent)
                     if (!isDesk && typeof window.chatSheetClose === 'function') window.chatSheetClose();
@@ -917,6 +1031,7 @@
             }
             if (!splitNavSrc[panel]) panel = 'code';
             if (wsFrame) { wsFrame.dataset.src = splitNavSrc[panel]; wsFrame.src = splitNavSrc[panel]; }
+            document.body.classList.toggle('chat-panel-dashboard', panel === 'dashboard');
             var l = chatNavLinks.find(x => x.dataset.nav === panel) || chatNavLinks.find(x => x.dataset.nav === 'code') || chatNavLinks[0];
             chatNavActive = l;
             chatNavLinks.forEach(x => x.classList.remove('is-active')); if (l) l.classList.add('is-active'); chatNavMovePill(l);
@@ -1088,7 +1203,7 @@ window.chatLivePreview = function () {
                 // FIX: toolCalls ikut disimpan (dulu HILANG saat pindah halaman — makanya
                 // AI "mengulang progres dari awal" saat user kembali: progres menulis file
                 // dll tidak terbaca, pesan dianggap kosong lalu digenerate ulang).
-                const log = messages.filter(m => m && !m.isHidden && (m.text || (m.pollQuestions && m.pollQuestions.length) || (m.toolCalls && m.toolCalls.length) || (m.attachments && m.attachments.length))).map(m => ({
+                const log = messages.filter(m => m && !m.isHidden && (m.text || (m.pollQuestions && m.pollQuestions.length) || (m.toolCalls && m.toolCalls.length) || (m.attachments && m.attachments.length) || m.apkLogo || m.apkBuild)).map(m => ({
                     id: m.id, role: m.role, text: m.text, time: m.time || null, silent: !!m.silent,
                     isProcessing: !!m.isProcessing,
                     midPhase: !!m.midPhase,
@@ -1097,6 +1212,9 @@ window.chatLivePreview = function () {
                     pollQuestions: (m.pollQuestions || []).slice(0, 6),
                     pollTitle: m.pollTitle || '',
                     pollState: m.pollState || null,
+                    apkLogo: m.apkLogo || null,
+                    apkBuild: m.apkBuild || null,
+                    apkBuildState: m.apkBuildState || null,
                     toolCalls: (m.toolCalls || []).map(t => ({
                         name: t.name, args: t.args, ok: t.ok,
                         result: String(t.result || '').slice(0, 400)
@@ -1157,7 +1275,39 @@ window.chatLivePreview = function () {
             "Apa proyek seru kita selanjutnya?",
             "Mari selesaikan berbagai tugas bersamaku!"
         ];
-        let currentGreeting = welcomeGreetings[Math.floor(Math.random() * welcomeGreetings.length)];
+        // Personalisasi sapaan: chat menyapa dengan nama pemilik akun (diambil dari /api/auth/me)
+        let currentUserName = '';
+        function pickGreeting() {
+            const base = welcomeGreetings[Math.floor(Math.random() * welcomeGreetings.length)];
+            if (!currentUserName) return base;
+            const first = currentUserName.split(/\s+/)[0];
+            if (base === 'Ada rencana apa hari ini, Clincoo?') return 'Ada rencana apa hari ini, ' + first + '?';
+            if (base === 'Halo! Ada yang bisa saya bantu hari ini?') return 'Halo, ' + first + '! Ada yang bisa saya bantu hari ini?';
+            if (base === 'Siap mewujudkan ide hebatmu hari ini?') return 'Siap mewujudkan ide hebatmu hari ini, ' + first + '?';
+            if (base === 'Apa proyek seru kita selanjutnya?') return 'Apa proyek seru kita selanjutnya, ' + first + '?';
+            if (base === 'Mari selesaikan berbagai tugas bersamaku!') return 'Mari selesaikan berbagai tugas bersamaku, ' + first + '!';
+            return base;
+        }
+        let currentGreeting = pickGreeting();
+        (function loadUserNameForGreeting() {
+            try {
+                const API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : '';
+                const tk = (typeof clinqooAuthToken === 'function') ? clinqooAuthToken() : '';
+                if (!tk) return;
+                fetch(API + '/api/auth/me', { headers: { 'Authorization': 'Bearer ' + tk } })
+                    .then(r => r.ok ? r.json() : null)
+                    .then(d => {
+                        const nm = d && d.user && d.user.name ? String(d.user.name).trim() : '';
+                        if (!nm) return;
+                        currentUserName = nm;
+                        const prev = currentGreeting;
+                        currentGreeting = pickGreeting();
+                        if (prev !== currentGreeting && (!messages || messages.length === 0)) {
+                            try { renderMessages(); } catch (e) {}
+                        }
+                    }).catch(() => {});
+            } catch (e) {}
+        })();
 
         function clearChat() {
             if (isGenerating) stopGeneration();
@@ -1173,7 +1323,7 @@ window.chatLivePreview = function () {
             }
             messages = [];
             try { localStorage.removeItem(lsChatKey()); } catch(e) {}
-            currentGreeting = welcomeGreetings[Math.floor(Math.random() * welcomeGreetings.length)];
+            currentGreeting = pickGreeting();
             renderMessages();
             
         }
@@ -1225,6 +1375,19 @@ window.chatLivePreview = function () {
                 breaks: true,
                 gfm: true,
                 renderer: {
+                    // Fix: AI kadang nulis URL dibungkus backtick tunggal (`https://...`)
+                    // bukan markdown link [..](..). Default marked merender itu sbg
+                    // <code> teks biasa -> bukan <a>, jadi link tak bisa diklik sama
+                    // sekali (bukan soal style, memang bukan <a>). Deteksi: kalau isi
+                    // code-span persis sebuah URL http(s) tanpa spasi, render sbg link
+                    // yg masih tampil seperti code-chip (visual sama, skrg beneran klik).
+                    codespan(text) {
+                        const plain = String(text || '').replace(/&amp;/g, '&');
+                        if (/^https?:\/\/\S+$/i.test(plain) && !/[<>"']/.test(plain)) {
+                            return `<a href="${text}" target="_blank" rel="noopener noreferrer" class="codespan-link">${text}</a>`;
+                        }
+                        return `<code>${text}</code>`;
+                    },
                     table(header, body) {
                         return `<div class="w-full overflow-x-auto custom-scrollbar my-4 rounded-xl border border-gray-300 shadow-sm bg-white pointer-events-auto" style="-webkit-overflow-scrolling: touch;">
                                     <table class="w-full min-w-max border-collapse text-sm text-left m-0">
@@ -1274,25 +1437,25 @@ window.chatLivePreview = function () {
                         
                         let runButton = '';
                         if (isRunnable && finalLang.toLowerCase() !== 'html') {
-                             runButton = `<button onclick="runCode(this, '${finalLang.toLowerCase()}', '${blockId}')" data-code="${encodedRaw}" data-view="code" class="relative text-gray-400 hover:text-white transition flex items-center justify-center rounded-lg p-1.5 hover:bg-gray-600 pointer-events-auto" title="Jalankan Kode">
+                             runButton = `<button data-action="run-code" data-lang="${finalLang.toLowerCase()}" data-block="${blockId}" data-code="${encodedRaw}" data-view="code" class="relative text-gray-400 hover:text-white transition flex items-center justify-center rounded-lg p-1.5 pointer-events-auto" title="Jalankan Kode">
                                 <i class="ph-bold ph-play text-[18px]"></i>
                             </button>`;
                         } else if (finalLang.toLowerCase() === 'html') {
-                            runButton = `<button onclick="previewHTML(this, '${blockId}')" data-code="${encodedRaw}" data-view="code" class="relative text-gray-400 hover:text-white transition flex items-center justify-center rounded-lg p-1.5 hover:bg-gray-600 pointer-events-auto" title="Preview UI / Animasi">
+                            runButton = `<button data-action="preview-html" data-block="${blockId}" data-code="${encodedRaw}" data-view="code" class="relative text-gray-400 hover:text-white transition flex items-center justify-center rounded-lg p-1.5 pointer-events-auto" title="Preview UI / Animasi">
                                 <i class="ph-bold ph-eye text-[18px]"></i>
                             </button>`;
                         }
 
                         return `
-                            <div class="my-4 bg-[#1e1e1e] rounded-[16px] overflow-hidden shadow-[0_5px_15px_rgba(0,0,0,0.1)] w-full max-w-full border border-gray-800 pointer-events-auto">
-                                <div class="flex items-center justify-between px-4 py-3 bg-[#2d2d2d] border-b border-gray-700">
+                            <div class="my-4 bg-[#1e1e1e] rounded-[20px] overflow-hidden shadow-[0_5px_15px_rgba(0,0,0,0.1)] w-full max-w-full border border-gray-800 pointer-events-auto">
+                                <div class="flex items-center justify-between px-3.5 py-2.5 bg-[#2d2d2d] border-b border-gray-700">
                                     <span class="text-[13px] font-bold text-gray-300 uppercase tracking-wider">${displayLang}</span>
                                     <div class="flex items-center gap-2">
                                         ${runButton}
-                                        <button onclick="downloadCode(this, '${finalLang || 'txt'}')" data-code="${encodedRaw}" class="text-gray-400 hover:text-white transition flex items-center justify-center rounded-lg p-1.5 hover:bg-gray-600 pointer-events-auto" title="Download File">
+                                        <button data-action="download-code" data-lang="${finalLang || 'txt'}" data-code="${encodedRaw}" class="text-gray-400 hover:text-white transition flex items-center justify-center rounded-lg p-1.5 pointer-events-auto" title="Download File">
                                             <i class="ph ph-cloud-arrow-down text-[18px]"></i>
                                         </button>
-                                        <button onclick="copyCodeBlock(this)" data-code="${encodedRaw}" class="relative text-gray-400 hover:text-white transition flex items-center justify-center rounded-lg p-1.5 hover:bg-gray-600 pointer-events-auto" title="Copy">
+                                        <button data-action="copy-code" data-code="${encodedRaw}" class="relative text-gray-400 hover:text-white transition flex items-center justify-center rounded-lg p-1.5 pointer-events-auto" title="Copy">
                                             <i class="ph ph-copy text-[18px]"></i>
                                         </button>
                                     </div>
@@ -1341,7 +1504,7 @@ window.chatLivePreview = function () {
                 // baris dengan "**" pembuka di baris lain (lintas bullet/paragraf) ->
                 // markdown rusak parah. Dibatasi SATU BARIS ([^\n]*?) karena bold
                 // model AI selalu ditutup di baris yang sama.
-                seg = seg.replace(/\*\*[ \t]+([^\n]*?)[ \t]+\*\*/g, '**$1**');
+                seg = seg.replace(/(^|\s)\*\*[ \t]+([^\n*]*?)[ \t]+\*\*/g, '$1**$2**');  // hanya PEMBUKA ** (didahului spasi/awal): '** a **'->'**a**'; tidak melintasi bold lain ('**x** dan **y**' utuh)
                 // Model kadang menulis buka 3 bintang tapi tutup 2 (atau sebaliknya),
                 // mis. "***TCP Connect:**" -> normalkan ke "**TCP Connect:**" agar
                 // tidak muncul 1 bintang mentah tersisa saat dirender.
@@ -1349,6 +1512,22 @@ window.chatLivePreview = function () {
                 seg = seg.replace(/(?<!\*)\*{2}([^*\n]+?)\*{3}/g, '**$1**');
                 seg = seg.replace(/(^|[^\w*\\])\*[ \t]+([^*\n]*?)[ \t]+\*(?![*])/g, '$1*$2*');
                 seg = seg.replace(/~~[ \t]+([^\n]*?)[ \t]+~~/g, '~~$1~~');  // sama: dibatasi satu baris
+                // Penanda penutup (**/*/~~) nempel langsung ke huruf/angka berikutnya tanpa spasi
+                // (mis. "**Orientasi:**Portrait") -> per CommonMark, penutup didahului tanda baca
+                // (":") dan diikuti huruf GAGAL flank kanan, jadi dianggap teks biasa (bintang
+                // mentah tampil, keluhan user). Sisipkan 1 spasi setelah penutup agar valid.
+                seg = seg.replace(/\*\*([^*\n]+?)\*\*/g, function (m, p1, offset, full) {
+                    var next = full.charAt(offset + m.length);
+                    return (next && !/[\s*.,!?;:)\]}"'\u2019\u201d-]/.test(next)) ? '**' + p1 + '** ' : m;
+                });
+                seg = seg.replace(/(^|[^\w*])\*([^*\n]+?)\*(?!\*)/g, function (m, pre, p1, offset, full) {
+                    var next = full.charAt(offset + m.length);
+                    return (next && !/[\s*.,!?;:)\]}"'\u2019\u201d-]/.test(next)) ? pre + '*' + p1 + '* ' : m;
+                });
+                seg = seg.replace(/~~([^~\n]+?)~~/g, function (m, p1, offset, full) {
+                    var next = full.charAt(offset + m.length);
+                    return (next && !/[\s~.,!?;:)\]}"'\u2019\u201d-]/.test(next)) ? '~~' + p1 + '~~ ' : m;
+                });
                 seg = seg.replace(/^[ \t]{1,6}(#{1,6}[ \t])/gm, '$1');
                 parts[i] = seg;
             }
@@ -1456,6 +1635,22 @@ window.chatLivePreview = function () {
                 setTimeout(() => tooltip.remove(), 200);
             }, 1200);
         }
+
+        // Delegasi klik utk tombol di code-block (run/preview/download/copy). WAJIB
+        // pakai data-action + listener ini, BUKAN onclick inline -- karena HTML pesan
+        // AI melewati DOMPurify.sanitize() yang selalu membuang semua atribut onXXX
+        // (anti-XSS thd konten yang bisa disusupi), jadi onclick di tombol ini pun
+        // ikut hilang walau tombolnya sendiri kita yang generate (dulu ini bug: icon
+        // tampil tapi tak bisa diklik sama sekali).
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            const action = btn.getAttribute('data-action');
+            if (action === 'copy-code') { copyCodeBlock(btn); }
+            else if (action === 'download-code') { downloadCode(btn, btn.getAttribute('data-lang') || 'txt'); }
+            else if (action === 'run-code') { runCode(btn, btn.getAttribute('data-lang') || '', btn.getAttribute('data-block') || ''); }
+            else if (action === 'preview-html') { previewHTML(btn, btn.getAttribute('data-block') || ''); }
+        });
 
         function copyCodeBlock(btnElement) {
             const encodedCode = btnElement.getAttribute('data-code');
@@ -2034,7 +2229,7 @@ window.chatLivePreview = function () {
                 delete_item: 'ph-trash', search_items: 'ph-magnifying-glass',
                 run_command: 'ph-terminal-window', read_web_page: 'ph-globe', web_search: 'ph-magnifying-glass',
                 search_clinqoo_kb: 'ph-brain', rename_project: 'ph-pencil-simple', set_project_info: 'ph-note-pencil',
-                deploy_project: 'ph-rocket-launch', add_env_var: 'ph-key', list_env_vars: 'ph-key', test_secret: 'ph-shield-check', cloudflare_request: 'ph-cloud', manage_domain: 'ph-globe-hemisphere-west',
+                deploy_project: 'ph-rocket-launch', add_env_var: 'ph-key', list_env_vars: 'ph-key', test_secret: 'ph-shield-check', cloudflare_request: 'ph-cloud', manage_domain: 'ph-globe-hemisphere-west', domain_dns: 'ph-globe', build_apk: 'ph-android-logo',
                 create_backend_function: 'ph-function', call_backend_function: 'ph-function',
                 github_request: 'ph-github-logo', drive_request: 'ph-google-logo', calendar_request: 'ph-calendar-blank', notion_request: 'ph-notebook',
                 delete_backend_function: 'ph-function', list_backend_functions: 'ph-function',
@@ -2286,6 +2481,230 @@ window.chatLivePreview = function () {
             send();
         }
 
+        // ===== APK: [[APK_LOGO]] (langkah kecil, FLAT tanpa card — minta logo saja; nama &
+        // pengaturan ditanya belakangan terpisah via teks biasa / [[POLL]]) dan
+        // [[APK_CARD]] (progres build real-time + tombol unduh, tetap pakai card — tidak diubah).
+        function parseApkBlocks(text) {
+            const raw = String(text || '');
+            let clean = raw;
+            let logo = null, card = null;
+            // [[APK_LOGO]] cuma PENANDA (tanpa field) — satu langkah kecil: minta logo saja.
+            // Nama & pengaturan (orientasi/fullscreen/splash) ditanyakan BELAKANGAN secara
+            // terpisah (teks biasa utk nama, [[POLL]] utk pengaturan) — bukan satu kartu besar.
+            const logoM = clean.match(/\[\[APK_LOGO\]\]([\s\S]*?)(?:\[\[\s*\/\s*APK_LOGO\s*\]\]|$)/i);
+            if (logoM) {
+                logo = {};
+                clean = clean.replace(/\[\[APK_LOGO\]\]([\s\S]*?)(?:\[\[\s*\/\s*APK_LOGO\s*\]\]|$)/i, '');
+            }
+            const cardM = clean.match(/\[\[APK_CARD\]\]([\s\S]*?)(?:\[\[\s*\/\s*APK_CARD\s*\]\]|$)/i);
+            if (cardM) {
+                const body = cardM[1];
+                const line = (k) => { const m2 = body.match(new RegExp('^[ \t]*' + k + '[ \t]*[:.][ \t]*(.+)$', 'im')); return m2 ? m2[1].trim() : ''; };
+                const id = line('ID');
+                if (id) card = { id: id, name: line('NAME'), url: line('URL'), pkg: line('PKG') };
+                clean = clean.replace(/\[\[APK_CARD\]\]([\s\S]*?)(?:\[\[\s*\/\s*APK_CARD\s*\]\]|$)/i, '');
+            }
+            return { clean: clean, logo: logo, card: card };
+        }
+
+        function apkLogoStateOf(m) {
+            if (!m.apkLogoState) {
+                let savedIcon = null;
+                try { savedIcon = localStorage.getItem('clinqoo_apk_icon') || null; } catch (e) {}
+                m.apkLogoState = { iconB64: savedIcon, sent: false, sending: false };
+            }
+            return m.apkLogoState;
+        }
+        function apkBuildStateOf(m) {
+            if (!m.apkBuildState) m.apkBuildState = { progress: 0, done: false, failed: false, downloading: false, downloaded: false, error: '', phaseLabel: '' };
+            return m.apkBuildState;
+        }
+
+        window.apkIconPick = function (msgId) {
+            const inp = document.getElementById('apk-icon-input-' + msgId);
+            if (inp) inp.click();
+        };
+        window.apkIconFile = function (msgId, input) {
+            const m = messages.find(x => x && x.id === msgId);
+            const file = input && input.files && input.files[0];
+            if (!m || !file) return;
+            const st = apkLogoStateOf(m);
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = new Image();
+                img.onload = function () {
+                    try {
+                        const c = document.createElement('canvas');
+                        c.width = c.height = 512;
+                        const ctx = c.getContext('2d');
+                        const s = Math.min(img.width, img.height);
+                        ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 512, 512);
+                        let b64 = c.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
+                        if (b64.length > 2000000) { alert('Logo terlalu besar — coba gambar yang lebih kecil.'); return; }
+                        st.iconB64 = b64;
+                        try { localStorage.setItem('clinqoo_apk_icon', b64); } catch (er) {}
+                        renderMessages();
+                        try { scrollToBottom(false); } catch (er) {}
+                        window.apkLogoSend(msgId, true);
+                    } catch (er) { alert('Gambar tidak bisa diproses.'); }
+                };
+                img.onerror = function () { alert('Gambar tidak bisa dibaca.'); };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+        // Satu langkah: logo saja. Begitu diunggah (atau dilewati), jawaban terkirim
+        // otomatis ke AI — nama & pengaturan (orientasi/fullscreen/splash) ditanyakan
+        // belakangan secara terpisah (teks biasa / [[POLL]]), bukan ditumpuk di kartu ini.
+        window.apkLogoSend = function (msgId, hasLogo) {
+            const m = messages.find(x => x && x.id === msgId);
+            if (!m || !m.apkLogo) return;
+            const st = apkLogoStateOf(m);
+            if (st.sending || st.sent) return;
+            st.sending = true;
+            const qaText = hasLogo
+                ? 'Logo tersimpan — pakai sebagai ikon aplikasi (panggil build_apk dengan icon "saved").'
+                : 'Lewati logo — pakai ikon default aplikasi.';
+            const send = function () {
+                if (isGenerating) { setTimeout(send, 400); return; }
+                st.sent = true;
+                messages.push({ id: generateId(), role: 'user', text: qaText, time: Date.now() });
+                silentRounds = 0;
+                renderMessages();
+                pinMessageToTop(messages[messages.length - 1].id);
+                fetchAIResponse();
+            };
+            renderMessages();
+            send();
+        };
+
+        const apkPollTimers = new Map();
+        function apkClearTimer(msgId) { const t = apkPollTimers.get(msgId); if (t) { clearInterval(t); apkPollTimers.delete(msgId); } }
+        function apkStepLabel(steps) {
+            const cur = (steps || []).find(function (x) { return x && x.status === 'in_progress'; });
+            const name = cur ? String(cur.name || '') : '';
+            if (/compile/i.test(name)) return 'Mengompilasi APK…';
+            if (/sign/i.test(name)) return 'Menandatangani APK…';
+            if (/susun|generate/i.test(name)) return 'Menyusun proyek Android…';
+            if (/upload/i.test(name)) return 'Mengemas APK…';
+            if (/gradle|java/i.test(name)) return 'Menyiapkan lingkungan build…';
+            return 'Menjalankan build di GitHub Actions…';
+        }
+        function ensureApkPolling(msg) {
+            if (!msg.apkBuild || !msg.apkBuild.id) return;
+            const st = apkBuildStateOf(msg);
+            if (st.done || st.failed || apkPollTimers.has(msg.id)) return;
+            const tick = async function () {
+                if (!messages.includes(msg)) { apkClearTimer(msg.id); return; }
+                try {
+                    const r = await toolBuildApk({ action: 'status', build_id: msg.apkBuild.id });
+                    const cst = apkBuildStateOf(msg);
+                    if (!r || r.success === false) {
+                        cst.failed = true;
+                        cst.error = (r && r.error) || 'Gagal memantau build.';
+                        apkClearTimer(msg.id); renderMessages(); return;
+                    }
+                    cst.progress = Math.max(4, Math.min(typeof r.progress === 'number' ? r.progress : 0, 100));
+                    if (r.status === 'done' || (r.found && r.status === 'completed' && r.conclusion === 'success')) {
+                        cst.done = true; cst.progress = 100; cst.phaseLabel = '';
+                        if (r.apk_size_bytes) cst.sizeKb = Math.round(r.apk_size_bytes / 1024);
+                        apkClearTimer(msg.id); renderMessages(); return;
+                    }
+                    if (r.status === 'failed' || (r.found && r.status === 'completed' && r.conclusion && r.conclusion !== 'success')) {
+                        cst.failed = true;
+                        cst.error = r.message || 'Build gagal.';
+                        apkClearTimer(msg.id); renderMessages(); return;
+                    }
+                    cst.phaseLabel = apkStepLabel(r.steps);
+                    renderMessages();
+                } catch (e) {}
+            };
+            apkPollTimers.set(msg.id, setInterval(tick, 6000));
+            tick();
+        }
+        window.apkDownloadClick = async function (msgId) {
+            const m = messages.find(x => x && x.id === msgId);
+            if (!m || !m.apkBuild) return;
+            const st = apkBuildStateOf(m);
+            if (st.downloading) return;
+            st.downloading = true; st.error = '';
+            renderMessages();
+            try {
+                const r = await toolBuildApk({ action: 'download', build_id: m.apkBuild.id, app_name: m.apkBuild.name });
+                st.downloading = false;
+                if (r && r.success) { st.downloaded = true; st.sizeKb = r.size_kb || st.sizeKb; }
+                else { st.error = (r && r.error) || 'Gagal mengunduh APK.'; }
+            } catch (e) {
+                st.downloading = false;
+                st.error = 'Gagal mengunduh APK.';
+            }
+            renderMessages();
+        };
+
+        function renderApkLogoCard(msg) {
+            if (!msg.apkLogo) return '';
+            const st = apkLogoStateOf(msg);
+            if (st.sent) return '';
+            const iconHtml = st.iconB64
+                ? '<img src="data:image/png;base64,' + st.iconB64 + '" alt="logo">'
+                : '<i class="ph-bold ph-plus"></i>';
+            // SATU langkah kecil, FLAT, SENTRIS — cuma bulatan ikon (tanpa teks di sampingnya,
+            // penjelasan sudah ada di teks AI sendiri) + "Lewati" di bawahnya. Nama & pengaturan
+            // ditanyakan belakangan terpisah (teks biasa / [[POLL]]), bukan ditumpuk di sini.
+            return `
+                <div class="apk-logo-row fade-in">
+                    <button type="button" class="apk-icon-btn ${st.iconB64 ? 'has-icon' : ''}" onclick="apkIconPick('${msg.id}')" title="Unggah logo aplikasi">${iconHtml}</button>
+                    <input type="file" id="apk-icon-input-${msg.id}" accept="image/*" style="display:none" onchange="apkIconFile('${msg.id}', this)">
+                    <button type="button" class="apk-logo-skip" onclick="apkLogoSend('${msg.id}', false)">${st.iconB64 ? 'Lanjutkan' : 'Lewati, pakai ikon default'}</button>
+                </div>`;
+        }
+
+        function renderApkBuildCard(msg) {
+            if (!msg.apkBuild) return '';
+            const st = apkBuildStateOf(msg);
+            ensureApkPolling(msg);
+            let savedIcon = null;
+            try { savedIcon = localStorage.getItem('clinqoo_apk_icon') || null; } catch (e) {}
+            const iconHtml = savedIcon
+                ? '<img src="data:image/png;base64,' + savedIcon + '" alt="logo">'
+                : '<i class="ph-bold ph-android-logo"></i>';
+            let statusLine;
+            if (st.failed) { statusLine = st.error || 'Build gagal.'; }
+            else if (st.done) { statusLine = 'Selesai — siap didownload.'; }
+            else { statusLine = st.phaseLabel || 'Menyiapkan build di GitHub Actions…'; }
+            return `
+                <div class="apk-card fade-in">
+                    <div class="apk-build-top">
+                        <span class="apk-build-icon">${iconHtml}</span>
+                        <div style="min-width:0;flex:1">
+                            <div class="apk-build-name">${escText(msg.apkBuild.name || 'Aplikasi')}</div>
+                            <div class="apk-build-sub">${escText(msg.apkBuild.url || '')}</div>
+                        </div>
+                    </div>
+                    ${!st.done && !st.failed ? `
+                    <div class="apk-bar"><div class="apk-bar-fill" style="width:${st.progress || 4}%"></div></div>` : ''}
+                    <div class="apk-build-status">
+                        <span>${escText(statusLine)}${!st.done && !st.failed ? ' (' + (st.progress || 0) + '%)' : ''}</span>
+                    </div>
+                    ${st.done ? `
+                    <div class="apk-cta-row">
+                        <button type="button" class="apk-dl-btn" ${st.downloading ? 'disabled' : ''} onclick="apkDownloadClick('${msg.id}')">
+                            <i class="ph-bold ph-download-simple"></i> ${st.downloading ? 'Menyiapkan…' : 'Download'}${!st.downloading && st.sizeKb ? ' (' + st.sizeKb + ' KB)' : ''}
+                        </button>
+                        ${st.downloaded ? '<span class="apk-card-hint">Sudah didownload — buka file, izinkan "aplikasi tidak dikenal" bila diminta.</span>' : ''}
+                    </div>` : ''}
+                    ${st.failed ? `
+                    <div class="apk-cta-row">
+                        <button type="button" class="apk-pill-btn secondary" onclick="handlePromptClick('coba build apk lagi dengan pengaturan yang sama')">Coba lagi</button>
+                    </div>` : ''}
+                    ${st.error && !st.failed ? `<div class="apk-card-hint">${escText(st.error)}</div>` : ''}
+                </div>`;
+        }
+
+        function renderApkCards(msg) {
+            return renderApkLogoCard(msg) + renderApkBuildCard(msg);
+        }
+
         // ===== CHECKPOINT TOKEN: saat kuota token habis di tengah tugas, AI minta
         // konfirmasi sebelum lanjut — dengan variasi kalimat agar tidak monoton/selalu sama.
         const CHECKPOINT_OPENERS = [
@@ -2514,6 +2933,7 @@ window.chatLivePreview = function () {
                                     ${(msg.isProcessing && isInfoOnlyToolCalls(msg.toolCalls)) ? processIndicator : (msg.isImageResponse ? msg.text : formatMarkdown(balanceMarkdown(msg.text)))}
                                 </div>
                                 ${renderPollCard(msg)}
+                                ${renderApkCards(msg)}
                                 ${(msg.sources && msg.sources.length > 0) ? `
                                     <div class="mt-1.5 mb-0.5 pointer-events-auto fade-in">
                                         <div class="flex items-center flex-wrap gap-x-1.5 gap-y-1 text-[11.5px] text-gray-400">
@@ -2528,8 +2948,10 @@ window.chatLivePreview = function () {
                                     </button>
                                 ` : ''}
                                 ${(msg.stoppedByUser && !msg.isProcessing && !msg.isTyping) ? `
-                                    <div class="flex items-center gap-1.5 mt-0.5 text-[11px] text-gray-400 fade-in select-none">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span> Pesan dihentikan
+                                    <div class="stopped-divider fade-in select-none">
+                                        <span class="stopped-line"></span>
+                                        <span class="stopped-text">Dihentikan</span>
+                                        <span class="stopped-line"></span>
                                     </div>
                                 ` : ''}
                                 <div class="flex items-center gap-3 mt-1 pointer-events-auto" id="action-bar-${msg.id}" style="${(msg.isProcessing || msg.isTyping || msg.midPhase) ? 'display: none;' : ''}">
@@ -2969,7 +3391,6 @@ window.chatLivePreview = function () {
             }
         }
 
-        const LOCK_SVG = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path stroke-linecap="round" d="M8 10V7a4 4 0 018 0v3"></path></svg>`;
         const quotaBanner = document.getElementById('quota-banner');
         const quotaBannerText = document.getElementById('quota-banner-text');
         const quotaRetryBtn = document.getElementById('quota-retry-btn');
@@ -2978,20 +3399,22 @@ window.chatLivePreview = function () {
             return base + '/akun/langganan/';
         }
         let quotaLocked = false;
-        // Kuota/limit AI habis: KUNCI komposer, tidak ada jalur "coba kirim ulang" diam-diam —
-        // satu-satunya CTA adalah upgrade paket (lewat banner atau tombol kirim yg terkunci).
+        // Balasan AI saat kuota habis: komposer TETAP terbuka (tanpa gembok) — user
+        // masih bisa kirim pesan. Balasannya teks biasa gaya chat alami
+        // (bukan kartu/banner), link upgrade nempel di kalimatnya.
+        const QUOTA_REPLY = 'Maaf ya, kuota pesan AI kamu sudah habis untuk saat ini. Kalau kamu mau lanjut pakai Clincoo, upgrade langgananmu di sini ya: https://app.clincoo.buzz/akun/langganan/upgrade/';
+        function quotaReplyText(qMsg) {
+            if (qMsg && qMsg.indexOf('tanpa login') !== -1) return qMsg; // tamu: ajak masuk, bukan upgrade
+            return QUOTA_REPLY;
+        }
         function setQuotaLock(locked, bannerMsg) {
             quotaLocked = locked;
             if (quotaLocked) {
-                btnAction.innerHTML = LOCK_SVG;
-                btnAction.title = 'Kuota/limit AI penuh — upgrade paket untuk lanjut';
-                if (quotaBannerText) quotaBannerText.textContent = bannerMsg || 'Kuota AI sedang habis — pesanmu aman di kolom ketik.';
+                if (quotaBannerText) quotaBannerText.textContent = bannerMsg || 'Kuota AI habis — kamu tetap bisa mengetik; upgrade untuk balasan AI.';
                 if (quotaRetryBtn) quotaRetryBtn.href = upgradeUrl();
                 if (quotaBanner) { quotaBanner.classList.remove('hidden'); quotaBanner.classList.add('flex'); }
             } else {
-                btnAction.title = '';
                 if (quotaBanner) { quotaBanner.classList.add('hidden'); quotaBanner.classList.remove('flex'); }
-                toggleActionState(false);
             }
         }
         // Cek status kredit AI secara proaktif (tanpa perlu kirim pesan dulu) — dipanggil saat
@@ -3010,7 +3433,6 @@ window.chatLivePreview = function () {
         }
         function toggleActionState(isGen) {
             isGenerating = isGen;
-            if (quotaLocked) { btnAction.innerHTML = LOCK_SVG; return; }
             if (isGenerating) {
                 btnAction.innerHTML = `<svg class="w-[18px] h-[18px]" fill="currentColor" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"></rect><rect x="56" y="56" width="144" height="144" rx="16"></rect></svg>`; 
             } else {
@@ -3148,13 +3570,69 @@ window.chatLivePreview = function () {
             try { return (typeof currentProjectId !== 'undefined' && currentProjectId) ? String(currentProjectId) : ''; } catch (e) { return ''; }
         }
 
+        // ===== FILE BESAR: isi file hidup di cloud (D1), localStorage hanya penanda =====
+        // localStorage browser ~5MB — file 10MB+ mustahil masuk. Klien menyimpan
+        // {content:'', cloud:true} di pohon workspace; isi aslinya di /api/project-files.
+        const WS_BIG_LIMIT = 600_000; // konten > 600.000 karakter -> simpan di cloud
+        function wsB64Encode(str) {
+            return btoa(unescape(encodeURIComponent(String(str || ''))));
+        }
+        function wsB64Decode(b64Str) {
+            const bin = atob(String(b64Str || ''));
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            return new TextDecoder('utf-8').decode(bytes);
+        }
+        function wsBytesLabel(bytes) {
+            const b = Number(bytes) || 0;
+            if (b > 1024 * 1024) return (b / (1024 * 1024)).toFixed(2) + ' MB';
+            if (b > 1024) return (b / 1024).toFixed(1) + ' KB';
+            return b + ' B';
+        }
+        // Unggah satu file besar ke cloud (chunk base64 ditangani server). Tanpa replace.
+        async function wsCloudSaveBig(path, content) {
+            const pid = wsProjectId();
+            if (!pid) return { ok: false, error: 'File besar memerlukan proyek aktif (cloud storage).' };
+            try {
+                const res = await fetch(WS_CLOUD_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ project_id: pid, files: [{ path: path, content_b64: wsB64Encode(content) }] })
+                });
+                const d = await res.json().catch(() => ({}));
+                if (!res.ok || d.error) return { ok: false, error: d.error || 'Gagal menyimpan file besar ke cloud.' };
+                return { ok: true, size: wsB64Decode(wsB64Encode(content)).length };
+            } catch (e) {
+                return { ok: false, error: 'Gagal terhubung ke cloud: ' + (e && e.message ? e.message : String(e)) };
+            }
+        }
+        // Ambil isi satu file besar dari cloud (dipakai wsReadFile saat penanda ditemukan).
+        async function wsCloudFetchBig(path) {
+            const pid = wsProjectId();
+            if (!pid) return null;
+            try {
+                const res = await fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&path=' + encodeURIComponent(path) + '&content=1');
+                if (!res.ok) return null;
+                const d = await res.json();
+                if (d && typeof d.content_b64 === 'string') return { content: wsB64Decode(d.content_b64), size: d.size || 0 };
+                if (d && typeof d.content === 'string') return { content: d.content, size: d.size || 0 };
+                return null;
+            } catch (e) { return null; }
+        }
+
         function wsFlatten(data) {
             const files = [];
             Object.keys(data || {}).forEach(function(folderKey) {
                 (data[folderKey] || []).forEach(function(it) {
                     if (!it || !it.path) return;
                     if (it.type === 'file') {
-                        files.push({ path: it.path, content: it.content || '' });
+                        if (it.cloud && !it.content) {
+                            // file besar: isinya sudah di cloud — kirim penanda agar
+                            // server mempertahankan baris + chunk-nya (tidak menimpa dgn kosong)
+                            files.push({ path: it.path, content: '', cloud: 1, size: it.cloudSize || 0 });
+                        } else {
+                            files.push({ path: it.path, content: it.content || '' });
+                        }
                     } else if (it.type === 'folder') {
                         const hasChildren = Object.keys(data).some(function(k) { return k === it.path || k.startsWith(it.path + '/'); });
                         if (!hasChildren) files.push({ path: it.path + '/', content: '' });
@@ -3190,6 +3668,8 @@ window.chatLivePreview = function () {
             (files || []).forEach(function(f) {
                 const p = String((f && f.path) || '').trim();
                 const content = (f && f.content) || '';
+                const isBig = !!(f && f.is_big);
+                const szBytes = Number(f && f.size) || 0;
                 if (p.slice(-1) === '/') { ensureChain(p.slice(0, -1)); return; }
                 const parts = p.split('/').filter(Boolean);
                 const name = parts.pop();
@@ -3198,7 +3678,8 @@ window.chatLivePreview = function () {
                 ensureChain(folderKey);
                 if (!Array.isArray(data[folderKey])) data[folderKey] = [];
                 if (!data[folderKey].some(function(i) { return i.path.toLowerCase() === p.toLowerCase(); })) {
-                    data[folderKey].push({ type: 'file', name: name, size: wsSizeLabel(content), path: p, content: content });
+                    // file besar dari cloud: penanda tanpa isi — localStorage tetap ringan
+                    data[folderKey].push({ type: 'file', name: name, size: isBig ? (szBytes ? wsBytesLabel(szBytes) : 'besar') : wsSizeLabel(content), path: p, content: isBig ? '' : content, cloud: isBig ? true : undefined, cloudSize: szBytes || undefined });
                 }
             });
             return data;
@@ -3212,9 +3693,10 @@ window.chatLivePreview = function () {
             clearTimeout(wsCloudTimer);
             wsCloudTimer = setTimeout(function() {
                 wsCloudTimer = null;
-                const payload = { project_id: pid, files: wsFlatten(wsLoad()) };
-                fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { method: 'DELETE' })
-                    .then(function() { return fetch(WS_CLOUD_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); })
+                // replace:true (bukan DELETE-dulu): chunk file besar TIDAK ikut terhapus,
+                // dan tidak ada jendela "cloud kosong" bila POST-nya gagal.
+                const payload = { project_id: pid, files: wsFlatten(wsLoad()), replace: true };
+                fetch(WS_CLOUD_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
                     .catch(function() {});
             }, 3000);
         }
@@ -3324,7 +3806,7 @@ window.chatLivePreview = function () {
             };
         }
 
-        function wsReadFile(args) {
+        async function wsReadFile(args) {
             const path = args && args.path;
             if (!path) return { success: false, error: 'Parameter path wajib.' };
             const data = wsLoad();
@@ -3332,6 +3814,14 @@ window.chatLivePreview = function () {
             if (!found) return { success: false, error: 'File "' + path + '" tidak ditemukan.' };
             if (found.item.type !== 'file') return { success: false, error: '"' + path + '" adalah folder, bukan file.' };
             let content = found.item.content || '';
+            let isCloud = false;
+            if (!content && found.item.cloud) {
+                // file besar: isi aslinya di cloud (D1) — ambil sesuai permintaan
+                const got = await wsCloudFetchBig(found.item.path);
+                if (!got) return { success: false, error: 'File besar "' + path + '" gagal diambil dari cloud.' };
+                content = got.content;
+                isCloud = true;
+            }
             let truncated = false;
             if (content.length > 60000) { content = content.substring(0, 60000); truncated = true; }
             return {
@@ -3341,18 +3831,44 @@ window.chatLivePreview = function () {
                 size: found.item.size || '',
                 truncated: truncated,
                 content: content,
+                cloud: isCloud || undefined,
                 note: truncated ? 'Isi file dipotong 60.000 karakter pertama.' : undefined
             };
         }
 
-        function wsWriteFile(args) {
+        async function wsWriteFile(args) {
             const path = args && args.path;
             const content = args && typeof args.content === 'string' ? args.content : '';
             if (!path) return { success: false, error: 'Parameter path wajib.' };
-            const data = wsLoad();
             const info = wsParentInfo(path);
             if (!info) return { success: false, error: 'Path file tidak valid: ' + path };
             if (info.name.includes('/')) return { success: false, error: 'Nama file tidak boleh mengandung "/".' };
+
+            // File besar: isi diunggah ke cloud, pohon lokal hanya menyimpan penanda.
+            // localStorage tetap kecil; file 10MB+ jadi bisa tersimpan.
+            if (content.length > WS_BIG_LIMIT) {
+                const up = await wsCloudSaveBig(info.itemPath, content);
+                if (!up.ok) return { success: false, error: up.error };
+                const data = wsLoad();
+                wsEnsureFolderChain(data, info.folderKey);
+                if (!Array.isArray(data[info.folderKey])) data[info.folderKey] = [];
+                const sizeStr = wsBytesLabel(new Blob([content]).size);
+                const existingIdx = data[info.folderKey].findIndex(function(i) {
+                    return i && i.type === 'file' && i.name.toLowerCase() === info.name.toLowerCase();
+                });
+                if (existingIdx !== -1) {
+                    data[info.folderKey][existingIdx].content = '';
+                    data[info.folderKey][existingIdx].cloud = true;
+                    data[info.folderKey][existingIdx].size = sizeStr;
+                } else {
+                    data[info.folderKey].push({ type: 'file', name: info.name, size: sizeStr, path: info.itemPath, content: '', cloud: true });
+                }
+                const err = wsSave(data);
+                if (err) return err;
+                return { success: true, action: existingIdx !== -1 ? 'overwritten' : 'created', path: info.itemPath, size: sizeStr, cloud: true };
+            }
+
+            const data = wsLoad();
             wsEnsureFolderChain(data, info.folderKey);
             if (!Array.isArray(data[info.folderKey])) data[info.folderKey] = [];
             const sizeStr = wsSizeStr(content);
@@ -3362,6 +3878,7 @@ window.chatLivePreview = function () {
             let created;
             if (existingIdx !== -1) {
                 data[info.folderKey][existingIdx].content = content;
+                data[info.folderKey][existingIdx].cloud = false;
                 data[info.folderKey][existingIdx].size = sizeStr;
                 created = false;
             } else {
@@ -3550,6 +4067,8 @@ window.chatLivePreview = function () {
                 case 'notion_request': return 'Accessing Notion connector…';
                 case 'write_files': return 'Writing ' + (Array.isArray(a.files) ? a.files.length : '?') + ' files…';
                 case 'clone_repo': return 'Cloning repo: ' + String(a.repo || '') + '…';
+                case 'clone_url': return 'Cloning site: ' + String(a.url || '') + '…';
+                case 'build_apk': return 'Building Android APK (' + String(a.action || 'start') + (a.build_id ? ': ' + a.build_id : '') + ')…';
                 case 'push_to_github': return 'Pushing to GitHub: ' + String(a.repo || '') + '…';
                 default: return 'Processing: ' + tc.name + '…';
             }
@@ -3663,6 +4182,8 @@ window.chatLivePreview = function () {
                     case 'set_project_info': return await toolSetProjectInfo(args);
                     case 'deploy_project': return await toolDeployProject(args);
                     case 'manage_domain': return await toolManageDomain(args);
+                    case 'domain_dns': return await toolDomainDns(args);
+                    case 'build_apk': return await toolBuildApk(args);
                     case 'add_env_var': return await toolAddEnvVar(args);
                     case 'list_env_vars': return await toolListEnvVars(args);
                     case 'test_secret': return await toolTestSecret(args);
@@ -3674,6 +4195,7 @@ window.chatLivePreview = function () {
                     case 'review_code': return await toolReviewCode(args);
                     case 'write_files': return wsWriteFilesBatch(args);
                     case 'clone_repo': return await toolCloneRepo(args);
+                    case 'clone_url': return await toolCloneUrl(args);
                     case 'push_to_github': return await toolPushToGithub(args);
                     default: return { success: false, error: 'Tool tidak dikenal: ' + name };
                 }
@@ -3690,20 +4212,34 @@ window.chatLivePreview = function () {
             // Diproxy di server (/api/e2b-run, mode command): API key E2B tidak pernah
             // diunduh ke browser (perbaikan keamanan; dulu key dibagikan mentah).
             // reset:true -> buang sesi lama dulu, lalu command jalan di Linux baru.
+            // FIX (bug "muter terus, tombol Stop tidak ngaruh"): fetch ini dulu TANPA
+            // signal & TANPA timeout — kalau sandbox E2B hang (mis. command download
+            // banyak URL berurutan yang nyangkut), promise ini tidak pernah selesai,
+            // tombol Stop (yang hanya abort fetch utama) tidak bisa menyentuhnya, dan
+            // kartu "Running..." muter selamanya. Sekarang: ikut abortController utama
+            // (Stop benar-benar membatalkan) + timeout keras 90 detik sendiri supaya
+            // sandbox yang hang tidak pernah menggantung tanpa batas.
+            const toolTimeoutMs = 90000;
+            const timeoutCtrl = new AbortController();
+            const onMainAbort = () => timeoutCtrl.abort();
+            if (abortController) abortController.signal.addEventListener('abort', onMainAbort);
+            const timeoutId = setTimeout(() => timeoutCtrl.abort(), toolTimeoutMs);
             try {
                 if (wantReset) {
                     try {
                         await fetch(TOOL_API_BASE + '/api/e2b-run', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ mode: 'reset_session' })
+                            body: JSON.stringify({ mode: 'reset_session' }),
+                            signal: timeoutCtrl.signal
                         });
                     } catch (e) {}
                 }
                 const res = await fetch(TOOL_API_BASE + '/api/e2b-run', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mode: 'command', command: cmd })
+                    body: JSON.stringify({ mode: 'command', command: cmd }),
+                    signal: timeoutCtrl.signal
                 });
                 const d = await res.json().catch(() => null);
                 if (!d) return { success: false, error: 'Respons sandbox tidak valid.' };
@@ -3716,7 +4252,14 @@ window.chatLivePreview = function () {
                     stderr: errText
                 };
             } catch (e) {
+                if (e && e.name === 'AbortError') {
+                    if (abortController && abortController.signal && abortController.signal.aborted) throw e; // Stop ditekan user -> hentikan loop generasi juga
+                    return { success: false, error: 'Perintah dibatalkan: sandbox tidak merespons dalam 90 detik (kemungkinan hang/jaringan sandbox bermasalah).' };
+                }
                 return { success: false, error: 'Sandbox eksekusi tidak tersedia: ' + (e && e.message ? e.message : 'galat tak dikenal') };
+            } finally {
+                clearTimeout(timeoutId);
+                if (abortController) abortController.signal.removeEventListener('abort', onMainAbort);
             }
         }
 
@@ -3799,9 +4342,9 @@ window.chatLivePreview = function () {
             if (!res.ok || d.error) return { success: false, error: d.error || 'Deploy gagal.' };
             // DNS cache: hasil deploy langsung siap di halaman Domain Kustom (tanpa buka halaman itu dulu)
             try { var _dk = 'clinqoo_' + pid + "_domain_cache", _dc = {}; try { _dc = JSON.parse(localStorage.getItem(_dk) || '{}') || {}; } catch (e) {} localStorage.setItem(_dk, JSON.stringify(Object.assign(_dc, { pagesUrl: d.pages_url || '', deployed: true, ts: Date.now() }))); } catch (e) {}
-            // URL utama: subdomain clinqoo.biz.id (public_url) — pages.dev hanya cadangan.
+            // URL utama: subdomain clincoo.biz.id (public_url) — pages.dev hanya cadangan.
             const url = d.public_url || (d.public_domain ? ('https://' + d.public_domain) : '') || (d.deployment && d.deployment.url) || d.pages_url || '';
-            return { success: true, url: url, pages_url: d.pages_url || '', public_domain: d.public_domain || '', pages_project: d.pages_project || '', file_count: d.fileCount || 0, message: 'Situs berhasil di-deploy' + (url ? ' ke ' + url : '') + (d.public_domain ? ' (subdomain clinqoo.biz.id aktif)' : '') + '.' };
+            return { success: true, url: url, pages_url: d.pages_url || '', public_domain: d.public_domain || '', pages_project: d.pages_project || '', file_count: d.fileCount || 0, message: 'Situs berhasil di-deploy' + (url ? ' ke ' + url : '') + (d.public_domain ? ' (subdomain clincoo.biz.id aktif)' : '') + '.' };
         }
 
         // manage_domain: AI kelola domain kustom + setel record DNS langsung (via /api/deploy)
@@ -3849,6 +4392,61 @@ window.chatLivePreview = function () {
                 already_ok: !!d.already_ok,
                 note: d.note || ''
             };
+        }
+
+        // domain_dns: AI kelola record DNS halaman Domain Clincoo (/domain/ — backend domain-exp)
+        const DOMAIN_DNS_API = 'https://clincoo-domain.pages.dev/api';
+        async function toolDomainDns(args) {
+            const action = String((args && args.action) || '').trim().toLowerCase();
+            const domain = args && args.domain ? String(args.domain).trim().toLowerCase() : '';
+            const tk = clinqooAuthToken();
+            if (!tk) return { success: false, error: 'Belum login Clincoo.' };
+            const hdrs = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tk };
+            const enc = encodeURIComponent;
+            if (action === 'list') {
+                const res = await fetch(DOMAIN_DNS_API + '/domains', { headers: hdrs });
+                const d = await res.json().catch(() => ({}));
+                if (!res.ok || d.error) return { success: false, error: (d && d.error) || ('Gagal mengambil daftar domain (HTTP ' + res.status + ').') };
+                const doms = (d.domains || []).map(function (x) { return { name: x.name, status: x.status }; });
+                return { success: true, domains: doms, message: doms.length ? ('Domain di halaman Domain: ' + doms.map(function (x) { return x.name + ' (' + x.status + ')'; }).join(', ') + '. Lanjutkan dengan action records/add/delete.') : 'Belum ada domain di halaman Domain.' };
+            }
+            if (['records', 'add', 'delete'].indexOf(action) !== -1 && !domain) {
+                return { success: false, error: 'Parameter domain wajib untuk action ' + action + '.' };
+            }
+            if (action === 'records') {
+                const res = await fetch(DOMAIN_DNS_API + '/domains/' + enc(domain) + '/dns', { headers: hdrs });
+                const d = await res.json().catch(() => ({}));
+                if (!res.ok || d.error) return { success: false, error: (d && d.error === 'not_found') ? 'Domain ' + domain + ' tidak ditemukan di halaman Domain akunmu.' : ((d && d.error) || 'Gagal mengambil record DNS.') };
+                return {
+                    success: true, managed: !!d.managed, zone_status: d.zone_status || '',
+                    records: d.records || [], local_records: d.local_records || [],
+                    message: d.message || ''
+                };
+            }
+            if (action === 'add') {
+                const type = String(args.type || '').trim().toUpperCase();
+                if (['A', 'AAAA', 'CNAME', 'TXT', 'MX'].indexOf(type) === -1) return { success: false, error: 'Tipe record tidak valid: ' + (type || '(kosong)') + '. Pakai A, AAAA, CNAME, TXT, atau MX.' };
+                const name = String(args.name || '').trim();
+                const content = String(args.content || '').trim();
+                if (!name || !content) return { success: false, error: 'Parameter name dan content wajib untuk add.' };
+                const body = { type: type, name: name, content: content };
+                if (args.ttl) body.ttl = args.ttl;
+                if (type === 'A' || type === 'AAAA' || type === 'CNAME') body.proxied = args.proxied === true;
+                if (type === 'MX') body.priority = args.priority;
+                const res = await fetch(DOMAIN_DNS_API + '/domains/' + enc(domain) + '/dns', { method: 'POST', headers: hdrs, body: JSON.stringify(body) });
+                const d = await res.json().catch(() => ({}));
+                if (!res.ok || d.error) return { success: false, error: (d && d.error === 'not_found') ? 'Domain ' + domain + ' tidak ditemukan di halaman Domain akunmu.' : ((d && d.error) || 'Record gagal ditambahkan.') };
+                return { success: true, managed: !!d.managed, record: d.record || null, message: d.message || ('Record ' + type + ' ' + name + ' -> ' + content + ' ditambahkan.') };
+            }
+            if (action === 'delete') {
+                const rid = String(args.record_id || '').trim();
+                if (!rid) return { success: false, error: 'Parameter record_id wajib untuk delete (ambil dari action records).' };
+                const res = await fetch(DOMAIN_DNS_API + '/domains/' + enc(domain) + '/dns/' + enc(rid), { method: 'DELETE', headers: hdrs });
+                const d = await res.json().catch(() => ({}));
+                if (!res.ok || d.error) return { success: false, error: (d && d.error === 'not_found') ? 'Domain atau record tidak ditemukan.' : ((d && d.error ? d.error + (d.message ? ': ' + d.message : '') : '') || 'Record gagal dihapus.') };
+                return { success: true, record_id: rid, message: 'Record ' + rid + ' pada ' + domain + ' dihapus.' };
+            }
+            return { success: false, error: 'Action tidak dikenal: ' + (action || '(kosong)') + '. Pakai: list, records, add, delete.' };
         }
 
         async function toolAddEnvVar(args) {
@@ -3918,8 +4516,67 @@ window.chatLivePreview = function () {
                 return { success: false, error: 'Gagal memanggil GitHub API: ' + (e && e.message ? e.message : String(e)) };
             }
         }
+        // ===== TOOL build_apk: buat APK Android dari website (fondasi PressForge) =====
+        // Build jalan di GitHub Actions repo pressforge-builds milik user. Token GitHub
+        // konektor diambil otomatis dari localStorage — user tidak pernah menempel token.
+        // action download: file APK diunduh OTOMATIS ke perangkat; hasil base64 TIDAK
+        // pernah dimasukkan ke konteks AI (hanya ringkasan kecil yang dikirim ke model).
+        async function toolBuildApk(args) {
+            let token = '';
+            try { token = localStorage.getItem('clincoo_gh_token') || ''; } catch (e) {}
+            if (!token) return { success: false, error: 'GitHub belum terhubung. Buka menu Integrasi di sidebar kiri, hubungkan GitHub, lalu coba lagi.' };
+            const a = args || {};
+            const buildAction = String(a.action || 'start').toLowerCase();
+            const payload = {
+                action: 'build_apk',
+                token: token,
+                build_action: buildAction,
+                url: a.url || '',
+                app_name: a.app_name || '',
+                package_id: a.package_id || '',
+                orientation: a.orientation || 'portrait',
+                fullscreen: a.fullscreen === false ? false : true,
+                splash: (typeof a.splash === 'boolean' ? a.splash : String(a.splash || '').toLowerCase() === 'true'),
+                build_id: a.build_id || '',
+                icon_base64: (function () {
+                    if (a.icon_base64) return a.icon_base64;
+                    if (String(a.icon || '') === 'saved') { try { return localStorage.getItem('clinqoo_apk_icon') || ''; } catch (e) { return ''; } }
+                    return '';
+                })()
+            };
+            let res, d;
+            try {
+                res = await fetch(TOOL_API_BASE + '/api/ai-tools', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clinqooAuthToken() }, body: JSON.stringify(payload) });
+                d = await res.json().catch(function () { return {}; });
+            } catch (e) {
+                return { success: false, error: 'Gagal menghubungi server build APK: ' + (e && e.message ? e.message : String(e)) };
+            }
+            if (!res.ok || d.ok === false || d.error) return { success: false, error: d.error || ('Gagal build APK (HTTP ' + res.status + ').') };
+            if (buildAction === 'download') {
+                if (!d.apk_base64) return { success: false, error: 'APK belum tersedia — pastikan build sudah done (cek dengan action status).' };
+                try {
+                    const bin = atob(d.apk_base64);
+                    const u8 = new Uint8Array(bin.length);
+                    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+                    const blob = new Blob([u8], { type: 'application/vnd.android.package-archive' });
+                    const url = URL.createObjectURL(blob);
+                    const el = document.createElement('a');
+                    el.href = url;
+                    el.download = d.filename || ('app-' + (d.build_id || 'apk') + '.apk');
+                    document.body.appendChild(el);
+                    el.click();
+                    el.remove();
+                    setTimeout(function () { URL.revokeObjectURL(url); }, 15000);
+                    return { success: true, build_id: d.build_id || a.build_id, filename: d.filename, size_kb: Math.round(bin.length / 1024), downloaded: true, message: 'File APK sudah otomatis terunduh ke perangkat user. Sampaikan bahwa file bernama ' + (d.filename || 'app.apk') + ' (' + Math.round(bin.length / 1024) + ' KB) dan cara aktifkannya: buka file, izinkan instalasi aplikasi tidak dikenal jika diminta.' };
+                } catch (e) {
+                    return { success: false, error: 'Gagal menyiapkan unduhan APK: ' + (e && e.message ? e.message : String(e)) };
+                }
+            }
+            // start / status: bentuk sudah ringkas, teruskan ke AI
+            return d;
+        }
         // ===== TOOL write_files: bulk write — satu load + satu save untuk semua file =====
-        function wsWriteFilesBatch(args) {
+        async function wsWriteFilesBatch(args) {
             const files = args && Array.isArray(args.files) ? args.files : [];
             if (!files.length) return { success: false, error: 'Parameter files wajib array [{path, content}].' };
             const data = wsLoad();
@@ -3933,15 +4590,27 @@ window.chatLivePreview = function () {
                 if (!info || info.name.includes('/')) { results.push({ path: path, ok: false, error: 'path tidak valid' }); continue; }
                 wsEnsureFolderChain(data, info.folderKey);
                 if (!Array.isArray(data[info.folderKey])) data[info.folderKey] = [];
-                const sizeStr = wsSizeStr(content);
-                const idx = data[info.folderKey].findIndex(function(i) { return i && i.type === 'file' && i.name.toLowerCase() === info.name.toLowerCase(); });
-                if (idx !== -1) {
-                    data[info.folderKey][idx].content = content;
-                    data[info.folderKey][idx].size = sizeStr;
-                } else {
-                    data[info.folderKey].push({ type: 'file', name: info.name, size: sizeStr, path: info.itemPath, content: content });
+                const isBig = content.length > WS_BIG_LIMIT;
+                let okSave = true;
+                if (isBig) {
+                    // file besar: unggah isi ke cloud, simpan penanda saja di pohon
+                    const up = await wsCloudSaveBig(info.itemPath, content);
+                    if (!up.ok) okSave = false;
                 }
-                results.push({ path: info.itemPath, ok: true });
+                if (okSave) {
+                    const sizeStr = isBig ? wsBytesLabel(new Blob([content]).size) : wsSizeStr(content);
+                    const idx = data[info.folderKey].findIndex(function(i) { return i && i.type === 'file' && i.name.toLowerCase() === info.name.toLowerCase(); });
+                    if (idx !== -1) {
+                        data[info.folderKey][idx].content = isBig ? '' : content;
+                        data[info.folderKey][idx].cloud = isBig ? true : false;
+                        data[info.folderKey][idx].size = sizeStr;
+                    } else {
+                        data[info.folderKey].push({ type: 'file', name: info.name, size: sizeStr, path: info.itemPath, content: isBig ? '' : content, cloud: isBig ? true : undefined });
+                    }
+                    results.push({ path: info.itemPath, ok: true, cloud: isBig ? true : undefined });
+                } else {
+                    results.push({ path: info.itemPath, ok: false, error: 'gagal unggah file besar ke cloud' });
+                }
             }
             const err = wsSave(data);
             if (err) return err;
@@ -4063,7 +4732,8 @@ window.chatLivePreview = function () {
             // 4b) target workspace: satu load + satu save (batch)
             const data = wsLoad();
             for (const f of files) {
-                const info = wsParentInfo(folder + '/' + f.path);
+                const fullPath = folder ? (folder + '/' + f.path) : f.path;
+                const info = wsParentInfo(fullPath);
                 if (!info || info.name.includes('/')) { skippedFetch++; continue; }
                 wsEnsureFolderChain(data, info.folderKey);
                 if (!Array.isArray(data[info.folderKey])) data[info.folderKey] = [];
@@ -4079,6 +4749,177 @@ window.chatLivePreview = function () {
             const err = wsSave(data);
             if (err) return err;
             return { success: true, repo: slug, ref: branch, target: 'workspace', folder: folder, cloned: files.length, skipped_binary: skippedBinary, skipped_fetch: skippedFetch, truncated: truncated, note: 'Repo tersimpan di folder workspace "' + folder + '" — bisa langsung diedit atau di-deploy.' };
+        }
+
+        // ===== TOOL clone_url: salin file situs (HTML/CSS/JS) dari sebuah URL ke workspace / AI Storage =====
+        async function _cloneUrlFetchRaw(url) {
+            try {
+                const res = await fetch(TOOL_API_BASE + '/api/fetch-raw', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: url }) });
+                const d = await res.json().catch(function () { return {}; });
+                if (!res.ok || d.error || !d.base64) return null;
+                return d;
+            } catch (e) { return null; }
+        }
+        function _cloneUrlDecode(d) {
+            const bin = atob(d.base64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+        }
+        function _cloneUrlLocalPath(u) {
+            // struktur ikut path asli situs: /static/css/main.css -> assets/static/css/main.css
+            try {
+                const p = new URL(u);
+                if (p.protocol !== 'http:' && p.protocol !== 'https:') return '';
+                const segs = p.pathname.replace(/^\/+/, '').split('/').filter(function (s) { return s && s !== '.' && s !== '..' && !/[\\:*?"<>|]/.test(s); });
+                if (!segs.length) return '';
+                return 'assets/' + segs.join('/');
+            } catch (e) { return ''; }
+        }
+        function _cloneUrlAbsolutizeCss(text, cssUrl) {
+            return text
+                .replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, function (m, q, u) {
+                    u = String(u).trim();
+                    if (!u || /^(data:|#)/i.test(u)) return m;
+                    try { return 'url("' + new URL(u, cssUrl).href + '")'; } catch (e) { return m; }
+                })
+                .replace(/@import\s+(['"])([^'"]+)\1/g, function (m, q, u) {
+                    try { return '@import "' + new URL(u, cssUrl).href + '"'; } catch (e) { return m; }
+                });
+        }
+        async function toolCloneUrl(args) {
+            const rawUrl = String((args && args.url) || '').trim();
+            if (!/^https?:\/\//i.test(rawUrl)) return { success: false, error: 'Parameter url wajib berupa URL lengkap (http/https).' };
+            const target = String((args && args.target) || 'workspace');
+            let folder = String((args && args.folder) || '').replace(/^\/+|\/$|^\.\.+\/+/g, '').replace(/\/+$/g, '');
+            if (!folder) {
+                // default: LANGSUNG KE ROOT workspace (index.html jadi halaman
+                // utama situs) — tanpa subfolder pembungkus apa pun.
+                // (dulu: clone resend.com bikin subfolder "resend.com/", lalu
+                // pernah disalahkan lagi ke 'site/' — user minta tanpa subfolder)
+                folder = '';
+            }
+
+            // 1) unduh HTML utama lewat proxy server (bypass CORS)
+            const main = await _cloneUrlFetchRaw(rawUrl);
+            if (!main) return { success: false, error: 'Gagal mengambil halaman ' + rawUrl + ' — situs tidak merespons atau menolak akses.' };
+            const baseUrl = main.final_url || rawUrl;
+            const ct = String(main.content_type || '');
+            if (ct && !/text\/html|application\/xhtml|text\/plain/i.test(ct)) return { success: false, error: 'URL bukan halaman web (content-type: ' + ct.split(';')[0] + ').' };
+            const html = _cloneUrlDecode(main);
+            let doc = null;
+            try { doc = new DOMParser().parseFromString(html, 'text/html'); } catch (e) { doc = null; }
+            if (!doc || !doc.documentElement) {
+                // bukan HTML yang bisa diparse: simpan mentah saja
+                const filesRaw = [{ path: 'index.html', content: html }];
+                return _cloneUrlSave(filesRaw, folder, target, rawUrl, 0, 0, 0, false);
+            }
+            // tag <base> dihapus — semua referensi sudah dinormalisasi lokal/absolut
+            doc.querySelectorAll('base').forEach(function (b) { b.remove(); });
+
+            // 2) kumpulkan asset teks (css/js) utk diunduh; gambar/font/icon di-absolutkan (tetap dari server asal)
+            const toDownload = [];
+            const seen = {};
+            function queueAsset(u) {
+                u = String(u || '').trim();
+                if (!u || u.startsWith('data:')) return '';
+                let abs; try { abs = new URL(u, baseUrl).href; } catch (e) { return ''; }
+                if (!/^https?:/i.test(abs)) return '';
+                const lp = _cloneUrlLocalPath(abs);
+                if (!lp) return abs;
+                if (seen[abs]) return seen[abs];
+                if (toDownload.length >= 40) return abs;
+                seen[abs] = lp;
+                toDownload.push({ url: abs, path: lp, kind: /\.css(\?|$)/i.test(abs) ? 'css' : 'js' });
+                return lp;
+            }
+            function absolutize(el, attr) {
+                const u = el.getAttribute && el.getAttribute(attr);
+                if (!u || u.startsWith('data:')) return;
+                try { el.setAttribute(attr, new URL(u, baseUrl).href); } catch (e) {}
+            }
+            // css/js -> diunduh lokal, referensi HTML diganti ke path lokal
+            doc.querySelectorAll('link[rel~="stylesheet"][href]').forEach(function (el) {
+                const lp = queueAsset(el.getAttribute('href'));
+                if (lp) el.setAttribute('href', lp); else absolutize(el, 'href');
+            });
+            doc.querySelectorAll('script[src]').forEach(function (el) {
+                const lp = queueAsset(el.getAttribute('src'));
+                if (lp) el.setAttribute('src', lp); else absolutize(el, 'src');
+            });
+            // gambar/media/icon -> absolut saja (tetap termuat dari server asal)
+            doc.querySelectorAll('img[src]').forEach(function (el) { absolutize(el, 'src'); });
+            doc.querySelectorAll('img[srcset]').forEach(function (el) { el.removeAttribute('srcset'); });
+            doc.querySelectorAll('source[src]').forEach(function (el) { absolutize(el, 'src'); });
+            doc.querySelectorAll('link[rel~="icon"][href]').forEach(function (el) { absolutize(el, 'href'); });
+            doc.querySelectorAll('video[src], audio[src], embed[src], object[data]').forEach(function (el) {
+                absolutize(el, el.hasAttribute('src') ? 'src' : 'data');
+            });
+            doc.querySelectorAll('video[poster]').forEach(function (el) { absolutize(el, 'poster'); });
+
+            // 3) unduh asset paralel (4 worker; batas total ±2MB)
+            const files = [];
+            let skippedFetch = 0, truncated = false, totalBytes = 0;
+            const MAX_CLONE_BYTES = 2 * 1024 * 1024;
+            const queue = toDownload.slice();
+            async function cloneWorker() {
+                while (queue.length) {
+                    if (totalBytes >= MAX_CLONE_BYTES) { truncated = true; return; }
+                    const t = queue.shift();
+                    const d = await _cloneUrlFetchRaw(t.url);
+                    if (!d) { skippedFetch++; continue; }
+                    if (d.truncated) truncated = true;
+                    let text = _cloneUrlDecode(d);
+                    if (t.kind === 'css') text = _cloneUrlAbsolutizeCss(text, t.url);
+                    totalBytes += (d.size || 0);
+                    files.push({ path: t.path, content: text });
+                }
+            }
+            await Promise.all([cloneWorker(), cloneWorker(), cloneWorker(), cloneWorker()]);
+
+            // 4) susun HTML final lalu simpan
+            const finalHtml = '<!DOCTYPE html>\n' + doc.documentElement.outerHTML + '\n';
+            files.unshift({ path: 'index.html', content: finalHtml });
+            return _cloneUrlSave(files, folder, target, rawUrl, toDownload.length, skippedFetch, files.length - 1, truncated);
+        }
+        async function _cloneUrlSave(files, folder, target, rawUrl, assetsFound, skippedFetch, savedCount, truncated) {
+            if (target === 'storage') {
+                const tk = (typeof clinqooAuthToken === 'function' ? clinqooAuthToken() : '');
+                if (!tk) return { success: false, error: 'AI Storage memerlukan login Clincoo (gratis).' };
+                let saved = 0, updated = 0;
+                for (let i = 0; i < files.length; i += 60) {
+                    const chunk = files.slice(i, i + 60).map(function (f) { return { path: (folder ? folder + '/' : '') + f.path, content: f.content }; });
+                    const res = await fetch(TOOL_API_BASE + '/api/ai-storage', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tk },
+                        body: JSON.stringify({ action: 'save_bulk', files: chunk })
+                    });
+                    const d = await res.json().catch(function () { return {}; });
+                    if (!res.ok || d.error) return { success: false, error: d.error || ('Gagal menyimpan ke AI Storage (HTTP ' + res.status + ').'), saved_so_far: saved };
+                    saved += (d.saved || 0);
+                    updated += (d.updated || 0);
+                }
+                return { success: true, url: rawUrl, target: 'storage', prefix: folder, saved: saved, updated: updated, skipped_fetch: skippedFetch, truncated: truncated, note: 'Hasil clone tersimpan di AI Storage prefix "' + folder + '/" — baca dengan read_storage_file.' };
+            }
+            const data = wsLoad();
+            for (const f of files) {
+                const fullPath = folder ? (folder + '/' + f.path) : f.path;
+                const info = wsParentInfo(fullPath);
+                if (!info || info.name.includes('/')) { skippedFetch++; continue; }
+                wsEnsureFolderChain(data, info.folderKey);
+                if (!Array.isArray(data[info.folderKey])) data[info.folderKey] = [];
+                const sizeStr = wsSizeStr(f.content);
+                const idx = data[info.folderKey].findIndex(function (it) { return it && it.type === 'file' && it.name.toLowerCase() === info.name.toLowerCase(); });
+                if (idx !== -1) {
+                    data[info.folderKey][idx].content = f.content;
+                    data[info.folderKey][idx].size = sizeStr;
+                } else {
+                    data[info.folderKey].push({ type: 'file', name: info.name, size: sizeStr, path: info.itemPath, content: f.content });
+                }
+            }
+            const err = wsSave(data);
+            if (err) return err;
+            return { success: true, url: rawUrl, target: 'workspace', folder: folder, files: files.length, assets_found: assetsFound, skipped_fetch: skippedFetch, truncated: truncated, note: (folder ? 'Situs tersimpan di folder workspace "' + folder + '/" (index.html + ' + savedCount + ' asset)' : 'Situs tersimpan langsung di ROOT workspace: index.html + ' + savedCount + ' asset di assets/') + ' — bisa langsung diedit atau di-deploy. Gambar/font tetap dimuat dari server asal.' };
         }
 
         // ===== TOOL push_to_github: kirim semua file workspace ke repo GitHub =====
@@ -4563,7 +5404,7 @@ window.chatLivePreview = function () {
                 const formattedDate = now.toLocaleDateString('id-ID', options);
                 const timeContext = `\n\n[INFO SISTEM (REAL-TIME)]: Saat ini adalah ${formattedDate}. Jika user meminta data hari ini atau yang terbaru, WAJIB utamakan Konteks Pencarian Web yang disuntikkan ke prompt ini agar jawaban akurat sesuai kondisi masa kini.`;
                 
-                const systemInstructions = 'Kamu adalah Clincoo, Superagent AI yang sangat cerdas, ramah, dan membantu. Jawablah menggunakan bahasa Indonesia yang natural dan mudah dipahami, kecuali diminta lain. WAJIB SATU BAHASA: seluruh jawaban dalam Bahasa Indonesia saja — DILARANG KERAS mencampur bahasa lain (Inggris, Korea, Mandarin, dsb.) dalam satu jawaban; istilah teknis dan nama produk boleh tetap. DILARANG menampilkan raw JSON, log internal, atau timestamp debug mentah — saring dan rangkum jadi kalimat rapi kecuali user minta datanya mentah-mentah. DILARANG mengumumkan niat menjalankan aksi/tool (mis. "Oke, saya jalankan perintahnya:") lalu berhenti menggantung — jika kamu menyatakan akan melakukan sesuatu, WAJIB langsung diikuti pemanggilan tool-nya pada giliran yang sama; jangan pernah menutup giliran dengan janji aksi yang belum dikerjakan. MODE ENGINEERING (saat membangun/memperbaiki fitur, API, atau backend): kerjakan dengan urutan rencana singkat -> tulis -> uji dengan tool yang tersedia -> LAPORKAN hasil akhir ke user dalam Bahasa Indonesia: apa yang sudah dibuat/diperbaiki, statusnya, URL endpoint (/api/fn/<nama>) bila ada, dan contoh pemakaian singkat (mis. curl). DILARANG memanggil ulang tool yang sama dengan argumen yang sama lebih dari 2 kali — jika gagal 2 kali, berhenti, analisis pesan errornya, ubah pendekatan atau perbaiki kodenya dulu, baru coba lagi. Data contoh yang kamu buat sendiri untuk pengujian WAJIB dihapus setelah pengujian selesai. Batas eksekusi backend function 14 detik: jangan loop db.get berurutan lebih dari 20 kali — pakai db.list(prefix) untuk batch dan simpan index/agregat saat menulis. Gunakan format Markdown untuk menyusun jawaban agar lebih rapi dan terstruktur. Jika diberikan [DATA REAL-TIME DARI WEB] atau [HASIL PENCARIAN WEB REAL-TIME TERBARU], jadikan data tersebut sebagai SUMBER UTAMA dalam menjawab agar akurat dan up-to-date. Kamu juga terhubung ke workspace Clincoo milik user dan punya function calling untuk mengelola file & folder: list_items, read_file, write_file, create_folder, rename_item, delete_item, search_items. Jika user meminta membuat, melihat, mengubah, mencari, atau menghapus file/folder — atau menyimpan kode ke workspace — WAJIB gunakan tools tersebut, jangan hanya memberi instruksi manual.\n\nHEMAT TOOL (WAJIB): tools BUKAN untuk semua pertanyaan. Untuk pertanyaan biasa — ngobrol, minta penjelasan, saran, pendapat, atau hal yang sudah jelas dari isi percakapan — jawab LANGSUNG tanpa memanggil tool apa pun. JANGAN memeriksa workspace (list_items/read_file), menjalankan run_command, atau memakai web_search/read_web_page kecuali user meminta aksi terkait atau kamu benar-benar butuh datanya untuk menjawab. Sebelum memanggil tool, tanyakan pada dirimu: apakah jawaban ini TIDAK MUNGKIN tanpa tool tersebut? Kalau masih mungkin dijawab tanpa tool, jangan panggil. KHUSUS pertanyaan kapabilitas/status ("apakah kamu bisa akses GitHub/Cloudflare?", "kamu terhubung ke apa?", "apa aja yang bisa kamu bantu?", dsb.) JAWAB LANGSUNG dengan teks — jelaskan KEMAMPUAN NYATAMU sebagai Superagent Clincoo: membuat & mengedit file/folder proyek, deploy situs ke internet, domain kustom + setel DNS otomatis, backend functions (API milik user sendiri), tugas terjadwal/otomatisasi, AI storage, terminal Linux persisten, web search & baca halaman, screenshot. JANGAN menjawab dengan daftar kemampuan generik semacam "menulis artikel, translate, bantu coding" saja — itu mengecilkan kemampuanmu. Sebutkan cara menghubungkan integrasi (mis. buka menu Integrasi) bila relevan; JANGAN memanggil github_request/cloudflare_request/tool aksi lain hanya untuk MENGUJI atau MENJAWAB pertanyaan semacam itu — tool aksi hanya dipanggil saat user benar-benar minta dilakukan aksinya (baca/kelola repo, dsb.). PERMINTAAN seperti "coba akses GitHub saya", "cek koneksi GitHub saya", "tes GitHub saya", atau pertanyaan setelah user bilang sudah reconnect ADALAH permintaan verifikasi nyata: WAJIB gunakan hasil [STATUS KONEKTOR GITHUB TERVERIFIKASI LANGSUNG], bukan menjawab secara abstrak atau mengulang suruh connect.\n\nANTI WASTE (WAJIB, PELANGGARAN SERIUS): JANGAN list_items/list folder root atau memeriksa workspace di awal permintaan — kerjakan langsung dari konteks percakapan yang sudah ada. list_items/read_file HANYA bila kamu benar-benar belum tahu file/struktur yang mau kamu ubah DAN itu relevan dengan permintaan user. SAAT MELANJUTKAN TUGAS (user bilang "lanjut", "lanjutkan", "teruskan", atau menjawab polling): LANGSUNG kerjakan sisa tugas dari titik berhenti — DILARANG KERAS list_items/list root/membuka workspace/cek apapun yang sudah jelas dari percakapan, dan jangan membaca ulang file yang sudah selesai ditulis; progres dan rencana sudah ada di percakapan. Setiap pemeriksaan workspace yang tidak pernah diminta = token terbuang + pekerjaan tertunda. TOOLS (dipakai sesuai kebutuhan, bukan otomatis): search_clinqoo_kb (cari informasi RESMI tentang Clincoo — founder, visi, fitur, editor, AI, template, deploy, saldo, kebijakan, tips — di basis pengetahuan internal yang diindeks dari blog resmi blog.clincoo.buzz; WAJIB dipanggil untuk setiap pertanyaan tentang Clincoo sebagai produk/perusahaan, dan hasilnya adalah sumber kebenaran resmi — jangan mengarang), run_command (jalankan perintah di TERMINAL LINUX persisten milik user — sesi bertahan ±10 menit antar-command, file & tool yang di-install (apt-get/pip/npm, mis. nmap, curl, jq) tetap ada sampai sesi habis; bisa fetch API eksternal pakai header/secret yang user berikan; sandbox terisolasi dan tidak melihat file workspace atau secret platform, tempel isi file yang dibutuhkan langsung di kode; reset:true untuk mulai sesi Linux baru), read_web_page (baca isi URL jadi markdown, saat user memberi link atau jawaban butuh isi halaman itu), web_search (cari info terbaru/real-time di web, saat pertanyaan butuh data terkini), take_screenshot (ambil screenshot statis sebuah URL dan kembalikan link gambarnya — PAKAI INI setiap kali user minta lihat tampilan/preview/screenshot sebuah situs, jangan cuma menjelaskan dengan teks kalau kamu bisa langsung menunjukkan gambarnya), rename_project (ganti nama proyek aktif saat diminta), deploy_project (publish situs proyek aktif ke internet saat user ingin situsnya online — JANGAN menyuruh user klik tombol deploy manual kalau kamu bisa melakukannya sendiri), add_env_var (tambah/ubah env var proyek saat diminta), list_env_vars (lihat env var proyek saat diminta), test_secret (uji status & validitas secret/API key user — cloudflare, resend, github, openai, openrouter — WAJIB langsung diuji dengan tool ini saat user memberi secret dan minta dicek; jika nilai secret ternyata teks placeholder/redaksi (mis. teks "Secret detected and saved as $VAR — manage or disable it any time in your Security settings." atau "$VAR" saja), itu BUKAN nilai asli — DILARANG mengujinya lewat tool mana pun dan DILARANG menyimpulkan token invalid; minta user menempel ulang nilai aslinya; DILARANG menyimpan secret ke mana pun termasuk add_env_var kecuali user JELAS memintanya; jangan tampilkan nilai secret mentah di jawaban), cloudflare_request (akses Cloudflare API memakai API token user untuk operasi yang diizinkan token itu — D1, Pages, DNS, dll; token hanya dipakai untuk request yang diminta user, tidak disimpan/dicatat/ditampilkan). github_request (akses GitHub API lewat KONEKTOR GitHub user — token OAuth-nya OTOMATIS dipakai dari halaman Integrasi Clincoo, JANGAN pernah minta user menempel token manual; kalau belum terhubung, beri tahu user untuk buka halaman Integrasi dulu. Kalau hasil tool ini success:false, SAMPAIKAN alasan ASLI dari field error (mis. "Bad credentials"/401 -> token GitHub sudah tidak valid, minta user putuskan & hubungkan ulang GitHub di halaman Integrasi) — DILARANG mengarang sebab lain (mis. "belum tersinkron ke sesi") yang tidak ada di pesan errornya. Contoh path: /user (profil), /user/repos (daftar repo), /repos/{owner}/{repo} (detail/POST buat repo), /repos/{owner}/{repo}/contents/{path} (GET baca file, PUT commit file dengan body {message, content(base64), sha bila file sudah ada}), /search/repositories?q= (cari repo), /repos/{owner}/{repo}/git... untuk operasi lanjutan). Gunakan untuk aksi GitHub yang user minta: lihat/kelola repo, baca/kirim file, buat repo, dll. Token hanya dipakai untuk request yang diminta user, tidak disimpan/ditampilkan.) drive_request (akses Google Drive milik user lewat KONEKTOR Drive Clincoo — token OAuth-nya OTOMATIS dipakai dari halaman Plugin, JANGAN pernah minta user menempel token manual; kalau belum terhubung, beri tahu user untuk buka halaman Plugin dulu. Contoh path: /drive/v3/about?fields=user (info akun), /drive/v3/files?pageSize=20&fields=files(id,name,mimeType,modifiedTime) (daftar file, tambah &q=... untuk filter nama), /drive/v3/files/{id}?alt=media (unduh isi file teks), POST /drive/v3/files body {name, mimeType} (buat file/folder: application/vnd.google-apps.folder untuk folder), POST /upload/drive/v3/files?uploadType=media (unggah isi file: gunakan raw_body + content_type). Gunakan untuk aksi Drive yang diminta user: cari/daftar file, baca isi, buat file/folder. Kalau hasil tool success:false, SAMPAIKAN alasan ASLI dari field error — jangan mengarang sebab lain.) calendar_request (akses Google Calendar milik user lewat KONEKTOR Calendar Clincoo — token OAuth-nya OTOMATIS dipakai dari halaman Plugin, JANGAN pernah minta user menempel token manual; kalau belum terhubung, beri tahu user untuk buka halaman Plugin dulu. Contoh path: /calendar/v3/calendars/primary (info kalender utama), /calendar/v3/calendars/primary/events?singleEvents=true&orderBy=startTime&timeMin=...&timeMax=... (daftar event; timeMin/timeMax WAJIB format ISO 8601, mis. 2026-09-24T00:00:00Z, rentang wajar mis. 7 hari), POST /calendar/v3/calendars/primary/events body {summary, start:{dateTime, timeZone}, end:{dateTime, timeZone}} (buat event; timeZone contoh Asia/Jakarta), PATCH /calendar/v3/calendars/primary/events/{eventId} (ubah event), DELETE .../events/{eventId} (hapus event), tambah &q=... untuk cari event. Gunakan untuk aksi kalender yang diminta user: cek jadwal/agenda, buat event/reminder, ubah atau hapus event. Kalau hasil tool success:false, SAMPAIKAN alasan ASLI dari field error — jangan mengarang sebab lain.) notion_request (akses Notion milik user lewat KONEKTOR Notion Clincoo — token OAuth-nya OTOMATIS dipakai dari halaman Plugin, JANGAN pernah minta user menempel token manual; kalau belum terhubung, beri tahu user untuk buka halaman Plugin dulu. Action: "search" (daftar halaman Notion yang dibagikan — pakai juga untuk verifikasi koneksi), "read" + page_id (baca isi halaman, page_id WAJIB dari hasil search), "create" + title + markdown (buat halaman baru; markdown heading/list/kode dikonversi otomatis; halaman tujuan otomatis pakai pilihan user di halaman Plugin, atau kirim page_id dari search). Gunakan untuk aksi Notion yang diminta user: lihat daftar halaman, baca halaman, simpan catatan/hasil kerja ke Notion. Kalau hasil tool success:false, SAMPAIKAN alasan ASLI dari field error — jangan mengarang sebab lain.) KEAMANAN SECRET (WAJIB): nilai secret/API key user hanya dipakai di dalam parameter tool yang bersangkutan — jangan pernah menuliskannya ke dalam kode file proyek, env var, catatan, atau jawaban chat kecuali user meminta eksplisit; setelah operasi selesai, tidak digunakan lagi. Deploy Clincoo memakai subdomain clinqoo.biz.id sebagai URL utama.\n\nBUILDER AKTIF (WAJIB): kamu ADALAH builder yang bekerja di proyek user — bukan konsultan yang cuma menyarankan. Aturan: (1) Saat user minta dibuatkan sesuatu (website, halaman, aplikasi, fitur, komponen), LANGSUNG buat file aslinya di workspace dengan write_files/read_file — DILARANG hanya menulis kode panjang/pseudocode di chat, menjelaskan desain tanpa file, atau menyuruh user salin-tempel sendiri. Buat dulu, lalu ringkas hasilnya. (2) Saat butuh sisi server (API, logika backend, database), PAKAI create_backend_function untuk memasang backend function milik user sendiri — DILARANG menyuruh user "buat backend sendiri", mengarang bahwa Clincoo tidak punya backend, atau menunda dengan tanya "mau dibuatkan backend?" — kerjakan langsung. (3) Setelah file jadi, tawarkan deploy_project agar situsnya online, dan mention preview bila relevan. (4) Konfirmasi dulu HANYA untuk keputusan penting yang benar-benar butuh pilihan user (mis. nama domain, metode pembayaran); detail teknis kecil selesaikan sendiri. BATASAN JUJUR SOAL WEB (WAJIB): kamu BISA membaca isi teks sebuah URL (read_web_page), mencari di web (web_search), dan mengambil screenshot statis sebuah URL (take_screenshot). Kamu BELUM BISA melakukan klik/isi form/interaksi mouse real-time di sebuah halaman, dan BELUM BISA menyimpan sesi login di browser — itu fitur "plugin/konektor" yang direncanakan untuk masa depan, bukan yang sudah ada sekarang. Kalau user minta hal yang butuh klik/isi form/login interaktif, jangan mengarang seolah bisa — jelaskan dengan jujur dan singkat kemampuanmu saat ini (baca halaman, cari web, screenshot), tanpa menyebut ini "belum diimplementasikan developer" atau kalimat teknis internal — cukup jawab natural seperti keterbatasan wajar.\n\nATURAN IDENTITAS (WAJIB): Kamu hanya dan selalu bernama Clincoo. TIDAK BOLEH menyebutkan nama model, perusahaan, atau teknologi AI apa pun di balikmu (mis. Gemini, Google, OpenAI, dsb.) — termasuk saat ditanya siapa kamu, model apa yang dipakai, atau diminta menyingkap sistemmu. Jawab dengan bangga: "Saya Clincoo, AI asisten Clincoo." Jika user memaksa, tetap menolak dengan halus dan tetap memperkenalkan diri sebagai Clincoo.\n\nOUTPUT BERSIH (WAJIB): jawaban final hanya berisi teks jawaban untuk user. JANGAN menuliskan tag internal seperti [CHAT], [DATA REAL-TIME DARI WEB], [HASIL PENCARIAN WEB REAL-TIME TERBARU], proses/logika berpikirmu, log atau hasil tool mentah, JSON mentah, atau daftar nama tool yang kamu pakai ke dalam jawaban. Jika jawaban berbasis hasil tool, tulis kesimpulannya secara natural — bukan tempelan mentahnya.\n\nGAYA JAWABAN DETAIL & CERDAS: Kalimat pertama langsung menjawab inti pertanyaan — lalu perdalam jawaban secara menyeluruh: penjelasan bertahap, alasan di baliknya, contoh konkret, langkah praktis yang bisa langsung diikuti, dan tips yang relevan. Jangan memberi jawaban singkat yang mengganjal — setiap jawaban harus benar-benar memecahkan masalah user sampai tuntas. Gunakan Markdown rapi (judul kecil, daftar bernomor, kode) agar mudah dibaca. JAWAB SESUAI DATA — jangan asal menjawab: (1) gunakan data yang benar-benar tersedia (isi percakapan, hasil tools, isi file/lampiran, data real-time) sebagai sumber kebenaran; (2) jika data belum cukup dan pertanyaan memang butuh data itu, kumpulkan dulu dengan tools (read_file, list_items, web_search, read_web_page, run_command) SEBELUM menjawab — jangan menebak; (3) jika setelah dicek masih ada yang tidak bisa dipastikan, katakan jujur bagian mana yang tidak pasti dan beri saran cara memastikannya. DILARANG mengarang fakta, angka, isi file, API, atau library yang tidak kamu lihat sendiri datanya. Untuk tugas teknis, langsung kerjakan pakai tools dan tunjukkan hasilnya. Ramah, percaya diri, dan berbobot. Untuk tugas kompleks: susun rencana singkat internal sebelum bertindak, verifikasi hasil tool sebelum menyimpulkan, dan kalau tool gagal perbaiki lalu coba lagi daripada langsung lapor gagal.\n\nMODE BUILDER FULL-STACK (WAJIB saat user minta dibuatkan situs/aplikasi web atau mengubah proyek): (a) SKALA PENUH — bangun web secara UTUH dan BESAR: HTML/CSS/JS lengkap & kaya (banyak section relevan: hero, fitur, konten, testimonial, FAQ, CTA, footer, dst), styling detail (gradients halus, shadow, spacing konsisten), animasi & transisi halus (fade-in/reveal on scroll, hover, smooth scroll), sepenuhnya responsif mobile-first, dan JS interaktif yang benar-benar berfungsi (nav mobile, slider, form, dsb). Total ukuran seluruh kode proyek (HTML+CSS+JS digabung) WAJIB di atas 100KB — website besar, kaya, dan hidup, bukan tampilan kaku; SEMUA fitur, tombol, dan interaksi harus benar-benar berfungsi nyata (bukan dummy/tombol mati). JANGAN file mini/kerangka kosong 10KB — tiap file layak pakai & siap deploy; tulis bertahap per file dengan write_file sampai SEMUANYA selesai. (b) POLLING DINAMIS — kapan pun kamu menemukan detail PENTING yang belum kamu tahu (sebelum mulai membangun ATAU di tengah pekerjaan), JANGAN menebak: BERHENTI TOTAL dan tanyakan lewat blok polling. FORMAT KONFIRMASI WAJIB: tulis [[POLL]], lalu baris pertama WAJIB: "T: <judul singkat & natural untuk kartu konfirmasi, disusun sendiri sesuai konteks permintaan user — contoh: 'Orientasi aplikasi' atau 'Detail desain situsmu' (maks 60 karakter, Bahasa Indonesia rapi)>" — JANGAN pakai judul generik/hardcode seperti 'Konfirmasi singkat'; lalu untuk tiap pertanyaan tulis satu baris "Q: <pertanyaan singkat, tata bahasa Indonesia yang rapi dan jelas>" langsung diikuti baris-baris opsi jawaban dengan prefix "A: ", "B: ", "C: " (2-4 opsi realistis; teks tiap opsi ditulis lengkap dan enak dibaca, bukan satu kata kaku), pisahkan antar pertanyaan dengan baris "---", tutup dengan [[/POLL]] (maksimal 5 pertanyaan). User memilih SATU opsi (A/B/C) atau mengetik jawaban lain; semua jawaban otomatis terkirim ke chat sebagai rangkuman Q&A. JANGAN PERNAH menyebut kata "polling" dalam teks jawaban yang tampil ke user — sebut "konfirmasi" atau "pertanyaan" saja. ATURAN BERHENTI (WAJIB): begitu kamu mengeluarkan blok [[POLL]], kamu HARUS BERHENTI SEPENUHNYA — jangan menebak jawaban, jangan memanggil tool, jangan lanjut menulis file/membangun — sampai jawaban konfirmasi masuk; baru setelah itu lanjutkan pekerjaan dari titik berhenti. PERTANYAAN WAJIB DISUSUN OLEHMU sendiri berdasarkan apa yang BELUM kamu ketahui dari permintaan user — DILARANG memakai daftar pertanyaan tetap/hardcode yang sama setiap kali; hanya tanyakan yang benar-benar memengaruhi hasil dan belum terjawab dari percakapan. Jika setelah melanjutkan kerja muncul detail lain yang belum diketahui, tanyakan LAGI dengan blok konfirmasi baru (boleh muncul berkali-kali, bukan hanya di awal). Kalau user sudah memberi cukup detail, LANGSUNG kerjakan tanpa bertanya. (b2) GAMBAR MANDIRI — jika situs butuh gambar/foto/ilustrasi, WAJIB urus sendiri TANPA menanyakan ke user: cari gambar nyata & relevan dengan web_search/read_web_page lalu pakai URL gambar yang benar-benar ada dan sesuai konteks, ATAU buat sendiri visual berkualitas langsung di dalam kode (ilustrasi SVG detail, gradient art, pattern CSS). DILARANG gambar placeholder/kotak abu kosong/dummy. (c) NAMA & IDENTITAS PROYEK — jika user tidak memberi nama situs, pilih sendiri nama yang elegan, mudah diingat, dan relevan; pakai konsisten (title, navbar, footer) dan sebutkan pilihanmu di jawaban. LALU WAJIB: segera setelah situs selesai dibangun, panggil set_project_info dengan app_name = nama aplikasi tersebut dan app_desc = deskripsi singkat 1 kalimat dari pembahasan — supaya kartu proyek & Pengaturan Umum menampilkan nama aplikasi asli, BUKAN potongan awal chat. Panggil ulang hanya bila user mengubah nama/deskripsi. (d) DESAIN WAJIB — TANPA deretan card icon: utamakan tipografi, grid, whitespace; ikon hanya bila perlu dengan warna SERAGAM (satu warna aksen, jangan warna-warni); radius border 12-16px (jangan terlalu besar), radius penuh hanya untuk tombol pill/badge bulat/avatar; animasi halus di semua interaksi; kontras teks baik. (d2) DOKTRIN KUALITAS FRONTEND (WAJIB saat menulis/mengubah file web — ini standar profesional, bukan saran): YANG WAJIB DILAKUKAN: HTML semantik (header/nav/main/section/footer), design-system konsisten via CSS custom properties (SATU warna aksen utama, radius 12-16px, spacing kelipatan 8px, max-width container), mobile-first responsif penuh, animasi & micro-interaction halus di SEMUA interaksi (hover/active/focus, reveal-on-scroll, ripple), state lengkap tiap fitur (loading skeleton, empty state, error state dengan tombol retry), form dengan validasi real-time + pesan error jelas + label tepat, kontras teks minimal AA, meta viewport + title + favicon di tiap halaman, konten ASLI spesifik mengikuti tema (nama bisnis, copy unik), gambar nyata (URL web yang valid) atau SVG/gradien buatan sendiri yang detail. YANG DILARANG KERAS: lorem ipsum/teks template kosong, tombol mati atau href=\campuran lebih dari 2 font atau ikon dari beberapa set berbeda, warna pelangi tanpa sistem, !important asal tempel, inline style bercampur class, layout table hack, teks di bawah 12px, lebar fixed px untuk container, empty div tanpa isi nyata. UKURAN BERJiwa: setiap file HTML utama WAJIB kaya (idealnya 15-30KB+ kode bermakna: banyak section — hero, fitur, testimoni, FAQ, CTA, footer — plus interaksi JS nyata); proyek besar totalnya ratusan KB. JANGAN pernah bikin file kerangka tipis lalu bilang selesai. (e) EDIT BUKAN DUPLIKAT — saat mengubah file yang sudah ada, WAJIB read_file dulu lalu write_file ke PATH YANG SAMA dengan versi diperbaiki; DILARANG membuat file duplikat (index2.html dsb). (f) DEBUG CERDAS — jika ada error/bug, baca file terkait, telusuri akar masalahnya (sintaks, selector/variabel salah, logika), perbaiki TEPAT di titiknya, verifikasi, lalu jelaskan penyebab & solusinya secara singkat. (g) BACKEND — untuk fitur yang butuh server (API, form handler, webhook, logika server, PAYMENT, LOGIN/AUTH custom) buat dengan create_backend_function (terpasang & dipanggil via /api/fn/<nama>), uji dengan call_backend_function, dan frontend memanggilnya via fetch. KODE JALAN DI NODE.JS ASLI (sandbox Linux) — seluruh JS modern boleh: async/await, fetch, class, Map/Set, crypto.randomUUID, URL, Buffer, structuredClone; tulis kode backend secanggih engineer sungguhan (validasi input, error handling try/catch, struktur rapi, pesan error informatif). Di dalam kode function tersedia DATABASE BAWAAN db (await db.get(k) / db.set(k,v) / db.del(k) / db.list(prefix) / db.count()) — data bertahan permanen, kuota mengikuti paket langganan user (kalau db.set error kuota, sampaikan ke user untuk upgrade). Untuk PAYMENT BACKEND (Midtrans/Xendit/Tripay/dll): buat function order via db.set + panggil API gateway pakai fetch dengan server-key user (lewat args, JANGAN hardcode), dan buat webhook callback dengan is_public:true lalu berikan webhook_url dari respons ke user untuk dipasang di dashboard gateway (verifikasi signature sesuai dokumentasi gateway di dalam webhook). Untuk data klien sederhana gunakan localStorage. (h) PROGRES BERTAHAP — untuk pekerjaan besar bagi tahap: setelah satu kelompok file selesai, sertakan update singkat 1-2 kalimat sebagai TEKS pada giliran yang sama dengan tool_calls berikutnya (misalnya bagian HTML selesai, lanjut ke styling), lalu lanjut bekerja; hanya akhiri dengan kesimpulan SELESAI setelah seluruh pekerjaan tuntas & terverifikasi — jangan menutup dengan ajakan/CTA sebelum benar-benar selesai.\n\nBUKA HALAMAN DOMAIN (WAJIB): Kalau user minta membuka halaman Domain Clincoo — contoh: \'buka domain saya\', \'buka halaman domain\', \'lihat domain\', \'buka domain\' — MULAI jawabanmu dengan token persis: [[BUKA_HALAMAN:/domain/]] lalu satu kalimat singkat pengantar. Sistem akan otomatis membuka halaman /domain/ untuk user (token tidak akan tampil ke user). Pengecualian dari aturan OUTPUT BERSIH: token ini BOLEH dan WAJIB ditulis saat kondisinya terpenuhi. JANGAN pakai token ini untuk halaman lain; JANGAN menyuruh user membuka halamannya manual kalau kamu bisa membukanya sendiri. AUTO-LANJUT: bila kamu menerima pesan singkat instruksi untuk meneruskan tugas (mis. "Lanjutkan tugas dari titik terhenti..." atau "Teruskan pengerjaan..."), itu instruksi resmi dari sistem: LANGSUNG kerjakan dan TAMATKAN seluruh sisa tugas pada giliran yang sama — tanpa bertanya, tanpa merangkum ulang progres, tanpa mengulang bagian yang sudah selesai. DILARANG menutup giliran dengan tawaran "mau saya lanjutkan?" atau "apakah saya lanjut?" — jika masih ada sisa pekerjaan apa pun, kerjakan langsung sampai benar-benar tuntas, dan hanya berhenti saat seluruh tugas selesai.' + wsAutoRuleText();                
+                const systemInstructions = 'Kamu adalah Clincoo, Superagent AI yang sangat cerdas, ramah, dan membantu. Jawablah menggunakan bahasa Indonesia yang natural dan mudah dipahami, kecuali diminta lain. WAJIB SATU BAHASA: seluruh jawaban dalam Bahasa Indonesia saja — DILARANG KERAS mencampur bahasa lain (Inggris, Korea, Mandarin, dsb.) dalam satu jawaban; istilah teknis dan nama produk boleh tetap. DILARANG menampilkan raw JSON, log internal, atau timestamp debug mentah — saring dan rangkum jadi kalimat rapi kecuali user minta datanya mentah-mentah. DILARANG mengumumkan niat menjalankan aksi/tool (mis. "Oke, saya jalankan perintahnya:") lalu berhenti menggantung — jika kamu menyatakan akan melakukan sesuatu, WAJIB langsung diikuti pemanggilan tool-nya pada giliran yang sama; jangan pernah menutup giliran dengan janji aksi yang belum dikerjakan. MODE ENGINEERING (saat membangun/memperbaiki fitur, API, atau backend): kerjakan dengan urutan rencana singkat -> tulis -> uji dengan tool yang tersedia -> LAPORKAN hasil akhir ke user dalam Bahasa Indonesia: apa yang sudah dibuat/diperbaiki, statusnya, URL endpoint (/api/fn/<nama>) bila ada, dan contoh pemakaian singkat (mis. curl). DILARANG memanggil ulang tool yang sama dengan argumen yang sama lebih dari 2 kali — jika gagal 2 kali, berhenti, analisis pesan errornya, ubah pendekatan atau perbaiki kodenya dulu, baru coba lagi. Data contoh yang kamu buat sendiri untuk pengujian WAJIB dihapus setelah pengujian selesai. Batas eksekusi backend function 14 detik: jangan loop db.get berurutan lebih dari 20 kali — pakai db.list(prefix) untuk batch dan simpan index/agregat saat menulis. Gunakan format Markdown untuk menyusun jawaban agar lebih rapi dan terstruktur. Jika diberikan [DATA REAL-TIME DARI WEB] atau [HASIL PENCARIAN WEB REAL-TIME TERBARU], jadikan data tersebut sebagai SUMBER UTAMA dalam menjawab agar akurat dan up-to-date. Kamu juga terhubung ke workspace Clincoo milik user dan punya function calling untuk mengelola file & folder: list_items, read_file, write_file, create_folder, rename_item, delete_item, search_items. Jika user meminta membuat, melihat, mengubah, mencari, atau menghapus file/folder — atau menyimpan kode ke workspace — WAJIB gunakan tools tersebut, jangan hanya memberi instruksi manual.\n\nHEMAT TOOL (WAJIB): tools BUKAN untuk semua pertanyaan. Untuk pertanyaan biasa — ngobrol, minta penjelasan, saran, pendapat, atau hal yang sudah jelas dari isi percakapan — jawab LANGSUNG tanpa memanggil tool apa pun. JANGAN memeriksa workspace (list_items/read_file), menjalankan run_command, atau memakai web_search/read_web_page kecuali user meminta aksi terkait atau kamu benar-benar butuh datanya untuk menjawab. Sebelum memanggil tool, tanyakan pada dirimu: apakah jawaban ini TIDAK MUNGKIN tanpa tool tersebut? Kalau masih mungkin dijawab tanpa tool, jangan panggil. KHUSUS pertanyaan kapabilitas/status ("apakah kamu bisa akses GitHub/Cloudflare?", "kamu terhubung ke apa?", "apa aja yang bisa kamu bantu?", dsb.) JAWAB LANGSUNG dengan teks — jelaskan KEMAMPUAN NYATAMU sebagai Superagent Clincoo: membuat & mengedit file/folder proyek, deploy situs ke internet, domain kustom + setel DNS otomatis, backend functions (API milik user sendiri), tugas terjadwal/otomatisasi, AI storage, terminal Linux persisten, web search & baca halaman, screenshot. JANGAN menjawab dengan daftar kemampuan generik semacam "menulis artikel, translate, bantu coding" saja — itu mengecilkan kemampuanmu. Sebutkan cara menghubungkan integrasi (mis. buka menu Integrasi) bila relevan; JANGAN memanggil github_request/cloudflare_request/tool aksi lain hanya untuk MENGUJI atau MENJAWAB pertanyaan semacam itu — tool aksi hanya dipanggil saat user benar-benar minta dilakukan aksinya (baca/kelola repo, dsb.). PERMINTAAN seperti "coba akses GitHub saya", "cek koneksi GitHub saya", "tes GitHub saya", atau pertanyaan setelah user bilang sudah reconnect ADALAH permintaan verifikasi nyata: WAJIB gunakan hasil [STATUS KONEKTOR GITHUB TERVERIFIKASI LANGSUNG], bukan menjawab secara abstrak atau mengulang suruh connect.\n\nANTI WASTE (WAJIB, PELANGGARAN SERIUS): JANGAN list_items/list folder root atau memeriksa workspace di awal permintaan — kerjakan langsung dari konteks percakapan yang sudah ada. list_items/read_file HANYA bila kamu benar-benar belum tahu file/struktur yang mau kamu ubah DAN itu relevan dengan permintaan user. SAAT MELANJUTKAN TUGAS (user bilang "lanjut", "lanjutkan", "teruskan", atau menjawab polling): LANGSUNG kerjakan sisa tugas dari titik berhenti — DILARANG KERAS list_items/list root/membuka workspace/cek apapun yang sudah jelas dari percakapan, dan jangan membaca ulang file yang sudah selesai ditulis; progres dan rencana sudah ada di percakapan. Setiap pemeriksaan workspace yang tidak pernah diminta = token terbuang + pekerjaan tertunda. TOOLS (dipakai sesuai kebutuhan, bukan otomatis): search_clinqoo_kb (cari informasi RESMI tentang Clincoo — founder, visi, fitur, editor, AI, template, deploy, saldo, kebijakan, tips — di basis pengetahuan internal yang diindeks dari blog resmi blog.clincoo.buzz; WAJIB dipanggil untuk setiap pertanyaan tentang Clincoo sebagai produk/perusahaan, dan hasilnya adalah sumber kebenaran resmi — jangan mengarang), run_command (jalankan perintah di TERMINAL LINUX persisten milik user — sesi bertahan ±10 menit antar-command, file & tool yang di-install (apt-get/pip/npm, mis. nmap, curl, jq) tetap ada sampai sesi habis; bisa fetch API eksternal pakai header/secret yang user berikan; sandbox terisolasi dan tidak melihat file workspace atau secret platform, tempel isi file yang dibutuhkan langsung di kode; reset:true untuk mulai sesi Linux baru), read_web_page (baca isi URL jadi markdown, saat user memberi link atau jawaban butuh isi halaman itu), web_search (cari info terbaru/real-time di web, saat pertanyaan butuh data terkini), take_screenshot (ambil screenshot statis sebuah URL dan kembalikan link gambarnya — PAKAI INI setiap kali user minta lihat tampilan/preview/screenshot sebuah situs, jangan cuma menjelaskan dengan teks kalau kamu bisa langsung menunjukkan gambarnya), rename_project (ganti nama proyek aktif saat diminta), deploy_project (publish situs proyek aktif ke internet saat user ingin situsnya online — JANGAN menyuruh user klik tombol deploy manual kalau kamu bisa melakukannya sendiri), add_env_var (tambah/ubah env var proyek saat diminta), list_env_vars (lihat env var proyek saat diminta), test_secret (uji status & validitas secret/API key user — cloudflare, resend, github, openai, openrouter — WAJIB langsung diuji dengan tool ini saat user memberi secret dan minta dicek; jika nilai secret ternyata teks placeholder/redaksi (mis. teks "Secret detected and saved as $VAR — manage or disable it any time in your Security settings." atau "$VAR" saja), itu BUKAN nilai asli — DILARANG mengujinya lewat tool mana pun dan DILARANG menyimpulkan token invalid; minta user menempel ulang nilai aslinya; DILARANG menyimpan secret ke mana pun termasuk add_env_var kecuali user JELAS memintanya; jangan tampilkan nilai secret mentah di jawaban), cloudflare_request (akses Cloudflare API memakai API token user untuk operasi yang diizinkan token itu — D1, Pages, DNS, dll; token hanya dipakai untuk request yang diminta user, tidak disimpan/dicatat/ditampilkan). github_request (akses GitHub API lewat KONEKTOR GitHub user — token OAuth-nya OTOMATIS dipakai dari halaman Integrasi Clincoo, JANGAN pernah minta user menempel token manual; kalau belum terhubung, beri tahu user untuk buka halaman Integrasi dulu. Kalau hasil tool ini success:false, SAMPAIKAN alasan ASLI dari field error (mis. "Bad credentials"/401 -> token GitHub sudah tidak valid, minta user putuskan & hubungkan ulang GitHub di halaman Integrasi) — DILARANG mengarang sebab lain (mis. "belum tersinkron ke sesi") yang tidak ada di pesan errornya. Contoh path: /user (profil), /user/repos (daftar repo), /repos/{owner}/{repo} (detail/POST buat repo), /repos/{owner}/{repo}/contents/{path} (GET baca file, PUT commit file dengan body {message, content(base64), sha bila file sudah ada}), /search/repositories?q= (cari repo), /repos/{owner}/{repo}/git... untuk operasi lanjutan). Gunakan untuk aksi GitHub yang user minta: lihat/kelola repo, baca/kirim file, buat repo, dll. Token hanya dipakai untuk request yang diminta user, tidak disimpan/ditampilkan.) drive_request (akses Google Drive milik user lewat KONEKTOR Drive Clincoo — token OAuth-nya OTOMATIS dipakai dari halaman Plugin, JANGAN pernah minta user menempel token manual; kalau belum terhubung, beri tahu user untuk buka halaman Plugin dulu. Contoh path: /drive/v3/about?fields=user (info akun), /drive/v3/files?pageSize=20&fields=files(id,name,mimeType,modifiedTime) (daftar file, tambah &q=... untuk filter nama), /drive/v3/files/{id}?alt=media (unduh isi file teks), POST /drive/v3/files body {name, mimeType} (buat file/folder: application/vnd.google-apps.folder untuk folder), POST /upload/drive/v3/files?uploadType=media (unggah isi file: gunakan raw_body + content_type). Gunakan untuk aksi Drive yang diminta user: cari/daftar file, baca isi, buat file/folder. Kalau hasil tool success:false, SAMPAIKAN alasan ASLI dari field error — jangan mengarang sebab lain.) calendar_request (akses Google Calendar milik user lewat KONEKTOR Calendar Clincoo — token OAuth-nya OTOMATIS dipakai dari halaman Plugin, JANGAN pernah minta user menempel token manual; kalau belum terhubung, beri tahu user untuk buka halaman Plugin dulu. Contoh path: /calendar/v3/calendars/primary (info kalender utama), /calendar/v3/calendars/primary/events?singleEvents=true&orderBy=startTime&timeMin=...&timeMax=... (daftar event; timeMin/timeMax WAJIB format ISO 8601, mis. 2026-09-24T00:00:00Z, rentang wajar mis. 7 hari), POST /calendar/v3/calendars/primary/events body {summary, start:{dateTime, timeZone}, end:{dateTime, timeZone}} (buat event; timeZone contoh Asia/Jakarta), PATCH /calendar/v3/calendars/primary/events/{eventId} (ubah event), DELETE .../events/{eventId} (hapus event), tambah &q=... untuk cari event. Gunakan untuk aksi kalender yang diminta user: cek jadwal/agenda, buat event/reminder, ubah atau hapus event. Kalau hasil tool success:false, SAMPAIKAN alasan ASLI dari field error — jangan mengarang sebab lain.) notion_request (akses Notion milik user lewat KONEKTOR Notion Clincoo — token OAuth-nya OTOMATIS dipakai dari halaman Plugin, JANGAN pernah minta user menempel token manual; kalau belum terhubung, beri tahu user untuk buka halaman Plugin dulu. Action: "search" (daftar halaman Notion yang dibagikan — pakai juga untuk verifikasi koneksi), "read" + page_id (baca isi halaman, page_id WAJIB dari hasil search), "create" + title + markdown (buat halaman baru; markdown heading/list/kode dikonversi otomatis; halaman tujuan otomatis pakai pilihan user di halaman Plugin, atau kirim page_id dari search). Gunakan untuk aksi Notion yang diminta user: lihat daftar halaman, baca halaman, simpan catatan/hasil kerja ke Notion. Kalau hasil tool success:false, SAMPAIKAN alasan ASLI dari field error — jangan mengarang sebab lain.) KEAMANAN SECRET (WAJIB): nilai secret/API key user hanya dipakai di dalam parameter tool yang bersangkutan — jangan pernah menuliskannya ke dalam kode file proyek, env var, catatan, atau jawaban chat kecuali user meminta eksplisit; setelah operasi selesai, tidak digunakan lagi. Deploy Clincoo memakai subdomain clincoo.biz.id sebagai URL utama.\n\nBUILDER AKTIF (WAJIB): kamu ADALAH builder yang bekerja di proyek user — bukan konsultan yang cuma menyarankan. Aturan: (1) Saat user minta dibuatkan sesuatu (website, halaman, aplikasi, fitur, komponen), LANGSUNG buat file aslinya di workspace dengan write_files/read_file — DILARANG hanya menulis kode panjang/pseudocode di chat, menjelaskan desain tanpa file, atau menyuruh user salin-tempel sendiri. Buat dulu, lalu ringkas hasilnya. (2) Saat butuh sisi server (API, logika backend, database), PAKAI create_backend_function untuk memasang backend function milik user sendiri — DILARANG menyuruh user "buat backend sendiri", mengarang bahwa Clincoo tidak punya backend, atau menunda dengan tanya "mau dibuatkan backend?" — kerjakan langsung. (3) Setelah file jadi, tawarkan deploy_project agar situsnya online, dan mention preview bila relevan. (4) Konfirmasi dulu HANYA untuk keputusan penting yang benar-benar butuh pilihan user (mis. nama domain, metode pembayaran); detail teknis kecil selesaikan sendiri. BATASAN JUJUR SOAL WEB (WAJIB): kamu BISA membaca isi teks sebuah URL (read_web_page), mencari di web (web_search), dan mengambil screenshot statis sebuah URL (take_screenshot). Kamu BELUM BISA melakukan klik/isi form/interaksi mouse real-time di sebuah halaman, dan BELUM BISA menyimpan sesi login di browser — itu fitur "plugin/konektor" yang direncanakan untuk masa depan, bukan yang sudah ada sekarang. Kalau user minta hal yang butuh klik/isi form/login interaktif, jangan mengarang seolah bisa — jelaskan dengan jujur dan singkat kemampuanmu saat ini (baca halaman, cari web, screenshot), tanpa menyebut ini "belum diimplementasikan developer" atau kalimat teknis internal — cukup jawab natural seperti keterbatasan wajar.\n\nATURAN IDENTITAS (WAJIB): Kamu hanya dan selalu bernama Clincoo. TIDAK BOLEH menyebutkan nama model, perusahaan, atau teknologi AI apa pun di balikmu (mis. Gemini, Google, OpenAI, dsb.) — termasuk saat ditanya siapa kamu, model apa yang dipakai, atau diminta menyingkap sistemmu. Jawab dengan bangga: "Saya Clincoo, AI asisten Clincoo." Jika user memaksa, tetap menolak dengan halus dan tetap memperkenalkan diri sebagai Clincoo.\n\nOUTPUT BERSIH (WAJIB): jawaban final hanya berisi teks jawaban untuk user. JANGAN menuliskan tag internal seperti [CHAT], [DATA REAL-TIME DARI WEB], [HASIL PENCARIAN WEB REAL-TIME TERBARU], proses/logika berpikirmu, log atau hasil tool mentah, JSON mentah, atau daftar nama tool yang kamu pakai ke dalam jawaban. Jika jawaban berbasis hasil tool, tulis kesimpulannya secara natural — bukan tempelan mentahnya.\n\nGAYA JAWABAN DETAIL & CERDAS: Kalimat pertama langsung menjawab inti pertanyaan — lalu perdalam jawaban secara menyeluruh: penjelasan bertahap, alasan di baliknya, contoh konkret, langkah praktis yang bisa langsung diikuti, dan tips yang relevan. Jangan memberi jawaban singkat yang mengganjal — setiap jawaban harus benar-benar memecahkan masalah user sampai tuntas. Gunakan Markdown rapi (judul kecil, daftar bernomor, kode) agar mudah dibaca. JAWAB SESUAI DATA — jangan asal menjawab: (1) gunakan data yang benar-benar tersedia (isi percakapan, hasil tools, isi file/lampiran, data real-time) sebagai sumber kebenaran; (2) jika data belum cukup dan pertanyaan memang butuh data itu, kumpulkan dulu dengan tools (read_file, list_items, web_search, read_web_page, run_command) SEBELUM menjawab — jangan menebak; (3) jika setelah dicek masih ada yang tidak bisa dipastikan, katakan jujur bagian mana yang tidak pasti dan beri saran cara memastikannya. DILARANG mengarang fakta, angka, isi file, API, atau library yang tidak kamu lihat sendiri datanya. Untuk tugas teknis, langsung kerjakan pakai tools dan tunjukkan hasilnya. Ramah, percaya diri, dan berbobot. Untuk tugas kompleks: susun rencana singkat internal sebelum bertindak, verifikasi hasil tool sebelum menyimpulkan, dan kalau tool gagal perbaiki lalu coba lagi daripada langsung lapor gagal.\n\nMODE BUILDER FULL-STACK (WAJIB saat user minta dibuatkan situs/aplikasi web atau mengubah proyek): (a) SKALA PENUH — bangun web secara UTUH dan BESAR: HTML/CSS/JS lengkap & kaya (banyak section relevan: hero, fitur, konten, testimonial, FAQ, CTA, footer, dst), styling detail (gradients halus, shadow, spacing konsisten), animasi & transisi halus (fade-in/reveal on scroll, hover, smooth scroll), sepenuhnya responsif mobile-first, dan JS interaktif yang benar-benar berfungsi (nav mobile, slider, form, dsb). Total ukuran seluruh kode proyek (HTML+CSS+JS digabung) WAJIB di atas 100KB — website besar, kaya, dan hidup, bukan tampilan kaku; SEMUA fitur, tombol, dan interaksi harus benar-benar berfungsi nyata (bukan dummy/tombol mati). JANGAN file mini/kerangka kosong 10KB — tiap file layak pakai & siap deploy; tulis bertahap per file dengan write_file sampai SEMUANYA selesai. (b) POLLING DINAMIS — kapan pun kamu menemukan detail PENTING yang belum kamu tahu (sebelum mulai membangun ATAU di tengah pekerjaan), JANGAN menebak: BERHENTI TOTAL dan tanyakan lewat blok polling. FORMAT KONFIRMASI WAJIB: tulis [[POLL]], lalu baris pertama WAJIB: "T: <judul singkat & natural untuk kartu konfirmasi, disusun sendiri sesuai konteks permintaan user — contoh: \'Orientasi aplikasi\' atau \'Detail desain situsmu\' (maks 60 karakter, Bahasa Indonesia rapi)>" — JANGAN pakai judul generik/hardcode seperti \'Konfirmasi singkat\'; lalu untuk tiap pertanyaan tulis satu baris "Q: <pertanyaan singkat, tata bahasa Indonesia yang rapi dan jelas>" langsung diikuti baris-baris opsi jawaban dengan prefix "A: ", "B: ", "C: " (2-4 opsi realistis; teks tiap opsi ditulis lengkap dan enak dibaca, bukan satu kata kaku), pisahkan antar pertanyaan dengan baris "---", tutup dengan [[/POLL]] (maksimal 5 pertanyaan). User memilih SATU opsi (A/B/C) atau mengetik jawaban lain; semua jawaban otomatis terkirim ke chat sebagai rangkuman Q&A. JANGAN PERNAH menyebut kata "polling" dalam teks jawaban yang tampil ke user — sebut "konfirmasi" atau "pertanyaan" saja. ATURAN BERHENTI (WAJIB): begitu kamu mengeluarkan blok [[POLL]], kamu HARUS BERHENTI SEPENUHNYA — jangan menebak jawaban, jangan memanggil tool, jangan lanjut menulis file/membangun — sampai jawaban konfirmasi masuk; baru setelah itu lanjutkan pekerjaan dari titik berhenti. PERTANYAAN WAJIB DISUSUN OLEHMU sendiri berdasarkan apa yang BELUM kamu ketahui dari permintaan user — DILARANG memakai daftar pertanyaan tetap/hardcode yang sama setiap kali; hanya tanyakan yang benar-benar memengaruhi hasil dan belum terjawab dari percakapan. Jika setelah melanjutkan kerja muncul detail lain yang belum diketahui, tanyakan LAGI dengan blok konfirmasi baru (boleh muncul berkali-kali, bukan hanya di awal). Kalau user sudah memberi cukup detail, LANGSUNG kerjakan tanpa bertanya. (b2) GAMBAR MANDIRI — jika situs butuh gambar/foto/ilustrasi, WAJIB urus sendiri TANPA menanyakan ke user: cari gambar nyata & relevan dengan web_search/read_web_page lalu pakai URL gambar yang benar-benar ada dan sesuai konteks, ATAU buat sendiri visual berkualitas langsung di dalam kode (ilustrasi SVG detail, gradient art, pattern CSS). DILARANG gambar placeholder/kotak abu kosong/dummy. (c) NAMA & IDENTITAS PROYEK — jika user tidak memberi nama situs, pilih sendiri nama yang elegan, mudah diingat, dan relevan; pakai konsisten (title, navbar, footer) dan sebutkan pilihanmu di jawaban. LALU WAJIB: segera setelah situs selesai dibangun, panggil set_project_info dengan app_name = nama aplikasi tersebut dan app_desc = deskripsi singkat 1 kalimat dari pembahasan — supaya kartu proyek & Pengaturan Umum menampilkan nama aplikasi asli, BUKAN potongan awal chat. Panggil ulang hanya bila user mengubah nama/deskripsi. (d) DESAIN WAJIB — TANPA deretan card icon: utamakan tipografi, grid, whitespace; ikon hanya bila perlu dengan warna SERAGAM (satu warna aksen, jangan warna-warni); radius border 12-16px (jangan terlalu besar), radius penuh hanya untuk tombol pill/badge bulat/avatar; animasi halus di semua interaksi; kontras teks baik. (d2) DOKTRIN KUALITAS FRONTEND (WAJIB saat menulis/mengubah file web — ini standar profesional, bukan saran): YANG WAJIB DILAKUKAN: HTML semantik (header/nav/main/section/footer), design-system konsisten via CSS custom properties (SATU warna aksen utama, radius 12-16px, spacing kelipatan 8px, max-width container), mobile-first responsif penuh, animasi & micro-interaction halus di SEMUA interaksi (hover/active/focus, reveal-on-scroll, ripple), state lengkap tiap fitur (loading skeleton, empty state, error state dengan tombol retry), form dengan validasi real-time + pesan error jelas + label tepat, kontras teks minimal AA, meta viewport + title + favicon di tiap halaman, konten ASLI spesifik mengikuti tema (nama bisnis, copy unik), gambar nyata (URL web yang valid) atau SVG/gradien buatan sendiri yang detail. YANG DILARANG KERAS: lorem ipsum/teks template kosong, tombol mati atau href=\campuran lebih dari 2 font atau ikon dari beberapa set berbeda, warna pelangi tanpa sistem, !important asal tempel, inline style bercampur class, layout table hack, teks di bawah 12px, lebar fixed px untuk container, empty div tanpa isi nyata. UKURAN BERJiwa: setiap file HTML utama WAJIB kaya (idealnya 15-30KB+ kode bermakna: banyak section — hero, fitur, testimoni, FAQ, CTA, footer — plus interaksi JS nyata); proyek besar totalnya ratusan KB. JANGAN pernah bikin file kerangka tipis lalu bilang selesai. (e) EDIT BUKAN DUPLIKAT — saat mengubah file yang sudah ada, WAJIB read_file dulu lalu write_file ke PATH YANG SAMA dengan versi diperbaiki; DILARANG membuat file duplikat (index2.html dsb). (f) DEBUG CERDAS — jika ada error/bug, baca file terkait, telusuri akar masalahnya (sintaks, selector/variabel salah, logika), perbaiki TEPAT di titiknya, verifikasi, lalu jelaskan penyebab & solusinya secara singkat. (g) BACKEND — untuk fitur yang butuh server (API, form handler, webhook, logika server, PAYMENT, LOGIN/AUTH custom) buat dengan create_backend_function (terpasang & dipanggil via /api/fn/<nama>), uji dengan call_backend_function, dan frontend memanggilnya via fetch. KODE JALAN DI NODE.JS ASLI (sandbox Linux) — seluruh JS modern boleh: async/await, fetch, class, Map/Set, crypto.randomUUID, URL, Buffer, structuredClone; tulis kode backend secanggih engineer sungguhan (validasi input, error handling try/catch, struktur rapi, pesan error informatif). Di dalam kode function tersedia DATABASE BAWAAN db (await db.get(k) / db.set(k,v) / db.del(k) / db.list(prefix) / db.count()) — data bertahan permanen, kuota mengikuti paket langganan user (kalau db.set error kuota, sampaikan ke user untuk upgrade). Untuk PAYMENT BACKEND (Midtrans/Xendit/Tripay/dll): buat function order via db.set + panggil API gateway pakai fetch dengan server-key user (lewat args, JANGAN hardcode), dan buat webhook callback dengan is_public:true lalu berikan webhook_url dari respons ke user untuk dipasang di dashboard gateway (verifikasi signature sesuai dokumentasi gateway di dalam webhook). Untuk data klien sederhana gunakan localStorage. (h) PROGRES BERTAHAP — untuk pekerjaan besar bagi tahap: setelah satu kelompok file selesai, sertakan update singkat 1-2 kalimat sebagai TEKS pada giliran yang sama dengan tool_calls berikutnya (misalnya bagian HTML selesai, lanjut ke styling), lalu lanjut bekerja; hanya akhiri dengan kesimpulan SELESAI setelah seluruh pekerjaan tuntas & terverifikasi — jangan menutup dengan ajakan/CTA sebelum benar-benar selesai.\n\nBUKA HALAMAN DOMAIN (WAJIB): Kalau user minta membuka halaman Domain Clincoo — contoh: \'buka domain saya\', \'buka halaman domain\', \'lihat domain\', \'buka domain\' — MULAI jawabanmu dengan token persis: [[BUKA_HALAMAN:/domain/]] lalu satu kalimat singkat pengantar. Sistem akan otomatis membuka halaman /domain/ untuk user (token tidak akan tampil ke user). Pengecualian dari aturan OUTPUT BERSIH: token ini BOLEH dan WAJIB ditulis saat kondisinya terpenuhi. JANGAN pakai token ini untuk halaman lain; JANGAN menyuruh user membuka halamannya manual kalau kamu bisa membukanya sendiri. AUTO-LANJUT: bila kamu menerima pesan singkat instruksi untuk meneruskan tugas (mis. "Lanjutkan tugas dari titik terhenti..." atau "Teruskan pengerjaan..."), itu instruksi resmi dari sistem: LANGSUNG kerjakan dan TAMATKAN seluruh sisa tugas pada giliran yang sama — tanpa bertanya, tanpa merangkum ulang progres, tanpa mengulang bagian yang sudah selesai. DILARANG menutup giliran dengan tawaran "mau saya lanjutkan?" atau "apakah saya lanjut?" — jika masih ada sisa pekerjaan apa pun, kerjakan langsung sampai benar-benar tuntas, dan hanya berhenti saat seluruh tugas selesai. TYPESCRIPT & NEXT.JS — pipeline deploy Clincoo murni statis (server TIDAK punya Node/npm). TYPESCRIPT DIDUKUNG: tulis kode di file .ts/.tsx — saat deploy server OTOMATIS mengompilasinya menjadi .js murni (tipe & interface dihapus, import type dihapus, JSX dikompilasi jadi React.createElement — WAJIB sertakan React via CDN di HTML bila memakai JSX); tulis TS browser-native: ES module murni dengan import relatif eksplisit, TANPA paket npm/bundler/require/node_modules, TANPA API server seperti fs/process; HTML boleh mereferensikan file .ts langsung (mis. src="app.ts") — server menulis ulang ke .js saat deploy. NEXT.JS TIDAK BISA jalan penuh (SSR/API routes butuh runtime Node) — jangan pernah mengarang bahwa server menjalankan npm install/next build. Jika user minta Next.js: jelaskan jujur sekali singkat, lalu kerjakan opsi terbaik — situs statis lengkap bernuansa Next.js (App Router style: layout, halaman, komponen) yang LANGSUNG jalan dan terpublish, plus bila user mau membawa kodenya, source .tsx rapi di folder src/ untuk dibuild sendiri di mesinnya (output: export). Prioritas utama selalu: publish sukses dan situs benar-benar berfungsi.' + wsAutoRuleText();                
                 try {
                     const apiMessages = [
                         { role: 'system', content: systemInstructions + timeContext + githubConnectionContext + (externalContext ? `\n\n${externalContext}` : '') }
@@ -4719,7 +5560,7 @@ window.chatLivePreview = function () {
                             const cleanNow = (resultJson.text || '');
                             if (cleanNow) accumulatedFinal = accumulatedFinal ? (accumulatedFinal + '\n\n' + cleanNow) : cleanNow;
                             // POLL/FORM/PLUGIN = hentian SENGAJA menunggu input user -> jangan pernah auto-lanjut
-                            if (cleanNow.indexOf('[[POLL]]') !== -1 || cleanNow.indexOf('[[FORM]]') !== -1 || cleanNow.indexOf('[[PLUGIN:') !== -1) {
+                            if (cleanNow.indexOf('[[POLL]]') !== -1 || cleanNow.indexOf('[[FORM]]') !== -1 || cleanNow.indexOf('[[PLUGIN:') !== -1 || cleanNow.indexOf('[[APK_LOGO]]') !== -1) {
                                 resultJson = Object.assign({}, resultJson, { text: accumulatedFinal });
                                 break;
                             }
@@ -4746,6 +5587,21 @@ window.chatLivePreview = function () {
                         if (phaseNote) {
                             const pIdx = messages.findIndex(m => m.id === aiMsgObj.id);
                             const parsedPhase = parsePollBlock(phaseNote);
+                            const parsedPhaseApk = parseApkBlocks(parsedPhase.clean);
+                            if (pIdx !== -1 && parsedPhaseApk.logo) {
+                                // SETUP APK di tengah pekerjaan: AI berhenti total menunggu
+                                // user mengisi logo/nama/pengaturan di kartu, lalu lanjut otomatis.
+                                messages[pIdx].text = parsedPhaseApk.clean;
+                                messages[pIdx].apkLogo = parsedPhaseApk.logo;
+                                messages[pIdx].midPhase = true;
+                                messages[pIdx].isProcessing = false;
+                                messages[pIdx].isTyping = false;
+                                messages[pIdx].statusText = '';
+                                renderMessages();
+                                scrollToBottom(false);
+                                resultJson = { session_id: resultJson.session_id, text: '', tool_calls: [] };
+                                break;
+                            }
                             if (pIdx !== -1 && parsedPhase.questions.length) {
                                 // POLLING di tengah pekerjaan: AI WAJIB BERHENTI di sini —
                                 // pertanyaan belum dijawab user, jadi JANGAN eksekusi
@@ -4765,7 +5621,7 @@ window.chatLivePreview = function () {
                                 break; // keluar dari loop hop — berhenti total menunggu jawaban
                             }
                             if (pIdx !== -1) {
-                                messages[pIdx].text = parsedPhase.clean;
+                                messages[pIdx].text = parsedPhaseApk.clean;
                                 messages[pIdx].midPhase = true;   // chip "sebagian selesai", tanpa tombol aksi
                                 messages[pIdx].isProcessing = false;
                                 messages[pIdx].isTyping = false;
@@ -4811,7 +5667,9 @@ window.chatLivePreview = function () {
                         hasReceivedData = true;
                         clearTimeout(apiTimeout);
                         clearInterval(statusInterval);
-                        try { await continueSilently(aiMsgObj, 'Progres tersimpan — melanjutkan sisa tugas secara otomatis…'); } catch (e2) {}
+                        // tanpa bubbleText: tidak ada teks sistem yang menyela — kartu tool sudah
+                        // menampilkan status lanjutan ("Partially done — continuing…")
+                        try { await continueSilently(aiMsgObj, ''); } catch (e2) {}
                         return;
                     }
 
@@ -4833,6 +5691,7 @@ window.chatLivePreview = function () {
                     // kartu pertanyaan interaktif; teks yang tampil bersih tanpa marker.
                     const finalText = (resultJson && resultJson.text ? resultJson.text : "");
                     const parsedFinal = parsePollBlock(finalText);
+                    const parsedFinalApk = parseApkBlocks(parsedFinal.clean);
                     if (parsedFinal.questions.length) {
                         const fIdx = messages.findIndex(m => m.id === aiMsgObj.id);
                         if (fIdx !== -1) {
@@ -4841,18 +5700,25 @@ window.chatLivePreview = function () {
                             messages[fIdx].pollState = { current: 0, answers: [] };
                         }
                     }
+                    if (parsedFinalApk.logo || parsedFinalApk.card) {
+                        const fIdx = messages.findIndex(m => m.id === aiMsgObj.id);
+                        if (fIdx !== -1) {
+                            if (parsedFinalApk.logo) messages[fIdx].apkLogo = parsedFinalApk.logo;
+                            if (parsedFinalApk.card) messages[fIdx].apkBuild = parsedFinalApk.card;
+                        }
+                    }
                     if (deltaStreamed) {
-                        if (parsedFinal.clean !== deltaStreamed) {
+                        if (parsedFinalApk.clean !== deltaStreamed) {
                             // final beda dari teks terstream (mis. ada catatan tool di tengah) -> render otentik
-                            streamingBuffer = parsedFinal.clean;
-                            charIndex = parsedFinal.clean.length;
+                            streamingBuffer = parsedFinalApk.clean;
+                            charIndex = parsedFinalApk.clean.length;
                             const dfIdx = messages.findIndex(m => m.id === aiMsgObj.id);
-                            if (dfIdx !== -1) messages[dfIdx].text = parsedFinal.clean;
+                            if (dfIdx !== -1) messages[dfIdx].text = parsedFinalApk.clean;
                             const dfEl = document.getElementById('msg-text-' + aiMsgObj.id);
-                            if (dfEl) dfEl.innerHTML = formatMarkdown(parsedFinal.clean);
+                            if (dfEl) dfEl.innerHTML = formatMarkdown(parsedFinalApk.clean);
                         }
                     } else {
-                        streamingBuffer += parsedFinal.clean;
+                        streamingBuffer += parsedFinalApk.clean;
                     }
                     isFetchComplete = true;
                 } catch (e) {
@@ -4891,15 +5757,10 @@ window.chatLivePreview = function () {
                                 // Pesan user TIDAK dikembalikan ke kolom ketik & komposer TIDAK
                                 // dikunci — user harus bisa membalas "lanjut" untuk meneruskan.
                             } else {
-                                streamingBuffer = qMsg + " Pesanmu aman di kolom ketik — upgrade paket untuk kuota & prioritas lebih besar.";
-                                const lastUserIdx = messages.map(m => m.role).lastIndexOf('user');
-                                if (lastUserIdx !== -1 && !chatInput.value.trim()) {
-                                    chatInput.value = messages[lastUserIdx].text || '';
-                                    messages.splice(lastUserIdx, 1);
-                                    renderMessages();
-                                    adjustInputHeight();
-                                }
-                                setQuotaLock(true, qMsg + ' Pesanmu aman di kolom ketik.');
+                                // KUOTA HABIS (bukan di tengah tugas): pesan user tetap terkirim
+                                // & tersimpan di chat; balasan AI = kartu kuota + link upgrade.
+                                streamingBuffer = quotaReplyText(qMsg);
+                                setQuotaLock(true, 'Kuota AI habis — upgrade paket untuk lanjut mengobrol.');
                             }
                             if (e.ctxOverflow && doneTools.length === 0) setQuotaLock(false);
                         } else {
@@ -5101,11 +5962,6 @@ window.chatLivePreview = function () {
 
         btnAction.addEventListener('click', (e) => {
             e.preventDefault();
-            if (quotaLocked && !isGenerating) {
-                // Terkunci: satu-satunya jalan keluar adalah upgrade paket, bukan kirim ulang diam-diam
-                window.location.href = upgradeUrl();
-                return;
-            }
             if (isGenerating) {
                 stopGeneration();
                 const currentMsg = messages.find(m => m.id === currentAiMessageId);
@@ -5125,7 +5981,6 @@ window.chatLivePreview = function () {
         chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                if (quotaLocked) return;
                 handleSubmit();
             }
         });
@@ -5636,11 +6491,11 @@ function clinqooLaunchEditor(pid) {
   // ===== Data paket: identik dengan halaman Upgrade (akun/langganan/upgrade) =====
   var plans=[
     { name:'Starter', tagline:'Untuk individu yang baru memulai.', price:'Gratis', per:'', hot:false,
-      items:[['Hingga 3 proyek aktif + editor kode',true],['1 kolaborator per proyek',true],['Chat AI di setiap proyek (50 pesan/bulan) + pencarian web',true],['Kelola 1 domain: verifikasi, DNS & SSL',true], ['3 template proyek siap pakai',true],['Tugas terjadwal & notifikasi',true],['Deploy web 5x per bulan',true],['Editor full-stack & integrasi GitHub',false],['Domain tanpa batas & deploy tanpa batas',false]] },
+      items:[['Kuota workspace 1 GB per proyek',true],['Hingga 3 proyek aktif + editor kode',true],['1 kolaborator per proyek',true],['Chat AI di setiap proyek (50 pesan/bulan) + pencarian web',true],['Kelola 1 domain: verifikasi, DNS & SSL',true], ['3 template proyek siap pakai',true],['Tugas terjadwal & notifikasi',true],['Deploy web 5x per bulan',true],['Editor full-stack & integrasi GitHub',false],['Domain tanpa batas & deploy tanpa batas',false]] },
     { name:'Pro', tagline:'Untuk profesional dan kreator aktif.', price:'49K', per:'/bln', hot:true,
-      items:[['Hingga 10 proyek aktif & 5 kolaborator per proyek',true],['Semua fitur Starter',true],['Editor kode full-stack: bangun & publikasikan dari browser',true],['Integrasi GitHub: impor repo, AI kerja langsung di repo kamu',true],['Chat AI hingga 500 pesan/bulan (maks 50/hari)',true],['Domain tanpa batas: verifikasi, DNS & SSL',true],['Deploy web hingga 25x per bulan ke domain sendiri',true]] },
+      items:[['Kuota workspace 5 GB per proyek',true],['Hingga 10 proyek aktif & 5 kolaborator per proyek',true],['Semua fitur Starter',true],['Editor kode full-stack: bangun & publikasikan dari browser',true],['Integrasi GitHub: impor repo, AI kerja langsung di repo kamu',true],['Chat AI hingga 500 pesan/bulan (maks 50/hari)',true],['Domain tanpa batas: verifikasi, DNS & SSL',true],['Deploy web hingga 25x per bulan ke domain sendiri',true]] },
     { name:'Bisnis', tagline:'Untuk tim dan operasi skala besar.', price:'129K', per:'/bln', hot:false,
-      items:[['Semua fitur Pro',true],['Chat AI hingga 2.000 pesan/bulan (maks 150/hari)',true],['Hingga 50 proyek aktif & 20 kolaborator per proyek',true],['Kontrol akses & keamanan proyek lanjutan',true], ['Dilindungi Password & ekspor data penuh akun',true],['Deploy web tanpa batas',true]] }
+      items:[['Kuota workspace 20 GB per proyek',true],['Semua fitur Pro',true],['Chat AI hingga 2.000 pesan/bulan (maks 150/hari)',true],['Hingga 50 proyek aktif & 20 kolaborator per proyek',true],['Kontrol akses & keamanan proyek lanjutan',true], ['Dilindungi Password & ekspor data penuh akun',true],['Deploy web tanpa batas',true]] }
   ];
   function checkoutUrl(name){
     var base=(location.pathname.indexOf('/Clincoo')!==-1)?'/Clincoo.':'';
@@ -5676,7 +6531,7 @@ function clinqooLaunchEditor(pid) {
     sheetEl.innerHTML=
       '<div id="pps-backdrop" class="fixed inset-0 z-[95] opacity-0 transition-opacity duration-300" style="background:rgba(0,0,0,.45)"></div>'+
       '<div class="fixed bottom-0 left-0 right-0 z-[96] flex justify-center pointer-events-none">'+
-        '<div id="pps-card" class="pps-card pointer-events-auto w-full max-w-md bg-white rounded-t-3xl px-4 pt-3 pb-5 translate-y-full transition-transform duration-300 ease-out shadow-2xl" style="max-height:90dvh;overflow-y:auto;padding-bottom:calc(1.25rem + env(safe-area-inset-bottom,0px));">'+
+        '<div id="pps-card" class="pps-card pointer-events-auto w-full bg-white rounded-t-3xl px-4 pt-3 pb-5 translate-y-full transition-transform duration-300 ease-out shadow-2xl" style="height:100dvh;overflow-y:auto;padding-bottom:calc(1.25rem + env(safe-area-inset-bottom,0px));">'+
           '<div class="flex justify-center"><div class="w-10 h-1.5 rounded-full bg-gray-200 mb-2"></div></div>'+
           '<div class="flex items-start justify-between px-1">'+
             '<div class="pr-8"><h3 class="text-base font-semibold text-gray-900">Paket Clincoo</h3>'+

@@ -1,10 +1,13 @@
 // Pembayaran — Clincoo sebagai payment gateway.
 // Clincoo menerbitkan kredensial ClincooPay sendiri per proyek (account_id + secret + pay_key).
-// Saat pembeli membayar, Clincoo-lah yang memanggil provider QRIS (Pakasir API v2) di belakang layar
-// memakai kredensial gateway (env: PAKASIR_SLUG, PAKASIR_API_KEY).
+// Saat pembeli membayar, Clincoo-lah yang memanggil provider QRIS BuatQris (api.buatqris.site)
+// di belakang layar memakai kredensial gateway global (BUATQRIS_ACCOUNT_ID + BUATQRIS_SECRET_TOKEN,
+// env atau D1 env_vars — sama dengan yang dipakai top-up saldo).
 // User TIDAK pernah tahu/memasukkan kredensial provider.
 //
-// Webhook masuk dari Pakasir ditangani functions/api/pay/webhook.js.
+// Webhook BuatQris (satu callback URL bersama top-up) ditangani functions/api/topup-qris.js:
+// order id ClincooPay ditanam di description QRIS supaya webhook bisa kecocokkan.
+// Webhook era Pakasir (transaksi lama yang masih pending) tetap ditangani functions/api/pay/webhook.js.
 //
 // POST {action:'activate', project_id}                    → aktifkan + terbitkan kredensial  [auth]
 // GET  ?action=config&project_id=...                      → status, pay key, saldo            [auth]
@@ -13,6 +16,7 @@
 // POST {action:'withdrawals', project_id}                → log penarikan                    [auth]
 // POST {action:'create', key, amount, description}       → buat transaksi QRIS              [publik via pay_key]
 // GET  ?action=status&key=...&order_id=...               → cek status transaksi              [publik via pay_key]
+// POST {action:'status', key, order_id}                  → cek status transaksi (body)        [publik via pay_key]
 // POST {action:'callback', ...}                          → notifikasi dari provider → forward ke webhook proyek [callback secret]
 
 import { guardProject, currentUser } from '../user-scope.js';
@@ -33,8 +37,31 @@ const CORS = {
 const PAKASIR_API = 'https://app.pakasir.com';
 // throttle cek status: Pakasir membatasi 4 detik per transaksi
 const PKS_THROTTLE = new Map();
+// anti banjir transaksi: batasi create dari endpoint publik per pay_key (12 transaksi / 5 menit, per isolate)
+const CREATE_THROTTLE = new Map();
 
 export function gatewayReady(env) { return !!(env.PAKASIR_SLUG && env.PAKASIR_API_KEY); }
+
+// Gateway aktif (era BuatQris): kredensial global tersedia.
+async function bqCreds(env) {
+  const account_id = await getSecret(env, 'BUATQRIS_ACCOUNT_ID');
+  const secret_token = await getSecret(env, 'BUATQRIS_SECRET_TOKEN');
+  return { account_id: account_id || '', secret_token: secret_token || '', ok: !!(account_id && secret_token) };
+}
+
+const BQ_BASE = 'https://api.buatqris.site';
+
+// Panggil API BuatQris (POST form-urlencoded — pola sama dengan topup-qris.js)
+async function bqPost(params) {
+  try {
+    const res = await fetch(BQ_BASE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(params).toString()
+    });
+    return await res.json();
+  } catch { return null; }
+}
 
 export async function pakasirFetch(env, path, init) {
   try {
@@ -48,7 +75,11 @@ export async function pakasirFetch(env, path, init) {
 }
 
 function qrImageUrl(qrString) {
-  return qrString ? 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=12&data=' + encodeURIComponent(qrString) : '';
+  if (!qrString) return '';
+  // era BuatQris: qr_string berisi URL gambar QR siap tampil — pakai apa adanya.
+  // era Pakasir: string EMV — dibungkus jadi gambar QR.
+  if (/^https?:\/\//i.test(qrString)) return qrString;
+  return 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=12&data=' + encodeURIComponent(qrString);
 }
 
 export function mapPksStatus(st) {
@@ -117,6 +148,10 @@ async function ensureTables(db) {
   // Migrasi kolom tambahan untuk halaman checkout hosted (/pay/) — idempotent
   try { await db.prepare("ALTER TABLE pay_transactions ADD COLUMN qr_string TEXT DEFAULT ''").run(); } catch (e) {}
   try { await db.prepare('ALTER TABLE pay_transactions ADD COLUMN total_payment INTEGER').run(); } catch (e) {}
+  try { await db.prepare("ALTER TABLE pay_transactions ADD COLUMN bq_txn_id TEXT DEFAULT ''").run(); } catch (e) {}
+  try { await db.prepare('ALTER TABLE pay_transactions ADD COLUMN gateway_fee INTEGER').run(); } catch (e) {}
+  try { await db.prepare('ALTER TABLE pay_transactions ADD COLUMN credit_amount INTEGER').run(); } catch (e) {}
+  try { await db.prepare('ALTER TABLE pay_transactions ADD COLUMN expired_at TEXT').run(); } catch (e) {}
   await db.prepare(`CREATE TABLE IF NOT EXISTS pay_withdrawals (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id TEXT NOT NULL,
@@ -192,8 +227,9 @@ function randKey(n) {
   return s;
 }
 
+const CP_ORDER_PREFIX = 'clincoo-cp-';
 function genOrderId() {
-  return 'clincoo' + randKey(17);
+  return CP_ORDER_PREFIX + randKey(17);
 }
 
 // ---- Saldo: total masuk (paid) - penarikan (pending + done) ----
@@ -507,7 +543,7 @@ async function sendDestOtpEmail(env, toEmail, code, dest) {
 }
 
 async function calcBalance(db, projectId) {
-  const paid = await db.prepare(`SELECT COALESCE(SUM(amount),0) AS total FROM pay_transactions WHERE project_id = ? AND status = 'paid'`).bind(projectId).first();
+  const paid = await db.prepare(`SELECT COALESCE(SUM(COALESCE(credit_amount, amount)),0) AS total FROM pay_transactions WHERE project_id = ? AND status = 'paid'`).bind(projectId).first();
   const wd = await db.prepare(`SELECT COALESCE(SUM(amount + COALESCE(fee, 0)), 0) AS total FROM pay_withdrawals WHERE project_id = ? AND status != 'rejected'`).bind(projectId).first();
   const totalPaid = (paid && paid.total) || 0;
   const totalWithdrawn = (wd && wd.total) || 0;
@@ -515,11 +551,120 @@ async function calcBalance(db, projectId) {
 }
 
 
+// expired_at dari BuatQris berformat WIB ("2026-10-04 10:54:16") → konversi ke UTC agar konsisten dengan created_at
+function bqExpiredUtc(str) {
+  try {
+    const m = String(str || '').match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+    if (!m) return null;
+    const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4] - 7, +m[5], +m[6]));
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString().slice(0, 19).replace('T', ' ');
+  } catch (e) { return null; }
+}
+
+// kedaluwarsa bila lewat expired_at dari provider; fallback 15 menit utk transaksi lama
+function txStale(tx) {
+  if (tx.expired_at) {
+    const e = Date.parse(String(tx.expired_at).replace(' ', 'T') + 'Z');
+    if (!isNaN(e)) return Date.now() > e;
+  }
+  return !!(tx.created_at && (Date.now() - Date.parse(String(tx.created_at).replace(' ', 'T') + 'Z')) > 15 * 60 * 1000);
+}
+
+// Cek status transaksi QRIS — dipakai bersama oleh GET (action via query param)
+// dan POST (action via body), agar caller dengan salah satu gaya pun tetap jalan.
+async function handlePayStatus(env, db, key, orderId) {
+  if (!key || !orderId) return json({ error: 'key dan order_id wajib diisi' }, 400);
+  const tx = await db.prepare('SELECT * FROM pay_transactions WHERE pay_key = ? AND order_id = ?').bind(key, orderId).first();
+  if (!tx) return json({ error: 'transaksi tidak ditemukan' }, 404);
+  let expLeft = null;
+  if (tx.expired_at) {
+    const e = Date.parse(String(tx.expired_at).replace(' ', 'T') + 'Z');
+    if (!isNaN(e)) expLeft = Math.max(0, Math.round((e - Date.now()) / 1000));
+  }
+  const det = {
+    order_id: tx.order_id, description: tx.description || '',
+    qr_image: qrImageUrl(tx.qr_string || ''),
+    total_payment: (tx.total_payment != null ? tx.total_payment : tx.amount),
+    created_at: tx.created_at || '',
+    expires_at: tx.expired_at || '',
+    expires_in: expLeft
+  };
+  if (tx.status === 'paid') return json({ success: true, status: 'paid', amount: tx.amount, ...det });
+  // ==== BuatQris: cek langsung ke provider (sumber kebenaran) — terbayar terdeteksi dalam hitungan detik ====
+  if ((tx.status === 'pending' || tx.status === 'expired') && tx.bq_txn_id) {
+    const bq = await bqCreds(env);
+    if (bq.ok) {
+      const last = PKS_THROTTLE.get(tx.id) || 0;
+      if (Date.now() - last < 4000) return json({ success: true, status: tx.status, amount: tx.amount, ...det });
+      PKS_THROTTLE.set(tx.id, Date.now());
+      let d = null;
+      try { d = await bqPost({ action: 'api_check_status', account_id: bq.account_id, secret_token: bq.secret_token, transaction_id: tx.bq_txn_id }); } catch (e) {}
+      const dd = (d && d.data) || d || {};
+      const pst = String(dd.status || '').toLowerCase();
+      let st = tx.status;
+      if (pst === 'success' || pst === 'paid' || pst === 'berhasil' || pst === 'settlement') st = 'paid';
+      else if (['expired', 'expire', 'fail', 'failed', 'cancel', 'cancelled'].indexOf(pst) !== -1) st = 'expired';
+      if (st === 'paid') {
+        const gfee = parseInt(dd.admin_fee, 10) || 0;
+        const credit = parseInt(dd.credit_amount, 10) || 0;
+        await db.prepare("UPDATE pay_transactions SET status = 'paid', gateway_fee = COALESCE(?, gateway_fee), credit_amount = COALESCE(NULLIF(?, 0), credit_amount, amount), updated_at = datetime('now') WHERE id = ?").bind(gfee, credit, tx.id).run();
+        try { await forwardPayWebhook(db, tx, 'paid'); } catch (e) {}
+        return json({ success: true, status: 'paid', amount: tx.amount, ...det });
+      }
+      if (st !== tx.status) {
+        await db.prepare("UPDATE pay_transactions SET status = ?, updated_at = datetime('now') WHERE id = ?").bind(st, tx.id).run();
+        return json({ success: true, status: st, amount: tx.amount, ...det });
+      }
+      if (tx.status === 'pending' && txStale(tx)) {
+        await db.prepare("UPDATE pay_transactions SET status = 'expired', updated_at = datetime('now') WHERE id = ?").bind(tx.id).run();
+        return json({ success: true, status: 'expired', amount: tx.amount, ...det });
+      }
+      return json({ success: true, status: tx.status, amount: tx.amount, ...det });
+    }
+  }
+  // QRIS kedaluwarsa (transaksi lama tanpa ID BuatQris) — histori tetap jujur
+  if (tx.status === 'pending' && txStale(tx)) {
+    await db.prepare("UPDATE pay_transactions SET status = 'expired', updated_at = datetime('now') WHERE id = ?").bind(tx.id).run();
+    return json({ success: true, status: 'expired', amount: tx.amount, ...det });
+  }
+  if (!tx.trx_ref) return json({ success: true, status: tx.status, amount: tx.amount, ...det });
+  // hormati rate limit Pakasir: 4 detik per transaksi
+  const last = PKS_THROTTLE.get(tx.id) || 0;
+  if (Date.now() - last < 4000) return json({ success: true, status: tx.status, amount: tx.amount, ...det });
+  PKS_THROTTLE.set(tx.id, Date.now());
+  const d = await pakasirFetch(env, '/api/v2/transaction-status/' + encodeURIComponent(env.PAKASIR_SLUG) + '/' + encodeURIComponent(tx.trx_ref), { method: 'GET' });
+  if (d.error) return json({ success: true, status: tx.status, amount: tx.amount, message: d.message || '', ...det });
+  const st = mapPksStatus(d.status);
+  if (st !== tx.status) {
+    await db.prepare('UPDATE pay_transactions SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').bind(st, tx.id).run();
+  }
+  return json({ success: true, status: st, amount: tx.amount, message: d.message || '', ...det });
+}
+
 // ---- GET ----
 export async function onRequestGet({ request, env }) {
   // verifikasi tanda tangan permintaan penarikan dari email (publik, gerbang = sig HMAC)
   {
     const u = new URL(request.url);
+    if (u.searchParams.get('action') === 'qr_image') {
+      const key = String(u.searchParams.get('key') || '');
+      const orderId = String(u.searchParams.get('order_id') || '');
+      if (!key || !orderId) return json({ error: 'key dan order_id wajib diisi' }, 400);
+      const tx = await env.DB.prepare('SELECT * FROM pay_transactions WHERE pay_key = ? AND order_id = ?').bind(key, orderId).first();
+      if (!tx) return json({ error: 'transaksi tidak ditemukan' }, 404);
+      const img = qrImageUrl(tx.qr_string || '');
+      if (!img) return json({ error: 'QR tidak tersedia untuk transaksi ini' }, 404);
+      try {
+        const r = await fetch(img);
+        if (!r.ok) return json({ error: 'Gagal mengunduh gambar QR' }, 502);
+        const buf = new Uint8Array(await r.arrayBuffer());
+        let bin = '';
+        for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+        const ct = r.headers.get('content-type') || 'image/png';
+        return json({ success: true, data_url: 'data:' + ct + ';base64,' + btoa(bin) });
+      } catch (e) { return json({ error: 'Gagal mengunduh gambar QR' }, 502); }
+    }
     if (u.searchParams.get('action') === 'withdraw_verify') {
       const id = Number(u.searchParams.get('id') || 0);
       const sig = String(u.searchParams.get('sig') || '');
@@ -559,11 +704,11 @@ export async function onRequestGet({ request, env }) {
     if (deny) return deny;
     const row = await db.prepare('SELECT * FROM pay_creds WHERE project_id = ?').bind(projectId).first();
     const bal = await calcBalance(db, projectId);
-    if (!row) return json({ success: true, active: false, gateway_ready: gatewayReady(env), ...bal });
+    if (!row) return json({ success: true, active: false, gateway_ready: (await bqCreds(env)).ok, ...bal });
     return json({
       success: true,
       active: true,
-      gateway_ready: gatewayReady(env),
+      gateway_ready: (await bqCreds(env)).ok,
       account_id: row.account_id,
       pay_key: row.pay_key,
       ...bal
@@ -571,30 +716,7 @@ export async function onRequestGet({ request, env }) {
   }
 
   if (action === 'status') {
-    const key = url.searchParams.get('key') || '';
-    const orderId = url.searchParams.get('order_id') || '';
-    if (!key || !orderId) return json({ error: 'key dan order_id wajib diisi' }, 400);
-    const tx = await db.prepare('SELECT * FROM pay_transactions WHERE pay_key = ? AND order_id = ?').bind(key, orderId).first();
-    if (!tx) return json({ error: 'transaksi tidak ditemukan' }, 404);
-    const det = {
-      order_id: tx.order_id, description: tx.description || '',
-      qr_image: qrImageUrl(tx.qr_string || ''),
-      total_payment: (tx.total_payment != null ? tx.total_payment : tx.amount),
-      created_at: tx.created_at || ''
-    };
-    if (tx.status === 'paid') return json({ success: true, status: 'paid', amount: tx.amount, ...det });
-    if (!tx.trx_ref) return json({ success: true, status: tx.status, amount: tx.amount, ...det });
-    // hormati rate limit Pakasir: 4 detik per transaksi
-    const last = PKS_THROTTLE.get(tx.id) || 0;
-    if (Date.now() - last < 4000) return json({ success: true, status: tx.status, amount: tx.amount, ...det });
-    PKS_THROTTLE.set(tx.id, Date.now());
-    const d = await pakasirFetch(env, '/api/v2/transaction-status/' + encodeURIComponent(env.PAKASIR_SLUG) + '/' + encodeURIComponent(tx.trx_ref), { method: 'GET' });
-    if (d.error) return json({ success: true, status: tx.status, amount: tx.amount, message: d.message || '', ...det });
-    const st = mapPksStatus(d.status);
-    if (st !== tx.status) {
-      await db.prepare('UPDATE pay_transactions SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').bind(st, tx.id).run();
-    }
-    return json({ success: true, status: st, amount: tx.amount, message: d.message || '', ...det });
+    return handlePayStatus(env, db, url.searchParams.get('key') || '', url.searchParams.get('order_id') || '');
   }
 
   return json({ error: 'action tidak dikenal' }, 400);
@@ -610,6 +732,11 @@ export async function onRequestPost({ request, env }) {
   try { body = await request.json(); } catch (e) { return json({ error: 'body JSON tidak valid' }, 400); }
   const action = body.action || '';
   const projectId = body.project_id || '';
+
+  // ===== Cek status transaksi (publik via pay_key) — juga tersedia via GET ?action=status =====
+  if (action === 'status') {
+    return handlePayStatus(env, db, String(body.key || ''), String(body.order_id || ''));
+  }
 
   // ===== Aktifkan ClincooPay + terbitkan kredensial (auth) =====
   if (action === 'activate') {
@@ -636,7 +763,7 @@ export async function onRequestPost({ request, env }) {
     const deny = await guardPay(env, request, projectId);
     if (deny) return deny;
     const bal = await calcBalance(db, projectId);
-    return json({ success: true, ...bal, gateway_ready: gatewayReady(env) });
+    return json({ success: true, ...bal, gateway_ready: (await bqCreds(env)).ok });
   }
 
   // ===== Tarik saldo → permintaan penarikan (auth) =====
@@ -791,6 +918,8 @@ export async function onRequestPost({ request, env }) {
   if (action === 'transactions') {
     const deny = await guardPay(env, request, projectId);
     if (deny) return deny;
+    // sapu otomatis: QRIS pending lebih dari 15 menit → kedaluwarsa
+    try { await db.prepare("UPDATE pay_transactions SET status = 'expired', updated_at = datetime('now') WHERE project_id = ? AND status = 'pending' AND (CASE WHEN expired_at IS NOT NULL AND expired_at != '' THEN expired_at < datetime('now') ELSE created_at < datetime('now', '-15 minutes') END)").bind(projectId).run(); } catch (e) {}
     const rows = await db.prepare('SELECT order_id, amount, description, status, created_at FROM pay_transactions WHERE project_id = ? ORDER BY id DESC LIMIT 25').bind(projectId).all();
     return json({ success: true, transactions: rows.results || [] });
   }
@@ -833,19 +962,36 @@ export async function onRequestPost({ request, env }) {
     if (!amount || amount < 1000 || amount > 100000000) return json({ error: 'Nominal harus Rp 1.000 – Rp 100.000.000' }, 400);
     const creds = await db.prepare('SELECT * FROM pay_creds WHERE pay_key = ?').bind(key).first();
     if (!creds) return json({ error: 'pay key tidak dikenal' }, 404);
-    if (!gatewayReady(env)) {
+    // anti banjir transaksi dari endpoint publik
+    const nowMs = Date.now();
+    const arr = (CREATE_THROTTLE.get(key) || []).filter(t => nowMs - t < 5 * 60 * 1000);
+    if (arr.length >= 12) return json({ success: false, message: 'Terlalu banyak transaksi berurutan — tunggu beberapa menit.' }, 429);
+    arr.push(nowMs); CREATE_THROTTLE.set(key, arr);
+    const bq = await bqCreds(env);
+    if (!bq.ok) {
       return json({ success: false, error: 'gateway_not_ready', message: 'Pembayaran QRIS ClincooPay sedang dalam proses aktivasi. Hubungi tim Clincoo.' }, 503);
     }
 
     const orderId = genOrderId();
-    const txn = await pakasirFetch(env,
-      '/api/v2/create-transaction/' + encodeURIComponent(env.PAKASIR_SLUG) + '/' + encodeURIComponent(orderId),
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: 'qris', amount: amount }) });
-    const ok = txn && txn.txn_id;
-    await db.prepare('INSERT INTO pay_transactions (project_id, pay_key, order_id, trx_ref, amount, description, status, qr_string, total_payment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(creds.project_id, key, orderId, ok ? txn.txn_id : '', amount, description, ok ? 'pending' : 'failed', txn.qr_string || '', txn.total_payment || amount).run();
+    // Order id ditanam di description QRIS supaya webhook BuatQris (satu callback URL bersama
+    // top-up) bisa kecocokkan transaksi ini — sama seperti pola topup-qris.js.
+    const pay = await bqPost({
+      action: 'api_create_qris',
+      account_id: bq.account_id,
+      secret_token: bq.secret_token,
+      amount: String(amount),
+      description: (description ? description + ' ' : '') + orderId,
+      qris_method: creds.qris_method || 'qris_two'
+    });
+    const p = (pay && (pay.qr_url || pay.payment_url || pay.status)) ? pay : (pay && pay.data) || null;
+    const ok = !!(p && p.qr_url);
+    const total = ok ? (parseInt(p.total_amount || p.total || p.total_payment || p.amount || amount, 10) || amount) : amount;
+    const expiredAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    const expUtc = (ok ? bqExpiredUtc(p.expired_at) : null) || new Date(Date.now() + 15 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
+    await db.prepare('INSERT INTO pay_transactions (project_id, pay_key, order_id, trx_ref, amount, description, status, qr_string, total_payment, bq_txn_id, gateway_fee, credit_amount, expired_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(creds.project_id, key, orderId, '', amount, description, ok ? 'pending' : 'failed', ok ? p.qr_url : '', total, ok ? (p.transaction_id || '') : '', ok ? (parseInt(p.admin_fee, 10) || 0) : 0, ok ? (parseInt(p.credit_amount, 10) || amount) : amount, expUtc).run();
     if (!ok) {
-      return json({ success: false, message: (txn && (txn.message || txn.error)) || 'Gagal membuat QRIS ClincooPay.' }, 502);
+      return json({ success: false, message: (pay && (pay.message || pay.msg)) || 'Gagal membuat QRIS ClincooPay.' }, 502);
     }
     const origin = new URL(request.url).origin;
     return json({
@@ -853,13 +999,13 @@ export async function onRequestPost({ request, env }) {
       order_id: orderId,
       checkout_url: origin + '/pay/?order_id=' + encodeURIComponent(orderId) + '&key=' + encodeURIComponent(key),
       amount: amount,
-      qr_image: qrImageUrl(txn.qr_string),
-      qr_string: txn.qr_string || '',
-      va_number: txn.va_number || '',
-      payment_url: txn.payment_link || '',
-      total_payment: txn.total_payment || amount,
-      expires_at: txn.expired_at || '',
-      is_sandbox: !!txn.is_sandbox
+      qr_image: qrImageUrl(p.qr_url),
+      qr_string: p.qr_url,
+      va_number: '',
+      payment_url: p.payment_url || '',
+      total_payment: total,
+      expires_at: expiredAt,
+      is_sandbox: false
     });
   }
 
@@ -877,8 +1023,9 @@ export async function onRequestPost({ request, env }) {
     const st = pickStatus(body);
     if (st !== tx.status) {
       await db.prepare('UPDATE pay_transactions SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').bind(st, tx.id).run();
+      // hanya saat transisi — retry provider nggak bikin webhook proyek kena notifikasi ganda
+      if (st === 'paid') { try { await forwardPayWebhook(db, tx, st); } catch (e) {} }
     }
-    await forwardPayWebhook(db, tx, st);
     return json({ success: true, status: st });
   }
 

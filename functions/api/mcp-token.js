@@ -1,143 +1,202 @@
-// Cloudflare Pages Functions — token + izin akses MCP per proyek.
-import { getProjectTables } from './_tables.js';
-import { currentUser } from './user-scope.js';
-import { randomHex } from './auth/shared.js';
+// Cloudflare Pages Functions — Manajemen token MCP per proyek (dipanggil halaman Server MCP)
+// POST   /api/mcp-token { project_id }        -> buat/ganti token MCP (butuh login Clincoo)
+// GET    /api/mcp-token?project_id=xxx       -> status + token (butuh login)
+// PATCH  /api/mcp-token { project_id, scopes } -> ubah izin tanpa ganti token
+// DELETE /api/mcp-token?project_id=xxx        -> cabut akses (butuh login)
+// Token dipakai platform AI lain sebagai Bearer untuk endpoint /api/mcp.
+//
+// PENYIMPANAN GANDA (unifikasi 2026-10-03): sumber kebenaran = tabel mcp_tokens
+// (satu-satunya yang menyimpan be2_token, wajib untuk endpoint /api/mcp).
+// Sebagai CERMIN, token+izin+created_at juga ditulis ke project-settings
+// (mcp_token / mcp_scopes / mcp_created_at) — dipakai versi lama sesi paralel.
+// GET: kalau tabel kosong tapi cermin berisi (token aktif dari versi lama),
+// otomatis DIMIGRASI ke tabel (be2_token = sesi pemilik yang sedang login),
+// sehingga token lama langsung dipakai endpoint /api/mcp tanpa aktivasi ulang.
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization'
 };
-function json(data, status) {
-  return new Response(JSON.stringify(data), { status: status || 200, headers: { 'Content-Type': 'application/json', ...CORS } });
+
+const J = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', ...CORS } });
+
+const BE2 = 'https://clincoo-be2.pages.dev/api';
+
+async function be2Json(path, token, init = {}) {
+  const res = await fetch(BE2 + path, { ...init, headers: { ...(init.headers || {}), Authorization: 'Bearer ' + token } });
+  const data = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, data };
 }
 
-export async function onRequestOptions() { return new Response(null, { headers: CORS }); }
+async function ensureTables(env) {
+  await env.DB.prepare(
+    `CREATE TABLE IF NOT EXISTS mcp_tokens (
+      project_id TEXT PRIMARY KEY,
+      token TEXT NOT NULL,
+      be2_token TEXT NOT NULL,
+      scopes TEXT DEFAULT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    )`
+  ).run();
+  try {
+    await env.DB.prepare('ALTER TABLE mcp_tokens ADD COLUMN scopes TEXT DEFAULT NULL').run();
+  } catch (e) { /* kolom sudah ada */ }
+}
 
-async function requireOwnedProject(env, request) {
-  const user = await currentUser(env, request);
-  if (!user) return { error: json({ error: 'Login diperlukan', need_login: true }, 401) };
+// Guard: wajib token be2 milik akun yang memiliki proyek ini.
+async function guardOwner(request, env, projectId) {
+  if (!projectId) return { res: J({ error: 'Parameter project_id wajib' }, 400) };
+  const h = request.headers.get('Authorization') || '';
+  const m = /^Bearer\s+(.+)$/i.exec(h);
+  if (!m) return { res: J({ error: 'Login diperlukan' }, 401) };
+  const tok = m[1].trim();
+  const me = await be2Json('/auth/me', tok);
+  if (!me.ok || !me.data.authenticated) return { res: J({ error: 'Token tidak valid' }, 401) };
+  // Cek kepemilikan via /api/projects — BUG LAMA: kalau fetch ini gagal (jaringan/server lelet,
+  // cold start, dll), pj.data.projects jadi undefined dan kode salah nyimpulkan "bukan milik akun ini"
+  // padahal sebenarnya cuma gagal cek sementara. Sekarang gagal-fetch dibedakan dari gagal-kepemilikan.
+  const pj = await be2Json('/projects', tok);
+  if (!pj.ok) return { res: J({ error: 'Gagal memeriksa daftar proyek, coba lagi sebentar' }, 503) };
+  const owned = (pj.data.projects || []).some(p => String(p.id) === String(projectId));
+  if (!owned) return { res: J({ error: 'Proyek tidak ditemukan atau bukan milik akun ini' }, 403) };
+  return { token: tok };
+}
+
+function newMcpToken() {
+  const b = new Uint8Array(24);
+  crypto.getRandomValues(b);
+  return Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
+}
+
+export async function onRequestOptions() {
+  return new Response(null, { status: 204, headers: CORS });
+}
+
+// Izin MCP — read default ON, sisanya default OFF (least privilege).
+// 2026-10-03: izin baru chat (AI Clincoo), deploy (publikasi situs),
+// settings (panel pengaturan/integrasi), email (kirim email proyek).
+function normalizeScopes(raw) {
+  const r = raw && typeof raw === 'object' ? raw : {};
+  return {
+    read: r.read !== false,
+    write: r.write === true,
+    delete: r.delete === true,
+    chat: r.chat === true,
+    deploy: r.deploy === true,
+    settings: r.settings === true,
+    email: r.email === true,
+    notif: r.notif === true
+  };
+}
+
+// ---- Cermin di project-settings (kompatibilitas versi lama sesi paralel) ----
+async function mirrorRead(token, projectId) {
+  const r = await be2Json('/project-settings?project_id=' + encodeURIComponent(projectId) + '&key=mcp_token', token);
+  if (!r.ok || !r.data) return null;
+  const tok = String(r.data.value || '').trim();
+  if (!tok) return null;
+  const [sc, ca] = await Promise.all([
+    be2Json('/project-settings?project_id=' + encodeURIComponent(projectId) + '&key=mcp_scopes', token),
+    be2Json('/project-settings?project_id=' + encodeURIComponent(projectId) + '&key=mcp_created_at', token)
+  ]);
+  let scopes = null;
+  try { scopes = sc.ok && sc.data && sc.data.value ? JSON.parse(sc.data.value) : null; } catch (e) {}
+  return { token: tok, scopes, created_at: (ca.ok && ca.data && ca.data.value) || null };
+}
+
+async function mirrorWrite(token, projectId, payload) {
+  // payload: { token, scopes, created_at } — null/undefined berarti pertahankan nilai lama
+  const body = { project_id: projectId };
+  if (payload.token !== undefined) body.mcp_token = payload.token || '';
+  if (payload.scopes !== undefined) body.mcp_scopes = payload.scopes ? JSON.stringify(payload.scopes) : '';
+  if (payload.created_at !== undefined) body.mcp_created_at = payload.created_at || '';
+  await be2Json('/project-settings', token, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+}
+
+export async function onRequestGet(context) {
+  const { request, env } = context;
   const url = new URL(request.url);
-  let projectId = url.searchParams.get('project_id') || '';
-  if (!projectId && request.method !== 'GET' && request.method !== 'HEAD' && request.method !== 'DELETE') {
-    try {
-      const clone = request.clone();
-      const body = await clone.json();
-      if (body && body.project_id) projectId = String(body.project_id);
-    } catch (e) {}
+  const projectId = url.searchParams.get('project_id') || '';
+  const g = await guardOwner(request, env, projectId);
+  if (g.res) return g.res;
+  await ensureTables(env);
+  let row = await env.DB.prepare('SELECT token, scopes, created_at FROM mcp_tokens WHERE project_id = ?').bind(projectId).first();
+  // MIGRASI: tabel kosong tapi cermin versi lama berisi -> pindahkan ke tabel.
+  // be2_token diisi sesi pemilik yang sedang login (token lama versi paralel tidak
+  // menyimpan be2_token, jadi endpoint /api/mcp sebelumnya pasti menolaknya).
+  if (!row) {
+    const mir = await mirrorRead(g.token, projectId);
+    if (mir && mir.token) {
+      const scopes = normalizeScopes(mir.scopes);
+      await env.DB.prepare(
+        `INSERT INTO mcp_tokens (project_id, token, be2_token, scopes, created_at) VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT(project_id) DO UPDATE SET token = excluded.token, be2_token = excluded.be2_token, scopes = excluded.scopes, created_at = excluded.created_at`
+      ).bind(projectId, mir.token, g.token, JSON.stringify(scopes), mir.created_at || new Date().toISOString()).run();
+      row = { token: mir.token, scopes: JSON.stringify(scopes), created_at: mir.created_at };
+    }
   }
-  if (!projectId) return { error: json({ error: 'project_id wajib diisi' }, 400) };
-  const uid = Number(user.id);
-  // Pastikan tabel ada (akun/proyek baru) — skema identik dengan projects.js
-  try {
-    await env.DB.prepare(`CREATE TABLE IF NOT EXISTS user_projects (
-      id TEXT PRIMARY KEY,
-      user_id INTEGER,
-      title TEXT DEFAULT '',
-      prompt TEXT DEFAULT '',
-      ai_name TEXT DEFAULT '',
-      ai_desc TEXT DEFAULT '',
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT
-    )`).run();
-  } catch (e) {}
-  const row = await env.DB.prepare('SELECT user_id FROM user_projects WHERE id = ?').bind(projectId).first();
-  if (row) {
-    if (Number(row.user_id) === uid) return { user, projectId };
-    try {
-      const mem = await env.DB.prepare('SELECT id FROM project_members WHERE project_id = ? AND user_id = ?').bind(projectId, uid).first();
-      if (mem) return { user, projectId };
-    } catch (e) {}
-    return { error: json({ error: 'Proyek tidak ditemukan atau bukan milikmu' }, 404) };
-  }
-  // Proyek lama yang belum pernah tercatat di user_projects (dibuat sebelum era
-  // sinkronisasi akun): klaim otomatis ke akun yang meminta aktivasi — konsisten
-  // dengan guardProject di user-scope.js yang membolehkan proyek legacy lalu
-  // mencatatnya. Setelah ini, aktivasi MCP tidak lagi gagal 404 untuk proyek lama.
-  try {
-    await env.DB.prepare(`INSERT OR IGNORE INTO user_projects (id, user_id, title, prompt, ai_name, ai_desc, updated_at)
-      VALUES (?, ?, '', '', '', '', ?)`).bind(projectId, uid, new Date().toISOString()).run();
-    const own = await env.DB.prepare('SELECT id FROM user_projects WHERE id = ? AND user_id = ?').bind(projectId, uid).first();
-    if (own) return { user, projectId };
-    try {
-      const mem = await env.DB.prepare('SELECT id FROM project_members WHERE project_id = ? AND user_id = ?').bind(projectId, uid).first();
-      if (mem) return { user, projectId };
-    } catch (e) {}
-  } catch (e) {}
-  return { error: json({ error: 'Proyek tidak ditemukan atau bukan milikmu' }, 404) };
+  let scopes = null;
+  try { scopes = row && row.scopes ? JSON.parse(row.scopes) : null; } catch (e) {}
+  return J({
+    active: !!row,
+    token: row ? row.token : null,
+    scopes: normalizeScopes(scopes),
+    created_at: row ? row.created_at : null,
+    url: 'https://app.clincoo.buzz/api/mcp?project_id=' + encodeURIComponent(projectId)
+  });
 }
 
-const DEFAULT_SCOPES = { read: true, write: false, delete: false };
-function normScopes(s) {
-  const o = (s && typeof s === 'object') ? s : {};
-  return { read: o.read !== false, write: o.write === true, delete: o.delete === true };
+export async function onRequestPost(context) {
+  const { request, env } = context;
+  let body = {};
+  try { body = await request.json(); } catch (e) {}
+  const projectId = body.project_id || new URL(request.url).searchParams.get('project_id') || '';
+  const g = await guardOwner(request, env, projectId);
+  if (g.res) return g.res;
+  await ensureTables(env);
+  const token = newMcpToken();
+  // Izin akses default (least privilege): hanya baca. Halaman Server MCP bisa mengubahnya per proyek.
+  const scopes = normalizeScopes(body.scopes);
+  const created = new Date().toISOString();
+  await env.DB.prepare(
+    `INSERT INTO mcp_tokens (project_id, token, be2_token, scopes, created_at) VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(project_id) DO UPDATE SET token = excluded.token, be2_token = excluded.be2_token, scopes = excluded.scopes, created_at = excluded.created_at`
+  ).bind(projectId, token, g.token, JSON.stringify(scopes), created).run();
+  await mirrorWrite(g.token, projectId, { token, scopes, created_at: created });
+  return J({
+    ok: true,
+    token,
+    scopes,
+    created_at: created,
+    url: 'https://app.clincoo.buzz/api/mcp?project_id=' + encodeURIComponent(projectId)
+  });
 }
 
-async function readState(db, projectId) {
-  const T = await getProjectTables(db, projectId);
-  const rows = await db.prepare(`SELECT key, value FROM ${T.projectSettings} WHERE project_id = ? AND key IN ('mcp_token','mcp_scopes','mcp_created_at')`).bind(projectId).all();
-  const m = {};
-  for (const r of rows.results || []) m[r.key] = r.value;
-  if (!m.mcp_token) return null;
-  let scopes = DEFAULT_SCOPES;
-  try { scopes = normScopes(JSON.parse(m.mcp_scopes || '{}')); } catch (e) {}
-  return { token: m.mcp_token, scopes, created_at: m.mcp_created_at || null };
+// PATCH /api/mcp-token { project_id, scopes } -> ubah izin akses tanpa mengganti token
+export async function onRequestPatch(context) {
+  const { request, env } = context;
+  let body = {};
+  try { body = await request.json(); } catch (e) {}
+  const projectId = body.project_id || '';
+  const g = await guardOwner(request, env, projectId);
+  if (g.res) return g.res;
+  await ensureTables(env);
+  const scopes = normalizeScopes(body.scopes);
+  const r = await env.DB.prepare('UPDATE mcp_tokens SET scopes = ? WHERE project_id = ?').bind(JSON.stringify(scopes), projectId).run();
+  if (!r || !r.meta || !r.meta.changes) return J({ error: 'Token MCP belum aktif untuk proyek ini — aktifkan dulu di halaman Server MCP' }, 404);
+  await mirrorWrite(g.token, projectId, { scopes });
+  return J({ ok: true, scopes });
 }
 
-async function writeSetting(db, projectId, key, value) {
-  const T = await getProjectTables(db, projectId);
-  await db.prepare(`INSERT INTO ${T.projectSettings} (project_id, key, value) VALUES (?, ?, ?) ON CONFLICT(project_id, key) DO UPDATE SET value = excluded.value`).bind(projectId, key, value).run();
-}
-
-export async function onRequestGet({ request, env }) {
-  if (!env.DB) return json({ error: 'D1 not bound' }, 500);
-  const r = await requireOwnedProject(env, request);
-  if (r.error) return r.error;
-  try {
-    const state = await readState(env.DB, r.projectId);
-    if (!state) return json({ not_found: true });
-    return json(state);
-  } catch (e) { return json({ error: e.message }, 500); }
-}
-
-export async function onRequestPost({ request, env }) {
-  if (!env.DB) return json({ error: 'D1 not bound' }, 500);
-  const r = await requireOwnedProject(env, request);
-  if (r.error) return r.error;
-  try {
-    let body = {}; try { body = await request.json(); } catch (e) {}
-    const scopes = normScopes(body.scopes);
-    const existing = await readState(env.DB, r.projectId);
-    const token = randomHex(24);
-    const createdAt = (existing && existing.created_at) || new Date().toISOString();
-    await writeSetting(env.DB, r.projectId, 'mcp_token', token);
-    await writeSetting(env.DB, r.projectId, 'mcp_scopes', JSON.stringify(scopes));
-    await writeSetting(env.DB, r.projectId, 'mcp_created_at', createdAt);
-    return json({ token, scopes, created_at: createdAt });
-  } catch (e) { return json({ error: e.message }, 500); }
-}
-
-export async function onRequestPatch({ request, env }) {
-  if (!env.DB) return json({ error: 'D1 not bound' }, 500);
-  const r = await requireOwnedProject(env, request);
-  if (r.error) return r.error;
-  try {
-    const state = await readState(env.DB, r.projectId);
-    if (!state) return json({ error: 'Server MCP belum diaktifkan', not_found: true }, 404);
-    let body = {}; try { body = await request.json(); } catch (e) {}
-    const scopes = normScopes(body.scopes);
-    await writeSetting(env.DB, r.projectId, 'mcp_scopes', JSON.stringify(scopes));
-    return json({ ok: true, scopes });
-  } catch (e) { return json({ error: e.message }, 500); }
-}
-
-export async function onRequestDelete({ request, env }) {
-  if (!env.DB) return json({ error: 'D1 not bound' }, 500);
-  const r = await requireOwnedProject(env, request);
-  if (r.error) return r.error;
-  try {
-    const T = await getProjectTables(env.DB, r.projectId);
-    await env.DB.prepare(`DELETE FROM ${T.projectSettings} WHERE project_id = ? AND key IN ('mcp_token','mcp_scopes','mcp_created_at')`).bind(r.projectId).run();
-    return json({ ok: true });
-  } catch (e) { return json({ error: e.message }, 500); }
+export async function onRequestDelete(context) {
+  const { request, env } = context;
+  const url = new URL(request.url);
+  const projectId = url.searchParams.get('project_id') || '';
+  const g = await guardOwner(request, env, projectId);
+  if (g.res) return g.res;
+  await ensureTables(env);
+  await env.DB.prepare('DELETE FROM mcp_tokens WHERE project_id = ?').bind(projectId).run();
+  await mirrorWrite(g.token, projectId, { token: '', scopes: '', created_at: '' });
+  return J({ ok: true });
 }

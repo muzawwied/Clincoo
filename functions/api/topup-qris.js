@@ -7,11 +7,16 @@
 //   BUATQRIS_WEBHOOK_SECRET (opsional) — kunci tanda tangan webhook; jika kosong pakai secret_token
 //   BUATQRIS_METHOD         (opsional) — metode qris: qris_one..qris_four, default 'qris_two'
 // Callback URL (di dashboard BuatQris): https://<domain>/api/topup-qris
-// Referensi order ditanam di `description` QRIS ("Clincoo TOPUPQ-xxx") sehingga
+// Referensi order ditanam di `description` QRIS ("Clincoo clincoo-pay-xxx") sehingga
 // webhook apa pun formatnya tetap bisa dicocokkan ke order — plus verifikasi HMAC.
+// Callback URL cuma satu (untuk top-up), jadi webhook ClincooPay (order "clincoo-cp-xxx",
+// ditanam di description QRIS oleh /api/pay) juga dilayani di sini: kena HMAC verifikasi
+// yang sama, lalu transaksi ClincooPay ditandai paid/expired + forward ke webhook proyek.
 
 import { currentUser } from './user-scope.js';
 import { creditTopup } from './topup.js';
+import { sendEmail, flatTemplate, formatIDR } from './notify-helpers.js';
+import { forwardPayWebhook } from './pay/index.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -37,7 +42,7 @@ async function getSecret(env, key) {
 }
 
 const BQ_BASE = 'https://api.buatqris.site';
-const BQ_ORDER_PREFIX = 'TOPUPQ-';
+const BQ_ORDER_PREFIX = 'clincoo-pay-';
 
 // Panggil API BuatQris (POST, form-urlencoded seperti contoh resmi mereka)
 async function bqPost(params) {
@@ -90,6 +95,7 @@ async function ensureQrisColumns(db) {
 }
 
 // GET /api/topup-qris?action=ping           -> status konfigurasi (untuk UI)
+// GET /api/topup-qris?action=history  -> riwayat order QRIS user yang login
 // GET /api/topup-qris?action=status&order_id -> status order (webhook = sumber kebenaran)
 export async function onRequestGet({ request, env }) {
   const db = env.DB;
@@ -100,6 +106,70 @@ export async function onRequestGet({ request, env }) {
   if (action === 'ping') {
     const accountId = await getSecret(env, 'BUATQRIS_ACCOUNT_ID');
     return json({ configured: !!(accountId && (await getSecret(env, 'BUATQRIS_SECRET_TOKEN'))), provider: 'buatqris' });
+  }
+
+  // Riwayat order QRIS user (halaman langganan: histori transaksi checkout)
+  if (action === 'history') {
+    const user = await currentUser(env, request);
+    if (!user) return json({ success: false, need_login: true }, 401);
+    let rows = [];
+    try {
+      const r = await db.prepare(
+        "SELECT id, amount, method, status, bill_total, created_at, expires_at FROM topup_orders WHERE user_id = ? OR user_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 25"
+      ).bind(String(user.id), String(user.id) + '').all();
+      rows = (r && r.results) || [];
+    } catch (e) {}
+    return json({ success: true, orders: rows.map(function (o) {
+      return { order_id: o.id, amount: o.amount, method: 'QRIS', status: o.status, total: o.bill_total || o.amount, created_at: o.created_at, expires_at: o.expires_at || null };
+    }) });
+  }
+
+  // Order terakhir milik user yang login (untuk restore halaman checkout dari email pengingat)
+  if (action === 'pending') {
+    const user = await currentUser(env, request);
+    if (!user) return json({ success: false, need_login: true }, 401);
+    let order = null;
+    try {
+      order = await db.prepare(
+        "SELECT * FROM topup_orders WHERE (user_id = ? OR user_id = ?) AND datetime(created_at) >= datetime('now', '-48 hours') ORDER BY created_at DESC, rowid DESC LIMIT 1"
+      ).bind(String(user.id), String(user.id) + '').first();
+    } catch (e) {}
+    if (!order) return json({ success: true, order: null });
+    return json({
+      success: true,
+      order: {
+        order_id: order.id,
+        amount: order.amount,
+        status: order.status,
+        qr_image: order.qr_url || null,
+        total_payment: order.bill_total || order.amount,
+        expired_at: order.expires_at || null
+      }
+    });
+  }
+
+  // Order spesifik milik user yang login (deep-link checkout: /checkout/qris/?order_id=...)
+  // Supaya user bisa melanjutkan checkout order yang sama sampai batas waktu kedaluwarsa,
+  // di perangkat/browser mana pun (QR dipulihkan dari server, bukan localStorage).
+  if (action === 'get') {
+    const orderId = url.searchParams.get('order_id');
+    if (!orderId) return json({ error: 'order_id required' }, 400);
+    const user = await currentUser(env, request);
+    if (!user) return json({ success: false, need_login: true }, 401);
+    let order = null;
+    try { order = await db.prepare('SELECT * FROM topup_orders WHERE id = ? AND (user_id = ? OR user_id = ?)').bind(orderId, String(user.id), String(user.id) + '').first(); } catch (e) {}
+    if (!order) return json({ success: true, order: null });
+    return json({
+      success: true,
+      order: {
+        order_id: order.id,
+        amount: order.amount,
+        status: order.status,
+        qr_image: order.qr_url || null,
+        total_payment: order.bill_total || order.amount,
+        expired_at: order.expires_at || null
+      }
+    });
   }
 
   if (action === 'status') {
@@ -148,30 +218,51 @@ export async function onRequestPost({ request, env }) {
 
     // Cari referensi order kita (ditanam di description QRIS) di mana pun posisinya
     const raw = String(rawBody || '') + ' ' + JSON.stringify(body || {});
-    const m = raw.match(new RegExp(BQ_ORDER_PREFIX + '[A-Za-z0-9-]+'));
-    if (!m) return json({ received: true, matched: false });
-
-    const orderId = m[0];
-    let order = null;
-    try { order = await db.prepare('SELECT * FROM topup_orders WHERE id = ?').bind(orderId).first(); } catch (e) {}
-    if (!order) return json({ received: true, matched: false });
-
-    // Deteksi status dari payload (nama field callback bervariasi — cocokkan fleksibel)
     const low = raw.toLowerCase();
+    // Deteksi status dari payload (nama field callback bervariasi — cocokkan fleksibel)
     const negative = ['pending', 'expire', 'expired', 'failed', 'fail', 'gagal', 'cancel', 'cancelled', 'refund'];
     const positive = ['success', 'paid', 'berhasil', 'complete', 'completed', 'settlement'];
     const isNeg = negative.some(w => low.includes(w));
     const isPos = positive.some(w => low.includes(w));
 
-    if (isPos && !isNeg && order.status === 'pending') {
-      if (await claimOrder(db, order.id)) {
-        const fresh = await db.prepare('SELECT * FROM topup_orders WHERE id = ?').bind(order.id).first();
-        try { await creditTopup(env, fresh); } catch (e) {}
-        try { await db.prepare('INSERT INTO activity_log (action, details, user_id) VALUES (?, ?, ?)')
-          .bind('topup_buatqris_paid', order.id + ' (' + order.amount + ')', order.user_id).run(); } catch (e) {}
+    // ---- Top-up saldo: order "clincoo-pay-xxx" ----
+    const m = raw.match(new RegExp(BQ_ORDER_PREFIX + '[A-Za-z0-9-]+'));
+    if (m) {
+      const orderId = m[0];
+      let order = null;
+      try { order = await db.prepare('SELECT * FROM topup_orders WHERE id = ?').bind(orderId).first(); } catch (e) {}
+      if (order) {
+        if (isPos && !isNeg && order.status === 'pending') {
+          if (await claimOrder(db, order.id)) {
+            const fresh = await db.prepare('SELECT * FROM topup_orders WHERE id = ?').bind(order.id).first();
+            try { await creditTopup(env, fresh); } catch (e) {}
+            try { await db.prepare('INSERT INTO activity_log (action, details, user_id) VALUES (?, ?, ?)')
+              .bind('topup_buatqris_paid', order.id + ' (' + order.amount + ')', order.user_id).run(); } catch (e) {}
+          }
+        }
+        return json({ received: true, matched: true });
       }
     }
-    return json({ received: true, matched: true });
+
+    // ---- ClincooPay: order "clincoo-cp-xxx" (ditanam di description QRIS oleh /api/pay) ----
+    const mcp = raw.match(/clincoo-cp-[A-Za-z0-9]+/);
+    if (mcp) {
+      let tx = null;
+      try { tx = await db.prepare('SELECT * FROM pay_transactions WHERE order_id = ?').bind(mcp[0]).first(); } catch (e) {}
+      if (tx) {
+        let st = tx.status;
+        if (isPos && !isNeg) st = 'paid';
+        else if (['expire', 'expired', 'failed', 'fail', 'gagal', 'cancel', 'cancelled', 'canceled', 'refund'].some(w => low.includes(w))) st = 'expired';
+        if (st !== tx.status) {
+          try { await db.prepare("UPDATE pay_transactions SET status = ?, updated_at = datetime('now') WHERE id = ?").bind(st, tx.id).run(); } catch (e) {}
+          // hanya saat transisi — retry webhook nggak kirim 'paid' dobel ke situs deploy
+          if (st === 'paid') { try { await forwardPayWebhook(db, tx, st); } catch (e) {} }
+        }
+        return json({ received: true, matched: true });
+      }
+    }
+
+    return json({ received: true, matched: false });
   }
 
   // ---- Batalkan order ----
@@ -235,6 +326,43 @@ export async function onRequestPost({ request, env }) {
       .bind('topup_qris_created', orderId + ' (' + amount + ') via BuatQris', tpUser.id).run();
   } catch (e) {}
 
+  // Email detail langganan + CTA bayar (khusus order paket: Pro / Bisnis)
+  const expiredAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  const planName = (amount === 49000) ? 'Pro' : (amount === 129000) ? 'Bisnis' : '';
+  if (planName && tpUser && tpUser.email) {
+    try {
+      const expWib = new Date(expiredAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
+      // Domain kustom untuk CTA email: host pages.dev diganti app.clincoo.buzz
+      // supaya penerima tidak dibawa ke domain internal pages.dev.
+      let ctaBase = 'https://app.clincoo.buzz';
+      try {
+        const host = new URL(request.url).hostname;
+        if (!/(^|\.)pages\.dev$/.test(host)) ctaBase = new URL(request.url).origin;
+      } catch (e) {}
+      await sendEmail(env, {
+        toEmail: tpUser.email, toName: tpUser.name || '',
+        subject: 'Detail Langganan Clincoo ' + planName + ' — Bayar via QRIS',
+        html: flatTemplate(
+          'Detail Langganan ' + planName,
+          tpUser.name || '',
+          'Order pembayaran langganan Anda sudah dibuat. Selesaikan pembayaran QRIS sebelum batas waktu di bawah supaya paket langsung aktif.',
+          [
+            ['Paket', planName],
+            ['Harga', formatIDR(amount) + ' / bulan'],
+            ['Biaya Layanan', formatIDR(total - amount)]
+          ].concat((total > amount) ? [['Total Tagihan', formatIDR(total)]] : [])
+           .concat([
+            ['Order ID', orderId],
+            ['Metode', 'QRIS'],
+            ['Bayar Sebelum', expWib]
+          ]),
+          'Bayar Sekarang',
+          ctaBase + '/akun/langganan/checkout/qris/?order_id=' + encodeURIComponent(orderId)
+        )
+      });
+    } catch (e) {}
+  }
+
   return json({
     success: true,
     order_id: orderId,
@@ -244,7 +372,7 @@ export async function onRequestPost({ request, env }) {
     amount: amount,
     fee: 0,
     total_payment: total,
-    expired_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+    expired_at: expiredAt,
     provider: 'buatqris'
   });
 }

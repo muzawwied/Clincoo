@@ -37,6 +37,8 @@
     * { -ms-overflow-style: none; scrollbar-width: none; }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes mSpin { to { transform: rotate(360deg); } }
+    .m-spin { animation: mSpin 0.8s linear infinite; }
     body.dark-mode { background-color: #000000; color: #e0e0e0; }
     body.dark-mode .text-gray-900, body.dark-mode .text-gray-800 { color: #f0f0f0; }
     body.dark-mode .text-gray-700 { color: #b0b0b0; }
@@ -201,9 +203,6 @@
                 <a href="/proyek/pengaturan/email/metrik/" data-menu="metrik" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M18 20V10M12 20V4M6 20v-6"></path></svg>
                     Metrik
                 </a>
-                <a href="/proyek/pengaturan/email/domain/" data-menu="domain" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                    Domain
-                </a>
                 <a href="/proyek/pengaturan/email/kunci-api/" data-menu="apikey" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
                     Kunci API
                 </a>
@@ -213,9 +212,9 @@
             </div>
         </div>
     </header>
-    <main class="w-full max-w-5xl px-4 sm:px-6 pt-20 pb-28">
+    <main class="w-full max-w-5xl px-4 sm:px-6 pt-20 pb-28 flex flex-col min-h-screen">
 <style>
-        #settings-menu-pop.open { display: flex; }
+        #settings-menu-pop.open { display: grid; }
         .settings-menu-item { cursor: pointer; }
         .settings-menu-item .text-sm { line-height: 1.3; }
         .settings-menu-item .text-xs { line-height: 1.15; }
@@ -233,7 +232,7 @@
                 </span>
                 <svg id="settings-menu-chev" class="w-4 h-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
             </button>
-            <div id="settings-menu-pop" class="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-12px)] sm:w-[860px] mt-0 bg-white rounded-2xl shadow-xl p-1 flex-col gap-px z-40 hidden">
+            <div id="settings-menu-pop" class="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-12px)] sm:w-[860px] mt-0 bg-white rounded-2xl shadow-xl p-1 grid grid-cols-1 sm:grid-cols-2 gap-px z-40 hidden">
                                 <a href="/proyek/dashboard/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Umum</span><span class="block text-xs text-gray-400 truncate">Nama, deskripsi, dan runtime aplikasi</span></span>
@@ -262,11 +261,11 @@
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.01M6 18h.01"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Server MCP</span><span class="block text-xs text-gray-400 truncate">Sambungkan proyek ke platform AI lain (MCP)</span></span>
                 </a>
-                <a href="/proyek/pengaturan/pembayaran/" class="settings-menu-item flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                <a href="/proyek/pengaturan/pembayaran/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Pembayaran</span><span class="block text-xs text-gray-400 truncate">QRIS instan, dana masuk langsung ke akunmu</span></span>
                 </a>
-                <a href="/proyek/pengaturan/email/" class="settings-menu-item flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                <a href="/proyek/pengaturan/email/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Email</span><span class="block text-xs text-gray-400 truncate">Kirim email otomatis lewat API Clincoo</span></span>
                 </a>
@@ -325,7 +324,10 @@
           <!-- Aktif: mini-app email -->
           <div id="kirim-active" class="flex-col">
 
-            <div class="flex flex-col">
+            <div id="m-loading" class="flex flex-col items-center justify-center py-14">
+              <svg class="m-spin" style="width:28px;height:28px;color:#6b7280" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="3"/><path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+            </div>
+            <div id="m-content" class="flex flex-col hidden">
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div class="border border-gray-200 dark:border-slate-700 rounded-xl p-4">
                   <p class="text-[11px] text-gray-400 dark:text-gray-500">Terkirim (histori)</p>
@@ -345,11 +347,44 @@
                 </div>
               </div>
               <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-3">Kuota dihitung dari email terkirim bulan ini. Statistik histori menampilkan entri terbaru.</p>
+
+              <div id="m-analytics" class="mt-5">
+                <div class="flex items-center justify-between gap-3 mb-3">
+                  <p class="text-xs font-semibold text-gray-900 dark:text-white">Analitik pengiriman</p>
+                  <p class="text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap">berdasarkan 100 entri terbaru</p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Status pengiriman (Terkirim vs Gagal)</p>
+                    <div class="relative w-full h-[220px] rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 overflow-hidden p-2"><canvas id="m-status-chart"></canvas></div>
+                  </div>
+                  <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Tren harian (14 hari terakhir)</p>
+                    <div class="relative w-full h-[220px] rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 overflow-hidden p-2"><canvas id="m-daily-chart"></canvas></div>
+                  </div>
+                  <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Aktivitas per jam</p>
+                    <div class="relative w-full h-[220px] rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 overflow-hidden p-2"><canvas id="m-hour-chart"></canvas></div>
+                  </div>
+                  <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Penerima teratas</p>
+                    <div class="relative w-full h-[220px] rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 overflow-hidden p-2"><canvas id="m-recipient-chart"></canvas></div>
+                  </div>
+                  <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Subjek terpopuler</p>
+                    <div class="relative w-full h-[220px] rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 overflow-hidden p-2"><canvas id="m-subject-chart"></canvas></div>
+                  </div>
+                  <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Kuota bulan ini</p>
+                    <div class="relative w-full h-[220px] rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 overflow-hidden p-2"><canvas id="m-quota-chart"></canvas></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-            <footer class="w-full py-5 text-center text-xs text-gray-400 dark:text-gray-500">
+            <footer class="w-full mt-auto pt-6 pb-5 text-center text-xs text-gray-400 dark:text-gray-500">
         Penggunaan Clincoo Email API tunduk pada <a href="https://blog.clincoo.buzz/legal/syarat-ketentuan/" target="_blank" rel="noopener" class="underline hover:text-gray-600 dark:hover:text-gray-300">Syarat &amp; Ketentuan</a> dan <a href="https://blog.clincoo.buzz/legal/kebijakan-privasi/" target="_blank" rel="noopener" class="underline hover:text-gray-600 dark:hover:text-gray-300">Kebijakan Privasi</a> Clincoo.
       </footer>
 </main>
@@ -365,29 +400,219 @@
 <script>
 // ===== Email: halaman metrik =====
   function renderStats(data) {
+    var mLoad = document.getElementById('m-loading');
+    var mCont = document.getElementById('m-content');
+    if (mLoad) mLoad.classList.add('hidden');
+    if (mCont) mCont.classList.remove('hidden');
     var sent = 0, fail = 0;
     (data.items || []).forEach(function (r) { if (r.status === 'terkirim') sent++; else if (r.status === 'gagal') fail++; });
     document.getElementById('m-trkirim').textContent = sent.toLocaleString('id-ID');
     document.getElementById('m-gagal').textContent = fail.toLocaleString('id-ID');
     document.getElementById('m-kuota').textContent = (data.used || 0).toLocaleString('id-ID');
-    document.getElementById('m-sisa').textContent = Math.max(0, (data.limit || 1000) - (data.used || 0)).toLocaleString('id-ID');
+    document.getElementById('m-sisa').textContent = Math.max(0, (data.limit || 100) - (data.used || 0)).toLocaleString('id-ID');
+
+    renderEmailAnalytics(data);
   }
+
+  // ===== Analitik pengiriman (Chart.js) — gaya senada dgn halaman Integrasi AI =====
+  var _mChartState = { loaded: false, failed: false, inst: {} };
+  function _mDark() { return document.body.classList.contains('dark-mode'); }
+  function _mLoadChartJs(cb) {
+    if (_mChartState.loaded) { cb(true); return; }
+    if (_mChartState.failed) { cb(false); return; }
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
+    s.onload = function () { _mChartState.loaded = true; cb(true); };
+    s.onerror = function () { _mChartState.failed = true; cb(false); };
+    document.head.appendChild(s);
+  }
+  function _mChart(id, cfg) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (_mChartState.inst[id]) { _mChartState.inst[id].destroy(); delete _mChartState.inst[id]; }
+    try { _mChartState.inst[id] = new window.Chart(el, cfg); } catch (e) {}
+  }
+  function _mTrunc(v, n) { v = String(v == null ? '' : v); return v.length > n ? v.slice(0, n - 1) + '…' : v; }
+
+  function renderEmailAnalytics(data) {
+    var wrap = document.getElementById('m-analytics');
+    if (!wrap) return;
+    _mLoadChartJs(function (ok) {
+      if (!ok || !window.Chart) { wrap.classList.add('hidden'); return; }
+      wrap.classList.remove('hidden');
+      var dark = _mDark();
+      var tick = dark ? '#9ca3af' : '#6b7280';
+      var grid = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+      var cOk = dark ? '#34d399' : '#10b981';
+      var cFail = dark ? '#f87171' : '#ef4444';
+      var cBlue = dark ? '#60a5fa' : '#3b82f6';
+      var cViolet = dark ? '#a78bfa' : '#8b5cf6';
+      var cInk = dark ? 'rgba(255,255,255,0.9)' : 'rgba(17,17,17,0.9)';
+      var legendStyle = { position: 'bottom', labels: { color: tick, boxWidth: 10, boxHeight: 10, font: { size: 11 }, padding: 12 } };
+
+      var items = (data && data.items) || [];
+      var sent = 0, fail = 0, other = 0;
+      items.forEach(function (r) {
+        if (r.status === 'terkirim') sent++;
+        else if (r.status === 'gagal') fail++;
+        else other++;
+      });
+
+      // 1) Status pengiriman — doughnut
+      var sLabels = ['Terkirim', 'Gagal'], sData = [sent, fail], sColors = [cOk, cFail];
+      if (other > 0) { sLabels.push('Lainnya'); sData.push(other); sColors.push(dark ? '#6b7280' : '#9ca3af'); }
+      _mChart('m-status-chart', {
+        type: 'doughnut',
+        data: { labels: sLabels, datasets: [{ data: sData, backgroundColor: sColors, borderColor: dark ? '#0a0a0a' : '#ffffff', borderWidth: 2, hoverOffset: 6 }] },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: { duration: 300 }, cutout: '62%',
+          plugins: {
+            legend: legendStyle,
+            tooltip: { callbacks: { label: function (ctx) {
+              var tot = sData.reduce(function (a, b) { return a + b; }, 0);
+              var pct = tot ? Math.round(ctx.parsed / tot * 100) : 0;
+              return ' ' + ctx.label + ': ' + ctx.parsed + ' (' + pct + '%)';
+            } } }
+          }
+        }
+      });
+
+      // 2) Tren harian (14 hari) — stacked bar terkirim/gagal
+      var days = [], byDay = {};
+      var d0 = new Date(); d0.setHours(0, 0, 0, 0);
+      for (var i = 13; i >= 0; i--) {
+        var dt = new Date(d0.getTime() - i * 86400000);
+        var key = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+        days.push({ key: key, label: dt.getDate() + '/' + (dt.getMonth() + 1), ok: 0, fail: 0 });
+        byDay[key] = days[days.length - 1];
+      }
+      items.forEach(function (r) {
+        var t = String(r.time || '');
+        var day = byDay[t.slice(0, 10)];
+        if (!day) return;
+        if (r.status === 'terkirim') day.ok++; else day.fail++;
+      });
+      _mChart('m-daily-chart', {
+        type: 'bar',
+        data: {
+          labels: days.map(function (x) { return x.label; }),
+          datasets: [
+            { label: 'Terkirim', data: days.map(function (x) { return x.ok; }), backgroundColor: cOk, borderRadius: 3, stack: 'm' },
+            { label: 'Gagal', data: days.map(function (x) { return x.fail; }), backgroundColor: cFail, borderRadius: 3, stack: 'm' }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+          plugins: { legend: legendStyle, tooltip: { mode: 'index' } },
+          scales: {
+            x: { stacked: true, grid: { display: false }, ticks: { color: tick, font: { size: 10 }, maxRotation: 0, autoSkip: true } },
+            y: { stacked: true, beginAtZero: true, grid: { color: grid }, ticks: { color: tick, font: { size: 10 }, precision: 0 } }
+          }
+        }
+      });
+
+      // 3) Aktivitas per jam — bar 24 jam
+      var hours = []; for (var h = 0; h < 24; h++) hours.push(0);
+      items.forEach(function (r) {
+        var hh = parseInt(String(r.time || '').slice(11, 13), 10);
+        if (!isNaN(hh) && hh >= 0 && hh < 24) hours[hh]++;
+      });
+      _mChart('m-hour-chart', {
+        type: 'bar',
+        data: { labels: hours.map(function (_, i) { return String(i).padStart(2, '0'); }), datasets: [{ label: 'Email', data: hours, backgroundColor: cBlue, borderRadius: 3 }] },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: tick, font: { size: 10 }, autoSkip: true, maxTicksLimit: 12 } },
+            y: { beginAtZero: true, grid: { color: grid }, ticks: { color: tick, font: { size: 10 }, precision: 0 } }
+          }
+        }
+      });
+
+      // 4) Penerima teratas & 5) Subjek terpopuler — horizontal bar
+      function mTopN(field, n) {
+        var m = {};
+        items.forEach(function (r) {
+          var k = String(r[field] || '').trim() || '(tanpa subjek)';
+          m[k] = (m[k] || 0) + 1;
+        });
+        return Object.keys(m).map(function (k) { return { k: k, n: m[k] }; }).sort(function (a, b) { return b.n - a.n; }).slice(0, n);
+      }
+      var mHoriz = function (rows, color) {
+        return {
+          type: 'bar',
+          data: {
+            labels: rows.map(function (x) { return _mTrunc(x.k, 18); }),
+            datasets: [{ label: 'Email', data: rows.map(function (x) { return x.n; }), backgroundColor: color, borderRadius: 3 }]
+          },
+          options: {
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+            plugins: {
+              legend: { display: false },
+              tooltip: { callbacks: { title: function (ctx) { var r = rows[ctx[0].dataIndex]; return r ? r.k : ''; } } }
+            },
+            scales: {
+              x: { beginAtZero: true, grid: { color: grid }, ticks: { color: tick, font: { size: 10 }, precision: 0 } },
+              y: { grid: { display: false }, ticks: { color: tick, font: { size: 10 } } }
+            }
+          }
+        };
+      };
+      _mChart('m-recipient-chart', mHoriz(mTopN('to', 5), cInk));
+      _mChart('m-subject-chart', mHoriz(mTopN('subject', 5), cViolet));
+
+      // 6) Kuota bulan ini — doughnut
+      var used = (data && data.used) || 0;
+      var limit = (data && data.limit) || 100;
+      var sisa = Math.max(0, limit - used);
+      _mChart('m-quota-chart', {
+        type: 'doughnut',
+        data: { labels: ['Terpakai', 'Sisa'], datasets: [{ data: [used, sisa], backgroundColor: [cBlue, dark ? '#262626' : '#e5e7eb'], borderColor: dark ? '#0a0a0a' : '#ffffff', borderWidth: 2, hoverOffset: 6 }] },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: { duration: 300 }, cutout: '62%',
+          plugins: {
+            legend: legendStyle,
+            tooltip: { callbacks: { label: function (ctx) {
+              var pct = limit ? Math.round(ctx.parsed / limit * 100) : 0;
+              return ' ' + ctx.label + ': ' + ctx.parsed.toLocaleString('id-ID') + ' (' + pct + '%)';
+            } } }
+          }
+        }
+      });
+    });
+  }
+
   var _mLast = 0;
-  function mRefresh() {
-    if (Date.now() - _mLast < 8000) return;
-    _mLast = Date.now();
+  var _mLastJson = '';
+  var _mTimer = null;
+  // Ambil data otomatis tiap detik saat tab terlihat — grafik & kartu diperbarui
+  // HANYA kalau payload berubah (chart gak berkedip, hemat kerja browser).
+  function mRefresh(force) {
+    var now = Date.now();
+    if (!force && now - _mLast < 1000) return;
+    _mLast = now;
     fetch(API_BASE + '/email?action=history&project_id=' + encodeURIComponent(_pid()), { headers: _hdrs() })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
-      .then(function (data) { renderEmailState('active'); renderStats(data); try { localStorage.setItem(_cacheKey(), JSON.stringify(data)); } catch (e) {} })
+      .then(function (data) {
+        var raw = JSON.stringify(data);
+        if (raw === _mLastJson) return;
+        _mLastJson = raw;
+        renderEmailState('active');
+        renderStats(data);
+        try { localStorage.setItem(_cacheKey(), raw); } catch (e) {}
+      })
       .catch(function (st) {
-        if (st === 401) { renderEmailState('login'); }
-        else if (st === 404) { renderEmailState('inactive'); }
+        if (st === 401) { renderEmailState('login'); if (_mTimer) { clearInterval(_mTimer); _mTimer = null; } }
+        else if (st === 404) { renderEmailState('inactive'); if (_mTimer) { clearInterval(_mTimer); _mTimer = null; } }
       });
   }
   document.addEventListener('DOMContentLoaded', function () {
+    // Cache-first: refresh halaman = langsung tampil data terakhir, tanpa spinner.
     var cached = _readCache();
-    if (cached && cached.items) { renderEmailState('active'); renderStats(cached); }
-    mRefresh();
+    if (cached && cached.items) { renderEmailState('active'); renderStats(cached); _mLastJson = JSON.stringify(cached); }
+    mRefresh(true);
+    _mTimer = setInterval(function () { if (document.visibilityState === 'visible') mRefresh(true); }, 1000);
   });
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') mRefresh(); });
   window.addEventListener('pageshow', function () { mRefresh(); });
@@ -514,11 +739,11 @@ window.chatLivePreview = function () {
   // ===== Data paket: identik dengan halaman Upgrade (akun/langganan/upgrade) =====
   var plans=[
     { name:'Starter', tagline:'Untuk individu yang baru memulai.', price:'Gratis', per:'', hot:false,
-      items:[['Hingga 3 proyek aktif + editor kode',true],['1 kolaborator per proyek',true],['Chat AI di setiap proyek (50 pesan/bulan) + pencarian web',true],['Kelola 1 domain: verifikasi, DNS & SSL',true], ['3 template proyek siap pakai',true],['Tugas terjadwal & notifikasi',true],['Deploy web 5x per bulan',true],['Editor full-stack & integrasi GitHub',false],['Domain tanpa batas & deploy tanpa batas',false]] },
+      items:[['Kuota workspace 1 GB per proyek',true],['Hingga 3 proyek aktif + editor kode',true],['1 kolaborator per proyek',true],['Chat AI di setiap proyek (50 pesan/bulan) + pencarian web',true],['Kelola 1 domain: verifikasi, DNS & SSL',true], ['3 template proyek siap pakai',true],['Tugas terjadwal & notifikasi',true],['Deploy web 5x per bulan',true],['Editor full-stack & integrasi GitHub',false],['Domain tanpa batas & deploy tanpa batas',false]] },
     { name:'Pro', tagline:'Untuk profesional dan kreator aktif.', price:'49K', per:'/bln', hot:true,
-      items:[['Hingga 10 proyek aktif',true],['Hingga 5 kolaborator per proyek',true],['Semua fitur Starter',true], ['Editor kode full-stack: bangun & publikasikan dari browser',true], ['Domain tanpa batas: verifikasi, DNS & SSL',true],['Chat AI hingga 500 pesan/bulan (maks 50/hari)',true],['Deploy web hingga 25x per bulan ke domain sendiri',true],['Integrasi GitHub: impor repo, AI kerja langsung di repo kamu',true]] },
+      items:[['Kuota workspace 5 GB per proyek',true],['Hingga 10 proyek aktif',true],['Hingga 5 kolaborator per proyek',true],['Semua fitur Starter',true], ['Editor kode full-stack: bangun & publikasikan dari browser',true], ['Domain tanpa batas: verifikasi, DNS & SSL',true],['Chat AI hingga 500 pesan/bulan (maks 50/hari)',true],['Deploy web hingga 25x per bulan ke domain sendiri',true],['Integrasi GitHub: impor repo, AI kerja langsung di repo kamu',true]] },
     { name:'Bisnis', tagline:'Untuk tim dan operasi skala besar.', price:'129K', per:'/bln', hot:false,
-      items:[['Semua fitur Pro',true],['Chat AI hingga 2.000 pesan/bulan (maks 150/hari)',true],['Hingga 50 proyek aktif',true],['Hingga 20 kolaborator per proyek',true],['Kontrol akses & keamanan proyek lanjutan',true], ['Dilindungi Password & ekspor data penuh akun',true],['Deploy web tanpa batas',true]] }
+      items:[['Kuota workspace 20 GB per proyek',true],['Semua fitur Pro',true],['Chat AI hingga 2.000 pesan/bulan (maks 150/hari)',true],['Hingga 50 proyek aktif',true],['Hingga 20 kolaborator per proyek',true],['Kontrol akses & keamanan proyek lanjutan',true], ['Dilindungi Password & ekspor data penuh akun',true],['Deploy web tanpa batas',true]] }
   ];
   function checkoutUrl(name){
     var base=(location.pathname.indexOf('/Clincoo')!==-1)?'/Clincoo.':'';

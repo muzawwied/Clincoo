@@ -483,15 +483,44 @@
                 }
             }
         }
-        // Subtext menu Langganan = nama paket aktif (bukan teks statis)
-        async function refreshMenuPlanSub() {
-            try {
-                const d = await fetch('https://clincoo-be2.pages.dev/api/subscription').then(function(r){ return r.json(); });
-                const el = document.getElementById('menu-plan-sub');
-                if (el && d && d.plan) el.textContent = d.plan;
-            } catch (e) {}
-        }
-        refreshMenuPlanSub();
+        // Subtext menu Langganan = nama paket aktif (bukan teks statis).
+        // 1) Tampilkan instan dari cache lokal (diisi halaman langganan/upgrade) — jangan tampilkan default 'Starter' palsu.
+        // 2) Baru fetch ulang PAKAI token (tanpa token, API balikin paket global default 'Starter').
+        // 3) Berhasil fetch = perbarui cache biar halaman lain ikut benar.
+        (function () {
+            var el = document.getElementById('menu-plan-sub');
+            function readCachedPlan() {
+                try {
+                    var keys = ['TM_SUB_CACHE_KEY', 'clinqoo_subscription_cache'];
+                    var best = null;
+                    keys.forEach(function (k) {
+                        var c = JSON.parse(localStorage.getItem(k) || 'null');
+                        if (c && c.plan && (!best || (c.ts || 0) > (best.ts || 0))) best = c;
+                    });
+                    return best;
+                } catch (e) { return null; }
+            }
+            function setLabel(plan) { if (el && plan) el.textContent = plan; }
+            var _c = readCachedPlan(); setLabel(_c ? _c.plan : null);
+            async function refreshMenuPlanSub() {
+                try {
+                    var hdr = {};
+                    var tok = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || '';
+                    if (tok) hdr['Authorization'] = 'Bearer ' + tok;
+                    var d = await fetch('https://clincoo-be2.pages.dev/api/subscription', { headers: hdr }).then(function (r) { return r.json(); });
+                    if (d && d.plan) {
+                        setLabel(d.plan);
+                        try { localStorage.setItem('TM_SUB_CACHE_KEY', JSON.stringify({ plan: d.plan, billingCycle: d.billingCycle || 'Bulanan', ts: Date.now() })); localStorage.setItem('clinqoo_subscription_cache', JSON.stringify({ plan: d.plan, billingCycle: d.billingCycle || 'Bulanan', ts: Date.now() })); } catch (e) {}
+                    }
+                } catch (e) {}
+            }
+            refreshMenuPlanSub();
+            window.addEventListener('storage', function (e) {
+                if (e.key === 'TM_SUB_CACHE_KEY' || e.key === 'clinqoo_subscription_cache') {
+                    var c = readCachedPlan(); if (c) setLabel(c.plan);
+                }
+            });
+        })();
 
         async function refreshProfileFromD1() {
             try {

@@ -214,7 +214,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
     </header>
     <main class="w-full max-w-5xl px-4 sm:px-6 pt-20 pb-24">
     <style>
-        #settings-menu-pop.open { display: flex; }
+        #settings-menu-pop.open { display: grid; }
         .settings-menu-item { cursor: pointer; }
         .settings-menu-item .text-sm { line-height: 1.3; }
         .settings-menu-item .text-xs { line-height: 1.15; }
@@ -232,7 +232,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
                 </span>
                 <svg id="settings-menu-chev" class="w-4 h-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
             </button>
-            <div id="settings-menu-pop" class="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-12px)] sm:w-[860px] mt-0 bg-white rounded-2xl shadow-xl p-1 flex-col gap-px z-40 hidden">
+            <div id="settings-menu-pop" class="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-12px)] sm:w-[860px] mt-0 bg-white rounded-2xl shadow-xl p-1 grid grid-cols-1 sm:grid-cols-2 gap-px z-40 hidden">
                                 <a href="/proyek/dashboard/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Umum</span><span class="block text-xs text-gray-400 truncate">Nama, deskripsi, dan runtime aplikasi</span></span>
@@ -261,11 +261,11 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.01M6 18h.01"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Server MCP</span><span class="block text-xs text-gray-400 truncate">Sambungkan proyek ke platform AI lain (MCP)</span></span>
                 </a>
-                <a href="/proyek/pengaturan/pembayaran/" class="settings-menu-item flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                <a href="/proyek/pengaturan/pembayaran/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Pembayaran</span><span class="block text-xs text-gray-400 truncate">QRIS instan, dana masuk langsung ke akunmu</span></span>
                 </a>
-                <a href="/proyek/pengaturan/email/" class="settings-menu-item flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                <a href="/proyek/pengaturan/email/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Email</span><span class="block text-xs text-gray-400 truncate">Kirim email otomatis lewat API Clincoo</span></span>
                 </a>
@@ -336,7 +336,11 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
 
           <!-- Aktif -->
           <div id="pay-active" class="hidden flex-col gap-5">
-            <div class="flex items-center justify-end">
+            <div class="flex items-center justify-end gap-2.5">
+              <button type="button" id="pay-receive-btn" onclick="location.href='/proyek/pengaturan/pembayaran/terima-saldo/'" class="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v10m0 0l-4-4m4 4l4-4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"></path></svg>
+                Terima
+              </button>
               <button type="button" id="pay-withdraw-btn" onclick="openWithdrawModal()" class="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed" disabled>
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-5-5m5 5l5-5M4 20h16"></path></svg>
                 Tarik Saldo
@@ -382,7 +386,24 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
             <button type="button" id="pay-key-copy" onclick="copyPayKey(this)" class="relative z-10 flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-500 transition-colors cursor-pointer" title="Salin kunci" aria-label="Salin kunci"><svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M5 15.4A2 2 0 0 1 3.6 14V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 1.4"></path></svg></button>
           </div>
           <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Dipakai situs deploy-mu untuk membuat QR bayar via <span class="font-mono" id="pay-endpoint">/api/pay</span></p>
-          <a href="https://blog.clincoo.buzz/pembayaran/dokumentasi/" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 mt-2.5 px-3.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-slate-700 rounded-full hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-500 transition-colors">Dokumentasi API<svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"></path></svg></a>
+          <a href="https://blog.clincoo.buzz/dokumentasi/api-payment-gateway-qris/" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 mt-2.5 px-3.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-slate-700 rounded-full hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-500 transition-colors">Dokumentasi API<svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"></path></svg></a>
+
+          <details class="mt-4 pt-4 border-t border-gray-100 dark:border-slate-800">
+            <summary class="text-sm font-semibold text-gray-900 dark:text-white cursor-pointer">Contoh pemakaian dari situs deploy</summary>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-3 mb-2">1. Buat transaksi QR — respons berisi <span class="font-mono">checkout_url</span>, <span class="font-mono">qr_image</span> (gambar QR siap embed), dan <span class="font-mono">qr_string</span>:</p>
+            <div class="relative">
+            <pre class="text-[11px] font-mono overflow-x-auto bg-gray-50 dark:bg-slate-800 rounded-lg p-3 pr-11 text-gray-700 dark:text-gray-300">curl -X POST https://app.clincoo.buzz/api/pay \
+  -H "Content-Type: application/json" \
+  -d '{"action":"create","key":"<span class="pay-usage-key">clc_pk_…</span>","amount":50000,"description":"Paket Premium"}'</pre>
+            <button type="button" onclick="copyUsageCurl(this)" class="absolute top-2 right-2 flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-500 transition-colors cursor-pointer" title="Salin perintah" aria-label="Salin perintah"><svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M5 15.4A2 2 0 0 1 3.6 14V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 1.4"></path></svg></button>
+          </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-3 mb-2">2. Cek status pembayaran dari situs deploy-mu (berubah jadi <span class="font-mono">paid</span> setelah dibayar):</p>
+            <div class="relative">
+            <pre class="text-[11px] font-mono overflow-x-auto bg-gray-50 dark:bg-slate-800 rounded-lg p-3 pr-11 text-gray-700 dark:text-gray-300">curl "https://app.clincoo.buzz/api/pay?action=status&amp;key=<span class="pay-usage-key">clc_pk_…</span>&amp;order_id=clincoo…"</pre>
+            <button type="button" onclick="copyUsageCurl(this)" class="absolute top-2 right-2 flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-500 transition-colors cursor-pointer" title="Salin perintah" aria-label="Salin perintah"><svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M5 15.4A2 2 0 0 1 3.6 14V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 1.4"></path></svg></button>
+          </div>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">Nominal Rp 1.000 – Rp 100.000.000. Biaya QRIS 3,8% ditanggung pembeli. Dana masuk ke saldo ClincooPay proyekmu.</p>
+          </details>
         </div>
         <div id="pay-logs-section" style="display:none">
         <div class="py-5" id="pay-stats-section" style="display:none">
@@ -624,6 +645,7 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
     if (wb) wb.disabled = false;
     var kb = document.getElementById('pay-key-box');
     if (data.pay_key) kb.textContent = data.pay_key;
+    if (data.pay_key) document.querySelectorAll('.pay-usage-key').forEach(function (el) { el.textContent = data.pay_key; });
   }
 
   function renderPayInactive() {
@@ -728,6 +750,28 @@ body.dark-mode .pay-toast{background:#e9e9ee;color:#141416}
   function _payValidKey(k) {
     return k && (k.indexOf('clc_pay_') === 0 || k.indexOf('cno_pk_') === 0 || k.indexOf('clc_pk_') === 0 || k.indexOf('pk_') === 0);
   }
+  function copyUsageCurl(btn) {
+    var pre = btn.parentElement.querySelector('pre');
+    var txt = ((pre && pre.textContent) || '').trim();
+    if (!txt) return;
+    var done = function () {
+      if (!btn || !btn.innerHTML) return;
+      if (!btn._orig) btn._orig = btn.innerHTML;
+      btn.innerHTML = '<svg class="h-3.5 w-3.5 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>';
+      if (btn._t) clearTimeout(btn._t);
+      btn._t = setTimeout(function () { btn.innerHTML = btn._orig; }, 1600);
+    };
+    var fallback = function () {
+      var ta = document.createElement('textarea');
+      ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) {}
+      document.body.removeChild(ta);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, fallback);
+    else fallback();
+  }
+
   function copyPayKey(btn) {
     var kb = document.getElementById('pay-key-box');
     var key = (kb.textContent || '').trim();
@@ -1183,11 +1227,11 @@ window.chatLivePreview = function () {
   // ===== Data paket: identik dengan halaman Upgrade (akun/langganan/upgrade) =====
   var plans=[
     { name:'Starter', tagline:'Untuk individu yang baru memulai.', price:'Gratis', per:'', hot:false,
-      items:[['Hingga 3 proyek aktif + editor kode',true],['1 kolaborator per proyek',true],['Chat AI di setiap proyek (50 pesan/bulan) + pencarian web',true],['Kelola 1 domain: verifikasi, DNS & SSL',true], ['3 template proyek siap pakai',true],['Tugas terjadwal & notifikasi',true],['Deploy web 5x per bulan',true],['Editor full-stack & integrasi GitHub',false],['Domain tanpa batas & deploy tanpa batas',false]] },
+      items:[['Kuota workspace 1 GB per proyek',true],['Hingga 3 proyek aktif + editor kode',true],['1 kolaborator per proyek',true],['Chat AI di setiap proyek (50 pesan/bulan) + pencarian web',true],['Kelola 1 domain: verifikasi, DNS & SSL',true], ['3 template proyek siap pakai',true],['Tugas terjadwal & notifikasi',true],['Deploy web 5x per bulan',true],['Editor full-stack & integrasi GitHub',false],['Domain tanpa batas & deploy tanpa batas',false]] },
     { name:'Pro', tagline:'Untuk profesional dan kreator aktif.', price:'49K', per:'/bln', hot:true,
-      items:[['Hingga 10 proyek aktif',true],['Hingga 5 kolaborator per proyek',true],['Semua fitur Starter',true], ['Editor kode full-stack: bangun & publikasikan dari browser',true], ['Domain tanpa batas: verifikasi, DNS & SSL',true],['Chat AI hingga 500 pesan/bulan (maks 50/hari)',true],['Deploy web hingga 25x per bulan ke domain sendiri',true],['Integrasi GitHub: impor repo, AI kerja langsung di repo kamu',true]] },
+      items:[['Kuota workspace 5 GB per proyek',true],['Hingga 10 proyek aktif',true],['Hingga 5 kolaborator per proyek',true],['Semua fitur Starter',true], ['Editor kode full-stack: bangun & publikasikan dari browser',true], ['Domain tanpa batas: verifikasi, DNS & SSL',true],['Chat AI hingga 500 pesan/bulan (maks 50/hari)',true],['Deploy web hingga 25x per bulan ke domain sendiri',true],['Integrasi GitHub: impor repo, AI kerja langsung di repo kamu',true]] },
     { name:'Bisnis', tagline:'Untuk tim dan operasi skala besar.', price:'129K', per:'/bln', hot:false,
-      items:[['Semua fitur Pro',true],['Chat AI hingga 2.000 pesan/bulan (maks 150/hari)',true],['Hingga 50 proyek aktif',true],['Hingga 20 kolaborator per proyek',true],['Kontrol akses & keamanan proyek lanjutan',true], ['Dilindungi Password & ekspor data penuh akun',true],['Deploy web tanpa batas',true]] }
+      items:[['Kuota workspace 20 GB per proyek',true],['Semua fitur Pro',true],['Chat AI hingga 2.000 pesan/bulan (maks 150/hari)',true],['Hingga 50 proyek aktif',true],['Hingga 20 kolaborator per proyek',true],['Kontrol akses & keamanan proyek lanjutan',true], ['Dilindungi Password & ekspor data penuh akun',true],['Deploy web tanpa batas',true]] }
   ];
   function checkoutUrl(name){
     var base=(location.pathname.indexOf('/Clincoo')!==-1)?'/Clincoo.':'';

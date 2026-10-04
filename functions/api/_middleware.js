@@ -30,7 +30,7 @@ import { initTables as initAuthTables, getUserByToken, getToken } from './auth/s
 //             (clc_pay_...) demi situs deploy; action lain tetap cek sesi (requireOwned).
 // /api/mcp  -> publik: klien AI luar tidak punya sesi Clincoo; handler mcp.js
 //             memverifikasi token MCP per proyek + izin read/write/delete sendiri.
-const PUBLIC = [/^\/api\/pay(\/|$)/, /^\/api\/mcp(\/|$)/, /^\/api\/fn-db(\/|$)/, /^\/api\/beta-claim(\/|$)/, /^\/api\/promo(\/|$)/, /^\/api\/template-submissions(\/|$)/, /^\/api\/auth(\/|$)/, /^\/api\/github-oauth(\/|$)/, /^\/api\/topup(-qris)?(\/|$)/, /^\/api\/wallet(\/|$)/, /^\/api\/scheduled-tasks(\/|$)/, /^\/api\/user-report-sync(\/|$)/, /^\/api\/wallet-sync(\/|$)/, /^\/api\/collab(\/|$)/, /^\/api\/chat(\/|$)/, /^\/api\/prompt-templates(\/|$)/, /^\/api\/wa(\/|$)/, /^\/api\/email(\/|$)/];
+const PUBLIC = [/^\/api\/pay(\/|$)/, /^\/api\/mcp(\/|$)/, /^\/api\/fn-db(\/|$)/, /^\/api\/beta-claim(\/|$)/, /^\/api\/promo(\/|$)/, /^\/api\/template-submissions(\/|$)/, /^\/api\/auth(\/|$)/, /^\/api\/github-oauth(\/|$)/, /^\/api\/topup(-qris)?(\/|$)/, /^\/api\/wallet(\/|$)/, /^\/api\/scheduled-tasks(\/|$)/, /^\/api\/user-report-sync(\/|$)/, /^\/api\/wallet-sync(\/|$)/, /^\/api\/collab(\/|$)/, /^\/api\/chat(\/|$)/, /^\/api\/prompt-templates(\/|$)/, /^\/api\/wa(\/|$)/, /^\/api\/email(\/|$)/, /^\/api\/promo-email(\/|$)/];
 
 // ---- 1. RATE LIMIT (anti-DDoS L7 / anti-brute-force) ----
 const _buckets = new Map(); // key -> array timestamp
@@ -70,7 +70,7 @@ function tooMany(retryAfter) {
 //  b) strictOriginOk — KETAT: untuk mutasi /api/auth dan /api/admin. HANYA host milik
 //     Clincoo sendiri. Sebelumnya regex menerima SEMUA subdomain *.pages.dev /
 //     *.workers.dev milik siapa pun (halaman phising siapa pun lolos cek ini).
-const ORIGIN_ALLOW = /^(^[^.:]+\.pages\.dev$)|(^muzawwied\.github\.io$)|(^[^.:]+\.workers\.dev$)|(^([\w-]+\.)*clincoo\.buzz$)|(^([\w-]+\.)*clinqoo\.biz\.id$)/;
+const ORIGIN_ALLOW = /^(^[^.:]+\.pages\.dev$)|(^muzawwied\.github\.io$)|(^[^.:]+\.workers\.dev$)|(^([\w-]+\.)*clincoo\.buzz$)|(^([\w-]+\.)*clinqoo\.biz\.id$)|(^([\w-]+\.)*clincoo\.biz\.id$)/;
 const ORIGIN_STRICT = /^(^clincoo-be2\.pages\.dev$)|(^clinqoo\.pages\.dev$)|(^muzawwied\.github\.io$)|(^([\w-]+\.)*clincoo\.buzz$)|(^localhost(:\d+)?$)/;
 function originOk(request) {
   const origin = request.headers.get('origin');
@@ -194,7 +194,30 @@ export async function onRequest({ request, env, next }) {
   // 3. Cap ukuran body (anti flood payload besar)
   const cl = parseInt(request.headers.get('content-length') || '0', 10);
   if (cl > 1500000) {
-    return new Response(JSON.stringify({ error: 'Payload terlalu besar.' }), { status: 413, headers: { 'Content-Type': 'application/json' } });
+    // Pengecualian: simpan file workspace (/api/project-files) — file media besar
+    // (mp3 dll) dikirim klien sebagai SATU body JSON berisi content_b64, jadi butuh
+    // cap lebih besar. HANYA untuk request yang LOGIN: token divalidasi dulu;
+    // guest / token tak valid tetap kena cap 1.5MB.
+    let bigUpload = false;
+    if (cl <= 50 * 1024 * 1024 && path === '/api/project-files' && mutates) {
+      try {
+        if (env.DB) {
+          await initAuthTables(env.DB);
+          const u = await getUserByToken(env.DB, getToken(request));
+          if (u) bigUpload = true;
+        }
+      } catch (e) { /* anggap guest */ }
+    }
+    if (!bigUpload) {
+      // CORS wajib ada di sini: editor produksi (app.clincoo.buzz/clinqoo.pages.dev)
+      // memanggil API lintas-origin (clincoo-be2.pages.dev). Tanpa header ini browser
+      // memblokir respons dari dibaca skrip -> fetch() melempar "Failed to fetch" dan
+      // pesan asli ("Payload terlalu besar") tidak pernah sampai ke user (notifikasi
+      // workspace jadi salah diagnosis sebagai masalah koneksi).
+      return new Response(JSON.stringify({ error: 'Payload terlalu besar.' }), {
+        status: 413, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
   }
 
   let publicRoute = false;

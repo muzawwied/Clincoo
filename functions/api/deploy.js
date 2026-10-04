@@ -4,7 +4,8 @@
 // POST /api/deploy {project_id} = deploy; action 'unpublish' = hapus situs;
 // action 'add_domain'/'remove_domain' = kelola domain kustom; GET = status situs.
 
-import { getProjectTables } from './_tables.js';
+import { getProjectTables, tableFor } from './_tables.js';
+import { transform as tsTransform } from './_ts-compile.js';
 import { guardProject, currentUser } from './user-scope.js';
 import { getEffectivePlan, getMonthlyDeployCount, bumpMonthlyDeployCount, ADMIN_EMAILS } from './plan-helpers.js';
 
@@ -33,6 +34,15 @@ function json(data, status = 200) {
 
 function b64(str) {
   return btoa(unescape(encodeURIComponent(String(str || ''))));
+}
+
+// base64 -> string asli (file besar disimpan sebagai chunk base64 dari string
+// asli — bisa teks murni atau data-URL gambar — jadi didecode kembali ke string)
+function unb64(b64Str) {
+  const bin = atob(String(b64Str || ''));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder('utf-8').decode(bytes);
 }
 
 function slugify(s) {
@@ -314,13 +324,23 @@ async function ensurePublicDomain(creds, pagesName) {
   } catch (e) {
     if (e && e.code !== 8000013) return null; // 8000013 = sudah terpasang -> lanjut cek DNS
   }
-  if (await ensurePublicDomainDns(creds, domain, pagesName)) return domain;
-  // DNS tidak bisa dikelola dari sini: pakai domain cuma kalau sudah aktif
-  // (record pernah dibuat manual / zona di akun yang sama dan sudah validate).
-  try {
-    const info = await cfFetch('/accounts/' + creds.accountId + '/pages/projects/' + pagesName + '/domains/' + domain, creds.apiKey);
-    if (info && info.status === 'active') return domain;
-  } catch (e) {}
+  const dnsOk = await ensurePublicDomainDns(creds, domain, pagesName);
+  // Domain baru saja dipasang -> status Cloudflare masih "pending" beberapa
+  // detik. TANPA polling, deploy balik memberi URL pages.dev (AI lalu kasih
+  // link format lama ke user). Polling maks 5x3s (=15s) sampai status
+  // "active"; kalau DNS tidak bisa dikelola dari sini, cek statusnya saja.
+  for (let i = 0; i < 5; i++) {
+    if (i > 0) await new Promise(r => setTimeout(r, 3000));
+    try {
+      const info = await cfFetch('/accounts/' + creds.accountId + '/pages/projects/' + pagesName + '/domains/' + domain, creds.apiKey);
+      if (info && info.status === 'active') return domain;
+      if (info && info.status && info.status !== 'pending' && !dnsOk) break; // error domain (bukan sekadar pending) -> jangan nunggu
+    } catch (e) { if (!dnsOk) break; }
+    if (!dnsOk && i === 0) break; // tanpa akses DNS & belum aktif -> jangan menunda deploy
+  }
+  if (dnsOk) { // DNS benar tapi Cloudflare belum selesai validasi -> domain akan aktif sendiri
+    return domain;
+  }
   return null;
 }
 
@@ -345,8 +365,22 @@ async function ensurePagesProject(creds, name) {
 
 async function readFiles(db, table, projectId) {
   try {
-    const { results } = await db.prepare(`SELECT path, content FROM ${table} WHERE project_id = ?`).bind(projectId).all();
-    return results || [];
+    // kolom is_big wajib ada sebelum dipakai (proyek lama belum punya kolom ini)
+    try { await db.prepare(`ALTER TABLE ${table} ADD COLUMN is_big INTEGER DEFAULT 0`).run(); } catch (e) {}
+    const { results } = await db.prepare(`SELECT path, content, is_big FROM ${table} WHERE project_id = ?`).bind(projectId).all();
+    const rows = results || [];
+    const bigs = rows.filter(r => r.is_big);
+    if (!bigs.length) return rows;
+    // File besar: konten utuh dibangun ulang dari chunk di p_<pid>_file_chunks
+    const chunksTable = tableFor('file_chunks', projectId);
+    for (const r of bigs) {
+      try {
+        const ch = await db.prepare(`SELECT chunk FROM ${chunksTable} WHERE path = ? ORDER BY idx ASC`).bind(r.path).all();
+        const b64Str = (ch.results || []).map(c => c.chunk || '').join('');
+        r.content = b64Str ? unb64(b64Str) : '';
+      } catch (e) { r.content = ''; }
+    }
+    return rows;
   } catch (e) { return []; }
 }
 
@@ -641,6 +675,61 @@ export async function onRequestPost({ request, env }) {
 
     const files = await readFiles(db, T.files, projectId);
 
+    // === Transpile otomatis TypeScript/JSX saat deploy (fitur "AI masak, Clincoo deploy") ===
+    // File .ts/.tsx/.jsx di workspace dikompilasi server-side menjadi .js murni (sucrase:
+    // hapus tipe/interface, JSX klasik -> React.createElement). Referensi ekstensi di HTML
+    // (mis. src="app.ts") dan import relatif antar file ditulis ulang ke ".js".
+    // Hasil deploy tetap 100% statis — tidak butuh Node/npm di server.
+    {
+      const jsPathOf = p => String(p).replace(/\.(tsx?|jsx)$/i, '.js');
+      const existing = new Set(files.map(f => String(f.path)));
+      const isTSSrc = p => /\.(ts|tsx|jsx)$/i.test(String(p)) && !/\.d\.ts$/i.test(String(p));
+      const tsSources = files.filter(f => isTSSrc(f.path));
+      if (tsSources.length) {
+        await setPhase(db, T.projectSettings, projectId, 'Mengompilasi TypeScript (' + tsSources.length + ' file)...');
+        const compiled = new Map(); // path .js hasil kompilasi -> content
+        const drop = new Set();     // file sumber .ts/.tsx/.jsx yang TIDAK dideploy
+        for (const f of tsSources) {
+          const jsPath = jsPathOf(f.path);
+          if (existing.has(jsPath)) { drop.add(f.path); continue; } // .js eksplisit di workspace menang
+          const transforms = /\.(tsx|jsx)$/i.test(String(f.path)) ? ['typescript', 'jsx'] : ['typescript'];
+          let code;
+          try {
+            code = tsTransform(String(f.content || ''), { transforms, jsxRuntime: 'classic', production: true }).code;
+          } catch (e) {
+            return json({ error: 'Gagal mengompilasi ' + f.path + ': ' + (e && e.message ? e.message : String(e)) }, 400);
+          }
+          // import relatif antar file TS: perbaiki ekstensi & tambahkan .js bila tanpa ekstensi.
+          const norm = (dir, spec) => (dir + spec).replace(/^\.\//, '');
+          const dir = String(f.path).replace(/[^/]+$/, '');
+          code = code.replace(/(from\s*["'])(\.[^"']+)(["'])/g, (m, a, spec, z) => {
+            if (/\.(tsx?|jsx)$/i.test(spec)) return a + spec.replace(/\.(tsx?|jsx)$/i, '.js') + z;
+            if (/\.[a-z0-9]+$/i.test(spec)) return m; // sudah ada ekstensi lain (mis. .json)
+            const base = norm(dir, spec);
+            for (const cand of [base + '.js', base + '.ts', base + '.tsx']) {
+              if (existing.has(cand)) { return a + spec + '.js' + z; }
+            }
+            return m;
+          });
+          // import CSS side-effect tidak berlaku di browser — hapus.
+          code = code.replace(/^import\s+["'][^"']+\.css["'];?\s*$/gm, '');
+          compiled.set(jsPath, code);
+          drop.add(f.path);
+        }
+        // tulis ulang referensi ekstensi TS di HTML -> .js
+        for (const f of files) {
+          if (/\.html?$/i.test(String(f.path)) && typeof f.content === 'string') {
+            f.content = f.content.replace(/\.(tsx?|jsx)(["'?#\s])/g, '.js$2');
+          }
+        }
+        const keep = files.filter(f => !drop.has(String(f.path)) && !/\.d\.ts$/i.test(String(f.path)));
+        for (const [p, c] of compiled) keep.push({ path: p, content: c });
+        keep.sort((a, b) => String(a.path).localeCompare(String(b.path)));
+        files.length = 0;
+        files.push(...keep);
+      }
+    }
+
     // === Logo Aplikasi -> favicon otomatis (Pengaturan > Umum) ===
     // Logo yang diunggah di Pengaturan > Umum dipasang sebagai favicon situs:
     // tag <link rel="icon"> lama diganti dengan logo, jadi ikon tab browser
@@ -745,7 +834,7 @@ export async function onRequestPost({ request, env }) {
       let value;
       const raw = String(f.content || '');
       const dm = raw.startsWith('data:') && /^data:([a-z0-9.+-]+\/\/[a-z0-9.+-]+)?;base64,([A-Za-z0-9+/=]+)$/i.exec(raw);
-      if (dm && raw.length < 3_000_000) {
+      if (dm && raw.length < 34_000_000) {
         value = dm[2];
       } else {
         value = b64(f.content);

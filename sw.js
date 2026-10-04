@@ -1,5 +1,5 @@
 /* Clincoo service worker — PWA + cache aset CDN (lucide, fonts, tailwind) v31 */
-var CACHE = 'clinqoo-v39';
+var CACHE = 'clinqoo-v76';
 var PRECACHE = [
   './manifest.json',
   './assets/icons/icon-192.png',
@@ -61,8 +61,11 @@ self.addEventListener('fetch', function (e) {
   if (url.pathname.indexOf('/api/') !== -1) return; // backend/functions: selalu network
 
   if (req.mode === 'navigate') {
-    // Halaman sensitif (login/pembayaran): network-first, fallback cache saat offline.
-    var sensitive = url.pathname.indexOf('/auth') === 0 || url.pathname.indexOf('/pay') === 0;
+    // Halaman sensitif (login/pembayaran) + halaman CHAT: network-first, fallback cache saat offline.
+    // Chat WAJIB network-first: server AI bisa mengeluarkan blok kartu baru ([[APK_SETUP]] dll)
+    // — jika halaman lama ter-cache (SWR), blok tampil mentah sebagai teks aneh bagi user.
+    var sensitive = url.pathname.indexOf('/auth') === 0 || url.pathname.indexOf('/pay') === 0
+      || url.pathname.indexOf('/akun/langganan/checkout') === 0 || url.pathname.indexOf('/proyek/chat') === 0;
     if (sensitive) {
       e.respondWith(
         fetch(req).then(function (res) {

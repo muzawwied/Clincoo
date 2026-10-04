@@ -4,6 +4,12 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
 
-# Jangan publish halaman debug ke produksi (audit #9) — folder tetap di repo untuk pengujian lokal
-/debug/* X-Robots-Tag: noindex
-/debug-notif/* X-Robots-Tag: noindex
+# Service worker harus selalu dicek ulang — SW basi membuat halaman tayang versi lama
+/sw.js
+  Cache-Control: no-cache, must-revalidate
+
+# Jangan publish halaman debug ke produksi (audit #9)
+/debug/*
+  X-Robots-Tag: noindex
+/debug-notif/*
+  X-Robots-Tag: noindex

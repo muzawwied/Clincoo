@@ -6,7 +6,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex">
-    <title>Live preview — Clincoo</title>
+    <title>Clincoo - Live Preview</title>
+    <meta property="og:title" content="Clincoo - Live Preview">
+    <meta property="og:description" content="Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/proyek/preview/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Clincoo - Live Preview">
+    <meta name="twitter:description" content="Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../assets/favicon.png">
+    <link rel="manifest" href="../../manifest.json">
     <style>
         html, body { margin: 0; height: 100%; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #ffffff; display: flex; flex-direction: column; color: #18181b; }
@@ -222,13 +234,37 @@
                 if (!r.ok) throw new Error('HTTP ' + r.status);
                 return r.json();
             })
-            .then(function (d) {
+            .then(async function (d) {
                 var files = (d && d.files) || [];
                 var map = {};
+                var bigs = [];
                 files.forEach(function (f) {
                     if (!f || !f.path || String(f.path).slice(-1) === '/') return;
+                    if (f.is_big) { bigs.push(f); return; }
                     map[norm(f.path)] = { type: 'file', name: String(f.path).split('/').pop(), path: f.path, content: f.content || '' };
                 });
+                // FILE BESAR: isinya tidak ikut di daftar (hemat kuota) — ambil satu per
+                // satu supaya pratinjau tetap utuh (gambar/video/css/js ikut ke-render).
+                var fetched = 0;
+                for (var i = 0; i < bigs.length; i++) {
+                    var bf = bigs[i];
+                    if (fetched >= 10) break;
+                    if ((bf.size || 0) > 12 * 1024 * 1024) continue;
+                    try {
+                        var r2 = await fetch(PV_API + '/project-files?project_id=' + encodeURIComponent(pid) + '&path=' + encodeURIComponent(bf.path) + '&content=1', { headers: authHeaders() });
+                        if (!r2.ok) continue;
+                        var d2 = await r2.json();
+                        var content = '';
+                        if (typeof d2.content_b64 === 'string') {
+                            var bin = atob(d2.content_b64);
+                            var bytes = new Uint8Array(bin.length);
+                            for (var j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
+                            content = new TextDecoder('utf-8').decode(bytes);
+                        } else if (typeof d2.content === 'string') content = d2.content;
+                        map[norm(bf.path)] = { type: 'file', name: String(bf.path).split('/').pop(), path: bf.path, content: content };
+                        fetched++;
+                    } catch (e) {}
+                }
                 return map;
             });
     }

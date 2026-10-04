@@ -41,8 +41,13 @@ export async function onRequestOptions() {
   return new Response(null, { status: 200, headers: CORS });
 }
 
+let _secretTableReady = false;
 async function initSecretTable(db) {
+  // jalankan SEKALI per isolate — sebelumnya CREATE TABLE jalan di setiap
+  // request (query D1 ekstra = secret load terasa lambat).
+  if (_secretTableReady) return;
   await db.prepare('CREATE TABLE IF NOT EXISTS ai_router_secrets (project_id TEXT PRIMARY KEY, secret TEXT NOT NULL, created_at TEXT, last_used TEXT)').run();
+  _secretTableReady = true;
 }
 
 function newSecret() {

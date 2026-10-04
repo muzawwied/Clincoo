@@ -204,7 +204,7 @@
     </header>
     <main class="w-full max-w-5xl px-4 sm:px-6 pt-20 pb-24">
     <style>
-        #settings-menu-pop.open { display: flex; }
+        #settings-menu-pop.open { display: grid; }
         .settings-menu-item { cursor: pointer; }
         .settings-menu-item .text-sm { line-height: 1.3; }
         .settings-menu-item .text-xs { line-height: 1.15; }
@@ -222,7 +222,7 @@
                 </span>
                 <svg id="settings-menu-chev" class="w-4 h-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
             </button>
-            <div id="settings-menu-pop" class="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-12px)] sm:w-[860px] mt-0 bg-white rounded-2xl shadow-xl p-1 flex-col gap-px z-40 hidden">
+            <div id="settings-menu-pop" class="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-12px)] sm:w-[860px] mt-0 bg-white rounded-2xl shadow-xl p-1 grid grid-cols-1 sm:grid-cols-2 gap-px z-40 hidden">
                                 <a href="/proyek/dashboard/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Umum</span><span class="block text-xs text-gray-400 truncate">Nama, deskripsi, dan runtime aplikasi</span></span>
@@ -251,11 +251,11 @@
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.01M6 18h.01"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Server MCP</span><span class="block text-xs text-gray-400 truncate">Sambungkan proyek ke platform AI lain (MCP)</span></span>
                 </a>
-                <a href="/proyek/pengaturan/pembayaran/" class="settings-menu-item flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                <a href="/proyek/pengaturan/pembayaran/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Pembayaran</span><span class="block text-xs text-gray-400 truncate">QRIS instan, dana masuk langsung ke akunmu</span></span>
                 </a>
-                <a href="/proyek/pengaturan/email/" class="settings-menu-item flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                <a href="/proyek/pengaturan/email/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
                     <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"></path></svg>
                     <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Email</span><span class="block text-xs text-gray-400 truncate">Kirim email otomatis lewat API Clincoo</span></span>
                 </a>
@@ -341,7 +341,18 @@
               <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Secret dikeluarkan Clincoo khusus untuk proyek ini — setiap proyek punya secret berbeda</p>
             </div>
           </div>
-          <div id="ai-secret-empty" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div id="ai-secret-loading" class="flex items-center gap-2 py-1">
+            <svg class="animate-spin h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+            <p class="text-xs text-gray-400 dark:text-gray-500">Memuat secret…</p>
+          </div>
+          <div id="ai-secret-error" style="display:none" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <p id="ai-secret-error-text" class="text-xs text-red-500 dark:text-red-400">Gagal memuat secret — cek koneksi lalu coba lagi.</p>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <a id="ai-secret-relogin-btn" href="/auth/" style="display:none" class="px-4 py-2 text-xs font-medium text-white bg-black dark:bg-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors cursor-pointer">Login Ulang</a>
+              <button type="button" onclick="loadAiSecret()" class="px-4 py-2 text-xs font-medium text-blue-600 border border-blue-200 dark:text-blue-300 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors cursor-pointer">Muat Ulang</button>
+            </div>
+          </div>
+          <div id="ai-secret-empty" style="display:none" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <p class="text-xs text-gray-400 dark:text-gray-500">Belum ada secret — buat secret baru untuk mulai memakai Clincoo Open API.</p>
             <button type="button" id="ai-secret-create-btn" onclick="createAiSecret()" class="px-4 py-2 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-lg transition-colors cursor-pointer flex-shrink-0">Buat Secret Baru</button>
           </div>
@@ -435,9 +446,15 @@
               <p id="ai-stat-tokens" class="text-base sm:text-xl font-bold text-gray-900 dark:text-white mt-0.5">0</p>
             </div>
             <div class="rounded-xl border border-gray-200 dark:border-slate-700 p-2 sm:p-3.5">
-              <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">Total kredit</p>
-              <p id="ai-stat-cost" class="text-base sm:text-xl font-bold text-gray-900 dark:text-white mt-0.5">0</p>
+              <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">Total biaya</p>
+              <p id="ai-stat-cost" class="text-base sm:text-xl font-bold text-gray-900 dark:text-white mt-0.5">$0.000000</p>
             </div>
+          </div>
+          <div id="ai-credits-card" style="display:none" class="mt-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 px-3.5 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1">
+            <span class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Kredit API <span id="ai-credits-plan" class="normal-case tracking-normal"></span></span>
+            <span class="text-xs text-gray-600 dark:text-gray-300">Hari ini <span id="ai-credits-day" class="font-semibold text-gray-900 dark:text-white">…</span></span>
+            <span class="text-xs text-gray-600 dark:text-gray-300">Bulan ini <span id="ai-credits-month" class="font-semibold text-gray-900 dark:text-white">…</span></span>
+            <span class="text-[11px] text-gray-400 dark:text-gray-500 ml-auto">reset harian tiap hari · bulanan tiap awal bulan</span>
           </div>
           <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             <div>
@@ -495,41 +512,82 @@
   // Daftar model: nama dirapikan (tanpa duplikasi brand, tanpa suffix teknis), dikelompokkan per brand.
   // Sumber: model gratis OpenRouter + model Workers AI Cloudflare (alokasi gratis), dialihkan Clincoo.
   var AI_MODELS = [
-    { id: 'clincoo/auto', label: 'Auto (rantai otomatis)', rate: 'gratis', ctx: 'Mengikuti model terpilih', vision: false, desc: 'Memilih model terbaik secara otomatis untuk tiap permintaan, menyeimbangkan kecepatan dan kualitas jawaban.' },
-    { id: 'clincoo/deepseek-v4-flash', label: 'DeepSeek V4 Flash', rate: 'gratis · konteks besar', ctx: '160K token', vision: false, desc: 'Model cepat dari DeepSeek dengan jendela konteks besar, cocok untuk percakapan panjang dan ringkasan dokumen.' },
-    { id: 'clincoo/deepseek-v4-pro', label: 'DeepSeek V4 Pro', rate: 'gratis · reasoning · konteks 1M', ctx: '1M token', vision: false, desc: 'Varian reasoning DeepSeek dengan konteks hingga 1 juta token, untuk analisis mendalam dan tugas multi-langkah.' },
-    { id: 'clincoo/glm-5.2', label: 'Z.ai: GLM 5.2', rate: 'gratis · reasoning & kode', ctx: '128K token', vision: false, desc: 'Model Zhipu (Z.ai) yang kuat untuk reasoning dan pembuatan kode.' },
-    { id: 'clincoo/glm-5.3', label: 'Z.ai: GLM 5.3', rate: 'gratis · coding & agen', ctx: '128K token', vision: false, desc: 'Versi lanjutan GLM untuk coding dan tugas agentic (otomasi multi-langkah).' },
-    { id: 'clincoo/glm-5.3-flash', label: 'Z.ai: GLM 5.3 Flash', rate: 'gratis · multimodal', ctx: '128K token', vision: true, desc: 'Varian cepat GLM 5.3 dengan dukungan input gambar, cocok untuk tugas multimodal ringan.' },
-    { id: 'clincoo/glm-4.7-flash', label: 'Z.ai: GLM 4.7 Flash', rate: 'gratis · multilingual', ctx: '128K token', vision: false, desc: 'Model Zhipu yang ringan dan mendukung banyak bahasa.' },
-    { id: 'clincoo/gpt-oss-120b', label: 'OpenAI: GPT-OSS 120B', rate: 'gratis · reasoning terbuka', ctx: '128K token', vision: false, desc: 'Model open-weight OpenAI untuk reasoning umum dengan performa tinggi.' },
-    { id: 'clincoo/gpt-oss-20b', label: 'OpenAI: GPT-OSS 20B', rate: 'gratis · ringan', ctx: '128K token', vision: false, desc: 'Versi ringan GPT-OSS, lebih cepat dan hemat untuk tugas sehari-hari.' },
-    { id: 'clincoo/kimi-k2.6', label: 'Moonshot: Kimi K2.6', rate: 'gratis · frontier 1T', ctx: '256K token', vision: false, desc: 'Model skala besar (1T parameter) dari Moonshot untuk tugas kompleks dan reasoning frontier.' },
-    { id: 'clincoo/kimi-k2.7-code', label: 'Moonshot: Kimi K2.7 Code', rate: 'gratis · fokus kode', ctx: '256K token', vision: false, desc: 'Varian Kimi yang difokuskan untuk pemrograman dan debugging.' },
-    { id: 'clincoo/llama-4-scout', label: 'Meta: Llama 4 Scout', rate: 'gratis · multimodal', ctx: '128K token', vision: true, desc: 'Model multimodal Meta, bisa memahami teks dan gambar sekaligus.' },
-    { id: 'clincoo/llama-3.3-70b', label: 'Meta: Llama 3.3 70B', rate: 'gratis · serba guna', ctx: '128K token', vision: false, desc: 'Model serba guna Meta dengan performa seimbang untuk berbagai tugas.' },
-    { id: 'clincoo/mistral-small-3.1', label: 'Mistral: Small 3.1', rate: 'gratis · cepat · konteks besar', ctx: '256K token', vision: false, desc: 'Model Mistral yang cepat dengan jendela konteks besar.' },
-    { id: 'clincoo/reasoning-120b', label: 'NVIDIA: Nemotron 3 Super', rate: 'gratis · reasoning umum', ctx: '128K token', vision: false, desc: 'Model NVIDIA Nemotron untuk reasoning umum dengan performa andal.' },
-    { id: 'clincoo/reasoning-550b', label: 'NVIDIA: Nemotron 3 Ultra', rate: 'gratis · konteks 1M token', ctx: '1M token', vision: false, desc: 'Model Nemotron terbesar dengan konteks hingga 1 juta token, untuk analisis dokumen panjang.' },
-    { id: 'clincoo/lightning', label: 'NVIDIA: Nemotron 3.5 Lightning', rate: 'gratis · ringan & cepat', ctx: '64K token', vision: false, desc: 'Model Nemotron yang ringan dan sangat cepat merespons.' },
-    { id: 'clincoo/omni-nano', label: 'NVIDIA: Nemotron 3 Nano Omni', rate: 'gratis · multimodal', ctx: '128K token', vision: true, desc: 'Model Nemotron multimodal berukuran kecil, mendukung input gambar.' },
-    { id: 'clincoo/gemini-3.8-flash', label: 'Google: Gemini 3.8 Flash', rate: 'gratis · cepat · reasoning', ctx: '1M token', vision: true, desc: 'Gemini terbaru — cepat, kuat untuk reasoning, dan mendukung gambar.' },
-    { id: 'clincoo/gemini-3.6-flash', label: 'Google: Gemini 3.6 Flash', rate: 'gratis · seimbang', ctx: '1M token', vision: true, desc: 'Gemini generasi sebelumnya, seimbang antara kecepatan dan kualitas jawaban.' },
-    { id: 'clincoo/gemini-3.5-flash', label: 'Google: Gemini 3.5 Flash', rate: 'gratis · multimodal', ctx: '1M token', vision: true, desc: 'Gemini multimodal untuk tugas teks dan gambar sehari-hari.' },
-    { id: 'clincoo/gemini-3.1-flash-lite', label: 'Google: Gemini 3.1 Flash Lite', rate: 'gratis · super ringan', ctx: '1M token', vision: false, desc: 'Varian paling ringan dan cepat Gemini, pas untuk respons singkat.' },
-    { id: 'clincoo/multimodal-27b', label: 'Qwen 3.8 27B', rate: 'gratis · multimodal', ctx: '256K token', vision: true, desc: 'Model Qwen multimodal dengan konteks besar.' },
-    { id: 'clincoo/qwq-32b', label: 'QwQ 32B', rate: 'gratis · reasoning', ctx: '128K token', vision: false, desc: 'Model Qwen yang difokuskan pada reasoning langkah demi langkah.' },
-    { id: 'clincoo/qwen-coder-32b', label: 'Qwen 2.5 Coder 32B', rate: 'gratis · fokus kode', ctx: '128K token', vision: false, desc: 'Model Qwen yang dioptimalkan khusus untuk pemrograman.' },
-    { id: 'clincoo/granite-4-micro', label: 'IBM: Granite 4.0 Micro', rate: 'gratis · super ringan', ctx: '32K token', vision: false, desc: 'Model IBM Granite yang sangat ringan dan hemat resource.' },
-    { id: 'clincoo/sea-lion-27b', label: 'AI Singapore: SEA-LION 27B', rate: 'gratis · bahasa Asia Tenggara', ctx: '128K token', vision: false, desc: 'Model dari AI Singapore yang dilatih khusus untuk bahasa-bahasa Asia Tenggara.' },
-    { id: 'clincoo/reasoning-mini', label: 'Apodex 1.1 Mini', rate: 'gratis · reasoning panjang', ctx: '128K token', vision: false, desc: 'Model ringan dengan kemampuan reasoning panjang untuk tugas yang butuh penalaran bertahap.' },
-    { id: 'clincoo/ling-flash', label: 'InclusionAI: Ling 3.0 Flash', rate: 'gratis · cepat', ctx: '64K token', vision: false, desc: 'Model InclusionAI yang cepat untuk respons singkat.' },
-    { id: 'clincoo/dots-note', label: 'Dots3-Note Preview', rate: 'gratis · multimodal', ctx: '128K token', vision: true, desc: 'Model multimodal untuk membaca dan meringkas catatan atau dokumen bergambar.' },
-    { id: 'clincoo/lfm-mini', label: 'Liquid AI: LFM 2.5 2.6B', rate: 'gratis · super ringan', ctx: '32K token', vision: false, desc: 'Model Liquid AI yang super ringan, cocok untuk tugas sederhana dan cepat.' },
-    { id: 'clincoo/laguna-s', label: 'Poolside: Laguna S 2.1', rate: 'gratis · serba guna', ctx: '128K token', vision: false, desc: 'Model serba guna dari Poolside untuk berbagai kebutuhan umum.' },
-    { id: 'clincoo/north-code', label: 'Cohere: North Mini Code', rate: 'gratis · fokus kode', ctx: '128K token', vision: false, desc: 'Model Cohere yang difokuskan khusus untuk pemrograman.' },
-    { id: 'clincoo/acak', label: 'Acak (jaringan mitra)', rate: 'gratis · otomatis', ctx: 'Bervariasi (jaringan mitra)', vision: false, desc: 'Memilih model secara acak dari jaringan mitra yang tersedia, cocok untuk pemerataan beban.' }
+    { id: 'clincoo/auto', label: 'Auto (rantai otomatis)', rate: '$0.000025 / panggilan', ctx: 'Mengikuti model terpilih', vision: false, desc: 'Memilih model terbaik secara otomatis untuk tiap permintaan, menyeimbangkan kecepatan dan kualitas jawaban.' },
+    { id: 'clincoo/deepseek-v4-flash', label: 'DeepSeek V4 Flash', rate: '$0.000015 · konteks besar', ctx: '160K token', vision: false, desc: 'Model cepat dari DeepSeek dengan jendela konteks besar, cocok untuk percakapan panjang dan ringkasan dokumen.' },
+    { id: 'clincoo/deepseek-v4-pro', label: 'DeepSeek V4 Pro', rate: '$0.000050 · reasoning · konteks 1M', ctx: '1M token', vision: false, desc: 'Varian reasoning DeepSeek dengan konteks hingga 1 juta token, untuk analisis mendalam dan tugas multi-langkah.' },
+    { id: 'clincoo/glm-5.2', label: 'Z.ai: GLM 5.2', rate: '$0.000025 · reasoning & kode', ctx: '128K token', vision: false, desc: 'Model Zhipu (Z.ai) yang kuat untuk reasoning dan pembuatan kode.' },
+    { id: 'clincoo/glm-5.3', label: 'Z.ai: GLM 5.3', rate: '$0.000050 · coding & agen', ctx: '128K token', vision: false, desc: 'Versi lanjutan GLM untuk coding dan tugas agentic (otomasi multi-langkah).' },
+    { id: 'clincoo/glm-5.3-flash', label: 'Z.ai: GLM 5.3 Flash', rate: '$0.000050 · multimodal', ctx: '128K token', vision: true, desc: 'Varian cepat GLM 5.3 dengan dukungan input gambar, cocok untuk tugas multimodal ringan.' },
+    { id: 'clincoo/glm-4.7-flash', label: 'Z.ai: GLM 4.7 Flash', rate: '$0.000015 · multilingual', ctx: '128K token', vision: false, desc: 'Model Zhipu yang ringan dan mendukung banyak bahasa.' },
+    { id: 'clincoo/gpt-oss-120b', label: 'OpenAI: GPT-OSS 120B', rate: '$0.000050 · reasoning terbuka', ctx: '128K token', vision: false, desc: 'Model open-weight OpenAI untuk reasoning umum dengan performa tinggi.' },
+    { id: 'clincoo/gpt-oss-20b', label: 'OpenAI: GPT-OSS 20B', rate: '$0.000015 · ringan', ctx: '128K token', vision: false, desc: 'Versi ringan GPT-OSS, lebih cepat dan hemat untuk tugas sehari-hari.' },
+    { id: 'clincoo/kimi-k2.6', label: 'Moonshot: Kimi K2.6', rate: '$0.000050 · frontier 1T', ctx: '256K token', vision: false, desc: 'Model skala besar (1T parameter) dari Moonshot untuk tugas kompleks dan reasoning frontier.' },
+    { id: 'clincoo/kimi-k2.7-code', label: 'Moonshot: Kimi K2.7 Code', rate: '$0.000050 · fokus kode', ctx: '256K token', vision: false, desc: 'Varian Kimi yang difokuskan untuk pemrograman dan debugging.' },
+    { id: 'clincoo/llama-4-scout', label: 'Meta: Llama 4 Scout', rate: '$0.000025 · multimodal', ctx: '128K token', vision: true, desc: 'Model multimodal Meta, bisa memahami teks dan gambar sekaligus.' },
+    { id: 'clincoo/llama-3.3-70b', label: 'Meta: Llama 3.3 70B', rate: '$0.000025 · serba guna', ctx: '128K token', vision: false, desc: 'Model serba guna Meta dengan performa seimbang untuk berbagai tugas.' },
+    { id: 'clincoo/mistral-small-3.1', label: 'Mistral: Small 3.1', rate: '$0.000025 · cepat · konteks besar', ctx: '256K token', vision: false, desc: 'Model Mistral yang cepat dengan jendela konteks besar.' },
+    { id: 'clincoo/reasoning-120b', label: 'NVIDIA: Nemotron 3 Super', rate: '$0.000050 · reasoning umum', ctx: '128K token', vision: false, desc: 'Model NVIDIA Nemotron untuk reasoning umum dengan performa andal.' },
+    { id: 'clincoo/reasoning-550b', label: 'NVIDIA: Nemotron 3 Ultra', rate: '$0.000080 · konteks 1M token', ctx: '1M token', vision: false, desc: 'Model Nemotron terbesar dengan konteks hingga 1 juta token, untuk analisis dokumen panjang.' },
+    { id: 'clincoo/lightning', label: 'NVIDIA: Nemotron 3.5 Lightning', rate: '$0.000010 · ringan & cepat', ctx: '64K token', vision: false, desc: 'Model Nemotron yang ringan dan sangat cepat merespons.' },
+    { id: 'clincoo/omni-nano', label: 'NVIDIA: Nemotron 3 Nano Omni', rate: '$0.000025 · multimodal', ctx: '128K token', vision: true, desc: 'Model Nemotron multimodal berukuran kecil, mendukung input gambar.' },
+    { id: 'clincoo/gemini-3.8-flash', label: 'Google: Gemini 3.8 Flash', rate: '$0.000025 · cepat · reasoning', ctx: '1M token', vision: true, desc: 'Gemini terbaru — cepat, kuat untuk reasoning, dan mendukung gambar.' },
+    { id: 'clincoo/gemini-3.6-flash', label: 'Google: Gemini 3.6 Flash', rate: '$0.000025 · seimbang', ctx: '1M token', vision: true, desc: 'Gemini generasi sebelumnya, seimbang antara kecepatan dan kualitas jawaban.' },
+    { id: 'clincoo/gemini-3.5-flash', label: 'Google: Gemini 3.5 Flash', rate: '$0.000025 · multimodal', ctx: '1M token', vision: true, desc: 'Gemini multimodal untuk tugas teks dan gambar sehari-hari.' },
+    { id: 'clincoo/gemini-3.1-flash-lite', label: 'Google: Gemini 3.1 Flash Lite', rate: '$0.000010 · super ringan', ctx: '1M token', vision: false, desc: 'Varian paling ringan dan cepat Gemini, pas untuk respons singkat.' },
+    { id: 'clincoo/multimodal-27b', label: 'Qwen 3.8 27B', rate: '$0.000025 · multimodal', ctx: '256K token', vision: true, desc: 'Model Qwen multimodal dengan konteks besar.' },
+    { id: 'clincoo/qwq-32b', label: 'QwQ 32B', rate: '$0.000025 · reasoning', ctx: '128K token', vision: false, desc: 'Model Qwen yang difokuskan pada reasoning langkah demi langkah.' },
+    { id: 'clincoo/qwen-coder-32b', label: 'Qwen 2.5 Coder 32B', rate: '$0.000025 · fokus kode', ctx: '128K token', vision: false, desc: 'Model Qwen yang dioptimalkan khusus untuk pemrograman.' },
+    { id: 'clincoo/granite-4-micro', label: 'IBM: Granite 4.0 Micro', rate: '$0.000010 · super ringan', ctx: '32K token', vision: false, desc: 'Model IBM Granite yang sangat ringan dan hemat resource.' },
+    { id: 'clincoo/sea-lion-27b', label: 'AI Singapore: SEA-LION 27B', rate: '$0.000025 · bahasa Asia Tenggara', ctx: '128K token', vision: false, desc: 'Model dari AI Singapore yang dilatih khusus untuk bahasa-bahasa Asia Tenggara.' },
+    { id: 'clincoo/reasoning-mini', label: 'Apodex 1.1 Mini', rate: '$0.000015 · reasoning panjang', ctx: '128K token', vision: false, desc: 'Model ringan dengan kemampuan reasoning panjang untuk tugas yang butuh penalaran bertahap.' },
+    { id: 'clincoo/ling-flash', label: 'InclusionAI: Ling 3.0 Flash', rate: '$0.000010 · cepat', ctx: '64K token', vision: false, desc: 'Model InclusionAI yang cepat untuk respons singkat.' },
+    { id: 'clincoo/dots-note', label: 'Dots3-Note Preview', rate: '$0.000015 · multimodal', ctx: '128K token', vision: true, desc: 'Model multimodal untuk membaca dan meringkas catatan atau dokumen bergambar.' },
+    { id: 'clincoo/lfm-mini', label: 'Liquid AI: LFM 2.5 2.6B', rate: '$0.000010 · super ringan', ctx: '32K token', vision: false, desc: 'Model Liquid AI yang super ringan, cocok untuk tugas sederhana dan cepat.' },
+    { id: 'clincoo/laguna-s', label: 'Poolside: Laguna S 2.1', rate: '$0.000015 · serba guna', ctx: '128K token', vision: false, desc: 'Model serba guna dari Poolside untuk berbagai kebutuhan umum.' },
+    { id: 'clincoo/north-code', label: 'Cohere: North Mini Code', rate: '$0.000015 · fokus kode', ctx: '128K token', vision: false, desc: 'Model Cohere yang difokuskan khusus untuk pemrograman.' },
+    { id: 'clincoo/acak', label: 'Acak (jaringan mitra)', rate: '$0.000020 · otomatis', ctx: 'Bervariasi (jaringan mitra)', vision: false, desc: 'Memilih model secara acak dari jaringan mitra yang tersedia, cocok untuk pemerataan beban.' }
   ];
+
+  // Harga per model (mikro-dolar per panggilan) — identik dengan backend
+  // (functions/v1/chat/completions.js MODEL_PRICES). 1.000.000 unit = $1.
+  var AI_MODEL_PRICES = {
+    "clincoo/acak": 20,
+    "clincoo/auto": 25,
+    "clincoo/deepseek-v4-flash": 15,
+    "clincoo/deepseek-v4-pro": 50,
+    "clincoo/dots-note": 15,
+    "clincoo/gemini-3.1-flash-lite": 10,
+    "clincoo/gemini-3.5-flash": 25,
+    "clincoo/gemini-3.6-flash": 25,
+    "clincoo/gemini-3.8-flash": 25,
+    "clincoo/glm-4.7-flash": 15,
+    "clincoo/glm-5.2": 25,
+    "clincoo/glm-5.3": 50,
+    "clincoo/glm-5.3-flash": 50,
+    "clincoo/gpt-oss-120b": 50,
+    "clincoo/gpt-oss-20b": 15,
+    "clincoo/granite-4-micro": 10,
+    "clincoo/kimi-k2.6": 50,
+    "clincoo/kimi-k2.7-code": 50,
+    "clincoo/laguna-s": 15,
+    "clincoo/lfm-mini": 10,
+    "clincoo/lightning": 10,
+    "clincoo/ling-flash": 10,
+    "clincoo/llama-3.3-70b": 25,
+    "clincoo/llama-4-scout": 25,
+    "clincoo/mistral-small-3.1": 25,
+    "clincoo/multimodal-27b": 25,
+    "clincoo/north-code": 15,
+    "clincoo/omni-nano": 25,
+    "clincoo/qwen-coder-32b": 25,
+    "clincoo/qwq-32b": 25,
+    "clincoo/reasoning-120b": 50,
+    "clincoo/reasoning-550b": 80,
+    "clincoo/reasoning-mini": 15,
+    "clincoo/sea-lion-27b": 25
+  };
+  function aiModelPrice(id) { return AI_MODEL_PRICES[id] || 25; }
+  function aiUsd(micro) { return '$' + ((micro || 0) / 1000000).toFixed(6); }
 
   function toggleAiModelPopover(e) {
     e.stopPropagation();
@@ -582,7 +640,7 @@
     var chip = 'w-7 h-7 rounded-full flex items-center justify-center shrink-0 overflow-hidden border border-gray-200 dark:border-slate-600';
     if (logo) {
       return '<span class="' + chip + ' bg-white ai-logo-chip-bg">' +
-        '<img src="' + logo + '" alt="' + aiModelLabel(id) + '" class="w-5 h-5 object-contain" loading="lazy" onerror="if(!this.dataset.f){this.dataset.f=1;this.src=AI_LOGO_FALLBACK;}else{this.style.display=&#39;none&#39;;}">' +
+        '<img src="' + logo + '" alt="' + aiModelLabel(id) + '" class="w-5 h-5 object-contain" loading="eager" decoding="async" onerror="if(!this.dataset.f){this.dataset.f=1;this.src=AI_LOGO_FALLBACK;}else{this.style.display=&#39;none&#39;;}">' +
         '</span>';
     }
     var ch = (aiModelLabel(id) || '?').trim().charAt(0).toUpperCase();
@@ -629,6 +687,17 @@
     if (i === -1) favs.push(id); else favs.splice(i, 1);
     try { localStorage.setItem('clincoo_ai_fav_models', JSON.stringify(favs)); } catch (e) {}
     return isAiModelFav(id);
+  }
+  // Toggle bintang favorit langsung dari baris dropdown (klik -> kuning, tersimpan
+  // di localStorage per-browser: refresh / buka ulang tidak hilang).
+  function aiToggleFavStar(el) {
+    var id = el.getAttribute('data-id');
+    if (!id) return;
+    var on = toggleAiModelFav(id);
+    el.setAttribute('aria-label', on ? 'Hapus dari favorit' : 'Tandai favorit');
+    el.className = el.className.replace(/(^|\s)(text-amber-500|text-gray-300 dark:text-slate-600 hover:text-amber-400)(\s|$)/, ' ').trim() + ' ' + (on ? 'text-amber-500' : 'text-gray-300 dark:text-slate-600 hover:text-amber-400');
+    var svg = el.querySelector('svg');
+    if (svg) svg.setAttribute('fill', on ? 'currentColor' : 'none');
   }
   function aiModelCategory(rate) {
     var parts = String(rate || '').split('\u00b7');
@@ -684,10 +753,11 @@
           '</div>' +
           (m.desc ? ('<p id="ai-model-detail-desc" class="text-[13px] text-gray-600 dark:text-gray-300 mt-3 leading-relaxed">' + (descLong ? descShort : m.desc) + '</p>' +
             (descLong ? '<button id="ai-model-detail-more" class="text-[12.5px] font-medium text-gray-900 dark:text-white mt-1 cursor-pointer hover:underline" data-open="0">Lihat selengkapnya</button>' : '')) : '') +
-          '<div class="grid grid-cols-3 gap-2 mt-4">' +
+          '<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">' +
           '<div class="rounded-xl border border-gray-200 dark:border-slate-700 p-2.5"><p class="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide truncate">Modalitas</p><p class="text-[13px] font-semibold text-gray-900 dark:text-white mt-0.5">' + modalitas + '</p></div>' +
           '<div class="rounded-xl border border-gray-200 dark:border-slate-700 p-2.5"><p class="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide truncate">Konteks</p><p class="text-[13px] font-semibold text-gray-900 dark:text-white mt-0.5">' + (m.ctx || '-') + '</p></div>' +
           '<div class="rounded-xl border border-gray-200 dark:border-slate-700 p-2.5"><p class="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide truncate">Kategori</p><p class="text-[13px] font-semibold text-gray-900 dark:text-white mt-0.5 truncate">' + cat + '</p></div>' +
+          '<div class="rounded-xl border border-gray-200 dark:border-slate-700 p-2.5"><p class="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide truncate">Harga/req</p><p class="text-[13px] font-semibold text-gray-900 dark:text-white mt-0.5 truncate" title="Harga per panggilan">' + aiUsd(aiModelPrice(m.id)) + '</p></div>' +
           '</div>' +
           '<button id="ai-model-detail-use" class="w-full mt-4 py-2.5 rounded-xl text-[14px] font-semibold transition-colors ' +
           (sel ? 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-300 cursor-default' : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 cursor-pointer') + '">' +
@@ -757,7 +827,8 @@
       var sel = m.id === _aiModelValue;
       b.className = 'w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-slate-700 rounded-lg transition-colors text-left cursor-pointer' + (sel ? ' bg-gray-50 dark:bg-slate-700/60 font-medium' : '');
       b.innerHTML = aiModelIconChip(m.id) + '<span class="truncate">' + m.label + '</span>' +
-        (sel ? '<span class="ml-auto pl-2 flex-shrink-0 text-gray-900 dark:text-white"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg></span>' : '');
+        (sel ? '<span class="ml-auto pl-2 flex-shrink-0 text-gray-900 dark:text-white"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg></span>' : '') +
+        '<span role="button" tabindex="0" data-id="' + m.id + '" aria-label="' + (isAiModelFav(m.id) ? 'Hapus dari favorit' : 'Tandai favorit') + '" onclick="event.stopPropagation();aiToggleFavStar(this)" class="' + (sel ? '' : 'ml-auto ') + 'pl-2 pr-1 flex-shrink-0 cursor-pointer transition-colors ' + (isAiModelFav(m.id) ? 'text-amber-500' : 'text-gray-300 dark:text-slate-600 hover:text-amber-400') + '"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="' + (isAiModelFav(m.id) ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.5a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385c.117.489-.417.874-.846.61l-4.725-2.885a.562.562 0 0 0-.588 0L5.973 20.54c-.429.264-.963-.12-.846-.61l1.285-5.385a.563.563 0 0 0-.182-.557L2.026 10.386c-.38-.325-.178-.948.321-.988l5.518-.442a.563.563 0 0 0 .475-.345L10.465 3.5Z"></path></svg></span>';
       b.addEventListener('click', function () { openAiModelDetail(m.id); });
       pop.appendChild(b);
     });
@@ -771,22 +842,335 @@
   }
 
   // ===== Secret API per proyek =====
-  async function loadAiSecret() {
+  async function _aiSecretFetchOnce() {
+    var res = await fetch(AI_API_BASE + '/ai/v1/secret?project_id=' + encodeURIComponent(_aiPid()), { headers: _aiHdrs(false) });
+    if (res.status === 401) { var e401 = new Error('HTTP 401'); e401.isAuth = true; throw e401; }
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }
+  async function loadAiCredits() {
+    var card = document.getElementById('ai-credits-card');
+    if (!card) return;
     try {
-      var res = await fetch(AI_API_BASE + '/ai/v1/secret?project_id=' + encodeURIComponent(_aiPid()), { headers: _aiHdrs(false) });
-      if (!res.ok) return;
+      var res = await fetch(AI_API_BASE + '/ai/v1/credits?project_id=' + encodeURIComponent(_aiPid()), { headers: _aiHdrs(false) });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
       var data = await res.json();
-      if (data && data.exists && data.secret) {
-        _aiSecret = data.secret;
-        renderAiSecret(data);
+      var planEl = document.getElementById('ai-credits-plan');
+      if (planEl) planEl.textContent = data.plan ? ('(paket ' + data.plan + ')') : '';
+      var dEl = document.getElementById('ai-credits-day');
+      if (dEl) dEl.textContent = aiUsd(data.daily && data.daily.used) + ' / ' + aiUsd(data.daily && data.daily.limit) + ' terpakai';
+      var mEl = document.getElementById('ai-credits-month');
+      if (mEl) mEl.textContent = aiUsd(data.monthly && data.monthly.used) + ' / ' + aiUsd(data.monthly && data.monthly.limit) + ' terpakai';
+      card.style.display = '';
+    } catch (e) {
+      card.style.display = 'none'; // endpoint belum ada / gagal -> sembunyikan, jangan ganggu halaman
+    }
+  }
+  // ===== Playground API: chat uji model — full-screen dari bawah, bisa dipeser =====
+  // Gaya obrolan seperti AI Clincoo: bubble user kanan / jawaban kiri + meta
+  // (model pelayan, latensi, biaya). Pemilih model = popover berlogo di baris
+  // input (bintang favorit ikut tersimpan sama dengan dropdown utama).
+  var AI_OPEN_BASE = (AI_API_BASE === '/api') ? '' : 'https://clincoo-be2.pages.dev';
+  var _aiPgModel = null;
+  var _aiPgMsgs = [];
+  var _aiPgBusy = false;
+
+  function aiPgCard() { return document.getElementById('ai-pg-card'); }
+  function aiPgStatus(t) { var el = document.getElementById('ai-pg-status'); if (el) el.textContent = t; }
+  function aiPgScroll() { var b = document.getElementById('ai-pg-msgs'); if (b) b.scrollTop = b.scrollHeight; }
+
+  function aiPgIntro() {
+    var b = document.getElementById('ai-pg-msgs');
+    if (b && b.childElementCount === 0) {
+      var tpl = [
+        ['Jelaskan konsep AI dengan sederhana', 'Jelaskan konsep AI'],
+        ['Ringkas keunggulan Clincoo dalam 3 poin', 'Ringkas keunggulan Clincoo'],
+        ['Tuliskan email profesional untuk klien', 'Tulis email'],
+        ['Buatkan 5 ide nama aplikasi kreatif', 'Ide nama aplikasi'],
+        ['Terjemahkan ke bahasa Inggris: Selamat datang di Clincoo', 'Contoh terjemahan']
+      ];
+      var pills = tpl.map(function (t) {
+        return '<button type="button" onclick="aiPgPickPrompt(\'' + t[0] + '\')" class="px-4 py-2 bg-gray-50 dark:bg-slate-800/60 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-full text-[13px] font-medium text-gray-700 dark:text-gray-200 transition-colors shadow-sm">' + t[1] + '</button>';
+      }).join('');
+      b.innerHTML = '<div data-intro="1" class="h-full flex flex-col items-center justify-center gap-6 px-4 ai-pg-fade">' +
+        '<h2 class="text-2xl sm:text-3xl text-center text-gray-800 dark:text-gray-100 tracking-tight" style="font-weight:400">Mau uji apa hari ini?</h2>' +
+        '<div class="flex flex-wrap items-center justify-center gap-2 max-w-xl">' + pills + '</div>' +
+        '</div>';
+    }
+  }
+  function aiPgPickPrompt(text) {
+    var input = document.getElementById('ai-pg-input');
+    if (input) { input.value = text; input.style.height = 'auto'; }
+    aiPgSendCheck();
+    aiPgSend();
+  }
+  function aiPgClearIntro() {
+    var b = document.getElementById('ai-pg-msgs');
+    var intro = b && b.querySelector('[data-intro]');
+    if (intro) b.removeChild(intro);
+  }
+  function aiPgAddMsg(role, content, meta) {
+    var b = document.getElementById('ai-pg-msgs');
+    if (!b) return;
+    aiPgClearIntro();
+    var user = role === 'user';
+    var wrap = document.createElement('div');
+    wrap.className = 'flex flex-col ' + (user ? 'items-end' : 'items-start');
+    var bub = document.createElement('div');
+    bub.className = user
+      ? 'bg-gray-100 text-black dark:bg-slate-800 dark:text-white px-4 py-2.5 rounded-2xl rounded-br-sm text-[15px] leading-relaxed whitespace-pre-wrap break-words w-fit max-w-full'
+      : 'w-full text-[15px] leading-relaxed text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words';
+    bub.textContent = content;
+    wrap.appendChild(bub);
+    if (meta) {
+      var m = document.createElement('div');
+      m.className = 'text-[11px] text-gray-400 dark:text-gray-500 mt-1.5 px-1';
+      m.textContent = meta;
+      wrap.appendChild(m);
+    }
+    b.appendChild(wrap);
+    aiPgScroll();
+  }
+  function aiPgTyping() {
+    var b = document.getElementById('ai-pg-msgs');
+    if (!b) return null;
+    aiPgClearIntro();
+    var wrap = document.createElement('div');
+    wrap.className = 'flex items-start';
+    var bub = document.createElement('div');
+    bub.className = 'flex items-center gap-1.5 py-1.5';
+    bub.innerHTML = '<span class="ai-pg-dot w-2 h-2 rounded-full bg-gray-300 dark:bg-slate-600"></span><span class="ai-pg-dot w-2 h-2 rounded-full bg-gray-300 dark:bg-slate-600" style="animation-delay:.2s"></span><span class="ai-pg-dot w-2 h-2 rounded-full bg-gray-300 dark:bg-slate-600" style="animation-delay:.4s"></span>';
+    wrap.appendChild(bub);
+    b.appendChild(wrap);
+    aiPgScroll();
+    return wrap;
+  }
+  function aiPgRemove(el) { if (el && el.parentNode) el.parentNode.removeChild(el); }
+
+  function aiPgOpenFn() {
+    var modal = document.getElementById('ai-pg-modal');
+    var card = aiPgCard();
+    if (!modal || !card) return;
+    if (!_aiPgModel) aiPgSetModel(_aiModelValue || 'clincoo/auto');
+    aiPgIntro();
+    modal.style.display = '';
+    requestAnimationFrame(function () { requestAnimationFrame(function () { card.classList.add('ai-pg-open'); }); });
+  }
+  function aiPgCloseFn() {
+    var modal = document.getElementById('ai-pg-modal');
+    var card = aiPgCard();
+    if (!modal || !card) return;
+    card.style.transform = '';
+    card.classList.remove('ai-pg-open');
+    setTimeout(function () { if (!card.classList.contains('ai-pg-open')) modal.style.display = 'none'; }, 320);
+  }
+
+  // Geser atas-bawah: seret header/handle ke bawah buat nutup, lepas balik kalau cuma sedikit.
+  function aiPgDrag() {
+    var grab = document.getElementById('ai-pg-grab');
+    var card = aiPgCard();
+    if (!grab || !card) return;
+    var startY = 0, dy = 0, active = false;
+    function down(e) {
+      if (e.target && e.target.closest && e.target.closest('#ai-pg-close')) return;
+      active = true; dy = 0;
+      startY = (e.touches ? e.touches[0].clientY : e.clientY);
+      card.classList.add('ai-pg-dragging');
+    }
+    function move(e) {
+      if (!active) return;
+      dy = (e.touches ? e.touches[0].clientY : e.clientY) - startY;
+      if (dy < 0) dy = 0;
+      card.style.transform = 'translateY(' + dy + 'px)';
+      if (e.cancelable) e.preventDefault();
+    }
+    function up() {
+      if (!active) return;
+      active = false;
+      card.classList.remove('ai-pg-dragging');
+      card.style.transform = '';
+      if (dy > 130) aiPgCloseFn();
+    }
+    grab.addEventListener('touchstart', down, { passive: true });
+    grab.addEventListener('touchmove', move, { passive: false });
+    grab.addEventListener('touchend', up);
+    grab.addEventListener('mousedown', down);
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  }
+
+  function aiPgSetModel(id) {
+    _aiPgModel = id;
+    var name = document.getElementById('ai-pg-model-name');
+    var logo = document.getElementById('ai-pg-model-logo');
+    if (name) name.textContent = aiModelLabel(id);
+    if (logo) logo.innerHTML = aiModelIconChip(id);
+  }
+  function aiPgRenderPop() {
+    var pop = document.getElementById('ai-pg-mpop');
+    if (!pop) return;
+    var html = '';
+    AI_MODELS.forEach(function (m) {
+      var fav = isAiModelFav(m.id);
+      var sel = m.id === _aiPgModel;
+      html += '<div class="ai-pg-mrow flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer' + (sel ? ' bg-gray-50 dark:bg-white/5' : '') + '" data-id="' + m.id + '">' +
+        aiModelIconChip(m.id) +
+        '<span class="flex-1 min-w-0"><span class="block text-[13px] font-medium text-gray-900 dark:text-white truncate">' + m.label + '</span>' +
+        '<span class="block text-[10px] text-gray-400 dark:text-gray-500">' + aiUsd(aiModelPrice(m.id)) + ' /panggilan</span></span>' +
+        (sel ? '<svg class="w-4 h-4 shrink-0 text-gray-900 dark:text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>' : '') +
+        '<span role="button" class="ai-pg-star pl-1 text-[16px] leading-none ' + (fav ? 'text-yellow-400' : 'text-gray-300 dark:text-slate-600') + '" data-id="' + m.id + '">&#9733;</span>' +
+        '</div>';
+    });
+    pop.innerHTML = html;
+  }
+  function aiPgTogglePop(force) {
+    var pop = document.getElementById('ai-pg-mpop');
+    if (!pop) return;
+    var show = (typeof force === 'boolean') ? force : pop.style.display === 'none';
+    if (show) { aiPgRenderPop(); pop.style.display = ''; } else { pop.style.display = 'none'; }
+  }
+
+  function aiPgSendCheck() {
+    var input = document.getElementById('ai-pg-input');
+    var btn = document.getElementById('ai-pg-send');
+    if (btn) btn.disabled = _aiPgBusy || !String((input && input.value) || '').trim();
+  }
+
+  async function aiPgSend() {
+    if (_aiPgBusy) return;
+    var input = document.getElementById('ai-pg-input');
+    var text = String((input && input.value) || '').trim();
+    if (!text) return;
+    if (!_aiSecret) { aiPgAddMsg('assistant', 'Secret proyek belum ada. Buat dulu di bagian Secret API di halaman ini, lalu kembali ke Playground.'); return; }
+    _aiPgBusy = true;
+    aiPgSendCheck();
+    aiPgAddMsg('user', text);
+    _aiPgMsgs.push({ role: 'user', content: text });
+    if (input) input.value = '';
+    var typ = aiPgTyping();
+    aiPgStatus('Menjalankan ' + aiModelLabel(_aiPgModel) + '…');
+    var t0 = Date.now();
+    try {
+      var res = await fetch(AI_OPEN_BASE + '/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _aiSecret },
+        body: JSON.stringify({ model: _aiPgModel, messages: _aiPgMsgs.slice(-12) })
+      });
+      var ms = Date.now() - t0;
+      var data = {};
+      try { data = await res.json(); } catch (e) {}
+      aiPgRemove(typ);
+      if (!res.ok) {
+        var em = (data && data.error && data.error.message) || ('HTTP ' + res.status);
+        aiPgAddMsg('assistant', 'Gagal: ' + em);
+        aiPgStatus('Gagal · ' + ms + ' ms');
       } else {
-        _aiSecret = '';
-        renderAiSecret(null);
+        var content = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '(jawaban kosong)';
+        var c = data.clincoo || {};
+        _aiPgMsgs.push({ role: 'assistant', content: content });
+        aiPgAddMsg('assistant', content, aiModelLabel(c.served_model || _aiPgModel) + ' · ' + ms + ' ms · ' + aiUsd(c.cost));
+        aiPgStatus('Selesai · ' + ms + ' ms · biaya ' + aiUsd(c.cost));
+        loadAiCredits(); // kartu sisa kredit ikut ter-update setelah dipotong
       }
-    } catch (e) {}
+    } catch (e) {
+      aiPgRemove(typ);
+      aiPgAddMsg('assistant', 'Koneksi gagal: ' + ((e && e.message) || e));
+      aiPgStatus('Gagal');
+    }
+    _aiPgBusy = false;
+    aiPgSendCheck();
+  }
+
+  document.addEventListener('click', function (e) {
+    var pop = document.getElementById('ai-pg-mpop');
+    if (!pop || pop.style.display === 'none') return;
+    if (e.target && e.target.closest && (e.target.closest('#ai-pg-mpop') || e.target.closest('#ai-pg-model-btn'))) return;
+    aiPgTogglePop(false);
+  });
+  document.addEventListener('DOMContentLoaded', function () {
+    var fab = document.getElementById('ai-pg-fab');
+    if (fab) fab.addEventListener('click', aiPgOpenFn);
+    var closeBtn = document.getElementById('ai-pg-close');
+    if (closeBtn) closeBtn.addEventListener('click', aiPgCloseFn);
+    var mb = document.getElementById('ai-pg-model-btn');
+    if (mb) mb.addEventListener('click', function (e) { e.stopPropagation(); aiPgTogglePop(); });
+    var pop = document.getElementById('ai-pg-mpop');
+    if (pop) pop.addEventListener('click', function (e) {
+      var star = e.target.closest('.ai-pg-star');
+      if (star) { toggleAiModelFav(star.getAttribute('data-id')); aiPgRenderPop(); return; }
+      var row = e.target.closest('.ai-pg-mrow');
+      if (row) { aiPgSetModel(row.getAttribute('data-id')); aiPgTogglePop(false); }
+    });
+    var sendBtn = document.getElementById('ai-pg-send');
+    if (sendBtn) sendBtn.addEventListener('click', aiPgSend);
+    var input = document.getElementById('ai-pg-input');
+    if (input) {
+      input.addEventListener('input', function () { aiPgSendCheck(); input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 120) + 'px'; });
+      input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); aiPgSend(); } });
+    }
+    aiPgDrag();
+  });
+  async function loadAiSecret() {
+    // tampilkan status memuat dulu — JANGAN tampilkan CTA "belum ada secret"
+    // sebelum data benar-benar sampai (dulu: CTA muncul duluan lalu secret
+    // tiba-tiba muncul setelah fetch selesai).
+    var _loading = document.getElementById('ai-secret-loading');
+    var _err = document.getElementById('ai-secret-error');
+    var _errText = document.getElementById('ai-secret-error-text');
+    var _reloginBtn = document.getElementById('ai-secret-relogin-btn');
+    var _empty = document.getElementById('ai-secret-empty');
+    var _active = document.getElementById('ai-secret-active');
+    if (_loading) _loading.style.display = '';
+    if (_err) _err.style.display = 'none';
+    if (_reloginBtn) _reloginBtn.style.display = 'none';
+    if (_empty) _empty.style.display = 'none';
+    if (_active) _active.classList.add('hidden');
+    // Hiccup jaringan/D1 sesaat itu umum (bukan berarti sesi mati) — coba lagi diam-diam
+    // sebelum nunjukin error ke user. Sesi benar-benar berakhir (401) TIDAK di-retry,
+    // ngulang fetch dgn token yg sama-sama kadaluarsa cuma buang waktu.
+    var attempts = 3, delayMs = 700;
+    for (var i = 0; i < attempts; i++) {
+      try {
+        var data = await _aiSecretFetchOnce();
+        if (data && data.exists && data.secret) {
+          _aiSecret = data.secret;
+          renderAiSecret(data);
+        } else {
+          _aiSecret = '';
+          renderAiSecret(null);
+        }
+        renderAiCurl();
+        return;
+      } catch (e) {
+        if (e && e.isAuth) {
+          // sesi berakhir — bukan masalah koneksi, retry tidak akan membantu
+          if (_loading) _loading.style.display = 'none';
+          if (_empty) _empty.style.display = 'none';
+          if (_active) _active.classList.add('hidden');
+          if (_errText) _errText.textContent = 'Sesi login sudah berakhir — silakan login ulang untuk melihat secret.';
+          if (_reloginBtn) { try { _reloginBtn.href = '/auth/?next=' + encodeURIComponent(location.href); } catch (e2) {} _reloginBtn.style.display = ''; }
+          if (_err) _err.style.display = '';
+          renderAiCurl();
+          return;
+        }
+        if (i < attempts - 1) { await new Promise(function (r) { setTimeout(r, delayMs); }); delayMs *= 2; continue; }
+        // gagal memuat setelah beberapa percobaan BUKAN berarti belum ada secret —
+        // tampilkan error + muat ulang, jangan tampilkan CTA buat secret baru
+        // (bisa bikin user bikin dua kali).
+        if (_loading) _loading.style.display = 'none';
+        if (_empty) _empty.style.display = 'none';
+        if (_active) _active.classList.add('hidden');
+        if (_errText) _errText.textContent = 'Gagal memuat secret — cek koneksi lalu coba lagi.';
+        if (_err) _err.style.display = '';
+      }
+    }
     renderAiCurl();
   }
   function renderAiSecret(data) {
+    var loadingEl = document.getElementById('ai-secret-loading');
+    if (loadingEl) loadingEl.style.display = 'none';
+    var errEl = document.getElementById('ai-secret-error');
+    if (errEl) errEl.style.display = 'none';
     var emptyWrap = document.getElementById('ai-secret-empty');
     var activeWrap = document.getElementById('ai-secret-active');
     var input = document.getElementById('ai-secret-value');
@@ -1032,7 +1416,7 @@
       '<th class="px-3 py-2 text-left font-medium">Status</th>' +
       '<th class="px-3 py-2 text-right font-medium">Latensi</th>' +
       '<th class="px-3 py-2 text-right font-medium">Token</th>' +
-      '<th class="px-3 py-2 text-right font-medium">Kredit</th>' +
+      '<th class="px-3 py-2 text-right font-medium">Biaya</th>' +
       '<th class="px-3 py-2 text-left font-medium">Sumber</th>' +
       '</tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
@@ -1068,7 +1452,7 @@
     var set = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
     set('ai-stat-total', (stats && stats.total) || 0);
     set('ai-stat-tokens', (stats && stats.tokens) || 0);
-    set('ai-stat-cost', (stats && stats.cost) || 0);
+    set('ai-stat-cost', aiUsd((stats && stats.cost) || 0));
     renderAiStatusChart((stats && stats.ok) || 0, (stats && stats.fail) || 0);
     var wrap = document.getElementById('ai-model-usage');
     var empty = document.getElementById('ai-usage-empty');
@@ -1086,7 +1470,7 @@
             '<td class="px-3 py-2 font-medium text-gray-900 dark:text-white max-w-[200px] truncate" title="' + esc2(x.m) + '">' + esc2(x.m) + '</td>' +
             '<td class="px-3 py-2 text-right whitespace-nowrap text-gray-700 dark:text-gray-300">' + x.n + 'x</td>' +
             '<td class="px-3 py-2 text-right whitespace-nowrap text-gray-500 dark:text-gray-400">' + (x.tok || 0) + '</td>' +
-            '<td class="px-3 py-2 text-right whitespace-nowrap text-gray-500 dark:text-gray-400">' + (x.c || 0) + '</td>' +
+            '<td class="px-3 py-2 text-right whitespace-nowrap text-gray-500 dark:text-gray-400">' + aiUsd(x.c || 0) + '</td>' +
             '<td class="px-3 py-2 w-[28%]"><div class="flex items-center gap-2"><div class="h-1.5 flex-1 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden"><div class="h-full rounded-full bg-black dark:bg-white" style="width:' + pct + '%"></div></div><span class="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums w-8 text-right">' + pct + '%</span></div></td>' +
             '</tr>';
         }).join('');
@@ -1375,6 +1759,9 @@
   async function loadAiSettings() {
     // render awal dulu — jangan tergantung sukses/tidaknya fetch
     renderAiModelOptions();
+    aiModelApplyUi(); // isi ikon dropdown dari _aiModelValue default SEKARANG —
+    // sebelum ini ikon kosong sampai fetch /project-settings selesai (tombol
+    // tampil tanpa logo lalu logo "muncul" telat begitu fetch kelar).
     updateAiRateHint();
     renderAiCurl();
     try {
@@ -1402,6 +1789,8 @@
     } catch (e) {}
   }
   document.addEventListener('DOMContentLoaded', function () {
+    loadAiCredits();
+    setInterval(loadAiCredits, 60000); // sisa kredit cukup segar tiap 1 menit (log 5 detik sudah terpisah)
     // Tampilkan data tersimpan (cache lokal) lebih dulu — halaman terasa instan
     // tanpa menunggu jaringan; data segar menyusul otomatis (real-time tiap 5 detik).
     try {
@@ -1543,11 +1932,11 @@ window.chatLivePreview = function () {
   // ===== Data paket: identik dengan halaman Upgrade (akun/langganan/upgrade) =====
   var plans=[
     { name:'Starter', tagline:'Untuk individu yang baru memulai.', price:'Gratis', per:'', hot:false,
-      items:[['Hingga 3 proyek aktif + editor kode',true],['1 kolaborator per proyek',true],['Chat AI di setiap proyek (50 pesan/bulan) + pencarian web',true],['Kelola 1 domain: verifikasi, DNS & SSL',true], ['3 template proyek siap pakai',true],['Tugas terjadwal & notifikasi',true],['Deploy web 5x per bulan',true],['Editor full-stack & integrasi GitHub',false],['Domain tanpa batas & deploy tanpa batas',false]] },
+      items:[['Kuota workspace 1 GB per proyek',true],['Hingga 3 proyek aktif + editor kode',true],['1 kolaborator per proyek',true],['Chat AI di setiap proyek (50 pesan/bulan) + pencarian web',true],['Kelola 1 domain: verifikasi, DNS & SSL',true], ['3 template proyek siap pakai',true],['Tugas terjadwal & notifikasi',true],['Deploy web 5x per bulan',true],['Editor full-stack & integrasi GitHub',false],['Domain tanpa batas & deploy tanpa batas',false]] },
     { name:'Pro', tagline:'Untuk profesional dan kreator aktif.', price:'49K', per:'/bln', hot:true,
-      items:[['Hingga 10 proyek aktif',true],['Hingga 5 kolaborator per proyek',true],['Semua fitur Starter',true], ['Editor kode full-stack: bangun & publikasikan dari browser',true], ['Domain tanpa batas: verifikasi, DNS & SSL',true],['Chat AI hingga 500 pesan/bulan (maks 50/hari)',true],['Deploy web hingga 25x per bulan ke domain sendiri',true],['Integrasi GitHub: impor repo, AI kerja langsung di repo kamu',true]] },
+      items:[['Kuota workspace 5 GB per proyek',true],['Hingga 10 proyek aktif',true],['Hingga 5 kolaborator per proyek',true],['Semua fitur Starter',true], ['Editor kode full-stack: bangun & publikasikan dari browser',true], ['Domain tanpa batas: verifikasi, DNS & SSL',true],['Chat AI hingga 500 pesan/bulan (maks 50/hari)',true],['Deploy web hingga 25x per bulan ke domain sendiri',true],['Integrasi GitHub: impor repo, AI kerja langsung di repo kamu',true]] },
     { name:'Bisnis', tagline:'Untuk tim dan operasi skala besar.', price:'129K', per:'/bln', hot:false,
-      items:[['Semua fitur Pro',true],['Chat AI hingga 2.000 pesan/bulan (maks 150/hari)',true],['Hingga 50 proyek aktif',true],['Hingga 20 kolaborator per proyek',true],['Kontrol akses & keamanan proyek lanjutan',true], ['Dilindungi Password & ekspor data penuh akun',true],['Deploy web tanpa batas',true]] }
+      items:[['Kuota workspace 20 GB per proyek',true],['Semua fitur Pro',true],['Chat AI hingga 2.000 pesan/bulan (maks 150/hari)',true],['Hingga 50 proyek aktif',true],['Hingga 20 kolaborator per proyek',true],['Kontrol akses & keamanan proyek lanjutan',true], ['Dilindungi Password & ekspor data penuh akun',true],['Deploy web tanpa batas',true]] }
   ];
   function checkoutUrl(name){
     var base=(location.pathname.indexOf('/Clincoo')!==-1)?'/Clincoo.':'';
@@ -1686,5 +2075,46 @@ window.chatLivePreview = function () {
   }).catch(function(){});
 })();
 </script>
+<!-- ===== Playground API: FAB + bottom sheet (uji API langsung di halaman ini) ===== -->
+<button id="ai-pg-fab" aria-label="Buka Playground API" title="Playground API" class="fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))] right-4 z-[90] h-12 pl-3.5 pr-4 rounded-full bg-black dark:bg-white text-white dark:text-black shadow-lg hover:opacity-90 active:scale-95 transition-all flex items-center gap-2">
+  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+  <span class="text-sm font-semibold">Playground</span>
+</button>
+<div id="ai-pg-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Playground API Clincoo">
+  <div id="ai-pg-backdrop" class="fixed inset-0 z-[95] bg-black/50"></div>
+  <div id="ai-pg-card" class="fixed inset-0 z-[96] bg-white dark:bg-[#0a0a0a] flex flex-col">
+    <div id="ai-pg-grab" class="shrink-0 touch-none select-none cursor-grab">
+      <div class="flex items-center justify-between pt-2.5 pb-1 pl-4 pr-3">
+        <span class="w-8"></span>
+        <div class="w-10 h-1.5 rounded-full bg-gray-200 dark:bg-slate-700"></div>
+        <button id="ai-pg-close" aria-label="Tutup" class="w-8 h-8 shrink-0 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 dark:text-gray-500 hover:text-black dark:hover:text-white flex items-center justify-center transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6 6 18M6 6l12 12"></path></svg></button>
+      </div>
+    </div>
+    <div id="ai-pg-msgs" class="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4"></div>
+    <div class="relative shrink-0 px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
+      <div id="ai-pg-mpop" style="display:none" class="absolute bottom-full left-4 right-4 mb-2 max-h-[46vh] overflow-y-auto bg-white dark:bg-[#111111] border border-gray-100 dark:border-slate-700 rounded-xl shadow-xl p-1.5 z-10"></div>
+      <div class="bg-white dark:bg-[#111111] rounded-[26px] shadow-[0_4px_24px_rgba(0,0,0,0.10)] dark:shadow-black/40 border border-gray-100/80 dark:border-slate-800 p-3.5 sm:p-4">
+        <textarea id="ai-pg-input" rows="1" autocomplete="off" placeholder="Tulis prompt…" class="w-full resize-none border-0 bg-transparent p-0 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-0 text-[15px] leading-relaxed max-h-[120px] overflow-hidden"></textarea>
+        <div class="flex items-center justify-between pt-2">
+          <button id="ai-pg-model-btn" aria-label="Pilih model" class="inline-flex items-center gap-1.5 h-9 pl-1.5 pr-2.5 rounded-full border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 hover:border-gray-300 dark:hover:border-slate-600 transition-colors">
+            <span id="ai-pg-model-logo" class="flex items-center"></span>
+            <span id="ai-pg-model-name" class="text-[11px] font-medium text-gray-900 dark:text-white max-w-[110px] truncate"></span>
+            <svg class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"></path></svg>
+          </button>
+          <button id="ai-pg-send" aria-label="Kirim" disabled class="w-10 h-10 bg-black dark:bg-white text-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-all duration-200 active:scale-90 flex items-center justify-center shadow-sm shrink-0 disabled:opacity-40 disabled:pointer-events-none"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+#ai-pg-card{transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,.24,1)}
+#ai-pg-card.ai-pg-open{transform:translateY(0)}
+#ai-pg-card.ai-pg-dragging{transition:none}
+@keyframes aiPgBlink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.ai-pg-fade{animation:aiPgFade .35s ease}
+@keyframes aiPgFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.ai-pg-dot{animation:aiPgBlink 1.2s infinite}
+</style>
 </body>
 </html>

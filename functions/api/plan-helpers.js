@@ -11,12 +11,30 @@ export const PLAN_LIMITS = {
   Bisnis: { projectLimit: 50, collaboratorLimit: 20, deployLimit: null }
 };
 
+// Kuota workspace (total ukuran file per proyek) sesuai paket.
+// File tunggal tetap dibatasi 25MB (batas aset Cloudflare Pages) — lihat project-files.js.
+export const PLAN_WORKSPACE_LIMITS = {
+  Starter: 1 * 1024 * 1024 * 1024,   // 1 GB per proyek
+  Pro: 5 * 1024 * 1024 * 1024,      // 5 GB per proyek
+  Bisnis: 20 * 1024 * 1024 * 1024   // 20 GB per proyek
+};
+
 // Kuota chat AI per paket: bulanan (selaras periode tagihan) + cap harian (anti-burst).
 // Benar-benar diterapkan di /api/chat (dua-duanya dicek server-side).
 export const PLAN_AI_LIMITS = {
   Starter: { monthly: 50, daily: 10 },
   Pro: { monthly: 500, daily: 50 },
   Bisnis: { monthly: 2000, daily: 150 }
+};
+
+// Kredit Open API Clincoo (Integrasi AI, /v1/chat/completions) per paket —
+// disimpan dalam mikro-dolar (1.000.000 unit = $1) supaya bebas float.
+// Harian = anti-burst; bulanan = anggaran per periode tagihan (YYYY-MM).
+// Harga per model ada di functions/v1/chat/completions.js (MODEL_PRICES).
+export const PLAN_AI_API_CREDITS = {
+  Starter: { daily: 50000, monthly: 1000000 },    // $0.05/hari, $1/bulan
+  Pro:     { daily: 250000, monthly: 5000000 },   // $0.25/hari, $5/bulan
+  Bisnis:  { daily: 1000000, monthly: 20000000 }  // $1/hari, $20/bulan
 };
 
 // Email admin: bypass semua gate paket (kebijakan internal).
