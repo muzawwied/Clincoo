@@ -29,7 +29,7 @@ const CORS = {
 
 // ==== Batas penyimpanan ====
 const SMALL_MAX_CHARS = 700_000;        // <= ini: content TEXT biasa satu baris
-const CHUNK_CHARS = 600_000;            // ukuran potongan base64 per baris D1
+const CHUNK_CHARS = 1_500_000;          // ukuran potongan base64 per baris D1 (1,5MB — aman di bawah batas baris 2MB; file 25MB hanya ~23 insert, jauh di bawah limit 50 query/request plan gratis)
 const BIG_MAX_BYTES = 25 * 1024 * 1024; // batas atas file besar (25MB, sama dgn batas aset Cloudflare Pages)
 
 function json(data, status = 200) {

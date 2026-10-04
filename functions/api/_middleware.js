@@ -194,7 +194,23 @@ export async function onRequest({ request, env, next }) {
   // 3. Cap ukuran body (anti flood payload besar)
   const cl = parseInt(request.headers.get('content-length') || '0', 10);
   if (cl > 1500000) {
-    return new Response(JSON.stringify({ error: 'Payload terlalu besar.' }), { status: 413, headers: { 'Content-Type': 'application/json' } });
+    // Pengecualian: simpan file workspace (/api/project-files) — file media besar
+    // (mp3 dll) dikirim klien sebagai SATU body JSON berisi content_b64, jadi butuh
+    // cap lebih besar. HANYA untuk request yang LOGIN: token divalidasi dulu;
+    // guest / token tak valid tetap kena cap 1.5MB.
+    let bigUpload = false;
+    if (cl <= 50 * 1024 * 1024 && path === '/api/project-files' && mutates) {
+      try {
+        if (env.DB) {
+          await initAuthTables(env.DB);
+          const u = await getUserByToken(env.DB, getToken(request));
+          if (u) bigUpload = true;
+        }
+      } catch (e) { /* anggap guest */ }
+    }
+    if (!bigUpload) {
+      return new Response(JSON.stringify({ error: 'Payload terlalu besar.' }), { status: 413, headers: { 'Content-Type': 'application/json' } });
+    }
   }
 
   let publicRoute = false;
