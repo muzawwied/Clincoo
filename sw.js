@@ -1,6 +1,6 @@
 /* Clincoo service worker — PWA + cache aset CDN (lucide, fonts, tailwind) v31 */
 <<<<<<< HEAD
-var CACHE = 'clincoo-v89';
+var CACHE = 'clincoo-v90';
 =======
 var CACHE = 'clincoo-v86';
 >>>>>>> 8b6f71d (fix(logo): Dashboard & Pengaturan Umum kini paham dua konvensi logo (data-URL vs path+app_logo_data) — logo hasil generate_image/set_as_logo AI langsung tampil di Dashboard; hapus logo membersihkan app_logo_data; auto-refresh 8s di kedua halaman (logo/nama dari AI/perangkat lain muncul tanpa reload); SW v86)

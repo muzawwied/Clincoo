@@ -6505,7 +6505,7 @@ if (loadChatLog()) {
                     saveChatLog();
                     renderMessages();
                     scrollToBottom(true);
-                    messages.push({ id: generateId(), role: 'user', text: 'lanjut', time: Date.now() });
+                    messages.push({ id: generateId(), role: 'user', text: 'lanjut', time: Date.now(), silent: true });
                     renderMessages();
                     scrollToBottom(true);
                     fetchAIResponse();
@@ -6521,7 +6521,7 @@ if (loadChatLog()) {
                     if (partial) {
                         saveChatLog();
                         renderMessages();
-                        messages.push({ id: generateId(), role: 'user', text: 'lanjut', time: Date.now() });
+                        messages.push({ id: generateId(), role: 'user', text: 'lanjut', time: Date.now(), silent: true });
                         renderMessages();
                         scrollToBottom(true);
                         fetchAIResponse();
