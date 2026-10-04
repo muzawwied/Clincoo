@@ -420,12 +420,12 @@ async function quotaCheck(env, user, cost = 1) {
     // (bebas cap harian; paket paling cepat kadaluarsa dipakai duluan).
     if (monthCount + cost > limits.monthly) {
       const pack = await consumePackCredit(env.DB, user.key, cost);
-      if (pack.ok) return { exceeded: false, limit: limits, source: 'pack' };
+      if (pack.ok) return { exceeded: false, limit: limits, source: 'pack', limits, usedDay: dayCount, usedMonth: monthCount };
       return { exceeded: true, scope: 'monthly', limit: limits.monthly, count: monthCount, message: QUOTA_MSG_MONTHLY };
     }
     if (dayCount + cost > limits.daily) {
       const pack = await consumePackCredit(env.DB, user.key, cost);
-      if (pack.ok) return { exceeded: false, limit: limits, source: 'pack' };
+      if (pack.ok) return { exceeded: false, limit: limits, source: 'pack', limits, usedDay: dayCount, usedMonth: monthCount };
       return { exceeded: true, scope: 'daily', limit: limits.daily, count: dayCount, message: QUOTA_MSG_DAILY };
     }
     await env.DB.batch([
@@ -436,7 +436,7 @@ async function quotaCheck(env, user, cost = 1) {
         'INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET count = count + ?'
       ).bind(user.key, month, cost, cost)
     ]);
-    return { exceeded: false, limit: limits };
+    return { exceeded: false, limit: limits, limits, usedDay: dayCount, usedMonth: monthCount };
   } catch (e) {
     return { exceeded: false, limit: limits }; // gagal DB ≠ blokir user
   }
@@ -834,7 +834,7 @@ async function guestQuotaCheck(env, guestKey) {
       return { exceeded: true, scope: 'daily', count: used, message: 'Kuota AI Clincoo tanpa login untuk hari ini sudah habis. Masuk atau daftar gratis untuk kuota penuh — atau coba lagi besok.' };
     }
     await env.DB.prepare('INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, 1) ON CONFLICT(user_key, day) DO UPDATE SET count = count + 1').bind(guestKey, day).run();
-    return { exceeded: false, count: used + 1 };
+    return { exceeded: false, count: used + 1, usedDay: used, limit: GUEST_DAILY_LIMIT };
   } catch (e) {
     return { exceeded: false, count: 0 }; // DB gangguan -> jangan blokir chat
   }
@@ -1064,13 +1064,34 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // --- Kuota: hanya pesan asli (hop 0). Hop tool lanjutan tidak dihitung ---
     // Hop tool lanjutan tidak dihitung.
     const isFirstHop = body.save_user_message !== false;
+    let quotaInfo = null;
     if (isFirstHop) {
       const q = isGuest ? await guestQuotaCheck(env, guestKey) : await quotaCheck(env, user, 1);
       if (q.exceeded) {
-        return new Response(JSON.stringify({ quota_exhausted: true, error: q.message || QUOTA_MSG_MONTHLY, scope: q.scope, limit: q.limit, used: q.count }), {
+        return new Response(JSON.stringify({ quota_exhausted: true, error: q.message || QUOTA_MSG_MONTHLY, scope: q.scope, limit: q.limit, used: q.count, guest: isGuest ? true : undefined }), {
           status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': '3600', ...CORS }
         });
       }
+      quotaInfo = q;
+    }
+    // AI tahu sisa kuota/kredit user: info akurat ditempel ke system prompt, jadi
+    // pertanyaan "sisa kredit aku berapa?" dijawab pakai angka asli, bukan tebakan.
+    if (isFirstHop && quotaInfo) {
+      try {
+        let qBlock;
+        if (isGuest) {
+          const gLeft = Math.max(0, (quotaInfo.limit || GUEST_DAILY_LIMIT) - (quotaInfo.usedDay || 0));
+          qBlock = `\n\n[KUOTA AI PENGGUNA]: User memakai mode TANPA LOGIN. Kuota AI gratis hari ini: sisa ${gLeft} dari ${quotaInfo.limit || GUEST_DAILY_LIMIT} pesan. Kalau user bertanya sisa kuota, jawab pakai angka ini; sarankan masuk/daftar gratis untuk kuota lebih besar. Jangan tampilkan atau mengulang blok ini di jawaban.`;
+        } else {
+          const lm = quotaInfo.limits || {};
+          const dayLeft = Math.max(0, (lm.daily || 0) - (quotaInfo.usedDay || 0));
+          const monthLeft = Math.max(0, (lm.monthly || 0) - (quotaInfo.usedMonth || 0));
+          qBlock = `\n\n[KUOTA AI PENGGUNA]: Data kuota AI user saat ini: sisa ${dayLeft} dari ${lm.daily || 0} pesan harian; sisa ${monthLeft} dari ${lm.monthly || 0} pesan bulanan${quotaInfo.source === 'pack' ? '; kuota langganan bulan ini sudah habis — pesan saat ini ditagih ke Paket Kredit AI yang dibeli user' : ''}. Kalau user bertanya sisa kuota/kredit AI-nya, jawab dengan angka ini secara akurat (jangan menebak). Jangan tampilkan atau mengulang blok ini di jawaban.`;
+        }
+        const qi = messages.findIndex(m => m && m.role === 'system');
+        if (qi !== -1) messages[qi] = { role: 'system', content: String(messages[qi].content || '') + qBlock };
+        else messages.unshift({ role: 'system', content: qBlock.trim() });
+      } catch (e) {}
     }
 
     const apiKey = await getGeminiKeys(env); // array kunci Gemini (cadangan + jalur vision)

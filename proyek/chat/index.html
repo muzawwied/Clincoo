@@ -3364,7 +3364,6 @@ window.chatLivePreview = function () {
             }
         }
 
-        const LOCK_SVG = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path stroke-linecap="round" d="M8 10V7a4 4 0 018 0v3"></path></svg>`;
         const quotaBanner = document.getElementById('quota-banner');
         const quotaBannerText = document.getElementById('quota-banner-text');
         const quotaRetryBtn = document.getElementById('quota-retry-btn');
@@ -3373,20 +3372,21 @@ window.chatLivePreview = function () {
             return base + '/akun/langganan/';
         }
         let quotaLocked = false;
-        // Kuota/limit AI habis: KUNCI komposer, tidak ada jalur "coba kirim ulang" diam-diam —
-        // satu-satunya CTA adalah upgrade paket (lewat banner atau tombol kirim yg terkunci).
+        // Balasan AI saat kuota habis: komposer TETAP terbuka (tanpa gembok) — user
+        // masih bisa kirim pesan, balasannya kartu kuota + link upgrade.
+        const QUOTA_REPLY = '⚡ Kuota pesanmu sudah habis.\n\nIngin tetap menggunakan Clincoo? Upgrade langgananmu di sini:\n\nhttps://app.clincoo.buzz/akun/langganan/upgrade/';
+        function quotaReplyText(qMsg) {
+            if (qMsg && qMsg.indexOf('tanpa login') !== -1) return qMsg; // tamu: ajak masuk, bukan upgrade
+            return QUOTA_REPLY;
+        }
         function setQuotaLock(locked, bannerMsg) {
             quotaLocked = locked;
             if (quotaLocked) {
-                btnAction.innerHTML = LOCK_SVG;
-                btnAction.title = 'Kuota/limit AI penuh — upgrade paket untuk lanjut';
-                if (quotaBannerText) quotaBannerText.textContent = bannerMsg || 'Kuota AI sedang habis — pesanmu aman di kolom ketik.';
+                if (quotaBannerText) quotaBannerText.textContent = bannerMsg || 'Kuota AI habis — kamu tetap bisa mengetik; upgrade untuk balasan AI.';
                 if (quotaRetryBtn) quotaRetryBtn.href = upgradeUrl();
                 if (quotaBanner) { quotaBanner.classList.remove('hidden'); quotaBanner.classList.add('flex'); }
             } else {
-                btnAction.title = '';
                 if (quotaBanner) { quotaBanner.classList.add('hidden'); quotaBanner.classList.remove('flex'); }
-                toggleActionState(false);
             }
         }
         // Cek status kredit AI secara proaktif (tanpa perlu kirim pesan dulu) — dipanggil saat
@@ -3405,7 +3405,6 @@ window.chatLivePreview = function () {
         }
         function toggleActionState(isGen) {
             isGenerating = isGen;
-            if (quotaLocked) { btnAction.innerHTML = LOCK_SVG; return; }
             if (isGenerating) {
                 btnAction.innerHTML = `<svg class="w-[18px] h-[18px]" fill="currentColor" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"></rect><rect x="56" y="56" width="144" height="144" rx="16"></rect></svg>`; 
             } else {
@@ -5703,15 +5702,10 @@ window.chatLivePreview = function () {
                                 // Pesan user TIDAK dikembalikan ke kolom ketik & komposer TIDAK
                                 // dikunci — user harus bisa membalas "lanjut" untuk meneruskan.
                             } else {
-                                streamingBuffer = qMsg + " Pesanmu aman di kolom ketik — upgrade paket untuk kuota & prioritas lebih besar.";
-                                const lastUserIdx = messages.map(m => m.role).lastIndexOf('user');
-                                if (lastUserIdx !== -1 && !chatInput.value.trim()) {
-                                    chatInput.value = messages[lastUserIdx].text || '';
-                                    messages.splice(lastUserIdx, 1);
-                                    renderMessages();
-                                    adjustInputHeight();
-                                }
-                                setQuotaLock(true, qMsg + ' Pesanmu aman di kolom ketik.');
+                                // KUOTA HABIS (bukan di tengah tugas): pesan user tetap terkirim
+                                // & tersimpan di chat; balasan AI = kartu kuota + link upgrade.
+                                streamingBuffer = quotaReplyText(qMsg);
+                                setQuotaLock(true, 'Kuota AI habis — upgrade paket untuk lanjut mengobrol.');
                             }
                             if (e.ctxOverflow && doneTools.length === 0) setQuotaLock(false);
                         } else {
@@ -5913,11 +5907,6 @@ window.chatLivePreview = function () {
 
         btnAction.addEventListener('click', (e) => {
             e.preventDefault();
-            if (quotaLocked && !isGenerating) {
-                // Terkunci: satu-satunya jalan keluar adalah upgrade paket, bukan kirim ulang diam-diam
-                window.location.href = upgradeUrl();
-                return;
-            }
             if (isGenerating) {
                 stopGeneration();
                 const currentMsg = messages.find(m => m.id === currentAiMessageId);
@@ -5937,7 +5926,6 @@ window.chatLivePreview = function () {
         chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                if (quotaLocked) return;
                 handleSubmit();
             }
         });
