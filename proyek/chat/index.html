@@ -528,6 +528,13 @@
         .apk-icon-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .apk-icon-btn i { font-size: 22px; color: #9ca3af; }
         .apk-icon-hint { font-size: 11.5px; color: #6b7280; line-height: 1.5; }
+        /* Langkah LOGO — flat, tanpa kotak/card, konsisten dgn gaya minimalis lain */
+        .apk-logo-row { display: flex; align-items: center; gap: 0.875rem; margin-top: 0.5rem; }
+        .apk-logo-info { display: flex; flex-direction: column; gap: 0.375rem; min-width: 0; }
+        .apk-logo-skip { align-self: flex-start; background: none; border: none; padding: 0; font-size: 11.5px; color: #6b7280; text-decoration: underline; cursor: pointer; font-family: inherit; }
+        .apk-logo-skip:hover { color: #111827; }
+        body.dark-mode .apk-logo-skip { color: #9ca3af; }
+        body.dark-mode .apk-logo-skip:hover { color: #e5e7eb; }
         .apk-name-row { display: flex; gap: 0.5rem; margin-top: 0.75rem; align-items: center; }
         .apk-name-input { flex: 1; min-width: 0; border: 1px solid #d1d5db; border-radius: 999px; background: #ffffff; color: #1f2937; font-size: 13px; padding: 0.5rem 0.9rem; outline: none; transition: border-color 0.15s ease; font-family: inherit; }
         .apk-name-input:focus { border-color: #111827; }
@@ -1174,7 +1181,7 @@ window.chatLivePreview = function () {
                 // FIX: toolCalls ikut disimpan (dulu HILANG saat pindah halaman — makanya
                 // AI "mengulang progres dari awal" saat user kembali: progres menulis file
                 // dll tidak terbaca, pesan dianggap kosong lalu digenerate ulang).
-                const log = messages.filter(m => m && !m.isHidden && (m.text || (m.pollQuestions && m.pollQuestions.length) || (m.toolCalls && m.toolCalls.length) || (m.attachments && m.attachments.length) || m.apkSetup || m.apkBuild)).map(m => ({
+                const log = messages.filter(m => m && !m.isHidden && (m.text || (m.pollQuestions && m.pollQuestions.length) || (m.toolCalls && m.toolCalls.length) || (m.attachments && m.attachments.length) || m.apkLogo || m.apkBuild)).map(m => ({
                     id: m.id, role: m.role, text: m.text, time: m.time || null, silent: !!m.silent,
                     isProcessing: !!m.isProcessing,
                     midPhase: !!m.midPhase,
@@ -1182,7 +1189,7 @@ window.chatLivePreview = function () {
                     stoppedByUser: !!m.stoppedByUser,
                     pollQuestions: (m.pollQuestions || []).slice(0, 6),
                     pollState: m.pollState || null,
-                    apkSetup: m.apkSetup || null,
+                    apkLogo: m.apkLogo || null,
                     apkBuild: m.apkBuild || null,
                     apkBuildState: m.apkBuildState || null,
                     toolCalls: (m.toolCalls || []).map(t => ({
@@ -2423,18 +2430,20 @@ window.chatLivePreview = function () {
             send();
         }
 
-        // ===== KARTU APK: [[APK_SETUP]] (logo bulat + nama kapsul + pengaturan) dan
-        // [[APK_CARD]] (progres build real-time + tombol unduh) — gaya netral poll-card.
+        // ===== APK: [[APK_LOGO]] (langkah kecil, FLAT tanpa card — minta logo saja; nama &
+        // pengaturan ditanya belakangan terpisah via teks biasa / [[POLL]]) dan
+        // [[APK_CARD]] (progres build real-time + tombol unduh, tetap pakai card — tidak diubah).
         function parseApkBlocks(text) {
             const raw = String(text || '');
             let clean = raw;
-            let setup = null, card = null;
-            const setupM = clean.match(/\[\[APK_SETUP\]\]([\s\S]*?)(?:\[\[\s*\/\s*APK_SETUP\s*\]\]|$)/i);
-            if (setupM) {
-                const body = setupM[1];
-                const line = (k) => { const m2 = body.match(new RegExp('^[ \t]*' + k + '[ \t]*[:.][ \t]*(.+)$', 'im')); return m2 ? m2[1].trim() : ''; };
-                setup = { url: line('URL'), name: line('NAME') };
-                clean = clean.replace(/\[\[APK_SETUP\]\]([\s\S]*?)(?:\[\[\s*\/\s*APK_SETUP\s*\]\]|$)/i, '');
+            let logo = null, card = null;
+            // [[APK_LOGO]] cuma PENANDA (tanpa field) — satu langkah kecil: minta logo saja.
+            // Nama & pengaturan (orientasi/fullscreen/splash) ditanyakan BELAKANGAN secara
+            // terpisah (teks biasa utk nama, [[POLL]] utk pengaturan) — bukan satu kartu besar.
+            const logoM = clean.match(/\[\[APK_LOGO\]\]([\s\S]*?)(?:\[\[\s*\/\s*APK_LOGO\s*\]\]|$)/i);
+            if (logoM) {
+                logo = {};
+                clean = clean.replace(/\[\[APK_LOGO\]\]([\s\S]*?)(?:\[\[\s*\/\s*APK_LOGO\s*\]\]|$)/i, '');
             }
             const cardM = clean.match(/\[\[APK_CARD\]\]([\s\S]*?)(?:\[\[\s*\/\s*APK_CARD\s*\]\]|$)/i);
             if (cardM) {
@@ -2444,90 +2453,21 @@ window.chatLivePreview = function () {
                 if (id) card = { id: id, name: line('NAME'), url: line('URL'), pkg: line('PKG') };
                 clean = clean.replace(/\[\[APK_CARD\]\]([\s\S]*?)(?:\[\[\s*\/\s*APK_CARD\s*\]\]|$)/i, '');
             }
-            return { clean: clean, setup: setup, card: card };
+            return { clean: clean, logo: logo, card: card };
         }
 
-        function apkSetupStateOf(m) {
-            if (!m.apkSetupState) {
+        function apkLogoStateOf(m) {
+            if (!m.apkLogoState) {
                 let savedIcon = null;
                 try { savedIcon = localStorage.getItem('clinqoo_apk_icon') || null; } catch (e) {}
-                m.apkSetupState = {
-                    name: (m.apkSetup && m.apkSetup.name) || '',
-                    nameSaved: false,
-                    iconB64: savedIcon,
-                    orientation: 'portrait',
-                    fullscreen: true,
-                    popover: false,
-                    sent: false,
-                    sending: false,
-                    plan: null,
-                    planKnown: false,
-                    planResolving: false,
-                    splash: true,
-                    splashForced: false,
-                    splashTouched: false
-                };
+                m.apkLogoState = { iconB64: savedIcon, sent: false, sending: false };
             }
-            return m.apkSetupState;
+            return m.apkLogoState;
         }
         function apkBuildStateOf(m) {
             if (!m.apkBuildState) m.apkBuildState = { progress: 0, done: false, failed: false, downloading: false, downloaded: false, error: '', phaseLabel: '' };
             return m.apkBuildState;
         }
-
-        const apkPlanCache = { plan: null, ts: 0 };
-        function apkApplyPlan(msg, plan) {
-            if (!msg || !msg.apkSetup) return;
-            const st = apkSetupStateOf(msg);
-            if (st.sent) return;
-            const p = plan || 'Starter';
-            const isFree = (p === 'Starter');
-            if (st.planKnown && st.plan === p) return;
-            st.plan = p;
-            st.planKnown = true;
-            st.splashForced = isFree;
-            if (!st.splashTouched) st.splash = isFree; // gratis: aktif; berbayar: nonaktif
-            renderMessages();
-        }
-        async function apkResolvePlan(msg) {
-            if (!msg || !msg.apkSetup) return;
-            const st = apkSetupStateOf(msg);
-            let cached = apkPlanCache.plan;
-            try {
-                if (!cached && window.clinqooEditorPlan) cached = window.clinqooEditorPlan;
-                if (!cached) {
-                    const c = JSON.parse(localStorage.getItem('TM_SUB_CACHE_KEY') || 'null');
-                    if (c && c.plan) cached = c.plan;
-                }
-            } catch (e) {}
-            if (cached && !st.planKnown) apkApplyPlan(msg, cached);
-            if (apkPlanCache.plan && (Date.now() - apkPlanCache.ts) < 300000) return;
-            try {
-                const t = clinqooAuthToken();
-                const res = await fetch(clinqooApiBase() + '/api/subscription', { cache: 'no-store', headers: t ? { Authorization: 'Bearer ' + t } : {} });
-                if (res.ok) {
-                    const d = await res.json();
-                    if (d && d.plan) {
-                        apkPlanCache.plan = d.plan;
-                        apkPlanCache.ts = Date.now();
-                        try { localStorage.setItem('TM_SUB_CACHE_KEY', JSON.stringify({ plan: d.plan, billingCycle: d.billingCycle || 'Bulanan', ts: Date.now() })); } catch (e) {}
-                        try { window.clinqooEditorPlan = d.plan; } catch (e) {}
-                        apkApplyPlan(msg, d.plan);
-                        return;
-                    }
-                }
-            } catch (e) {}
-            if (!st.planKnown) apkApplyPlan(msg, 'Starter'); // tak diketahui: anggap gratis (server tetap pemutus)
-        }
-        window.apkSetSplash = function (msgId, v) {
-            const m = messages.find(x => x && x.id === msgId);
-            if (!m) return;
-            const st = apkSetupStateOf(m);
-            if (st.splashForced) return; // paket gratis: terkunci
-            st.splash = !!v;
-            st.splashTouched = true;
-            renderMessages();
-        };
 
         window.apkIconPick = function (msgId) {
             const inp = document.getElementById('apk-icon-input-' + msgId);
@@ -2537,7 +2477,7 @@ window.chatLivePreview = function () {
             const m = messages.find(x => x && x.id === msgId);
             const file = input && input.files && input.files[0];
             if (!m || !file) return;
-            const st = apkSetupStateOf(m);
+            const st = apkLogoStateOf(m);
             const reader = new FileReader();
             reader.onload = function (e) {
                 const img = new Image();
@@ -2554,6 +2494,7 @@ window.chatLivePreview = function () {
                         try { localStorage.setItem('clinqoo_apk_icon', b64); } catch (er) {}
                         renderMessages();
                         try { scrollToBottom(false); } catch (er) {}
+                        window.apkLogoSend(msgId, true);
                     } catch (er) { alert('Gambar tidak bisa diproses.'); }
                 };
                 img.onerror = function () { alert('Gambar tidak bisa dibaca.'); };
@@ -2561,57 +2502,18 @@ window.chatLivePreview = function () {
             };
             reader.readAsDataURL(file);
         };
-        window.apkNameInput = function (msgId, v) {
+        // Satu langkah: logo saja. Begitu diunggah (atau dilewati), jawaban terkirim
+        // otomatis ke AI — nama & pengaturan (orientasi/fullscreen/splash) ditanyakan
+        // belakangan secara terpisah (teks biasa / [[POLL]]), bukan ditumpuk di kartu ini.
+        window.apkLogoSend = function (msgId, hasLogo) {
             const m = messages.find(x => x && x.id === msgId);
-            if (!m) return;
-            const st = apkSetupStateOf(m);
-            st.name = String(v || '').slice(0, 40);
-            if (st.nameSaved && st.name) { /* tetap saved, biarkan ubah bebas */ }
-        };
-        window.apkNameSave = function (msgId) {
-            const m = messages.find(x => x && x.id === msgId);
-            if (!m) return;
-            const st = apkSetupStateOf(m);
-            if (!st.name.trim()) return;
-            st.nameSaved = true;
-            renderMessages();
-        };
-        window.apkTogglePop = function (msgId) {
-            const m = messages.find(x => x && x.id === msgId);
-            if (!m) return;
-            const st = apkSetupStateOf(m);
-            st.popover = !st.popover;
-            renderMessages();
-        };
-        window.apkSetOrient = function (msgId, o) {
-            const m = messages.find(x => x && x.id === msgId);
-            if (!m) return;
-            const st = apkSetupStateOf(m);
-            st.orientation = o === 'landscape' ? 'landscape' : 'portrait';
-            renderMessages();
-        };
-        window.apkSetFull = function (msgId, v) {
-            const m = messages.find(x => x && x.id === msgId);
-            if (!m) return;
-            const st = apkSetupStateOf(m);
-            st.fullscreen = !!v;
-            renderMessages();
-        };
-        window.apkSetupSend = function (msgId) {
-            const m = messages.find(x => x && x.id === msgId);
-            if (!m || !m.apkSetup) return;
-            const st = apkSetupStateOf(m);
+            if (!m || !m.apkLogo) return;
+            const st = apkLogoStateOf(m);
             if (st.sending || st.sent) return;
             st.sending = true;
-            const lines = ['Setup APK siap:'];
-            lines.push('Nama aplikasi: ' + (st.name.trim() || '(pakai default dari domain)'));
-            lines.push('Orientasi: ' + (st.orientation === 'landscape' ? 'landscape (tiduran)' : 'portrait (berdiri)'));
-            lines.push('Fullscreen: ' + (st.fullscreen ? 'ya' : 'tidak'));
-            lines.push('Logo aplikasi: ' + (st.iconB64 ? 'sudah diunggah — panggil build_apk dengan icon "saved"' : 'tidak diunggah — pakai ikon default'));
-            lines.push('Splash logo Clincoo: ' + (st.splash ? 'aktif (kirim splash: true)' : 'nonaktif (kirim splash: false)') + (st.splashForced ? ' — paket gratis, selalu aktif' : ''));
-            if (m.apkSetup.url) lines.push('URL situs: ' + m.apkSetup.url);
-            lines.push('Lanjutkan proses build APK dengan pengaturan di atas.');
-            const qaText = lines.join('\n');
+            const qaText = hasLogo
+                ? 'Logo tersimpan — pakai sebagai ikon aplikasi (panggil build_apk dengan icon "saved").'
+                : 'Lewati logo — pakai ikon default aplikasi.';
             const send = function () {
                 if (isGenerating) { setTimeout(send, 400); return; }
                 st.sent = true;
@@ -2688,55 +2590,22 @@ window.chatLivePreview = function () {
             renderMessages();
         };
 
-        function renderApkSetupCard(msg) {
-            if (!msg.apkSetup) return '';
-            const st = apkSetupStateOf(msg);
+        function renderApkLogoCard(msg) {
+            if (!msg.apkLogo) return '';
+            const st = apkLogoStateOf(msg);
             if (st.sent) return '';
-            // Sekali per kartu, bukan tiap render — render terjadi berkali-kali per detik saat
-            // animasi mengetik/polling; tanpa guard ini tiap render memicu fetch baru ke
-            // /api/subscription sebelum cache terisi, membanjiri endpoint (429).
-            if (!st.planKnown && !st.planResolving) { st.planResolving = true; apkResolvePlan(msg); }
             const iconHtml = st.iconB64
                 ? '<img src="data:image/png;base64,' + st.iconB64 + '" alt="logo">'
                 : '<i class="ph-bold ph-plus"></i>';
+            // SATU langkah kecil, FLAT (tanpa kotak/card) — cuma logo. Nama & pengaturan
+            // ditanyakan belakangan terpisah (teks biasa / [[POLL]]), bukan ditumpuk di sini.
             return `
-                <div class="apk-card fade-in">
-                    <div class="apk-card-head"><i class="ph-bold ph-android-logo"></i> Siapkan Aplikasi Android</div>
-                    <div class="apk-icon-wrap">
-                        <button type="button" class="apk-icon-btn ${st.iconB64 ? 'has-icon' : ''}" onclick="apkIconPick('${msg.id}')" title="Unggah logo aplikasi">${iconHtml}</button>
-                        <input type="file" id="apk-icon-input-${msg.id}" accept="image/*" style="display:none" onchange="apkIconFile('${msg.id}', this)">
-                        <div class="apk-icon-hint">${st.iconB64 ? 'Logo tersimpan — dipakai sebagai ikon aplikasi.' : 'Belum ada logo? Klik bulatan ini untuk unggah logo (tersimpan otomatis).'}</div>
-                    </div>
-                    <div class="apk-name-row">
-                        <input type="text" class="apk-name-input" placeholder="Nama aplikasi…" maxlength="40" value="${escText(st.name)}" oninput="apkNameInput('${msg.id}', this.value)">
-                        <button type="button" class="apk-pill-btn" onclick="apkNameSave('${msg.id}')">${st.nameSaved ? '✓' : 'Simpan'}</button>
-                    </div>
-                    <div class="apk-set-row">
-                        <button type="button" class="apk-set-chip" onclick="apkTogglePop('${msg.id}')"><i class="ph-bold ph-gear-six"></i> Pengaturan</button>
-                        <span class="apk-set-chip" style="cursor:default"><i class="ph-bold ph-device-mobile"></i> ${st.orientation === 'landscape' ? 'Tiduran' : 'Berdiri'}</span>
-                        <span class="apk-set-chip" style="cursor:default"><i class="ph-bold ph-frame-corners"></i> ${st.fullscreen ? 'Fullscreen' : 'Normal'}</span>
-                        <div class="apk-pop-wrap">
-                            ${st.popover ? `
-                            <div class="apk-popover fade-in">
-                                <div class="apk-pop-row"><span>Orientasi</span><span class="apk-seg">
-                                    <button type="button" class="${st.orientation === 'portrait' ? 'on' : ''}" onclick="apkSetOrient('${msg.id}', 'portrait')">Berdiri</button>
-                                    <button type="button" class="${st.orientation === 'landscape' ? 'on' : ''}" onclick="apkSetOrient('${msg.id}', 'landscape')">Tiduran</button>
-                                </span></div>
-                                <div class="apk-pop-row"><span>Fullscreen</span>
-                                    <button type="button" class="apk-toggle ${st.fullscreen ? 'on' : ''}" onclick="apkSetFull('${msg.id}', ${st.fullscreen ? 'false' : 'true'})" title="Mode layar penuh"><span></span></button>
-                                </div>
-                            </div>` : ''}
-                        </div>
-                    </div>
-                    <div class="apk-set-row" style="margin-top:0.625rem">
-                        <span class="apk-set-chip" style="cursor:default"><i class="ph-bold ph-image-square"></i> Splash Clincoo</span>
-                        <button type="button" class="apk-toggle ${st.splash ? 'on' : ''}" ${st.splashForced ? 'disabled style="opacity:0.55;cursor:not-allowed" title="Paket gratis: splash Clincoo selalu aktif"' : `title="${st.splash ? 'Klik untuk nonaktifkan splash Clincoo' : 'Klik untuk aktifkan splash Clincoo'}"`} onclick="apkSetSplash('${msg.id}', ${st.splash ? 'false' : 'true'})"><span></span></button>
-                        <span class="apk-card-hint">${st.splashForced ? 'Paket gratis: splash logo Clincoo selalu aktif.' : (st.splash ? 'Logo Clincoo tampil sekilas saat aplikasi dibuka.' : 'Tanpa splash logo Clincoo.')}</span>
-                    </div>
-                    ${msg.apkSetup.url ? `<div class="apk-card-hint" style="margin-top:0.625rem">Situs: ${escText(msg.apkSetup.url)}</div>` : ''}
-                    <div class="apk-cta-row">
-                        <button type="button" class="apk-pill-btn" onclick="apkSetupSend('${msg.id}')"><i class="ph-bold ph-rocket-launch"></i> Lanjutkan Build</button>
-                        <span class="apk-card-hint">Logo opsional — tanpa logo, ikon default dipakai.</span>
+                <div class="apk-logo-row fade-in">
+                    <button type="button" class="apk-icon-btn ${st.iconB64 ? 'has-icon' : ''}" onclick="apkIconPick('${msg.id}')" title="Unggah logo aplikasi">${iconHtml}</button>
+                    <input type="file" id="apk-icon-input-${msg.id}" accept="image/*" style="display:none" onchange="apkIconFile('${msg.id}', this)">
+                    <div class="apk-logo-info">
+                        <div class="apk-icon-hint">${st.iconB64 ? 'Logo tersimpan — dipakai sebagai ikon aplikasi.' : 'Klik bulatan untuk unggah logo aplikasi (opsional, tersimpan otomatis).'}</div>
+                        <button type="button" class="apk-logo-skip" onclick="apkLogoSend('${msg.id}', false)">Lewati, pakai ikon default</button>
                     </div>
                 </div>`;
         }
@@ -2784,7 +2653,7 @@ window.chatLivePreview = function () {
         }
 
         function renderApkCards(msg) {
-            return renderApkSetupCard(msg) + renderApkBuildCard(msg);
+            return renderApkLogoCard(msg) + renderApkBuildCard(msg);
         }
 
         // ===== CHECKPOINT TOKEN: saat kuota token habis di tengah tugas, AI minta
@@ -5338,7 +5207,7 @@ window.chatLivePreview = function () {
                             const cleanNow = (resultJson.text || '');
                             if (cleanNow) accumulatedFinal = accumulatedFinal ? (accumulatedFinal + '\n\n' + cleanNow) : cleanNow;
                             // POLL/FORM/PLUGIN = hentian SENGAJA menunggu input user -> jangan pernah auto-lanjut
-                            if (cleanNow.indexOf('[[POLL]]') !== -1 || cleanNow.indexOf('[[FORM]]') !== -1 || cleanNow.indexOf('[[PLUGIN:') !== -1 || cleanNow.indexOf('[[APK_SETUP]]') !== -1) {
+                            if (cleanNow.indexOf('[[POLL]]') !== -1 || cleanNow.indexOf('[[FORM]]') !== -1 || cleanNow.indexOf('[[PLUGIN:') !== -1 || cleanNow.indexOf('[[APK_LOGO]]') !== -1) {
                                 resultJson = Object.assign({}, resultJson, { text: accumulatedFinal });
                                 break;
                             }
@@ -5366,11 +5235,11 @@ window.chatLivePreview = function () {
                             const pIdx = messages.findIndex(m => m.id === aiMsgObj.id);
                             const parsedPhase = parsePollBlock(phaseNote);
                             const parsedPhaseApk = parseApkBlocks(parsedPhase.clean);
-                            if (pIdx !== -1 && parsedPhaseApk.setup) {
+                            if (pIdx !== -1 && parsedPhaseApk.logo) {
                                 // SETUP APK di tengah pekerjaan: AI berhenti total menunggu
                                 // user mengisi logo/nama/pengaturan di kartu, lalu lanjut otomatis.
                                 messages[pIdx].text = parsedPhaseApk.clean;
-                                messages[pIdx].apkSetup = parsedPhaseApk.setup;
+                                messages[pIdx].apkLogo = parsedPhaseApk.logo;
                                 messages[pIdx].midPhase = true;
                                 messages[pIdx].isProcessing = false;
                                 messages[pIdx].isTyping = false;
@@ -5474,10 +5343,10 @@ window.chatLivePreview = function () {
                             messages[fIdx].pollState = { current: 0, answers: [] };
                         }
                     }
-                    if (parsedFinalApk.setup || parsedFinalApk.card) {
+                    if (parsedFinalApk.logo || parsedFinalApk.card) {
                         const fIdx = messages.findIndex(m => m.id === aiMsgObj.id);
                         if (fIdx !== -1) {
-                            if (parsedFinalApk.setup) messages[fIdx].apkSetup = parsedFinalApk.setup;
+                            if (parsedFinalApk.logo) messages[fIdx].apkLogo = parsedFinalApk.logo;
                             if (parsedFinalApk.card) messages[fIdx].apkBuild = parsedFinalApk.card;
                         }
                     }
