@@ -144,7 +144,7 @@ export async function onRequestPost({ request, env }) {
       // Kaskade: hapus SEMUA data proyek (chat, file workspace, settings, env vars, log deploy).
       // Dijalankan paralel (bukan satu-satu berurutan) supaya tidak lama/timeout di koneksi lambat.
       try {
-        await Promise.all(['chat_sessions', 'chat_messages', 'project_files', 'env_vars', 'project_settings', 'security_settings', 'deploy_logs']
+        await Promise.all(['chat_sessions', 'chat_messages', 'project_files', 'file_chunks', 'env_vars', 'project_settings', 'security_settings', 'deploy_logs']
           .map(t => db.prepare(`DROP TABLE IF EXISTS ${tableFor(t, String(body.id))}`).run().catch(() => {})));
       } catch (e) {}
       return j({ success: true });
