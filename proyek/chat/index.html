@@ -2599,6 +2599,7 @@ window.chatLivePreview = function () {
                 try {
                     const r = await toolBuildApk({ action: 'status', build_id: msg.apkBuild.id });
                     const cst = apkBuildStateOf(msg);
+                    const before = { progress: cst.progress, phaseLabel: cst.phaseLabel, done: cst.done, failed: cst.failed, sizeKb: cst.sizeKb };
                     if (!r || r.success === false) {
                         cst.failed = true;
                         cst.error = (r && r.error) || 'Gagal memantau build.';
@@ -2616,7 +2617,15 @@ window.chatLivePreview = function () {
                         apkClearTimer(msg.id); renderMessages(); return;
                     }
                     cst.phaseLabel = apkStepLabel(r.steps);
-                    renderMessages();
+                    // FIX GETAR ("kaya refresh"): dulu polling tiap 6 detik SELALU
+                    // renderMessages() penuh walau tak ada perubahan apa pun — seluruh
+                    // chat dibongkar-pasang ulang (gambar kedip, animasi fade-in main
+                    // lagi, layout loncat sesaat) sehingga halaman terasa digetar/
+                    // ke-refresh terus. Sekarang render hanya jika tampilan kartu
+                    // benar-benar berubah; saveChatLog & sinkron cloud ikut hemat.
+                    if (cst.progress !== before.progress || cst.phaseLabel !== before.phaseLabel
+                        || cst.done !== before.done || cst.failed !== before.failed
+                        || cst.sizeKb !== before.sizeKb) renderMessages();
                 } catch (e) {}
             };
             apkPollTimers.set(msg.id, setInterval(tick, 6000));
