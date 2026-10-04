@@ -498,7 +498,7 @@
         '<p id="zb-del-name" class="text-sm text-gray-500 mt-1 px-2 truncate"></p>' +
         '<p class="text-[13px] text-gray-400 mt-2 leading-snug">Semua data proyek akan dihapus, <span class="text-gray-500">termasuk situs yang sudah dipublish dan link publiknya</span>.</p>' +
         '<input id="zb-del-name-input" type="text" autocomplete="off" spellcheck="false" placeholder="Ketik nama proyek untuk konfirmasi" class="w-full mt-3 px-3 py-2 text-sm text-center border border-gray-200 rounded-md focus:outline-none focus:border-gray-400" />' +
-        '<p id="zb-del-err" class="text-xs text-red-600 mt-2 hidden"></p>' +
+        '<p id="zb-del-err" class="text-xs text-red-600 mt-2 hidden">Gagal menghapus proyek. Periksa koneksi lalu coba lagi.</p>' +
         '<div id="zb-del-otp-step" class="hidden mt-3">' +
         '<p class="text-[13px] text-gray-500 leading-snug">Kode OTP 6 digit sudah dikirim ke email akunmu.</p>' +
         '<input id="zb-del-otp-input" type="text" inputmode="numeric" maxlength="6" placeholder="Kode OTP" class="w-full mt-2 px-3 py-2 text-sm text-center tracking-[0.3em] border border-gray-200 rounded-md focus:outline-none focus:border-gray-400" />' +
@@ -524,6 +524,17 @@
       document.getElementById('zb-del-ok').addEventListener('click', function () { confirmDelete(); });
       return m;
     }
+        function delToast(msg, kind) {
+      var t = document.createElement('div');
+      t.textContent = msg;
+      t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translate(-50%,12px);z-index:999;' +
+        'padding:9px 18px;border-radius:999px;font-size:13px;font-weight:600;color:#fff;' +
+        'background:' + (kind === 'error' ? '#dc2626' : '#111') + ';box-shadow:0 8px 24px rgba(0,0,0,.18);' +
+        'opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;white-space:nowrap;';
+      document.body.appendChild(t);
+      requestAnimationFrame(function () { t.style.opacity = '1'; t.style.transform = 'translate(-50%,0)'; });
+      setTimeout(function () { t.style.opacity = '0'; t.style.transform = 'translate(-50%,12px)'; setTimeout(function () { t.remove(); }, 350); }, 2200);
+    }
     var delBusy = false;
     var DEL_SPIN = '<svg class="w-4 h-4 cc-spin inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2a10 10 0 1 0 10 10"></path></svg>';
     async function confirmDelete() {
@@ -548,7 +559,8 @@
             closeDeleteModal();
             removeLocalData(pid);
             removeFromProjectsList();
-            showStatus('Proyek dihapus', 'Semua data proyek — termasuk situs yang sudah dipublish — sudah dihapus permanen.', function () { goHome(); });
+            delToast('Proyek dihapus', 'success');
+            setTimeout(goHome, 900);
             return;
           }
           okBtn.classList.remove('cc-spin'); okBtn.innerHTML = 'Konfirmasi Hapus';
@@ -617,7 +629,8 @@
         closeDeleteModal();
         removeLocalData(pid);
         removeFromProjectsList();
-        showStatus('Proyek dihapus', 'Semua data proyek — termasuk situs yang sudah dipublish — sudah dihapus permanen.', function () { goHome(); });
+        delToast('Proyek dihapus', 'success');
+        setTimeout(goHome, 900);
         return;
       }
       if (errEl) { errEl.textContent = (r3 && r3.error) || 'Gagal menghapus proyek. Periksa koneksi lalu coba lagi.'; errEl.classList.remove('hidden'); }
