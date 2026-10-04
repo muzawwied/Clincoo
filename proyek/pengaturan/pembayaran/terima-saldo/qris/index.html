@@ -44,6 +44,16 @@
     body.dark-mode button[onclick="history.back()"] svg { stroke: #ffffff !important; }
     body.dark-mode button[onclick="history.back()"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
   </style>
+  <style>
+    .medal-wrap { perspective: 600px; }
+    .medal { background: radial-gradient(circle at 30% 25%, #6ee7b7, #10b981 55%, #047857); box-shadow: 0 16px 34px -10px rgba(16,185,129,.55), inset 0 -8px 14px rgba(0,0,0,.25), inset 0 8px 14px rgba(255,255,255,.4); transform-style: preserve-3d; animation: medalIn .85s cubic-bezier(.34,1.56,.64,1) both, medalFloat 2.6s ease-in-out 1s infinite alternate; }
+    .medal-check { stroke-dasharray: 32; stroke-dashoffset: 32; animation: medalDraw .5s ease-out .5s forwards; }
+    .medal-halo { position: absolute; inset: -8px; border-radius: 9999px; border: 2px solid rgba(16,185,129,.5); animation: medalHalo 1.5s ease-out .35s both; }
+    @keyframes medalIn { 0% { transform: scale(.15) rotateY(190deg); opacity: 0; } 60% { transform: scale(1.12) rotateY(-16deg); opacity: 1; } 100% { transform: scale(1) rotateY(0deg); } }
+    @keyframes medalFloat { from { transform: rotateX(5deg) translateY(0); } to { transform: rotateX(-5deg) translateY(-7px); } }
+    @keyframes medalDraw { to { stroke-dashoffset: 0; } }
+    @keyframes medalHalo { from { transform: scale(.55); opacity: .9; } to { transform: scale(1.45); opacity: 0; } }
+  </style>
 </head>
 <body class="text-gray-900 antialiased min-h-screen w-full bg-white pt-16">
   <script>(function(){var t=localStorage.getItem("clinqoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
@@ -91,8 +101,11 @@
       </div>
 
       <div id="qr-cta-paid" class="hidden text-center">
-        <div class="w-14 h-14 mx-auto rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center mb-4">
-          <svg class="w-7 h-7 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7"></path></svg>
+        <div class="medal-wrap relative w-16 h-16 mx-auto mb-5">
+          <div class="medal absolute inset-0 rounded-full flex items-center justify-center">
+            <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path class="medal-check" d="m5 13 4 4L19 7"></path></svg>
+          </div>
+          <div class="medal-halo"></div>
         </div>
         <p class="text-base font-bold text-gray-900 dark:text-white">Pembayaran diterima</p>
         <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 mb-6">Dana sudah masuk ke saldo proyekmu.</p>
@@ -146,6 +159,8 @@
     if (!_paid && !_expired) {
       _timer = setInterval(qrPoll, 1000); // muat ulang status otomatis tiap detik
       document.addEventListener('visibilitychange', function () { if (!document.hidden) qrPoll(); });
+      window.addEventListener('pageshow', function () { qrPoll(); });
+      window.addEventListener('focus', function () { qrPoll(); });
     }
   }
 
