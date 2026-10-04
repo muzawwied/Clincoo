@@ -302,7 +302,7 @@ const CLOUVIA_MODELS = ['glm5.3-flash', 'coding-high-flash', 'free-model'];
 // role system (glm5.3-flash tidak — gateway membuangnya) sehingga system prompt utuh
 // sampai ke model, (2) tool-calling berfungsi, (3) gratis. Begitu OpenRouter di-top-up,
 // urutkan Sol Pro asli di depan rute ini (OPENROUTER_MODELS).
-const CLOUVIA_SOL_MODELS = ['gpt-6.1-sol'];
+const CLOUVIA_SOL_MODELS = ['deepseek-v4-pro', 'glm5.3-flash'];
 // 'free-model' = lapis terakhir Clouvia: tidak menguras saldo berbayar (pakai
 // kuota free_balance), jadi chat tetap hidup walau 50M+ token balance habis.
 
@@ -610,12 +610,10 @@ async function quotaCheck(env, user, cost = 1) {
 // bukan flat 1 per pesan. Pre-flight quotaCheck memotong 1 sebagai reservasi;
 // setelah jawaban jadi, SELISIH harga sebenarnya dipotong di sini.
 const MODEL_PRICES = {
-  'gpt-6-luna-pro': 2,      // cadangan pertama (reasoning, biaya provider lebih tinggi)
-  'gpt-6.1-sol-pro': 3,     // model utama sejak 4 Okt 2026: biaya provider premium
-  'gpt-6.1-sol': 1          // jalur Clouvia: backend sebenarnya GLM (direlabel) —
-                            // dipatok 1 kredit jujur, bukan harga Sol Pro asli
-                            // ditanggung margin platform; 3 kredit = tetap terjangkau
-                            // user gratis (25/hari ~ 8 jawaban) sambil menutup biaya
+  'gpt-6-luna-pro': 2,       // cadangan reasoning OpenRouter (biaya provider lebih tinggi)
+  'gpt-6.1-sol-pro': 3,      // Sol Pro ASLI (OpenRouter) — pasif, nunggu saldo di-top-up
+  'deepseek-v4-pro': 1,      // jalur utama Clouvia (4 Okt 2026 malam): cepat & stabil di tes nyata, gratis
+  'gpt-6.1-sol': 1           // model lama: backend sebenarnya GLM direlabel — 1 kredit jujur
   // semua model lain (glm-5.3-flash, gemini, clouvia, workers-ai, nemotron) = 1
 };
 const OUTPUT_FREE_CHARS = 4000; // karakter output pertama tanpa biaya tambahan
@@ -1438,7 +1436,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // SOL PRO UTAMA via Clouvia (gratis, tanpa kartu): hanya user login —
       // tamu tidak boleh membakar model premium. Reasoning model: napas 60s.
       if (!isGuest && !hasImages && cvKeysEarly.length) {
-        const sp = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, CLOUVIA_SOL_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 60000, 'ClouviaSolPro').catch(e => ({ error: e.message }));
+        const sp = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, CLOUVIA_SOL_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 40000, 'ClouviaSolPro').catch(e => ({ error: e.message }));
         if (sp) r = sp;
       }
       if ((!r || r.error) && orKeys.length && !hasImages) {
