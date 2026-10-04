@@ -5345,6 +5345,44 @@ window.chatLivePreview = function () {
         // SATU kali per tugas; kalau masih belum tuntas, AI berhenti & tunggu user bilang
         // "lanjut" sendiri — daripada terus-terusan membuat giliran jawaban baru sendiri.
         const SILENT_MAX_ROUNDS = 1;
+
+        // ROOT CAUSE ditemukan dari video keluhan user: payload riwayat tool
+        // membengkak TANPA BATAS dalam SATU generasi (sampai 20 hop/giliran via
+        // MAX_TOOL_HOPS). write_files mengirim ARGS (isi file lengkap, bisa puluhan
+        // KB per file) sebagai bagian 'function_call' ke riwayat, dan hasil tool
+        // dikirim balik APA ADANYA (tanpa potongan) sebagai 'function_response' --
+        // truncation 4000 char yang sudah ada SEBELUMNYA hanya memotong tampilan
+        // kartu UI, BUKAN payload yang benar-benar dikirim ke provider AI. Proyek
+        // web multi-file + beberapa kali "lanjut" bikin riwayat percakapan dalam
+        // satu giliran membengkak ratusan KB sampai MB -> request ke SEMUA provider
+        // (termasuk seluruh bank fallback, yang menerima persis payload sama besar)
+        // gagal bersamaan -> "Lagi ada gangguan koneksi sebentar." Ini cocok dengan
+        // keluhan: gagal justru spesifik saat membangun web (banyak file, "lanjut"
+        // berkali-kali), bukan outage acak.
+        // FIX: pangkas string panjang di dalam args/result SEBELUM dikirim ke
+        // provider -- AI tidak perlu melihat ulang isi file yang baru saja ia tulis
+        // sendiri (ia sudah tahu isinya); ia cuma perlu tahu status sukses/gagal
+        // untuk melanjutkan. Eksekusi tool TETAP memakai args asli yang lengkap --
+        // ini hanya memangkas COPY yang dikirim balik ke riwayat percakapan model.
+        function slimForModelHistory(value, limit) {
+            limit = limit || 1500;
+            function walk(v) {
+                if (typeof v === 'string') {
+                    return v.length > limit
+                        ? (v.slice(0, limit) + ' ... (dipotong, total ' + v.length + ' karakter -- AI sudah menulis/membaca ini sendiri, tidak perlu diulang penuh)')
+                        : v;
+                }
+                if (Array.isArray(v)) return v.map(walk);
+                if (v && typeof v === 'object') {
+                    const out = {};
+                    for (const k of Object.keys(v)) out[k] = walk(v[k]);
+                    return out;
+                }
+                return v;
+            }
+            try { return walk(value); } catch (e) { return value; }
+        }
+
         const SILENT_NUDGES = [
             'Lanjutkan tugas dari titik terhenti sampai benar-benar selesai. Jangan ulangi bagian yang sudah selesai dan jangan bertanya apa pun — langsung kerjakan sisa tugasnya sekarang.',
             'Teruskan pengerjaan sampai seluruh tugas tuntas dan hasil akhir lengkap. Langsung kerjakan tanpa konfirmasi; bagian yang sudah beres tidak perlu diulang.',
@@ -5986,9 +6024,13 @@ window.chatLivePreview = function () {
                         // Progress real-time: teks diambil dari aksi AI sendiri (nama tool + argumennya)
                         resultJson.tool_calls.forEach(tc => setAiStatus(clientToolProgressLabel(tc)));
 
-                        // Eksekusi tool workspace secara lokal (localStorage browser)
+                        // Eksekusi tool workspace secara lokal (localStorage browser).
+                        // PENTING: args PENUH (tc.args, bukan versi slim) tetap dipakai untuk
+                        // eksekusi nyata di bawah -- slimForModelHistory HANYA memangkas COPY
+                        // yang dikirim balik ke riwayat percakapan model (lihat catatan di
+                        // definisi slimForModelHistory soal payload membengkak tanpa batas).
                         const assistantToolParts = resultJson.tool_calls.map(function(tc) {
-                            return { type: 'function_call', name: tc.name, args: tc.args || {}, thought_signature: tc.thought_signature || undefined };
+                            return { type: 'function_call', name: tc.name, args: slimForModelHistory(tc.args || {}), thought_signature: tc.thought_signature || undefined };
                         });
                         apiMessagesWithTools.push({ role: 'assistant', content: assistantToolParts });
 
@@ -6001,7 +6043,10 @@ window.chatLivePreview = function () {
                             try { resultText = (typeof result === 'string') ? result : JSON.stringify(result, null, 2); } catch(e) { resultText = String(result); }
                             if (resultText && resultText.length > 4000) resultText = resultText.slice(0, 4000) + '\n… (dipotong)';
                             aiMsgObj.toolCalls.push({ name: tc.name, args: tc.args || {}, ok: ok, result: resultText });
-                            return { type: 'function_response', name: tc.name, result: result };
+                            // result yang dikirim BALIK ke model juga dipangkas (bukan hanya tampilan
+                            // UI) -- mencegah riwayat satu giliran membengkak tak terbatas saat AI
+                            // membaca kembali file besar (read_file/read_files) di hop berikutnya.
+                            return { type: 'function_response', name: tc.name, result: slimForModelHistory(result, 3000) };
                         }));
                         apiMessagesWithTools.push({ role: 'user', content: functionResponses });
                         // Tampilkan progres eksekusi tugas secara langsung ke chat (mirip kartu "Ran command")
