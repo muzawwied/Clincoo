@@ -72,9 +72,8 @@ async function ensureChunksTable(db, projectId) {
 }
 
 function decB64Bytes(b64Str) {
-  const bin = atob(String(b64Str || ''));
-  const len = Math.floor(bin.length * 3 / 4) - (bin.endsWith('==') ? 2 : bin.endsWith('=') ? 1 : 0);
-  return Math.max(0, len);
+  // panjang binary string hasil atob = jumlah byte asli (tiap char = 1 byte)
+  try { return atob(String(b64Str || '')).length; } catch (e) { return 0; }
 }
 
 // ==== Simpan satu file (kecil atau besar) ====
