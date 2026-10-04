@@ -117,8 +117,6 @@ async function getOpenRouterKeys(env) {
 // Toggle premium (body.premium=true) tetap ada tapi kini setara — Sol Pro sudah jadi
 // jalur utama semua user login, bukan lagi model opt-in.
 const OPENROUTER_MODELS = ['openai/gpt-6.1-sol-pro', 'openai/gpt-6-luna-pro', 'z-ai/glm-5.3-flash', 'nvidia/nemotron-3-ultra-550b-a55b'];
-// Jalur premium lama (toggle Sol Pro di chat) — dipertahankan agar toggle lama tetap berfungsi.
-const SOL_PRO_MODELS = ['openai/gpt-6.1-sol-pro'];
 // Rantai khusus TAMU (anonim, gratis): TANPA Sol Pro — model premium hanya
 // untuk user login; tamu tidak boleh membakar biaya provider premium.
 const GUEST_OR_MODELS = ['openai/gpt-6-luna-pro', 'z-ai/glm-5.3-flash', 'nvidia/nemotron-3-ultra-550b-a55b'];
@@ -220,12 +218,17 @@ async function getClouviaKeys(env) {
 // Dipakai saat OpenRouter gagal (limit/kredit) supaya chat tidak langsung jatuh
 // ke GLM 4.7 Flash (Workers AI) yang kualitas formatnya jauh lebih rendah.
 const CLOUVIA_MODELS = ['glm5.3-flash', 'coding-high-flash', 'free-model'];
+// GPT-6.1 Sol via Clouvia (4 Okt 2026): jalur UTAMA Sol Pro — gratis, tanpa kartu,
+// system prompt diterima penuh (terverifikasi: sol mematuhi role system, beda
+// dari glm5.3-flash yang gateway-nya membuang system) & tool-calling berfungsi.
+const CLOUVIA_SOL_MODELS = ['gpt-6.1-sol'];
 // 'free-model' = lapis terakhir Clouvia: tidak menguras saldo berbayar (pakai
 // kuota free_balance), jadi chat tetap hidup walau 50M+ token balance habis.
 
-async function tryClouviaText(keys, messages, gDecls) {
+async function tryClouviaText(keys, messages, gDecls, models) {
   const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
   if (!keyList.length) return null;
+  const modelList = (Array.isArray(models) && models.length) ? models : CLOUVIA_MODELS;
   const { system, chatMsgs } = toOAIChat(messages);
   const oaiTools = oaiToolsOf(gDecls);
   // Gateway Clouvia membuang role 'system' (terverifikasi 3 Okt 2026: model
@@ -249,7 +252,7 @@ async function tryClouviaText(keys, messages, gDecls) {
   } catch (e) {}
   let lastErr = null;
   for (const key of keyList) {
-    for (const model of CLOUVIA_MODELS) {
+    for (const model of modelList) {
       let baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
       if (idPrefix) {
         const iu = baseMsgs.findIndex(m => m && m.role === 'user');
@@ -502,7 +505,9 @@ async function quotaCheck(env, user, cost = 1) {
 // setelah jawaban jadi, SELISIH harga sebenarnya dipotong di sini.
 const MODEL_PRICES = {
   'gpt-6-luna-pro': 2,      // cadangan pertama (reasoning, biaya provider lebih tinggi)
-  'gpt-6.1-sol-pro': 3      // model utama sejak 4 Okt 2026: biaya provider premium
+  'gpt-6.1-sol-pro': 3,     // model utama sejak 4 Okt 2026: biaya provider premium
+  'gpt-6.1-sol': 3          // Sol Pro jalur Clouvia (gratis di provider) — 3 kredit
+                            // setara Sol Pro supaya kuota AI adil antar jalur
                             // ditanggung margin platform; 3 kredit = tetap terjangkau
                             // user gratis (25/hari ~ 8 jawaban) sambil menutup biaya
   // semua model lain (glm-5.3-flash, gemini, clouvia, workers-ai, nemotron) = 1
@@ -1322,15 +1327,12 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // jadi pengulangan hanya meminta ulang jawaban, bukan mengulang pekerjaan.
     const attemptCascade = async () => {
     let r = null;
-    // MODE SOL PRO: sejak 4 Okt 2026 Sol Pro adalah MODEL UTAMA rantai user login
-    // (lihat OPENROUTER_MODELS); cabang premium=true di bawah tetap dipertahankan
-    // untuk kompatibilitas toggle lama di frontend.
-    // Premium hanya untuk user LOGIN: mode tamu (gratis) tidak boleh membakar model mahal.
-    const wantSolPro = body.premium === true && !isGuest && !hasImages;
     for (let sHop = 0; sHop <= 4; sHop++) {
       r = null;
-      if (wantSolPro && orKeys.length) {
-        const sp = await withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, SOL_PRO_MODELS), 90000, 'SolPro').catch(e => ({ error: e.message }));
+      // SOL PRO UTAMA via Clouvia (gratis, tanpa kartu): hanya user login —
+      // tamu tidak boleh membakar model premium. Reasoning model: napas 60s.
+      if (!isGuest && !hasImages && cvKeysEarly.length) {
+        const sp = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, CLOUVIA_SOL_MODELS), 60000, 'ClouviaSolPro').catch(e => ({ error: e.message }));
         if (sp) r = sp;
       }
       if ((!r || r.error) && orKeys.length && !hasImages) {
