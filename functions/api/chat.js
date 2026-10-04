@@ -132,7 +132,62 @@ function withTimeout(promise, ms, label) {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
 }
 
-async function tryOpenRouterText(keys, messages, gDecls, models) {
+// Baca respons streaming SSE gaya OpenAI-compat (OpenRouter / Clouvia).
+// Mengembalikan { text, fin, tcs } — tcs = tool_calls yang sudah dirakit per-index.
+// Dipakai jalur streaming supaya teks jawaban mengalir potongan-demi-potongan ke
+// user SEKETIKA saat model menulis, bukan menunggu seluruh generasi selesai dulu.
+async function readOAICompatStream(res, onDelta) {
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = '', text = '', fin = null;
+  const tcMap = {};
+  let streamEnd = false;
+  while (!streamEnd) {
+    const rd = await reader.read();
+    if (rd.done) break;
+    buf += dec.decode(rd.value, { stream: true });
+    let nl;
+    while ((nl = buf.indexOf('\n')) !== -1) {
+      const line = buf.slice(0, nl).trim();
+      buf = buf.slice(nl + 1);
+      if (!line || line.charAt(0) === ':') continue; // komentar keep-alive SSE
+      if (line.indexOf('data:') !== 0) continue;
+      const dbody = line.slice(5).trim();
+      if (dbody === '[DONE]') { streamEnd = true; break; }
+      let j; try { j = JSON.parse(dbody); } catch (e) { continue; }
+      const ch = j.choices && j.choices[0];
+      if (!ch) continue;
+      const d = ch.delta || {};
+      if (typeof d.content === 'string' && d.content) {
+        text += d.content;
+        try { onDelta(d.content); } catch (e) {}
+      }
+      if (Array.isArray(d.tool_calls)) {
+        for (const tc of d.tool_calls) {
+          const ix = (tc.index !== undefined) ? tc.index : 0;
+          if (!tcMap[ix]) tcMap[ix] = { name: '', args: '' };
+          const fn = tc.function || {};
+          if (fn.name && !tcMap[ix].name) tcMap[ix].name = fn.name;
+          if (typeof fn.arguments === 'string') tcMap[ix].args += fn.arguments;
+        }
+      }
+      if (ch.finish_reason) fin = ch.finish_reason;
+    }
+  }
+  const tcs = Object.keys(tcMap).sort((a, b) => Number(a) - Number(b)).map((k) => tcMap[k]).filter((x) => x.name);
+  return { text, fin, tcs };
+}
+
+function normStreamToolCalls(tcs) {
+  const norm = [];
+  for (const c of tcs) {
+    let a = {}; try { a = c.args ? JSON.parse(c.args) : {}; } catch (e) { a = {}; }
+    norm.push({ name: c.name, args: a });
+  }
+  return norm;
+}
+
+async function tryOpenRouterText(keys, messages, gDecls, models, onDelta) {
   const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
   if (!keyList.length) return null;
   const modelList = (Array.isArray(models) && models.length) ? models : OPENROUTER_MODELS;
@@ -143,6 +198,29 @@ async function tryOpenRouterText(keys, messages, gDecls, models) {
   for (const model of modelList) {
     const baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
     let data = null;
+    // JALUR STREAMING (percepat output): kirim potongan teks ke user seketika.
+    // Gagal/tdk didukung -> otomatis jatuh ke panggilan non-stream di bawah.
+    if (onDelta) {
+      try {
+        const sp = { model, messages: baseMsgs, max_tokens: 24576, stream: true };
+        if (oaiTools) sp.tools = oaiTools;
+        const sr = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.pages.dev', 'X-Title': 'Clincoo' },
+          body: JSON.stringify(sp)
+        });
+        if (sr.ok && sr.body) {
+          const st = await readOAICompatStream(sr, onDelta);
+          if (st.text || st.tcs.length) {
+            if (st.tcs.length) return { tool_calls: normStreamToolCalls(st.tcs), text: st.text, model: model.split('/').pop() + ' (OpenRouter)' };
+            return { text: st.text, model: model.split('/').pop() + ' (OpenRouter)' };
+          }
+          lastErr = `OpenRouter ${model}: stream kosong`;
+          continue; // stream bener-bener kosong -> model berikutnya
+        }
+        if (!sr.ok) lastErr = `OpenRouter ${model}: HTTP ${sr.status}`;
+      } catch (e) { lastErr = `OpenRouter ${model}: ${e && e.message}`; }
+    }
     try {
       const payload = { model, messages: baseMsgs, max_tokens: 24576 };
       if (oaiTools) payload.tools = oaiTools;
@@ -225,7 +303,7 @@ const CLOUVIA_SOL_MODELS = ['gpt-6.1-sol'];
 // 'free-model' = lapis terakhir Clouvia: tidak menguras saldo berbayar (pakai
 // kuota free_balance), jadi chat tetap hidup walau 50M+ token balance habis.
 
-async function tryClouviaText(keys, messages, gDecls, models) {
+async function tryClouviaText(keys, messages, gDecls, models, onDelta) {
   const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
   if (!keyList.length) return null;
   const modelList = (Array.isArray(models) && models.length) ? models : CLOUVIA_MODELS;
@@ -262,6 +340,31 @@ async function tryClouviaText(keys, messages, gDecls, models) {
         }
       }
       let data = null;
+      // JALUR STREAMING (percepat output): teks mengalir progresif ke user.
+      // Sol Pro (gpt-6.1-sol) adalah model UTAMA user login — dulu non-stream:
+      // user menunggu puluhan detik blank "Thinking..." lalu teks muncul
+      // sekaligus. Gagal/tdk didukung -> jatuh ke non-stream di bawah.
+      if (onDelta) {
+        try {
+          const sp = { model, messages: baseMsgs, max_tokens: 16384, stream: true };
+          if (oaiTools) sp.tools = oaiTools;
+          const sr = await fetch('https://router.clouvia.id/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+            body: JSON.stringify(sp)
+          });
+          if (sr.ok && sr.body) {
+            const st = await readOAICompatStream(sr, onDelta);
+            if (st.text || st.tcs.length) {
+              if (st.tcs.length) return { tool_calls: normStreamToolCalls(st.tcs), text: st.text, model: model + ' (Clouvia)' };
+              return { text: st.text, model: model + ' (Clouvia)' };
+            }
+            lastErr = `Clouvia ${model}: stream kosong`;
+            continue;
+          }
+          if (!sr.ok) lastErr = `Clouvia ${model}: HTTP ${sr.status}`;
+        } catch (e) { lastErr = `Clouvia ${model}: ${e && e.message}`; }
+      }
       try {
         const payload = { model, messages: baseMsgs, max_tokens: 16384 };
         if (oaiTools) payload.tools = oaiTools;
@@ -1332,7 +1435,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // SOL PRO UTAMA via Clouvia (gratis, tanpa kartu): hanya user login —
       // tamu tidak boleh membakar model premium. Reasoning model: napas 60s.
       if (!isGuest && !hasImages && cvKeysEarly.length) {
-        const sp = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, CLOUVIA_SOL_MODELS), 60000, 'ClouviaSolPro').catch(e => ({ error: e.message }));
+        const sp = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, CLOUVIA_SOL_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 60000, 'ClouviaSolPro').catch(e => ({ error: e.message }));
         if (sp) r = sp;
       }
       if ((!r || r.error) && orKeys.length && !hasImages) {
@@ -1340,11 +1443,11 @@ export async function onRequestPost({ request, env, waitUntil }) {
         // non-premium. Reasoning model lebih lambat dari flash, butuh napas lebih
         // panjang per panggilan (90s) supaya jawaban panjang tidak terpotong timeout.
         const chainModels = isGuest ? GUEST_OR_MODELS : OPENROUTER_MODELS;
-        const o = await withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, chainModels), 90000, 'OpenRouter').catch(e => ({ error: e.message }));
+        const o = await withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, chainModels, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 90000, 'OpenRouter').catch(e => ({ error: e.message }));
         if (o) r = o;
       }
       if ((!r || r.error) && cvKeysEarly.length && !hasImages) {
-        const c = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls), 25000, 'Clouvia').catch(e => ({ error: e.message }));
+        const c = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, undefined, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 25000, 'Clouvia').catch(e => ({ error: e.message }));
         if (c) r = c;
       }
       if ((!r || r.error) && aiMain) {
