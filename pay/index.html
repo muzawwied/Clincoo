@@ -180,10 +180,21 @@
     el('copy-order').textContent = d.order_id || orderId;
     if (d.qr_image && d.qr_image !== lastQrSrc) {
       lastQrSrc = d.qr_image;
-      el('qr').src = d.qr_image;
-      el('qr').classList.remove('hidden');
-      el('qr-skel').className = 'hidden';
-      el('dl-btn').classList.remove('hidden');
+      // tampilkan QR hanya setelah gambarnya BENAR-BENAR termuat —
+      // host gambar provider kadang lambat: kerangka loading tetap tampil sampai siap,
+      // gagal muat = coba lagi otomatis tiap 3 detik (bukan area kosong)
+      var img = el('qr');
+      img.onload = function () {
+        img.classList.remove('hidden');
+        el('qr-skel').className = 'hidden';
+        el('dl-btn').classList.remove('hidden');
+      };
+      img.onerror = function () {
+        setTimeout(function () {
+          if (lastQrSrc === d.qr_image) img.src = d.qr_image + (d.qr_image.indexOf('?') === -1 ? '?r=' : '&r=') + Date.now();
+        }, 3000);
+      };
+      img.src = d.qr_image;
       dlUrl = d.qr_image;
     }
     saveCache(d);
