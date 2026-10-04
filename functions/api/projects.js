@@ -42,6 +42,29 @@ function rowToProject(r) {
   };
 }
 
+
+// Guard hapus proyek: proyek dengan ClincooPay aktif yang masih punya saldo /
+// penarikan sedang diproses TIDAK boleh dihapus (saldo bisa lenyap tanpa jejak).
+// Kalau tabel pay belum ada (proyek tanpa ClincooPay), izinkan hapus.
+async function payDeleteGuard(db, projectId) {
+  try {
+    const cred = await db.prepare('SELECT pay_key FROM pay_creds WHERE project_id = ?').bind(projectId).first();
+    if (!cred) return { ok: true };
+    const paid = await db.prepare(`SELECT COALESCE(SUM(COALESCE(credit_amount, amount)),0) AS t FROM pay_transactions WHERE project_id = ? AND status = 'paid'`).bind(projectId).first();
+    const wd = await db.prepare(`SELECT COALESCE(SUM(amount + COALESCE(fee,0)),0) AS t, COALESCE(SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END),0) AS p FROM pay_withdrawals WHERE project_id = ? AND status != 'rejected'`).bind(projectId).first();
+    const available = Math.max(0, (paid && paid.t) || 0) - Math.min((wd && wd.t) || 0, Math.max(0, (paid && paid.t) || 0));
+    const pendingWd = (wd && wd.p) || 0;
+    if (available > 0 || pendingWd > 0) {
+      const parts = [];
+      if (available > 0) parts.push('saldo ClincooPay Rp ' + available.toLocaleString('id-ID'));
+      if (pendingWd > 0) parts.push(pendingWd + ' penarikan sedang diproses');
+      return { ok: false, available, pending_withdrawals: pendingWd,
+        reason: 'Proyek tidak bisa dihapus: masih ada ' + parts.join(' dan ') + '. Tarik/cairkan dulu sebelum menghapus proyek.' };
+    }
+    return { ok: true };
+  } catch (e) { return { ok: true }; }
+}
+
 async function upsert(db, uid, p) {
   if (!p || !p.id) return;
   await db.prepare(`INSERT INTO user_projects (id, user_id, title, prompt, ai_name, ai_desc, updated_at)
@@ -63,6 +86,14 @@ export async function onRequestGet({ request, env }) {
     await ensureTable(db);
     const user = await currentUser(env, request);
     if (!user) return j({ error: 'unauthorized' }, 401);
+    // Pre-check hapus (dipakai modal konfirmasi UI): ?delete_check=<id> -> boleh hapus / blokir + alasan
+    const checkId = new URL(request.url).searchParams.get('delete_check');
+    if (checkId) {
+      const own = await db.prepare('SELECT id FROM user_projects WHERE id = ? AND user_id = ?').bind(checkId, user.id).first();
+      if (!own) return j({ blocked: true, reason: 'Proyek tidak ditemukan atau bukan milik akun ini.' }, 404);
+      const g = await payDeleteGuard(db, checkId);
+      return j(g.ok ? { ok: true } : { blocked: true, reason: g.reason, available: g.available, pending_withdrawals: g.pending_withdrawals });
+    }
     const res = await db.prepare(
       'SELECT * FROM user_projects WHERE user_id = ? ORDER BY COALESCE(updated_at, created_at) DESC'
     ).bind(user.id).all();
@@ -107,6 +138,8 @@ export async function onRequestPost({ request, env }) {
     }
     if (action === 'delete') {
       if (!body.id) return j({ error: 'id required' }, 400);
+      const g = await payDeleteGuard(db, String(body.id));
+      if (!g.ok) return j({ success: false, guarded: true, error: g.reason, available: g.available, pending_withdrawals: g.pending_withdrawals }, 400);
       await db.prepare('DELETE FROM user_projects WHERE id = ? AND user_id = ?').bind(String(body.id), user.id).run();
       // Kaskade: hapus SEMUA data proyek (chat, file workspace, settings, env vars, log deploy).
       // Dijalankan paralel (bukan satu-satu berurutan) supaya tidak lama/timeout di koneksi lambat.
@@ -117,6 +150,10 @@ export async function onRequestPost({ request, env }) {
       return j({ success: true });
     }
     if (action === 'delete_all') {
+      const rows = await db.prepare('SELECT id FROM user_projects WHERE user_id = ?').bind(user.id).all();
+      let blocked = 0;
+      for (const r of (rows.results || [])) { const g = await payDeleteGuard(db, r.id); if (!g.ok) blocked++; }
+      if (blocked > 0) return j({ success: false, guarded: true, error: blocked + ' proyek masih punya saldo ClincooPay / penarikan berjalan. Tarik/cairkan dulu sebelum menghapus.' }, 400);
       await db.prepare('DELETE FROM user_projects WHERE user_id = ?').bind(user.id).run();
       return j({ success: true });
     }
@@ -157,8 +194,17 @@ export async function onRequestDelete({ request, env }) {
     const user = await currentUser(env, request);
     if (!user) return j({ error: 'unauthorized' }, 401);
     const id = new URL(request.url).searchParams.get('id');
-    if (id) await db.prepare('DELETE FROM user_projects WHERE id = ? AND user_id = ?').bind(id, user.id).run();
-    else await db.prepare('DELETE FROM user_projects WHERE user_id = ?').bind(user.id).run();
+    if (id) {
+      const g = await payDeleteGuard(db, id);
+      if (!g.ok) return j({ success: false, guarded: true, error: g.reason, available: g.available, pending_withdrawals: g.pending_withdrawals }, 400);
+      await db.prepare('DELETE FROM user_projects WHERE id = ? AND user_id = ?').bind(id, user.id).run();
+    } else {
+      const rows = await db.prepare('SELECT id FROM user_projects WHERE user_id = ?').bind(user.id).all();
+      let blocked = 0;
+      for (const r of (rows.results || [])) { const g = await payDeleteGuard(db, r.id); if (!g.ok) blocked++; }
+      if (blocked > 0) return j({ success: false, guarded: true, error: blocked + ' proyek masih punya saldo ClincooPay / penarikan berjalan. Tarik/cairkan dulu sebelum menghapus.' }, 400);
+      await db.prepare('DELETE FROM user_projects WHERE user_id = ?').bind(user.id).run();
+    }
     return j({ success: true });
   } catch (err) {
     return j({ error: err.message }, 500);

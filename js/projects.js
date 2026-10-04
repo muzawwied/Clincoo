@@ -270,9 +270,31 @@ function _ensureDeleteModal() {
     const modal = document.getElementById('confirm-delete-modal');
     modal.addEventListener('click', function (e) { if (e.target === modal) _closeDeleteModal(); });
     document.getElementById('confirm-delete-cancel').addEventListener('click', _closeDeleteModal);
-    document.getElementById('confirm-delete-ok').addEventListener('click', function () {
+    document.getElementById('confirm-delete-ok').addEventListener('click', async function () {
         const id = _pendingDeleteId;
         if (!id) { _closeDeleteModal(); return; }
+        const okBtn = document.getElementById('confirm-delete-ok');
+        const errEl = document.getElementById('confirm-delete-error');
+        okBtn.disabled = true;
+        okBtn.classList.add('cc-spin');
+        okBtn.innerHTML = 'Memeriksa...';
+        if (errEl) errEl.classList.add('hidden');
+        // Pre-check guard server: proyek dengan saldo ClincooPay / penarikan berjalan diblokir.
+        try {
+            const tok = (function () { try { return localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) { return ''; } })();
+            const res = await fetch(PROJECTS_API + '?delete_check=' + encodeURIComponent(id), { headers: tok ? { Authorization: 'Bearer ' + tok } : {} });
+            const d = await res.json().catch(function () { return null; });
+            if (d && d.blocked) {
+                okBtn.disabled = false;
+                okBtn.classList.remove('cc-spin');
+                okBtn.innerHTML = 'Hapus';
+                if (errEl) { errEl.textContent = d.reason || 'Proyek ini tidak bisa dihapus dulu.'; errEl.classList.remove('hidden'); }
+                return;
+            }
+        } catch (e) { /* jaringan gagal: lanjut optimistik — guard di server tetap jadi pengaman terakhir */ }
+        okBtn.disabled = false;
+        okBtn.classList.remove('cc-spin');
+        okBtn.innerHTML = 'Hapus';
         // Optimistic: proyek langsung lenyap dari daftar & modal langsung tertutup —
         // penghapusan sungguhan di server (D1 + unpublish) jalan sendiri di latar belakang
         // (fire-and-forget + retry diam-diam), jadi hapus TERASA instan tanpa menunggu jaringan.
@@ -355,6 +377,10 @@ async function _deleteProjectInBackground(id, attempt) {
     try {
         const res = await fetch(PROJECTS_API, { method: 'POST', headers: hdrs, body: JSON.stringify({ action: 'delete', id: id }) });
         if (res.ok) { const d = await res.json().catch(() => null); ok = !d || d.success !== false; }
+        else {
+            const d = await res.json().catch(() => null);
+            if (d && d.guarded) { _unqueuePendingDelete(id); return; } // diblokir guard saldo: jangan retry diam-diam
+        }
     } catch (e) { ok = false; }
     if (ok) {
         _unqueuePendingDelete(id);

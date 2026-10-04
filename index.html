@@ -1966,6 +1966,10 @@
             try {
                 const res = await fetch(PROJECTS_API, { method: 'POST', headers: authHdr, body: JSON.stringify({ action: 'delete', id: id }) });
                 if (res.ok) { const d = await res.json().catch(() => null); ok = !d || d.success !== false; }
+                else {
+                    const d = await res.json().catch(() => null);
+                    if (d && d.guarded) { unqueuePendingDelete(id); return; } // diblokir guard saldo: jangan retry diam-diam
+                }
             } catch (e) { ok = false; }
             if (ok) { unqueuePendingDelete(id); return; }
             if (attempt < 3) setTimeout(function () { deleteProjectInBackground(id, attempt + 1); }, attempt * 2000);
@@ -1981,9 +1985,31 @@
             if (!modal) return;
             modal.addEventListener('click', function (e) { if (e.target === modal) closeDeleteModal(); });
             document.getElementById('confirm-delete-cancel').addEventListener('click', closeDeleteModal);
-            document.getElementById('confirm-delete-ok').addEventListener('click', function () {
+            document.getElementById('confirm-delete-ok').addEventListener('click', async function () {
                 const id = _pendingDeleteId;
                 if (!id) { closeDeleteModal(); return; }
+                const okBtn = document.getElementById('confirm-delete-ok');
+                const errEl = document.getElementById('confirm-delete-error');
+                okBtn.disabled = true;
+                okBtn.classList.add('cc-spin');
+                okBtn.innerHTML = 'Memeriksa...';
+                if (errEl) errEl.classList.add('hidden');
+                // Pre-check guard server: proyek dengan saldo ClincooPay / penarikan berjalan diblokir.
+                try {
+                    const tok = localStorage.getItem('clinqoo_auth_token') || '';
+                    const res = await fetch(PROJECTS_API + '?delete_check=' + encodeURIComponent(id), { headers: tok ? { Authorization: 'Bearer ' + tok } : {} });
+                    const d = await res.json().catch(function () { return null; });
+                    if (d && d.blocked) {
+                        okBtn.disabled = false;
+                        okBtn.classList.remove('cc-spin');
+                        okBtn.innerHTML = 'Hapus';
+                        if (errEl) { errEl.textContent = d.reason || 'Proyek ini tidak bisa dihapus dulu.'; errEl.classList.remove('hidden'); }
+                        return;
+                    }
+                } catch (e) { /* jaringan gagal: lanjut optimistik — guard di server tetap jadi pengaman terakhir */ }
+                okBtn.disabled = false;
+                okBtn.classList.remove('cc-spin');
+                okBtn.innerHTML = 'Hapus';
                 // Optimistic: proyek langsung lenyap & modal langsung tertutup — penghapusan
                 // sungguhan di server jalan sendiri di latar belakang (fire-and-forget + retry diam-diam).
                 closeDeleteModal();
