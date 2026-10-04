@@ -111,9 +111,10 @@ async function getOpenRouterKeys(env) {
   return keys;
 }
 
-// ===== Provider utama: NVIDIA Nemotron 3 Ultra via OpenRouter =====
-// (free tier dulu, lalu berbayar, GLM 5.3 Flash tetap sebagai cadangan terakhir.)
-const OPENROUTER_MODELS = ['nvidia/nemotron-3-ultra-550b-a55b:free', 'nvidia/nemotron-3-ultra-550b-a55b', 'z-ai/glm-5.3-flash'];
+// ===== Provider utama: GLM 5.3 Flash via OpenRouter =====
+// (GLM utama — Nemotron hanya cadangan; Nemotron reasoning model sering bocorkan
+// proses berpikir internal ke jawaban final pada jalur free OpenRouter.)
+const OPENROUTER_MODELS = ['z-ai/glm-5.3-flash', 'nvidia/nemotron-3-ultra-550b-a55b:free', 'nvidia/nemotron-3-ultra-550b-a55b'];
 const oaiToolsOf = (gDecls) => (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
 
 // Pembatas waktu per-panggilan provider — fetch/binding AI TIDAK punya timeout
