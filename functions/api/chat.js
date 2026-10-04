@@ -269,7 +269,43 @@ async function tryClouviaText(keys, messages, gDecls) {
         }
         if (norm.length) return { tool_calls: norm, text, model: model + ' (Clouvia)' };
       }
-      if (text) return { text, model: model + ' (Clouvia)' };
+      if (text) {
+        const finishOf = (rr) => (rr && Array.isArray(rr.choices) && rr.choices[0] && rr.choices[0].finish_reason) || '';
+        let full = text, seg = text, fin = (data && data.choices && data.choices[0] && data.choices[0].finish_reason) || '';
+        const contMsgs = baseMsgs.slice();
+        for (let ac = 0; ac < 3 && fin === 'length'; ac++) {
+          contMsgs.push({ role: 'assistant', content: seg });
+          contMsgs.push({ role: 'user', content: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' });
+          let dc = null;
+          try {
+            const p3 = { model, messages: contMsgs, max_tokens: 4096 };
+            if (oaiTools) p3.tools = oaiTools;
+            const rc = await fetch('https://router.clouvia.id/v1/chat/completions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+              body: JSON.stringify(p3)
+            });
+            if (!rc.ok) break;
+            dc = await rc.json().catch(() => ({}));
+          } catch (e3) { break; }
+          const dm = dc && dc.choices && dc.choices[0] && dc.choices[0].message;
+          const dtcs = (dm && Array.isArray(dm.tool_calls)) ? dm.tool_calls : null;
+          if (dtcs && dtcs.length) {
+            const norm = [];
+            for (const c of dtcs) {
+              let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
+              if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
+            }
+            if (norm.length) return { tool_calls: norm, text: full, model: model + ' (Clouvia)' };
+            break;
+          }
+          const dseg = (dm && dm.content) || '';
+          fin = finishOf(dc);
+          if (!dseg) break;
+          full += dseg; seg = dseg;
+        }
+        return { text: full, model: model + ' (Clouvia)' };
+      }
       lastErr = `Clouvia ${model}: respons kosong`;
     }
   }
