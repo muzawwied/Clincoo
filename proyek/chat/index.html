@@ -5721,6 +5721,15 @@ window.chatLivePreview = function () {
                             // buang delta parsial hop ini agar re-stream tidak dobel teks
                             deltaStreamed = deltaStreamed.slice(0, deltaBaseLen);
                             streamingBuffer = deltaStreamed;
+                            // guard: fetch reconnect pun bisa menggantung tanpa balas
+                            // (koneksi benar2 mati) — timeout 300s agar tidak deadlock;
+                            // abort user-stop tetap diteruskan lewat chaining sinyal.
+                            if (abortController.signal.aborted) throw new DOMException('Aborted', 'AbortError');
+                            const rc = new AbortController();
+                            const onStop = () => { try { rc.abort(); } catch (e3) {} };
+                            abortController.signal.addEventListener('abort', onStop);
+                            const rcT = setTimeout(() => rc.abort(new Error('Koneksi mati saat menyambung ulang')), 300000);
+                            try {
                             response0 = await fetch(GEMINI_PROXY_URL, {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
@@ -5734,8 +5743,12 @@ window.chatLivePreview = function () {
 
                                     stream: true
                                 }),
-                                signal: abortController.signal
+                                signal: rc.signal
                             });
+                            } finally {
+                                clearTimeout(rcT);
+                                abortController.signal.removeEventListener('abort', onStop);
+                            }
                             if (!response0.ok) {
                                 // error definitif dari server (mis. kuota) -> parse agar
                                 // penanganan tengah-tugas (checkpoint/auto-lanjut) jalan
@@ -5754,9 +5767,29 @@ window.chatLivePreview = function () {
                         };
                         const isNetDrop = (e) => e && e.name !== 'AbortError' && e.message !== '__QUOTA__' && !e.providerBusy;
                         const deltaBaseLen = deltaStreamed.length; // basis delta hop ini (utk reset saat reconnect)
+                        // STALL WATCHDOG (fix kedua backgrounding): koneksi yang dibunuh
+                        // OS saat app di-background KADANG tidak melempar error sama sekali —
+                        // reader menggantung selamanya, AI terlihat "masih bekerja" padahal
+                        // sudah mati. Watchdog ini mengukur jeda antar event stream; jika
+                        // lebih dari STALL_MS (sudah di atas worst-case rantai provider
+                        // 90+90+25+25+25s), body stream dibatalkan paksa -> readNdjsonStream
+                        // melempar -> jalur reconnect menyiapkan koneksi baru & tugas lanjut.
+                        const STALL_MS = 300000;
+                        let lastEventAt = Date.now();
+                        let stallHits = 0;
+                        const stallTimer = setInterval(() => {
+                            if (!isGenerating) { clearInterval(stallTimer); return; }
+                            if (Date.now() - lastEventAt < STALL_MS) return;
+                            stallHits++;
+                            lastEventAt = Date.now(); // re-arm utk fetch reconnect berikutnya
+                            try { if (response0 && response0.body) response0.body.cancel(); } catch (e) {}
+                            if (stallHits >= 4) clearInterval(stallTimer); // reconnect 2x habis -> biarkan jalur error/fallback
+                        }, 15000);
+                        try {
                         for (;;) {
                             try {
                                 return await readNdjsonStream(response0, (evt) => {
+                                    lastEventAt = Date.now(); // event hidup -> stream masih sehat
                                     if (evt.t === 'delta') {
                                         hasReceivedData = true;
                                         deltaStreamed += evt.text || '';
@@ -5799,6 +5832,7 @@ window.chatLivePreview = function () {
                                 throw streamErr;
                             }
                         }
+                        } finally { clearInterval(stallTimer); }
                     };
 
                     for (let hop = 0; hop < MAX_TOOL_HOPS; hop++) {
