@@ -297,7 +297,7 @@ export async function onRequestGet({ request, env }) {
       const arts = await ghJson(env, '/repos/' + repo + '/actions/runs/' + runId + '/artifacts');
       const art = (arts.artifacts || []).find(a => a.name === 'apk' && !a.expired);
       if (!art) return json({ error: 'APK tidak ditemukan atau sudah kedaluwarsa (retensi 7 hari). Bangun ulang APK-nya.' }, 404);
-      let res = await gh(env, '/repos/' + repo + '/actions/artifacts/' + art.id + '/zip', { headers: { Authorization: 'Bearer ' + (await getToken(env)) } });
+      let res = await gh(env, '/repos/' + repo + '/actions/artifacts/' + art.id + '/zip', { redirect: 'manual' });
       const loc = res.headers.get('location');
       if (res.status >= 300 && res.status < 400 && loc) res = await fetch(loc);
       if (!res.ok) return json({ error: 'Gagal mengunduh arsip (' + res.status + ')' }, 502);
@@ -359,7 +359,7 @@ export async function onRequestGet({ request, env }) {
           const arts = await ghJson(env, '/repos/' + repo + '/actions/runs/' + run.id + '/artifacts');
           const art = (arts.artifacts || []).find(a => a.name === 'keystore' && !a.expired);
           if (art) {
-            let res = await gh(env, '/repos/' + repo + '/actions/artifacts/' + art.id + '/zip');
+            let res = await gh(env, '/repos/' + repo + '/actions/artifacts/' + art.id + '/zip', { redirect: 'manual' });
             const loc = res.headers.get('location');
             if (res.status >= 300 && res.status < 400 && loc) res = await fetch(loc);
             if (res.ok) {
@@ -368,19 +368,10 @@ export async function onRequestGet({ request, env }) {
               for (let i = 0; i < ks.length; i += 4096) bin += String.fromCharCode.apply(null, ks.subarray(i, i + 4096));
               await db.prepare(`INSERT OR REPLACE INTO ${T.projectSettings} (project_id, key, value) VALUES (?, 'apk_keystore', ?)`)
                 .bind(projectId, JSON.stringify({ ks_b64: btoa(bin), run_id: run.id, created_at: new Date().toISOString() })).run();
-            } else {
-              await db.prepare(`INSERT OR REPLACE INTO ${T.projectSettings} (project_id, key, value) VALUES (?, 'apk_ks_dbg', ?)`)
-                .bind(projectId, 'dl-fail ' + res.status).run();
             }
-          } else {
-            await db.prepare(`INSERT OR REPLACE INTO ${T.projectSettings} (project_id, key, value) VALUES (?, 'apk_ks_dbg', ?)`)
-              .bind(projectId, 'art-not-found ' + JSON.stringify((arts.artifacts || []).map(a => a.name))).run();
           }
         }
-      } catch (e) {
-        try { await db.prepare(`INSERT OR REPLACE INTO ${T.projectSettings} (project_id, key, value) VALUES (?, 'apk_ks_dbg', ?)`)
-          .bind(projectId, 'err ' + (e && e.message ? e.message : String(e))).run(); } catch (e2) {}
-      }
+      } catch (e) {}
     }
     return json(state);
   } catch (err) {
