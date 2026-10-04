@@ -114,7 +114,9 @@ async function getOpenRouterKeys(env) {
 // ===== Provider utama: GLM 5.3 Flash via OpenRouter =====
 // (GLM utama — Nemotron hanya cadangan; Nemotron reasoning model sering bocorkan
 // proses berpikir internal ke jawaban final pada jalur free OpenRouter.)
-const OPENROUTER_MODELS = ['z-ai/glm-5.3-flash', 'nvidia/nemotron-3-ultra-550b-a55b:free', 'nvidia/nemotron-3-ultra-550b-a55b'];
+// UTAMA: GPT-6 Luna Pro (4 Okt 2026, arahan pemilik). GLM 5.3 Flash turun jadi
+// cadangan pertama, Nemotron cadangan berikutnya — rantai fallback tetap utuh.
+const OPENROUTER_MODELS = ['openai/gpt-6-luna-pro', 'z-ai/glm-5.3-flash', 'nvidia/nemotron-3-ultra-550b-a55b'];
 const oaiToolsOf = (gDecls) => (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
 
 // Pembatas waktu per-panggilan provider — fetch/binding AI TIDAK punya timeout
@@ -1226,7 +1228,9 @@ export async function onRequestPost({ request, env, waitUntil }) {
     for (let sHop = 0; sHop <= 4; sHop++) {
       r = null;
       if (orKeys.length && !hasImages) {
-        const o = await withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls), 25000, 'OpenRouter').catch(e => ({ error: e.message }));
+        // GPT-6 Luna Pro = reasoning model: lebih lambat dari flash, butuh napas
+        // lebih panjang per panggilan (90s) supaya jawaban panjang tidak terpotong timeout.
+        const o = await withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls), 90000, 'OpenRouter').catch(e => ({ error: e.message }));
         if (o) r = o;
       }
       if ((!r || r.error) && cvKeysEarly.length && !hasImages) {
