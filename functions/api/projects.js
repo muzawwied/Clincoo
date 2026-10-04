@@ -50,6 +50,11 @@ function rowToProject(r) {
 // 2) Sesi baru (< 15 menit sejak login) dianggap mencurigakan -> wajib OTP email.
 const DELETE_SESSION_FRESH_MIN = 15;
 
+// Setelah OTP hapus terverifikasi 1x, pengguna boleh hapus beberapa proyek berikutnya
+// tanpa OTP lagi (batas jumlah + jendela waktu, mana habis dulu).
+const DELETE_OTP_WAIVER_MINUTES = 60;
+const DELETE_OTP_WAIVER_DELETES = 3;
+
 // Sesi login masih "segar" (baru dibuat)? Pola pembajakan akun: login lalu langsung hapus proyek.
 async function sessionFresh(db, request) {
   try {
@@ -68,6 +73,27 @@ async function ensureDeleteOtpTable(db) {
     attempts INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now'))
   )`).run();
+}
+
+// OTP hapus sudah pernah terverifikasi dan masih berlaku? -> hapus berikutnya tanpa OTP.
+async function deleteOtpWaived(db, user) {
+  try {
+    const row = await db.prepare('SELECT code_hash, expires_at FROM project_delete_otps WHERE user_id = ?').bind(user.id).first();
+    if (!row || row.code_hash !== 'verified') return false;
+    const t = Date.parse(String(row.expires_at).replace(' ', 'T') + 'Z');
+    return !isNaN(t) && t > Date.now();
+  } catch (e) { return false; }
+}
+
+// Pakai 1 kuota hapus bebas-OTP; kalau kuota habis, state verified dibersihkan.
+async function consumeDeleteWaiver(db, user) {
+  try {
+    await db.prepare(`UPDATE project_delete_otps SET
+      attempts = MAX(0, attempts - 1),
+      code_hash = CASE WHEN attempts <= 1 THEN 'expired' ELSE 'verified' END,
+      expires_at = datetime('now', '+${DELETE_OTP_WAIVER_MINUTES} minutes')
+      WHERE user_id = ?`).bind(user.id).run();
+  } catch (e) {}
 }
 
 async function sha256hex(str) {
@@ -113,7 +139,10 @@ async function verifyDeleteOtp(db, user, otp) {
       await db.prepare('UPDATE project_delete_otps SET attempts = attempts + 1 WHERE user_id = ?').bind(user.id).run();
       return { ok: false, error: 'Kode OTP salah.' };
     }
-    await db.prepare('DELETE FROM project_delete_otps WHERE user_id = ?').bind(user.id).run();
+    // Sukses verifikasi: jangan hapus — tandai verified agar hapus proyek berikutnya
+    // (sampai batas DELETE_OTP_WAIVER_DELETES kali / jendela waktu) tidak minta OTP lagi.
+    await db.prepare('UPDATE project_delete_otps SET code_hash = ?, expires_at = datetime(?), attempts = ? WHERE user_id = ?')
+      .bind('verified', new Date(Date.now() + DELETE_OTP_WAIVER_MINUTES * 60 * 1000).toISOString().replace('Z', ''), DELETE_OTP_WAIVER_DELETES, user.id).run();
     return { ok: true };
   } catch (e) { return { ok: false, error: 'Verifikasi OTP gagal. Coba lagi.' }; }
 }
@@ -167,7 +196,7 @@ export async function onRequestGet({ request, env }) {
       const own = await db.prepare('SELECT id FROM user_projects WHERE id = ? AND user_id = ?').bind(checkId, user.id).first();
       if (!own) return j({ blocked: true, reason: 'Proyek tidak ditemukan atau bukan milik akun ini.' }, 404);
       const g = await payDeleteGuard(db, checkId);
-      const otpRequired = await sessionFresh(db, request);
+      const otpRequired = (await sessionFresh(db, request)) && !(await deleteOtpWaived(db, user));
       return j(g.ok ? { ok: true, otp_required: otpRequired } : { blocked: true, otp_required: otpRequired, reason: g.reason, available: g.available, pending_withdrawals: g.pending_withdrawals });
     }
     const res = await db.prepare(
@@ -218,8 +247,11 @@ export async function onRequestPost({ request, env }) {
       const g = await payDeleteGuard(db, String(body.id));
       if (!g.ok) return j({ success: false, guarded: true, error: g.reason, available: g.available, pending_withdrawals: g.pending_withdrawals }, 400);
       if (await sessionFresh(db, request)) {
-        const v = await verifyDeleteOtp(db, user, body.otp);
-        if (!v.ok) return j({ success: false, need_otp: true, error: v.error }, 400);
+        if (await deleteOtpWaived(db, user)) await consumeDeleteWaiver(db, user);
+        else {
+          const v = await verifyDeleteOtp(db, user, body.otp);
+          if (!v.ok) return j({ success: false, need_otp: true, error: v.error }, 400);
+        }
       }
       await db.prepare('DELETE FROM user_projects WHERE id = ? AND user_id = ?').bind(String(body.id), user.id).run();
       // Kaskade: hapus SEMUA data proyek (chat, file workspace, settings, env vars, log deploy).
@@ -236,8 +268,11 @@ export async function onRequestPost({ request, env }) {
       for (const r of (rows.results || [])) { const g = await payDeleteGuard(db, r.id); if (!g.ok) blocked++; }
       if (blocked > 0) return j({ success: false, guarded: true, error: blocked + ' proyek masih punya saldo ClincooPay / penarikan berjalan. Tarik/cairkan dulu sebelum menghapus.' }, 400);
       if (await sessionFresh(db, request)) {
-        const v = await verifyDeleteOtp(db, user, body.otp);
-        if (!v.ok) return j({ success: false, need_otp: true, error: v.error + ' Hapus satu per satu lewat halaman proyek untuk bisa memasukkan OTP.' }, 400);
+        if (await deleteOtpWaived(db, user)) await consumeDeleteWaiver(db, user);
+        else {
+          const v = await verifyDeleteOtp(db, user, body.otp);
+          if (!v.ok) return j({ success: false, need_otp: true, error: v.error + ' Hapus satu per satu lewat halaman proyek untuk bisa memasukkan OTP.' }, 400);
+        }
       }
       await db.prepare('DELETE FROM user_projects WHERE user_id = ?').bind(user.id).run();
       return j({ success: true });
