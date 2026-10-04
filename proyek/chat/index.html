@@ -6059,10 +6059,20 @@ window.chatLivePreview = function () {
                         // Semua jalur (streaming, non-stream, 3x fallback) gagal — sangat jarang
                         // (butuh SEMUA provider down bersamaan). Jangan tampilkan teks error
                         // teknis mentah: pesan ramah + tombol coba lagi, bukan bubble "rusak".
-                        streamingBuffer = "Lagi ada gangguan koneksi sebentar.";
-                        isFetchComplete = true;
+                        // FIX: kalau AI SUDAH menelurkan jawaban (terstream) sebelum error,
+                        // jawaban itu JANGAN dihilangkan — tetap tersimpan dan tampil; pesan
+                        // gangguan hanya menjadi catatan kecil di bawahnya.
+                        const errText = "Lagi ada gangguan koneksi sebentar.";
+                        const answeredSoFar = (deltaStreamed || '').trim() || (streamingBuffer || '').trim();
                         const msgIndex = messages.findIndex(m => m.id === aiMsgObj.id);
-                        if (msgIndex !== -1) { messages[msgIndex].isError = true; messages[msgIndex].retryable = true; }
+                        if (answeredSoFar) {
+                            streamingBuffer = answeredSoFar + "\n\n---\n\n> ⚠️ " + errText + " — jawaban di atas sudah tersimpan.";
+                            if (msgIndex !== -1) messages[msgIndex].isError = false;
+                        } else {
+                            streamingBuffer = errText;
+                            if (msgIndex !== -1) { messages[msgIndex].isError = true; messages[msgIndex].retryable = true; }
+                        }
+                        isFetchComplete = true;
                     }
                     }
                 }
@@ -6127,7 +6137,14 @@ window.chatLivePreview = function () {
             const upd = function (text, done, isError) {
                 const idx = messages.findIndex(function (m) { return m.id === aiMsg.id; });
                 if (idx !== -1) {
-                    messages[idx].text = text;
+                    // FIX: error di tengah jalan JANGAN menghapus progres/jawaban yang sudah
+                    // ditampilkan — tambahkan sebagai catatan lanjutan di bawah teks lama
+                    // (kecuali bubble memang belum ada isinya / sudah bubble error).
+                    if (isError && messages[idx].text && !messages[idx].isError) {
+                        messages[idx].text = messages[idx].text + '\n\n\u274C ' + text;
+                    } else {
+                        messages[idx].text = text;
+                    }
                     messages[idx].isProcessing = !done;
                     messages[idx].isError = !!isError;
                     if (done) messages[idx].isTyping = false;
