@@ -1211,10 +1211,15 @@ export async function onRequestPost({ request, env, waitUntil }) {
         // quota_exhausted di jalur stream = SEMUA model provider 429 (bukan kuota user):
         // kirim pesan bersih tanpa nama model — sama seperti jalur non-stream di bawah.
         const busy = !!r.quotaExhausted; // 429 semua model -> sibuk provider
+        // Error provider mentah (Inggris/teknis: 'OpenRouter x: 429...') jangan
+        // tampil apa adanya di bubble user — ganti teks ramah; detail asli di
+        // field 'detail' (diabaikan klien lama, berguna utk debugging).
+        const rawErr1 = r.error || '';
         const errText = busy
           ? 'Server AI sedang sibuk (limit provider). Coba lagi sebentar lagi.'
-          : r.error;
-        streamSend({ t: 'error', error: errText, provider_busy: busy ? true : undefined, quota_exhausted: busy ? undefined : !!r.quotaExhausted, context_overflow: !!r.contextOverflow });
+          : (rawErr1 === 'Tidak ada provider AI tersedia' ? rawErr1
+             : 'Maaf, AI sedang gangguan sebentar sehingga belum bisa menjawab. Coba kirim ulang pesanmu ya.');
+        streamSend({ t: 'error', error: errText, detail: (!busy && rawErr1 && rawErr1 !== errText) ? String(rawErr1).slice(0, 300) : undefined, provider_busy: busy ? true : undefined, quota_exhausted: busy ? undefined : !!r.quotaExhausted, context_overflow: !!r.contextOverflow });
       } else {
         const outS = {
           text: r.text || '',
@@ -1243,7 +1248,10 @@ export async function onRequestPost({ request, env, waitUntil }) {
       });
     }
     if (r.error) {
-      return new Response(JSON.stringify({ error: r.error }), {
+      // teks ramah utk user; detail teknis provider dipisah ke field 'detail'
+      const friendly = r.error === 'Tidak ada provider AI tersedia' ? r.error
+        : 'Maaf, AI sedang gangguan sebentar sehingga belum bisa menjawab. Coba kirim ulang pesanmu ya.';
+      return new Response(JSON.stringify({ error: friendly, detail: (r.error !== friendly) ? String(r.error).slice(0, 300) : undefined }), {
         status: 502, headers: { 'Content-Type': 'application/json', ...CORS }
       });
     }

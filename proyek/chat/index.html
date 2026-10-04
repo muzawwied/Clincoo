@@ -1489,7 +1489,7 @@ window.chatLivePreview = function () {
                 // baris dengan "**" pembuka di baris lain (lintas bullet/paragraf) ->
                 // markdown rusak parah. Dibatasi SATU BARIS ([^\n]*?) karena bold
                 // model AI selalu ditutup di baris yang sama.
-                seg = seg.replace(/\*\*[ \t]+([^\n]*?)[ \t]+\*\*/g, '**$1**');
+                seg = seg.replace(/(^|\s)\*\*[ \t]+([^\n*]*?)[ \t]+\*\*/g, '$1**$2**');  // hanya PEMBUKA ** (didahului spasi/awal): '** a **'->'**a**'; tidak melintasi bold lain ('**x** dan **y**' utuh)
                 // Model kadang menulis buka 3 bintang tapi tutup 2 (atau sebaliknya),
                 // mis. "***TCP Connect:**" -> normalkan ke "**TCP Connect:**" agar
                 // tidak muncul 1 bintang mentah tersisa saat dirender.
@@ -1505,7 +1505,7 @@ window.chatLivePreview = function () {
                     var next = full.charAt(offset + m.length);
                     return (next && !/[\s*.,!?;:)\]}"'\u2019\u201d-]/.test(next)) ? '**' + p1 + '** ' : m;
                 });
-                seg = seg.replace(/(^|[^*])\*([^*\n]+?)\*(?!\*)/g, function (m, pre, p1, offset, full) {
+                seg = seg.replace(/(^|[^\w*])\*([^*\n]+?)\*(?!\*)/g, function (m, pre, p1, offset, full) {
                     var next = full.charAt(offset + m.length);
                     return (next && !/[\s*.,!?;:)\]}"'\u2019\u201d-]/.test(next)) ? pre + '*' + p1 + '* ' : m;
                 });
