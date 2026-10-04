@@ -490,6 +490,64 @@ async function quotaCheck(env, user, cost = 1) {
   }
 }
 
+// ===== Harga kredit AI per model (4 Okt 2026, arahan pemilik) =====
+// Kredit dipotong SESUAI model yang benar-benar menjawab + panjang output-nya,
+// bukan flat 1 per pesan. Pre-flight quotaCheck memotong 1 sebagai reservasi;
+// setelah jawaban jadi, SELISIH harga sebenarnya dipotong di sini.
+const MODEL_PRICES = {
+  'gpt-6-luna-pro': 2   // model utama (reasoning, biaya provider lebih tinggi)
+  // semua model lain (glm-5.3-flash, gemini, clouvia, workers-ai, nemotron) = 1
+};
+const OUTPUT_FREE_CHARS = 4000; // karakter output pertama tanpa biaya tambahan
+const OUTPUT_STEP_CHARS = 8000;  // +1 kredit tiap kelipatan 8rb karakter output
+function aiCostOf(model, outputChars) {
+  const key = String(model || '').split(' ')[0].replace(':batch', '');
+  const base = MODEL_PRICES[key] || 1;
+  const extra = Math.floor(Math.max(0, (outputChars || 0) - OUTPUT_FREE_CHARS) / OUTPUT_STEP_CHARS);
+  return base + extra;
+}
+// Potong selisih kredit + catat pemakaian (model, output, biaya) ke tabel ai_usage.
+async function chargeAiUsage(env, user, model, outputChars) {
+  if (!user || !user.key) return;
+  try {
+    const cost = aiCostOf(model, outputChars);
+    const diff = cost - 1; // 1 sudah dipotong pre-flight oleh quotaCheck
+    const now = new Date();
+    const day = now.toISOString().slice(0, 10);
+    const month = now.toISOString().slice(0, 7);
+    await env.DB.prepare(
+      'CREATE TABLE IF NOT EXISTS ai_usage (user_key TEXT, ts INTEGER, model TEXT, out_chars INTEGER, cost INTEGER)'
+    ).run();
+    if (diff > 0) {
+      const limits = await aiLimits(env, user);
+      const rows = await env.DB.prepare(
+        'SELECT day, count FROM ai_quota WHERE user_key = ? AND day IN (?, ?)'
+      ).bind(user.key, day, month).all();
+      let monthCount = 0;
+      for (const rr of rows.results || []) if (rr.day === month) monthCount = rr.count;
+      if (monthCount + diff > limits.monthly) {
+        // kuota bulanan lewat -> selisihnya ditagih ke Paket Kredit AI;
+        // kalau paket juga kosong, tetap dicatat jujur di counter (tanpa blokir).
+        const pack = await consumePackCredit(env.DB, user.key, diff);
+        if (!pack.ok) {
+          await env.DB.batch([
+            env.DB.prepare('INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET count = count + ?').bind(user.key, day, diff, diff),
+            env.DB.prepare('INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET count = count + ?').bind(user.key, month, diff, diff)
+          ]);
+        }
+      } else {
+        await env.DB.batch([
+          env.DB.prepare('INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET count = count + ?').bind(user.key, day, diff, diff),
+          env.DB.prepare('INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET count = count + ?').bind(user.key, month, diff, diff)
+        ]);
+      }
+    }
+    await env.DB.prepare(
+      'INSERT INTO ai_usage (user_key, ts, model, out_chars, cost) VALUES (?, ?, ?, ?, ?)'
+    ).bind(user.key, Date.now(), String(model || '').slice(0, 64), Math.max(0, outputChars | 0), cost).run();
+  } catch (e) { /* gangguan pencatatan ≠ gangguin jawaban user */ }
+}
+
 function partsFromContent(content) {
   if (typeof content === 'string') return [{ text: content }];
   if (Array.isArray(content)) {
@@ -982,6 +1040,23 @@ export async function onRequestGet({ request, env }) {
         status: 401, headers: { 'Content-Type': 'application/json', ...CORS }
       });
     }
+    // ?usage=1 -> riwayat pemakaian AI (model apa, output berapa, kredit berapa)
+    if (new URL(request.url).searchParams.get('usage') === '1') {
+      const limit = Math.min(200, Math.max(1, Number(new URL(request.url).searchParams.get('limit')) || 50));
+      try {
+        await env.DB.prepare('CREATE TABLE IF NOT EXISTS ai_usage (user_key TEXT, ts INTEGER, model TEXT, out_chars INTEGER, cost INTEGER)').run();
+        const rows = await env.DB.prepare(
+          'SELECT ts, model, out_chars, cost FROM ai_usage WHERE user_key = ? ORDER BY ts DESC LIMIT ?'
+        ).bind(user.key, limit).all();
+        return new Response(JSON.stringify({ success: true, usage: rows.results || [] }), {
+          headers: { 'Content-Type': 'application/json', ...CORS }
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ success: true, usage: [] }), {
+          headers: { 'Content-Type': 'application/json', ...CORS }
+        });
+      }
+    }
     const limits = await aiLimits(env, user);
     const now = new Date();
     const day = now.toISOString().slice(0, 10);
@@ -1329,6 +1404,9 @@ export async function onRequestPost({ request, env, waitUntil }) {
           session_id: body.session_id || ('ls_' + Date.now())
         };
         if (r.tool_calls) outS.tool_calls = r.tool_calls;
+        // Kredit sesungguhnya: model yang menjawab + panjang output (teks + tool/code)
+        const outCharsS = (r.text || '').length + (r.tool_calls ? JSON.stringify(r.tool_calls).length : 0);
+        if (isFirstHop && !isGuest) await chargeAiUsage(env, user, r.model, outCharsS);
         streamSend({ t: 'final', ...outS });
       }
       streamWriter.close().catch(() => {}); // TANPA await: antrean writer sudah berurutan
@@ -1358,6 +1436,9 @@ export async function onRequestPost({ request, env, waitUntil }) {
       });
     }
 
+    // Kredit sesungguhnya: model yang menjawab + panjang output (teks + tool/code)
+    const outChars = (r.text || '').length + (r.tool_calls ? JSON.stringify(r.tool_calls).length : 0);
+    if (isFirstHop && !isGuest) await chargeAiUsage(env, user, r.model, outChars);
     const out = {
       text: r.text || '',
       model: r.model,
