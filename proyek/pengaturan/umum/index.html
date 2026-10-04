@@ -409,8 +409,9 @@
                 if (st.app_desc && document.activeElement !== descEl) { descEl.value = st.app_desc; savedVals.app_desc = st.app_desc; }
                 if (st.runtime) { savedVals.runtime = st.runtime; const l = document.getElementById('label-runtime'); if (l) l.textContent = st.runtime; }
                 if (st.maintenance) { savedVals.maintenance = st.maintenance; setMaintenance(st.maintenance === 'true'); }
-                applyLogo(st.app_logo || '', st.app_logo_data || '', false);
-                writeCache({ app_name: st.app_name || '', app_desc: st.app_desc || '', runtime: st.runtime || '', maintenance: st.maintenance || 'false', app_logo: st.app_logo || '', app_logo_data: st.app_logo_data || '' });
+                var _du = st.app_logo_data || (String(st.app_logo || '').indexOf('data:') === 0 ? st.app_logo : '');
+                applyLogo(st.app_logo || '', _du, false);
+                writeCache({ app_name: st.app_name || '', app_desc: st.app_desc || '', runtime: st.runtime || '', maintenance: st.maintenance || 'false', app_logo: st.app_logo || '', app_logo_data: _du || '' });
                 // pulihkan job APK dari server (tahan ganti perangkat)
                 if (!readApkJob() && st.apk_job) {
                     try {
@@ -789,6 +790,14 @@
         }
 
         loadUmum();
+
+        // AUTO-REFRESH: logo/nama yang dipasang AI atau dari perangkat lain langsung
+        // muncul tanpa reload. Aman: tidak berjalan saat tab tersembunyi.
+        setInterval(function () {
+            if (document.visibilityState !== 'visible') return;
+            if (_logoBusy) return;
+            loadUmum();
+        }, 8000);
 
         function toggleDropdown(element, targetId, optionsArray) {
             const wrapper = element.parentElement;

@@ -480,6 +480,13 @@
             if (ini) { el.classList.remove('hidden'); if (ph) ph.classList.add('hidden'); }
             else { el.classList.add('hidden'); if (ph) ph.classList.remove('hidden'); }
         }
+        // Logo bisa datang dari 2 konvensi: Dashboard lama (data-URL di app_logo)
+        // atau Pengaturan Umum/AI (path di app_logo + data-URL di app_logo_data).
+        function resolveLogoData(st) {
+            st = st || {};
+            if (st.app_logo_data) return st.app_logo_data;
+            return String(st.app_logo || '').indexOf('data:') === 0 ? st.app_logo : '';
+        }
         function setLogoPreview(dataUrl) {
             var img = document.getElementById('logo-preview');
             var rm = document.getElementById('logo-remove-btn');
@@ -577,6 +584,7 @@
         function onLogoRemove() {
             setLogoPreview(null);
             markPending('app_logo', '');
+            markPending('app_logo_data', '');
             setLogoStatus('Menghapus logo...');
             Promise.resolve(savePending()).then(function (ok) {
                 if (ok) setLogoStatus('');
@@ -643,7 +651,7 @@
             const c = readCache();
             if (c.app_name) document.getElementById('input-app-name').value = c.app_name;
             if (c.app_desc) document.getElementById('input-app-desc').value = c.app_desc;
-            if (c.app_logo) setLogoPreview(c.app_logo);
+            if (c.app_logo_data || c.app_logo) setLogoPreview(c.app_logo_data || (String(c.app_logo).indexOf('data:') === 0 ? c.app_logo : null));
             if (c.runtime) { const l = document.getElementById('label-runtime'); if (l) l.textContent = c.runtime; }
             if (c.maintenance === 'true') setMaintenance(true);
             updateNamePreview();
@@ -696,14 +704,23 @@
                     if (v) { descEl.value = v; savedVals.app_desc = v; }
                 }
                 if (st.maintenance) { savedVals.maintenance = st.maintenance; setMaintenance(st.maintenance === 'true'); }
-                if (pending.app_logo === undefined) setLogoPreview(st.app_logo || null);
-                writeCache({ app_name: st.app_name || '', app_desc: st.app_desc || '', app_logo: st.app_logo || '', maintenance: st.maintenance || 'false' });
+                if (pending.app_logo === undefined) setLogoPreview(resolveLogoData(st) || null);
+                writeCache({ app_name: st.app_name || '', app_desc: st.app_desc || '', app_logo: st.app_logo || '', app_logo_data: st.app_logo_data || '', maintenance: st.maintenance || 'false' });
             } catch (e) {}
             updateNamePreview();
             updateOgPreview();
             updateLogoInitials();
             showSkeletons(false);
         }
+
+        // AUTO-REFRESH: perubahan dari AI (logo dipasang via generate_image / set_project_info,
+        // nama dari perangkat lain) langsung muncul tanpa reload. Aman: skip saat user
+        // sedang mengedit/menyimpan (pending/_saving) atau tab tersembunyi.
+        setInterval(function () {
+            if (document.visibilityState !== 'visible') return;
+            if (_saving || Object.keys(pending).length) return;
+            loadUmum(true);
+        }, 8000);
 
         async function savePending() {
             if (_saving) return;
