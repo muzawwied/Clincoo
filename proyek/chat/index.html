@@ -6066,7 +6066,8 @@ window.chatLivePreview = function () {
                         const answeredSoFar = (deltaStreamed || '').trim() || (streamingBuffer || '').trim();
                         const msgIndex = messages.findIndex(m => m.id === aiMsgObj.id);
                         if (answeredSoFar) {
-                            streamingBuffer = answeredSoFar + "\n\n---\n\n> ⚠️ " + errText + " — jawaban di atas sudah tersimpan.";
+                            // jawaban sudah keluar: tampilkan apa adanya, TANPA catatan error apa pun
+                            streamingBuffer = answeredSoFar;
                             if (msgIndex !== -1) messages[msgIndex].isError = false;
                         } else {
                             streamingBuffer = errText;
