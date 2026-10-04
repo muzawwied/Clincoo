@@ -5639,9 +5639,12 @@ window.chatLivePreview = function () {
 
                         // === FASE BERTAHAP (multi "Menjalankan Tugas") ===
                         // Model boleh mengirim catatan update DI TENGAH pekerjaan bersama
-                        // tool_calls berikutnya. Catatan itu jadi pesan terpisah di chat,
-                        // kartu progres lama ditutup sebagai "sebagian selesai", dan
-                        // tool_calls berikutnya masuk kartu progres BARU — sampai final.
+                        // tool_calls berikutnya. FIX: dulu catatan ini membuka bubble/kartu
+                        // progres BARU (kartu lama ditutup "Partially done — continuing…",
+                        // kartu baru "Running…") — user melihat 2 kartu terpisah menumpuk utk
+                        // 1 tugas yang sama. Sekarang (kecuali kasus poll/apk yang memang WAJIB
+                        // berhenti menunggu user) catatan digabung ke bubble & kartu tool-calls
+                        // YANG SAMA — satu kartu "Running…" terus sampai tugas final.
                         const phaseNote = (resultJson.text || '').trim();
                         if (phaseNote) {
                             const pIdx = messages.findIndex(m => m.id === aiMsgObj.id);
@@ -5679,18 +5682,17 @@ window.chatLivePreview = function () {
                                 resultJson = { session_id: resultJson.session_id, text: '', tool_calls: [] };
                                 break; // keluar dari loop hop — berhenti total menunggu jawaban
                             }
+                            // GABUNG: tetap di bubble & kartu tool-calls yang sama (tidak
+                            // membuka bubble baru) — kartu progres tetap satu, terus "Running…"
+                            // sampai tugas final. Catatan ditambahkan sebagai teks di bubble itu.
                             if (pIdx !== -1) {
-                                messages[pIdx].text = parsedPhaseApk.clean;
-                                messages[pIdx].midPhase = true;   // chip "sebagian selesai", tanpa tombol aksi
-                                messages[pIdx].isProcessing = false;
-                                messages[pIdx].isTyping = false;
-                                messages[pIdx].statusText = '';
+                                const noteText = parsedPhaseApk.clean.trim();
+                                if (noteText) {
+                                    messages[pIdx].text = messages[pIdx].text ? (messages[pIdx].text + '\n\n' + noteText) : noteText;
+                                }
+                                renderMessages();
+                                scrollToBottom(false);
                             }
-                            aiMsgObj = { id: generateId(), role: 'ai', text: '', isProcessing: true, isTyping: false, processType: 'file', toolCalls: [] };
-                            messages.push(aiMsgObj);
-                            currentAiMessageId = aiMsgObj.id;
-                            renderMessages();
-                            scrollToBottom(false);
                         }
 
                         // Progress real-time: teks diambil dari aksi AI sendiri (nama tool + argumennya)
