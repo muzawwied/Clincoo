@@ -18,9 +18,9 @@ export async function onRequestOptions() {
 }
 
 const PLANS = {
-  'Starter': { price: 0, projectLimit: 3, bandwidthLimit: 10, collaboratorLimit: 1 },
-  'Pro': { price: 49000, projectLimit: 10, bandwidthLimit: 100, collaboratorLimit: 5 },
-  'Bisnis': { price: 129000, projectLimit: 50, bandwidthLimit: 500, collaboratorLimit: 20 }
+  'Starter': { price: 0, projectLimit: 3, bandwidthLimit: 10, collaboratorLimit: 1, deployLimit: 5 },
+  'Pro': { price: 49000, projectLimit: 10, bandwidthLimit: 100, collaboratorLimit: 5, deployLimit: 25 },
+  'Bisnis': { price: 129000, projectLimit: 50, bandwidthLimit: 500, collaboratorLimit: 20, deployLimit: null }
 };
 // storageLimit TIDAK lagi angka tetap di sini — diambil dari PLAN_WORKSPACE_LIMITS
 // (plan-helpers.js), SAMA PERSIS dengan kuota yang ditegakkan server di
@@ -74,26 +74,38 @@ export async function onRequestGet({ request, env }) {
       }
     }
 
+    // === Statistik pemakaian NYATA per user (bukan angka statis) ===
     let projectCount = 0;
     let storageUsedBytes = 0;
-    try {
-      const projResult = await db.prepare('SELECT COUNT(*) as c FROM projects').first();
-      projectCount = projResult?.c || 0;
-    } catch(e) {}
-    // Storage REAL: sum(size) dari tabel project_files tiap proyek milik user ini
-    // (sama persis dgn basis hitung kuota di POST /api/project-files).
-    try {
-      if (user) {
+    let deployUsed = 0;
+    let collaboratorCount = 0;
+    if (user) {
+      try {
+        // Proyek nyata milik user ini
         const myProjects = await db.prepare('SELECT id FROM user_projects WHERE user_id = ?').bind(user.id).all();
-        for (const row of (myProjects.results || [])) {
+        const ids = (myProjects.results || []).map(r => r.id);
+        projectCount = ids.length;
+        for (const pid of ids) {
+          // Storage REAL: SUM(size) tabel project_files (sama dgn basis kuota POST /api/project-files)
           try {
-            const t = tableFor('project_files', String(row.id));
+            const t = tableFor('project_files', String(pid));
             const r = await db.prepare(`SELECT COALESCE(SUM(size), 0) as s FROM ${t}`).first();
             storageUsedBytes += Number(r?.s) || 0;
-          } catch (e) { /* tabel proyek ini belum ada file -> lanjut */ }
+          } catch (e) {}
+          // Deploy bulan ini: log deploy sukses + preview
+          try {
+            const dl = tableFor('deploy_logs', String(pid));
+            const d = await db.prepare(`SELECT COUNT(*) AS c FROM ${dl} WHERE status IN ('success','preview') AND created_at >= datetime('now','start of month')`).first();
+            deployUsed += Number(d?.c) || 0;
+          } catch (e) {}
+          // Kolaborator terbanyak di satu proyek (limit paket = per proyek)
+          try {
+            const m2 = await db.prepare('SELECT COUNT(*) AS c FROM project_members WHERE project_id = ?').bind(pid).first();
+            if ((Number(m2?.c) || 0) > collaboratorCount) collaboratorCount = Number(m2?.c) || 0;
+          } catch (e) {}
         }
-      }
-    } catch (e) { /* biarkan 0 bila gagal, jangan ganggu respons */ }
+      } catch (e) { /* biarkan 0 bila gagal, jangan ganggu respons */ }
+    }
 
     return new Response(JSON.stringify({
       plan,
@@ -108,8 +120,11 @@ export async function onRequestGet({ request, env }) {
       collaboratorLimit: planInfo.collaboratorLimit,
       projectCount,
       storageUsed: Math.round((storageUsedBytes / (1024 ** 3)) * 100) / 100,
+      storageBytes: storageUsedBytes,
       bandwidthUsed: parseFloat(data.bandwidth_used || '0'),
-      collaboratorCount: parseInt(data.collaborator_count || '0')
+      collaboratorCount,
+      deployUsed,
+      deployLimit: planInfo.deployLimit === undefined ? null : planInfo.deployLimit
     }), {
       headers: { 'Content-Type': 'application/json', ...CORS }
     });

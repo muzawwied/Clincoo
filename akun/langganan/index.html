@@ -333,7 +333,8 @@
             setVal('plan-badge', plan);
         }
         setVal('stat-proyek', (d.projectCount || 0) + ' / ' + (d.projectLimit || 0));
-        setVal('stat-storage', fmtID(d.storageUsed || 0) + ' / ' + fmtID(d.storageLimit || 0) + ' GB');
+        const fmtSize = function(b){ if(!b) return '0 B'; if(b >= 1073741824) return (b/1073741824).toFixed(2) + ' GB'; if(b >= 1048576) return (b/1048576).toFixed(1) + ' MB'; if(b >= 1024) return Math.round(b/1024) + ' KB'; return b + ' B'; };
+        setVal('stat-storage', fmtSize(d.storageBytes || 0) + ' / ' + fmtID(d.storageLimit || 0) + ' GB');
         setVal('stat-bandwidth', (d.deployUsed || 0) + ' / ' + (d.deployLimit === null || d.deployLimit === undefined ? 'Tak terbatas' : (d.deployLimit || 0)));
         setVal('stat-kolaborator', (d.collaboratorCount || 0) + ' / ' + (d.collaboratorLimit || 0));
 
