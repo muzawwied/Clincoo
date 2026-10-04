@@ -323,13 +323,23 @@ async function ensurePublicDomain(creds, pagesName) {
   } catch (e) {
     if (e && e.code !== 8000013) return null; // 8000013 = sudah terpasang -> lanjut cek DNS
   }
-  if (await ensurePublicDomainDns(creds, domain, pagesName)) return domain;
-  // DNS tidak bisa dikelola dari sini: pakai domain cuma kalau sudah aktif
-  // (record pernah dibuat manual / zona di akun yang sama dan sudah validate).
-  try {
-    const info = await cfFetch('/accounts/' + creds.accountId + '/pages/projects/' + pagesName + '/domains/' + domain, creds.apiKey);
-    if (info && info.status === 'active') return domain;
-  } catch (e) {}
+  const dnsOk = await ensurePublicDomainDns(creds, domain, pagesName);
+  // Domain baru saja dipasang -> status Cloudflare masih "pending" beberapa
+  // detik. TANPA polling, deploy balik memberi URL pages.dev (AI lalu kasih
+  // link format lama ke user). Polling maks 5x3s (=15s) sampai status
+  // "active"; kalau DNS tidak bisa dikelola dari sini, cek statusnya saja.
+  for (let i = 0; i < 5; i++) {
+    if (i > 0) await new Promise(r => setTimeout(r, 3000));
+    try {
+      const info = await cfFetch('/accounts/' + creds.accountId + '/pages/projects/' + pagesName + '/domains/' + domain, creds.apiKey);
+      if (info && info.status === 'active') return domain;
+      if (info && info.status && info.status !== 'pending' && !dnsOk) break; // error domain (bukan sekadar pending) -> jangan nunggu
+    } catch (e) { if (!dnsOk) break; }
+    if (!dnsOk && i === 0) break; // tanpa akses DNS & belum aktif -> jangan menunda deploy
+  }
+  if (dnsOk) { // DNS benar tapi Cloudflare belum selesai validasi -> domain akan aktif sendiri
+    return domain;
+  }
   return null;
 }
 

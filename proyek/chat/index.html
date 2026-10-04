@@ -4684,7 +4684,8 @@ window.chatLivePreview = function () {
             // 4b) target workspace: satu load + satu save (batch)
             const data = wsLoad();
             for (const f of files) {
-                const info = wsParentInfo(folder + '/' + f.path);
+                const fullPath = folder ? (folder + '/' + f.path) : f.path;
+                const info = wsParentInfo(fullPath);
                 if (!info || info.name.includes('/')) { skippedFetch++; continue; }
                 wsEnsureFolderChain(data, info.folderKey);
                 if (!Array.isArray(data[info.folderKey])) data[info.folderKey] = [];
@@ -4744,9 +4745,11 @@ window.chatLivePreview = function () {
             const target = String((args && args.target) || 'workspace');
             let folder = String((args && args.folder) || '').replace(/^\/+|\/$|^\.\.+\/+/g, '').replace(/\/+$/g, '');
             if (!folder) {
-                // folder netral — BUKAN nama domain situs (dulu: clone resend.com
-                // bikin subfolder "resend.com/" yang gak diminta user)
-                folder = 'site';
+                // default: LANGSUNG KE ROOT workspace (index.html jadi halaman
+                // utama situs) — tanpa subfolder pembungkus apa pun.
+                // (dulu: clone resend.com bikin subfolder "resend.com/", lalu
+                // pernah disalahkan lagi ke 'site/' — user minta tanpa subfolder)
+                folder = '';
             }
 
             // 1) unduh HTML utama lewat proxy server (bypass CORS)
@@ -4837,7 +4840,7 @@ window.chatLivePreview = function () {
                 if (!tk) return { success: false, error: 'AI Storage memerlukan login Clincoo (gratis).' };
                 let saved = 0, updated = 0;
                 for (let i = 0; i < files.length; i += 60) {
-                    const chunk = files.slice(i, i + 60).map(function (f) { return { path: folder + '/' + f.path, content: f.content }; });
+                    const chunk = files.slice(i, i + 60).map(function (f) { return { path: (folder ? folder + '/' : '') + f.path, content: f.content }; });
                     const res = await fetch(TOOL_API_BASE + '/api/ai-storage', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tk },
@@ -4852,7 +4855,8 @@ window.chatLivePreview = function () {
             }
             const data = wsLoad();
             for (const f of files) {
-                const info = wsParentInfo(folder + '/' + f.path);
+                const fullPath = folder ? (folder + '/' + f.path) : f.path;
+                const info = wsParentInfo(fullPath);
                 if (!info || info.name.includes('/')) { skippedFetch++; continue; }
                 wsEnsureFolderChain(data, info.folderKey);
                 if (!Array.isArray(data[info.folderKey])) data[info.folderKey] = [];
@@ -4867,7 +4871,7 @@ window.chatLivePreview = function () {
             }
             const err = wsSave(data);
             if (err) return err;
-            return { success: true, url: rawUrl, target: 'workspace', folder: folder, files: files.length, assets_found: assetsFound, skipped_fetch: skippedFetch, truncated: truncated, note: 'Situs tersimpan di folder workspace "' + folder + '/" (index.html + ' + savedCount + ' asset) — bisa langsung diedit atau di-deploy. Gambar/font tetap dimuat dari server asal.' };
+            return { success: true, url: rawUrl, target: 'workspace', folder: folder, files: files.length, assets_found: assetsFound, skipped_fetch: skippedFetch, truncated: truncated, note: (folder ? 'Situs tersimpan di folder workspace "' + folder + '/" (index.html + ' + savedCount + ' asset)' : 'Situs tersimpan langsung di ROOT workspace: index.html + ' + savedCount + ' asset di assets/') + ' — bisa langsung diedit atau di-deploy. Gambar/font tetap dimuat dari server asal.' };
         }
 
         // ===== TOOL push_to_github: kirim semua file workspace ke repo GitHub =====
