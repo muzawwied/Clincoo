@@ -395,6 +395,32 @@
   }
   document.addEventListener('DOMContentLoaded', function () {
     var pid = new URLSearchParams(location.search).get('id') || localStorage.getItem('clincoo_current_project_id') || '';
+
+    // Sinkronkan daftar proyek dari server (sumber kebenaran) — cache lokal bisa basi
+    // (akun/sesi lain, proyek pindah tangan), dulu memicu pesan "bukan milik akun ini".
+    (function syncProjectsFromServer() {
+      try {
+        var tk = ''; try { tk = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
+        fetch(apiRoot() + '/projects', { headers: tk ? { Authorization: 'Bearer ' + tk } : {} })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) {
+            if (!d || !Array.isArray(d.projects) || !d.projects.length) return;
+            var onServer = {};
+            d.projects.forEach(function (x) { onServer[x.id] = true; });
+            var list = [];
+            try { list = JSON.parse(localStorage.getItem('clincoo_projects') || '[]') || []; } catch (e) { list = []; }
+            list = list.filter(function (x) { return onServer[x.id]; }); // buang proyek basi
+            d.projects.forEach(function (x) {
+              var i = -1;
+              for (var k = 0; k < list.length; k++) if (list[k].id === x.id) { i = k; break; }
+              if (i >= 0) list[i] = Object.assign({}, list[i], x);
+              else list.push(x);
+            });
+            localStorage.setItem('clincoo_projects', JSON.stringify(list));
+          })
+          .catch(function () {});
+      } catch (e) {}
+    })();
     var modal = document.getElementById('confirm-modal');
     modal.addEventListener('click', function (e) { if (e.target === modal && !busy) closeConfirm(); });
     document.getElementById('confirm-cancel').addEventListener('click', function () { if (!busy) closeConfirm(); });
