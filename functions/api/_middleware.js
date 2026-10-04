@@ -198,8 +198,16 @@ export async function onRequest({ request, env, next }) {
     // (mp3 dll) dikirim klien sebagai SATU body JSON berisi content_b64, jadi butuh
     // cap lebih besar. HANYA untuk request yang LOGIN: token divalidasi dulu;
     // guest / token tak valid tetap kena cap 1.5MB.
+    // Pengecualian kedua: /api/chat (login) — sesi AI dengan banyak tool-use panjang
+    // (baca halaman web, buat/baca beberapa backend function sekaligus, hasil tool
+    // bertumpuk) bisa membuat body (system prompt + riwayat + tool_results) tembus
+    // 1.5MB meski bukan upload file. Tanpa ini, sesi panjang kena 413 di SEMUA jalur
+    // termasuk fallback retry-nya (body sama besar) -> user cuma lihat "ada gangguan
+    // koneksi" padahal penyebabnya payload kelewat besar, bukan koneksi.
     let bigUpload = false;
-    if (cl <= 50 * 1024 * 1024 && path === '/api/project-files' && mutates) {
+    const isBigPath = path === '/api/project-files' || /^\/api\/chat(\/|$)/.test(path);
+    const capFor = path === '/api/project-files' ? 50 * 1024 * 1024 : 15 * 1024 * 1024;
+    if (cl <= capFor && isBigPath && mutates) {
       try {
         if (env.DB) {
           await initAuthTables(env.DB);
