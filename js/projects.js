@@ -138,6 +138,13 @@ function projCardDesc(proj) {
     const st = umumCacheRead(proj && proj.id);
     return stripMd((st && st.app_desc) || (proj && proj.prompt) || '');
 }
+function projCardLogo(proj) {
+    const st = umumCacheRead(proj && proj.id);
+    return (st && st.app_logo) || '';
+}
+function _safeLogoUrl(v) {
+    return (typeof v === 'string' && /^(data:image\/|https?:\/\/|\/)/.test(v)) ? v : '';
+}
 
 function getProjects() {
     let projects = [];
@@ -161,12 +168,14 @@ function renderProjects() {
     function createHomeCard(proj) {
         const title = esc(projCardTitle(proj));
         const desc = esc(projCardDesc(proj));
+        const logo = _safeLogoUrl(projCardLogo(proj));
+        const avatarHtml = logo ? '<img src="' + esc(logo) + '" class="w-6 h-6 rounded-full object-cover shrink-0 border border-gray-100" alt="Logo">' : '';
         return '<div class="w-56 sm:w-60 flex-shrink-0 border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group" onclick="openProject(\'' + esc(proj.id) + '\')">' +
             '<div class="w-full h-28 bg-[#F9FAFB] rounded-xl mb-3.5 p-3 flex flex-col justify-between border border-gray-100 group-hover:border-gray-200 transition-colors">' +
             '<div class="flex items-center justify-between"><div class="w-12 h-2 bg-gray-200 rounded-full"></div><div class="w-3 h-3 rounded-full bg-black/10"></div></div>' +
             '<div class="grid grid-cols-2 gap-2 my-auto"><div class="h-10 rounded-lg border border-gray-100 p-1.5 flex flex-col justify-between"><div class="w-6 h-1.5 bg-gray-200 rounded"></div><div class="w-10 h-2 bg-gray-900 rounded"></div></div><div class="h-10 rounded-lg border border-gray-100 p-1.5 flex flex-col justify-between"><div class="w-6 h-1.5 bg-gray-200 rounded"></div><div class="w-8 h-2 bg-gray-400 rounded"></div></div></div>' +
             '<div class="w-full h-1.5 bg-gray-200 rounded-full"></div></div>' +
-            '<h3 class="font-semibold text-gray-900 text-sm group-hover:text-black truncate">' + title + '</h3>' +
+            '<div class="flex items-center gap-2">' + avatarHtml + '<h3 class="font-semibold text-gray-900 text-sm group-hover:text-black truncate">' + title + '</h3></div>' +
             '<p class="text-[11px] text-gray-500 mt-0.5 truncate">' + desc.substring(0, 40) + '</p>' +
             '<p class="text-xs text-gray-400 mt-1.5">' + timeAgo(proj.updatedAt) + '</p></div>';
     }
@@ -174,9 +183,13 @@ function renderProjects() {
     function createAllCard(proj) {
         const title = esc(projCardTitle(proj));
         const desc = esc(projCardDesc(proj));
+        const logo = _safeLogoUrl(projCardLogo(proj));
+        const thumbInner = logo
+            ? '<img src="' + esc(logo) + '" class="w-full h-full rounded-full object-cover" alt="Logo">'
+            : '<div class="w-full h-1.5 bg-gray-200 rounded-full"></div><div class="w-full h-1.5 bg-gray-200 rounded-full"></div><div class="w-full h-1.5 bg-gray-200 rounded-full"></div>';
+        const thumbCls = 'w-20 h-20 shrink-0 bg-[#F9FAFB] p-2.5 flex flex-col justify-between items-center border border-gray-100 group-hover:border-gray-200 transition-colors overflow-hidden ' + (logo ? 'rounded-full' : 'rounded-xl');
         return '<div data-proj-id="' + esc(proj.id) + '" class="relative w-full bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group flex items-center gap-4" onclick="openProject(\'' + esc(proj.id) + '\')">' +
-            '<div class="w-20 h-20 shrink-0 bg-[#F9FAFB] rounded-xl p-2.5 flex flex-col justify-between border border-gray-100 group-hover:border-gray-200 transition-colors">' +
-            '<div class="w-full h-1.5 bg-gray-200 rounded-full"></div><div class="w-full h-1.5 bg-gray-200 rounded-full"></div><div class="w-full h-1.5 bg-gray-200 rounded-full"></div></div>' +
+            '<div class="' + thumbCls + '">' + thumbInner + '</div>' +
             '<div class="flex-1 min-w-0"><h3 class="font-semibold text-gray-900 text-base group-hover:text-black truncate">' + title + '</h3>' +
             '<p class="text-[13px] text-gray-500 mt-0.5 truncate">' + desc.substring(0, 60) + '</p>' +
             '<p class="text-sm text-gray-400 mt-1">' + timeAgo(proj.updatedAt) + '</p></div>' +
@@ -429,5 +442,32 @@ function processPromptSubmission() {
 }
 
 // Sinkron dengan database per akun saat halaman dibuka
-document.addEventListener('DOMContentLoaded', function () { syncProjectsFromServer(); _flushPendingDeletes(); });
+document.addEventListener('DOMContentLoaded', function () { syncProjectsFromServer(); _flushPendingDeletes(); loadProjectLogos(); });
+// Tarik app_logo (Pengaturan Umum) tiap proyek dari server agar logo kartu selalu segar,
+// simpan ke cache lokal clinqoo_umum_<id> (merge, tidak menimpa key lain), lalu render ulang.
+function loadProjectLogos() {
+    try {
+        const base = PROJECTS_API.replace(/\/projects$/, '');
+        const tok = (function () { try { return localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) { return ''; } })();
+        const hdr = tok ? { Authorization: 'Bearer ' + tok } : {};
+        getProjects().forEach(function (proj) {
+            fetch(base + '/project-settings?project_id=' + encodeURIComponent(proj.id), { headers: hdr })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (d) {
+                    if (!d) return;
+                    if (d.app_name || d.app_desc || d.app_logo) {
+                        try {
+                            const key = 'clinqoo_umum_' + (proj.id || 'default');
+                            let st = {}; try { st = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) {}
+                            st.app_name = d.app_name || st.app_name || '';
+                            st.app_desc = d.app_desc || st.app_desc || '';
+                            st.app_logo = d.app_logo || st.app_logo || '';
+                            localStorage.setItem(key, JSON.stringify(st));
+                        } catch (e) {}
+                        renderProjects();
+                    }
+                }).catch(function () {});
+        });
+    } catch (e) {}
+}
 if (document.readyState !== 'loading') { syncProjectsFromServer(); _flushPendingDeletes(); }
