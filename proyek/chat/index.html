@@ -2911,7 +2911,7 @@ window.chatLivePreview = function () {
             const summaryText = running
                 ? (msg.statusText || 'Running…')
                 : (reportFailed
-                    ? 'Task complete — report failed to send, ketuk "Coba lagi"'
+                    ? 'Task complete — laporan gagal terkirim, ketuk "Lanjutkan" di bawah'
                     : (msg.midPhase
                         ? 'Partially done — continuing…'
                         : (errCount > 0
@@ -6147,8 +6147,8 @@ window.chatLivePreview = function () {
                                 }
                             } catch (e3) { console.warn('Retry /api/chat non-stream gagal:', e3 && e3.message); }
                         }
-                        for (let fbTry = 0; !fbOk && fbTry < 3 && isGenerating; fbTry++) {
-                        if (fbTry > 0) await new Promise(r => setTimeout(r, fbTry === 1 ? 3000 : 6000));
+                        for (let fbTry = 0; !fbOk && fbTry < 4 && isGenerating; fbTry++) {
+                        if (fbTry > 0) await new Promise(r => setTimeout(r, fbTry === 1 ? 3000 : (fbTry === 2 ? 6000 : 9000)));
                         try {
                             const fbRes = await fetch(TOOL_API_BASE + '/api/ai', {
                                 method: 'POST',
@@ -6188,7 +6188,13 @@ window.chatLivePreview = function () {
                             if (msgIndex !== -1) messages[msgIndex].isError = false;
                         } else {
                             streamingBuffer = errText;
-                            if (msgIndex !== -1) { messages[msgIndex].isError = true; messages[msgIndex].retryable = true; }
+                            // FIX: kartu status sebelumnya menulis "ketuk 'Coba lagi'" padahal
+                            // tombol kartu itu cuma toggle buka/tutup — tidak pernah retry apa pun,
+                            // bikin user kesal (mengetuk, tidak terjadi apa-apa). Sekarang pasang
+                            // checkpoint=true supaya chip "Lanjutkan" yang NYATA berfungsi (sama
+                            // seperti jalur checkpoint kuota/context-overflow) muncul di bawah
+                            // bubble ini — satu ketuk benar-benar mengirim "lanjut" & meneruskan.
+                            if (msgIndex !== -1) { messages[msgIndex].isError = true; messages[msgIndex].retryable = true; messages[msgIndex].checkpoint = true; }
                         }
                         isFetchComplete = true;
                     }
