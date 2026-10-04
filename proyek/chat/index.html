@@ -2690,6 +2690,7 @@ window.chatLivePreview = function () {
         function renderApkSetupCard(msg) {
             if (!msg.apkSetup) return '';
             const st = apkSetupStateOf(msg);
+            if (!st.planKnown) apkResolvePlan(msg);
             if (st.sent) return '';
             const iconHtml = st.iconB64
                 ? '<img src="data:image/png;base64,' + st.iconB64 + '" alt="logo">'
@@ -2735,7 +2736,6 @@ window.chatLivePreview = function () {
                     </div>
                 </div>`;
         }
-        if (!st.planKnown) apkResolvePlan(msg);
 
         function renderApkBuildCard(msg) {
             if (!msg.apkBuild) return '';
