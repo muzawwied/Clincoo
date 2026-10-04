@@ -296,9 +296,12 @@ async function getClouviaKeys(env) {
 // Dipakai saat OpenRouter gagal (limit/kredit) supaya chat tidak langsung jatuh
 // ke GLM 4.7 Flash (Workers AI) yang kualitas formatnya jauh lebih rendah.
 const CLOUVIA_MODELS = ['glm5.3-flash', 'coding-high-flash', 'free-model'];
-// GPT-6.1 Sol via Clouvia (4 Okt 2026): jalur UTAMA Sol Pro — gratis, tanpa kartu,
-// system prompt diterima penuh (terverifikasi: sol mematuhi role system, beda
-// dari glm5.3-flash yang gateway-nya membuang system) & tool-calling berfungsi.
+// 'gpt-6.1-sol' via Clouvia (4 Okt 2026): jalur utama user login — gratis, tanpa
+// kartu. CATATAN JUJUR: backend model ini ternyata GLM (Z.ai) yang direlabel Clouvia,
+// BUKAN Sol Pro asli (yang hanya ada di OpenRouter). Tetap dipakai karena: (1) mematuhi
+// role system (glm5.3-flash tidak — gateway membuangnya) sehingga system prompt utuh
+// sampai ke model, (2) tool-calling berfungsi, (3) gratis. Begitu OpenRouter di-top-up,
+// urutkan Sol Pro asli di depan rute ini (OPENROUTER_MODELS).
 const CLOUVIA_SOL_MODELS = ['gpt-6.1-sol'];
 // 'free-model' = lapis terakhir Clouvia: tidak menguras saldo berbayar (pakai
 // kuota free_balance), jadi chat tetap hidup walau 50M+ token balance habis.
@@ -609,8 +612,8 @@ async function quotaCheck(env, user, cost = 1) {
 const MODEL_PRICES = {
   'gpt-6-luna-pro': 2,      // cadangan pertama (reasoning, biaya provider lebih tinggi)
   'gpt-6.1-sol-pro': 3,     // model utama sejak 4 Okt 2026: biaya provider premium
-  'gpt-6.1-sol': 3          // Sol Pro jalur Clouvia (gratis di provider) — 3 kredit
-                            // setara Sol Pro supaya kuota AI adil antar jalur
+  'gpt-6.1-sol': 1          // jalur Clouvia: backend sebenarnya GLM (direlabel) —
+                            // dipatok 1 kredit jujur, bukan harga Sol Pro asli
                             // ditanggung margin platform; 3 kredit = tetap terjangkau
                             // user gratis (25/hari ~ 8 jawaban) sambil menutup biaya
   // semua model lain (glm-5.3-flash, gemini, clouvia, workers-ai, nemotron) = 1
