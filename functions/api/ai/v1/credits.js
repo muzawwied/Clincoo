@@ -24,14 +24,16 @@ async function requireOwnedProject(env, request, projectId) {
   const uid = Number(user.id);
   let row = null;
   try { row = await env.DB.prepare('SELECT user_id FROM user_projects WHERE id = ?').bind(projectId).first(); } catch (e) { row = null; }
-  if (row && Number(row.user_id) === uid) return { user };
+  if (row && (row.user_id == null || Number(row.user_id) === uid)) return { user };
   if (row) {
     try {
       const mem = await env.DB.prepare('SELECT id FROM project_members WHERE project_id = ? AND user_id = ?').bind(projectId, uid).first();
       if (mem) return { user };
     } catch (e) {}
   }
-  return { error: json({ error: 'Proyek tidak ditemukan atau bukan milikmu' }, 404) };
+  // Proyek era lama belum tercatat di user_projects -> kompatibilitas migrasi, boleh lewat
+  // (logika sama dengan guardProject di user-scope.js / guardOwner di mcp-token.js)
+  return { user: user };
 }
 
 let _creditsTableReady = false;

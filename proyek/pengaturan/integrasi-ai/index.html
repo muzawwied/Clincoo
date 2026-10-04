@@ -849,6 +849,7 @@
   async function _aiSecretFetchOnce() {
     var res = await fetch(AI_API_BASE + '/ai/v1/secret?project_id=' + encodeURIComponent(_aiPid()), { headers: _aiHdrs(false) });
     if (res.status === 401) { var e401 = new Error('HTTP 401'); e401.isAuth = true; throw e401; }
+    if (res.status === 404) { var e404 = new Error('HTTP 404'); e404.isProject = true; throw e404; }
     if (!res.ok) throw new Error('HTTP ' + res.status);
     return res.json();
   }
@@ -1206,6 +1207,17 @@
           if (_active) _active.classList.add('hidden');
           if (_errText) _errText.textContent = 'Sesi login sudah berakhir — silakan login ulang untuk melihat secret.';
           if (_reloginBtn) { try { _reloginBtn.href = '/auth/?next=' + encodeURIComponent(location.href); } catch (e2) {} _reloginBtn.style.display = ''; }
+          if (_err) _err.style.display = '';
+          renderAiCurl();
+          return;
+        }
+        if (e && e.isProject) {
+          // proyek bukan milik akun ini / tidak ada — bukan masalah koneksi, retry sia-sia
+          if (_loading) _loading.style.display = 'none';
+          if (_empty) _empty.style.display = 'none';
+          if (_active) _active.classList.add('hidden');
+          if (_errText) _errText.textContent = 'Proyek tidak ditemukan atau bukan milik akun ini.';
+          if (_reloginBtn) _reloginBtn.style.display = 'none';
           if (_err) _err.style.display = '';
           renderAiCurl();
           return;
