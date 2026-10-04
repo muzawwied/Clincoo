@@ -993,7 +993,8 @@ export async function onRequestPost({ request, env }) {
     if (!ok) {
       return json({ success: false, message: (pay && (pay.message || pay.msg)) || 'Gagal membuat QRIS ClincooPay.' }, 502);
     }
-    const origin = new URL(request.url).origin;
+    // alamat checkout resmi — JANGAN ikut origin request (mencegah bocor host backend clincoo-be2.pages.dev)
+    const origin = 'https://app.clincoo.buzz';
     return json({
       success: true,
       order_id: orderId,
