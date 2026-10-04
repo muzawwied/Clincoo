@@ -194,7 +194,7 @@ async function tryExtModel(env, publicId, internal, messages) {
   if (!keys.length) return { error: `Model ${publicId} sedang tidak tersedia` };
   const sys = messages.filter(m => m.role === 'system').map(m => m.content).join('\n');
   const chatMsgs = messages.filter(m => m.role !== 'system').map(m => ({ role: m.role, content: m.content }));
-  const payload = { model: internal, messages: sys ? [{ role: 'system', content: sys }, ...chatMsgs] : chatMsgs, max_tokens: 4096 };
+  const payload = { model: internal, messages: sys ? [{ role: 'system', content: sys }, ...chatMsgs] : chatMsgs, max_tokens: 8192 };
   for (const key of keys) {
     try {
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
