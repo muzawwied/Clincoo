@@ -999,7 +999,9 @@ export async function onRequestPost({ request, env, waitUntil }) {
         status: 413, headers: { 'Content-Type': 'application/json', ...CORS }
       });
     }
-    const body = JSON.parse(raw);
+    // Body tidak valid / kosong jangan dianggap error server — cukup dianggap pesan kosong
+    let body = {};
+    try { body = JSON.parse(raw) || {}; } catch (e) { body = {}; }
 
     // Aksi manajemen sesi — stateless (riwayat di localStorage klien), cukup ACK
     const action = body.action || 'send';
@@ -1035,10 +1037,14 @@ export async function onRequestPost({ request, env, waitUntil }) {
         : (typeof body.message === 'string' ? body.message : '');
       if (fallback) messages.push({ role: 'user', content: fallback });
     }
+    // Pesan kosong TIDAK lagi dibalas HTTP 400 (menampilkan error di UI) —
+    // balas 200 dengan teks ramah supaya percakapan tetap berjalan normal.
     if (messages.length === 0) {
-      return new Response(JSON.stringify({ error: 'Pesan kosong' }), {
-        status: 400, headers: { 'Content-Type': 'application/json', ...CORS }
-      });
+      return new Response(JSON.stringify({
+        text: 'Sepertinya pesannya belum ikut terkirim. Coba tulis ulang pertanyaanmu ya — aku siap bantu. 😊',
+        model: 'assistant',
+        session_id: body.session_id || ('ls_' + Date.now())
+      }), { headers: { 'Content-Type': 'application/json', ...CORS } });
     }
 
     // --- Identitas user: AI tahu nama pemilik akun yang sedang chat ---
