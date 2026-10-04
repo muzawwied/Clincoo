@@ -1,9 +1,9 @@
-// Regenerasi snapshot basis pengetahuan Clincoo dari blog resmi (blog.clincoo.buzz).
+// Regenerasi snapshot basis pengetahuan Clincoo dari dokumentasi resmi (docs.clincoo.buzz).
 // Jalankan di lokal / CI (Node 18+):  node kb-sync.mjs
 // Hasil: functions/api/blog-kb-data.js — commit & deploy (jangan commit file ini ke situs).
 import { writeFileSync } from 'node:fs';
 
-const BLOG = 'https://blog.clincoo.buzz';
+const BLOG = 'https://docs.clincoo.buzz';
 
 async function fetchWithTimeout(url, ms = 10000) {
   const ctrl = new AbortController();
@@ -24,7 +24,7 @@ const loaderCode = await fetchWithTimeout(BLOG + '/loader.js');
 let files = [];
 const m = loaderCode.match(/var files\s*=\s*(\[[^\]]*\])/);
 if (m) files = JSON.parse(m[1]);
-for (const mm of loaderCode.matchAll(/['"]([^'"\s]*data_clinqoo\.js[^'"\s]*)['"]/g)) {
+for (const mm of loaderCode.matchAll(/['"]([^'"\s]*data_[a-z]+\.js[^'"\s]*)['"]/g)) {
   const f = mm[1].split('?')[0];
   if (!files.includes(f)) files.push(f);
 }
@@ -52,7 +52,7 @@ for (const [cid, cat] of Object.entries(merged)) {
   }
 }
 const now = new Date(Date.now() + 7 * 3600e3).toISOString().replace('T', ' ').slice(0, 16) + ' WIB';
-const js = '// SNAPSHOT basis pengetahuan Clincoo — digenerate otomatis dari blog.clincoo.buzz\n'
+const js = '// SNAPSHOT basis pengetahuan Clincoo — digenerate otomatis dari docs.clincoo.buzz\n'
   + `// Dibuat: ${now} | ${arts.length} artikel | JANGAN edit manual — regenerasi via tools/kb-sync.mjs.\n`
   + 'export const KB_ARTICLES = ' + JSON.stringify(arts) + ';\n';
 writeFileSync('functions/api/blog-kb-data.js', js);
