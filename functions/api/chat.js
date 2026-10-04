@@ -117,6 +117,8 @@ async function getOpenRouterKeys(env) {
 // UTAMA: GPT-6 Luna Pro (4 Okt 2026, arahan pemilik). GLM 5.3 Flash turun jadi
 // cadangan pertama, Nemotron cadangan berikutnya — rantai fallback tetap utuh.
 const OPENROUTER_MODELS = ['openai/gpt-6-luna-pro', 'z-ai/glm-5.3-flash', 'nvidia/nemotron-3-ultra-550b-a55b'];
+// Model premium Sol Pro: HANYA via body.premium=true (toggle user), tidak pernah fallback otomatis.
+const SOL_PRO_MODELS = ['openai/gpt-6.1-sol-pro'];
 const oaiToolsOf = (gDecls) => (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
 
 // Pembatas waktu per-panggilan provider — fetch/binding AI TIDAK punya timeout
@@ -129,14 +131,15 @@ function withTimeout(promise, ms, label) {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
 }
 
-async function tryOpenRouterText(keys, messages, gDecls) {
+async function tryOpenRouterText(keys, messages, gDecls, models) {
   const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
   if (!keyList.length) return null;
+  const modelList = (Array.isArray(models) && models.length) ? models : OPENROUTER_MODELS;
   const { system, chatMsgs } = toOAIChat(messages);
   const oaiTools = oaiToolsOf(gDecls);
   let lastErr = null;
   for (const key of keyList) {
-  for (const model of OPENROUTER_MODELS) {
+  for (const model of modelList) {
     const baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
     let data = null;
     try {
@@ -495,15 +498,25 @@ async function quotaCheck(env, user, cost = 1) {
 // bukan flat 1 per pesan. Pre-flight quotaCheck memotong 1 sebagai reservasi;
 // setelah jawaban jadi, SELISIH harga sebenarnya dipotong di sini.
 const MODEL_PRICES = {
-  'gpt-6-luna-pro': 2   // model utama (reasoning, biaya provider lebih tinggi)
+  'gpt-6-luna-pro': 2,      // model utama (reasoning, biaya provider lebih tinggi)
+  'gpt-6.1-sol-pro': 20     // model premium: biaya provider ~20-40x Luna Pro -> harga
+                            // kredit harus menutup biaya supaya tidak merugikan
   // semua model lain (glm-5.3-flash, gemini, clouvia, workers-ai, nemotron) = 1
 };
 const OUTPUT_FREE_CHARS = 4000; // karakter output pertama tanpa biaya tambahan
 const OUTPUT_STEP_CHARS = 8000;  // +1 kredit tiap kelipatan 8rb karakter output
+// Model premium: komponen output dihitung lebih rapat (+1 kredit tiap 2rb karakter)
+// karena biaya output-nya di provider jauh lebih tinggi.
+const MODEL_OUTPUT_STEPS = {
+  'gpt-6.1-sol-pro': { free: 2000, step: 2000 }
+};
 function aiCostOf(model, outputChars) {
   const key = String(model || '').split(' ')[0].replace(':batch', '');
   const base = MODEL_PRICES[key] || 1;
-  const extra = Math.floor(Math.max(0, (outputChars || 0) - OUTPUT_FREE_CHARS) / OUTPUT_STEP_CHARS);
+  const cfg = MODEL_OUTPUT_STEPS[key] || {};
+  const free = cfg.free || OUTPUT_FREE_CHARS;
+  const step = cfg.step || OUTPUT_STEP_CHARS;
+  const extra = Math.floor(Math.max(0, (outputChars || 0) - free) / step);
   return base + extra;
 }
 // Potong selisih kredit + catat pemakaian (model, output, biaya) ke tabel ai_usage.
@@ -1307,9 +1320,18 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // jadi pengulangan hanya meminta ulang jawaban, bukan mengulang pekerjaan.
     const attemptCascade = async () => {
     let r = null;
+    // MODE SOL PRO (premium, 4 Okt 2026): dipilih user lewat toggle di chat.
+    // HANYA dipakai bila diminta eksplisit — TIDAK pernah masuk rantai fallback
+    // otomatis (model premium jauh lebih mahal di provider, tidak boleh terpakai diam-diam).
+    // Premium hanya untuk user LOGIN: mode tamu (gratis) tidak boleh membakar model mahal.
+    const wantSolPro = body.premium === true && !isGuest && !hasImages;
     for (let sHop = 0; sHop <= 4; sHop++) {
       r = null;
-      if (orKeys.length && !hasImages) {
+      if (wantSolPro && orKeys.length) {
+        const sp = await withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, SOL_PRO_MODELS), 90000, 'SolPro').catch(e => ({ error: e.message }));
+        if (sp) r = sp;
+      }
+      if ((!r || r.error) && orKeys.length && !hasImages) {
         // GPT-6 Luna Pro = reasoning model: lebih lambat dari flash, butuh napas
         // lebih panjang per panggilan (90s) supaya jawaban panjang tidak terpotong timeout.
         const o = await withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls), 90000, 'OpenRouter').catch(e => ({ error: e.message }));
