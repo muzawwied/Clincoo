@@ -3373,8 +3373,9 @@ window.chatLivePreview = function () {
         }
         let quotaLocked = false;
         // Balasan AI saat kuota habis: komposer TETAP terbuka (tanpa gembok) — user
-        // masih bisa kirim pesan, balasannya kartu kuota + link upgrade.
-        const QUOTA_REPLY = '⚡ Kuota pesanmu sudah habis.\n\nIngin tetap menggunakan Clincoo? Upgrade langgananmu di sini:\n\nhttps://app.clincoo.buzz/akun/langganan/upgrade/';
+        // masih bisa kirim pesan. Balasannya teks biasa gaya chat alami
+        // (bukan kartu/banner), link upgrade nempel di kalimatnya.
+        const QUOTA_REPLY = 'Kuota pesan AI-mu sudah habis. Kalau mau lanjut pakai Clincoo, upgrade langgananmu di sini: https://app.clincoo.buzz/akun/langganan/upgrade/';
         function quotaReplyText(qMsg) {
             if (qMsg && qMsg.indexOf('tanpa login') !== -1) return qMsg; // tamu: ajak masuk, bukan upgrade
             return QUOTA_REPLY;
