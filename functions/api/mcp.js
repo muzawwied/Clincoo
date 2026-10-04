@@ -4,7 +4,7 @@
 // Tools: list_items, read_file, write_file, delete_item, get_project_info,
 //        chat_ai, deploy_project, deploy_status, get_settings, update_settings, send_email,
 //        list_notifications, send_notification
-// Data file real-time diambil dari backend utama clincoo-be2 (/api/project-files).
+// Data file real-time diambil dari backend utama app.clincoo.buzz (/api/project-files, D1 produksi).
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -38,7 +38,7 @@ async function ensureTables(env) {
     `CREATE TABLE IF NOT EXISTS mcp_tokens (
       project_id TEXT PRIMARY KEY,
       token TEXT NOT NULL,
-      be2_token TEXT NOT NULL,
+      be2_token TEXT NOT NULL, -- kini menyimpan sesi user valid (lokal utama, era-be2 fallback); di-refresh otomatis mcp-token.js
       scopes TEXT DEFAULT NULL,
       created_at TEXT DEFAULT (datetime('now'))
     )`
@@ -92,28 +92,31 @@ function rpcError(id, code, message) {
   return json({ jsonrpc: '2.0', id, error: { code, message } });
 }
 
-// ---- Operasi workspace via be2 (read-modify-write seluruh set file) ----
+// ---- Operasi workspace via backend UTAMA app.clincoo.buzz (read-modify-write seluruh set file).
+// 2026-10-04: pindah dari BE2 lama ke SELF_API — file proyek hidup di D1 produksi lokal,
+// BE2 lama berisi salinan basi. Token dipakai = sesi user tersimpan (di-refresh otomatis
+// oleh mcp-token.js tiap halaman Server MCP dibuka). ----
 
-async function fetchFiles(be2Token, projectId) {
-  const r = await be2Json('/project-files?project_id=' + encodeURIComponent(projectId), be2Token);
+async function fetchFiles(userToken, projectId) {
+  const r = await selfJson('/project-files?project_id=' + encodeURIComponent(projectId), userToken);
   if (!r.ok) throw new Error(r.status === 401
     ? 'Sesi backend Clincoo kedaluwarsa. Buka halaman Server MCP Clincoo lalu klik "Buat ulang token" untuk memperbarui akses.'
     : 'Gagal mengambil file proyek dari backend (' + r.status + ')');
   return (r.data && r.data.files) || [];
 }
 
-async function pushFiles(be2Token, projectId, files) {
-  // sinkron total: hapus lalu POST set baru (pola yang sama dipakai frontend chat)
-  await fetch(BE2 + '/project-files?project_id=' + encodeURIComponent(projectId), {
-    method: 'DELETE', headers: { Authorization: 'Bearer ' + be2Token }
-  }).catch(() => {});
-  const post = () => be2Json('/project-files', be2Token, {
+async function pushFiles(userToken, projectId, files) {
+  // sinkron total via replace:true (POST tunggal, TANPA delete-all dulu):
+  // konten kosong pada file besar tidak menimpa isinya, path yatim otomatis dihapus.
+  // Pola delete-then-post LAMA dilarang — file besar (is_big) hidup di D1 dan
+  // kehapus duluan = data hilang.
+  const post = () => selfJson('/project-files', userToken, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ project_id: projectId, files })
+    body: JSON.stringify({ project_id: projectId, files, replace: true })
   });
   let r = await post();
-  if (!r.ok) r = await post(); // retry 1x: jangan biarkan workspace kosong cuma gara-gara 1x gagal
+  if (!r.ok) r = await post(); // retry 1x: jangan biarkan workspace rusak cuma gara-gara 1x gagal
   if (!r.ok) throw new Error(r.status === 401
     ? 'Sesi backend Clincoo kedaluwarsa. Buka halaman Server MCP Clincoo lalu klik "Buat ulang token" untuk memperbarui akses.'
     : 'Gagal menyimpan file proyek (' + r.status + ')');
@@ -304,6 +307,16 @@ async function callTool(name, args, ctx) {
       const f = files.find(x => String(x.path).toLowerCase() === path.toLowerCase());
       if (!f) throw new Error('File tidak ditemukan: ' + path);
       let content = String(f.content || '');
+      // File besar (is_big): isi hidup di D1 (content kosong di daftar) — ambil utuh
+      // via endpoint file-tunggal, lalu potong 120rb karakter utk respons tool.
+      if (!content && f.is_big) {
+        const r = await selfJson('/project-files?project_id=' + encodeURIComponent(projectId) + '&path=' + encodeURIComponent(path) + '&content=1', be2Token);
+        if (r.ok && r.data) {
+          if (r.data.content_b64) {
+            try { content = atob(r.data.content_b64); } catch (e) { content = ''; }
+          } else content = String(r.data.content || '');
+        }
+      }
       if (content.length > 120000) content = content.slice(0, 120000) + '\n...[dipotong]';
       return { content: [{ type: 'text', text: content || '(file kosong)' }] };
     }
@@ -335,7 +348,7 @@ async function callTool(name, args, ctx) {
     }
     case 'get_project_info': {
       const [st, files] = await Promise.all([
-        be2Json('/project-settings?project_id=' + encodeURIComponent(projectId), be2Token),
+        selfJson('/project-settings?project_id=' + encodeURIComponent(projectId), be2Token),
         fetchFiles(be2Token, projectId)
       ]);
       const settings = (st.ok && st.data && !st.data.error) ? (st.data.settings || {}) : {};

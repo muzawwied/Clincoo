@@ -21,6 +21,8 @@ const CORS = {
 
 const J = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', ...CORS } });
 
+import { getUserByToken } from './auth/shared.js';
+
 const BE2 = 'https://clincoo-be2.pages.dev/api';
 
 async function be2Json(path, token, init = {}) {
@@ -44,23 +46,46 @@ async function ensureTables(env) {
   } catch (e) { /* kolom sudah ada */ }
 }
 
-// Guard: wajib token be2 milik akun yang memiliki proyek ini.
+// Guard: wajib token sesi milik akun yang memiliki proyek ini.
+// UTAMA (2026-10-04): validasi LOKAL (auth_users/auth_sessions di D1 produksi).
+// Selama ini guard memvalidasi ke BE2 lama — padahal login Clincoo sekarang
+// lokal, jadi sesi yang SAH ditolak "Token tidak valid" (apalagi tiap sesi
+// BE2 terhapus saat redeploy). BE2 hanya fallback untuk sesi era lama.
 async function guardOwner(request, env, projectId) {
   if (!projectId) return { res: J({ error: 'Parameter project_id wajib' }, 400) };
   const h = request.headers.get('Authorization') || '';
   const m = /^Bearer\s+(.+)$/i.exec(h);
   if (!m) return { res: J({ error: 'Login diperlukan' }, 401) };
   const tok = m[1].trim();
+  try {
+    const u = await getUserByToken(env.DB, tok);
+    if (u) {
+      // Kepemilikan lokal — logika sama dengan guardProject (user-scope.js):
+      // row user_projects tidak ada => proyek era lama, boleh lewat;
+      // row ada & milik user lain => tolak, JANGAN fallback ke be2.
+      try {
+        const own = await env.DB.prepare('SELECT user_id FROM user_projects WHERE id = ?').bind(String(projectId)).first();
+        if (!own || own.user_id == null || Number(own.user_id) === Number(u.id)) return { token: tok, local: true };
+        return { res: J({ error: 'Proyek tidak ditemukan atau bukan milik akun ini' }, 403) };
+      } catch (e) { /* tabel belum ada => proyek era lama, lanjut fallback be2 */ }
+    }
+  } catch (e) { /* tabel auth belum siap => fallback be2 */ }
+  // LEGACY: sesi era BE2 lama tetap diterima.
   const me = await be2Json('/auth/me', tok);
-  if (!me.ok || !me.data.authenticated) return { res: J({ error: 'Token tidak valid' }, 401) };
-  // Cek kepemilikan via /api/projects — BUG LAMA: kalau fetch ini gagal (jaringan/server lelet,
-  // cold start, dll), pj.data.projects jadi undefined dan kode salah nyimpulkan "bukan milik akun ini"
-  // padahal sebenarnya cuma gagal cek sementara. Sekarang gagal-fetch dibedakan dari gagal-kepemilikan.
+  if (!me.ok || !me.data.authenticated) return { res: J({ error: 'Token tidak valid — silakan login ulang Clincoo' }, 401) };
   const pj = await be2Json('/projects', tok);
   if (!pj.ok) return { res: J({ error: 'Gagal memeriksa daftar proyek, coba lagi sebentar' }, 503) };
   const owned = (pj.data.projects || []).some(p => String(p.id) === String(projectId));
   if (!owned) return { res: J({ error: 'Proyek tidak ditemukan atau bukan milik akun ini' }, 403) };
-  return { token: tok };
+  return { token: tok, local: false };
+}
+
+// Refresh token tersimpan di mcp_tokens (kolom be2_token, kini menyimpan
+// sesi user mana pun yang valid) tiap guard lokal berhasil — jadi tool MCP
+// selalu pegang sesi segar tanpa minta user buat ulang token.
+async function refreshStoredToken(env, g, projectId) {
+  if (!g || !g.local || !g.token) return;
+  try { await env.DB.prepare('UPDATE mcp_tokens SET be2_token = ? WHERE project_id = ?').bind(g.token, projectId).run(); } catch (e) {}
 }
 
 function newMcpToken() {
@@ -126,6 +151,7 @@ export async function onRequestGet(context) {
   const g = await guardOwner(request, env, projectId);
   if (g.res) return g.res;
   await ensureTables(env);
+  await refreshStoredToken(env, g, projectId);
   let row = await env.DB.prepare('SELECT token, scopes, created_at FROM mcp_tokens WHERE project_id = ?').bind(projectId).first();
   // MIGRASI: tabel kosong tapi cermin versi lama berisi -> pindahkan ke tabel.
   // be2_token diisi sesi pemilik yang sedang login (token lama versi paralel tidak
