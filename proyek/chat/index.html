@@ -1207,7 +1207,6 @@ window.chatLivePreview = function () {
             { keys: ['api', 'endpoint', 'webhook', 'fungsi backend'], chips: ['Bikin endpoint API baru', 'Tes endpoint API yang sudah ada'] },
             { keys: ['otomasi', 'jadwal', 'cron', 'terjadwal'], chips: ['Bikin automasi harian sederhana'] }
         ];
-        const PROMPT_CHIP_DEFAULTS = ['Apa saja yang bisa kamu bantu?', 'Deploy situs pertamaku ke production', 'Aktifkan pembayaran QRIS', 'Hubungkan domain kustom'];
         let promptChipsTimer = null;
         function schedulePromptChips() {
             if (promptChipsTimer) clearTimeout(promptChipsTimer);
@@ -1226,7 +1225,8 @@ window.chatLivePreview = function () {
                 topic.keys.forEach(k => { if (txt.indexOf(k) !== -1) score += 1; });
                 if (score > bestScore) { bestScore = score; best = topic; }
             });
-            const chips = (best ? best.chips : PROMPT_CHIP_DEFAULTS).slice(0, 4);
+            if (!best) { wrap.classList.add('hidden'); wrap.setAttribute('data-sig', ''); return; }
+            const chips = best.chips.slice(0, 4);
             const sig = chips.join('|');
             if (wrap.getAttribute('data-sig') === sig) { wrap.classList.remove('hidden'); return; }
             wrap.setAttribute('data-sig', sig);
