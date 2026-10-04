@@ -368,10 +368,19 @@ export async function onRequestGet({ request, env }) {
               for (let i = 0; i < ks.length; i += 4096) bin += String.fromCharCode.apply(null, ks.subarray(i, i + 4096));
               await db.prepare(`INSERT OR REPLACE INTO ${T.projectSettings} (project_id, key, value) VALUES (?, 'apk_keystore', ?)`)
                 .bind(projectId, JSON.stringify({ ks_b64: btoa(bin), run_id: run.id, created_at: new Date().toISOString() })).run();
+            } else {
+              await db.prepare(`INSERT OR REPLACE INTO ${T.projectSettings} (project_id, key, value) VALUES (?, 'apk_ks_dbg', ?)`)
+                .bind(projectId, 'dl-fail ' + res.status).run();
             }
+          } else {
+            await db.prepare(`INSERT OR REPLACE INTO ${T.projectSettings} (project_id, key, value) VALUES (?, 'apk_ks_dbg', ?)`)
+              .bind(projectId, 'art-not-found ' + JSON.stringify((arts.artifacts || []).map(a => a.name))).run();
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        try { await db.prepare(`INSERT OR REPLACE INTO ${T.projectSettings} (project_id, key, value) VALUES (?, 'apk_ks_dbg', ?)`)
+          .bind(projectId, 'err ' + (e && e.message ? e.message : String(e))).run(); } catch (e2) {}
+      }
     }
     return json(state);
   } catch (err) {
