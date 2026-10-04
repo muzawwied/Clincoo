@@ -233,6 +233,9 @@ async function tryClouviaText(keys, messages, gDecls) {
       const qMatch = system.match(/\[KUOTA AI PENGGUNA\][^\n]*/);
       if (qMatch) picks.push(qMatch[0]);
     }
+    const lu = [...messages].reverse().find(m => m && m.role === 'user');
+    const payDocs = paymentDocsFor(lu ? textOf(lu) : '');
+    if (payDocs) picks.push(payDocs);
     if (picks.length) idPrefix = picks.join('\n\n') + '\n\n';
   } catch (e) {}
   let lastErr = null;
@@ -619,6 +622,15 @@ const WORKSPACE_FUNCTION_DECLARATIONS = [
       prompt: { type: 'STRING', description: 'Instruksi lengkap yang dijalankan AI penjadwal pada waktunya — tulis detail, mandiri, dengan sumber data yang jelas (mis. "Cari 5 berita teknologi terbaru hari ini di web, rangkum dalam 5 poin singkat").' },
       notify_email: { type: 'BOOLEAN', description: 'true bila hasil juga dikirim ke email user.' }
     }, required: ['name', 'schedule_type', 'prompt'] } },
+  { name: 'clincoo_pay',
+    description: 'SEKALI JALAN terima pembayaran di situs Clincoo via ClincooPay (QRIS bawaan, tanpa gateway eksternal). PAKAI INI DULU setiap user ingin situsnya bisa menerima pembayaran/checkout/QRIS/bayar — lewati HANYA bila user EKSPLISIT minta gateway luar (Xendit/Midtrans/DOKU/Pakasir dll. dengan API key sendiri). JANGAN bikin backend function atau halaman bayar sendiri untuk kasus ini — selesaikan langsung dengan tool ini lalu BERIKAN checkout_url ke user di jawaban yang sama. Actions: "config" (cek status aktifasi + pay_key + saldo proyek aktif), "activate" (aktifkan ClincooPay proyek aktif, butuh login Clincoo), "create" (buat order QRIS — respons berisi checkout_url, order_id, qr_image, total_payment; TUNJUKKAN checkout_url SEGERA), "status" (cek order sudah dibayar/belum). ALUR KILAT 1 GILIRAN: config -> bila belum aktif: activate -> create(amount, description) -> kasih checkout_url. amount = rupiah integer minimum 1000. Bila nominal belum disebut user, pakai nominal contoh untuk demo dan jelaskan ganti nominal tinggal create ulang.',
+    parameters: { type: 'OBJECT', properties: {
+      action: { type: 'STRING', description: 'Salah satu: config, activate, create, status.' },
+      amount: { type: 'NUMBER', description: 'create: nominal rupiah integer, minimum 1000.' },
+      description: { type: 'STRING', description: 'create opsional: keterangan order, contoh "Paket A".' },
+      order_id: { type: 'STRING', description: 'status: id order dari hasil create.' },
+      key: { type: 'STRING', description: 'pay_key proyek — diisi otomatis dari config bila kosong.' }
+    }, required: ['action'] } },
   { name: 'manage_domain',
     description: 'Kelola domain kustom + DNS proyek AKTIF (halaman Fitur Domain / Domain Kustom). Action: "status" (daftar domain terpasang + record DNS yang harus disetel), "add" (pasang domain kustom ke situs — domain harus sudah dimiliki user), "remove" (lepas domain dari situs), "dns_status" (cek zona DNS + record yang ada untuk domain), "set_dns" (SETEL LANGSUNG record CNAME domain -> <proyek>.pages.dev di Cloudflare — pakai ini saat user minta AI mengatur DNS domainnya; konflik A/AAAA lama otomatis dibersihkan), "delete_dns" (hapus record DNS domain). Alur lengkap pindah domain: set_dns dulu, lalu add. Zona DNS harus ada di akun Cloudflare yang tersimpan di Pengaturan Deploy; bila domainnya di provider lain, jelaskan record manualnya (CNAME -> <proyek>.pages.dev). HANYA untuk domain kustom SITUS PROYEK — bila user bicara tentang halaman Domain Clincoo (/domain/, Kelola DNS), pakai tool domain_dns.',
     parameters: { type: 'OBJECT', properties: {

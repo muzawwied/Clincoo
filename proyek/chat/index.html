@@ -2229,7 +2229,7 @@ window.chatLivePreview = function () {
                 delete_item: 'ph-trash', search_items: 'ph-magnifying-glass',
                 run_command: 'ph-terminal-window', read_web_page: 'ph-globe', web_search: 'ph-magnifying-glass',
                 search_clinqoo_kb: 'ph-brain', rename_project: 'ph-pencil-simple', set_project_info: 'ph-note-pencil',
-                deploy_project: 'ph-rocket-launch', add_env_var: 'ph-key', list_env_vars: 'ph-key', test_secret: 'ph-shield-check', cloudflare_request: 'ph-cloud', manage_domain: 'ph-globe-hemisphere-west', domain_dns: 'ph-globe', build_apk: 'ph-android-logo',
+                deploy_project: 'ph-rocket-launch', add_env_var: 'ph-key', list_env_vars: 'ph-key', test_secret: 'ph-shield-check', cloudflare_request: 'ph-cloud', manage_domain: 'ph-globe-hemisphere-west', domain_dns: 'ph-globe', clincoo_pay: 'ph-credit-card', build_apk: 'ph-android-logo',
                 create_backend_function: 'ph-function', call_backend_function: 'ph-function',
                 github_request: 'ph-github-logo', drive_request: 'ph-google-logo', calendar_request: 'ph-calendar-blank', notion_request: 'ph-notebook',
                 delete_backend_function: 'ph-function', list_backend_functions: 'ph-function',
@@ -4192,6 +4192,7 @@ window.chatLivePreview = function () {
                     case 'deploy_project': return await toolDeployProject(args);
                     case 'manage_domain': return await toolManageDomain(args);
                     case 'domain_dns': return await toolDomainDns(args);
+                    case 'clincoo_pay': return await toolClincooPay(args);
                     case 'build_apk': return await toolBuildApk(args);
                     case 'add_env_var': return await toolAddEnvVar(args);
                     case 'list_env_vars': return await toolListEnvVars(args);
@@ -4357,6 +4358,55 @@ window.chatLivePreview = function () {
         }
 
         // manage_domain: AI kelola domain kustom + setel record DNS langsung (via /api/deploy)
+        async function toolClincooPay(args) {
+            const a = args || {};
+            const action = String(a.action || 'config').trim().toLowerCase();
+            const pid = currentProjectId;
+            let token = '';
+            try { token = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+            const authHeaders = token ? { Authorization: 'Bearer ' + token } : {};
+            if (action === 'config' || action === 'activate') {
+                if (!pid) return { success: false, error: 'Tidak ada proyek aktif. Buka proyek dulu dari daftar proyek.' };
+                const res = await fetch(TOOL_API_BASE + '/api/pay?action=' + action + '&project_id=' + encodeURIComponent(pid), { headers: Object.assign({}, authHeaders) });
+                const d = await res.json().catch(function () { return {}; });
+                if (!res.ok || d.error) return { success: false, error: d.error || ('Gagal ' + action + ' ClincooPay — pastikan sudah login Clincoo.') };
+                if (action === 'activate') return { success: true, active: true, account_id: d.account_id, pay_key: d.pay_key, message: 'ClincooPay aktif untuk proyek ini. Lanjut action create untuk membuat order.' };
+                return { success: true, active: !!d.active, pay_key: d.pay_key || '', account_id: d.account_id || '', gateway_ready: d.gateway_ready, available: d.available, total_paid: d.total_paid, message: d.active ? 'ClincooPay sudah aktif — langsung bisa create order.' : 'ClincooPay belum aktif — panggil action activate dulu.' };
+            }
+            if (action === 'create') {
+                const amount = Math.round(Number(a.amount) || 0);
+                if (!amount || amount < 1000) return { success: false, error: 'amount wajib rupiah integer minimum 1000.' };
+                let key = String(a.key || '').trim();
+                if (!key) {
+                    if (!pid) return { success: false, error: 'Tidak ada proyek aktif untuk mengambil pay_key.' };
+                    const rc = await fetch(TOOL_API_BASE + '/api/pay?action=config&project_id=' + encodeURIComponent(pid), { headers: Object.assign({}, authHeaders) });
+                    const dc = await rc.json().catch(function () { return {}; });
+                    if (!rc.ok || dc.error) return { success: false, error: dc.error || 'Gagal mengambil pay_key. Pastikan login dan ClincooPay aktif (action activate).' };
+                    key = dc.pay_key || '';
+                }
+                if (!key) return { success: false, error: 'ClincooPay belum aktif untuk proyek ini — panggil action activate dulu.' };
+                const res = await fetch(TOOL_API_BASE + '/api/pay', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', key: key, amount: amount, description: String(a.description || 'Pembayaran') }) });
+                const d = await res.json().catch(function () { return {}; });
+                if (!res.ok || d.error) return { success: false, error: d.error || 'Gagal membuat order pembayaran.' };
+                return { success: true, order_id: d.order_id, checkout_url: d.checkout_url, amount: d.amount, total_payment: d.total_payment, qr_image: d.qr_image, expires_at: d.expires_at, message: 'Order dibuat. SERTAKAN checkout_url di jawabanmu SEKARANG — halaman bayar resmi Clincoo sudah siap (QRIS, cek status otomatis, halaman berhasil).' };
+            }
+            if (action === 'status') {
+                const orderId = String(a.order_id || '').trim();
+                if (!orderId) return { success: false, error: 'status butuh order_id dari hasil create.' };
+                let key = String(a.key || '').trim();
+                if (!key && pid) {
+                    const rc = await fetch(TOOL_API_BASE + '/api/pay?action=config&project_id=' + encodeURIComponent(pid), { headers: Object.assign({}, authHeaders) });
+                    const dc = await rc.json().catch(function () { return {}; });
+                    if (rc.ok && !dc.error) key = dc.pay_key || '';
+                }
+                if (!key) return { success: false, error: 'pay_key tidak tersedia — kirim parameter key dari hasil config.' };
+                const res = await fetch(TOOL_API_BASE + '/api/pay?action=status&key=' + encodeURIComponent(key) + '&order_id=' + encodeURIComponent(orderId));
+                const d = await res.json().catch(function () { return {}; });
+                if (!res.ok || d.error) return { success: false, error: d.error || 'Gagal cek status order.' };
+                return { success: true, order_id: orderId, status: d.status, amount: d.amount, message: d.status === 'paid' ? 'Order sudah dibayar.' : (d.status === 'expired' ? 'Order kedaluwarsa — buat ulang dengan create.' : 'Belum dibayar.') };
+            }
+            return { success: false, error: 'Action tidak dikenal: ' + action + '. Pakai: config, activate, create, status.' };
+        }
         async function toolManageDomain(args) {
             const pid = currentProjectId;
             if (!pid) return { success: false, error: 'Tidak ada proyek aktif. Buka proyek dulu dari daftar proyek.' };
