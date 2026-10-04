@@ -1489,6 +1489,22 @@ window.chatLivePreview = function () {
                 seg = seg.replace(/(?<!\*)\*{2}([^*\n]+?)\*{3}/g, '**$1**');
                 seg = seg.replace(/(^|[^\w*\\])\*[ \t]+([^*\n]*?)[ \t]+\*(?![*])/g, '$1*$2*');
                 seg = seg.replace(/~~[ \t]+([^\n]*?)[ \t]+~~/g, '~~$1~~');  // sama: dibatasi satu baris
+                // Penanda penutup (**/*/~~) nempel langsung ke huruf/angka berikutnya tanpa spasi
+                // (mis. "**Orientasi:**Portrait") -> per CommonMark, penutup didahului tanda baca
+                // (":") dan diikuti huruf GAGAL flank kanan, jadi dianggap teks biasa (bintang
+                // mentah tampil, keluhan user). Sisipkan 1 spasi setelah penutup agar valid.
+                seg = seg.replace(/\*\*([^*\n]+?)\*\*/g, function (m, p1, offset, full) {
+                    var next = full.charAt(offset + m.length);
+                    return (next && !/[\s*.,!?;:)\]}"'\u2019\u201d-]/.test(next)) ? '**' + p1 + '** ' : m;
+                });
+                seg = seg.replace(/(^|[^*])\*([^*\n]+?)\*(?!\*)/g, function (m, pre, p1, offset, full) {
+                    var next = full.charAt(offset + m.length);
+                    return (next && !/[\s*.,!?;:)\]}"'\u2019\u201d-]/.test(next)) ? pre + '*' + p1 + '* ' : m;
+                });
+                seg = seg.replace(/~~([^~\n]+?)~~/g, function (m, p1, offset, full) {
+                    var next = full.charAt(offset + m.length);
+                    return (next && !/[\s~.,!?;:)\]}"'\u2019\u201d-]/.test(next)) ? '~~' + p1 + '~~ ' : m;
+                });
                 seg = seg.replace(/^[ \t]{1,6}(#{1,6}[ \t])/gm, '$1');
                 parts[i] = seg;
             }
