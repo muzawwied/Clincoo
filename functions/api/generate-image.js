@@ -62,7 +62,8 @@ export async function onRequestPost({ request, env }) {
 
     let bin = '';
     for (let i = 0; i < out.length; i += 4096) bin += String.fromCharCode.apply(null, out.subarray(i, i + 4096));
-    return json({ ok: true, data_url: 'data:image/png;base64,' + btoa(bin) });
+    const isJpeg = out.length > 3 && out[0] === 0xFF && out[1] === 0xD8 && out[2] === 0xFF;
+    return json({ ok: true, data_url: 'data:image/' + (isJpeg ? 'jpeg' : 'png') + ';base64,' + btoa(bin) });
   } catch (err) {
     return json({ error: err && err.message ? err.message : 'Error tak terduga' }, 500);
   }

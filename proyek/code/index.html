@@ -1013,6 +1013,11 @@
       if (document.visibilityState === 'hidden' && wsDirtyIs()) wsCloudPushNow(0, true);
       if (document.visibilityState === 'visible') wsCloudPull(); // refresh real-time lintas perangkat
     });
+    // AUTO-REFRESH WORKSPACE: tarik data cloud tiap 10 detik saat tab terlihat —
+    // file baru buatan AI (termasuk dari perangkat lain / sesi chat lain) langsung
+    // muncul di pohon file tanpa reload manual. Pull aman: batal otomatis bila ada
+    // push tertunda atau edit lokal belum terkirim (guard di dalam wsCloudPull).
+    setInterval(function () { if (document.visibilityState === 'visible') wsCloudPull(); }, 10000);
 
     function saveData() {
       // Cache lokal best-effort: kalau kuota browser penuh, data TETAP aman —

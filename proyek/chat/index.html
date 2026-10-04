@@ -4423,10 +4423,6 @@ window.chatLivePreview = function () {
             const pid = currentProjectId;
             if (!pid) return { success: false, error: 'Tidak ada proyek aktif. Buka proyek dulu dari daftar proyek.' };
             const setAsLogo = args.set_as_logo === true || args.set_as_logo === 'true';
-            let name = args && args.filename ? String(args.filename).trim() : '';
-            name = name.replace(/[^a-zA-Z0-9._\/-]/g, '').replace(/^\/+/, '');
-            if (setAsLogo) name = 'logo.png'; // konvensi Pengaturan Umum & deploy engine
-            if (!name) name = 'images/ai-' + Date.now().toString(36) + '.png';
             // 1) generate gambar via backend (Workers AI)
             const gRes = await fetch(TOOL_API_BASE + '/api/generate-image', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -4434,13 +4430,17 @@ window.chatLivePreview = function () {
             });
             const g = await gRes.json();
             if (g.error || !g.data_url) return { success: false, error: g.error || 'Gagal membuat gambar.' };
-            // 2) simpan ke workspace (file gambar disimpan sebagai data-URL, sama seperti upload logo)
-            const wRes = await fetch(TOOL_API_BASE + '/api/project-files', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ project_id: pid, path: name, content: g.data_url })
-            });
-            const w = await wRes.json();
-            if (w.error) return { success: false, error: w.error };
+            // ekstensi dari mime asli ( Workers AI bisa balikin JPEG walau diminta PNG)
+            const mimeRaw = (String(g.data_url).match(/^data:image\/([a-z+]+)/) || [])[1] || 'png';
+            const ext = mimeRaw === 'jpeg' ? 'jpg' : mimeRaw;
+            let name = args && args.filename ? String(args.filename).trim() : '';
+            name = name.replace(/[^a-zA-Z0-9._\/-]/g, '').replace(/^\/+/, '');
+            if (setAsLogo) name = 'logo.' + ext; // konvensi Pengaturan Umum & deploy engine
+            if (!name) name = 'images/ai-' + Date.now().toString(36) + '.' + ext;
+            // 2) simpan lewat jalur yang sama dengan write_file: pohon lokal + sinkron cloud otomatis
+            //    (tab Workspace lain mendapat storage event -> file langsung muncul di pohon file)
+            const wr = await wsWriteFile({ path: name, content: g.data_url });
+            if (wr && wr.success === false) return wr;
             // 3) opsional: pasang sebagai logo di Pengaturan Umum
             if (setAsLogo) {
                 const sRes = await fetch(TOOL_API_BASE + '/api/project-settings', {
