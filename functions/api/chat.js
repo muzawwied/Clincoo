@@ -226,8 +226,14 @@ async function tryClouviaText(keys, messages, gDecls) {
   // yang pasti sampai ke model. (Sisanya biarkan: perilaku lama tidak diubah.)
   let idPrefix = '';
   try {
-    const idMatch = system ? system.match(/\[IDENTITAS PENGGUNA\][^\n]*/) : null;
-    if (idMatch) idPrefix = idMatch[0] + '\n\n';
+    const picks = [];
+    if (system) {
+      const idMatch = system.match(/\[IDENTITAS PENGGUNA\][^\n]*/);
+      if (idMatch) picks.push(idMatch[0]);
+      const qMatch = system.match(/\[KUOTA AI PENGGUNA\][^\n]*/);
+      if (qMatch) picks.push(qMatch[0]);
+    }
+    if (picks.length) idPrefix = picks.join('\n\n') + '\n\n';
   } catch (e) {}
   let lastErr = null;
   for (const key of keyList) {
