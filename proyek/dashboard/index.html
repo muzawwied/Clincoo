@@ -730,7 +730,7 @@
                         headers: { 'Content-Type': 'application/json', ...authHeaders() },
                         body: JSON.stringify({ project: {
                             id: pr.id,
-                            title: patch.app_name !== undefined ? patch.app_name : (pr.title || pr.aiName || ''),
+                            title: patch.app_name !== undefined ? patch.app_name : (pr.aiName || pr.title || ''),
                             prompt: pr.prompt || '',
                             aiName: pr.aiName || pr.title || '',
                             aiDesc: patch.app_desc !== undefined ? patch.app_desc : (pr.aiDesc || ''),

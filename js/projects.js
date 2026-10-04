@@ -530,7 +530,8 @@ function duplicateProject(id) {
     let projects = getProjects();
     const proj = projects.find(p => p.id === id);
     if (proj) {
-        const copy = Object.assign({}, proj, { id: 'proj_' + Date.now(), title: proj.title + ' (Copy)', updatedAt: new Date().toISOString() });
+        const copyTitle = (proj.title ? String(proj.title).replace(/\s*\(Copy\)\s*$/i, '') : 'Proyek') + ' (Copy)';
+        const copy = Object.assign({}, proj, { id: 'proj_' + Date.now(), title: copyTitle, aiName: '', updatedAt: new Date().toISOString() });
         projects.unshift(copy);
         saveProjects(projects);
         renderProjects();

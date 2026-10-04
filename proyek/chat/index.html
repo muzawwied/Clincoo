@@ -4394,6 +4394,17 @@ window.chatLivePreview = function () {
             const upRes = await fetch(TOOL_API_BASE + '/api/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'upsert', project: Object.assign({}, proj, { title: newName }) }) });
             const ud = await upRes.json();
             if (!upRes.ok || ud.error) return { success: false, error: ud.error || 'Gagal mengganti nama proyek.' };
+            // Sinkron satu pintu: ganti juga app_name (Pengaturan Umum) + ai_name + cache lokal,
+            // karena semua halaman memprioritaskan app_name — tanpa ini nama lama tetap tampil.
+            try {
+                await fetch(TOOL_API_BASE + '/api/project-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project_id: pid, app_name: newName }) });
+                let uc = {}; try { uc = JSON.parse(localStorage.getItem('clincoo_umum_' + pid) || '{}') || {}; } catch (e) {}
+                uc.app_name = newName; localStorage.setItem('clincoo_umum_' + pid, JSON.stringify(uc));
+                const stored = localStorage.getItem('clincoo_projects');
+                const plist = stored ? JSON.parse(stored) : [];
+                const lp = plist.find(function (x) { return String(x.id) === String(pid); });
+                if (lp) { lp.title = newName; lp.aiName = newName; localStorage.setItem('clincoo_projects', JSON.stringify(plist)); }
+            } catch (e) {}
             return { success: true, old_title: proj.title, new_title: newName, project_id: pid };
         }
 
@@ -4418,12 +4429,12 @@ window.chatLivePreview = function () {
                 const d = await listRes.json();
                 const proj = (Array.isArray(d.projects) ? d.projects : []).find(function (x) { return String(x.id) === String(pid); });
                 if (proj) {
-                    await fetch(TOOL_API_BASE + '/api/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'upsert', project: Object.assign({}, proj, { title: appName }) }) });
+                    await fetch(TOOL_API_BASE + '/api/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'upsert', project: Object.assign({}, proj, { title: appName, aiName: appName }) }) });
                 }
                 const stored = localStorage.getItem('clincoo_projects');
                 const list = stored ? JSON.parse(stored) : [];
                 const lp = list.find(function (x) { return String(x.id) === String(pid); });
-                if (lp) { lp.title = appName; localStorage.setItem('clincoo_projects', JSON.stringify(list)); }
+                if (lp) { lp.title = appName; lp.aiName = appName; localStorage.setItem('clincoo_projects', JSON.stringify(list)); }
                 let uc = {}; try { uc = JSON.parse(localStorage.getItem('clincoo_umum_' + pid) || '{}') || {}; } catch (e) {}
                 uc.app_name = appName; if (appDesc) uc.app_desc = appDesc;
                 localStorage.setItem('clincoo_umum_' + pid, JSON.stringify(uc));
