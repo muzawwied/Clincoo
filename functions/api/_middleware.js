@@ -222,7 +222,7 @@ export async function onRequest({ request, env, next }) {
       // memblokir respons dari dibaca skrip -> fetch() melempar "Failed to fetch" dan
       // pesan asli ("Payload terlalu besar") tidak pernah sampai ke user (notifikasi
       // workspace jadi salah diagnosis sebagai masalah koneksi).
-      return new Response(JSON.stringify({ error: 'Payload terlalu besar.' }), {
+      return new Response(JSON.stringify({ error: 'Payload terlalu besar.', _debug: { path, isBigPath, capFor, cl, mutates } }), {
         status: 413, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       });
     }
