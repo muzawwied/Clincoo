@@ -22,6 +22,9 @@ async function readBearer(request) {
   return m ? m[1].trim() : '';
 }
 
+import { initTables as initAuthTables, getUserByToken, getToken } from './auth/shared.js';
+import { getEffectivePlan } from './plan-helpers.js';
+
 // ---------- test_secret: uji validitas secret/API key berbagai provider ----------
 async function testSecret(body) {
   const provider = String(body.provider || '').toLowerCase();
@@ -297,6 +300,7 @@ on:
       package_id: { required: true }
       orientation: { required: true, default: portrait }
       fullscreen: { required: true, default: "true" }
+      splash: { required: true, default: "false" }
 permissions:
   contents: read
 jobs:
@@ -309,6 +313,7 @@ jobs:
       PKG: \${{ inputs.package_id }}
       ORIENT: \${{ inputs.orientation }}
       FULLSCREEN: \${{ inputs.fullscreen }}
+      SPLASH: \${{ inputs.splash }}
     steps:
       - uses: actions/checkout@v4
       - name: Siapkan Java
@@ -367,12 +372,18 @@ async function apkGhJson(token, path, init = {}) {
 async function apkEnsureFiles(token, repo) {
   for (const [path, content] of [[APK_WORKFLOW_PATH, APK_WORKFLOW]]) {
     const r = await apkGhJson(token, `/repos/${repo}/contents/${path}`);
-    if (r.status === 404) {
-      await apkGhJson(token, `/repos/${repo}/contents/${path}`, {
-        method: 'PUT',
-        body: JSON.stringify({ message: 'PressForge workflow (auto)', content: apkB64(content) })
-      });
-    }
+    if (!r.ok || !(r.data && r.data.content)) continue;
+    const remote = String(r.data.content).replace(/\s/g, '');
+    const local = apkB64(content).replace(/\s/g, '');
+    if (remote === local) continue;
+    await apkGhJson(token, `/repos/${repo}/contents/${path}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        message: 'PressForge sync (auto)',
+        content: apkB64(content),
+        ...(r.data.sha ? { sha: r.data.sha } : {})
+      })
+    });
   }
 }
 
@@ -443,7 +454,7 @@ function apkB64FromU8(u8) {
   return btoa(s);
 }
 
-async function buildApk(body) {
+async function buildApk(body, bearer, env) {
   const token = String(body.token || '').trim();
   if (!token) return jsonOut({ ok: false, error: 'GitHub belum terhubung — hubungkan dulu lewat halaman Integrasi Clincoo.' }, 400);
   const op = String(body.build_action || body.apk_action || 'start').toLowerCase();
@@ -454,6 +465,23 @@ async function buildApk(body) {
   const repo = owner + '/' + APK_REPO_NAME;
 
   // ---------- START ----------
+  // splash screen Clincoo (logo tanpa teks) otomatis untuk paket gratis (Starter);
+  // ikon launcher aplikasi tetap milik user. Keputusan PAKET diambil SERVER dari sesi
+  // Clincoo, bukan dari parameter klien (tidak bisa di-spoof lewat tool call).
+  let splash = true;
+  let userPlan = null;
+  try {
+    if (bearer && env && env.DB) {
+      await initAuthTables(env.DB);
+      const u = await getUserByToken(env.DB, bearer);
+      if (u && u.id) {
+        const planInfo = await getEffectivePlan(env.DB, u);
+        userPlan = planInfo.plan;
+        splash = planInfo.plan === 'Starter';
+      }
+    }
+  } catch (e) {}
+
   if (op === 'start') {
     let url = String(body.url || '').trim();
     if (!/^https?:\/\/.+\..+/i.test(url)) return jsonOut({ ok: false, error: 'Parameter url wajib URL lengkap (http/https), contoh "https://app.clincoo.buzz".' }, 400);
@@ -471,8 +499,8 @@ async function buildApk(body) {
     const buildId = apkNewId();
 
     const rr = await apkGhJson(token, `/repos/${repo}`);
-    if (rr.status === 404) return jsonOut({ ok: false, error: 'Repo ' + repo + ' tidak ditemukan di akun GitHub-mu — fondasi PressForge belum tersedia.' }, 404);
-    if (!rr.ok) return jsonOut({ ok: false, error: 'Gagal memeriksa repo ' + repo + ' (HTTP ' + rr.status + ').' }, 502);
+    if (rr.status === 404) return jsonOut({ ok: false, error: 'Fondasi build APK belum tersedia di akun GitHub-mu — hubungkan ulang GitHub lalu coba lagi.' }, 404);
+    if (!rr.ok) return jsonOut({ ok: false, error: 'Gagal memeriksa fondasi build APK (HTTP ' + rr.status + ').' }, 502);
 
     await apkEnsureFiles(token, repo);
     const icon = await apkResolveIcon(token, repo, body.icon_base64);
@@ -486,12 +514,12 @@ async function buildApk(body) {
 
     const dispatchBody = JSON.stringify({
       ref: (rr.data.default_branch || 'main'),
-      inputs: { build_id: buildId, url: url, app_name: appName, package_id: pkg, orientation: orientation, fullscreen: String(fullscreen) }
+      inputs: { build_id: buildId, url: url, app_name: appName, package_id: pkg, orientation: orientation, fullscreen: String(fullscreen), splash: splash ? 'true' : 'false' }
     });
     let lastErr = '';
     for (let i = 0; i < 3; i++) {
       const r = await apkGh(token, `/repos/${repo}/actions/workflows/build.yml/dispatches`, { method: 'POST', body: dispatchBody, headers: { 'Content-Type': 'application/json' } });
-      if (r.status === 204) return jsonOut({ ok: true, success: true, build_id: buildId, app_name: appName, package_id: pkg, url: url, orientation: orientation, fullscreen: fullscreen === 'true', repo: repo, status: 'started', note: 'Build berjalan di GitHub Actions (~3-5 menit). Lanjutkan dengan action status memakai build_id ini, beri update ke user, dan setelah done panggil action download.' });
+      if (r.status === 204) return jsonOut({ ok: true, success: true, build_id: buildId, app_name: appName, package_id: pkg, url: url, orientation: orientation, fullscreen: fullscreen === 'true', status: 'started', splash: splash, plan: userPlan, note: 'Build berjalan di GitHub Actions (~3-5 menit). Lanjutkan dengan action status memakai build_id ini, beri update singkat ke user, dan setelah done panggil action download. ' + (splash ? 'Paket gratis: APK otomatis menyertakan splash screen logo Clincoo (logo saja, tanpa teks) saat aplikasi dibuka; ikon aplikasi tetap milik user — sampaikan ini ke user.' : '') });
       const t = await r.text().catch(() => '');
       lastErr = `HTTP ${r.status}: ${t.slice(0, 200)}`;
       if (r.status === 403 || r.status === 401) break;
@@ -517,7 +545,6 @@ async function buildApk(body) {
     const out = {
       ok: true, success: true, build_id: buildId, found: true,
       run_id: run.id, status: run.status, conclusion: run.conclusion,
-      html_url: run.html_url,
       progress: run.status === 'completed' ? 100 : Math.round((doneCount / total) * 90),
       steps: steps
     };
@@ -532,7 +559,7 @@ async function buildApk(body) {
       out.status = 'failed';
       const failed = steps.filter((x) => x.conclusion === 'failure').map((x) => x.name);
       out.failed_steps = failed;
-      out.message = 'Build gagal: ' + (failed.join(', ') || run.conclusion) + '. Lihat detail: ' + run.html_url;
+      out.message = 'Build gagal di langkah: ' + (failed.join(', ') || run.conclusion) + '. Bisa dicoba ulang dengan action start baru.';
     } else {
       out.message = 'Build ' + (out.progress) + '% — status: ' + run.status + '. Panggil status lagi setelah beberapa detik.';
     }
@@ -551,7 +578,7 @@ async function buildApk(body) {
     const arts = await apkGhJson(token, `/repos/${repo}/actions/runs/${run.id}/artifacts`);
     const art = ((arts.data && arts.data.artifacts) || []).find((a) => a.name === 'apk' && !a.expired);
     if (!art) return jsonOut({ ok: false, error: 'Artifact APK tidak ditemukan atau sudah kedaluwarsa (hanya tersimpan 7 hari di GitHub).' }, 404);
-    if (art.size_in_bytes > 26214400) return jsonOut({ ok: false, error: 'APK terlalu besar untuk diunduh lewat chat (' + Math.round(art.size_in_bytes / 1048576) + 'MB). Unduh manual: ' + run.html_url }, 413);
+    if (art.size_in_bytes > 26214400) return jsonOut({ ok: false, error: 'APK terlalu besar untuk diunduh lewat chat (' + Math.round(art.size_in_bytes / 1048576) + 'MB).' }, 413);
     let r = await apkGh(token, `/repos/${repo}/actions/artifacts/${art.id}/zip`, { redirect: 'manual' });
     const loc = r.headers.get('location');
     if (r.status >= 300 && r.status < 400 && loc) r = await fetch(loc);
@@ -584,7 +611,7 @@ export async function onRequestPost({ request, env }) {
     if (action === 'github_request') return githubRequest(body);
     if (action === 'drive_request') return driveRequest(body);
     if (action === 'calendar_request') return calendarRequest(body);
-    if (action === 'build_apk') return buildApk(body);
+    if (action === 'build_apk') return buildApk(body, await readBearer(request), env);
     return jsonOut({ ok: false, error: 'Action tidak dikenal. Gunakan test_secret, cloudflare_request, github_request, drive_request, calendar_request, atau build_apk.' }, 400);
   } catch (e) {
     return jsonOut({ ok: false, error: 'Gagal memproses: ' + (e && e.message ? e.message : String(e)) }, 500);
