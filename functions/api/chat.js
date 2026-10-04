@@ -1047,12 +1047,31 @@ export async function onRequestPost({ request, env, waitUntil }) {
       });
     }
 
-    // Batasi ukuran body maksimal 2 MB (anti abuse attachment base64 raksasa)
+    // Batasi ukuran body maksimal 2 MB (anti abuse attachment base64 raksasa).
+    // Pengecualian: user LOGIN boleh sampai 15 MB — sesi AI tool-use panjang
+    // (system prompt + riwayat + hasil tool baca web / backend function bertumpuk)
+    // bisa tembus 2MB dan kena 413 di request awal MAUPUN semua jalur fallback
+    // retry-nya (body sama besar) -> user cuma lihat pesan generik "ada gangguan
+    // koneksi" padahal sebabnya payload kelewat besar. Cap login disamakan dengan
+    // middleware (_middleware.js, 15MB) supaya konsisten.
     const raw = await request.text();
     if (raw.length > 2_000_000) {
-      return new Response(JSON.stringify({ error: 'Payload terlalu besar (maks 2MB).' }), {
-        status: 413, headers: { 'Content-Type': 'application/json', ...CORS }
-      });
+      let bigAllowed = false;
+      if (raw.length <= 15_000_000) {
+        try {
+          const t = getToken(request);
+          if (t && env.DB) {
+            await initAuthTables(env.DB);
+            const u = await getUserByToken(env.DB, t);
+            if (u) bigAllowed = true;
+          }
+        } catch (e) { /* anggap guest */ }
+      }
+      if (!bigAllowed) {
+        return new Response(JSON.stringify({ error: 'Payload terlalu besar (maks 2MB).' }), {
+          status: 413, headers: { 'Content-Type': 'application/json', ...CORS }
+        });
+      }
     }
     // Body tidak valid / kosong jangan dianggap error server — cukup dianggap pesan kosong
     let body = {};
