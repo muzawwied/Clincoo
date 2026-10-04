@@ -141,6 +141,26 @@ export async function upsertOauthUser(db, provider, providerAccountId, email, na
   return user;
 }
 
+export async function getTurnstileSiteKey(db) {
+  try { return (await getEnvVarDb(db, 'TURNSTILE_SITEKEY')) || ''; } catch (e) { return ''; }
+}
+
+export async function turnstileOk(db, token, ip) {
+  let secret = '';
+  try { secret = (await getEnvVarDb(db, 'TURNSTILE_SECRET')) || ''; } catch (e) {}
+  if (!secret) return true;
+  if (!token) return false;
+  try {
+    const b = new URLSearchParams();
+    b.set('secret', secret);
+    b.set('response', String(token || ''));
+    if (ip) b.set('remoteip', String(ip));
+    const r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { method: 'POST', body: b.toString() });
+    const d = await r.json().catch(() => ({}));
+    return !!(d && d.success);
+  } catch (e) { return false; }
+}
+
 export async function getEnvVarDb(db, key) {
   try {
     const row = await db.prepare('SELECT value FROM env_vars WHERE key = ?').bind(key).first();

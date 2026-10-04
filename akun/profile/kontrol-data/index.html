@@ -684,7 +684,7 @@
           showToast("Akun dan seluruh data Anda telah dihapus permanen.", "info");
           setTimeout(() => {
             if (window.ClinqooAuth && window.ClinqooAuth.logout) {
-              window.ClinqooAuth.logout();
+              window.ClinqooAuth.logout(null, { skipConfirm: true });
             } else if (window.ClinqooBack) {
               window.ClinqooBack('../../');
             } else {

@@ -107,8 +107,17 @@ try {
   window.ClinqooAuth = {
     getToken: getToken,
     authUrl: AUTH_URL,
-    logout: function (ev) {
+    logout: function (ev, opts) {
       if (ev && ev.preventDefault) { try { ev.preventDefault(); } catch (e) {} }
+      if (!(opts && opts.skipConfirm)) {
+        if (this._modalOpen) return;
+        this._modalOpen = true;
+        this._confirmLogout();
+        return;
+      }
+      this._doLogout();
+    },
+    _doLogout: function () {
       var API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : '';
       var done = false;
       var finish = function () {
@@ -127,6 +136,25 @@ try {
       } else {
         finish();
       }
+    },
+    _confirmLogout: function () {
+      var self = this;
+      var ov = document.createElement('div');
+      ov.id = 'clq-logout-modal';
+      ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:16px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
+      ov.innerHTML = '<div role="dialog" aria-modal="true" aria-label="Konfirmasi keluar" style="background:#fff;border-radius:16px;max-width:340px;width:100%;padding:24px;box-shadow:0 20px 50px rgba(15,23,42,.25);text-align:center">'
+        + '<h3 style="margin:0 0 8px;font-size:17px;font-weight:600;color:#0f172a">Keluar dari akun?</h3>'
+        + '<p style="margin:0 0 20px;font-size:14px;line-height:1.5;color:#64748b">Kamu akan dikeluarkan dari Clincoo dan perlu login ulang untuk kembali.</p>'
+        + '<div style="display:flex;gap:10px">'
+        + '<button type="button" id="clq-logout-cancel" style="flex:1;padding:10px 0;border:1px solid #e2e8f0;background:#fff;color:#334155;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer">Batal</button>'
+        + '<button type="button" id="clq-logout-yes" style="flex:1;padding:10px 0;border:none;background:#ef4444;color:#fff;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer">Keluar</button>'
+        + '</div></div>';
+      document.body.appendChild(ov);
+      var close = function () { self._modalOpen = false; if (ov.parentNode) ov.parentNode.removeChild(ov); };
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      ov.querySelector('#clq-logout-cancel').addEventListener('click', close);
+      ov.querySelector('#clq-logout-yes').addEventListener('click', function () { close(); self._doLogout(); });
+      document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); } });
     }
   };
 

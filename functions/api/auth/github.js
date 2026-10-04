@@ -1,5 +1,5 @@
 // POST /api/auth/github {code, redirect_uri} — tukar code GitHub jadi sesi Clincoo
-import { initTables, upsertOauthUser, createSession, publicUser, getEnvVarDb, json, CORS } from './shared.js';
+import { initTables, upsertOauthUser, createSession, publicUser, getEnvVarDb, turnstileOk, json, CORS } from './shared.js';
 
 export async function onRequestOptions() { return new Response(null, { status: 204, headers: CORS }); }
 
@@ -14,6 +14,8 @@ export async function onRequestPost({ request, env }) {
 
     const body = await request.json().catch(() => ({}));
     if (!body.code) return json({ error: 'Authorization code diperlukan' }, 400);
+    const tsOk = await turnstileOk(db, body.turnstile_token, request.headers.get('CF-Connecting-IP'));
+    if (!tsOk) return json({ need_turnstile: true, error: 'Verifikasi anti-bot wajib untuk login. Muat ulang halaman lalu coba lagi.' }, 403);
 
     const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',

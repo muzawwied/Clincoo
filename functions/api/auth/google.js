@@ -1,6 +1,6 @@
 // GET  /api/auth/google -> {client_id}
 // POST /api/auth/google {code, redirect_uri} -> tukar code Google jadi sesi Clincoo
-import { initTables, upsertOauthUser, createSession, publicUser, getEnvVarDb, json, CORS } from './shared.js';
+import { initTables, upsertOauthUser, createSession, publicUser, getEnvVarDb, getTurnstileSiteKey, turnstileOk, json, CORS } from './shared.js';
 
 export async function onRequestOptions() { return new Response(null, { status: 204, headers: CORS }); }
 
@@ -8,7 +8,7 @@ export async function onRequestGet({ request, env }) {
   const db = env.DB;
   const clientId = db ? await getEnvVarDb(db, 'GOOGLE_CLIENT_ID') : null;
   if (!clientId) return json({ error: 'Client ID Google tidak tersedia.' }, 500);
-  return json({ client_id: clientId });
+  return json({ client_id: clientId, turnstile_sitekey: await getTurnstileSiteKey(db) });
 }
 
 export async function onRequestPost({ request, env }) {
@@ -22,6 +22,8 @@ export async function onRequestPost({ request, env }) {
 
     const body = await request.json().catch(() => ({}));
     if (!body.code) return json({ error: 'Authorization code diperlukan' }, 400);
+    const tsOk = await turnstileOk(db, body.turnstile_token, request.headers.get('CF-Connecting-IP'));
+    if (!tsOk) return json({ need_turnstile: true, error: 'Verifikasi anti-bot wajib untuk login. Muat ulang halaman lalu coba lagi.' }, 403);
 
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
