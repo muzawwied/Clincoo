@@ -571,8 +571,12 @@
                     // Samakan dengan kartu proyek & Pengaturan Umum: nama custom (app_name) > nama AI > judul awal
                     var _st = {}; try { _st = JSON.parse(localStorage.getItem('clinqoo_umum_' + (p && p.id || 'default')) || '{}'); } catch (e2) {}
                     var name = (_st && _st.app_name) || (p && (p.aiName || p.title)) || 'Tanpa nama';
+                    // Logo proyek (Pengaturan Umum > app_logo): tampil bundar ukuran ikon; tanpa logo pakai ikon folder
+                    var _lg = '';
+                    try { _lg = (window.umumSettingsMap && window.umumSettingsMap[p.id] && window.umumSettingsMap[p.id].app_logo) || (_st && _st.app_logo) || ''; } catch (e3) {}
+                    if (typeof _lg !== 'string' || !/^(data:image\/|https?:\/\/|\/)/.test(_lg)) _lg = '';
                     html2 += '<a href="proyek/workspace/?id=' + encodeURIComponent(p.id) + '" onclick="toggleSidebar(false)" class="sb-sub flex items-center gap-2.5 px-6 py-2 pl-[3.25rem] hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0" data-search="' + esc(name) + '">' +
-                        '<i data-lucide="folder" class="w-4 h-4 text-gray-400 shrink-0"></i>' +
+                        (_lg ? '<img src="' + esc(_lg) + '" alt="Logo" class="w-4 h-4 rounded-full object-cover shrink-0 border border-gray-200 dark:border-[#2f2f2f] bg-white">' : '<i data-lucide="folder" class="w-4 h-4 text-gray-400 shrink-0"></i>') +
                         '<span class="text-sm text-gray-600 truncate">' + esc(name) + '</span></a>';
                 });
                 if (!html2) html2 = '<p class="sb-sub px-6 py-2 pl-[3.25rem] text-xs text-gray-400">Belum ada proyek</p>';
@@ -1791,6 +1795,7 @@
 
             // === Judul & deskripsi kartu proyek: dari Pengaturan Umum (app_name/app_desc), BUKAN dari chat AI ===
             const umumSettingsMap = {};
+            window.umumSettingsMap = umumSettingsMap;
             function umumCacheRead(pid) {
                 try { return JSON.parse(localStorage.getItem('clinqoo_umum_' + (pid || 'default')) || '{}'); } catch (e) { return {}; }
             }
