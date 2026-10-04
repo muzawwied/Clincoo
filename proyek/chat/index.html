@@ -6039,6 +6039,10 @@ window.chatLivePreview = function () {
         
         chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
+                // KHUSUS MOBILE: Enter JANGAN kirim pesan — cukup baris baru.
+                // Submit hanya lewat tombol kirim. 'pointer: coarse' = perangkat
+                // sentuh (HP/tablet); desktop (mouse/keyboard) tetap Enter = kirim.
+                if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return;
                 e.preventDefault();
                 handleSubmit();
             }
