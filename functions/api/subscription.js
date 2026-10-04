@@ -1,6 +1,8 @@
 import { currentUser, scopedKey, rowScope } from './user-scope.js';
 import { getCpConnection, mirroredBalance, mirrorDelta } from './clincoopay-helpers.js';
 import { flatTemplate, formatIDR, sendEmail, notifyEvent } from './notify-helpers.js';
+import { PLAN_WORKSPACE_LIMITS } from './plan-helpers.js';
+import { tableFor } from './_tables.js';
 
 // Cloudflare Pages Functions - Subscription Backend
 // Stores subscription plan data in D1 (real-time, interconnected between pages)
@@ -16,10 +18,13 @@ export async function onRequestOptions() {
 }
 
 const PLANS = {
-  'Starter': { price: 0, projectLimit: 3, storageLimit: 5, bandwidthLimit: 10, collaboratorLimit: 1 },
-  'Pro': { price: 49000, projectLimit: 10, storageLimit: 50, bandwidthLimit: 100, collaboratorLimit: 5 },
-  'Bisnis': { price: 129000, projectLimit: 50, storageLimit: 200, bandwidthLimit: 500, collaboratorLimit: 20 }
+  'Starter': { price: 0, projectLimit: 3, bandwidthLimit: 10, collaboratorLimit: 1 },
+  'Pro': { price: 49000, projectLimit: 10, bandwidthLimit: 100, collaboratorLimit: 5 },
+  'Bisnis': { price: 129000, projectLimit: 50, bandwidthLimit: 500, collaboratorLimit: 20 }
 };
+// storageLimit TIDAK lagi angka tetap di sini — diambil dari PLAN_WORKSPACE_LIMITS
+// (plan-helpers.js), SAMA PERSIS dengan kuota yang ditegakkan server di
+// POST /api/project-files. Satu sumber kebenaran, bukan dua angka berbeda.
 
 export async function onRequestGet({ request, env }) {
   const db = env.DB;
@@ -70,10 +75,25 @@ export async function onRequestGet({ request, env }) {
     }
 
     let projectCount = 0;
+    let storageUsedBytes = 0;
     try {
       const projResult = await db.prepare('SELECT COUNT(*) as c FROM projects').first();
       projectCount = projResult?.c || 0;
     } catch(e) {}
+    // Storage REAL: sum(size) dari tabel project_files tiap proyek milik user ini
+    // (sama persis dgn basis hitung kuota di POST /api/project-files).
+    try {
+      if (user) {
+        const myProjects = await db.prepare('SELECT id FROM user_projects WHERE user_id = ?').bind(user.id).all();
+        for (const row of (myProjects.results || [])) {
+          try {
+            const t = tableFor('project_files', String(row.id));
+            const r = await db.prepare(`SELECT COALESCE(SUM(size), 0) as s FROM ${t}`).first();
+            storageUsedBytes += Number(r?.s) || 0;
+          } catch (e) { /* tabel proyek ini belum ada file -> lanjut */ }
+        }
+      }
+    } catch (e) { /* biarkan 0 bila gagal, jangan ganggu respons */ }
 
     return new Response(JSON.stringify({
       plan,
@@ -83,11 +103,11 @@ export async function onRequestGet({ request, env }) {
       paymentMethod: data.payment_method || '',
       price: planInfo.price,
       projectLimit: planInfo.projectLimit,
-      storageLimit: planInfo.storageLimit,
+      storageLimit: Math.round(((PLAN_WORKSPACE_LIMITS[plan] || PLAN_WORKSPACE_LIMITS.Starter) / (1024 ** 3)) * 100) / 100,
       bandwidthLimit: planInfo.bandwidthLimit,
       collaboratorLimit: planInfo.collaboratorLimit,
       projectCount,
-      storageUsed: parseFloat(data.storage_used || '0'),
+      storageUsed: Math.round((storageUsedBytes / (1024 ** 3)) * 100) / 100,
       bandwidthUsed: parseFloat(data.bandwidth_used || '0'),
       collaboratorCount: parseInt(data.collaborator_count || '0')
     }), {
