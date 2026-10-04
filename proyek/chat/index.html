@@ -3633,7 +3633,11 @@ window.chatLivePreview = function () {
         }
 
         const TOOL_API_BASE = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : '';
-        const GEMINI_PROXY_URL = TOOL_API_BASE + '/api/chat'; // backend AI Clincoo (kuota 25/hari user gratis, 500/hari admin)
+        const GEMINI_PROXY_URL = TOOL_API_BASE + '/api/chat';
+        // Model premium Sol Pro (gpt-6.1-sol-pro) tanpa tombol UI: frontend selalu
+        // kirim premium:true ke /api/chat (server hanya pakai utk user login & tanpa
+        // gambar; tamu/bergambar otomatis jatuh ke model biasa). Set false utk balik normal.
+        const AI_PREMIUM_MODEL = true; // backend AI Clincoo (kuota 25/hari user gratis, 500/hari admin)
 
         // Token login Clincoo dipakai tools API (github_request, cloudflare_request,
         // test_secret). Sebelumnya hanya ada di IIFE bawah file (script block lain),
@@ -5715,6 +5719,7 @@ window.chatLivePreview = function () {
                                             session_id: currentSessionId || undefined,
                                             project_id: currentProjectId || undefined,
                                             workspace_tools: true,
+                                            premium: AI_PREMIUM_MODEL,
                                             save_user_message: false,
                                            
                                             stream: true
@@ -5749,6 +5754,7 @@ window.chatLivePreview = function () {
                                         session_id: currentSessionId || undefined,
                                         project_id: currentProjectId || undefined,
                                         workspace_tools: true,
+                                        premium: AI_PREMIUM_MODEL,
                                         save_user_message: hop === 0,
                                        
                                         stream: true
@@ -6020,7 +6026,7 @@ window.chatLivePreview = function () {
                                 const rc = await fetch(GEMINI_PROXY_URL, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ messages: apiMessagesWithTools, session_id: currentSessionId || undefined, project_id: currentProjectId || undefined, workspace_tools: true, save_user_message: false, }),
+                                    body: JSON.stringify({ messages: apiMessagesWithTools, session_id: currentSessionId || undefined, project_id: currentProjectId || undefined, workspace_tools: true, premium: AI_PREMIUM_MODEL, save_user_message: false, }),
                                     signal: abortController.signal
                                 });
                                 if (rc.ok) {
