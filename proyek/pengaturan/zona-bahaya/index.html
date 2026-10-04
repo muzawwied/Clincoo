@@ -441,32 +441,195 @@
       });
     });
 
-    // === Hapus proyek (kaskade total) ===
+    // === Hapus proyek (kaskade total) — SAMA dengan alur di halaman Semua Proyek ===
+    // Step 1: ketik nama proyek persis -> pre-check server (guard saldo ClincooPay + deteksi sesi baru)
+    // -> sesi baru: step OTP 6 digit via email -> hapus terverifikasi. Sesi lama: langsung hapus.
+    function projTitle() {
+      var proj = null, st = {};
+      try { proj = (JSON.parse(localStorage.getItem('clincoo_projects') || '[]') || []).filter(function (x) { return x.id === pid; })[0]; } catch (e) {}
+      try { st = JSON.parse(localStorage.getItem('clincoo_umum_' + pid) || '{}') || {}; } catch (e) {}
+      var t = (st && st.app_name) || (proj && (proj.aiName || proj.title)) || 'Proyek Tanpa Nama';
+      return String(t).replace(/```[\s\S]*?```/g, ' ').replace(/`([^`]+)`/g, '$1').replace(/[*_~#]+/g, '').trim();
+    }
+    function delSyncOk() {
+      var okBtn = document.getElementById('zb-del-ok');
+      if (!okBtn) return;
+      if (okBtn.dataset.step === 'otp') {
+        var v = (document.getElementById('zb-del-otp-input').value || '').trim();
+        okBtn.disabled = !/^\d{6}$/.test(v);
+      } else {
+        var n = (document.getElementById('zb-del-name-input').value || '').trim().toLowerCase();
+        okBtn.disabled = !n || n !== projTitle().toLowerCase();
+      }
+      okBtn.classList.toggle('opacity-40', okBtn.disabled);
+    }
+    function closeDeleteModal() {
+      var m = document.getElementById('zb-delete-modal'); if (!m) return;
+      m.classList.add('hidden'); m.classList.remove('flex');
+      var okBtn = document.getElementById('zb-del-ok');
+      okBtn.disabled = true; okBtn.dataset.step = ''; okBtn.classList.remove('cc-spin'); okBtn.innerHTML = 'Hapus'; okBtn.classList.add('opacity-40');
+      var ni = document.getElementById('zb-del-name-input');
+      ni.value = ''; ni.classList.remove('border-red-300'); ni.classList.remove('hidden');
+      document.getElementById('zb-del-otp-step').classList.add('hidden');
+      document.getElementById('zb-del-otp-input').value = '';
+      document.getElementById('zb-del-err').classList.add('hidden');
+      document.getElementById('zb-del-otp-err').classList.add('hidden');
+    }
+    function removeFromProjectsList() {
+      try {
+        var list = JSON.parse(localStorage.getItem('clincoo_projects') || '[]');
+        list = list.filter(function (x) { return x.id !== pid; });
+        localStorage.setItem('clincoo_projects', JSON.stringify(list));
+        if (localStorage.getItem('clincoo_current_project_id') === pid) localStorage.removeItem('clincoo_current_project_id');
+      } catch (e) {}
+    }
+    function ensureDeleteModal() {
+      var m = document.getElementById('zb-delete-modal'); if (m) return m;
+      var css = document.getElementById('zb-delete-css');
+      if (!css) {
+        css = document.createElement('style'); css.id = 'zb-delete-css';
+        css.textContent = '.cc-spin{animation:cc-spin .8s linear infinite}@keyframes cc-spin{to{transform:rotate(360deg)}}';
+        document.head.appendChild(css);
+      }
+      var div = document.createElement('div');
+      div.innerHTML = '<div id="zb-delete-modal" class="fixed inset-0 z-[80] hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.45)">' +
+        '<div class="bg-white rounded-md w-full max-w-xs px-5 pt-5 pb-4 text-center">' +
+        '<h3 class="text-base font-semibold text-gray-900">Hapus proyek ini?</h3>' +
+        '<p id="zb-del-name" class="text-sm text-gray-500 mt-1 px-2 truncate"></p>' +
+        '<p class="text-[13px] text-gray-400 mt-2 leading-snug">Semua data proyek akan dihapus, <span class="text-gray-500">termasuk situs yang sudah dipublish dan link publiknya</span>.</p>' +
+        '<input id="zb-del-name-input" type="text" autocomplete="off" spellcheck="false" placeholder="Ketik nama proyek untuk konfirmasi" class="w-full mt-3 px-3 py-2 text-sm text-center border border-gray-200 rounded-md focus:outline-none focus:border-gray-400" />' +
+        '<p id="zb-del-err" class="text-xs text-red-600 mt-2 hidden"></p>' +
+        '<div id="zb-del-otp-step" class="hidden mt-3">' +
+        '<p class="text-[13px] text-gray-500 leading-snug">Kode OTP 6 digit sudah dikirim ke email akunmu.</p>' +
+        '<input id="zb-del-otp-input" type="text" inputmode="numeric" maxlength="6" placeholder="Kode OTP" class="w-full mt-2 px-3 py-2 text-sm text-center tracking-[0.3em] border border-gray-200 rounded-md focus:outline-none focus:border-gray-400" />' +
+        '<p id="zb-del-otp-err" class="text-xs text-red-600 mt-2 hidden"></p>' +
+        '</div>' +
+        '<div class="flex items-center justify-center gap-10 mt-5">' +
+        '<button type="button" id="zb-del-cancel" class="text-sm font-medium text-gray-400 hover:text-gray-900 transition-colors px-1 py-0.5">Batal</button>' +
+        '<button type="button" id="zb-del-ok" disabled class="inline-flex items-center justify-center min-w-[64px] text-sm font-semibold text-red-600 hover:text-red-700 transition-colors px-1 py-0.5 opacity-40">Hapus</button>' +
+        '</div></div></div>';
+      document.body.appendChild(div.firstElementChild);
+      m = document.getElementById('zb-delete-modal');
+      m.addEventListener('click', function (e) { if (e.target === m) closeDeleteModal(); });
+      document.getElementById('zb-del-cancel').addEventListener('click', closeDeleteModal);
+      document.getElementById('zb-del-name-input').addEventListener('input', function () {
+        this.classList.remove('border-red-300');
+        document.getElementById('zb-del-err').classList.add('hidden');
+        delSyncOk();
+      });
+      document.getElementById('zb-del-otp-input').addEventListener('input', function () {
+        document.getElementById('zb-del-otp-err').classList.add('hidden');
+        delSyncOk();
+      });
+      document.getElementById('zb-del-ok').addEventListener('click', function () { confirmDelete(); });
+      return m;
+    }
+    var delBusy = false;
+    var DEL_SPIN = '<svg class="w-4 h-4 cc-spin inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2a10 10 0 1 0 10 10"></path></svg>';
+    async function confirmDelete() {
+      if (delBusy) return;
+      var okBtn = document.getElementById('zb-del-ok');
+      var errEl = document.getElementById('zb-del-err');
+      var otpErr = document.getElementById('zb-del-otp-err');
+      var otpEl = document.getElementById('zb-del-otp-input');
+      var nameEl = document.getElementById('zb-del-name-input');
+
+      // STEP OTP: konfirmasi terakhir dengan kode 6 digit dari email.
+      if (okBtn.dataset.step === 'otp') {
+        var otp = (otpEl.value || '').trim();
+        if (!/^\d{6}$/.test(otp)) return;
+        delBusy = true; okBtn.disabled = true; okBtn.innerHTML = DEL_SPIN;
+        try {
+          // unpublish situs (non-fatal, fire-and-forget) lalu hapus terverifikasi OTP
+          try { postJSON('/deploy', { project_id: pid, action: 'unpublish' }); } catch (e) {}
+          var r = await postJSON('/projects', { action: 'delete', id: pid, otp: otp });
+          delBusy = false;
+          if (r && r.success) {
+            closeDeleteModal();
+            removeLocalData(pid);
+            removeFromProjectsList();
+            showStatus('Proyek dihapus', 'Semua data proyek — termasuk situs yang sudah dipublish — sudah dihapus permanen.', function () { goHome(); });
+            return;
+          }
+          okBtn.classList.remove('cc-spin'); okBtn.innerHTML = 'Konfirmasi Hapus';
+          if (r && r.guarded) {
+            // race: saldo masuk setelah OTP — balik ke step nama
+            okBtn.dataset.step = '';
+            document.getElementById('zb-del-otp-step').classList.add('hidden');
+            nameEl.classList.remove('hidden');
+            if (errEl) { errEl.textContent = r.error || 'Proyek ini tidak bisa dihapus dulu.'; errEl.classList.remove('hidden'); }
+            delSyncOk();
+            return;
+          }
+          if (otpErr) { otpErr.textContent = (r && r.error) || 'Kode OTP salah atau kadaluarsa.'; otpErr.classList.remove('hidden'); }
+        } catch (e) {
+          delBusy = false;
+          okBtn.classList.remove('cc-spin'); okBtn.innerHTML = 'Konfirmasi Hapus';
+          if (otpErr) { otpErr.textContent = 'Koneksi gagal. Coba lagi.'; otpErr.classList.remove('hidden'); }
+        }
+        return;
+      }
+
+      // STEP 1: nama proyek harus cocok persis.
+      var typed = (nameEl.value || '').trim().toLowerCase();
+      if (typed !== projTitle().toLowerCase()) { nameEl.classList.add('border-red-300'); nameEl.focus(); return; }
+      delBusy = true; okBtn.disabled = true; okBtn.innerHTML = DEL_SPIN;
+      if (errEl) errEl.classList.add('hidden');
+
+      // Pre-check guard server: saldo ClincooPay diblokir; sesi baru -> minta OTP email.
+      var check = null;
+      try {
+        var tok = localStorage.getItem('clincoo_auth_token') || '';
+        var res = await fetch(apiRoot() + '/projects?delete_check=' + encodeURIComponent(pid), { headers: tok ? { Authorization: 'Bearer ' + tok } : {} });
+        check = await res.json().catch(function () { return null; });
+      } catch (e) { check = null; }
+      delBusy = false;
+      okBtn.classList.remove('cc-spin'); okBtn.innerHTML = 'Hapus';
+      if (check && check.blocked) {
+        if (errEl) { errEl.textContent = check.reason || 'Proyek ini tidak bisa dihapus dulu.'; errEl.classList.remove('hidden'); }
+        delSyncOk();
+        return;
+      }
+      if (check && check.otp_required) {
+        // masuk step OTP: kirim kode ke email akun
+        okBtn.dataset.step = 'otp'; okBtn.disabled = true; okBtn.innerHTML = DEL_SPIN;
+        if (errEl) errEl.classList.add('hidden');
+        document.getElementById('zb-del-name-input').classList.add('hidden');
+        document.getElementById('zb-del-otp-step').classList.remove('hidden');
+        var r2 = await postJSON('/projects', { action: 'delete_otp_send' });
+        okBtn.classList.remove('cc-spin');
+        if (!r2 || !r2.success) {
+          if (otpErr) { otpErr.textContent = (r2 && r2.error) || 'Kode OTP gagal dikirim. Tutup lalu coba lagi.'; otpErr.classList.remove('hidden'); }
+          okBtn.innerHTML = 'Konfirmasi Hapus';
+          return;
+        }
+        okBtn.innerHTML = 'Konfirmasi Hapus';
+        otpEl.focus();
+        okBtn.disabled = !/^\d{6}$/.test((otpEl.value || '').trim());
+        okBtn.classList.toggle('opacity-40', okBtn.disabled);
+        return;
+      }
+
+      // tanpa OTP: unpublish (non-fatal) lalu hapus sinkron — sama seperti alur OTP di halaman Semua Proyek.
+      try { postJSON('/deploy', { project_id: pid, action: 'unpublish' }); } catch (e) {}
+      var r3 = await postJSON('/projects', { action: 'delete', id: pid });
+      if (r3 && r3.success) {
+        closeDeleteModal();
+        removeLocalData(pid);
+        removeFromProjectsList();
+        showStatus('Proyek dihapus', 'Semua data proyek — termasuk situs yang sudah dipublish — sudah dihapus permanen.', function () { goHome(); });
+        return;
+      }
+      if (errEl) { errEl.textContent = (r3 && r3.error) || 'Gagal menghapus proyek. Periksa koneksi lalu coba lagi.'; errEl.classList.remove('hidden'); }
+      delSyncOk();
+    }
     var btnD = document.getElementById('btn-hapus-proyek');
     if (btnD) btnD.addEventListener('click', function () {
-      askConfirm('Hapus proyek ini?', 'Semua data proyek akan dihapus permanen, termasuk situs yang sudah dipublish dan link publiknya.', 'Hapus', async function () {
-        var r1 = await postJSON('/deploy', { project_id: pid, action: 'unpublish' });
-        // Situs HARUS benar-benar ditarik dari Cloudflare sebelum proyek dihapus.
-        // Kalau tidak, domain kustom + subdomain tetap hidup tanpa proyek yang mengontrolnya.
-        if (r1 && r1.error) {
-          showStatus('Gagal menarik situs', 'Situs publik gagal dihapus dari Cloudflare (' + r1.error + '). Proyek TIDAK jadi dihapus supaya tidak ada situs yatim yang masih aktif — coba lagi.');
-          return;
-        }
-        if (!r1 || !r1.success) {
-          showStatus('Gagal menarik situs', 'Server tidak merespons permintaan penarikan situs. Proyek TIDAK jadi dihapus — coba lagi.');
-          return;
-        }
-        var r2 = await postJSON('/projects', { action: 'delete', id: pid });
-        if (r2.error) { showStatus('Gagal menghapus proyek', r2.error); return; }
-        removeLocalData(pid);
-        try {
-          var list = JSON.parse(localStorage.getItem('clincoo_projects') || '[]');
-          list = list.filter(function (x) { return x.id !== pid; });
-          localStorage.setItem('clincoo_projects', JSON.stringify(list));
-          if (localStorage.getItem('clincoo_current_project_id') === pid) localStorage.removeItem('clincoo_current_project_id');
-        } catch (e) {}
-        goHome();
-      });
+      var m = ensureDeleteModal();
+      closeDeleteModal(); // reset state tiap kali dibuka
+      document.getElementById('zb-del-name').textContent = projTitle();
+      m.classList.remove('hidden'); m.classList.add('flex');
+      document.getElementById('zb-del-name-input').focus();
     });
   });
 })();
