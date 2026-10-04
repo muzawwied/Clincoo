@@ -4449,7 +4449,13 @@ window.chatLivePreview = function () {
             const authHeaders = token ? { Authorization: 'Bearer ' + token } : {};
             if (action === 'config' || action === 'activate') {
                 if (!pid) return { success: false, error: 'Tidak ada proyek aktif. Buka proyek dulu dari daftar proyek.' };
-                const res = await fetch(TOOL_API_BASE + '/api/pay?action=' + action + '&project_id=' + encodeURIComponent(pid), { headers: Object.assign({}, authHeaders) });
+                // config = GET (baca status); activate = POST (handler activate hanya ada di onRequestPost)
+                let res;
+                if (action === 'activate') {
+                    res = await fetch(TOOL_API_BASE + '/api/pay', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders), body: JSON.stringify({ action: 'activate', project_id: pid }) });
+                } else {
+                    res = await fetch(TOOL_API_BASE + '/api/pay?action=config&project_id=' + encodeURIComponent(pid), { headers: Object.assign({}, authHeaders) });
+                }
                 const d = await res.json().catch(function () { return {}; });
                 if (!res.ok || d.error) return { success: false, error: d.error || ('Gagal ' + action + ' ClincooPay — pastikan sudah login Clincoo.') };
                 if (action === 'activate') return { success: true, active: true, account_id: d.account_id, pay_key: d.pay_key, message: 'ClincooPay aktif untuk proyek ini. Lanjut action create untuk membuat order.' };
