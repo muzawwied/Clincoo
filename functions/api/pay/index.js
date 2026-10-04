@@ -37,6 +37,8 @@ const CORS = {
 const PAKASIR_API = 'https://app.pakasir.com';
 // throttle cek status: Pakasir membatasi 4 detik per transaksi
 const PKS_THROTTLE = new Map();
+// anti banjir transaksi: batasi create dari endpoint publik per pay_key (12 transaksi / 5 menit, per isolate)
+const CREATE_THROTTLE = new Map();
 
 export function gatewayReady(env) { return !!(env.PAKASIR_SLUG && env.PAKASIR_API_KEY); }
 
@@ -960,6 +962,11 @@ export async function onRequestPost({ request, env }) {
     if (!amount || amount < 1000 || amount > 100000000) return json({ error: 'Nominal harus Rp 1.000 – Rp 100.000.000' }, 400);
     const creds = await db.prepare('SELECT * FROM pay_creds WHERE pay_key = ?').bind(key).first();
     if (!creds) return json({ error: 'pay key tidak dikenal' }, 404);
+    // anti banjir transaksi dari endpoint publik
+    const nowMs = Date.now();
+    const arr = (CREATE_THROTTLE.get(key) || []).filter(t => nowMs - t < 5 * 60 * 1000);
+    if (arr.length >= 12) return json({ success: false, message: 'Terlalu banyak transaksi berurutan — tunggu beberapa menit.' }, 429);
+    arr.push(nowMs); CREATE_THROTTLE.set(key, arr);
     const bq = await bqCreds(env);
     if (!bq.ok) {
       return json({ success: false, error: 'gateway_not_ready', message: 'Pembayaran QRIS ClincooPay sedang dalam proses aktivasi. Hubungi tim Clincoo.' }, 503);
@@ -1016,8 +1023,9 @@ export async function onRequestPost({ request, env }) {
     const st = pickStatus(body);
     if (st !== tx.status) {
       await db.prepare('UPDATE pay_transactions SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').bind(st, tx.id).run();
+      // hanya saat transisi — retry provider nggak bikin webhook proyek kena notifikasi ganda
+      if (st === 'paid') { try { await forwardPayWebhook(db, tx, st); } catch (e) {} }
     }
-    await forwardPayWebhook(db, tx, st);
     return json({ success: true, status: st });
   }
 

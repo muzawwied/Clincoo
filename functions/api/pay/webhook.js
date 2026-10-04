@@ -57,8 +57,8 @@ export async function onRequestPost({ request, env }) {
 
   if (st !== tx.status) {
     await db.prepare('UPDATE pay_transactions SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').bind(st, tx.id).run();
+    if (st === 'paid') await forwardPayWebhook(db, tx, st);
   }
-  await forwardPayWebhook(db, tx, st);
 
   return new Response(JSON.stringify({ success: true, status: st }), { status: 200, headers: { 'Content-Type': 'application/json', ...CORS } });
 }

@@ -255,8 +255,9 @@ export async function onRequestPost({ request, env }) {
         else if (['expire', 'expired', 'failed', 'fail', 'gagal', 'cancel', 'cancelled', 'canceled', 'refund'].some(w => low.includes(w))) st = 'expired';
         if (st !== tx.status) {
           try { await db.prepare("UPDATE pay_transactions SET status = ?, updated_at = datetime('now') WHERE id = ?").bind(st, tx.id).run(); } catch (e) {}
+          // hanya saat transisi — retry webhook nggak kirim 'paid' dobel ke situs deploy
+          if (st === 'paid') { try { await forwardPayWebhook(db, tx, st); } catch (e) {} }
         }
-        try { await forwardPayWebhook(db, tx, st); } catch (e) {}
         return json({ received: true, matched: true });
       }
     }
