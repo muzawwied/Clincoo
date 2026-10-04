@@ -19,7 +19,8 @@
 // DELETE /api/project-files?project_id=xxx[&path=yyy]
 
 import { getProjectTables, tableFor } from './_tables.js';
-import { guardProject } from './user-scope.js';
+import { guardProject, currentUser } from './user-scope.js';
+import { getEffectivePlan, PLAN_WORKSPACE_LIMITS, ADMIN_EMAILS } from './plan-helpers.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -170,6 +171,21 @@ export async function onRequestGet({ request, env }) {
   }
 }
 
+// ==== Kuota workspace per proyek (mengikuti paket langganan) ====
+function fmtBytes(n) {
+  if (n >= 1024 * 1024 * 1024) return (n / (1024 * 1024 * 1024)).toFixed(1).replace('.0', '') + ' GB';
+  if (n >= 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + ' MB';
+  return Math.max(0, Math.round(n / 1024)) + ' KB';
+}
+
+// Perkiraan byte baru yang masuk dari satu entri file payload
+function estBytes(f) {
+  if (!f) return 0;
+  if (f.cloud) return 0; // penanda: isi sudah di server, tidak menambah
+  if (typeof f.content_b64 === 'string' && f.content_b64.length) return decB64Bytes(f.content_b64);
+  return new TextEncoder().encode(String(f.content || '')).length;
+}
+
 export async function onRequestPost({ request, env }) {
   const db = env.DB;
   if (!db) return json({ error: 'D1 not bound' }, 500);
@@ -187,6 +203,27 @@ export async function onRequestPost({ request, env }) {
     const filesToSave = body.files && Array.isArray(body.files) ? body.files
       : (body.path !== undefined ? [{ path: body.path, content: body.content, content_b64: body.content_b64 }] : []);
     if (filesToSave.length === 0) return json({ error: 'path/content or files[] required' }, 400);
+
+    // Kuota workspace per proyek sesuai paket (admin bypass)
+    const user = await currentUser(env, request);
+    if (!user || !ADMIN_EMAILS.has(String(user.email || '').toLowerCase())) {
+      const planInfo = await getEffectivePlan(db, user);
+      const quota = PLAN_WORKSPACE_LIMITS[planInfo.plan] || PLAN_WORKSPACE_LIMITS.Starter;
+      const incoming = new Map(); // path -> perkiraan byte baru
+      for (const f of filesToSave) {
+        const path = String((f && f.path) || '').trim();
+        if (path) incoming.set(path, (incoming.get(path) || 0) + estBytes(f));
+      }
+      // terpakai = total baris yang TIDAK sedang ditimpa (biar overwrite tidak dihitung dua kali)
+      const rows = await db.prepare(`SELECT path, size FROM ${T.files} WHERE project_id = ?`).bind(projectId).all();
+      let used = 0;
+      for (const r of (rows.results || [])) if (!incoming.has(r.path)) used += Number(r.size) || 0;
+      let add = 0;
+      for (const v of incoming.values()) add += v;
+      if (used + add > quota) {
+        return json({ success: false, error: 'Kuota workspace penuh: paket ' + planInfo.plan + ' maksimal ' + fmtBytes(quota) + ' per proyek (terpakai ' + fmtBytes(used) + '). Upgrade paket di halaman Langganan untuk kuota lebih besar.', plan: planInfo.plan, quota_bytes: quota, used_bytes: used, upgrade_needed: true }, 402);
+      }
+    }
 
     const keepPaths = [];
     const errors = [];

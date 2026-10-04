@@ -11,6 +11,14 @@ export const PLAN_LIMITS = {
   Bisnis: { projectLimit: 50, collaboratorLimit: 20, deployLimit: null }
 };
 
+// Kuota workspace (total ukuran file per proyek) sesuai paket.
+// File tunggal tetap dibatasi 25MB (batas aset Cloudflare Pages) — lihat project-files.js.
+export const PLAN_WORKSPACE_LIMITS = {
+  Starter: 1 * 1024 * 1024 * 1024,   // 1 GB per proyek
+  Pro: 5 * 1024 * 1024 * 1024,      // 5 GB per proyek
+  Bisnis: 20 * 1024 * 1024 * 1024   // 20 GB per proyek
+};
+
 // Kuota chat AI per paket: bulanan (selaras periode tagihan) + cap harian (anti-burst).
 // Benar-benar diterapkan di /api/chat (dua-duanya dicek server-side).
 export const PLAN_AI_LIMITS = {
