@@ -5295,11 +5295,11 @@ window.chatLivePreview = function () {
             ];
             if (markers.some(function (rx) { return rx.test(tail); })) return true;
             if (/(^|\n)\s*(berikutnya|selanjutnya|tahap|langkah|step)\s*[:：]/i.test(tail) && aiMsgObj && aiMsgObj.toolCalls && aiMsgObj.toolCalls.length) return true;
-            // Teks menggantung diakhiri ':' TANPA tool call sama sekali di giliran ini
-            // = AI mengumumkan niat ("...akan memperbarui file X untuk Y:") lalu terputus
-            // (sering karena finish_reason length) tanpa benar-benar mengerjakannya.
-            const noToolThisTurn = !aiMsgObj || !aiMsgObj.toolCalls || aiMsgObj.toolCalls.length === 0;
-            if (noToolThisTurn && /[:：]\s*$/.test(t)) return true;
+            // Teks menggantung diakhiri ':' = AI mengumumkan niat/aksi ("...akan memperbarui
+            // file X:" atau "Lakukan deployment:") lalu terputus (sering finish_reason length)
+            // — berlaku SELALU, baik ada tool call di giliran ini maupun tidak (tool yang sudah
+            // dipanggil tidak berarti kalimat penutupnya sendiri sudah tuntas).
+            if (/[:：]\s*$/.test(t)) return true;
             return false;
         }
         // Tutup bubble AI "sebagian selesai" lalu mulai ronde lanjutan secara diam-diam
