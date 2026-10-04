@@ -5276,7 +5276,11 @@ window.chatLivePreview = function () {
         // meneruskan sisa tugas sampai benar-benar selesai tanpa menunggu konfirmasi.
         // silentRounds di-reset setiap user mengirim pesan baru / menjawab polling.
         let silentRounds = 0;
-        const SILENT_MAX_ROUNDS = 3;
+        // Diturunkan dari 3 -> 1: user komplain AI kebanyakan buka bubble jawaban baru
+        // sendiri (auto-lanjut diam-diam). Sekarang AI hanya boleh melanjutkan otomatis
+        // SATU kali per tugas; kalau masih belum tuntas, AI berhenti & tunggu user bilang
+        // "lanjut" sendiri — daripada terus-terusan membuat giliran jawaban baru sendiri.
+        const SILENT_MAX_ROUNDS = 1;
         const SILENT_NUDGES = [
             'Lanjutkan tugas dari titik terhenti sampai benar-benar selesai. Jangan ulangi bagian yang sudah selesai dan jangan bertanya apa pun — langsung kerjakan sisa tugasnya sekarang.',
             'Teruskan pengerjaan sampai seluruh tugas tuntas dan hasil akhir lengkap. Langsung kerjakan tanpa konfirmasi; bagian yang sudah beres tidak perlu diulang.',
@@ -5301,22 +5305,23 @@ window.chatLivePreview = function () {
                 messages.some(function (m) { return m.role === 'user' && !m.silent && /buat(kan)?\b|bikin|deploy|perbaiki|tambah(kan)?|ubah|rancang|kembangkan|lanjut/i.test(m.text || ''); });
             if (!hasWork) return false;
             const tail = t.slice(-260);
+            // Markers DIPERKETAT (user komplain AI kebanyakan auto-lanjut sendiri jadi
+            // bubble jawaban baru): sinyal lemah seperti "sebentar ya" / "tunggu dulu"
+            // dihapus karena sering muncul di jawaban santai yang SUDAH tuntas, bukan
+            // tanda tugas terpotong — hanya sinyal KUAT niat melanjutkan tugas nyata.
             const markers = [
                 /lanjut(kan)?\s*(di|ke|bagian|tahap|langkah|pesan)\b/i,
                 /(akan|bisa|mau|biar)\s+(saya\s+)?(melanjutkan|lanjutkan|teruskan)/i,
                 /bersambung/i,
-                /to\s*be\s*continued/i,
-                /(mau|ingin|apakah)\s+(saya|aku)\s+(lanjut|lanjutkan|teruskan)/i,
-                /tunggu\s+(dulu|sebentar)/i,
-                /sebentar\s+ya/i
+                /to\s*be\s*continued/i
             ];
             if (markers.some(function (rx) { return rx.test(tail); })) return true;
             if (/(^|\n)\s*(berikutnya|selanjutnya|tahap|langkah|step)\s*[:：]/i.test(tail) && aiMsgObj && aiMsgObj.toolCalls && aiMsgObj.toolCalls.length) return true;
-            // Teks menggantung diakhiri ':' = AI mengumumkan niat/aksi ("...akan memperbarui
-            // file X:" atau "Lakukan deployment:") lalu terputus (sering finish_reason length)
-            // — berlaku SELALU, baik ada tool call di giliran ini maupun tidak (tool yang sudah
-            // dipanggil tidak berarti kalimat penutupnya sendiri sudah tuntas).
-            if (/[:：]\s*$/.test(t)) return true;
+            // Teks menggantung diakhiri ':' = AI mengumumkan niat/aksi lalu terputus —
+            // sekarang WAJIB ada tool call di giliran ini (tugas kerja nyata yang
+            // benar-benar sedang berjalan), supaya kalimat santai yang kebetulan
+            // diakhiri ':' tidak memicu bubble lanjutan baru secara keliru.
+            if (/[:：]\s*$/.test(t) && aiMsgObj && aiMsgObj.toolCalls && aiMsgObj.toolCalls.length) return true;
             return false;
         }
         // Tutup bubble AI "sebagian selesai" lalu mulai ronde lanjutan secara diam-diam
