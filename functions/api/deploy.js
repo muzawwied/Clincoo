@@ -700,11 +700,12 @@ export async function onRequestPost({ request, env }) {
             return json({ error: 'Gagal mengompilasi ' + f.path + ': ' + (e && e.message ? e.message : String(e)) }, 400);
           }
           // import relatif antar file TS: perbaiki ekstensi & tambahkan .js bila tanpa ekstensi.
+          const norm = (dir, spec) => (dir + spec).replace(/^\.\//, '');
           const dir = String(f.path).replace(/[^/]+$/, '');
           code = code.replace(/(from\s*["'])(\.[^"']+)(["'])/g, (m, a, spec, z) => {
             if (/\.(tsx?|jsx)$/i.test(spec)) return a + spec.replace(/\.(tsx?|jsx)$/i, '.js') + z;
             if (/\.[a-z0-9]+$/i.test(spec)) return m; // sudah ada ekstensi lain (mis. .json)
-            const base = dir + spec;
+            const base = norm(dir, spec);
             for (const cand of [base + '.js', base + '.ts', base + '.tsx']) {
               if (existing.has(cand)) { return a + spec + '.js' + z; }
             }
