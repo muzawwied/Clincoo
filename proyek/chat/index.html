@@ -3944,6 +3944,7 @@ window.chatLivePreview = function () {
                 case 'notion_request': return 'Accessing Notion connector…';
                 case 'write_files': return 'Writing ' + (Array.isArray(a.files) ? a.files.length : '?') + ' files…';
                 case 'clone_repo': return 'Cloning repo: ' + String(a.repo || '') + '…';
+                case 'clone_url': return 'Cloning site: ' + String(a.url || '') + '…';
                 case 'build_apk': return 'Building Android APK (' + String(a.action || 'start') + (a.build_id ? ': ' + a.build_id : '') + ')…';
                 case 'push_to_github': return 'Pushing to GitHub: ' + String(a.repo || '') + '…';
                 default: return 'Processing: ' + tc.name + '…';
@@ -4071,6 +4072,7 @@ window.chatLivePreview = function () {
                     case 'review_code': return await toolReviewCode(args);
                     case 'write_files': return wsWriteFilesBatch(args);
                     case 'clone_repo': return await toolCloneRepo(args);
+                    case 'clone_url': return await toolCloneUrl(args);
                     case 'push_to_github': return await toolPushToGithub(args);
                     default: return { success: false, error: 'Tool tidak dikenal: ' + name };
                 }
@@ -4590,6 +4592,173 @@ window.chatLivePreview = function () {
             const err = wsSave(data);
             if (err) return err;
             return { success: true, repo: slug, ref: branch, target: 'workspace', folder: folder, cloned: files.length, skipped_binary: skippedBinary, skipped_fetch: skippedFetch, truncated: truncated, note: 'Repo tersimpan di folder workspace "' + folder + '" — bisa langsung diedit atau di-deploy.' };
+        }
+
+        // ===== TOOL clone_url: salin file situs (HTML/CSS/JS) dari sebuah URL ke workspace / AI Storage =====
+        async function _cloneUrlFetchRaw(url) {
+            try {
+                const res = await fetch(TOOL_API_BASE + '/api/fetch-raw', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: url }) });
+                const d = await res.json().catch(function () { return {}; });
+                if (!res.ok || d.error || !d.base64) return null;
+                return d;
+            } catch (e) { return null; }
+        }
+        function _cloneUrlDecode(d) {
+            const bin = atob(d.base64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+        }
+        function _cloneUrlLocalPath(u) {
+            // struktur ikut path asli situs: /static/css/main.css -> assets/static/css/main.css
+            try {
+                const p = new URL(u);
+                if (p.protocol !== 'http:' && p.protocol !== 'https:') return '';
+                const segs = p.pathname.replace(/^\/+/, '').split('/').filter(function (s) { return s && s !== '.' && s !== '..' && !/[\\:*?"<>|]/.test(s); });
+                if (!segs.length) return '';
+                return 'assets/' + segs.join('/');
+            } catch (e) { return ''; }
+        }
+        function _cloneUrlAbsolutizeCss(text, cssUrl) {
+            return text
+                .replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, function (m, q, u) {
+                    u = String(u).trim();
+                    if (!u || /^(data:|#)/i.test(u)) return m;
+                    try { return 'url("' + new URL(u, cssUrl).href + '")'; } catch (e) { return m; }
+                })
+                .replace(/@import\s+(['"])([^'"]+)\1/g, function (m, q, u) {
+                    try { return '@import "' + new URL(u, cssUrl).href + '"'; } catch (e) { return m; }
+                });
+        }
+        async function toolCloneUrl(args) {
+            const rawUrl = String((args && args.url) || '').trim();
+            if (!/^https?:\/\//i.test(rawUrl)) return { success: false, error: 'Parameter url wajib berupa URL lengkap (http/https).' };
+            const target = String((args && args.target) || 'workspace');
+            let folder = String((args && args.folder) || '').replace(/^\/+|\/$|^\.\.+\/+/g, '').replace(/\/+$/g, '');
+            if (!folder) {
+                try { folder = new URL(rawUrl).hostname.replace(/^www\./, '').replace(/[^\w.-]/g, ''); } catch (e) {}
+                if (!folder) folder = 'site';
+            }
+
+            // 1) unduh HTML utama lewat proxy server (bypass CORS)
+            const main = await _cloneUrlFetchRaw(rawUrl);
+            if (!main) return { success: false, error: 'Gagal mengambil halaman ' + rawUrl + ' — situs tidak merespons atau menolak akses.' };
+            const baseUrl = main.final_url || rawUrl;
+            const ct = String(main.content_type || '');
+            if (ct && !/text\/html|application\/xhtml|text\/plain/i.test(ct)) return { success: false, error: 'URL bukan halaman web (content-type: ' + ct.split(';')[0] + ').' };
+            const html = _cloneUrlDecode(main);
+            let doc = null;
+            try { doc = new DOMParser().parseFromString(html, 'text/html'); } catch (e) { doc = null; }
+            if (!doc || !doc.documentElement) {
+                // bukan HTML yang bisa diparse: simpan mentah saja
+                const filesRaw = [{ path: 'index.html', content: html }];
+                return _cloneUrlSave(filesRaw, folder, target, rawUrl, 0, 0, 0, false);
+            }
+            // tag <base> dihapus — semua referensi sudah dinormalisasi lokal/absolut
+            doc.querySelectorAll('base').forEach(function (b) { b.remove(); });
+
+            // 2) kumpulkan asset teks (css/js) utk diunduh; gambar/font/icon di-absolutkan (tetap dari server asal)
+            const toDownload = [];
+            const seen = {};
+            function queueAsset(u) {
+                u = String(u || '').trim();
+                if (!u || u.startsWith('data:')) return '';
+                let abs; try { abs = new URL(u, baseUrl).href; } catch (e) { return ''; }
+                if (!/^https?:/i.test(abs)) return '';
+                const lp = _cloneUrlLocalPath(abs);
+                if (!lp) return abs;
+                if (seen[abs]) return seen[abs];
+                if (toDownload.length >= 40) return abs;
+                seen[abs] = lp;
+                toDownload.push({ url: abs, path: lp, kind: /\.css(\?|$)/i.test(abs) ? 'css' : 'js' });
+                return lp;
+            }
+            function absolutize(el, attr) {
+                const u = el.getAttribute && el.getAttribute(attr);
+                if (!u || u.startsWith('data:')) return;
+                try { el.setAttribute(attr, new URL(u, baseUrl).href); } catch (e) {}
+            }
+            // css/js -> diunduh lokal, referensi HTML diganti ke path lokal
+            doc.querySelectorAll('link[rel~="stylesheet"][href]').forEach(function (el) {
+                const lp = queueAsset(el.getAttribute('href'));
+                if (lp) el.setAttribute('href', lp); else absolutize(el, 'href');
+            });
+            doc.querySelectorAll('script[src]').forEach(function (el) {
+                const lp = queueAsset(el.getAttribute('src'));
+                if (lp) el.setAttribute('src', lp); else absolutize(el, 'src');
+            });
+            // gambar/media/icon -> absolut saja (tetap termuat dari server asal)
+            doc.querySelectorAll('img[src]').forEach(function (el) { absolutize(el, 'src'); });
+            doc.querySelectorAll('img[srcset]').forEach(function (el) { el.removeAttribute('srcset'); });
+            doc.querySelectorAll('source[src]').forEach(function (el) { absolutize(el, 'src'); });
+            doc.querySelectorAll('link[rel~="icon"][href]').forEach(function (el) { absolutize(el, 'href'); });
+            doc.querySelectorAll('video[src], audio[src], embed[src], object[data]').forEach(function (el) {
+                absolutize(el, el.hasAttribute('src') ? 'src' : 'data');
+            });
+            doc.querySelectorAll('video[poster]').forEach(function (el) { absolutize(el, 'poster'); });
+
+            // 3) unduh asset paralel (4 worker; batas total ±2MB)
+            const files = [];
+            let skippedFetch = 0, truncated = false, totalBytes = 0;
+            const MAX_CLONE_BYTES = 2 * 1024 * 1024;
+            const queue = toDownload.slice();
+            async function cloneWorker() {
+                while (queue.length) {
+                    if (totalBytes >= MAX_CLONE_BYTES) { truncated = true; return; }
+                    const t = queue.shift();
+                    const d = await _cloneUrlFetchRaw(t.url);
+                    if (!d) { skippedFetch++; continue; }
+                    if (d.truncated) truncated = true;
+                    let text = _cloneUrlDecode(d);
+                    if (t.kind === 'css') text = _cloneUrlAbsolutizeCss(text, t.url);
+                    totalBytes += (d.size || 0);
+                    files.push({ path: t.path, content: text });
+                }
+            }
+            await Promise.all([cloneWorker(), cloneWorker(), cloneWorker(), cloneWorker()]);
+
+            // 4) susun HTML final lalu simpan
+            const finalHtml = '<!DOCTYPE html>\n' + doc.documentElement.outerHTML + '\n';
+            files.unshift({ path: 'index.html', content: finalHtml });
+            return _cloneUrlSave(files, folder, target, rawUrl, toDownload.length, skippedFetch, files.length - 1, truncated);
+        }
+        async function _cloneUrlSave(files, folder, target, rawUrl, assetsFound, skippedFetch, savedCount, truncated) {
+            if (target === 'storage') {
+                const tk = (typeof clinqooAuthToken === 'function' ? clinqooAuthToken() : '');
+                if (!tk) return { success: false, error: 'AI Storage memerlukan login Clincoo (gratis).' };
+                let saved = 0, updated = 0;
+                for (let i = 0; i < files.length; i += 60) {
+                    const chunk = files.slice(i, i + 60).map(function (f) { return { path: folder + '/' + f.path, content: f.content }; });
+                    const res = await fetch(TOOL_API_BASE + '/api/ai-storage', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tk },
+                        body: JSON.stringify({ action: 'save_bulk', files: chunk })
+                    });
+                    const d = await res.json().catch(function () { return {}; });
+                    if (!res.ok || d.error) return { success: false, error: d.error || ('Gagal menyimpan ke AI Storage (HTTP ' + res.status + ').'), saved_so_far: saved };
+                    saved += (d.saved || 0);
+                    updated += (d.updated || 0);
+                }
+                return { success: true, url: rawUrl, target: 'storage', prefix: folder, saved: saved, updated: updated, skipped_fetch: skippedFetch, truncated: truncated, note: 'Hasil clone tersimpan di AI Storage prefix "' + folder + '/" — baca dengan read_storage_file.' };
+            }
+            const data = wsLoad();
+            for (const f of files) {
+                const info = wsParentInfo(folder + '/' + f.path);
+                if (!info || info.name.includes('/')) { skippedFetch++; continue; }
+                wsEnsureFolderChain(data, info.folderKey);
+                if (!Array.isArray(data[info.folderKey])) data[info.folderKey] = [];
+                const sizeStr = wsSizeStr(f.content);
+                const idx = data[info.folderKey].findIndex(function (it) { return it && it.type === 'file' && it.name.toLowerCase() === info.name.toLowerCase(); });
+                if (idx !== -1) {
+                    data[info.folderKey][idx].content = f.content;
+                    data[info.folderKey][idx].size = sizeStr;
+                } else {
+                    data[info.folderKey].push({ type: 'file', name: info.name, size: sizeStr, path: info.itemPath, content: f.content });
+                }
+            }
+            const err = wsSave(data);
+            if (err) return err;
+            return { success: true, url: rawUrl, target: 'workspace', folder: folder, files: files.length, assets_found: assetsFound, skipped_fetch: skippedFetch, truncated: truncated, note: 'Situs tersimpan di folder workspace "' + folder + '/" (index.html + ' + savedCount + ' asset) — bisa langsung diedit atau di-deploy. Gambar/font tetap dimuat dari server asal.' };
         }
 
         // ===== TOOL push_to_github: kirim semua file workspace ke repo GitHub =====
