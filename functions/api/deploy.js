@@ -5,6 +5,7 @@
 // action 'add_domain'/'remove_domain' = kelola domain kustom; GET = status situs.
 
 import { getProjectTables, tableFor } from './_tables.js';
+import { transform as tsTransform } from './_ts-compile.js';
 import { guardProject, currentUser } from './user-scope.js';
 import { getEffectivePlan, getMonthlyDeployCount, bumpMonthlyDeployCount, ADMIN_EMAILS } from './plan-helpers.js';
 
@@ -673,6 +674,60 @@ export async function onRequestPost({ request, env }) {
     }
 
     const files = await readFiles(db, T.files, projectId);
+
+    // === Transpile otomatis TypeScript/JSX saat deploy (fitur "AI masak, Clincoo deploy") ===
+    // File .ts/.tsx/.jsx di workspace dikompilasi server-side menjadi .js murni (sucrase:
+    // hapus tipe/interface, JSX klasik -> React.createElement). Referensi ekstensi di HTML
+    // (mis. src="app.ts") dan import relatif antar file ditulis ulang ke ".js".
+    // Hasil deploy tetap 100% statis — tidak butuh Node/npm di server.
+    {
+      const jsPathOf = p => String(p).replace(/\.(tsx?|jsx)$/i, '.js');
+      const existing = new Set(files.map(f => String(f.path)));
+      const isTSSrc = p => /\.(ts|tsx|jsx)$/i.test(String(p)) && !/\.d\.ts$/i.test(String(p));
+      const tsSources = files.filter(f => isTSSrc(f.path));
+      if (tsSources.length) {
+        await setPhase(db, T.projectSettings, projectId, 'Mengompilasi TypeScript (' + tsSources.length + ' file)...');
+        const compiled = new Map(); // path .js hasil kompilasi -> content
+        const drop = new Set();     // file sumber .ts/.tsx/.jsx yang TIDAK dideploy
+        for (const f of tsSources) {
+          const jsPath = jsPathOf(f.path);
+          if (existing.has(jsPath)) { drop.add(f.path); continue; } // .js eksplisit di workspace menang
+          const transforms = /\.(tsx|jsx)$/i.test(String(f.path)) ? ['typescript', 'jsx'] : ['typescript'];
+          let code;
+          try {
+            code = tsTransform(String(f.content || ''), { transforms, jsxRuntime: 'classic', production: true }).code;
+          } catch (e) {
+            return json({ error: 'Gagal mengompilasi ' + f.path + ': ' + (e && e.message ? e.message : String(e)) }, 400);
+          }
+          // import relatif antar file TS: perbaiki ekstensi & tambahkan .js bila tanpa ekstensi.
+          const dir = String(f.path).replace(/[^/]+$/, '');
+          code = code.replace(/(from\s*["'])(\.[^"']+)(["'])/g, (m, a, spec, z) => {
+            if (/\.(tsx?|jsx)$/i.test(spec)) return a + spec.replace(/\.(tsx?|jsx)$/i, '.js') + z;
+            if (/\.[a-z0-9]+$/i.test(spec)) return m; // sudah ada ekstensi lain (mis. .json)
+            const base = dir + spec;
+            for (const cand of [base + '.js', base + '.ts', base + '.tsx']) {
+              if (existing.has(cand)) { return a + spec + '.js' + z; }
+            }
+            return m;
+          });
+          // import CSS side-effect tidak berlaku di browser — hapus.
+          code = code.replace(/^import\s+["'][^"']+\.css["'];?\s*$/gm, '');
+          compiled.set(jsPath, code);
+          drop.add(f.path);
+        }
+        // tulis ulang referensi ekstensi TS di HTML -> .js
+        for (const f of files) {
+          if (/\.html?$/i.test(String(f.path)) && typeof f.content === 'string') {
+            f.content = f.content.replace(/\.(tsx?|jsx)(["'?#\s])/g, '.js$2');
+          }
+        }
+        const keep = files.filter(f => !drop.has(String(f.path)) && !/\.d\.ts$/i.test(String(f.path)));
+        for (const [p, c] of compiled) keep.push({ path: p, content: c });
+        keep.sort((a, b) => String(a.path).localeCompare(String(b.path)));
+        files.length = 0;
+        files.push(...keep);
+      }
+    }
 
     // === Logo Aplikasi -> favicon otomatis (Pengaturan > Umum) ===
     // Logo yang diunggah di Pengaturan > Umum dipasang sebagai favicon situs:
