@@ -1213,11 +1213,16 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // TOOLS SERVER (backend function & screenshot) dieksekusi di sini: hasil
     // ditempel ke pesan lalu provider dipanggil lagi (max 4 hop server) —
     // jalur klien (frontend) tidak berubah sama sekali.
-    let r = null;
     const workMessages = messages; // array sama — kita append blok function_call/response
     const orKeys = orKeysEarly; // GLM 5.3 Flash (OpenRouter) — UTAMA
     const aiMain = !!(env.AI && !hasImages);
     const toolDecls = (gTools && gTools[0] && gTools[0].functionDeclarations) || null;
+    // Cascade lengkap (OpenRouter -> Clouvia -> Workers AI -> Gemini) dijalankan
+    // sebagai SATU unit supaya bisa diulang utuh bila semua provider gagal
+    // bersamaan — workMessages tetap mempertahankan hasil tool yang sudah jalan,
+    // jadi pengulangan hanya meminta ulang jawaban, bukan mengulang pekerjaan.
+    const attemptCascade = async () => {
+    let r = null;
     for (let sHop = 0; sHop <= 4; sHop++) {
       r = null;
       if (orKeys.length && !hasImages) {
@@ -1274,6 +1279,18 @@ export async function onRequestPost({ request, env, waitUntil }) {
         const sw = await tryWorkersAIText(env, sumMsgs, null);
         if (sw && !sw.error && String(sw.text || '').trim()) r = { text: sw.text, model: sw.model };
       }
+    }
+    return r;
+    };
+    let r = await attemptCascade();
+    // RETRY OTOMATIS SEBELUM ERROR SAMPAI KE USER: semua provider gagal bersamaan
+    // hampir selalu sesaat (429/limit sibuk). Tunggu 2.5 detik lalu ulangi seluruh
+    // cascade SEKALI lagi — kalau berhasil, user tidak pernah melihat error sama sekali.
+    // Konteks ke-limiter TIDAK di-retry (retry tidak menolong, perlu pemangkasan riwayat).
+    if ((!r || r.error) && !(r && r.contextOverflow)) {
+      try { streamSend && streamSend({ t: 'progress', text: 'Retrying…' }); } catch (e) {}
+      await new Promise(res => setTimeout(res, 2500));
+      r = await attemptCascade();
     }
     if (!r || (r.error && !apiKey.length && !env.AI)) {
       if (!r) r = { error: 'Tidak ada provider AI tersedia' };

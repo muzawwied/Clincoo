@@ -2891,17 +2891,22 @@ window.chatLivePreview = function () {
             // Tertutup default: progres tidak auto-membuka; user membuka sendiri manual.
             const groupOpen = (msg.toolCallsOpen === undefined) ? false : msg.toolCallsOpen;
             const errCount = msg.toolCalls.filter(tc => tc.ok === false).length;
+            // Jawaban final gagal terkirim (semua provider down sesaat) -> jangan
+            // klaim "finished" seolah semua berhasil; tampilkan status jujur.
+            const reportFailed = !running && msg.isError && msg.retryable;
             // Saat masih berjalan: tampilkan aksi NYATA yang sedang AI lakukan (English,
             // dari statusText yang sama dipakai shimmer -- misal "Writing file: services.html…"),
             // bukan teks generik "Menjalankan Tugas".
             const summaryText = running
                 ? (msg.statusText || 'Running…')
-                : (msg.midPhase
-                    ? 'Partially done — continuing…'
-                    : (errCount > 0
-                        ? `Everything's finished (${errCount} gagal)`
-                        : "Everything's finished"));
-            const badgeClass = running ? '' : (errCount > 0 ? ' err' : ' ok');
+                : (reportFailed
+                    ? 'Task complete — report failed to send, ketuk "Coba lagi"'
+                    : (msg.midPhase
+                        ? 'Partially done — continuing…'
+                        : (errCount > 0
+                            ? `Everything's finished (${errCount} gagal)`
+                            : "Everything's finished")));
+            const badgeClass = running ? '' : (reportFailed || errCount > 0 ? ' err' : ' ok');
             const summaryIcon = running
                 ? '<i class="ph-bold ph-circle-notch tc-spin text-[15px]"></i>'
                 : (msg.midPhase
