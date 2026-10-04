@@ -29,6 +29,16 @@
     @keyframes pulse-soft { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
     .pulse-soft { animation: pulse-soft 1.6s ease-in-out infinite; }
     .qr-wrap img { image-rendering: pixelated; }
+
+    /* ===== Medali sukses 3D ===== */
+    .medal-wrap { perspective: 600px; }
+    .medal { background: radial-gradient(circle at 30% 25%, #6ee7b7, #10b981 55%, #047857); box-shadow: 0 16px 34px -10px rgba(16,185,129,.55), inset 0 -8px 14px rgba(0,0,0,.25), inset 0 8px 14px rgba(255,255,255,.4); transform-style: preserve-3d; animation: medalIn .85s cubic-bezier(.34,1.56,.64,1) both, medalFloat 2.6s ease-in-out 1s infinite alternate; }
+    .medal-check { stroke-dasharray: 30; stroke-dashoffset: 30; animation: medalDraw .5s ease-out .5s forwards; }
+    .medal-halo { position: absolute; inset: -8px; border-radius: 9999px; border: 2px solid rgba(16,185,129,.5); animation: medalHalo 1.5s ease-out .35s both; }
+    @keyframes medalIn { 0% { transform: scale(.15) rotateY(190deg); opacity: 0; } 60% { transform: scale(1.12) rotateY(-16deg); opacity: 1; } 100% { transform: scale(1) rotateY(0deg); } }
+    @keyframes medalFloat { from { transform: rotateX(5deg) translateY(0); } to { transform: rotateX(-5deg) translateY(-7px); } }
+    @keyframes medalDraw { to { stroke-dashoffset: 0; } }
+    @keyframes medalHalo { from { transform: scale(.55); opacity: .9; } to { transform: scale(1.45); opacity: 0; } }
     .divider { border-top: 1px solid rgba(0,0,0,.08); }
     .dark-mode .divider { border-top: 1px solid rgba(255,255,255,.08); }
   </style>
@@ -67,11 +77,14 @@
 
     <!-- Sukses -->
     <div id="ok-area" class="hidden mt-10 w-full flex flex-col items-center text-center">
-      <div class="pop w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mb-5">
-        <svg class="w-10 h-10 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      <div class="medal-wrap relative w-28 h-28 mb-6">
+        <div class="medal absolute inset-0 rounded-full flex items-center justify-center">
+          <svg class="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path class="medal-check" d="M20 6 9 17l-5-5"/></svg>
+        </div>
+        <div class="medal-halo"></div>
       </div>
       <div class="text-xl font-extrabold">Pembayaran berhasil</div>
-      <div class="mt-1.5 text-sm text-slate-500 dark-mode:text-slate-400">Terima kasih! Dana sudah kami terima dan pesananmu diproses.</div>
+      <div class="mt-1.5 text-sm text-slate-500 dark-mode:text-slate-400">Dana sudah masuk dan diterima oleh penjual. Terima kasih sudah membayar!</div>
       <div id="ok-amount" class="mt-4 text-lg font-bold text-emerald-600 dark-mode:text-emerald-400"></div>
     </div>
 
@@ -111,9 +124,6 @@
         <a href="https://blog.clincoo.buzz/legal/syarat-ketentuan/" class="hover:underline">Syarat &amp; Ketentuan</a>
         <span class="px-1.5 text-slate-300 dark-mode:text-slate-600">·</span>
         <a href="https://blog.clincoo.buzz/legal/kebijakan-privasi/" class="hover:underline">Kebijakan Privasi</a>
-      </div>
-      <div class="mt-2 text-[11px] text-slate-300 dark-mode:text-slate-600">
-        Status diperbarui otomatis — tidak perlu me-refresh halaman
       </div>
     </div>
   </main>
@@ -243,6 +253,10 @@
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden && timer) poll();
     });
+    // HP sering membekukan tab saat pembayar pindah ke aplikasi e-wallet:
+    // pastikan status dicek ulang begitu halaman kembali hidup, tanpa refresh manual
+    window.addEventListener('pageshow', function (ev) { if (timer) poll(); });
+    window.addEventListener('focus', function () { if (timer) poll(); });
   }
 })();
 </script>
