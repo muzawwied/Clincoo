@@ -1,16 +1,16 @@
 // PENGETAHUAN PAYMENT GATEWAY — disuntik langsung ke AI Clincoo.
 // Dipakai chat.js (auto-inject saat user bicara soal payment) dan blogsearch.js
-// (tool search_clinqoo_kb). Sumber: dokumentasi resmi masing-masing gateway +
+// (tool search_clincoo_kb). Sumber: dokumentasi resmi masing-masing gateway +
 // integrasi nyata Clincoo sendiri (functions/api/topup-qris.js).
 // Sengaja ringkas & padat supaya hemat token: hanya fakta yang stabil.
 
 export const PAYMENT_KB = [
   {
-    id: 'clinqoopay-internal',
+    id: 'clincoopay-internal',
     gateway: 'ClincooPay',
-    keywords: ['clincoo pay', 'clinqoo pay', 'clinqoopay', 'payment clincoo', 'pembayaran clincoo', 'qris clincoo', 'pembayaran', 'qris', 'bayar', 'pay', 'checkout', 'pay_key', 'clc_pay_', 'cno_pk_', 'clc_pk_', 'api/pay'],
+    keywords: ['clincoo pay', 'clincoo pay', 'clincoopay', 'payment clincoo', 'pembayaran clincoo', 'qris clincoo', 'pembayaran', 'qris', 'bayar', 'pay', 'checkout', 'pay_key', 'clc_pay_', 'cno_pk_', 'clc_pk_', 'api/pay'],
     summary: 'ClincooPay: pembayaran QRIS bawaan Clincoo — aktivasi per proyek, buat QRIS dari situs deploy via /api/pay, cek status order.',
-    doc: `CLINQOOPAY (pembayaran bawaan Clincoo, endpoint: https://app.clincoo.buzz/api/pay):
+    doc: `CLINCOOPAY (pembayaran bawaan Clincoo, endpoint: https://app.clincoo.buzz/api/pay):
 - JALUR KILAT VIA TOOL clincoo_pay (PAKAI INI DULU): setiap user ingin situs Clincoo-nya bisa menerima pembayaran/checkout/QRIS TANPA menyebut gateway eksternal secara eksplisit — JANGAN bangun backend function sendiri, JANGAN bikin halaman bayar sendiri, JANGAN bertanya bertubi-tubi. Langsung: (1) tool clincoo_pay action config; (2) bila belum aktif: action activate (butuh login Clincoo); (3) action create (amount rupiah integer min 1000 + description); (4) BERIKAN d.checkout_url dari respons ke user DI JAWABAN YANG SAMA — itu halaman bayar resmi siap pakai. checkout_url ADALAH SATU-SATUNYA link yang boleh diberikan/kirim ke user: link gateway mentah (mis. pakasir.zone.id, app.pakasir.com, buatqris) atau field qr_image/qr_string adalah data INTERNAL (untuk embed di situs user sendiri) dan DILARANG dikirim sebagai link bayar ke user. DILARANG memanggil /api/pay atau API gateway via run_command/cloudflare_request — selalu pakai tool clincoo_pay; bila tool gagal (mis. butuh login), laporkan errornya ke user, jangan buat order manual via terminal. Bila nominal belum disebut user, pakai nominal contoh untuk demo dan jelaskan nominal lain tinggal create ulang. Gateway eksternal (Xendit/Midtrans/DOKU/Pakasir dkk + API key user sendiri) HANYA bila user eksplisit memintanya.
 - AKTIVASI (pemilik proyek, perlu login Clincoo): UI Pengaturan > Pembayaran > tombol Aktifkan, atau POST /api/pay body {"action":"activate","project_id":"<id>"} dengan header Authorization: Bearer <token akun Clincoo>. Respons: {"success":true,"account_id":"CP....","pay_key":"clc_pay_...."}. Secret (clc_pay_ss_..., lama cno_ss_/cps_...) internal server — JANGAN dipublikasikan.
 - PAY_KEY: kunci publik per proyek (clc_pay_; proyek lama masih memakai cno_pk_/clc_pk_/pk_ — semuanya valid). Dipakai situs deploy untuk membuat QRIS dan cek status — aman diletakkan di frontend.
@@ -89,7 +89,7 @@ export const PAYMENT_KB = [
 - CATATAN: bedakan mode sandbox (simulasi, tidak ada uang nyata) dan production (aktifkan di dashboard project — untuk Pakasir cukup toggle status project, tanpa perubahan kode).`
   },
   {
-    id: 'payment-pattern-clinqoo',
+    id: 'payment-pattern-clincoo',
     gateway: 'Pola Umum',
     keywords: ['payment gateway', 'payment', 'pembayaran', 'payout', 'qris', 'va', 'virtual account'],
     summary: 'Pola umum backend payment di Clincoo (berlaku semua gateway).',
@@ -113,7 +113,7 @@ export function paymentDocsFor(text) {
   }
   // pertanyaan payment umum tanpa sebut gateway -> pola umum saja
   if (!hits.length) {
-    const umum = PAYMENT_KB.find(k => k.id === 'payment-pattern-clinqoo');
+    const umum = PAYMENT_KB.find(k => k.id === 'payment-pattern-clincoo');
     const mentions = /payment|bayar|pembayaran|checkout|qris|top.?up|invoice|transaksi/.test(t);
     if (mentions && /(buat|bikin|integrasi|backend|tambah|pasang|set up|setup|implement)/.test(t)) hits.push(umum);
   }

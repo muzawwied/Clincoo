@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script src="../js/auth-client.js?v=4"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -62,18 +62,18 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
         #reg-capsule.cap-collapsed .cap-label { max-width: 0; opacity: 0; }
         #reg-capsule.cap-collapsed .cap-plus { width: 16px; height: 16px; font-size: 16px; }
     </style>
-    <script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+    <script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
 <script src="../js/i18n-dict.js" defer></script>
 <script src="../js/i18n.js" defer></script>
 </head>
 <body class="bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white min-h-screen antialiased">
-    <script>try{var t=localStorage.getItem("clinqoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}}catch(e){}</script>
+    <script>try{var t=localStorage.getItem("clincoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}}catch(e){}</script>
 
     <!-- HEADER -->
     <header class="sticky top-0 z-40 border-b border-gray-100 dark:border-[#222] bg-white/90 dark:bg-[#0a0a0a]/90 backdrop-blur-md">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
             <a href="../" class="flex items-center gap-2">
-                <img src="../assets/logo-clinqoo.png" alt="Clincoo" class="w-7 h-7 rounded-full">
+                <img src="../assets/logo-clincoo.png" alt="Clincoo" class="w-7 h-7 rounded-full">
                 <span class="font-bold text-[15px]">Clincoo</span>
             </a>
             <div id="hdr-auth" class="flex items-center gap-2"></div>
@@ -142,13 +142,13 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
     </footer>
 
     <script src="../js/templates-data.js?v=20260924b"></script>
-    <script>var _tSeg=location.pathname.split('/')[1]||'';var _tKnown=['akun','proyek','auth','templates','integrasi','assets','js','demo','sw.js','manifest.json','robots.txt','_redirects','index.html','404.html'];window.CLINQOO_BASE=window.CLINQOO_BASE||(location.hostname.indexOf('github.io')!==-1&&_tSeg&&_tKnown.indexOf(_tSeg)===-1?'/'+_tSeg:'');
+    <script>var _tSeg=location.pathname.split('/')[1]||'';var _tKnown=['akun','proyek','auth','templates','integrasi','assets','js','demo','sw.js','manifest.json','robots.txt','_redirects','index.html','404.html'];window.CLINCOO_BASE=window.CLINCOO_BASE||(location.hostname.indexOf('github.io')!==-1&&_tSeg&&_tKnown.indexOf(_tSeg)===-1?'/'+_tSeg:'');
     // ===== Data template (public) — diambil langsung dari js/templates-data.js (sumber sama dengan halaman utama) =====
     // Galeri selalu menampilkan SEMUA template; halaman utama maksimal 5.
     var _TPL_CATS = { portfolio: "Portfolio", saas: "Landing Page", topup: "Toko Online", tasks: "Produktivitas", properti: "Properti" };
     var TEMPLATES = [];
     (function () {
-        var src = (typeof ClinqooTemplates !== "undefined" && ClinqooTemplates.list) ? ClinqooTemplates.list : null;
+        var src = (typeof ClincooTemplates !== "undefined" && ClincooTemplates.list) ? ClincooTemplates.list : null;
         if (src) {
             Object.keys(src).forEach(function (k) {
                 var t = src[k];
@@ -262,7 +262,7 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
 
             // Gambar pratinjau — aspect-video (16:9, pas sama ukuran asli 1280x720) agar tidak terpotong
             var imgWrap = document.createElement('a');
-            imgWrap.href = (window.CLINQOO_BASE||'') + t.url;
+            imgWrap.href = (window.CLINCOO_BASE||'') + t.url;
             imgWrap.target = '_blank';
             imgWrap.rel = 'noopener';
             imgWrap.className = 'block relative aspect-video overflow-hidden bg-gray-100 dark:bg-[#111]';
@@ -350,7 +350,7 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
             menuBtn('Lihat Preview', null, function (e) {
                 if (t.community) {
                     trackCommunity(t.id, 'view');
-                    window.open((window.CLINQOO_BASE || '') + t.url, '_blank', 'noopener');
+                    window.open((window.CLINCOO_BASE || '') + t.url, '_blank', 'noopener');
                 } else { previewTemplate(t.key, e); }
             });
             if (!t.community) {
@@ -398,13 +398,13 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
 
     // ===== Auth ringan: cek status login tanpa redirect (galeri tetap publik) =====
     var TOKEN = '';
-    try { TOKEN = localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) {}
+    try { TOKEN = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
     if (TOKEN) {
         fetch(API_BASE + '/auth/me', { headers: { 'Authorization': 'Bearer ' + TOKEN } })
             .then(function (r) { return r.ok ? r.json() : { authenticated: false }; })
             .then(function (d) {
                 if (d && d.authenticated) onAuthed(d.user);
-                else localStorage.removeItem('clinqoo_auth_token');
+                else localStorage.removeItem('clincoo_auth_token');
             })
             .catch(function () {});
     }
@@ -489,14 +489,14 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
 
     function useTemplate(key) {
         // Simpan pilihan template; URL utama akan mendeteksi status login pengguna.
-        try { localStorage.setItem('clinqoo_pending_template', key); } catch (e) {}
+        try { localStorage.setItem('clincoo_pending_template', key); } catch (e) {}
         window.location.href = '../';
     }
 
     render();
     </script>
 
-    <script>/* clinqoo-seo-auto: canonical & og mengikuti domain aktif */
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
 (function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<1;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
     </script>
 <!-- Google tag (gtag.js) - Google Analytics -->

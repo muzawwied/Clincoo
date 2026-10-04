@@ -1,6 +1,6 @@
 // ===== Clincoo Templates — data & aksi fitur template (dipakai index.html & akun/favorit.html) =====
 // Dibuat otomatis dari preview-shots/, jangan diedit manual.
-var ClinqooTemplates = (function () {
+var ClincooTemplates = (function () {
   'use strict';
 
   // Path dasar sesuai lokasi halaman (root vs /akun/)
@@ -141,10 +141,10 @@ var ClinqooTemplates = (function () {
 
   var toastTimer = null;
   function showToast(message) {
-    var toast = document.getElementById('clinqoo-toast');
+    var toast = document.getElementById('clincoo-toast');
     if (!toast) {
       toast = document.createElement('div');
-      toast.id = 'clinqoo-toast';
+      toast.id = 'clincoo-toast';
       toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 rounded-full bg-gray-900 text-white text-sm font-medium shadow-lg transition-all duration-300 opacity-0 translate-y-2';
       document.body.appendChild(toast);
     }
@@ -163,7 +163,7 @@ var ClinqooTemplates = (function () {
 
   // ---------- favorit & laporan ----------
   function getFavorites() {
-    try { return JSON.parse(localStorage.getItem('clinqoo_template_favorites') || '[]'); } catch (e) { return []; }
+    try { return JSON.parse(localStorage.getItem('clincoo_template_favorites') || '[]'); } catch (e) { return []; }
   }
   function isFavorite(key) { return getFavorites().indexOf(key) !== -1; }
   function favorite(key, event) {
@@ -174,7 +174,7 @@ var ClinqooTemplates = (function () {
       var favs = getFavorites();
       if (favs.indexOf(key) === -1) {
         favs.push(key);
-        localStorage.setItem('clinqoo_template_favorites', JSON.stringify(favs));
+        localStorage.setItem('clincoo_template_favorites', JSON.stringify(favs));
         showToast('Template "' + list[key].name + '" disimpan ke favorit.');
       } else {
         showToast('Template ini sudah ada di favorit.');
@@ -187,7 +187,7 @@ var ClinqooTemplates = (function () {
     closeAllOptionPopups();
     try {
       var favs = getFavorites().filter(function (k) { return k !== key; });
-      localStorage.setItem('clinqoo_template_favorites', JSON.stringify(favs));
+      localStorage.setItem('clincoo_template_favorites', JSON.stringify(favs));
       showToast('Template dihapus dari favorit.');
     } catch (e) {}
     if (typeof refreshFavoriteList === 'function') { try { refreshFavoriteList(); } catch (e) {} }
@@ -197,10 +197,10 @@ var ClinqooTemplates = (function () {
     closeAllOptionPopups();
     if (!list[key]) return;
     try {
-      var reports = JSON.parse(localStorage.getItem('clinqoo_template_reports') || '[]');
+      var reports = JSON.parse(localStorage.getItem('clincoo_template_reports') || '[]');
       if (reports.indexOf(key) === -1) {
         reports.push(key);
-        localStorage.setItem('clinqoo_template_reports', JSON.stringify(reports));
+        localStorage.setItem('clincoo_template_reports', JSON.stringify(reports));
       }
     } catch (e) {}
     showToast('Terima kasih, laporanmu sudah kami terima.');
@@ -210,7 +210,7 @@ var ClinqooTemplates = (function () {
   var PRO_TEMPLATES = ['properti', 'saas'];
 
   function planFromCache() {
-    try { return (JSON.parse(localStorage.getItem('clinqoo_subscription_cache') || 'null') || {}).plan || 'Starter'; }
+    try { return (JSON.parse(localStorage.getItem('clincoo_subscription_cache') || 'null') || {}).plan || 'Starter'; }
     catch (e) { return 'Starter'; }
   }
   function isProPlan() { var p = planFromCache(); return p === 'Pro' || p === 'Bisnis'; }
@@ -219,7 +219,7 @@ var ClinqooTemplates = (function () {
   function showProLockTemplate() {
     // Popup kartu lama dihapus -> pakai carousel daftar paket (konsisten dengan popup Kolaborasi AI & Sync GitHub).
     var cached = null;
-    try { cached = JSON.parse(localStorage.getItem('clinqoo_subscription_cache') || 'null') || null; } catch (e) {}
+    try { cached = JSON.parse(localStorage.getItem('clincoo_subscription_cache') || 'null') || null; } catch (e) {}
     if (typeof tmShowCollabPlansModal === 'function') {
       tmShowCollabPlansModal({ plan: cached ? cached.plan : null, billingCycle: cached ? cached.billingCycle : null });
     }
@@ -243,12 +243,12 @@ var ClinqooTemplates = (function () {
     // 1) Daftar proyek (lokal + D1)
     var projects = [];
     try {
-      var stored = localStorage.getItem('clinqoo_projects');
+      var stored = localStorage.getItem('clincoo_projects');
       if (stored) projects = JSON.parse(stored);
     } catch (e) {}
     projects.unshift(newProject);
     try {
-      localStorage.setItem('clinqoo_projects', JSON.stringify(projects));
+      localStorage.setItem('clincoo_projects', JSON.stringify(projects));
       if (typeof pushProjectsToServer === 'function') {
         pushProjectsToServer(projects);
       } else {
@@ -264,7 +264,7 @@ var ClinqooTemplates = (function () {
     var flat = [];
     Object.keys(site).forEach(function (path) { flat.push({ path: path, content: site[path] }); });
     try {
-      localStorage.setItem('clinqoo_workspace_files_' + pid, JSON.stringify(unflatten(flat)));
+      localStorage.setItem('clincoo_workspace_files_' + pid, JSON.stringify(unflatten(flat)));
     } catch (e) {}
 
     // 3) Sinkron file ke D1 (per-akun) — fire & forget, workspace akan menarik saat dibuka
@@ -286,7 +286,7 @@ var ClinqooTemplates = (function () {
     } catch (e) {}
 
     // 5) Buka workspace — websitenya sudah jadi
-    try { localStorage.setItem('clinqoo_current_project_id', pid); } catch (e) {}
+    try { localStorage.setItem('clincoo_current_project_id', pid); } catch (e) {}
     window.location.href = WS_URL + '?id=' + pid;
   }
 
@@ -359,7 +359,7 @@ var ClinqooTemplates = (function () {
 })();
 
 // Alias global — dipakai atribut onclick di kartu template
-function useTemplate(key, event) { ClinqooTemplates.use(key, event); }
-function previewTemplate(key, event) { ClinqooTemplates.preview(key, event); }
-function favoriteTemplate(key, event) { ClinqooTemplates.favorite(key, event); }
-function reportTemplate(key, event) { ClinqooTemplates.report(key, event); }
+function useTemplate(key, event) { ClincooTemplates.use(key, event); }
+function previewTemplate(key, event) { ClincooTemplates.preview(key, event); }
+function favoriteTemplate(key, event) { ClincooTemplates.favorite(key, event); }
+function reportTemplate(key, event) { ClincooTemplates.report(key, event); }

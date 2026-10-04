@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script src="../../../js/auth-client.js?v=4"></script>
     <script src="../../../js/accent-init.js"></script>
     <meta charset="UTF-8">
@@ -174,9 +174,9 @@
     body.dark-mode .skel-dot { background-color: #141414 !important; border-color: #222222 !important; }
     </style>
 <!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
-<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
 
-    <script>/* clinqoo-seo-auto: canonical & og mengikuti domain aktif */
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
 (function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<3;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
     </script>
 <!-- Google tag (gtag.js) - Google Analytics -->
@@ -192,7 +192,7 @@
 <script src="../../../js/i18n.js" defer></script>
 </head>
 <body class="min-h-screen flex flex-col text-gray-900 bg-white">
-    <script>(function(){var t=localStorage.getItem("clinqoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+    <script>(function(){var t=localStorage.getItem("clincoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
 
     <div id="page-dompet" class="flex flex-col min-h-screen w-full">
         <header class="bg-white flex justify-between items-center px-3 py-2 fixed top-0 w-full z-40 transition-colors">
@@ -249,7 +249,7 @@
         // Tanpa token, backend mengira user belum login -> saldo ClincooPay (mirroring) tidak pernah diambil.
         function walletAuthHeaders(extra) {
             const hdr = Object.assign({}, extra || {});
-            const tok = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || '';
+            const tok = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || '';
             if (tok) hdr['Authorization'] = 'Bearer ' + tok;
             return hdr;
         }
@@ -485,7 +485,7 @@
     }
     function openTerimaModal() {
         var myEmail = '';
-        try { myEmail = localStorage.getItem('clinqoo_email') || ''; } catch (e) {}
+        try { myEmail = localStorage.getItem('clincoo_email') || ''; } catch (e) {}
         document.getElementById('terima-email').textContent = myEmail || 'Email tidak ditemukan — login ulang.';
         var m = document.getElementById('modal-terima');
         m.classList.remove('hidden'); m.classList.add('flex');
@@ -505,7 +505,7 @@
         var email = document.getElementById('kirim-email').value.trim();
         var amount = parseInt(document.getElementById('kirim-amount').value, 10);
         var note = document.getElementById('kirim-note').value.trim();
-        var token = ''; try { token = localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) {}
+        var token = ''; try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
         var btn = document.getElementById('kirim-submit');
         if (!email || email.indexOf('@') < 1) { showModal('Kirim Gagal', 'Masukkan email penerima yang valid.'); return; }
         if (!amount || amount < 1000) { showModal('Kirim Gagal', 'Minimal kirim saldo 1.000.'); return; }
@@ -533,7 +533,7 @@
     }
     </script>
 
-    <script>/* clinqoo-sw-register */
+    <script>/* clincoo-sw-register */
     if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../sw.js').catch(function () {}); }); }
     </script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>

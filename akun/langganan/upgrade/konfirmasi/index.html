@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script src="../../../../js/auth-client.js?v=4"></script>
   <script src="../../../../js/accent-init.js"></script>
   <meta charset="UTF-8">
@@ -150,10 +150,10 @@
   </style>
   <script>
     (function(){
-      var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';
+      var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';
       var isDark=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);
       if(isDark) document.documentElement.classList.add('dark-mode');
-      var a=localStorage.getItem('clinqoo_accent')||'Hitam (Default)';
+      var a=localStorage.getItem('clincoo_accent')||'Hitam (Default)';
       var am={'Hitam (Default)':{m:'#000000',h:'#1f2937'},'Biru':{m:'#2563eb',h:'#1d4ed8'},'Hijau':{m:'#059669',h:'#047857'},'Ungu':{m:'#9333ea',h:'#7e22ce'},'Merah':{m:'#dc2626',h:'#b91c1c'}};
       var c=am[a]||am['Hitam (Default)'];
       document.documentElement.style.setProperty('--accent-color',c.m);
@@ -161,16 +161,16 @@
     })();
   </script>
 <!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
-<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
 <style>
-.clinqoo-shimmer{position:relative;overflow:hidden;display:inline-block;min-width:4.5rem;min-height:1.4em;color:transparent!important;background:#e5e7eb;border-radius:8px;-webkit-user-select:none;user-select:none;vertical-align:middle}
-.clinqoo-shimmer::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);animation:clinqoo-shimmer 1.3s infinite}
-@keyframes clinqoo-shimmer{100%{transform:translateX(100%)}}
-.dark-mode .clinqoo-shimmer{background:#1e293b}
-.dark-mode .clinqoo-shimmer::after{background:linear-gradient(90deg,transparent,rgba(148,163,184,.3),transparent)}
+.clincoo-shimmer{position:relative;overflow:hidden;display:inline-block;min-width:4.5rem;min-height:1.4em;color:transparent!important;background:#e5e7eb;border-radius:8px;-webkit-user-select:none;user-select:none;vertical-align:middle}
+.clincoo-shimmer::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);animation:clincoo-shimmer 1.3s infinite}
+@keyframes clincoo-shimmer{100%{transform:translateX(100%)}}
+.dark-mode .clincoo-shimmer{background:#1e293b}
+.dark-mode .clincoo-shimmer::after{background:linear-gradient(90deg,transparent,rgba(148,163,184,.3),transparent)}
 </style>
 
-    <script>/* clinqoo-seo-auto: canonical & og mengikuti domain aktif */
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
 (function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<4;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
     </script>
 <!-- Google tag (gtag.js) - Google Analytics -->
@@ -184,7 +184,7 @@
 <!-- End Google tag -->
 <script src="../../../../js/i18n-dict.js" defer></script>
 <script src="../../../../js/i18n.js" defer></script>
-<script>window.ClinqooBack = window.ClinqooBack || function (fallbackUrl) {             try {                 var sameOrigin = document.referrer && new URL(document.referrer).origin === location.origin;                 if (sameOrigin && history.length > 1) { window.history.back(); return; }             } catch (e) {}             if (fallbackUrl) { try { location.replace(fallbackUrl); return; } catch (e2) {} }             try { window.history.back(); } catch (e3) {}         };</script>
+<script>window.ClincooBack = window.ClincooBack || function (fallbackUrl) {             try {                 var sameOrigin = document.referrer && new URL(document.referrer).origin === location.origin;                 if (sameOrigin && history.length > 1) { window.history.back(); return; }             } catch (e) {}             if (fallbackUrl) { try { location.replace(fallbackUrl); return; } catch (e2) {} }             try { window.history.back(); } catch (e3) {}         };</script>
 </head>
 <body class="text-gray-900 antialiased h-screen w-full overflow-hidden relative bg-white">
   <script>
@@ -215,7 +215,7 @@
             <h4 class="text-base font-semibold text-gray-900 dark:text-white">Paket Dipilih</h4>
             <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Paket yang akan diaktifkan</p>
           </div>
-          <span id="order-plan-badge" class="clinqoo-shimmer inline-flex items-center self-start sm:self-auto px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">-</span>
+          <span id="order-plan-badge" class="clincoo-shimmer inline-flex items-center self-start sm:self-auto px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">-</span>
         </div>
 
         <div class="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -238,7 +238,7 @@
             <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Harga per bulan</p>
           </div>
           <div class="w-full sm:w-80">
-            <span id="order-price" class="clinqoo-shimmer text-sm text-gray-600 dark:text-gray-400">-</span>
+            <span id="order-price" class="clincoo-shimmer text-sm text-gray-600 dark:text-gray-400">-</span>
           </div>
         </div>
 
@@ -248,7 +248,7 @@
             <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Ditagih sekali per siklus</p>
           </div>
           <div class="w-full sm:w-80">
-            <span id="order-total" class="clinqoo-shimmer text-lg font-extrabold text-gray-900 dark:text-white">-</span>
+            <span id="order-total" class="clincoo-shimmer text-lg font-extrabold text-gray-900 dark:text-white">-</span>
           </div>
         </div>
 
@@ -264,7 +264,7 @@
               </div>
               <span class="text-sm text-gray-600 dark:text-gray-400 truncate">Saldo Dompet</span>
             </div>
-            <span id="wallet-balance" class="clinqoo-shimmer text-sm font-semibold text-gray-900 dark:text-white">-</span>
+            <span id="wallet-balance" class="clincoo-shimmer text-sm font-semibold text-gray-900 dark:text-white">-</span>
           </div>
         </div>
 
@@ -274,7 +274,7 @@
             <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Saldo dompet setelah pembayaran</p>
           </div>
           <div class="w-full sm:w-80">
-            <span id="wallet-after" class="clinqoo-shimmer text-sm text-gray-600 dark:text-gray-400">-</span>
+            <span id="wallet-after" class="clincoo-shimmer text-sm text-gray-600 dark:text-gray-400">-</span>
           </div>
         </div>
 
@@ -372,7 +372,7 @@
       const el = document.getElementById(id);
       if(!el) return;
       el.textContent = text;
-      el.classList.remove('clinqoo-shimmer');
+      el.classList.remove('clincoo-shimmer');
     }
 
     function showFallback(text, onClick){
@@ -407,7 +407,7 @@
           const why = betaInfo.alreadyClaimed ? 'Email Anda sudah pernah klaim program beta ini.' : 'Kuota 25 beta tester sudah penuh.';
           document.getElementById('pay-error-text').textContent = why;
           document.getElementById('pay-error').classList.remove('hidden');
-          showFallback('Kembali ke Langganan', function(){ window.ClinqooBack('../langganan/'); });
+          showFallback('Kembali ke Langganan', function(){ window.ClincooBack('../langganan/'); });
           return;
         }
       }
@@ -436,7 +436,7 @@
         alreadyActive = true;
         document.getElementById('pay-success').textContent = 'Paket ' + PLAN + ' sudah aktif di akun Anda.';
         document.getElementById('pay-success').classList.remove('hidden');
-        showFallback('Kembali ke Langganan', function(){ window.ClinqooBack('../langganan/'); });
+        showFallback('Kembali ke Langganan', function(){ window.ClincooBack('../langganan/'); });
         return;
       }
 
@@ -454,12 +454,12 @@
           });
           const data = await res.json();
           if(res.ok && data.success){
-            try { localStorage.setItem('clinqoo_subscription_cache', JSON.stringify({ plan: 'Pro', billingCycle: 'Bulanan', ts: Date.now() })); } catch(e) {}
+            try { localStorage.setItem('clincoo_subscription_cache', JSON.stringify({ plan: 'Pro', billingCycle: 'Bulanan', ts: Date.now() })); } catch(e) {}
             document.getElementById('pay-success').textContent = 'Berhasil! Paket Pro (Bulanan) aktif selama 30 hari lewat program beta.';
             document.getElementById('pay-success').classList.remove('hidden');
             document.getElementById('pay-error').classList.add('hidden');
             setLabel('Berhasil!');
-            setTimeout(function(){ window.ClinqooBack('../langganan/'); }, 1200);
+            setTimeout(function(){ window.ClincooBack('../langganan/'); }, 1200);
           } else {
             document.getElementById('pay-error-text').textContent = 'Gagal klaim beta: ' + ((data && data.error) || 'coba lagi nanti');
             document.getElementById('pay-error').classList.remove('hidden');
@@ -482,12 +482,12 @@
         });
         const data = await res.json();
         if(res.ok && data.success){
-          try { localStorage.setItem('clinqoo_subscription_cache', JSON.stringify({ plan: PLAN, billingCycle: BILLING, ts: Date.now() })); } catch(e) {}
+          try { localStorage.setItem('clincoo_subscription_cache', JSON.stringify({ plan: PLAN, billingCycle: BILLING, ts: Date.now() })); } catch(e) {}
           document.getElementById('pay-success').textContent = 'Berhasil! Paket ' + PLAN + ' (' + BILLING + ') sekarang aktif.';
           document.getElementById('pay-success').classList.remove('hidden');
           document.getElementById('pay-error').classList.add('hidden');
           setLabel('Berhasil!');
-          setTimeout(function(){ window.ClinqooBack('../langganan/'); }, 900);
+          setTimeout(function(){ window.ClincooBack('../langganan/'); }, 900);
         } else if(res.status === 402){
           document.getElementById('pay-error-text').textContent = 'Saldo dompet tidak cukup. Butuh ' + fmtID(data.required || totalPrice) + ', saldo Anda ' + fmtID(data.balance || 0) + '.';
           document.getElementById('pay-error').classList.remove('hidden');
@@ -593,7 +593,7 @@
     load();
   </script>
 
-    <script>/* clinqoo-sw-register */
+    <script>/* clincoo-sw-register */
     if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../../sw.js').catch(function () {}); }); }
     </script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>

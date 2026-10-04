@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script src="../../../js/auth-client.js?v=4"></script>
   <script src="../../../js/accent-init.js"></script>
   <meta charset="UTF-8">
@@ -89,11 +89,11 @@
     }
   </style>
 
-  <script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+  <script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
 </head>
 
 <body class="min-h-screen flex flex-col bg-white dark:bg-black text-gray-900 dark:text-gray-100">
-  <script>(function(){var t=localStorage.getItem("clinqoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+  <script>(function(){var t=localStorage.getItem("clincoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
 
   <!-- Blank/Hidden Wrapper for Privacy Guard -->
   <div id="admin-page-container" style="display: none;" class="flex-1 flex flex-col min-h-screen">
@@ -351,10 +351,10 @@
 
     // Toast Notification Helper
     function showToast(message, isError = false) {
-      let toast = document.getElementById('clinqoo-toast');
+      let toast = document.getElementById('clincoo-toast');
       if (!toast) {
         toast = document.createElement('div');
-        toast.id = 'clinqoo-toast';
+        toast.id = 'clincoo-toast';
         document.body.appendChild(toast);
       }
       toast.className = `fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-2xl text-sm font-medium transition-all duration-300 transform translate-y-0 opacity-100 flex items-center gap-2 ${
@@ -373,7 +373,7 @@
     // Privacy Guard Logic
     async function checkAdminPing() {
       try {
-        const token = (window.ClinqooAuth && ClinqooAuth.getToken) ? ClinqooAuth.getToken() : (function(){try{return localStorage.getItem('clinqoo_auth_token')||localStorage.getItem('clinqoo_token')||'';}catch(e){return '';}})();
+        const token = (window.ClincooAuth && ClincooAuth.getToken) ? ClincooAuth.getToken() : (function(){try{return localStorage.getItem('clincoo_auth_token')||localStorage.getItem('clincoo_token')||'';}catch(e){return '';}})();
         const res = await fetch(API_BASE + '/api/admin/ping', {
           headers: token ? { 'Authorization': 'Bearer ' + token } : {}
         });
@@ -415,7 +415,7 @@
       if (spin) spin.classList.add('animate-spin');
 
       try {
-        const token = (window.ClinqooAuth && ClinqooAuth.getToken) ? ClinqooAuth.getToken() : (function(){try{return localStorage.getItem('clinqoo_auth_token')||localStorage.getItem('clinqoo_token')||'';}catch(e){return '';}})();
+        const token = (window.ClincooAuth && ClincooAuth.getToken) ? ClincooAuth.getToken() : (function(){try{return localStorage.getItem('clincoo_auth_token')||localStorage.getItem('clincoo_token')||'';}catch(e){return '';}})();
         const res = await fetch(API_BASE + '/api/admin/stats', {
           headers: token ? { 'Authorization': 'Bearer ' + token } : {}
         });

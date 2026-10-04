@@ -79,14 +79,14 @@ export async function onRequestPost({ request, env }) {
       const d = await r.json().catch(() => ({}));
       if (!d || !d.success) return j({ error: (d && d.error) || 'Gagal menghubungkan dompet.' }, 401);
       if (!d.address) return j({ error: 'Respons Wallet tidak valid' }, 502);
-      await db.prepare('DELETE FROM clincoopay_connections WHERE user_id = ?').bind(user.id).run();
+      await db.prepare('DELETE FROM clincoopay_connections WHERE CAST(user_id AS REAL) = CAST(? AS REAL)').bind(user.id).run();
       await db.prepare('INSERT INTO clincoopay_connections (user_id, wallet_address, token) VALUES (?, ?, ?)')
         .bind(user.id, d.address, d.token).run();
       return j({ success: true, connected: true, wallet_address: d.address, wallet_balance: Number(d.balance) || 0 });
     }
 
     if (action === 'unlink') {
-      await db.prepare('DELETE FROM clincoopay_connections WHERE user_id = ?').bind(user.id).run();
+      await db.prepare('DELETE FROM clincoopay_connections WHERE CAST(user_id AS REAL) = CAST(? AS REAL)').bind(user.id).run();
       return j({ success: true, connected: false });
     }
 

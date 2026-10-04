@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script>/* base dinamis: pastikan aset dimuat dari folder halaman top-up */
   (function(){var p=location.pathname.replace(/[^/]+\.html$/,'');if(!/\/$/.test(p))p+='/';document.write('<base href="'+p+'">');})();</script>
   <script src="../../../../js/auth-client.js?v=2"></script>
@@ -189,9 +189,9 @@
     </style>
     <script src="/js/path-router.js"></script>
 <!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
-<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
 
-    <script>/* clinqoo-seo-auto: canonical & og mengikuti domain aktif */
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
 (function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<4;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
     </script>
 <!-- Google tag (gtag.js) - Google Analytics -->
@@ -207,7 +207,7 @@
 <script src="../../../../js/i18n.js" defer></script>
 </head>
 <body class="min-h-screen flex flex-col text-gray-900 bg-white">
-    <script>(function(){var t=localStorage.getItem("clinqoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+    <script>(function(){var t=localStorage.getItem("clincoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
 
 
         <div id="page-topup" class="flex flex-col bg-white min-h-screen w-full overflow-x-hidden">
@@ -234,13 +234,13 @@
                         <div class="pay-method-card selected border border-gray-200 dark:border-gray-800 rounded-2xl w-full bg-gray-50 dark:bg-[#1a1a1a]">
                             <div class="flex items-center space-x-3 p-3.5">
                                 <div class="relative w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white shadow-sm border border-gray-200 dark:border-gray-700">
-                                    <img src="/assets/ewallet-logos/clinqoopay.png" alt="ClincooPay" class="w-full h-full object-contain">
+                                    <img src="/assets/ewallet-logos/clincoopay.png" alt="ClincooPay" class="w-full h-full object-contain">
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <p class="text-sm font-bold text-gray-900 dark:text-white truncate">ClincooPay</p>
-                                    <p id="clinqoopay-desc" class="text-[11px] md:text-xs text-gray-500 mt-0.5 truncate">Memuat…</p>
+                                    <p id="clincoopay-desc" class="text-[11px] md:text-xs text-gray-500 mt-0.5 truncate">Memuat…</p>
                                 </div>
-                                <div id="clinqoopay-cta" class="shrink-0"></div>
+                                <div id="clincoopay-cta" class="shrink-0"></div>
                             </div>
                             <input type="hidden" name="payment-method" value="ClincooPay">
                         </div>
@@ -561,7 +561,7 @@
 
         
         
-        function closeTopUpPage() { qrisForgetSession(); window.ClinqooBack('../'); }
+        function closeTopUpPage() { qrisForgetSession(); window.ClincooBack('../'); }
 
         
         function goToStep1() {
@@ -579,7 +579,7 @@
                 if (cpConnected) {
                     showModal('Saldo Sudah Terhubung', 'Saldo ClincooPay dan saldo Clincoo kamu sudah tersinkron otomatis. Tidak perlu isi saldo — cukup isi dari aplikasi Wallet.');
                 } else {
-                    window.location.href = 'clinqoopay/';
+                    window.location.href = 'clincoopay/';
                 }
                 return;
             }
@@ -648,13 +648,13 @@
             }
         }
 
-        async function processClinqooPay() {
+        async function processClincooPay() {
             if (cpConnected) {
                 showModal('Saldo Sudah Terhubung', 'Saldo ClincooPay dan saldo Clincoo kamu sudah tersinkron otomatis. Tidak perlu isi saldo — cukup isi dari aplikasi Wallet.');
                 return;
             }
             var token = '';
-            try { token = localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) {}
+            try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
             try {
                 var res = await fetch(API_BASE + '/api/wallet', {
                     method: 'POST',
@@ -677,19 +677,19 @@
         var cpConnected = false;
         function cpAuthHeaders() {
             var token = '';
-            try { token = localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) {}
+            try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
             return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
         }
         function cpMask(addr) { return addr ? '0x…' + String(addr).slice(-6) : ''; }
 
         async function cpLoad() {
-            var desc = document.getElementById('clinqoopay-desc');
-            var cta = document.getElementById('clinqoopay-cta');
+            var desc = document.getElementById('clincoopay-desc');
+            var cta = document.getElementById('clincoopay-cta');
             if (!desc) return;
             desc.textContent = 'Memuat…';
             if (cta) cta.innerHTML = '';
             try {
-                var st = await fetch(API_BASE + '/api/clinqoopay', { headers: cpAuthHeaders() }).then(function(r) { return r.json(); });
+                var st = await fetch(API_BASE + '/api/clincoopay', { headers: cpAuthHeaders() }).then(function(r) { return r.json(); });
                 cpConnected = !!st.connected;
                 if (st.connected) {
                     var bal = (st.wallet_balance == null) ? '…' : Number(st.wallet_balance).toLocaleString('id-ID');
@@ -697,7 +697,7 @@
                 } else {
                     desc.textContent = 'Clincoo wallet';
                     if (cta) cta.innerHTML =
-                        '<button type="button" onclick="location.href=\'clinqoopay/\'" class="px-3.5 py-1.5 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-black text-[11px] font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-all">Hubungkan</button>';
+                        '<button type="button" onclick="location.href=\'clincoopay/\'" class="px-3.5 py-1.5 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-black text-[11px] font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-all">Hubungkan</button>';
                 }
             } catch (e) {
                 desc.textContent = 'Gagal memuat status ClincooPay.';
@@ -747,7 +747,7 @@
             var btn = document.getElementById('qris-continue-btn');
             if (btn) { btn.disabled = true; btn.textContent = 'Memproses…'; }
             var token = '';
-            try { token = localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) {}
+            try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
             var res;
             try {
                 res = await fetch(API_BASE + '/api/topup-qris', {
@@ -792,18 +792,18 @@
                 }
             }
             try { lucide.createIcons(); } catch (e) {}
-            try { localStorage.setItem('clinqoo_qris_active_order', JSON.stringify(res)); } catch (e) {}
+            try { localStorage.setItem('clincoo_qris_active_order', JSON.stringify(res)); } catch (e) {}
             startQrisCountdown(res.expired_at);
             startQrisPoll(res.order_id);
         }
 
         function qrisForgetSession() {
-            try { localStorage.removeItem('clinqoo_qris_active_order'); } catch (e) {}
+            try { localStorage.removeItem('clincoo_qris_active_order'); } catch (e) {}
         }
 
         function qrisRestore() {
             try {
-                var raw = localStorage.getItem('clinqoo_qris_active_order');
+                var raw = localStorage.getItem('clincoo_qris_active_order');
                 if (!raw) return;
                 var o = JSON.parse(raw);
                 if (!o || !o.order_id || !o.qr_string) { qrisForgetSession(); return; }
@@ -854,7 +854,7 @@
 
         async function checkQris(orderId, auto) {
             var token = '';
-            try { token = localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) {}
+            try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
             try {
                 var data = await fetch(API_BASE + '/api/topup-qris?action=status&order_id=' + encodeURIComponent(orderId), {
                     headers: { 'Authorization': 'Bearer ' + token }
@@ -881,7 +881,7 @@
         async function qrisCancelTopup() {
             if (!qrisOrder || !qrisOrder.order_id) return;
             var token = '';
-            try { token = localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) {}
+            try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
             stopQrisTimers();
             try {
                 await fetch(API_BASE + '/api/topup-qris', {
@@ -911,7 +911,7 @@
             if (!src) { showModal('Gagal', 'QR belum siap untuk diunduh.'); return; }
             var a = document.createElement('a');
             a.href = src;
-            a.download = 'clinqoo-qris-' + (qrisOrder ? qrisOrder.order_id : 'bayar') + '.png';
+            a.download = 'clincoo-qris-' + (qrisOrder ? qrisOrder.order_id : 'bayar') + '.png';
             document.body.appendChild(a);
             a.click();
             a.remove();
@@ -929,12 +929,12 @@
             }
             var methodEl = document.querySelector('input[name="payment-method"]:checked');
             var method = methodEl ? methodEl.value : 'ClincooPay';
-            if (method === 'ClincooPay') { return processClinqooPay(); }
+            if (method === 'ClincooPay') { return processClincooPay(); }
             if (method === 'QRIS') { return showQrisConfirm(); }
             var channel = XENDIT_METHOD_MAP[method] || 'qris';
             try {
-                var payerEmail = ''; try { payerEmail = localStorage.getItem('clinqoo_email') || ''; } catch(e) {}
-                var payerToken = ''; try { payerToken = localStorage.getItem('clinqoo_auth_token') || ''; } catch(e) {}
+                var payerEmail = ''; try { payerEmail = localStorage.getItem('clincoo_email') || ''; } catch(e) {}
+                var payerToken = ''; try { payerToken = localStorage.getItem('clincoo_auth_token') || ''; } catch(e) {}
                 var res = await fetch(TOPUP_API, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + payerToken },
@@ -965,7 +965,7 @@
                 try {
                     var data = await fetch(TOPUP_API + '?action=status&order_id=' + encodeURIComponent(orderId), {
                         method: 'GET',
-                        headers: { 'Authorization': 'Bearer ' + (function(){ try { return localStorage.getItem('clinqoo_auth_token') || ''; } catch(e) { return ''; } })() }
+                        headers: { 'Authorization': 'Bearer ' + (function(){ try { return localStorage.getItem('clincoo_auth_token') || ''; } catch(e) { return ''; } })() }
                     }).then(function(r) { return r.json(); });
                     if (data.status === 'paid') {
                         stopTopUpPoll();
@@ -1023,7 +1023,7 @@
         }
     </script>
 
-    <script>/* clinqoo-sw-register */
+    <script>/* clincoo-sw-register */
     if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../../sw.js').catch(function () {}); }); }
     </script>
 </body>

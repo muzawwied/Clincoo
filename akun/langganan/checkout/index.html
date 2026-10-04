@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script>/* base dinamis: URL bersih per-step (mis. /topup/qris/) tetap memuat aset dari /topup/ */
   (function(){var p=location.pathname.replace(/[^/]+\.html$/,'');var m=p.match(/\/(metode|konfirmasi|qris)\/?$/);if(m)p=p.slice(0,m.index);var m2=p.match(/\/qris\/[^/]+\/?$/);if(m2)p=p.slice(0,m2.index);if(!/\/$/.test(p))p+='/';document.write('<base href="'+p+'">');})();</script>
     <script src="../../../js/accent-init.js"></script>
@@ -184,9 +184,9 @@
     </style>
     <script src="/js/path-router.js"></script>
 <!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
-<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
 
-    <script>/* clinqoo-seo-auto: canonical & og mengikuti domain aktif */
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
 (function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<4;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
     </script>
 <!-- Google tag (gtag.js) - Google Analytics -->
@@ -202,7 +202,7 @@
 <script src="../../../js/i18n.js" defer></script>
 </head>
 <body class="min-h-screen flex flex-col text-gray-900 bg-white">
-    <script>(function(){var t=localStorage.getItem("clinqoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+    <script>(function(){var t=localStorage.getItem("clincoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
 
 
         <div id="page-topup" class="flex flex-col bg-white min-h-screen w-full overflow-x-hidden">
@@ -357,7 +357,7 @@
         // tidak memuat file itu, jadi ditanam langsung di sini (perilaku sama):
         // datang dari halaman aplikasi ini -> history.back() beneran,
         // dibuka langsung/deep-link -> location.replace ke halaman induk.
-        window.ClinqooBack = window.ClinqooBack || function (fallbackUrl) {
+        window.ClincooBack = window.ClincooBack || function (fallbackUrl) {
             try {
                 var sameOrigin = document.referrer && new URL(document.referrer).origin === location.origin;
                 if (sameOrigin && history.length > 1) { window.history.back(); return; }
@@ -407,7 +407,7 @@
         // dan belum melewati batas waktu (rentang waktu kedaluwarsa).
         async function restoreOrderById(orderId) {
             var token = '';
-            try { token = localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) {}
+            try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
             var res = null;
             try {
                 res = await fetch(QRIS_API + '?action=get&order_id=' + encodeURIComponent(orderId), { headers: { 'Authorization': 'Bearer ' + token } })
@@ -446,7 +446,7 @@
         // supaya tautan pengingat tetap menampilkan QR walaupun dibuka di perangkat/browser lain.
         async function restoreServerOrder() {
             var token = '';
-            try { token = localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) {}
+            try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
             var res = null;
             try {
                 res = await fetch(QRIS_API + '?action=pending', { headers: { 'Authorization': 'Bearer ' + token } })
@@ -484,7 +484,7 @@
             el.textContent = 'Paket ' + CHECKOUT_PLAN + ' \u00b7 ' + fmtID(CHECKOUT_AMOUNT) + ' / ' + (CHECKOUT_BILLING === 'Tahunan' ? 'bln (tahunan)' : 'bulan');
         }
 
-        function closeTopUpPage() { qrisForgetSession(); window.ClinqooBack('../'); }
+        function closeTopUpPage() { qrisForgetSession(); window.ClincooBack('../'); }
 
         // Path URL bersih tiap step: /checkout/ -> /checkout/konfirmasi/ -> /checkout/qris/
         var TOPUP_BASE = (function () {
@@ -558,7 +558,7 @@
             var btn = document.getElementById('qris-continue-btn');
             if (btn) { btn.disabled = true; btn.textContent = 'Memproses\u2026'; }
             var token = '';
-            try { token = localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) {}
+            try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
             var res;
             try {
                 res = await fetch(QRIS_API, {
@@ -603,18 +603,18 @@
                 }
             }
             try { lucide.createIcons(); } catch (e) {}
-            try { localStorage.setItem('clinqoo_checkout_qris_order', JSON.stringify(res)); } catch (e) {}
+            try { localStorage.setItem('clincoo_checkout_qris_order', JSON.stringify(res)); } catch (e) {}
             startQrisCountdown(res.expired_at);
             startQrisPoll(res.order_id);
         }
 
         function qrisForgetSession() {
-            try { localStorage.removeItem('clinqoo_checkout_qris_order'); } catch (e) {}
+            try { localStorage.removeItem('clincoo_checkout_qris_order'); } catch (e) {}
         }
 
         function qrisRestore() {
             try {
-                var raw = localStorage.getItem('clinqoo_checkout_qris_order');
+                var raw = localStorage.getItem('clincoo_checkout_qris_order');
                 if (!raw) return;
                 var o = JSON.parse(raw);
                 if (!o || !o.order_id) { qrisForgetSession(); return; }
@@ -662,7 +662,7 @@
 
         async function checkQris(orderId, auto) {
             var token = '';
-            try { token = localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) {}
+            try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
             try {
                 var data = await fetch(QRIS_API + '?action=status&order_id=' + encodeURIComponent(orderId), {
                     headers: { 'Authorization': 'Bearer ' + token }
@@ -687,7 +687,7 @@
         // Lunas via QRIS -> saldo masuk lewat webhook -> aktivasi paket langsung
         async function activateSubscription() {
             var token = '';
-            try { token = localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) {}
+            try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
             var plan = (qrisOrder && qrisOrder.__plan) || CHECKOUT_PLAN;
             var billing = (qrisOrder && qrisOrder.__billing) || CHECKOUT_BILLING;
             try {
@@ -697,9 +697,9 @@
                     body: JSON.stringify({ plan: plan, billingCycle: billing })
                 }).then(function (r) { return r.json(); });
                 if (res.success) {
-                    try { localStorage.setItem('clinqoo_subscription_cache', JSON.stringify({ plan: plan, billingCycle: billing, ts: Date.now() })); } catch (e) {}
+                    try { localStorage.setItem('clincoo_subscription_cache', JSON.stringify({ plan: plan, billingCycle: billing, ts: Date.now() })); } catch (e) {}
                     showModal('Pembayaran Berhasil', 'Pembayaran QRIS diterima. Paket ' + plan + ' (' + billing + ') sekarang aktif.');
-                    setTimeout(function () { window.ClinqooBack('../'); }, 1600);
+                    setTimeout(function () { window.ClincooBack('../'); }, 1600);
                 } else {
                     showModal('Aktivasi Belum Berhasil', 'Pembayaran diterima, namun aktivasi paket gagal: ' + (res.error || res.message || 'cek status di halaman Langganan.'), true);
                 }
@@ -711,7 +711,7 @@
         async function qrisCancelTopup() {
             if (!qrisOrder || !qrisOrder.order_id) return;
             var token = '';
-            try { token = localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) {}
+            try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
             stopQrisTimers();
             try {
                 await fetch(QRIS_API, {
@@ -728,7 +728,7 @@
         function triggerQrisDownload(href) {
             var a = document.createElement('a');
             a.href = href;
-            a.download = 'clinqoo-qris-' + (qrisOrder ? qrisOrder.order_id : 'bayar') + '.png';
+            a.download = 'clincoo-qris-' + (qrisOrder ? qrisOrder.order_id : 'bayar') + '.png';
             document.body.appendChild(a);
             a.click();
             a.remove();
@@ -795,7 +795,7 @@
         }
     </script>
 
-    <script>/* clinqoo-sw-register */
+    <script>/* clincoo-sw-register */
     if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../sw.js').catch(function () {}); }); }
     </script>
 </body>

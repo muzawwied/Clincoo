@@ -9,11 +9,11 @@ function getCurrentProjectId() {
     if (pid) return pid;
   }
   try {
-    return localStorage.getItem('clinqoo_current_project_id') || '';
+    return localStorage.getItem('clincoo_current_project_id') || '';
   } catch(e) { return ''; }
 }
 
-const ClinqooAPI = {
+const ClincooAPI = {
   // Environment Variables
   async getEnvVars() {
     const pid = getCurrentProjectId();
@@ -182,12 +182,12 @@ const ClinqooAPI = {
 
 // ---- Alias methods for pages that use the older API names ----
 // (getSecurity/updateSecurity dipakai halaman keamanan-https & visibilitas-akses)
-ClinqooAPI.getSecurity = async function() {
+ClincooAPI.getSecurity = async function() {
   const pid = getCurrentProjectId();
   const res = await fetch(API_BASE + '/security?project_id=' + encodeURIComponent(pid));
   return res.json();
 };
-ClinqooAPI.updateSecurity = async function(key, value) {
+ClincooAPI.updateSecurity = async function(key, value) {
   const res = await fetch(API_BASE + '/security', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

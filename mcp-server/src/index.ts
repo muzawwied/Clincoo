@@ -1,23 +1,23 @@
 #!/usr/bin/env node
 /**
- * Clinqoo MCP Server
- * Memberikan akses ke API Clinqoo (projects, agent, wallet, notifications)
+ * Clincoo MCP Server
+ * Memberikan akses ke API Clincoo (projects, agent, wallet, notifications)
  * lewat Model Context Protocol.
  *
  * Env yang dibutuhkan:
- *   CLINQOO_TOKEN     — Bearer token akun Clinqoo (wajib)
- *   CLINQOO_BASE_URL  — Base URL API (default: https://muzawwied.github.io/Clinqoo.)
+ *   CLINCOO_TOKEN     — Bearer token akun Clincoo (wajib)
+ *   CLINCOO_BASE_URL  — Base URL API (default: https://muzawwied.github.io/Clincoo.)
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
-const BASE_URL = (process.env.CLINQOO_BASE_URL || "https://muzawwied.github.io/Clinqoo.").replace(/\/$/, "");
-const TOKEN = process.env.CLINQOO_TOKEN || "";
+const BASE_URL = (process.env.CLINCOO_BASE_URL || "https://muzawwied.github.io/Clincoo.").replace(/\/$/, "");
+const TOKEN = process.env.CLINCOO_TOKEN || "";
 
 if (!TOKEN) {
-  console.error("[clinqoo-mcp] Error: CLINQOO_TOKEN environment variable is required");
+  console.error("[clincoo-mcp] Error: CLINCOO_TOKEN environment variable is required");
   process.exit(1);
 }
 
@@ -39,25 +39,25 @@ async function api<T = unknown>(
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg = (data as any)?.error || (data as any)?.message || res.statusText;
-    throw new Error(`Clinqoo API ${res.status}: ${msg}`);
+    throw new Error(`Clincoo API ${res.status}: ${msg}`);
   }
   return data as T;
 }
 
 const server = new McpServer({
-  name: "clinqoo",
+  name: "clincoo",
   version: "1.0.0",
 });
 
 // ─── get_me ───────────────────────────────────────────────────────────────
 server.tool(
   "get_me",
-  "Ambil info akun Clinqoo yang sedang login (nama, email, role, status).",
+  "Ambil info akun Clincoo yang sedang login (nama, email, role, status).",
   {},
   async () => {
     const data = await api<{ authenticated: boolean; user: any }>("/api/auth/me");
     if (!data.authenticated || !data.user) {
-      return { content: [{ type: "text", text: "Tidak terautentikasi. Cek CLINQOO_TOKEN." }] };
+      return { content: [{ type: "text", text: "Tidak terautentikasi. Cek CLINCOO_TOKEN." }] };
     }
     return {
       content: [{ type: "text", text: JSON.stringify(data.user, null, 2) }],
@@ -68,7 +68,7 @@ server.tool(
 // ─── list_projects ────────────────────────────────────────────────────────
 server.tool(
   "list_projects",
-  "Daftar semua proyek milik akun Clinqoo yang login.",
+  "Daftar semua proyek milik akun Clincoo yang login.",
   {},
   async () => {
     const data = await api<{ projects: any[] }>("/api/projects");
@@ -91,12 +91,12 @@ server.tool(
 // ─── get_wallet_balance ───────────────────────────────────────────────────
 server.tool(
   "get_wallet_balance",
-  "Ambil saldo dompet Clinqoo (termasuk jika terhubung ClinqooPay).",
+  "Ambil saldo dompet Clincoo (termasuk jika terhubung ClincooPay).",
   {},
   async () => {
     const data = await api<{ balance: number; mirrored?: boolean; wallet_address?: string }>("/api/wallet");
     const text = data.mirrored
-      ? `Saldo (mirrored ClinqooPay): Rp ${Number(data.balance).toLocaleString("id-ID")}\nWallet: ${data.wallet_address || "-"}`
+      ? `Saldo (mirrored ClincooPay): Rp ${Number(data.balance).toLocaleString("id-ID")}\nWallet: ${data.wallet_address || "-"}`
       : `Saldo: Rp ${Number(data.balance).toLocaleString("id-ID")}`;
     return { content: [{ type: "text", text }] };
   }
@@ -105,7 +105,7 @@ server.tool(
 // ─── list_wallet_transactions ─────────────────────────────────────────────
 server.tool(
   "list_wallet_transactions",
-  "Daftar riwayat transaksi dompet Clinqoo (terbaru dulu).",
+  "Daftar riwayat transaksi dompet Clincoo (terbaru dulu).",
   {
     limit: z.number().int().min(1).max(50).optional().describe("Jumlah maksimal transaksi (default 20)"),
   },
@@ -132,7 +132,7 @@ server.tool(
 // ─── start_agent_task ─────────────────────────────────────────────────────
 server.tool(
   "start_agent_task",
-  "Mulai tugas Agent Mode Clinqoo di latar belakang (background). Kembalikan task_id untuk dipantau.",
+  "Mulai tugas Agent Mode Clincoo di latar belakang (background). Kembalikan task_id untuk dipantau.",
   {
     goal: z.string().min(3).describe("Tujuan tugas agent (bahasa Indonesia, jelas)"),
     project_id: z.string().optional().describe("ID proyek terkait (opsional)"),
@@ -196,7 +196,7 @@ server.tool(
 // ─── list_notifications ───────────────────────────────────────────────────
 server.tool(
   "list_notifications",
-  "Ambil notifikasi terbaru dari akun Clinqoo.",
+  "Ambil notifikasi terbaru dari akun Clincoo.",
   {
     limit: z.number().int().min(1).max(50).optional().describe("Jumlah maksimal (default 15)"),
   },
@@ -228,10 +228,10 @@ server.tool(
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("[clinqoo-mcp] Server running on stdio");
+  console.error("[clincoo-mcp] Server running on stdio");
 }
 
 main().catch((err) => {
-  console.error("[clinqoo-mcp] Fatal:", err);
+  console.error("[clincoo-mcp] Fatal:", err);
   process.exit(1);
 });

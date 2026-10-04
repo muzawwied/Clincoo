@@ -15,9 +15,9 @@
       root.style.setProperty('--accent-hover', c.h);
     } catch (e) {}
   }
-  applyAccent(localStorage.getItem('clinqoo_accent') || 'Hitam (Default)');
+  applyAccent(localStorage.getItem('clincoo_accent') || 'Hitam (Default)');
   // Sinkron live bila aksen diganti di tab/halaman lain
   window.addEventListener('storage', function (e) {
-    if (e.key === 'clinqoo_accent') applyAccent(e.newValue || 'Hitam (Default)');
+    if (e.key === 'clincoo_accent') applyAccent(e.newValue || 'Hitam (Default)');
   });
 })();

@@ -58,7 +58,7 @@ export function flatTemplate(title, name, intro, details, ctaText, ctaLink, foot
   return '<div style="background:#ffffff;padding:36px 24px;font-family:Arial,Helvetica,sans-serif">' +
     '<div style="max-width:520px;margin:0 auto">' +
       '<div style="padding-bottom:20px;border-bottom:1px solid #eceef1">' +
-        '<img src="https://app.clincoo.buzz/assets/logo-clinqoo.png" width="36" height="36" alt="Clincoo" style="display:inline-block;vertical-align:middle;border-radius:10px;margin-right:12px">' +
+        '<img src="https://app.clincoo.buzz/assets/logo-clincoo.png" width="36" height="36" alt="Clincoo" style="display:inline-block;vertical-align:middle;border-radius:10px;margin-right:12px">' +
         '<span style="font-size:20px;font-weight:bold;letter-spacing:2px;color:#0a0a0a;vertical-align:middle">Clincoo</span>' +
       '</div>' +
       '<h1 style="margin:28px 0 6px;font-size:18px;color:#111827;font-weight:bold">' + title + '</h1>' +
@@ -98,7 +98,7 @@ export function emailTemplate(title, name, introText, details, ctaText, ctaLink,
   return '<div style="background:#f4f5f7;padding:32px 16px;font-family:Arial,Helvetica,sans-serif">' +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;border:1px solid #e5e7eb;border-collapse:separate;overflow:hidden">' +
       '<tr><td style="background:#0a0a0a;padding:22px 32px">' +
-        '<img src="https://app.clincoo.buzz/assets/logo-clinqoo.png" width="34" height="34" alt="Clincoo" style="display:inline-block;vertical-align:middle;border-radius:8px;margin-right:12px">' +
+        '<img src="https://app.clincoo.buzz/assets/logo-clincoo.png" width="34" height="34" alt="Clincoo" style="display:inline-block;vertical-align:middle;border-radius:8px;margin-right:12px">' +
         '<span style="color:#ffffff;font-size:19px;font-weight:bold;letter-spacing:2px;vertical-align:middle">Clincoo</span>' +
       '</td></tr>' +
       '<tr><td style="padding:32px">' +
@@ -132,7 +132,7 @@ export function otpEmail(opts) {
   return '<div style="background:#ffffff;padding:36px 24px;font-family:Arial,Helvetica,sans-serif">' +
     '<div style="max-width:520px;margin:0 auto">' +
       '<div style="padding-bottom:20px;border-bottom:1px solid #eceef1">' +
-        '<img src="https://app.clincoo.buzz/assets/logo-clinqoo.png" width="36" height="36" alt="Clincoo" style="display:inline-block;vertical-align:middle;border-radius:10px;margin-right:12px">' +
+        '<img src="https://app.clincoo.buzz/assets/logo-clincoo.png" width="36" height="36" alt="Clincoo" style="display:inline-block;vertical-align:middle;border-radius:10px;margin-right:12px">' +
         '<span style="font-size:20px;font-weight:bold;letter-spacing:2px;color:#0a0a0a;vertical-align:middle">Clincoo</span>' +
       '</div>' +
       '<h1 style="margin:28px 0 6px;font-size:18px;color:#111827;font-weight:bold">Kode OTP Clincoo</h1>' +

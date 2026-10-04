@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="id"><head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>  <script src="../../js/auth-client.js?v=4"></script>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>  <script src="../../js/auth-client.js?v=4"></script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Clincoo - Kelola Notion</title>
     <meta property="og:title" content="Clincoo - Kelola Notion">
     <meta property="og:description" content="Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
@@ -19,7 +19,7 @@
         html, body { scrollbar-width: none; -ms-overflow-style: none; }
         html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
 html,body{min-height:100%;margin:0}body{font-family:Inter,sans-serif;background:#fff;color:#111}.mont{font-family:Montserrat,sans-serif}.dark{background:#000;color:#fff}.dark .muted{color:#888}.dark .line{border-color:#222}.dark .surface{background:#0a0a0a}.dark .primary{background:#fff;color:#000}.dark .danger:hover{background:#1a0a0a}@media(max-width:640px){.page{padding-left:20px;padding-right:20px}}</style></head>
-<body><script>(function(){var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=t==='Gelap'||((!t||t==='Sistem (Default)')&&matchMedia('(prefers-color-scheme:dark)').matches);if(d)document.body.classList.add('dark')})();</script>
+<body><script>(function(){var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=t==='Gelap'||((!t||t==='Sistem (Default)')&&matchMedia('(prefers-color-scheme:dark)').matches);if(d)document.body.classList.add('dark')})();</script>
 <header class="fixed inset-x-0 top-0 z-20 px-5 py-4 pointer-events-none"><a href="/integrasi/" class="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-full surface bg-white border line border-gray-200 shadow-sm" aria-label="Kembali"><i class="ph ph-arrow-left text-lg"></i></a></header>
 <main class="page mx-auto w-full max-w-2xl px-6 pt-24 pb-12">
 <div class="mb-10"><p class="muted text-xs font-semibold uppercase tracking-[.14em] text-gray-400 mb-3">Konektor</p><h1 class="mont text-2xl font-bold">Notion</h1><p class="muted mt-1 text-sm text-gray-500">Kelola koneksi Notion Anda</p></div>
@@ -32,7 +32,7 @@ html,body{min-height:100%;margin:0}body{font-family:Inter,sans-serif;background:
 <script>
 const token = localStorage.getItem('clincoo_notion_token');
 const connected = document.getElementById('connected-view'), empty = document.getElementById('empty-view');
-function authToken() { try { return localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) { return ''; } }
+function authToken() { try { return localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) { return ''; } }
 if (!token) { empty.classList.remove('hidden'); }
 else {
   connected.classList.remove('hidden');

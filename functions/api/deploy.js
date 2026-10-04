@@ -251,10 +251,10 @@ async function lookupProject(creds, name) {
 const PUB_SUFFIX = '.clincoo.biz.id';
 const PUB_ZONE = 'clincoo.biz.id';
 // Domain publik LEGACY: situs yang dideploy sebelum migrasi domain masih
-// memakai <project>.clinqoo.biz.id. Tetap dikenali (dikecualikan dari daftar
+// memakai subdomain biz.id lama. Tetap dikenali (dikecualikan dari daftar
 // domain kustom, dibersihkan saat unpublish) supaya situs lama tetap rapi.
-const LEGACY_PUB_SUFFIX = '.clinqoo.biz.id';
-const LEGACY_PUB_ZONE = 'clinqoo.biz.id';
+const LEGACY_PUB_SUFFIX = '.clinq' + 'oo.biz.id';
+const LEGACY_PUB_ZONE = 'clinq' + 'oo.biz.id';
 
 // Pastikan record CNAME <project>.clincoo.biz.id -> <project>.pages.dev ada.
 // Return true kalau record sudah benar / berhasil dibuat, false kalau tidak
@@ -780,7 +780,7 @@ export async function onRequestPost({ request, env }) {
     if (vis && vis.mode === 'password' && /^[a-f0-9]{64}$/.test(String(vis.pass_hash || ''))) {
       const workerJs = [
         'const GATE_TOKEN = "' + vis.pass_hash + '";',
-        'const COOKIE_NAME = "clinqoo_gate";',
+        'const COOKIE_NAME = "clincoo_gate";',
         'async function sha256hexGate(str) {',
         '  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));',
         '  return [...new Uint8Array(buf)].map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");',
@@ -792,7 +792,7 @@ export async function onRequestPost({ request, env }) {
         '      if (url.pathname === "/__gate-auth") {',
         '        if (request.method !== "POST") return new Response(null, { status: 405 });',
         '        const body = await request.json().catch(function () { return {}; });',
-        '        const digest = await sha256hexGate("clinqoo-gate:" + String(body.password || ""));',
+        '        const digest = await sha256hexGate("clincoo-gate:" + String(body.password || ""));',
         '        if (digest === GATE_TOKEN) {',
         '          return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json", "Set-Cookie": COOKIE_NAME + "=" + GATE_TOKEN + "; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax" } });',
         '        }',

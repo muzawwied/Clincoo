@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script src="../js/auth-client.js?v=4"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -139,7 +139,7 @@
 </script>
 </head>
 <body class="h-[100dvh] flex flex-col overflow-hidden selection:bg-gray-200">
-    <script>(function(){var t=localStorage.getItem("clinqoo_theme")||"Sistem (Default)";var d=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.body.classList.add("dark-mode");})();</script>
+    <script>(function(){var t=localStorage.getItem("clincoo_theme")||"Sistem (Default)";var d=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.body.classList.add("dark-mode");})();</script>
     
     <div id="session-options-popup" class="hidden fixed bg-white rounded-xl shadow-[0_5px_15px_rgba(0,0,0,0.1)] z-[100] w-40 p-1.5 text-[13px] text-gray-700 pointer-events-auto">
         <button id="btn-edit-session" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2.5 font-medium transition-none"><i class="ph-bold ph-pencil-simple text-gray-500 text-base"></i> Edit</button>
@@ -151,7 +151,7 @@
         <div class="h-16 border-b border-gray-100 flex items-center px-4 justify-between flex-shrink-0">
             <div class="flex items-center gap-2.5">
                 <div class="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
-                    <img src="https://app.clincoo.buzz/assets/logo-clinqoo.png" alt="Logo" class="w-full h-full object-cover">
+                    <img src="https://app.clincoo.buzz/assets/logo-clincoo.png" alt="Logo" class="w-full h-full object-cover">
                 </div>
                 <span class="font-bold font-montserrat text-lg text-gray-800">Clincoo</span>
             </div>
@@ -173,7 +173,7 @@
             <a href="../proyek/workspace/editor/" data-page="editor" id="sidebar-editor-link" class="sidebar-nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 text-gray-700 transition-colors">
                 <svg class="w-5 h-5 text-gray-500 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg>
                 <span class="font-medium text-[14px]">Editor</span>
-                <span class="clinqoo-editor-crown text-amber-500 shrink-0 cursor-pointer hover:text-amber-600 transition-colors ml-auto" style="display:none" title="Lihat daftar paket" onclick="event.preventDefault(); event.stopPropagation(); clinqooOpenPlansPopup();"><svg class="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#f59e0b" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/></svg></span>
+                <span class="clincoo-editor-crown text-amber-500 shrink-0 cursor-pointer hover:text-amber-600 transition-colors ml-auto" style="display:none" title="Lihat daftar paket" onclick="event.preventDefault(); event.stopPropagation(); clincooOpenPlansPopup();"><svg class="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#f59e0b" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/></svg></span>
             </a>
             <a href="/integrasi/" data-page="plugin" class="sidebar-nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 text-gray-700 transition-colors">
                 <svg class="w-5 h-5 text-gray-500 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M15 8V2"/><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z"/><path d="M9 8V2"/></svg>
@@ -232,7 +232,7 @@
                         </div>
                         <div class="flex-shrink-0">
                             <span id="github-status-badge" class="hidden items-center text-[12px] font-semibold text-emerald-600 whitespace-nowrap">Terhubung</span>
-                            <button onclick="event.stopPropagation(); openGitHubModal()" id="github-connect-btn" class="px-4 py-2 bg-[#0f1115] text-white rounded-xl text-[12.5px] font-semibold hover:bg-[#1a1d24] transition-all duration-300 active:scale-[0.97] whitespace-nowrap">Hubungkan<span id="gh-connect-crown" style="display:none" class="text-amber-500 shrink-0 align-middle ml-0.5 cursor-pointer" title="Fitur premium — lihat daftar paket" onclick="event.preventDefault(); event.stopPropagation(); if (typeof clinqooOpenPlansPopup === 'function') clinqooOpenPlansPopup();"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#f59e0b" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/></svg></span></button>
+                            <button onclick="event.stopPropagation(); openGitHubModal()" id="github-connect-btn" class="px-4 py-2 bg-[#0f1115] text-white rounded-xl text-[12.5px] font-semibold hover:bg-[#1a1d24] transition-all duration-300 active:scale-[0.97] whitespace-nowrap">Hubungkan<span id="gh-connect-crown" style="display:none" class="text-amber-500 shrink-0 align-middle ml-0.5 cursor-pointer" title="Fitur premium — lihat daftar paket" onclick="event.preventDefault(); event.stopPropagation(); if (typeof clincooOpenPlansPopup === 'function') clincooOpenPlansPopup();"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#f59e0b" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/></svg></span></button>
                         </div>
                     </div>
                     <p class="text-[12.5px] text-gray-500 leading-relaxed mt-3">Analisis kode, review Pull Request, dan kelola repositori langsung dari chat.</p>
@@ -672,7 +672,7 @@
             <div class="px-6 pt-6 pb-5 flex-shrink-0">
                 <div class="flex items-start justify-between mb-4">
                     <div class="pr-8">
-                        <h3 class="text-lg font-bold text-gray-900 font-montserrat leading-tight flex items-center gap-1.5">Eksport ke Git <span class="clinqoo-premium-crown text-amber-500 shrink-0" title="Fitur premium"><svg class="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#f59e0b" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/></svg></span></h3>
+                        <h3 class="text-lg font-bold text-gray-900 font-montserrat leading-tight flex items-center gap-1.5">Eksport ke Git <span class="clincoo-premium-crown text-amber-500 shrink-0" title="Fitur premium"><svg class="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#f59e0b" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/></svg></span></h3>
                         <p class="text-[12.5px] text-gray-500 mt-0.5">Kirim file workspace proyek ke GitHub atau GitLab</p>
                     </div>
                     <button onclick="closeExportModal()" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0">
@@ -774,7 +774,7 @@
                         </div>
                         <span class="text-[12px] font-semibold text-emerald-600">Terhubung</span>
                     </div>
-                    <button onclick="closeGitLabModal(); openExportModal(); egSetPlatform('gitlab')" class="w-full py-3 cta-capsule rounded-full font-semibold text-sm active:scale-95 transition-all">Eksport workspace ke GitLab <span class="clinqoo-premium-crown text-amber-500 shrink-0" title="Fitur premium"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#f59e0b" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/></svg></span></button>
+                    <button onclick="closeGitLabModal(); openExportModal(); egSetPlatform('gitlab')" class="w-full py-3 cta-capsule rounded-full font-semibold text-sm active:scale-95 transition-all">Eksport workspace ke GitLab <span class="clincoo-premium-crown text-amber-500 shrink-0" title="Fitur premium"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#f59e0b" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/></svg></span></button>
                     <button onclick="disconnectGitLab()" class="w-full py-3 rounded-full border border-red-200 text-sm font-semibold text-red-500 hover:bg-red-50 transition">Putuskan koneksi</button>
                 </div>
                 <!-- belum terhubung -->
@@ -1079,9 +1079,9 @@
         const WORKER_URL = ""; // sinkron /db/gh-token (worker terpisah) tidak dipakai — token cukup di perangkat ini
         // Client ID AKTIF Clincoo (lama Ov23li... sudah basi) — sama dengan fitur impor GitHub workspace.
         const GITHUB_CLIENT_ID = "Ov23ctIBGjQBolR5PS2C";
-        const GH_API_BASE = (function(){ try { return localStorage.getItem('clinqoo_tool_api') || ''; } catch(e){ return ''; } })();
-        function clinqooAuthToken() {
-            try { return localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) { return ''; }
+        const GH_API_BASE = (function(){ try { return localStorage.getItem('clincoo_tool_api') || ''; } catch(e){ return ''; } })();
+        function clincooAuthToken() {
+            try { return localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) { return ''; }
         }
 
         async function syncGitHubFromDB() {
@@ -1117,7 +1117,7 @@
         async function exchangeCodeForToken(code) {
             const res = await fetch('/api/github-oauth', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clinqooAuthToken() },
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clincooAuthToken() },
                 body: JSON.stringify({ code: code, redirect_uri: getRedirectUri() })
             });
             const data = await res.json().catch(function () { return {}; });
@@ -1463,7 +1463,7 @@
         // tukar di /api/drive-oauth -> token disimpan per-akun (proxy namespace auth-client).
         const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive';
 
-        function driveRedirectUri() { return window.location.origin + (window.CLINQOO_BASE||'') + '/auth/'; }
+        function driveRedirectUri() { return window.location.origin + (window.CLINCOO_BASE||'') + '/auth/'; }
 
         function setDriveBadge(connected) {
             const badge = document.getElementById('drive-status-badge');
@@ -1506,7 +1506,7 @@
             try {
                 const res = await fetch('/api/drive-oauth', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clinqooAuthToken() },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clincooAuthToken() },
                     body: JSON.stringify({ refresh_token: refresh })
                 });
                 const data = await res.json().catch(function () { return {}; });
@@ -1545,7 +1545,7 @@
             const st = (crypto.randomUUID ? crypto.randomUUID() : ('d' + Date.now() + Math.random())).replace(/-/g, '');
             const back = window.location.origin + window.location.pathname;
             // Cookie Path=/ supaya bisa dibaca oleh halaman /auth/ yang menerima callback.
-            document.cookie = 'clinqoo_drive_state=' + encodeURIComponent(JSON.stringify({ v: st, back: back, t: Date.now() })) + '; Max-Age=900; Path=/; SameSite=Lax; Secure';
+            document.cookie = 'clincoo_drive_state=' + encodeURIComponent(JSON.stringify({ v: st, back: back, t: Date.now() })) + '; Max-Age=900; Path=/; SameSite=Lax; Secure';
             window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + encodeURIComponent(clientId) +
                 '&redirect_uri=' + encodeURIComponent(driveRedirectUri()) +
                 '&response_type=code&scope=' + encodeURIComponent(DRIVE_SCOPE) +
@@ -1568,7 +1568,7 @@
             try {
                 const res = await fetch('/api/drive-oauth', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clinqooAuthToken() },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clincooAuthToken() },
                     body: JSON.stringify({ code: codeParam, redirect_uri: driveRedirectUri() })
                 });
                 const data = await res.json().catch(function () { return {}; });
@@ -1651,11 +1651,11 @@
         }
         // ===== PLUGIN GOOGLE CALENDAR =====
         // Alur identik Drive: Plugin -> Google (redirect_uri = /auth/, cookie state
-        // clinqoo_calendar_state) -> /auth/ kirim ulang code (calendar_code) -> tukar
+        // clincoo_calendar_state) -> /auth/ kirim ulang code (calendar_code) -> tukar
         // di /api/calendar-oauth -> token per-akun di localStorage.
         const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar';
 
-        function calendarRedirectUri() { return window.location.origin + (window.CLINQOO_BASE||'') + '/auth/'; }
+        function calendarRedirectUri() { return window.location.origin + (window.CLINCOO_BASE||'') + '/auth/'; }
 
         function setCalendarBadge(connected) {
             const badge = document.getElementById('calendar-status-badge');
@@ -1698,7 +1698,7 @@
             try {
                 const res = await fetch('/api/calendar-oauth', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clinqooAuthToken() },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clincooAuthToken() },
                     body: JSON.stringify({ refresh_token: refresh })
                 });
                 const data = await res.json().catch(function () { return {}; });
@@ -1735,7 +1735,7 @@
             }
             const st = (crypto.randomUUID ? crypto.randomUUID() : ('c' + Date.now() + Math.random())).replace(/-/g, '');
             const back = window.location.origin + window.location.pathname;
-            document.cookie = 'clinqoo_calendar_state=' + encodeURIComponent(JSON.stringify({ v: st, back: back, t: Date.now() })) + '; Max-Age=900; Path=/; SameSite=Lax; Secure';
+            document.cookie = 'clincoo_calendar_state=' + encodeURIComponent(JSON.stringify({ v: st, back: back, t: Date.now() })) + '; Max-Age=900; Path=/; SameSite=Lax; Secure';
             window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + encodeURIComponent(clientId) +
                 '&redirect_uri=' + encodeURIComponent(calendarRedirectUri()) +
                 '&response_type=code&scope=' + encodeURIComponent(CALENDAR_SCOPE) +
@@ -1758,7 +1758,7 @@
             try {
                 const res = await fetch('/api/calendar-oauth', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clinqooAuthToken() },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clincooAuthToken() },
                     body: JSON.stringify({ code: codeParam, redirect_uri: calendarRedirectUri() })
                 });
                 const data = await res.json().catch(function () { return {}; });
@@ -1841,7 +1841,7 @@
         function notionStateMatches(st) {
             if (!st) return false;
             try {
-                const m = document.cookie.match(/clinqoo_notion_state=([^;]+)/);
+                const m = document.cookie.match(/clincoo_notion_state=([^;]+)/);
                 if (!m) return false;
                 const v = decodeURIComponent(m[1]);
                 return v === st;
@@ -1890,7 +1890,7 @@
             document.getElementById('notion-loading').classList.remove('hidden');
             let clientId = null, redirectUri = null;
             try {
-                const r = await fetch('/api/notion-oauth', { headers: { 'Authorization': 'Bearer ' + clinqooAuthToken() } });
+                const r = await fetch('/api/notion-oauth', { headers: { 'Authorization': 'Bearer ' + clincooAuthToken() } });
                 const d = await r.json();
                 clientId = d.client_id; redirectUri = d.redirect_uri;
             } catch (e) {}
@@ -1902,17 +1902,17 @@
                 return;
             }
             const st = 'n' + (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()).replace(/-/g, '');
-            document.cookie = 'clinqoo_notion_state=' + encodeURIComponent(st) + '; Max-Age=900; Path=/; SameSite=Lax; Secure';
+            document.cookie = 'clincoo_notion_state=' + encodeURIComponent(st) + '; Max-Age=900; Path=/; SameSite=Lax; Secure';
             window.location.href = 'https://api.notion.com/v1/oauth/authorize?client_id=' + encodeURIComponent(clientId) +
-                '&redirect_uri=' + encodeURIComponent(redirectUri || (window.location.origin + (window.CLINQOO_BASE||'') + '/integrasi/')) +
+                '&redirect_uri=' + encodeURIComponent(redirectUri || (window.location.origin + (window.CLINCOO_BASE||'') + '/integrasi/')) +
                 '&response_type=code&owner=user&state=' + encodeURIComponent(st);
         }
 
         function handleNotionCancel() {
             const urlParams = new URLSearchParams(window.location.search);
             if (!urlParams.get('error') || !notionStateMatches(urlParams.get('state'))) return;
-            window.history.replaceState({}, document.title, (window.CLINQOO_BASE||'') + '/integrasi/');
-            document.cookie = 'clinqoo_notion_state=; Max-Age=0; Path=/; SameSite=Lax; Secure';
+            window.history.replaceState({}, document.title, (window.CLINCOO_BASE||'') + '/integrasi/');
+            document.cookie = 'clincoo_notion_state=; Max-Age=0; Path=/; SameSite=Lax; Secure';
             const errEl = document.getElementById('notion-oauth-error');
             if (errEl) { errEl.textContent = 'Gagal menghubungkan: ' + (urlParams.get('description') || 'dibatalkan'); errEl.classList.remove('hidden'); }
             document.getElementById('notion-connect-modal').classList.remove('hidden');
@@ -1923,14 +1923,14 @@
             const codeParam = urlParams.get('code');
             const st = urlParams.get('state');
             if (!codeParam || !notionStateMatches(st)) return; // bukan callback Notion -> abaikan
-            window.history.replaceState({}, document.title, (window.CLINQOO_BASE||'') + '/integrasi/');
-            document.cookie = 'clinqoo_notion_state=; Max-Age=0; Path=/; SameSite=Lax; Secure';
+            window.history.replaceState({}, document.title, (window.CLINCOO_BASE||'') + '/integrasi/');
+            document.cookie = 'clincoo_notion_state=; Max-Age=0; Path=/; SameSite=Lax; Secure';
             document.getElementById('notion-loading').classList.remove('hidden');
             const errEl = document.getElementById('notion-oauth-error');
             try {
                 const res = await fetch('/api/notion-oauth', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clinqooAuthToken() },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clincooAuthToken() },
                     body: JSON.stringify({ code: codeParam })
                 });
                 const data = await res.json().catch(function () { return {}; });
@@ -1957,7 +1957,7 @@
             try {
                 const res = await fetch('/api/notion-oauth', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clinqooAuthToken() },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clincooAuthToken() },
                     body: JSON.stringify({ refresh_token: refresh })
                 });
                 const data = await res.json().catch(function () { return {}; });
@@ -1988,7 +1988,7 @@
             try {
                 const res = await fetch('/api/notion-proxy', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Notion-Token': token, 'Authorization': 'Bearer ' + clinqooAuthToken() },
+                    headers: { 'Content-Type': 'application/json', 'X-Notion-Token': token, 'Authorization': 'Bearer ' + clincooAuthToken() },
                     body: JSON.stringify({ action: 'search' })
                 });
                 const data = await res.json().catch(function () { return {}; });
@@ -2225,11 +2225,11 @@
   var files = [];
   var busy = false;
   var BLOCKED = { 'muzawwied/wallet': 'Repo Wallet (situs ClincooPay) dikunci dan tidak boleh dipakai sebagai tujuan eksport.' };
-  var GL = { tok: 'clinqoo_gitlab_token', ref: 'clinqoo_gitlab_refresh', exp: 'clinqoo_gitlab_exp', cid: 'clinqoo_gitlab_client_id', base: 'clinqoo_gitlab_base', user: 'clinqoo_gitlab_user', st: 'clinqoo_gitlab_state', ver: 'clinqoo_gitlab_verifier' };
+  var GL = { tok: 'clincoo_gitlab_token', ref: 'clincoo_gitlab_refresh', exp: 'clincoo_gitlab_exp', cid: 'clincoo_gitlab_client_id', base: 'clincoo_gitlab_base', user: 'clincoo_gitlab_user', st: 'clincoo_gitlab_state', ver: 'clincoo_gitlab_verifier' };
 
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v); } catch (e) { return ''; } }
   function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
-  function ghToken() { try { return localStorage.getItem('clincoo_gh_token') || localStorage.getItem('clinqoo_github_token') || ''; } catch (e) { return ''; } }
+  function ghToken() { try { return localStorage.getItem('clincoo_gh_token') || localStorage.getItem('clincoo_github_token') || ''; } catch (e) { return ''; } }
   function $(id) { return document.getElementById(id); }
   function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function glRedirectUri() { return location.origin + '/integrasi/'; }
@@ -2262,10 +2262,10 @@
   // ===== GitHub =====
   function ghUser(cb) {
     var cached = '';
-    try { cached = localStorage.getItem('clinqoo_gh_user') || ''; } catch (e) {}
+    try { cached = localStorage.getItem('clincoo_gh_user') || ''; } catch (e) {}
     if (cached) { try { cb(JSON.parse(cached)); } catch (e) { cb(null); } return; }
     fetch('https://api.github.com/user', { headers: { Authorization: 'Bearer ' + ghToken(), Accept: 'application/vnd.github.v3+json' } })
-      .then(function (r) { if (!r.ok) { cb(null); return; } r.json().then(function (u) { try { localStorage.setItem('clinqoo_gh_user', JSON.stringify(u)); } catch (e) {} cb(u); }); })
+      .then(function (r) { if (!r.ok) { cb(null); return; } r.json().then(function (u) { try { localStorage.setItem('clincoo_gh_user', JSON.stringify(u)); } catch (e) {} cb(u); }); })
       .catch(function () { cb(null); });
   }
 
@@ -2498,12 +2498,12 @@
 
   // ===== File workspace (localStorage + cloud D1) =====
   function collectEgFiles() {
-    var pid = ''; try { pid = localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) {}
-    var key = 'clinqoo_workspace_files_' + (pid || 'global');
+    var pid = ''; try { pid = localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) {}
+    var key = 'clincoo_workspace_files_' + (pid || 'global');
     var byPath = {};
     var raw = null;
     try { raw = localStorage.getItem(key); } catch (e) {}
-    if (!raw) { try { var legacy = localStorage.getItem('clinqoo_workspace_files'); if (legacy) { localStorage.setItem(key, legacy); raw = legacy; } } catch (e) {} }
+    if (!raw) { try { var legacy = localStorage.getItem('clincoo_workspace_files'); if (legacy) { localStorage.setItem(key, legacy); raw = legacy; } } catch (e) {} }
     try {
       var d = JSON.parse(raw) || {};
       Object.keys(d).forEach(function (k) {
@@ -2513,7 +2513,7 @@
       });
     } catch (e) {}
     var WS_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-files';
-    var tk = ''; try { tk = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+    var tk = ''; try { tk = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
     var headers = tk ? { Authorization: 'Bearer ' + tk } : {};
     var finish = function () {
       files = Object.keys(byPath).sort().map(function (p) { return { path: p, content: byPath[p] }; });
@@ -2668,19 +2668,19 @@
   renderGlCard();
 })();
 </script>
-<script>/* clinqoo-premium-sheet: bottom sheet daftar paket untuk fitur premium (crown) */
+<script>/* clincoo-premium-sheet: bottom sheet daftar paket untuk fitur premium (crown) */
 (function(){
-  if (window.__clinqooPremiumSheet) return; window.__clinqooPremiumSheet = true;
+  if (window.__clincooPremiumSheet) return; window.__clincooPremiumSheet = true;
   function apiBase(){ return (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname)===-1)?'https://clincoo-be2.pages.dev':''; }
-  function token(){ try{ return localStorage.getItem('clinqoo_auth_token')||localStorage.getItem('clinqoo_token')||''; }catch(e){ return ''; } }
+  function token(){ try{ return localStorage.getItem('clincoo_auth_token')||localStorage.getItem('clincoo_token')||''; }catch(e){ return ''; } }
   function readCache(k){ try{ var c=JSON.parse(localStorage.getItem(k)||'null'); return (c&&c.plan)?c:null; }catch(e){ return null; } }
   var verifiedPlan=null, promoProActive=false, closeTimer=null, previousOverflow='';
-  var crownSelector='.clinqoo-premium-crown, .clinqoo-editor-crown, #export-crown-label';
-  function cacheSub(){ var a=readCache('TM_SUB_CACHE_KEY'), b=readCache('clinqoo_subscription_cache'); return a&&b?((a.ts||0)>(b.ts||0)?a:b):(a||b); }
-  function currentPlan(){ var c=cacheSub(); return verifiedPlan||(c&&c.plan)||window.clinqooEditorPlan||null; }
+  var crownSelector='.clincoo-premium-crown, .clincoo-editor-crown, #export-crown-label';
+  function cacheSub(){ var a=readCache('TM_SUB_CACHE_KEY'), b=readCache('clincoo_subscription_cache'); return a&&b?((a.ts||0)>(b.ts||0)?a:b):(a||b); }
+  function currentPlan(){ var c=cacheSub(); return verifiedPlan||(c&&c.plan)||window.clincooEditorPlan||null; }
   function isPaid(){ var p=currentPlan(); return !!p && String(p).toLowerCase()!=='starter'; }
   var crownCss=document.createElement('style');
-  crownCss.textContent='body[data-pps-paid="true"] .clinqoo-premium-crown,body[data-pps-paid="true"] .clinqoo-editor-crown,body[data-pps-paid="true"] #export-crown-label,body[data-pps-paid="true"] #premium-invite-chip,body[data-pps-paid="true"] #gh-connect-crown{display:none!important;}';
+  crownCss.textContent='body[data-pps-paid="true"] .clincoo-premium-crown,body[data-pps-paid="true"] .clincoo-editor-crown,body[data-pps-paid="true"] #export-crown-label,body[data-pps-paid="true"] #premium-invite-chip,body[data-pps-paid="true"] #gh-connect-crown{display:none!important;}';
   document.head.appendChild(crownCss);
   function currentBilling(){ var c=cacheSub(); return (c&&c.billingCycle)||'Bulanan'; }
   var sheetEl=null, idx=1, featureMinimum='Pro';
@@ -2800,7 +2800,7 @@
       if(res.ok){ var d=await res.json();
         if(d&&d.plan){ verifiedPlan=d.plan;
           var cache=JSON.stringify({plan:d.plan,billingCycle:d.billingCycle||'Bulanan',ts:Date.now()});
-          try{localStorage.setItem('TM_SUB_CACHE_KEY',cache);localStorage.setItem('clinqoo_subscription_cache',cache);}catch(e){}
+          try{localStorage.setItem('TM_SUB_CACHE_KEY',cache);localStorage.setItem('clincoo_subscription_cache',cache);}catch(e){}
           applyCrownState();
         }
       }
@@ -2816,12 +2816,12 @@
   }
   document.addEventListener('click',crownAction,true);
   document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeSheet();return;}crownAction(e);},true);
-  window.addEventListener('storage',function(e){if(e.key==='TM_SUB_CACHE_KEY'||e.key==='clinqoo_subscription_cache'){verifiedPlan=null;applyCrownState();refreshSubscription();}});
+  window.addEventListener('storage',function(e){if(e.key==='TM_SUB_CACHE_KEY'||e.key==='clincoo_subscription_cache'){verifiedPlan=null;applyCrownState();refreshSubscription();}});
   new MutationObserver(function(records){if(records.some(function(r){return Array.from(r.addedNodes).some(function(n){return n.nodeType===1&&(n.matches(crownSelector)||n.querySelector(crownSelector));});}))applyCrownState();}).observe(document.body,{childList:true,subtree:true});
   applyCrownState();
   document.addEventListener('DOMContentLoaded',applyCrownState);
   refreshSubscription();
-  window.clinqooOpenPlansPopup=function(){openSheet();};
+  window.clincooOpenPlansPopup=function(){openSheet();};
   // Syarat promo dan harga mengikuti halaman Upgrade, bukan harga promo tanpa eligibility.
   fetch(apiBase()+'/api/promo',{cache:'no-store'}).then(function(r){return r.json();}).then(function(p){
     if(!p||p.active!==true||p.remaining<=0||!p.eligible)return;

@@ -1,5 +1,5 @@
 import { currentUser, scopedKey, rowScope } from './user-scope.js';
-import { getCpConnection, mirroredBalance, mirrorDelta } from './clinqoopay-helpers.js';
+import { getCpConnection, mirroredBalance, mirrorDelta } from './clincoopay-helpers.js';
 import { emailTemplate, formatIDR, sendEmail, notifyEvent } from './notify-helpers.js';
 
 // Cloudflare Pages Functions — Paket Kredit AI Clincoo (ala kuota internet).

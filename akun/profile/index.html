@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script src="../../js/auth-client.js?v=4"></script>
   <script src="../../js/accent-init.js"></script>
     <meta charset="UTF-8">
@@ -253,9 +253,9 @@
         })();
     </script>
 <!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
-<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
 
-    <script>/* clinqoo-seo-auto: canonical & og mengikuti domain aktif */
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
 (function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<2;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
     </script>
 <!-- Google tag (gtag.js) - Google Analytics -->
@@ -271,7 +271,7 @@
 <script src="../../js/i18n.js" defer></script>
 </head>
 <body class="min-h-screen flex flex-col text-gray-900 pt-20">
-    <script>try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.body.classList.add('dark-mode');var a=localStorage.getItem('clinqoo_accent')||'Hitam (Default)';var am={'Hitam (Default)':{m:'#000000',h:'#1f2937'},'Biru':{m:'#2563eb',h:'#1d4ed8'},'Hijau':{m:'#059669',h:'#047857'},'Ungu':{m:'#9333ea',h:'#7e22ce'},'Merah':{m:'#dc2626',h:'#b91c1c'}};var c=am[a]||am['Hitam (Default)'];document.documentElement.style.setProperty('--accent-color',c.m);document.documentElement.style.setProperty('--accent-hover',c.h);}catch(e){}</script>
+    <script>try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.body.classList.add('dark-mode');var a=localStorage.getItem('clincoo_accent')||'Hitam (Default)';var am={'Hitam (Default)':{m:'#000000',h:'#1f2937'},'Biru':{m:'#2563eb',h:'#1d4ed8'},'Hijau':{m:'#059669',h:'#047857'},'Ungu':{m:'#9333ea',h:'#7e22ce'},'Merah':{m:'#dc2626',h:'#b91c1c'}};var c=am[a]||am['Hitam (Default)'];document.documentElement.style.setProperty('--accent-color',c.m);document.documentElement.style.setProperty('--accent-hover',c.h);}catch(e){}</script>
     <main id="page-profile" class="page-view hidden flex-1 w-full max-w-2xl md:max-w-5xl mx-auto pb-12 flex-col justify-start relative">
         <button onclick="window.location.href='../../'" class="fixed top-3 left-3 w-10 h-10 flex items-center justify-center rounded-full bg-white backdrop-blur border border-gray-100 shadow-sm hover:bg-gray-50 transition-all cursor-pointer text-gray-700 hover:text-black z-50" aria-label="Kembali">
             <i data-lucide="arrow-left" class="w-5 h-5"></i>
@@ -391,7 +391,7 @@
                         </div>
                     </a>                </div>
                 <div class="flex flex-col w-full mt-3">
-                    <a href="javascript:void(0)" onclick="if(window.ClinqooAuth) ClinqooAuth.logout(event)" class="w-full flex items-center px-6 py-2.5 hover:bg-red-50 transition-colors active:bg-red-100 group">
+                    <a href="javascript:void(0)" onclick="if(window.ClincooAuth) ClincooAuth.logout(event)" class="w-full flex items-center px-6 py-2.5 hover:bg-red-50 transition-colors active:bg-red-100 group">
                         <i data-lucide="log-out" class="w-5 h-5 text-red-500 mr-4 group-hover:text-red-600 transition-colors"></i>
                         <span class="text-[15px] font-medium text-red-500 group-hover:text-red-600">Keluar</span>
                     </a>                </div>
@@ -402,8 +402,8 @@
         let currentThemeMode = 'Sistem (Default)';
         let currentAccentName = 'Hitam (Default)';
         try {
-            currentThemeMode = localStorage.getItem('clinqoo_theme') || 'Sistem (Default)';
-            currentAccentName = localStorage.getItem('clinqoo_accent') || 'Hitam (Default)';
+            currentThemeMode = localStorage.getItem('clincoo_theme') || 'Sistem (Default)';
+            currentAccentName = localStorage.getItem('clincoo_accent') || 'Hitam (Default)';
         } catch(e) {}
         function applyTheme() {
             const isDark = (currentThemeMode === 'Gelap') || 
@@ -421,7 +421,7 @@
         }
         function setTheme(themeName) {
             currentThemeMode = themeName;
-            try { localStorage.setItem('clinqoo_theme', themeName); } catch(e) {}
+            try { localStorage.setItem('clincoo_theme', themeName); } catch(e) {}
             const themeStatusText = document.getElementById('theme-status-text');
             const themeMenu = document.getElementById('theme-dropdown-menu');
             if (themeStatusText) {
@@ -440,7 +440,7 @@
         const profileInput = document.getElementById('profile-pic-input');
         const profileDisplay = document.getElementById('profile-pic-display');
         try {
-            const savedPic = localStorage.getItem('clinqoo_profile_pic');
+            const savedPic = localStorage.getItem('clincoo_profile_pic');
             if(savedPic && profileDisplay) {
                 profileDisplay.style.backgroundImage = `url(${savedPic})`;
                 profileDisplay.textContent = '';
@@ -449,8 +449,8 @@
 
         // Sync name and email from localStorage (shared with ../profile/personal/)
         try {
-            const savedName = localStorage.getItem('clinqoo_fullname');
-            const savedEmail = localStorage.getItem('clinqoo_email');
+            const savedName = localStorage.getItem('clincoo_fullname');
+            const savedEmail = localStorage.getItem('clincoo_email');
             const nameEl = document.getElementById('profile-display-name');
             const emailEl = document.getElementById('profile-display-email');
             if (savedName && nameEl) nameEl.textContent = savedName;
@@ -467,15 +467,15 @@
             const nameEl = document.getElementById('profile-display-name');
             const emailEl = document.getElementById('profile-display-email');
             if (d.name) {
-                try { localStorage.setItem('clinqoo_fullname', d.name); } catch(e) {}
+                try { localStorage.setItem('clincoo_fullname', d.name); } catch(e) {}
                 if (nameEl && nameEl.textContent !== d.name) nameEl.textContent = d.name;
             }
             if (d.email) {
-                try { localStorage.setItem('clinqoo_email', d.email); } catch(e) {}
+                try { localStorage.setItem('clincoo_email', d.email); } catch(e) {}
                 if (emailEl && emailEl.textContent !== d.email) emailEl.textContent = d.email;
             }
             if (d.avatar) {
-                try { localStorage.setItem('clinqoo_profile_pic', d.avatar); } catch(e) {}
+                try { localStorage.setItem('clincoo_profile_pic', d.avatar); } catch(e) {}
                 if (profileDisplay) {
                     profileDisplay.style.backgroundImage = 'url(' + d.avatar + ')';
                     profileDisplay.textContent = '';
@@ -495,7 +495,7 @@
             var el = document.getElementById('menu-plan-sub');
             function readCachedPlan() {
                 try {
-                    var keys = ['TM_SUB_CACHE_KEY', 'clinqoo_subscription_cache'];
+                    var keys = ['TM_SUB_CACHE_KEY', 'clincoo_subscription_cache'];
                     var best = null;
                     keys.forEach(function (k) {
                         var c = JSON.parse(localStorage.getItem(k) || 'null');
@@ -509,18 +509,18 @@
             async function refreshMenuPlanSub() {
                 try {
                     var hdr = {};
-                    var tok = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || '';
+                    var tok = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || '';
                     if (tok) hdr['Authorization'] = 'Bearer ' + tok;
                     var d = await fetch('https://clincoo-be2.pages.dev/api/subscription', { headers: hdr }).then(function (r) { return r.json(); });
                     if (d && d.plan) {
                         setLabel(d.plan);
-                        try { localStorage.setItem('TM_SUB_CACHE_KEY', JSON.stringify({ plan: d.plan, billingCycle: d.billingCycle || 'Bulanan', ts: Date.now() })); localStorage.setItem('clinqoo_subscription_cache', JSON.stringify({ plan: d.plan, billingCycle: d.billingCycle || 'Bulanan', ts: Date.now() })); } catch (e) {}
+                        try { localStorage.setItem('TM_SUB_CACHE_KEY', JSON.stringify({ plan: d.plan, billingCycle: d.billingCycle || 'Bulanan', ts: Date.now() })); localStorage.setItem('clincoo_subscription_cache', JSON.stringify({ plan: d.plan, billingCycle: d.billingCycle || 'Bulanan', ts: Date.now() })); } catch (e) {}
                     }
                 } catch (e) {}
             }
             refreshMenuPlanSub();
             window.addEventListener('storage', function (e) {
-                if (e.key === 'TM_SUB_CACHE_KEY' || e.key === 'clinqoo_subscription_cache') {
+                if (e.key === 'TM_SUB_CACHE_KEY' || e.key === 'clincoo_subscription_cache') {
                     var c = readCachedPlan(); if (c) setLabel(c.plan);
                 }
             });
@@ -538,9 +538,9 @@
                     const payload = {};
                     const nameEl = document.getElementById('profile-display-name');
                     const emailEl = document.getElementById('profile-display-email');
-                    const nm = localStorage.getItem('clinqoo_fullname') || (nameEl ? nameEl.textContent : '');
-                    const em = localStorage.getItem('clinqoo_email') || (emailEl ? emailEl.textContent : '');
-                    const pc = localStorage.getItem('clinqoo_profile_pic');
+                    const nm = localStorage.getItem('clincoo_fullname') || (nameEl ? nameEl.textContent : '');
+                    const em = localStorage.getItem('clincoo_email') || (emailEl ? emailEl.textContent : '');
+                    const pc = localStorage.getItem('clincoo_profile_pic');
                     if (nm) payload.name = nm.trim();
                     if (em) payload.email = em.trim();
                     if (pc && pc.length < 700000) payload.avatar = pc;
@@ -592,7 +592,7 @@
                 if (!file) return;
                 compressAvatar(file).then(function(base64) {
                     if (!base64) return;
-                    try { localStorage.setItem('clinqoo_profile_pic', base64); } catch(err) {}
+                    try { localStorage.setItem('clincoo_profile_pic', base64); } catch(err) {}
                     if (profileDisplay) {
                         profileDisplay.style.backgroundImage = 'url(' + base64 + ')';
                         profileDisplay.textContent = '';
@@ -608,11 +608,11 @@
         // Bahasa (i18n)
         const LANG_NAMES = { id: 'Bahasa Indonesia', en: 'English', es: 'Español' };
         function currentLanguage() {
-            try { const v = localStorage.getItem('clinqoo_language'); if (v === 'en' || v === 'es' || v === 'id') return v; } catch (e) {}
+            try { const v = localStorage.getItem('clincoo_language'); if (v === 'en' || v === 'es' || v === 'id') return v; } catch (e) {}
             return 'id';
         }
         function setLanguage(code) {
-            try { localStorage.setItem('clinqoo_language', code === 'en' || code === 'es' ? code : 'id'); } catch (e) {}
+            try { localStorage.setItem('clincoo_language', code === 'en' || code === 'es' ? code : 'id'); } catch (e) {}
             location.reload(); // re-render seluruh UI dalam bahasa baru
         }
         (function initLanguageUI() {
@@ -656,7 +656,7 @@
         });
     </script>
 
-    <script>/* clinqoo-sw-register */
+    <script>/* clincoo-sw-register */
     if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../sw.js').catch(function () {}); }); }
     </script>
 
@@ -669,7 +669,7 @@
   function check(){
     try {
       var base = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : '';
-      var token = window.ClinqooAuth && ClinqooAuth.getToken ? ClinqooAuth.getToken() : null;
+      var token = window.ClincooAuth && ClincooAuth.getToken ? ClincooAuth.getToken() : null;
       fetch(base + '/api/admin/ping', { headers: token ? { 'Authorization': 'Bearer ' + token } : {} })
         .then(function(r){ return r.ok ? r.json() : null; })
         .then(function(d){ if (d && d.success && d.is_admin) showAdminMenu(); })

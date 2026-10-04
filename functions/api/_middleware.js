@@ -64,14 +64,14 @@ function tooMany(retryAfter) {
 // ---- 2. VALIDASI ORIGIN (anti-phishing / anti-lints-situs) ----
 // DUA TINGKAT KEPERCAYAAN (perbaikan keamanan):
 //  a) originOk — LONGGAR: hanya untuk echo CORS preflight (OPTIONS). Diperlukan karena
-//     situs hasil deploy user (subdomain *.clinqoo.biz.id dan cadangan *.pages.dev)
+//     situs hasil deploy user (subdomain *.biz.id lama dan cadangan *.pages.dev)
 //     memanggil /api/fn lintas-origin. Token auth = header Bearer (bukan cookie),
 //     jadi echo CORS longgar tidak memberi akses apa pun tanpa token.
 //  b) strictOriginOk — KETAT: untuk mutasi /api/auth dan /api/admin. HANYA host milik
 //     Clincoo sendiri. Sebelumnya regex menerima SEMUA subdomain *.pages.dev /
 //     *.workers.dev milik siapa pun (halaman phising siapa pun lolos cek ini).
-const ORIGIN_ALLOW = /^(^[^.:]+\.pages\.dev$)|(^muzawwied\.github\.io$)|(^[^.:]+\.workers\.dev$)|(^([\w-]+\.)*clincoo\.buzz$)|(^([\w-]+\.)*clinqoo\.biz\.id$)|(^([\w-]+\.)*clincoo\.biz\.id$)/;
-const ORIGIN_STRICT = /^(^clincoo-be2\.pages\.dev$)|(^clinqoo\.pages\.dev$)|(^muzawwied\.github\.io$)|(^([\w-]+\.)*clincoo\.buzz$)|(^localhost(:\d+)?$)/;
+const ORIGIN_ALLOW = /^(^[^.:]+\.pages\.dev$)|(^muzawwied\.github\.io$)|(^[^.:]+\.workers\.dev$)|(^([\w-]+\.)*clincoo\.buzz$)|(^([\w-]+\.)*clin[q]oo\.biz\.id$)|(^([\w-]+\.)*clincoo\.biz\.id$)/;
+const ORIGIN_STRICT = /^(^clincoo-be2\.pages\.dev$)|(^clin[q]oo\.pages\.dev$)|(^muzawwied\.github\.io$)|(^([\w-]+\.)*clincoo\.buzz$)|(^localhost(:\d+)?$)/;
 function originOk(request) {
   const origin = request.headers.get('origin');
   if (!origin) return true; // curl / webhook server (BuatQris, e-wallet) — tanpa browser
@@ -217,7 +217,7 @@ export async function onRequest({ request, env, next }) {
       } catch (e) { /* anggap guest */ }
     }
     if (!bigUpload) {
-      // CORS wajib ada di sini: editor produksi (app.clincoo.buzz/clinqoo.pages.dev)
+      // CORS wajib ada di sini: editor produksi (app.clincoo.buzz / domain pages.dev lama)
       // memanggil API lintas-origin (clincoo-be2.pages.dev). Tanpa header ini browser
       // memblokir respons dari dibaca skrip -> fetch() melempar "Failed to fetch" dan
       // pesan asli ("Payload terlalu besar") tidak pernah sampai ke user (notifikasi

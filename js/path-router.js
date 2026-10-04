@@ -1,5 +1,5 @@
 /* Fallback tombol kembali cerdas (auth-client.js dihapus — tanpa gate login) */
-window.ClinqooBack = window.ClinqooBack || function (fallbackUrl) {
+window.ClincooBack = window.ClincooBack || function (fallbackUrl) {
             try {
                 var sameOrigin = document.referrer && new URL(document.referrer).origin === location.origin;
                 if (sameOrigin && history.length > 1) { window.history.back(); return; }
@@ -63,7 +63,7 @@ const PathRouter = {
     },
 
     buildProjectUrl(subpath) {
-        const projectId = this.getProjectId() || localStorage.getItem('clinqoo_current_project_id');
+        const projectId = this.getProjectId() || localStorage.getItem('clincoo_current_project_id');
         if (!projectId) return _BASE + '/';
         if (_isGitHubPages) {
             // GitHub Pages: use pages/xxx.html?id=projectId
@@ -86,31 +86,31 @@ const PathRouter = {
             if (segments.length >= 4) {
                 if (_isGitHubPages) {
                     const pid = this.getProjectId();
-                    window.ClinqooBack(_BASE + '/proyek/' + segments[2] + '/?id=' + encodeURIComponent(pid));
+                    window.ClincooBack(_BASE + '/proyek/' + segments[2] + '/?id=' + encodeURIComponent(pid));
                 } else {
-                    window.ClinqooBack(_BASE + '/' + segments.slice(0, 3).join('/'));
+                    window.ClincooBack(_BASE + '/' + segments.slice(0, 3).join('/'));
                 }
             } else if (segments.length >= 3) {
                 if (_isGitHubPages) {
                     const pid = this.getProjectId();
-                    window.ClinqooBack(_BASE + '/proyek/workspace.html?id=' + encodeURIComponent(pid));
+                    window.ClincooBack(_BASE + '/proyek/workspace.html?id=' + encodeURIComponent(pid));
                 } else {
-                    window.ClinqooBack(_BASE + '/' + segments.slice(0, 2).join('/'));
+                    window.ClincooBack(_BASE + '/' + segments.slice(0, 2).join('/'));
                 }
             } else if (segments.length >= 2) {
-                window.ClinqooBack(_BASE + '/');
+                window.ClincooBack(_BASE + '/');
             } else {
                 window.history.back();
             }
         } else if (segments[0] === 'profil') {
             if (segments.length >= 2) {
                 if (_isGitHubPages) {
-                    window.ClinqooBack(_BASE + '/akun/profile/');
+                    window.ClincooBack(_BASE + '/akun/profile/');
                 } else {
-                    window.ClinqooBack(_BASE + '/profil');
+                    window.ClincooBack(_BASE + '/profil');
                 }
             } else {
-                window.ClinqooBack(_BASE + '/');
+                window.ClincooBack(_BASE + '/');
             }
         } else {
             window.history.back();
@@ -120,14 +120,14 @@ const PathRouter = {
     persistProjectId() {
         const id = this.getProjectId();
         if (id) {
-            try { localStorage.setItem('clinqoo_current_project_id', id); } catch(e) {}
+            try { localStorage.setItem('clincoo_current_project_id', id); } catch(e) {}
         }
     },
 
     getProjectIdWithFallback() {
         let id = this.getProjectId();
         if (!id) {
-            try { id = localStorage.getItem('clinqoo_current_project_id'); } catch(e) {}
+            try { id = localStorage.getItem('clincoo_current_project_id'); } catch(e) {}
         }
         return id;
     },

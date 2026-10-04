@@ -243,7 +243,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (request.method === 'GET') {
-      return json({ ok: true, service: 'clinqoo-agent', workflows: 'agent-flow', version: '1.0' });
+      return json({ ok: true, service: 'clincoo-agent', workflows: 'agent-flow', version: '1.0' });
     }
     if (request.method === 'POST' && url.pathname === '/run') {
       const tok = await getEnvKey(env, 'AGENT_WORKER_TOKEN');

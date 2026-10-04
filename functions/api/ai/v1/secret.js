@@ -1,5 +1,5 @@
-// Cloudflare Pages Function — /api/ai/v1/secret "Clinqoo Open API" (pengelolaan secret)
-// Secret API Clinqoo per proyek — dikeluarkan Clinqoo untuk user (user TIDAK
+// Cloudflare Pages Function — /api/ai/v1/secret "Clincoo Open API" (pengelolaan secret)
+// Secret API Clincoo per proyek — dikeluarkan Clincoo untuk user (user TIDAK
 // membawa key provider sendiri). Dipakai sebagai Bearer di /v1/chat/completions.
 // Jalur /api/* -> middleware sudah memastikan user login (Bearer token akun).
 //   GET    ?project_id=xxx  -> status + secret (pemilik proyek)

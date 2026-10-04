@@ -1,17 +1,17 @@
 // ===== Sinkronisasi Workspace -> GitHub (Sync GitHub) =====
 // Engine bersama antara halaman workspace & editor.
 // Cara kerja:
-//  - Konfigurasi per-proyek: clinqoo_syncgh_cfg_<pid> = { on, owner, repo, branch }
-//  - Snapshot per-proyek: clinqoo_syncgh_snap_<pid> = { repo, files: { path: { sha, hash } } }
+//  - Konfigurasi per-proyek: clincoo_syncgh_cfg_<pid> = { on, owner, repo, branch }
+//  - Snapshot per-proyek: clincoo_syncgh_snap_<pid> = { repo, files: { path: { sha, hash } } }
 //  - schedule() dipanggil tiap workspace berubah (debounce 4 dtk) -> diff isi
 //    localStorage workspace vs snapshot -> push/delete via GitHub Contents API.
-//  - Token GitHub: clinqoo_github_token (dipasang oleh koneksi GitHub di halaman workspace).
+//  - Token GitHub: clincoo_github_token (dipasang oleh koneksi GitHub di halaman workspace).
 (function () {
-  var GITHUB_TOKEN_KEY = 'clinqoo_github_token';
-  var CFG_PREFIX = 'clinqoo_syncgh_cfg_';
-  var SNAP_PREFIX = 'clinqoo_syncgh_snap_';
+  var GITHUB_TOKEN_KEY = 'clincoo_github_token';
+  var CFG_PREFIX = 'clincoo_syncgh_cfg_';
+  var SNAP_PREFIX = 'clincoo_syncgh_snap_';
 
-  function pid() { try { return localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) { return ''; } }
+  function pid() { try { return localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) { return ''; } }
   function pkey(prefix) { return prefix + (pid() || 'global'); }
 
   function cfg() { try { return JSON.parse(localStorage.getItem(pkey(CFG_PREFIX)) || 'null') || null; } catch (e) { return null; } }
@@ -60,7 +60,7 @@
 
   function currentFiles() {
     try {
-      var raw = localStorage.getItem('clinqoo_workspace_files_' + (pid() || 'global'));
+      var raw = localStorage.getItem('clincoo_workspace_files_' + (pid() || 'global'));
       if (!raw) return null;
       var d = JSON.parse(raw);
       if (!d || typeof d !== 'object') return null;

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script src="../../../js/auth-client.js?v=4"></script>
     <script src="../../../js/accent-init.js"></script>
     <meta charset="UTF-8">
@@ -143,9 +143,9 @@
     body.dark-mode input::placeholder, body.dark-mode textarea::placeholder { color: #666666 !important; }
 </style>
 <!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
-<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
 
-    <script>/* clinqoo-seo-auto: canonical & og mengikuti domain aktif */
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
 (function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<3;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
     </script>
 <!-- Google tag (gtag.js) - Google Analytics -->
@@ -161,7 +161,7 @@
 <script src="../../../js/i18n.js" defer></script>
 </head>
 <body class="min-h-screen flex flex-col text-gray-900 pt-16">
-    <script>(function(){var t=localStorage.getItem("clinqoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+    <script>(function(){var t=localStorage.getItem("clincoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
 
      <header class="bg-white flex justify-between items-center px-3 py-2 fixed top-0 w-full z-40 transition-colors">
         <button onclick="history.back()" class="top-2 left-5 w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-100 hover:bg-gray-100 transition-all cursor-pointer text-gray-700 hover:text-black">
@@ -269,9 +269,9 @@
             return new Promise(function(resolve) {
                 try {
                     const payload = {};
-                    const name = localStorage.getItem('clinqoo_fullname');
-                    const email = localStorage.getItem('clinqoo_email');
-                    const pic = localStorage.getItem('clinqoo_profile_pic');
+                    const name = localStorage.getItem('clincoo_fullname');
+                    const email = localStorage.getItem('clincoo_email');
+                    const pic = localStorage.getItem('clincoo_profile_pic');
                     if (name) payload.name = name;
                     if (email) payload.email = email;
                     if (pic && pic.length < 700000) payload.avatar = pic;
@@ -317,18 +317,18 @@
                     const actions = document.getElementById('action-buttons');
                     if (actions && !actions.classList.contains('hidden')) return;
                     // Selalu samakan dengan D1 (real-time)
-                    if (d.name) { try { localStorage.setItem('clinqoo_fullname', d.name); } catch(e) {} }
-                    if (d.email) { try { localStorage.setItem('clinqoo_email', d.email); } catch(e) {} }
-                    if (d.avatar) { try { localStorage.setItem('clinqoo_profile_pic', d.avatar); } catch(e) {} }
+                    if (d.name) { try { localStorage.setItem('clincoo_fullname', d.name); } catch(e) {} }
+                    if (d.email) { try { localStorage.setItem('clincoo_email', d.email); } catch(e) {} }
+                    if (d.avatar) { try { localStorage.setItem('clincoo_profile_pic', d.avatar); } catch(e) {} }
                     const nameInput = document.getElementById('input-fullname');
                     const emailInput = document.getElementById('input-email');
                     const displayName = document.getElementById('user-display-name');
                     const displayEmail = document.getElementById('user-display-email');
                     const avatarContainer = document.getElementById('avatar-container');
                     const avatarInitial = document.getElementById('avatar-initial');
-                    const nm = d.name || localStorage.getItem('clinqoo_fullname');
-                    const em = d.email || localStorage.getItem('clinqoo_email');
-                    const pc = d.avatar || localStorage.getItem('clinqoo_profile_pic');
+                    const nm = d.name || localStorage.getItem('clincoo_fullname');
+                    const em = d.email || localStorage.getItem('clincoo_email');
+                    const pc = d.avatar || localStorage.getItem('clincoo_profile_pic');
                     if (nm && nameInput && document.activeElement !== nameInput && nameInput.value !== nm) nameInput.value = nm;
                     if (nm && displayName && displayName.innerText !== nm) displayName.innerText = nm;
                     if (em && emailInput && emailInput.value !== em) emailInput.value = em;
@@ -367,7 +367,7 @@
             const displayName = document.getElementById('user-display-name');
             if (nameInput && displayName) {
                 displayName.innerText = nameInput.value;
-                try { localStorage.setItem('clinqoo_fullname', nameInput.value); } catch(e) {}
+                try { localStorage.setItem('clincoo_fullname', nameInput.value); } catch(e) {}
             }
             await syncProfileToD1(); // tunggu benar2 tersimpan ke D1
 
@@ -391,7 +391,7 @@
                     avatarContainer.classList.remove('bg-accent');
                 }
                 if (avatarInitial) avatarInitial.style.display = 'none';
-                try { localStorage.setItem('clinqoo_profile_pic', base64); } catch(err) {}
+                try { localStorage.setItem('clincoo_profile_pic', base64); } catch(err) {}
                 syncProfileToD1(); // sinkron avatar ke D1
                 showActionButtons();
             });
@@ -419,9 +419,9 @@
             syncProfileFromD1();
             // Load Data from LocalStorage
             try {
-                const savedName = localStorage.getItem('clinqoo_fullname');
-                const savedEmail = localStorage.getItem('clinqoo_email');
-                const savedPic = localStorage.getItem('clinqoo_profile_pic');
+                const savedName = localStorage.getItem('clincoo_fullname');
+                const savedEmail = localStorage.getItem('clincoo_email');
+                const savedPic = localStorage.getItem('clincoo_profile_pic');
 
                 const nameInput = document.getElementById('input-fullname');
                 const emailInput = document.getElementById('input-email');
@@ -456,7 +456,7 @@
         });
     </script>
 
-    <script>/* clinqoo-sw-register */
+    <script>/* clincoo-sw-register */
     if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../sw.js').catch(function () {}); }); }
     </script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>

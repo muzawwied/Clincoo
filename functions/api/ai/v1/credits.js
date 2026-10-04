@@ -1,4 +1,4 @@
-// Cloudflare Pages Function — /api/ai/v1/credits "Clinqoo Open API"
+// Cloudflare Pages Function — /api/ai/v1/credits "Clincoo Open API"
 // Menampilkan sisa kredit Open API pemilik proyek (harga per model, sesuai paket).
 // Satuan: mikro-dolar (1.000.000 unit = $1) — sama dengan tabel ai_api_credits.
 //   GET ?project_id=xxx -> { plan, daily: {used, limit, left}, monthly: {...}, unit }

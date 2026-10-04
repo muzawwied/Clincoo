@@ -70,7 +70,7 @@ function flatEmail(o) {
   '<div style="background:#ffffff;padding:36px 24px;font-family:Arial,Helvetica,sans-serif">' +
     '<div style="max-width:520px;margin:0 auto">' +
       '<div style="padding-bottom:20px;border-bottom:1px solid #eceef1">' +
-        '<img src="https://app.clincoo.buzz/assets/logo-clinqoo.png" width="36" height="36" alt="Clincoo" style="display:inline-block;vertical-align:middle;border-radius:10px;margin-right:12px">' +
+        '<img src="https://app.clincoo.buzz/assets/logo-clincoo.png" width="36" height="36" alt="Clincoo" style="display:inline-block;vertical-align:middle;border-radius:10px;margin-right:12px">' +
         '<span style="font-size:20px;font-weight:bold;letter-spacing:2px;color:#0a0a0a;vertical-align:middle">Clincoo</span>' +
       '</div>' +
       '<h1 style="margin:28px 0 6px;font-size:18px;color:#111827;font-weight:bold">' + esc(o.title) + '</h1>' +

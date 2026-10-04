@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script src="../js/auth-client.js?v=4"></script>
   <script src="../js/accent-init.js"></script>
     <meta charset="UTF-8">
@@ -231,9 +231,9 @@
         body.dark-mode .chip { border-color: rgba(255,255,255,0.14); color: rgba(255,255,255,0.60); background: rgba(255,255,255,0.03); }
     </style>
 <!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
-<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
 
-    <script>/* clinqoo-seo-auto: canonical & og mengikuti domain aktif */
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
 (function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<1;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
     </script>
 <!-- Google tag (gtag.js) - Google Analytics -->
@@ -250,7 +250,7 @@
 </head>
 <body class="min-h-screen flex flex-col md:flex-row selection:bg-gray-900 selection:text-white dark:selection:bg-white dark:selection:text-black">
     <!-- Script Deteksi Tema (Langsung dieksekusi agar tidak flash) -->
-    <script>(function(){var t=localStorage.getItem("clinqoo_theme");var isDark=(t==="Gelap")||((t==="Sistem (Default)"||!t)&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+    <script>(function(){var t=localStorage.getItem("clincoo_theme");var isDark=(t==="Gelap")||((t==="Sistem (Default)"||!t)&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
 
     <!-- Layar loading proses OAuth: halaman polos + icon loading, agar tidak flash ke form login -->
     <div id="oauth-loading" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-white dark:bg-black">
@@ -274,7 +274,7 @@
     <!-- Kontainer Utama -->
     <!-- Logo pojok kiri atas (gaya Cloudflare) -->
     <a href="../" class="absolute top-5 left-5 sm:top-7 sm:left-7 z-20 group" aria-label="Beranda Clincoo">
-        <img src="../assets/logo-clinqoo.png" alt="Clincoo" class="w-9 h-9 rounded-full group-hover:scale-105 transition-transform">
+        <img src="../assets/logo-clincoo.png" alt="Clincoo" class="w-9 h-9 rounded-full group-hover:scale-105 transition-transform">
     </a>
 
     <div class="w-full md:w-1/2 flex flex-col justify-center min-h-screen relative z-10 animate-fade-in px-2 sm:px-8 xl:px-16">
@@ -311,9 +311,9 @@
 
                 <!-- Tautan Legal -->
                 <div class="text-center pb-2 text-xs text-gray-400 dark:text-gray-600 flex items-center justify-center gap-2">
-                    <a href="https://clinqoo-blog.pages.dev/legal/syarat-ketentuan/" target="_blank" rel="noopener" class="hover:text-gray-600 dark:hover:text-gray-400 transition-colors">Syarat &amp; Ketentuan</a>
+                    <a href="https://clincoo-blog.pages.dev/legal/syarat-ketentuan/" target="_blank" rel="noopener" class="hover:text-gray-600 dark:hover:text-gray-400 transition-colors">Syarat &amp; Ketentuan</a>
                     <span>|</span>
-                    <a href="https://clinqoo-blog.pages.dev/legal/kebijakan-privasi/" target="_blank" rel="noopener" class="hover:text-gray-600 dark:hover:text-gray-400 transition-colors">Privacy Policy</a>
+                    <a href="https://clincoo-blog.pages.dev/legal/kebijakan-privasi/" target="_blank" rel="noopener" class="hover:text-gray-600 dark:hover:text-gray-400 transition-colors">Privacy Policy</a>
                 </div>
             </div>
 
@@ -399,17 +399,17 @@
 
         // ==== KONFIG AUTH ====
         const API_BASE = 'https://clincoo-be2.pages.dev/api/auth';
-        const TOKEN_KEY = 'clinqoo_auth_token';
+        const TOKEN_KEY = 'clincoo_auth_token';
         const GITHUB_CLIENT_ID = 'Ov23ctIBGjQBolR5PS2C';
 
         function saveSession(data) {
             try {
                 localStorage.setItem(TOKEN_KEY, data.token);
                 // simpan user lebih dulu -> data profil di bawah otomatis masuk namespace akun
-                localStorage.setItem('clinqoo_auth_user', JSON.stringify(data.user || {}));
-                localStorage.setItem('clinqoo_fullname', data.user.name || '');
-                localStorage.setItem('clinqoo_email', data.user.email || '');
-                if (data.user.avatar_url) localStorage.setItem('clinqoo_profile_pic', data.user.avatar_url);
+                localStorage.setItem('clincoo_auth_user', JSON.stringify(data.user || {}));
+                localStorage.setItem('clincoo_fullname', data.user.name || '');
+                localStorage.setItem('clincoo_email', data.user.email || '');
+                if (data.user.avatar_url) localStorage.setItem('clincoo_profile_pic', data.user.avatar_url);
             } catch (e) {}
         }
 
@@ -418,14 +418,14 @@
         // localStorage/sessionStorage di beberapa browser dengan anti bounce-tracking).
         function setOauthStateCookie(val, provider) {
             const payload = encodeURIComponent(JSON.stringify({ v: val, t: Date.now(), p: provider }));
-            document.cookie = 'clinqoo_oauth_state=' + payload + '; Max-Age=900; Path=' + window.location.pathname + '; SameSite=Lax; Secure';
+            document.cookie = 'clincoo_oauth_state=' + payload + '; Max-Age=900; Path=' + window.location.pathname + '; SameSite=Lax; Secure';
         }
         function getOauthStateCookie() {
-            const m = document.cookie.match(/(?:^|;\s*)clinqoo_oauth_state=([^;]+)/);
+            const m = document.cookie.match(/(?:^|;\s*)clincoo_oauth_state=([^;]+)/);
             return m ? decodeURIComponent(m[1]) : null;
         }
         function clearOauthStateCookie() {
-            document.cookie = 'clinqoo_oauth_state=; Max-Age=0; Path=' + window.location.pathname + '; SameSite=Lax; Secure';
+            document.cookie = 'clincoo_oauth_state=; Max-Age=0; Path=' + window.location.pathname + '; SameSite=Lax; Secure';
         }
 
         // ==== LOGIN SOSIAL (OAuth) ====
@@ -588,7 +588,7 @@
         }
     </script>
 
-    <script>/* clinqoo-sw-register */
+    <script>/* clincoo-sw-register */
     if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../sw.js').catch(function () {}); }); }
     </script>
 </body>

@@ -368,7 +368,7 @@ async function handlePostUsers(db, adminUser, body, reqAction) {
     return json({ error: 'Pengguna tidak ditemukan' }, 404);
   }
 
-  const adminEmail = adminUser.email || 'admin@clinqoo';
+  const adminEmail = adminUser.email || 'admin@clincoo';
 
   if (action === 'suspend') {
     if (Number(targetUserId) === Number(adminUser.id)) {
@@ -543,7 +543,7 @@ async function handleGetReports(db) {
 
 async function handlePostReports(db, adminUser, body, reqAction) {
   const action = body.action || reqAction;
-  const adminEmail = adminUser.email || 'admin@clinqoo';
+  const adminEmail = adminUser.email || 'admin@clincoo';
 
   if (action === 'create') {
     const type = String(body.type || 'manual_report');

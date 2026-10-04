@@ -1,6 +1,6 @@
-# Clinqoo Agent Worker — Cloudflare Workflows
+# Clincoo Agent Worker — Cloudflare Workflows
 
-Worker terpisah yang menjalankan tugas Agent Mode Clinqoo **durable di latar belakang** (bukan tergantung request HTTP yang bisa putus).
+Worker terpisah yang menjalankan tugas Agent Mode Clincoo **durable di latar belakang** (bukan tergantung request HTTP yang bisa putus).
 
 ## Apa yang dilakukan
 - Task dengan status `queued` di tabel `agent_tasks` (D1 bersama app) dijemput **cron tiap menit**, lalu dijalankan sebagai instance **Cloudflare Workflow**.
@@ -9,8 +9,8 @@ Worker terpisah yang menjalankan tugas Agent Mode Clinqoo **durable di latar bel
 - Task `running` lama tanpa kabar otomatis di-antrekan ulang.
 
 ## Cara mulai tugas
-1. **Dari app Clinqoo** — `POST /api/agent { action: 'start_bg', goal, project_id?, wa_number? }` → langsung balik dengan `task_id`.
-2. **Dari WhatsApp** — kirim `tugas: <tujuan>` ke nomor WA Clinqoo → progres dikirim balik ke nomor itu tiap langkah. `status` untuk cek.
+1. **Dari app Clincoo** — `POST /api/agent { action: 'start_bg', goal, project_id?, wa_number? }` → langsung balik dengan `task_id`.
+2. **Dari WhatsApp** — kirim `tugas: <tujuan>` ke nomor WA Clincoo → progres dikirim balik ke nomor itu tiap langkah. `status` untuk cek.
 
 ## Env (di D1 `env_vars` — sama dengan app, tidak perlu setup ulang)
 - `OPENROUTER_API_KEY`, `GEMINI_API_KEY` — fallback provider AI.

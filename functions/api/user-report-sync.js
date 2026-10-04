@@ -1,7 +1,7 @@
 // Cloudflare Pages Functions — Sinkronisasi Laporan User ke GitHub (real-time)
 // POST /api/user-report-sync  {action:'sync'}  — wajib header x-cron-secret (CRON_SECRET)
 //
-// File tujuan: muzawwied/Clinqoo-Data/users-live.md (repo PRIVAT) — daftar user
+// File tujuan: muzawwied/Clincoo-Data/users-live.md (repo PRIVAT) — daftar user
 // yang SELALU ter-update otomatis:
 //   1. Real-time: hook di pendaftaran akun baru (register email + OAuth Google/GitHub)
 //   2. Cron: functions/scheduled.js tiap 15 menit (menangkap perubahan lain:
@@ -17,7 +17,7 @@
 import { getSecret, sendEmail, flatTemplate, formatIDR, notifyEvent } from './notify-helpers.js';
 import { getUserById } from './user-scope.js';
 
-const GH_REPO = 'muzawwied/Clinqoo-Data';
+const GH_REPO = 'muzawwied/Clincoo-Data';
 const GH_PATH = 'users-live.md';
 const GH_BRANCH = 'main';
 
@@ -201,7 +201,7 @@ export async function syncUserReport(env, opts) {
   md += `- **Aksi**: tautan langsung ke panel admin (\`akun/profile/admin/users\`) — Tangguhkan / Aktifkan / Hapus (butuh login admin). Admin/Owner dilindungi (tidak bisa di-suspend/hapus dari UI).\n`;
 
   // ---- push ke GitHub ----
-  const ghHeaders = { 'Authorization': 'Bearer ' + token, 'User-Agent': 'clinqoo-sync', 'Accept': 'application/vnd.github+json' };
+  const ghHeaders = { 'Authorization': 'Bearer ' + token, 'User-Agent': 'clincoo-sync', 'Accept': 'application/vnd.github+json' };
   const getRes = await fetch('https://api.github.com/repos/' + GH_REPO + '/contents/' + GH_PATH + '?ref=' + GH_BRANCH, { headers: ghHeaders, signal });
   let sha = null;
   if (getRes.ok) {

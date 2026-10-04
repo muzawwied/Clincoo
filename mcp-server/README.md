@@ -1,6 +1,6 @@
-# Clinqoo MCP Server
+# Clincoo MCP Server
 
-MCP (Model Context Protocol) server untuk platform **Clinqoo**.
+MCP (Model Context Protocol) server untuk platform **Clincoo**.
 
 Dengan server ini, AI assistant (Cursor, Claude Desktop, Windsurf, dll.) bisa:
 
@@ -17,7 +17,7 @@ Dengan server ini, AI assistant (Cursor, Claude Desktop, Windsurf, dll.) bisa:
 |------|-----------|
 | `get_me` | Info akun yang login |
 | `list_projects` | Daftar semua proyek |
-| `get_wallet_balance` | Saldo dompet (termasuk ClinqooPay) |
+| `get_wallet_balance` | Saldo dompet (termasuk ClincooPay) |
 | `list_wallet_transactions` | Riwayat transaksi |
 | `start_agent_task` | Mulai tugas Agent Mode (background) |
 | `get_agent_status` | Cek status + events agent task |
@@ -33,16 +33,16 @@ npm install
 npm run build
 ```
 
-### 2. Ambil token Clinqoo
+### 2. Ambil token Clincoo
 
-Login ke Clinqoo → buka DevTools → Application / Local Storage / Cookie, atau dari Network tab cari request yang punya header `Authorization: Bearer ...`.
+Login ke Clincoo → buka DevTools → Application / Local Storage / Cookie, atau dari Network tab cari request yang punya header `Authorization: Bearer ...`.
 
 Simpan token tersebut.
 
 ### 3. Jalankan (manual test)
 
 ```bash
-CLINQOO_TOKEN="your_token_here" node build/index.js
+CLINCOO_TOKEN="your_token_here" node build/index.js
 ```
 
 ### 4. Daftarkan di Cursor / Claude Desktop
@@ -52,12 +52,12 @@ CLINQOO_TOKEN="your_token_here" node build/index.js
 ```json
 {
   "mcpServers": {
-    "clinqoo": {
+    "clincoo": {
       "command": "node",
-      "args": ["/path/to/Clinqoo./mcp-server/build/index.js"],
+      "args": ["/path/to/Clincoo./mcp-server/build/index.js"],
       "env": {
-        "CLINQOO_TOKEN": "your_token_here",
-        "CLINQOO_BASE_URL": "https://muzawwied.github.io/Clinqoo."
+        "CLINCOO_TOKEN": "your_token_here",
+        "CLINCOO_BASE_URL": "https://muzawwied.github.io/Clincoo."
       }
     }
   }
@@ -69,32 +69,32 @@ CLINQOO_TOKEN="your_token_here" node build/index.js
 ```json
 {
   "mcpServers": {
-    "clinqoo": {
+    "clincoo": {
       "command": "node",
-      "args": ["/path/to/Clinqoo./mcp-server/build/index.js"],
+      "args": ["/path/to/Clincoo./mcp-server/build/index.js"],
       "env": {
-        "CLINQOO_TOKEN": "your_token_here"
+        "CLINCOO_TOKEN": "your_token_here"
       }
     }
   }
 }
 ```
 
-Ganti `/path/to/Clinqoo.` dengan path absolut di komputer kamu.
+Ganti `/path/to/Clincoo.` dengan path absolut di komputer kamu.
 
 ## Environment Variables
 
 | Variable | Wajib | Default | Keterangan |
 |----------|-------|---------|------------|
-| `CLINQOO_TOKEN` | Ya | — | Bearer token akun Clinqoo |
-| `CLINQOO_BASE_URL` | Tidak | `https://muzawwied.github.io/Clinqoo.` | Base URL API |
+| `CLINCOO_TOKEN` | Ya | — | Bearer token akun Clincoo |
+| `CLINCOO_BASE_URL` | Tidak | `https://muzawwied.github.io/Clincoo.` | Base URL API |
 
 ## Catatan
 
 - Token bersifat rahasia. Jangan commit ke git.
 - Agent task yang dijalankan lewat `start_agent_task` berjalan di **background** (Cloudflare Workflows). Gunakan `get_agent_status` untuk memantau.
-- Jika base URL berubah (custom domain), set `CLINQOO_BASE_URL`.
+- Jika base URL berubah (custom domain), set `CLINCOO_BASE_URL`.
 
 ## License
 
-Private — bagian dari proyek Clinqoo.
+Private — bagian dari proyek Clincoo.

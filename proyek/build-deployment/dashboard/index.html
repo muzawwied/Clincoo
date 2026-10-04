@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script src="../../../js/auth-client.js?v=4"></script>
   <script src="../../../js/accent-init.js"></script>
-<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
+<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clincoo_current_project_id',__p);}}catch(e){}})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
@@ -115,9 +115,9 @@
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 <!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
-<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
 
-    <script>/* clinqoo-seo-auto: canonical & og mengikuti domain aktif */
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
 (function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<3;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
     </script>
 <!-- Google tag (gtag.js) - Google Analytics -->
@@ -131,12 +131,12 @@
 <!-- End Google tag -->
 <script src="../../../js/i18n-dict.js" defer></script>
 <script src="../../../js/i18n.js" defer></script>
-<script>window.ClinqooBack = window.ClinqooBack || function (fallbackUrl) {             try {                 var sameOrigin = document.referrer && new URL(document.referrer).origin === location.origin;                 if (sameOrigin && history.length > 1) { window.history.back(); return; }             } catch (e) {}             if (fallbackUrl) { try { location.replace(fallbackUrl); return; } catch (e2) {} }             try { window.history.back(); } catch (e3) {}         };</script>
+<script>window.ClincooBack = window.ClincooBack || function (fallbackUrl) {             try {                 var sameOrigin = document.referrer && new URL(document.referrer).origin === location.origin;                 if (sameOrigin && history.length > 1) { window.history.back(); return; }             } catch (e) {}             if (fallbackUrl) { try { location.replace(fallbackUrl); return; } catch (e2) {} }             try { window.history.back(); } catch (e3) {}         };</script>
 </head>
 <body class="min-h-screen flex flex-col text-gray-900 pt-16 relative">
     <script>
         (function(){
-            var t=localStorage.getItem("clinqoo_theme");
+            var t=localStorage.getItem("clincoo_theme");
             var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);
             if(isDark){document.body.classList.add("dark-mode");}
         })();
@@ -258,7 +258,7 @@
                     </div>
 
                     <div class="pt-2 text-sm text-gray-500 leading-relaxed">
-                        Situs Anda terakhir kali di-deploy ke lingkungan <span class="font-semibold text-gray-700">clinqoo-pages</span> melalui alur kerja otomatis.<br>
+                        Situs Anda terakhir kali di-deploy ke lingkungan <span class="font-semibold text-gray-700">clincoo-pages</span> melalui alur kerja otomatis.<br>
                         <a href="#" class="text-blue-600 hover:underline">Pelajari lebih lanjut tentang mendeploy ke Clincoo menggunakan alur kerja kustom.</a>
                     </div>
                 </div>
@@ -302,15 +302,15 @@
         lucide.createIcons();
 
         // ===================== DEPLOY ASLI (Cloudflare Pages) =====================
-        // Deploy engine: same-origin di Cloudflare Pages; clinqoo-be2 hanya untuk frontend GitHub Pages (tanpa Functions).
+        // Deploy engine: same-origin di Cloudflare Pages; clincoo-be2 hanya untuk frontend GitHub Pages (tanpa Functions).
         const API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev/api' : '/api';
-        const pid = () => localStorage.getItem('clinqoo_current_project_id') || '';
+        const pid = () => localStorage.getItem('clincoo_current_project_id') || '';
         let deployState = { pages_url: '', public_url: '', pollTimer: null, domainTimer: null, deploying: false };
 
         // ===================== SESI DEPLOY (klik deploy cukup sekali) =====================
         // Sesi per proyek tersimpan di localStorage: halaman langsung membuka dashboard
         // situs yang sudah dideploy tanpa harus menekan tombol Deploy lagi.
-        const DEPLOY_SESSION_KEY = 'clinqoo_deploy_session';
+        const DEPLOY_SESSION_KEY = 'clincoo_deploy_session';
         function readDeploySession() {
             try {
                 const ses = JSON.parse(localStorage.getItem(DEPLOY_SESSION_KEY) || 'null');
@@ -328,7 +328,7 @@
         }
 
         async function apiFetch(path, opts = {}) {
-            const token = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || '';
+            const token = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || '';
             const res = await fetch(API + path, {
                 ...opts,
                 headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}), ...(opts.headers || {}) }
@@ -354,7 +354,7 @@
             if (!chip || !nm) return;
             var who = name || '';
             if (!who) {
-                try { who = (JSON.parse(localStorage.getItem('clinqoo_auth_user') || 'null') || {}).name || ''; } catch (e) {}
+                try { who = (JSON.parse(localStorage.getItem('clincoo_auth_user') || 'null') || {}).name || ''; } catch (e) {}
             }
             if (!who) { chip.classList.add('hidden'); return; }
             nm.textContent = who;
@@ -633,7 +633,7 @@
                 const res = await apiFetch('/deploy', { method: 'POST', body: JSON.stringify({ project_id: pid() }) });
                 deployState.deploying = false;
                 // DNS cache: hasil deploy langsung siap di halaman Domain Kustom (tanpa buka halaman itu dulu)
-                try { var _dk = 'clinqoo_' + pid() + "_domain_cache", _dc = {}; try { _dc = JSON.parse(localStorage.getItem(_dk) || '{}') || {}; } catch (e) {} localStorage.setItem(_dk, JSON.stringify(Object.assign(_dc, { pagesUrl: (res && res.pages_url) || '', deployed: true, ts: Date.now() }))); } catch (e) {}
+                try { var _dk = 'clincoo_' + pid() + "_domain_cache", _dc = {}; try { _dc = JSON.parse(localStorage.getItem(_dk) || '{}') || {}; } catch (e) {} localStorage.setItem(_dk, JSON.stringify(Object.assign(_dc, { pagesUrl: (res && res.pages_url) || '', deployed: true, ts: Date.now() }))); } catch (e) {}
                 writeDeploySession({ status: 'done', pages_url: (res && res.pages_url) || deployState.pages_url || '', public_url: (res && res.public_url) || '', done_at: Date.now() });
             } catch (err) {
                 deployState.deploying = false;
@@ -805,10 +805,10 @@
             if (!confirm("Apakah Anda yakin ingin menarik publikasi dan menonaktifkan situs ini?")) return;
             try {
                 await apiFetch('/deploy', { method: 'POST', body: JSON.stringify({ project_id: pid(), action: 'unpublish' }) });
-                localStorage.removeItem('clinqoo_is_deployed');
-                localStorage.removeItem('clinqoo_deploy_time');
+                localStorage.removeItem('clincoo_is_deployed');
+                localStorage.removeItem('clincoo_deploy_time');
                 clearDeploySession();
-                window.ClinqooBack('../');
+                window.ClincooBack('../');
             } catch (err) {
                 console.warn('Gagal: ' + err.message);
                 alert('Gagal membatalkan publikasi: ' + ((err && err.message) ? err.message : 'coba lagi beberapa saat.'));
@@ -854,12 +854,12 @@
         function loadCustomDomain() {
             // Input & tombol domain kustom sudah pindah ke halaman Domain Kustom —
             // fungsi ini hanya mengatur toggle HTTPS & menampilkan status domain.
-            const domain = localStorage.getItem('clinqoo_custom_domain');
+            const domain = localStorage.getItem('clincoo_custom_domain');
             const checkHttps = document.getElementById('check-https');
             if (domain && checkHttps) {
                 checkHttps.disabled = false;
                 checkHttps.classList.remove('opacity-50', 'cursor-not-allowed');
-                checkHttps.checked = localStorage.getItem('clinqoo_enforce_https') === 'true';
+                checkHttps.checked = localStorage.getItem('clincoo_enforce_https') === 'true';
             } else if (checkHttps) {
                 checkHttps.disabled = true;
                 checkHttps.classList.add('opacity-50', 'cursor-not-allowed');
@@ -871,13 +871,13 @@
 
         function toggleHttps() {
             const checkHttps = document.getElementById('check-https');
-            localStorage.setItem('clinqoo_enforce_https', checkHttps.checked);
+            localStorage.setItem('clincoo_enforce_https', checkHttps.checked);
         }
 
 
     </script>
 
-    <script>/* clinqoo-sw-register */
+    <script>/* clincoo-sw-register */
     if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../sw.js').catch(function () {}); }); }
     </script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>

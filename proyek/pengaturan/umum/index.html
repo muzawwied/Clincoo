@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script src="../../../js/auth-client.js?v=2"></script>
   <script src="../../../js/accent-init.js"></script>
-<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
+<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clincoo_current_project_id',__p);}}catch(e){}})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
@@ -130,16 +130,16 @@
             position: absolute; inset: 0;
             transform: translateX(-100%);
             background: linear-gradient(90deg, transparent, rgba(0,0,0,0.05), transparent);
-            animation: clinqoo-shimmer 1.4s ease infinite;
+            animation: clincoo-shimmer 1.4s ease infinite;
         }
-        @keyframes clinqoo-shimmer { 100% { transform: translateX(100%); } }
+        @keyframes clincoo-shimmer { 100% { transform: translateX(100%); } }
         body.dark-mode .skel { background-color: #1a1a1a; }
         body.dark-mode .skel::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent); }
     </style>
 <!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
-<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
 
-    <script>/* clinqoo-seo-auto: canonical & og mengikuti domain aktif */
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
 (function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<3;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
     </script>
 <!-- Google tag (gtag.js) - Google Analytics -->
@@ -157,7 +157,7 @@
 <body class="min-h-screen flex flex-col text-gray-900 pt-14 relative hide-scrollbar">
     <script>
         (function(){
-            var t=localStorage.getItem("clinqoo_theme");
+            var t=localStorage.getItem("clincoo_theme");
             var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);
             if(isDark){document.body.classList.add("dark-mode");}
         })();
@@ -323,8 +323,8 @@
 
         // ================= PENGATURAN UMUM -> DB (per proyek) =================
         const API = 'https://clincoo-be2.pages.dev/api';
-        const pid = () => localStorage.getItem('clinqoo_current_project_id') || '';
-        const authHeaders = () => { const t = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; return t ? { Authorization: 'Bearer ' + t } : {}; };
+        const pid = () => localStorage.getItem('clincoo_current_project_id') || '';
+        const authHeaders = () => { const t = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; return t ? { Authorization: 'Bearer ' + t } : {}; };
 
         // ---- Tombol simpan di pojok kanan header ----
         // Ada perubahan -> icon centang muncul. Diklik -> loading. Tersimpan -> icon hilang.
@@ -356,7 +356,7 @@
         }
 
         // ---- Cache lokal per proyek: nilai tampil instan saat refresh (tanpa flash placeholder) ----
-        const _cacheKey = 'clinqoo_umum_' + (pid() || 'default');
+        const _cacheKey = 'clincoo_umum_' + (pid() || 'default');
         function readCache() { try { return JSON.parse(localStorage.getItem(_cacheKey) || '{}'); } catch (e) { return {}; } }
         function writeCache(patch) {
             try { localStorage.setItem(_cacheKey, JSON.stringify(Object.assign(readCache(), patch))); } catch (e) {}
@@ -539,7 +539,7 @@
         // -> modal progres -> CTA unduh. Setelah refresh, klik CTA langsung
         // mengunduh APK yang sudah jadi (status job tersimpan lokal + server).
         const APK_API = API + '/apk';
-        const _apkJobKey = 'clinqoo_apk_job_' + (pid() || 'default');
+        const _apkJobKey = 'clincoo_apk_job_' + (pid() || 'default');
         function readApkJob() { try { return JSON.parse(localStorage.getItem(_apkJobKey) || 'null'); } catch (e) { return null; } }
         function writeApkJob(j) { try { localStorage.setItem(_apkJobKey, JSON.stringify(j)); } catch (e) {} }
         function clearApkJob() { try { localStorage.removeItem(_apkJobKey); } catch (e) {} }
@@ -874,7 +874,7 @@
         }
     </script>
 
-    <script>/* clinqoo-sw-register */
+    <script>/* clincoo-sw-register */
     if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../sw.js').catch(function () {}); }); }
     </script>
 </body>

@@ -1,7 +1,7 @@
 // Cloudflare Pages Functions - Wallet Backend (per-account)
 import { currentUser, scopedKey, rowScope } from './user-scope.js';
 import { emailTemplate, formatIDR, sendEmail, notifyEvent, getUserByEmail } from './notify-helpers.js';
-import { getCpConnection, mirroredBalance, mirrorDelta, WALLET_API } from './clinqoopay-helpers.js';
+import { getCpConnection, mirroredBalance, mirrorDelta, WALLET_API } from './clincoopay-helpers.js';
 import { ADMIN_EMAILS } from './plan-helpers.js';
 
 const CORS = {

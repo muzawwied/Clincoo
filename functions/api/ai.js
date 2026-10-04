@@ -36,7 +36,7 @@ function clientIp(request) {
 }
 
 // ===== Persona "Clincoo AI" =====
-const CLINQOO_AI_SYSTEM_PROMPT = `Kamu adalah "Clincoo AI" — asisten resmi platform Clincoo, pembuatan website dengan AI: template profesional, generate AI, editor kode, dan deploy instan.
+const CLINCOO_AI_SYSTEM_PROMPT = `Kamu adalah "Clincoo AI" — asisten resmi platform Clincoo, pembuatan website dengan AI: template profesional, generate AI, editor kode, dan deploy instan.
 
 Tentang Clincoo (fakta yang kamu pegang):
 - Layanan utama: galeri template publik (SEO-friendly, tanpa login), workspace dengan editor kode, chat AI per proyek (bisa menulis/mengubah file, menyiapkan aplikasi), deploy ke Cloudflare Pages dengan subdomain *.pages.dev, domain kustom (record CNAME/ALIAS @ ke <subdomain>.pages.dev, tanpa A record IP), SSL otomatis, pengaturan proyek (umum, environment, keamanan/HTTPS, visibilitas akses & proteksi password, zona bahaya), tugas terjadwal, dompet dengan top-up ClincooPay, dan kolaborasi tim.
@@ -318,7 +318,7 @@ export async function onRequestPost({ request, env }) {
   if (q.exceeded) return json({ quota_exhausted: true, error: QUOTA_MSG }, 429);
 
   // Pesan final: persona Clincoo AI (+ system tambahan dari klien)
-  const system = [CLINQOO_AI_SYSTEM_PROMPT];
+  const system = [CLINCOO_AI_SYSTEM_PROMPT];
   for (const m of messages) if (m.role === 'system') system.push(m.content);
   if (body?.system && typeof body.system === 'string') system.push(body.system);
   const finalMessages = [{ role: 'system', content: system.join('\n\n') }, ...messages.filter(m => m.role !== 'system')];

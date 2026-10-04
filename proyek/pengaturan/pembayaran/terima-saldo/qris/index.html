@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clincoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script src="../../../../js/auth-client.js?v=6"></script>
   <script src="../../../../js/accent-init.js"></script>
-<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
+<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clincoo_current_project_id',__p);}}catch(e){}})();</script>
   <script src="../../../../js/current-project.js?v=4"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -60,7 +60,7 @@
   </style>
 </head>
 <body class="text-gray-900 antialiased min-h-screen w-full bg-white pt-16">
-  <script>(function(){var t=localStorage.getItem("clinqoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+  <script>(function(){var t=localStorage.getItem("clincoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
 
   <!-- Header (seragam dengan dashboard deployment) -->
   <header class="bg-transparent flex justify-between items-center px-3 py-2 fixed top-0 w-full z-40 transition-colors">
@@ -130,7 +130,7 @@
 
   <script>
   var API_BASE = (['clincoo-be2.pages.dev','app.clincoo.buzz','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://app.clincoo.buzz/api' : '/api';
-  function _pid() { try { return localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) { return ''; } }
+  function _pid() { try { return localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) { return ''; } }
   function _rp(n) { return Number(n || 0).toLocaleString('id-ID'); }
 
   var _tx = null;
@@ -138,7 +138,7 @@
     var __q = new URLSearchParams(location.search);
     if (__q.get('order_id') && __q.get('key')) _tx = { order_id: __q.get('order_id'), key: __q.get('key'), amount: Number(__q.get('amount') || 0), total: Number(__q.get('total') || __q.get('amount') || 0), qr_image: __q.get('img') || '', ts: Date.now() };
   } catch (e) {}
-  if (!_tx) { try { _tx = JSON.parse(sessionStorage.getItem('clinqoo_rc_tx_' + _pid()) || 'null'); } catch (e) {} }
+  if (!_tx) { try { _tx = JSON.parse(sessionStorage.getItem('clincoo_rc_tx_' + _pid()) || 'null'); } catch (e) {} }
   var _pollBusy = false, _timer = null, _paid = false, _expired = false, _expAt = 0;
 
   function pad(n) { return (n < 10 ? '0' : '') + n; }

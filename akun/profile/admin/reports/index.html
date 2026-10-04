@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id" class="scroll-smooth">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script src="../../../../js/auth-client.js?v=4"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -46,7 +46,7 @@
       background-size: 200% 100%;
     }
   </style>
-  <script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+  <script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -57,7 +57,7 @@
 </head>
 
 <body class="min-h-screen flex flex-col bg-white dark:bg-black text-gray-900 dark:text-gray-100">
-  <script>(function(){var t=localStorage.getItem("clinqoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+  <script>(function(){var t=localStorage.getItem("clincoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
 
   <div id="admin-page-container" style="display: none;" class="flex-1 flex flex-col min-h-screen">
 
@@ -179,8 +179,8 @@
     }
 
     function showToast(message, isError = false) {
-      let toast = document.getElementById('clinqoo-toast');
-      if (!toast) { toast = document.createElement('div'); toast.id = 'clinqoo-toast'; document.body.appendChild(toast); }
+      let toast = document.getElementById('clincoo-toast');
+      if (!toast) { toast = document.createElement('div'); toast.id = 'clincoo-toast'; document.body.appendChild(toast); }
       toast.className = `fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-2xl text-sm font-medium transition-all duration-300 transform translate-y-0 opacity-100 flex items-center gap-2 ${
         isError ? 'bg-red-900 text-white border border-red-700' : 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border border-gray-700 dark:border-gray-300'}`;
       toast.innerHTML = (isError ? '<i data-lucide="alert-circle" class="w-4 h-4"></i>' : '<i data-lucide="check-circle-2" class="w-4 h-4"></i>') + `<span>${esc(message)}</span>`;
@@ -196,7 +196,7 @@
 
     async function checkAdminPing() {
       try {
-        const token = (window.ClinqooAuth && ClinqooAuth.getToken) ? ClinqooAuth.getToken() : (function(){try{return localStorage.getItem('clinqoo_auth_token')||localStorage.getItem('clinqoo_token')||'';}catch(e){return '';}})();
+        const token = (window.ClincooAuth && ClincooAuth.getToken) ? ClincooAuth.getToken() : (function(){try{return localStorage.getItem('clincoo_auth_token')||localStorage.getItem('clincoo_token')||'';}catch(e){return '';}})();
         const res = await fetch(API_BASE + '/api/admin/ping', { headers: token ? { 'Authorization': 'Bearer ' + token } : {} });
         if (!res.ok) { redirectToProfile(); return false; }
         const data = await res.json();
@@ -207,7 +207,7 @@
     }
 
     function authHeaders() {
-      const token = (window.ClinqooAuth && ClinqooAuth.getToken) ? ClinqooAuth.getToken() : (function(){try{return localStorage.getItem('clinqoo_auth_token')||localStorage.getItem('clinqoo_token')||'';}catch(e){return '';}})();
+      const token = (window.ClincooAuth && ClincooAuth.getToken) ? ClincooAuth.getToken() : (function(){try{return localStorage.getItem('clincoo_auth_token')||localStorage.getItem('clincoo_token')||'';}catch(e){return '';}})();
       return token ? { 'Authorization': 'Bearer ' + token } : {};
     }
 

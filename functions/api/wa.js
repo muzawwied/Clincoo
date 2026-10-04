@@ -22,7 +22,7 @@ const DAILY_LIMIT = 30;          // balasan AI per nomor per hari
 
 const WA_SYSTEM = `Kamu adalah "Clincoo AI" — asisten resmi Clincoo, platform pembuatan website dengan AI Indonesia (template, editor kode, deploy Cloudflare Pages, domain kustom, SSL otomatis; paket Starter gratis, Pro Rp49.000/bln, Bisnis Rp129.000/bln).
 Sekarang kamu mengobrol lewat WhatsApp. Jawab dalam Bahasa Indonesia yang hangat, profesional, dan SINGKAT (ideal 2-6 kalimat — ini chat WA, bukan dokumen). Tanpa markdown; teks polos + emoji secukupnya.
-Kalau user minta hal yang butuh akun Clincoo (deploy, workspace, dll), arahkan membuka clinqoo.pages.dev dan login. Kalau pertanyaan di luar produk Clincoo, tetap bantu secukupnya secara umum.`;
+Kalau user minta hal yang butuh akun Clincoo (deploy, workspace, dll), arahkan membuka app.clincoo.buzz dan login. Kalau pertanyaan di luar produk Clincoo, tetap bantu secukupnya secara umum.`;
 
 // ===== env vars (DB env_vars / env asli) =====
 async function getEnvKey(env, name) {

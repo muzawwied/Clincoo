@@ -34,7 +34,7 @@
   }
 
   // Data domain kini per akun: setiap request membawa token login Clincoo (Bearer).
-  function authToken() { try { return localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) { return ''; } }
+  function authToken() { try { return localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) { return ''; } }
   const api = (path, opts) => {
     const headers = { 'Content-Type': 'application/json' };
     const tok = authToken();

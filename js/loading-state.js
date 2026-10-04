@@ -4,8 +4,8 @@
 // langsung tampil, pindah antar halaman tidak terhalang. Hilang segera saat fetch selesai
 // (maks 3s pengaman). Tidak mengubah style/struktur halaman.
 (function () {
-  if (window.__clinqooLoading) return;
-  window.__clinqooLoading = true;
+  if (window.__clincooLoading) return;
+  window.__clincooLoading = true;
 
   var SHOW_DELAY = 500, MAX_MS = 3000;
   var t0 = Date.now();
@@ -13,7 +13,7 @@
 
   // Ikuti tema app ('Gelap' / 'Sistem (Default)')
   var theme = '';
-  try { theme = localStorage.getItem('clinqoo_theme') || 'Sistem (Default)'; } catch (e) {}
+  try { theme = localStorage.getItem('clincoo_theme') || 'Sistem (Default)'; } catch (e) {}
   var dark = theme === 'Gelap' || ((theme === 'Sistem (Default)' || !theme) && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
   var bg = dark ? '#000000' : '#f7f7f9';
   var stroke = dark ? '#52525b' : '#9ca3af';
@@ -28,13 +28,13 @@
     } catch (e) {}
     try {
       var style = document.createElement('style');
-      style.textContent = '@keyframes clinqooSpin{to{transform:rotate(360deg)}}';
+      style.textContent = '@keyframes clincooSpin{to{transform:rotate(360deg)}}';
       (document.head || document.documentElement).appendChild(style);
     } catch (e) {}
     overlay = document.createElement('div');
-    overlay.id = 'clinqoo-loading';
+    overlay.id = 'clincoo-loading';
     overlay.setAttribute('style', 'position:fixed;left:0;right:0;top:' + top + 'px;bottom:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:' + bg + ';transition:opacity .25s ease;opacity:0;');
-    overlay.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="' + stroke + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:clinqooSpin .9s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>';
+    overlay.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="' + stroke + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:clincooSpin .9s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>';
     document.documentElement.appendChild(overlay);
   }
 

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script src="../js/accent-init.js"></script>
     <meta charset="UTF-8">
     <link rel="icon" type="image/png" sizes="64x64" href="../assets/favicon.png">
@@ -237,7 +237,7 @@
 </head>
 <body class="min-h-screen flex flex-col md:flex-row selection:bg-gray-900 selection:text-white dark:selection:bg-white dark:selection:text-black">
     <!-- Script Deteksi Tema (Langsung dieksekusi agar tidak flash) -->
-    <script>(function(){var t=localStorage.getItem("clinqoo_theme");var isDark=(t==="Gelap")||((t==="Sistem (Default)"||!t)&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+    <script>(function(){var t=localStorage.getItem("clincoo_theme");var isDark=(t==="Gelap")||((t==="Sistem (Default)"||!t)&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
 
     <!-- Layar loading proses OAuth: halaman polos + icon loading, agar tidak flash ke form login -->
     <div id="oauth-loading" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-white dark:bg-black">
@@ -258,7 +258,7 @@
 
     <!-- Logo pojok kiri atas -->
     <a href="../" class="absolute top-5 left-5 sm:top-7 sm:left-7 z-20 group" aria-label="Beranda Clincoo">
-        <img src="../assets/logo-clinqoo.png" alt="Clincoo" class="w-9 h-9 rounded-full group-hover:scale-105 transition-transform">
+        <img src="../assets/logo-clincoo.png" alt="Clincoo" class="w-9 h-9 rounded-full group-hover:scale-105 transition-transform">
     </a>
 
     <div class="w-full md:w-1/2 flex flex-col justify-center min-h-screen relative z-10 animate-fade-in px-2 sm:px-8 xl:px-16">
@@ -379,27 +379,27 @@
         
         // ==== KONFIG AUTH ====
         const API_BASE = 'https://clincoo-be2.pages.dev/api/auth';
-        const TOKEN_KEY = 'clinqoo_auth_token';
+        const TOKEN_KEY = 'clincoo_auth_token';
         // ?next= ditangkap sekali di awal (sebelum replaceState menghapus query).
         // Hanya path same-origin diterima (mulai '/', bukan '//' dan tanpa '://').
-        const CLINQOO_NEXT = (function () {
+        const CLINCOO_NEXT = (function () {
             try {
                 var n = new URLSearchParams(window.location.search).get('next');
                 if (n && n.charAt(0) === '/' && n.charAt(1) !== '/' && n.indexOf('://') === -1) return n;
             } catch (e) {}
             return '';
         })();
-        function clinqooNextTarget(def) { return CLINQOO_NEXT || def || '../'; }
+        function clincooNextTarget(def) { return CLINCOO_NEXT || def || '../'; }
         const GITHUB_CLIENT_ID = 'Ov23ctIBGjQBolR5PS2C';
 
         function saveSession(data) {
             try {
                 localStorage.setItem(TOKEN_KEY, data.token);
                 // simpan user lebih dulu -> data profil di bawah otomatis masuk namespace akun
-                localStorage.setItem('clinqoo_auth_user', JSON.stringify(data.user || {}));
-                localStorage.setItem('clinqoo_fullname', data.user.name || '');
-                localStorage.setItem('clinqoo_email', data.user.email || '');
-                if (data.user.avatar_url) localStorage.setItem('clinqoo_profile_pic', data.user.avatar_url);
+                localStorage.setItem('clincoo_auth_user', JSON.stringify(data.user || {}));
+                localStorage.setItem('clincoo_fullname', data.user.name || '');
+                localStorage.setItem('clincoo_email', data.user.email || '');
+                if (data.user.avatar_url) localStorage.setItem('clincoo_profile_pic', data.user.avatar_url);
             } catch (e) {}
         }
 
@@ -408,14 +408,14 @@
         // localStorage/sessionStorage di beberapa browser dengan anti bounce-tracking).
         function setOauthStateCookie(val, provider) {
             const payload = encodeURIComponent(JSON.stringify({ v: val, t: Date.now(), p: provider }));
-            document.cookie = 'clinqoo_oauth_state=' + payload + '; Max-Age=900; Path=' + window.location.pathname + '; SameSite=Lax; Secure';
+            document.cookie = 'clincoo_oauth_state=' + payload + '; Max-Age=900; Path=' + window.location.pathname + '; SameSite=Lax; Secure';
         }
         function getOauthStateCookie() {
-            const m = document.cookie.match(/(?:^|;\s*)clinqoo_oauth_state=([^;]+)/);
+            const m = document.cookie.match(/(?:^|;\s*)clincoo_oauth_state=([^;]+)/);
             return m ? decodeURIComponent(m[1]) : null;
         }
         function clearOauthStateCookie() {
-            document.cookie = 'clinqoo_oauth_state=; Max-Age=0; Path=' + window.location.pathname + '; SameSite=Lax; Secure';
+            document.cookie = 'clincoo_oauth_state=; Max-Age=0; Path=' + window.location.pathname + '; SameSite=Lax; Secure';
         }
 
         // ==== LOGIN SOSIAL (OAuth) ====
@@ -428,7 +428,7 @@
                 return window.location.origin + window.location.pathname;
             if (location.hostname === 'muzawwied.github.io')
                 return 'https://muzawwied.github.io/Clincoo./akun/auth.html';
-            // Dinamis ikut domain aktif (app.clincoo.buzz, clinqoo.pages.dev, dst) —
+            // Dinamis ikut domain aktif (app.clincoo.buzz, clincoo.pages.dev, dst) —
             // WAJIB semua domain yang dipakai didaftarkan di Google Console & GitHub OAuth App.
             return location.origin + '/auth/';
         }
@@ -520,7 +520,7 @@
                 if (!res.ok || !data.token) throw new Error(data.error || 'Login ' + provider + ' gagal.');
                 saveSession(data);
 
-                setTimeout(() => { window.location.href = clinqooNextTarget(); }, 400);
+                setTimeout(() => { window.location.href = clincooNextTarget(); }, 400);
             } catch (err) {
                 document.getElementById('oauth-loading').classList.add('hidden');
                 showModal('Login ' + (provider === 'github' ? 'GitHub' : 'Google') + ' Gagal', err.message, 'error');
@@ -548,7 +548,7 @@
                     if (m) return { name: nm, raw: decodeURIComponent(m[1]) };
                 }
                 return null;
-            })(['clinqoo_drive_state', 'clinqoo_calendar_state']);
+            })(['clincoo_drive_state', 'clincoo_calendar_state']);
             if ((code || oauthError) && connCookie) {
                 let dc = null; try { dc = JSON.parse(connCookie.raw); } catch (e) {}
                 document.cookie = connCookie.name + '=; Max-Age=0; Path=/; SameSite=Lax; Secure';
@@ -584,7 +584,7 @@
                     const res = await fetch(API_BASE + '/me', { headers: { 'Authorization': 'Bearer ' + token } });
                     if (res.ok) {
                         const d = await res.json();
-                        if (d.authenticated) window.location.replace(clinqooNextTarget());
+                        if (d.authenticated) window.location.replace(clincooNextTarget());
                     } else {
                         localStorage.removeItem(TOKEN_KEY);
                     }
@@ -620,7 +620,7 @@
         }
     </script>
 
-    <script>/* clinqoo-sw-register */
+    <script>/* clincoo-sw-register */
     if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../sw.js').catch(function () {}); }); }
     </script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>

@@ -1,23 +1,23 @@
 // Inti mini-app email Clincoo — dipakai bersama seluruh halaman /proyek/pengaturan/email/kirim/
 var API_BASE = (['clincoo-be2.pages.dev','app.clincoo.buzz','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://app.clincoo.buzz/api' : '/api';
 var _apiToken = '';
-try { _apiToken = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+try { _apiToken = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
 
 function _pid() {
   try {
     var q = new URLSearchParams(location.search).get('id');
     if (q && q.indexOf('proj_') === 0) return q;
-    if (typeof getClinqooProjectId === 'function') {
-      var g = getClinqooProjectId();
+    if (typeof getClincooProjectId === 'function') {
+      var g = getClincooProjectId();
       if (g) return g;
     }
     var plain = '', ns = [], ids = {};
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i); if (!k) continue;
       var v = localStorage.getItem(k); if (!v) continue;
-      if (k === 'clinqoo_current_project_id') plain = v;
-      else if (/:clinqoo_current_project_id$/.test(k) && v.indexOf('proj_') === 0) ns.push(v);
-      else if (k === 'clinqoo_projects' || /:clinqoo_projects$/.test(k)) {
+      if (k === 'clincoo_current_project_id') plain = v;
+      else if (/:clincoo_current_project_id$/.test(k) && v.indexOf('proj_') === 0) ns.push(v);
+      else if (k === 'clincoo_projects' || /:clincoo_projects$/.test(k)) {
         try { JSON.parse(v).forEach(function(pr){ if(pr&&pr.id) ids[pr.id]=1; }); } catch(e){}
       }
     }

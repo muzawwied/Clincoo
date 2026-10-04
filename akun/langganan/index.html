@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script src="../../js/auth-client.js?v=4"></script>
     <script src="../../js/accent-init.js"></script>
   <meta charset="UTF-8">
@@ -111,22 +111,22 @@
 </style>
   <script>
     (function(){
-      var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';
+      var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';
       var isDark=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);
       if(isDark) document.documentElement.classList.add('dark-mode');
     })();
   </script>
 <!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
-<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
 <style>
-.clinqoo-shimmer{position:relative;overflow:hidden;display:inline-block;min-width:4.5rem;min-height:1.4em;color:transparent!important;background:#e5e7eb;border-radius:8px;-webkit-user-select:none;user-select:none;vertical-align:middle}
-.clinqoo-shimmer::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);animation:clinqoo-shimmer 1.3s infinite}
-@keyframes clinqoo-shimmer{100%{transform:translateX(100%)}}
-.dark-mode .clinqoo-shimmer{background:#1e293b}
-.dark-mode .clinqoo-shimmer::after{background:linear-gradient(90deg,transparent,rgba(148,163,184,.3),transparent)}
+.clincoo-shimmer{position:relative;overflow:hidden;display:inline-block;min-width:4.5rem;min-height:1.4em;color:transparent!important;background:#e5e7eb;border-radius:8px;-webkit-user-select:none;user-select:none;vertical-align:middle}
+.clincoo-shimmer::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);animation:clincoo-shimmer 1.3s infinite}
+@keyframes clincoo-shimmer{100%{transform:translateX(100%)}}
+.dark-mode .clincoo-shimmer{background:#1e293b}
+.dark-mode .clincoo-shimmer::after{background:linear-gradient(90deg,transparent,rgba(148,163,184,.3),transparent)}
 </style>
 
-    <script>/* clinqoo-seo-auto: canonical & og mengikuti domain aktif */
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
 (function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<2;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
     </script>
 <!-- Google tag (gtag.js) - Google Analytics -->
@@ -169,24 +169,24 @@
               <h4 class="text-base font-semibold text-gray-900 dark:text-white">Paket Saat Ini</h4>
               <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Paket langganan yang aktif</p>
             </div>
-            <span id="plan-badge" class="clinqoo-shimmer inline-flex items-center px-3 py-1 rounded-full text-xs font-medium">Pro</span>
+            <span id="plan-badge" class="clincoo-shimmer inline-flex items-center px-3 py-1 rounded-full text-xs font-medium">Pro</span>
           </div>
           <div class="grid grid-cols-2 gap-3 mt-4">
             <div class="p-3 rounded-xl border border-gray-200 dark:border-slate-700">
               <p class="text-xs text-gray-500 dark:text-gray-400">Proyek Aktif</p>
-              <p id="stat-proyek" class="clinqoo-shimmer text-lg font-bold text-gray-900 dark:text-white">3 / 10</p>
+              <p id="stat-proyek" class="clincoo-shimmer text-lg font-bold text-gray-900 dark:text-white">3 / 10</p>
             </div>
             <div class="p-3 rounded-xl border border-gray-200 dark:border-slate-700">
               <p class="text-xs text-gray-500 dark:text-gray-400">Storage</p>
-              <p id="stat-storage" class="clinqoo-shimmer text-lg font-bold text-gray-900 dark:text-white">2.4 / 50 GB</p>
+              <p id="stat-storage" class="clincoo-shimmer text-lg font-bold text-gray-900 dark:text-white">2.4 / 50 GB</p>
             </div>
             <div class="p-3 rounded-xl border border-gray-200 dark:border-slate-700">
               <p class="text-xs text-gray-500 dark:text-gray-400">Deploy Bulan Ini</p>
-              <p id="stat-bandwidth" class="clinqoo-shimmer text-lg font-bold text-gray-900 dark:text-white">0 / 5</p>
+              <p id="stat-bandwidth" class="clincoo-shimmer text-lg font-bold text-gray-900 dark:text-white">0 / 5</p>
             </div>
             <div class="p-3 rounded-xl border border-gray-200 dark:border-slate-700">
               <p class="text-xs text-gray-500 dark:text-gray-400">Kolaborator</p>
-              <p id="stat-kolaborator" class="clinqoo-shimmer text-lg font-bold text-gray-900 dark:text-white">2 / 5</p>
+              <p id="stat-kolaborator" class="clincoo-shimmer text-lg font-bold text-gray-900 dark:text-white">2 / 5</p>
             </div>
           </div>
         </div>
@@ -198,7 +198,7 @@
           </div>
           <div class="w-full sm:w-80 relative">
             <button id="billing-btn" type="button" onclick="toggleBillingPopover(event)" class="w-full flex items-center justify-between px-3.5 py-2 text-sm rounded-lg border border-gray-300 dark:border-slate-600 focus:outline-none cursor-pointer bg-transparent hover:bg-gray-200/50 dark:hover:bg-slate-800 text-gray-900 dark:text-white transition-colors">
-              <span id="billing-text" class="clinqoo-shimmer">Bulanan</span>
+              <span id="billing-text" class="clincoo-shimmer">Bulanan</span>
               <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500"></i>
             </button>
             
@@ -214,7 +214,7 @@
             <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Bayar langganan via QRIS</p>
           </div>
           <div class="w-full sm:w-80 flex items-center gap-2">
-            <span id="payment-method" class="clinqoo-shimmer text-sm font-mono text-gray-600 dark:text-gray-400">••••</span>
+            <span id="payment-method" class="clincoo-shimmer text-sm font-mono text-gray-600 dark:text-gray-400">••••</span>
           </div>
         </div>
         
@@ -224,7 +224,7 @@
             <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Tanggal perpanjangan otomatis</p>
           </div>
           <div class="w-full sm:w-80">
-            <span id="next-billing" class="clinqoo-shimmer text-sm text-gray-600 dark:text-gray-400">Memuat...</span>
+            <span id="next-billing" class="clincoo-shimmer text-sm text-gray-600 dark:text-gray-400">Memuat...</span>
           </div>
         </div>
         
@@ -247,7 +247,7 @@
                 </tr>
               </thead>
               <tbody id="history-body" class="divide-y divide-gray-100 dark:divide-slate-700/40 text-gray-900 dark:text-white">
-                <tr><td colspan="6" class="px-3 py-3"><span class="clinqoo-shimmer">Memuat…</span></td></tr>
+                <tr><td colspan="6" class="px-3 py-3"><span class="clincoo-shimmer">Memuat…</span></td></tr>
               </tbody>
             </table>
           </div>
@@ -305,7 +305,7 @@
     
     function selectBilling(text){
         document.getElementById('billing-text').innerText = text;
-        document.getElementById('billing-text').classList.remove('clinqoo-shimmer');
+        document.getElementById('billing-text').classList.remove('clincoo-shimmer');
         document.getElementById('billing-popover').classList.add('hidden');
         const cycle = text.indexOf('Tahunan') === 0 ? 'Tahunan' : 'Bulanan';
         fetch(SUB_API, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()), body: JSON.stringify({ billingCycle: cycle }) }).catch(function(){});
@@ -326,7 +326,7 @@
         const el = document.getElementById(id);
         if(!el) return;
         el.textContent = text;
-        el.classList.remove('clinqoo-shimmer');
+        el.classList.remove('clincoo-shimmer');
     }
 
     function fillSubscription(d){
@@ -360,7 +360,7 @@
 
     function authHeaders() {
         const hdr = {};
-        const tok = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || '';
+        const tok = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || '';
         if (tok) hdr['Authorization'] = 'Bearer ' + tok;
         return hdr;
     }
@@ -371,7 +371,7 @@
             if(!subData || subData.error) throw new Error(subData ? subData.error : 'no data');
             fillSubscription(subData);
             // Simpan cache plan — halaman Upgrade bisa tampil instan dgn data yang sama
-            try { localStorage.setItem('clinqoo_subscription_cache', JSON.stringify({ plan: subData.plan || 'Starter', billingCycle: subData.billingCycle || 'Bulanan', ts: Date.now() })); } catch(e) {}
+            try { localStorage.setItem('clincoo_subscription_cache', JSON.stringify({ plan: subData.plan || 'Starter', billingCycle: subData.billingCycle || 'Bulanan', ts: Date.now() })); } catch(e) {}
         } catch(e) {
             console.error('Gagal memuat langganan:', e);
             fillSubscription({ plan: 'Starter', projectCount: 0, projectLimit: 3, storageUsed: 0, storageLimit: 5, bandwidthUsed: 0, bandwidthLimit: 10, collaboratorCount: 0, collaboratorLimit: 1, price: 0, billingCycle: 'Bulanan', nextBillingDate: new Date(Date.now() + 30 * 86400000).toISOString(), paymentMethod: 'QRIS' });
@@ -448,7 +448,7 @@
     }
   </script>
 
-    <script>/* clinqoo-sw-register */
+    <script>/* clincoo-sw-register */
     if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../sw.js').catch(function () {}); }); }
     </script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>

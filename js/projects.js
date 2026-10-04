@@ -91,7 +91,7 @@ async function syncProjectsFromServer() {
             return;
         }
         if (JSON.stringify(list) !== JSON.stringify(local)) {
-            try { localStorage.setItem('clinqoo_projects', JSON.stringify(list)); } catch (e) {}
+            try { localStorage.setItem('clincoo_projects', JSON.stringify(list)); } catch (e) {}
             renderProjects();
         }
     } catch (e) {}
@@ -128,7 +128,7 @@ function timeAgo(dateStr) {
 // Judul & deskripsi kartu proyek: dari Pengaturan Umum (app_name/app_desc), BUKAN dari chat AI —
 // samakan dengan renderProjects() di halaman utama (index.html).
 function umumCacheRead(pid) {
-    try { return JSON.parse(localStorage.getItem('clinqoo_umum_' + (pid || 'default')) || '{}'); } catch (e) { return {}; }
+    try { return JSON.parse(localStorage.getItem('clincoo_umum_' + (pid || 'default')) || '{}'); } catch (e) { return {}; }
 }
 function projCardTitle(proj) {
     const st = umumCacheRead(proj && proj.id);
@@ -149,14 +149,14 @@ function _safeLogoUrl(v) {
 function getProjects() {
     let projects = [];
     try {
-        const stored = localStorage.getItem('clinqoo_projects');
+        const stored = localStorage.getItem('clincoo_projects');
         if (stored) projects = JSON.parse(stored);
     } catch(e) {}
     return projects;
 }
 
 function saveProjects(projects) {
-    try { localStorage.setItem('clinqoo_projects', JSON.stringify(projects)); } catch(e) {}
+    try { localStorage.setItem('clincoo_projects', JSON.stringify(projects)); } catch(e) {}
     pushProjectsToServer(projects); // simpan per akun di D1
 }
 
@@ -223,8 +223,8 @@ function openProject(id) {
     const projects = getProjects();
     const proj = projects.find(p => p.id === id);
     if (proj) {
-        localStorage.setItem('clinqoo_current_chat_msg', proj.prompt || '');
-        localStorage.setItem('clinqoo_current_project_id', id);
+        localStorage.setItem('clincoo_current_chat_msg', proj.prompt || '');
+        localStorage.setItem('clincoo_current_project_id', id);
         if (_isGHPages) {
             window.location.href = _PJBASE + '/proyek/workspace/?id=' + encodeURIComponent(id);
         } else {
@@ -248,9 +248,9 @@ function _showToast(msg, kind) {
 }
 function _ensureDeleteModal() {
     if (document.getElementById('confirm-delete-modal')) return;
-    if (!document.getElementById('clinqoo-delete-spin-css')) {
+    if (!document.getElementById('clincoo-delete-spin-css')) {
         const st = document.createElement('style');
-        st.id = 'clinqoo-delete-spin-css';
+        st.id = 'clincoo-delete-spin-css';
         st.textContent = '.cc-spin{animation:cc-spin .8s linear infinite}@keyframes cc-spin{to{transform:rotate(360deg)}}.cc-deleting{opacity:.45;pointer-events:none;filter:grayscale(.3)}';
         document.head.appendChild(st);
     }
@@ -309,7 +309,7 @@ function _ensureDeleteModal() {
         const errEl = document.getElementById('confirm-delete-error');
         const otpErr = document.getElementById('confirm-delete-otp-error');
         const otpEl = document.getElementById('confirm-delete-otp-input');
-        const tok = (function () { try { return localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) { return ''; } })();
+        const tok = (function () { try { return localStorage.getItem('clincoo_auth_token') || ''; } catch (e) { return ''; } })();
         const hdrs = { 'Content-Type': 'application/json', ...(tok ? { Authorization: 'Bearer ' + tok } : {}) };
         const apiRoot = PROJECTS_API.replace(/\/projects$/, '');
 
@@ -454,14 +454,14 @@ function deleteProject(id) {
 // Hapus proyek dari tampilan & data lokal SEKETIKA (optimistic) — tidak menunggu server sama sekali.
 function _removeProjectLocally(id) {
     try {
-        localStorage.removeItem('clinqoo_ls_chat_' + id);
-        localStorage.removeItem('clinqoo_workspace_files_' + id);
-        if (localStorage.getItem('clinqoo_current_project_id') === id) localStorage.removeItem('clinqoo_current_project_id');
+        localStorage.removeItem('clincoo_ls_chat_' + id);
+        localStorage.removeItem('clincoo_workspace_files_' + id);
+        if (localStorage.getItem('clincoo_current_project_id') === id) localStorage.removeItem('clincoo_current_project_id');
     } catch (e) {}
     let projects = getProjects();
     projects = projects.filter(p => p.id !== id);
     _dataVersion++; // tandai data lokal berubah agar respons sync basi tidak menghidupkan ulang proyek terhapus
-    try { localStorage.setItem('clinqoo_projects', JSON.stringify(projects)); } catch (e) {}
+    try { localStorage.setItem('clincoo_projects', JSON.stringify(projects)); } catch (e) {}
     renderProjects();
 }
 
@@ -469,10 +469,10 @@ function _removeProjectLocally(id) {
 // id-nya disimpan supaya dicoba lagi otomatis saat halaman proyek dibuka lagi.
 // Proyek TIDAK pernah dihidupkan kembali di UI — ini murni membereskan sisa data di server.
 function _getPendingDeletes() {
-    try { return JSON.parse(localStorage.getItem('clinqoo_pending_deletes') || '[]'); } catch (e) { return []; }
+    try { return JSON.parse(localStorage.getItem('clincoo_pending_deletes') || '[]'); } catch (e) { return []; }
 }
 function _setPendingDeletes(list) {
-    try { localStorage.setItem('clinqoo_pending_deletes', JSON.stringify(list)); } catch (e) {}
+    try { localStorage.setItem('clincoo_pending_deletes', JSON.stringify(list)); } catch (e) {}
 }
 function _queuePendingDelete(id) {
     const list = _getPendingDeletes();
@@ -487,7 +487,7 @@ function _unqueuePendingDelete(id) {
 // Sampai 3x percobaan (dengan jeda), gagal terus -> masuk antrean retry diam-diam.
 async function _deleteProjectInBackground(id, attempt) {
     attempt = attempt || 1;
-    const tok = (function () { try { return localStorage.getItem('clinqoo_auth_token') || ''; } catch (e) { return ''; } })();
+    const tok = (function () { try { return localStorage.getItem('clincoo_auth_token') || ''; } catch (e) { return ''; } })();
     const hdrs = { 'Content-Type': 'application/json' };
     if (tok) hdrs['Authorization'] = 'Bearer ' + tok;
     const apiRoot = PROJECTS_API.replace(/\/projects$/, '');
@@ -552,9 +552,9 @@ function processPromptSubmission() {
     if (!prompt) return;
     
     try {
-        localStorage.removeItem('clinqoo_current_chat_msg');
-        localStorage.removeItem('clinqoo_current_project_id');
-        localStorage.removeItem('clinqoo_current_attachments');
+        localStorage.removeItem('clincoo_current_chat_msg');
+        localStorage.removeItem('clincoo_current_project_id');
+        localStorage.removeItem('clincoo_current_attachments');
     } catch(e) {}
     
     const projectId = 'proj_' + Date.now();
@@ -568,8 +568,8 @@ function processPromptSubmission() {
     
     try {
         saveProjects(projects);
-        localStorage.setItem('clinqoo_current_chat_msg', prompt);
-        localStorage.setItem('clinqoo_current_project_id', projectId);
+        localStorage.setItem('clincoo_current_chat_msg', prompt);
+        localStorage.setItem('clincoo_current_project_id', projectId);
         const filePreviewContainer = document.getElementById('file-preview-container');
         const fileChips = filePreviewContainer ? filePreviewContainer.querySelectorAll('.file-chip') : [];
         if (fileChips.length > 0) {
@@ -577,7 +577,7 @@ function processPromptSubmission() {
                 const nameEl = chip.querySelector('span');
                 return { name: nameEl ? nameEl.textContent : 'file', type: 'document' };
             });
-            localStorage.setItem('clinqoo_current_attachments', JSON.stringify(attachments));
+            localStorage.setItem('clincoo_current_attachments', JSON.stringify(attachments));
         }
     } catch(e) {}
     if (_isGHPages) {
@@ -590,11 +590,11 @@ function processPromptSubmission() {
 // Sinkron dengan database per akun saat halaman dibuka
 document.addEventListener('DOMContentLoaded', function () { syncProjectsFromServer(); _flushPendingDeletes(); loadProjectLogos(); });
 // Tarik app_logo (Pengaturan Umum) tiap proyek dari server agar logo kartu selalu segar,
-// simpan ke cache lokal clinqoo_umum_<id> (merge, tidak menimpa key lain), lalu render ulang.
+// simpan ke cache lokal clincoo_umum_<id> (merge, tidak menimpa key lain), lalu render ulang.
 function loadProjectLogos() {
     try {
         const base = PROJECTS_API.replace(/\/projects$/, '');
-        const tok = (function () { try { return localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) { return ''; } })();
+        const tok = (function () { try { return localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) { return ''; } })();
         const hdr = tok ? { Authorization: 'Bearer ' + tok } : {};
         getProjects().forEach(function (proj) {
             fetch(base + '/project-settings?project_id=' + encodeURIComponent(proj.id), { headers: hdr })
@@ -603,7 +603,7 @@ function loadProjectLogos() {
                     if (!d) return;
                     if (d.app_name || d.app_desc || d.app_logo) {
                         try {
-                            const key = 'clinqoo_umum_' + (proj.id || 'default');
+                            const key = 'clincoo_umum_' + (proj.id || 'default');
                             let st = {}; try { st = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) {}
                             st.app_name = d.app_name || st.app_name || '';
                             st.app_desc = d.app_desc || st.app_desc || '';

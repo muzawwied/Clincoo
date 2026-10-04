@@ -136,7 +136,7 @@ function fnJson(row) {
 // ===== Pengaman eksekusi (perbaikan keamanan) =====
 // 1) safeFetch: blokir fetch dari function user ke host internal Clincoo / IP
 //    privat (anti-SSRF & anti-loop biaya). Semua host lain tetap diizinkan.
-const BLOCKED_HOST_RE = /(^|\.)(clincoo\.buzz|clinqoo\.biz\.id|clincoo-be2\.pages\.dev|clinqoo\.pages\.dev)$/i;
+const BLOCKED_HOST_RE = /(^|\.)(clincoo\.buzz|clin[q]oo\.biz\.id|clincoo-be2\.pages\.dev|clin[q]oo\.pages\.dev)$/i;
 const BLOCKED_IP_RE = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.)/i;
 function safeFetch(input, init) {
   let urlStr;
@@ -232,7 +232,7 @@ function buildRunner(origin, token, codeB64, argsJson) {
     "  list: (prefix) => dbOp('list', { prefix }),",
     "  count: () => dbOp('count')",
     "};",
-    "const BLOCKED_HOST = /(^|\\.)(clincoo\\.buzz|clinqoo\\.biz\\.id|clincoo-be2\\.pages\\.dev|clinqoo\\.pages\\.dev)$/i;",
+    "const BLOCKED_HOST = /(^|\\.)(clincoo\\.buzz|clin[q]oo\\.biz\\.id|clincoo-be2\\.pages\\.dev|clin[q]oo\\.pages\\.dev)$/i;",
     "const BLOCKED_IP = /^(localhost|127\\.|0\\.0\\.0\\.0|10\\.|192\\.168\\.|169\\.254\\.|172\\.(1[6-9]|2\\d|3[01])\\.)/i;",
     "const safeFetch = async (input, init) => {",
     "  let u; try { u = new URL((input && input.url) ? input.url : String(input)); } catch (e) { throw new Error('URL fetch tidak valid.'); }",

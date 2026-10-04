@@ -18,7 +18,7 @@
     <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
     <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
     <link rel="manifest" href="../../../manifest.json">
-<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#141416';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#141416';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
 <script>/* embed=1: kode page di dalam split view chat */(function(){try{if(/(^|[?&])embed=1(&|$)/.test(location.search)){document.documentElement.classList.add('embed-mode');}}catch(e){}})();</script>
 <style>
         /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
@@ -220,7 +220,7 @@ html.embed-mode body{padding-top:76px}
   var pid = qs.get('id') || '';
   var folder = qs.get('folder') || '';
   var fname = qs.get('file') || '';
-  var key = 'clinqoo_workspace_files_' + (pid || 'global');
+  var key = 'clincoo_workspace_files_' + (pid || 'global');
 
   var elFname = document.getElementById('kd-fname');
   var elSub = document.getElementById('kd-sub');
@@ -272,7 +272,7 @@ html.embed-mode body{padding-top:76px}
 
   // tema
   try {
-    var t = localStorage.getItem('clinqoo_theme') || 'Sistem (Default)';
+    var t = localStorage.getItem('clincoo_theme') || 'Sistem (Default)';
     var isDark = (t === 'Gelap') || ((!t || t === 'Sistem (Default)') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
     if (isDark) document.body.classList.add('dark-mode');
   } catch (e) {}
@@ -318,7 +318,7 @@ html.embed-mode body{padding-top:76px}
     try {
       require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs' } });
       require(['vs/editor/editor.main'], function () {
-        monaco.editor.defineTheme('clinqoo-dark', { base: 'vs-dark', inherit: true, rules: [], colors: {
+        monaco.editor.defineTheme('clincoo-dark', { base: 'vs-dark', inherit: true, rules: [], colors: {
           'editor.background': '#1a1a1d', 'editor.foreground': '#d6d6dc',
           'editor.selectionBackground': '#3c3c46', 'editor.inactiveSelectionBackground': '#2c2c34',
           'editor.lineHighlightBackground': '#232329',
@@ -327,14 +327,14 @@ html.embed-mode body{padding-top:76px}
           'editorLineNumber.foreground': '#4c4c56', 'editorLineNumber.activeForeground': '#9a9aa4',
           'minimap.background': '#18181b'
         }});
-        monaco.editor.defineTheme('clinqoo-light', { base: 'vs', inherit: true, rules: [], colors: {
+        monaco.editor.defineTheme('clincoo-light', { base: 'vs', inherit: true, rules: [], colors: {
           'editor.selectionBackground': '#d8d8e0', 'editor.inactiveSelectionBackground': '#e4e4ea',
           'editor.lineHighlightBackground': '#ececef',
           'editorCursor.foreground': '#4a4a55',
           'editorIndentGuide.background1': '#e0e0e6', 'editorIndentGuide.activeBackground1': '#c8c8d0',
           'editorWidget.background': '#f4f4f6', 'editorWidget.border': '#c8c8d0'
         }});
-        monaco.editor.setTheme(document.body.classList.contains('dark-mode') ? 'clinqoo-dark' : 'clinqoo-light');
+        monaco.editor.setTheme(document.body.classList.contains('dark-mode') ? 'clincoo-dark' : 'clincoo-light');
         model = monaco.editor.createModel('', langOf(fname), monaco.Uri.parse('inmemory:/' + (fname || 'file.txt')));
         editor = monaco.editor.create(document.getElementById('kd-editor'), {
           model: model,
@@ -392,7 +392,7 @@ html.embed-mode body{padding-top:76px}
     elSub.textContent = 'Memuat dari cloud…';
     var WS_API2 = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-files';
     var tk2 = '';
-    try { tk2 = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+    try { tk2 = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
     var h2 = tk2 ? { Authorization: 'Bearer ' + tk2 } : {};
     fetch(WS_API2 + '?project_id=' + encodeURIComponent(pid), { headers: h2 })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
@@ -602,7 +602,7 @@ html.embed-mode body{padding-top:76px}
   var WS_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-files';
   function authHeaders() {
     var tk = '';
-    try { tk = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
+    try { tk = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
     return tk ? { Authorization: 'Bearer ' + tk } : {};
   }
   function flatten(d) {

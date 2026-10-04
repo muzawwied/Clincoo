@@ -19,7 +19,7 @@ function stripHtml(h) {
   return h.replace(/\s+/g, ' ').trim();
 }
 
-// ambil daftar file data dari loader.js (dukung format lama: var files=[], dan baru: src='data_clinqoo.js?v=N')
+// ambil daftar file data dari loader.js (dukung format lama: var files=[], dan baru: src='data_clincoo.js?v=N')
 const loaderCode = await fetchWithTimeout(BLOG + '/loader.js');
 let files = [];
 const m = loaderCode.match(/var files\s*=\s*(\[[^\]]*\])/);
@@ -28,7 +28,7 @@ for (const mm of loaderCode.matchAll(/['"]([^'"\s]*data_[a-z]+\.js[^'"\s]*)['"]/
   const f = mm[1].split('?')[0];
   if (!files.includes(f)) files.push(f);
 }
-if (!files.length) files = ['data_clinqoo.js'];
+if (!files.length) files = ['data_clincoo.js'];
 console.log('file data blog:', files.length);
 
 // fetch paralel + parse (di Node, new Function aman dipakai)

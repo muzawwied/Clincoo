@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clinqoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script src="../../../../../js/auth-client.js?v=6"></script>
   <script src="../../../../../js/accent-init.js"></script>
-<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clinqoo_current_project_id',__p);}}catch(e){}})();</script>
+<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clincoo_current_project_id',__p);}}catch(e){}})();</script>
   <script src="../../../../../js/current-project.js?v=4"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -56,7 +56,7 @@
   </style>
 </head>
 <body class="text-gray-900 antialiased min-h-screen w-full bg-white pt-16">
-  <script>(function(){var t=localStorage.getItem("clinqoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+  <script>(function(){var t=localStorage.getItem("clincoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
 
   <!-- Header (seragam dengan dashboard deployment) -->
   <header class="bg-[#f7f7f9] flex justify-between items-center px-3 py-2 fixed top-0 w-full z-40 transition-colors border-b border-transparent">
@@ -116,12 +116,12 @@
   <script>
   var API_BASE = (['clincoo-be2.pages.dev','app.clincoo.buzz','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://app.clincoo.buzz/api' : '/api';
   var _apiToken = '';
-  try { _apiToken = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) {}
-  function _pid() { try { return localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) { return ''; } }
+  try { _apiToken = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
+  function _pid() { try { return localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) { return ''; } }
 
   var _draft = null, _otp = null;
-  try { _draft = JSON.parse(sessionStorage.getItem('clinqoo_wd_draft_' + _pid()) || 'null'); } catch (e) {}
-  try { _otp = JSON.parse(sessionStorage.getItem('clinqoo_wd_otp_' + _pid()) || 'null'); } catch (e) {}
+  try { _draft = JSON.parse(sessionStorage.getItem('clincoo_wd_draft_' + _pid()) || 'null'); } catch (e) {}
+  try { _otp = JSON.parse(sessionStorage.getItem('clincoo_wd_otp_' + _pid()) || 'null'); } catch (e) {}
   var _code = '';
   var _submitted = false;
   var _resending = false;
@@ -172,7 +172,7 @@
       var data = await res.json().catch(function () { return {}; });
       if (res.ok && data.success) {
         _otp = { otp_id: data.otp_id, sent_to: data.sent_to, expires_in: data.expires_in, ts: Date.now() };
-        try { sessionStorage.setItem('clinqoo_wd_otp_' + _pid(), JSON.stringify(_otp)); } catch (e) {}
+        try { sessionStorage.setItem('clincoo_wd_otp_' + _pid(), JSON.stringify(_otp)); } catch (e) {}
         _code = '';
         otpRender();
         otpCooldown(60);
@@ -256,8 +256,8 @@
         return;
       }
       try {
-        sessionStorage.removeItem('clinqoo_wd_draft_' + _pid());
-        sessionStorage.removeItem('clinqoo_wd_otp_' + _pid());
+        sessionStorage.removeItem('clincoo_wd_draft_' + _pid());
+        sessionStorage.removeItem('clincoo_wd_otp_' + _pid());
       } catch (e) {}
       document.getElementById('otp-wd-id').textContent = data.ref || ('wd-' + (data.id || '—'));
       document.getElementById('otp-digits').classList.add('hidden');

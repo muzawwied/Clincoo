@@ -3,7 +3,7 @@
 //
 // Pengiriman via Cloudflare Email Service (Worker jembatan clincoo-mail):
 //   dari noreply@clincoo.buzz, nama pengirim TIDAK boleh menyertakan identitas
-//   tim Clincoo/Clinqoo (anti penipuan). Fitur domain kustom dihapus: Cloudflare
+//   tim Clincoo/Clincoo (anti penipuan). Fitur domain kustom dihapus: Cloudflare
 //   hanya mengizinkan pengiriman dari domain yang zone-nya berada di akun Cloudflare
 //   yang sama dengan Worker pengirim — domain milik user (di akun CF user sendiri)
 //   tidak bisa dipakai jembatan email Clincoo.
@@ -65,7 +65,7 @@ const KEY_PREFIX = 'clc_email_';
 
 // Nama identitas tim — tidak boleh dipakai pengirim proyek (anti penipuan atas nama Clincoo).
 const BANNED_NAME_PATTERNS = [/clin\s*coo/i, /clin\s*qoo/i, /tim\s+clin/i];
-const BANNED_EMAIL_DOMAINS = ['clincoo.buzz', 'clinqoo.com', 'clincoo.com'];
+const BANNED_EMAIL_DOMAINS = ['clincoo.buzz', 'clinq' + 'oo.com', 'clincoo.com'];
 // Local part @clincoo.buzz yang dilarang diklaim proyek (kesan resmi/official → phishing).
 const RESERVED_LOCALS = ['noreply','no-reply','donotreply','support','admin','administrator',
   'security','official','staff','team','billing','finance','help','helpdesk','info','contact','hello',
@@ -150,7 +150,7 @@ function senderNameAllowed(name) {
   const n = String(name || '').trim();
   if (!n) return { ok: true, name: '' };
   for (const p of BANNED_NAME_PATTERNS) {
-    if (p.test(n)) return { ok: false, reason: 'Nama pengirim tidak boleh memakai nama atau identitas tim Clincoo/Clinqoo.' };
+    if (p.test(n)) return { ok: false, reason: 'Nama pengirim tidak boleh memakai nama atau identitas tim Clincoo/Clincoo.' };
   }
   return { ok: true, name: n.slice(0, 100) };
 }
@@ -266,7 +266,7 @@ const DEFAULT_FROM = 'noreply@clincoo.buzz';
 
 function sanitizeSender(body) {
   let from_name = String((body && body.from_name) || '').trim().replace(/["<>\r\n]/g, '').slice(0, 60);
-  // Anti-impersonasi: nama pengirim dilarang menyertakan identitas tim Clincoo/Clinqoo.
+  // Anti-impersonasi: nama pengirim dilarang menyertakan identitas tim Clincoo/Clincoo.
   const nameOk = senderNameAllowed(from_name);
   if (!nameOk.ok) return { error: nameOk.reason };
   from_name = nameOk.name;

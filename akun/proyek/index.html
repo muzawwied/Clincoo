@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz","clincoo.biz.id":"clincoo.buzz","www.clincoo.biz.id":"clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script src="../../js/auth-client.js?v=4"></script>
   <script src="../../js/accent-init.js"></script>
     <meta charset="UTF-8">
@@ -59,9 +59,9 @@
         body.dark-mode header i, body.dark-mode header svg { color: #ffffff !important; }
     </style>
 <!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
-<script>(function(){try{var t=localStorage.getItem('clinqoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
 
-    <script>/* clinqoo-seo-auto: canonical & og mengikuti domain aktif */
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
 (function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<2;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
     </script>
 <!-- Google tag (gtag.js) - Google Analytics -->
@@ -77,7 +77,7 @@
 <script src="../../js/i18n.js" defer></script>
 </head>
 <body class="min-h-screen">
-    <script>try{var t=localStorage.getItem("clinqoo_theme")||"Sistem (Default)";var d=(t==="Gelap")||((t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.body.classList.add("dark-mode");var a=localStorage.getItem("clinqoo_accent")||"Hitam (Default)";var am={"Hitam (Default)":{m:"#000000",h:"#1f2937"},Biru:{m:"#2563eb",h:"#1d4ed8"},Hijau:{m:"#059669",h:"#047857"},Ungu:{m:"#9333ea",h:"#7e22ce"},Merah:{m:"#dc2626",h:"#b91c1c"}};var c=am[a]||am["Hitam (Default)"];document.documentElement.style.setProperty("--accent-color",c.m);document.documentElement.style.setProperty("--accent-hover",c.h);}catch(e){}</script>
+    <script>try{var t=localStorage.getItem("clincoo_theme")||"Sistem (Default)";var d=(t==="Gelap")||((t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.body.classList.add("dark-mode");var a=localStorage.getItem("clincoo_accent")||"Hitam (Default)";var am={"Hitam (Default)":{m:"#000000",h:"#1f2937"},Biru:{m:"#2563eb",h:"#1d4ed8"},Hijau:{m:"#059669",h:"#047857"},Ungu:{m:"#9333ea",h:"#7e22ce"},Merah:{m:"#dc2626",h:"#b91c1c"}};var c=am[a]||am["Hitam (Default)"];document.documentElement.style.setProperty("--accent-color",c.m);document.documentElement.style.setProperty("--accent-hover",c.h);}catch(e){}</script>
 
     <!-- Header -->
     <header class="bg-white flex justify-between items-center px-3 py-2 fixed top-0 w-full z-40 transition-colors">
@@ -115,7 +115,7 @@
         try { lucide.createIcons(); } catch (e) {}
     </script>
 
-    <script>/* clinqoo-sw-register */
+    <script>/* clincoo-sw-register */
     if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../sw.js').catch(function () {}); }); }
     </script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>

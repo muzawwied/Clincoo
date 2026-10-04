@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script>(function(){var m={"clinqoo.pages.dev":"app.clincoo.buzz","clinqoo.biz.id":"app.clincoo.buzz","www.clinqoo.biz.id":"app.clincoo.buzz"};var t=m[location.hostname];if(t)location.replace("https://"+t+location.pathname+location.search+location.hash);})();</script>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script src="../../js/auth-client.js?v=4"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -80,7 +80,7 @@
     <script>
         (function () {
             try {
-                var t = localStorage.getItem('clinqoo_theme') || 'Sistem (Default)';
+                var t = localStorage.getItem('clincoo_theme') || 'Sistem (Default)';
                 var d = (t === 'Gelap') || ((t === 'Sistem (Default)' || !t) && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
                 if (d) { document.documentElement.setAttribute('data-dark', '1'); document.documentElement.style.background = '#0a0a0a'; }
             } catch (e) {}
@@ -104,9 +104,9 @@
     </div>
     <iframe id="pv-frame" title="Preview proyek"></iframe>
     <div id="pv-pop" hidden></div>
-    <div id="pv-mark" aria-hidden="true"><img src="../../assets/logo-clinqoo.png" alt="">Clincoo</div>
+    <div id="pv-mark" aria-hidden="true"><img src="../../assets/logo-clincoo.png" alt="">Clincoo</div>
     <div id="pv-msg">
-        <img src="../../assets/logo-clinqoo.png" alt="Clincoo">
+        <img src="../../assets/logo-clincoo.png" alt="Clincoo">
         <div class="pv-word">Clincoo</div>
         <p id="pv-msg-text">Mengambil file proyek…</p>
     </div>
@@ -115,11 +115,11 @@
     'use strict';
     var qs = new URLSearchParams(location.search);
     var pid = '';
-    try { pid = qs.get('id') || localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) {}
-    if (pid) { try { localStorage.setItem('clinqoo_current_project_id', pid); } catch (e) {} }
+    try { pid = qs.get('id') || localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) {}
+    if (pid) { try { localStorage.setItem('clincoo_current_project_id', pid); } catch (e) {} }
 
     // API: same-origin di domain Clincoo, absolut hanya untuk mirror (guest).
-    var PV_API = /(^|\.)clincoo\.buzz$|(^|\.)clinqoo\.biz\.id$|clincoo-be2\.pages\.dev$|^localhost$|^127\.0\.0\.1$/.test(location.hostname) ? '/api' : 'https://clincoo-be2.pages.dev/api';
+    var PV_API = /(^|\.)clincoo\.buzz$|(^|\.)clincoo\.biz\.id$|clincoo-be2\.pages\.dev$|^localhost$|^127\.0\.0\.1$/.test(location.hostname) ? '/api' : 'https://clincoo-be2.pages.dev/api';
 
     var frame = document.getElementById('pv-frame');
     var msg = document.getElementById('pv-msg');
@@ -140,13 +140,13 @@
     var pollTimer = null;
 
     function token() {
-        try { return localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e) { return ''; }
+        try { return localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) { return ''; }
     }
     function authHeaders() {
         var tk = token();
         return tk ? { Authorization: 'Bearer ' + tk } : {};
     }
-    function entryKey() { return 'clinqoo_preview_entry_' + (pid || 'global'); }
+    function entryKey() { return 'clincoo_preview_entry_' + (pid || 'global'); }
     function loadEntry() {
         try { entryPath = localStorage.getItem(entryKey()) || ''; } catch (e) { entryPath = ''; }
     }
@@ -211,7 +211,7 @@
     // ===== sumber 1: cache lokal (render instan) =====
     function loadFiles() {
         var map = {};
-        var keys = ['clinqoo_workspace_files_' + (pid || 'global'), 'clinqoo_workspace_files'];
+        var keys = ['clincoo_workspace_files_' + (pid || 'global'), 'clincoo_workspace_files'];
         for (var k = 0; k < keys.length; k++) {
             var raw = null;
             try { raw = localStorage.getItem(keys[k]); } catch (e) {}
@@ -416,7 +416,7 @@
         liveOn.hidden = true;
         openBtn.href = u;
         openBtn.hidden = false;
-        try { localStorage.setItem('clinqoo_live_url_' + pid, u); } catch (e) {}
+        try { localStorage.setItem('clincoo_live_url_' + pid, u); } catch (e) {}
     }
     copyBtn.onclick = function () {
         try {
@@ -446,7 +446,7 @@
         if (!pid || !token()) return; // guest: tanpa live URL
         // paint instan dari cache
         try {
-            var cached = localStorage.getItem('clinqoo_live_url_' + pid);
+            var cached = localStorage.getItem('clincoo_live_url_' + pid);
             if (cached) { liveUrl = cached; urlEl.textContent = cached; urlbox.hidden = false; openBtn.href = cached; openBtn.hidden = false; liveOn.hidden = true; }
         } catch (e) {}
         fetch(PV_API + '/deploy?project_id=' + encodeURIComponent(pid), { headers: authHeaders() })
@@ -477,7 +477,7 @@
     if (token()) pollTimer = setInterval(cloudTick, 5000);
     // sinkron antar-tab (workspace di tab lain menyimpan ke localStorage)
     window.addEventListener('storage', function (ev) {
-        if (!ev || !ev.key || ev.key.indexOf('clinqoo_workspace_files') !== 0) return;
+        if (!ev || !ev.key || ev.key.indexOf('clincoo_workspace_files') !== 0) return;
         try { applyMap(loadFiles(), 'cache'); } catch (e) {}
     });
     // refresh saat tab kembali terlihat

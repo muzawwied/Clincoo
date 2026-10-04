@@ -1,5 +1,5 @@
 // Cloudflare Pages Function module — pencarian pengetahuan resmi Clincoo
-// (dipakai tool server search_clinqoo_kb di chat.js).
+// (dipakai tool server search_clincoo_kb di chat.js).
 // Sumber UTAMA (real-time): file data_*.js di dokumentasi resmi docs.clincoo.buzz,
 // diambil langsung saat pencarian dan diparse dengan scanner JSON (tanpa eval/new
 // Function, aman untuk runtime Workers), lalu di-cache 5 menit per isolate.
@@ -92,7 +92,7 @@ async function fetchLiveArticles() {
   let files = null;
   const loader = await fetchText(DOCS_BASE + '/loader.js');
   if (loader) files = [...loader.matchAll(/['"]([^'"\s]*data_[a-z]+\.js[^'"\s]*)['"]/g)].map(mm => mm[1].split('?')[0]);
-  if (!files || !files.length) files = ['data_clinqoo.js','data_aria.js','data_console.js','data_dialog.js','data_form.js','data_keyboard.js','data_prompt.js','data_seo.js','data_semantic.js'];
+  if (!files || !files.length) files = ['data_clincoo.js','data_aria.js','data_console.js','data_dialog.js','data_form.js','data_keyboard.js','data_prompt.js','data_seo.js','data_semantic.js'];
   const arts = [];
   await Promise.all(files.map(async (f) => {
     const code = await fetchText(DOCS_BASE + '/' + f);
@@ -122,7 +122,7 @@ async function getKbArticles() {
   return { arts: KB_ARTICLES, live: false };
 }
 
-// Ekspor utama: dipanggil dari chat.js (tool server search_clinqoo_kb)
+// Ekspor utama: dipanggil dari chat.js (tool server search_clincoo_kb)
 export async function searchClincooBlog(env, query) {
   const q = String(query || '').trim();
   if (!q) return { error: 'Query pencarian kosong.' };

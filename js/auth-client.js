@@ -1,15 +1,15 @@
 // Clincoo Auth Client — gate login + injeksi token ke semua API call
 // Wajib dimuat PERTAMA di semua halaman (kecuali halaman auth di /auth/).
 (function () {
-  var TOKEN_KEY = 'clinqoo_auth_token';
+  var TOKEN_KEY = 'clincoo_auth_token';
   var isAuthPage = /\/auth\/(index\.html)?(\?|$)|akun\/auth\.html(\?|$)/.test(location.pathname + location.search);
   var AUTH_URL = (location.hostname.indexOf('github.io') !== -1)
     ? '/Clincoo./auth/'
     : '/auth/';
 
 // ===== NAMESPACE DATA PER AKUN =====
-var NS_USER_KEY = 'clinqoo_auth_user';
-var NS_AUTH_RE = /^clinqoo_auth_/;
+var NS_USER_KEY = 'clincoo_auth_user';
+var NS_AUTH_RE = /^clincoo_auth_/;
 var NS_NS_RE = /^u\d+:/;
 var NS_raw = window.localStorage;
 
@@ -104,7 +104,7 @@ try {
   function getToken() {
     try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; }
   }
-  window.ClinqooAuth = {
+  window.ClincooAuth = {
     getToken: getToken,
     authUrl: AUTH_URL,
     logout: function (ev, opts) {
@@ -199,9 +199,9 @@ try {
     if (!isAuthPage && location.pathname.indexOf('/proyek/') !== -1) {
       try {
         var qid = new URLSearchParams(location.search).get('id');
-        var pid = qid || (function () { try { return localStorage.getItem('clinqoo_current_project_id') || ''; } catch (e) { return ''; } })();
+        var pid = qid || (function () { try { return localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) { return ''; } })();
         if (!pid) return;
-        try { localStorage.setItem('clinqoo_current_project_id', pid); } catch (e) {}
+        try { localStorage.setItem('clincoo_current_project_id', pid); } catch (e) {}
         var anchors = document.querySelectorAll('a[href]');
         for (var i = 0; i < anchors.length; i++) {
           var href = anchors[i].getAttribute('href') || '';
