@@ -29,7 +29,7 @@ export async function onRequestGet() {
     endpoint: '/v1/chat/completions',
     method: 'POST',
     auth: 'Bearer <secret proyek Clincoo>',
-    docs_hint: 'Buat secret di halaman Integrasi AI pada Clincoo workspace.'
+    docs_hint: 'Buat secret di halaman Integrasi AI pada Clincoo workspace. Mendukung stream:true (SSE) dan input gambar (image_url) pada model multimodal.'
   });
 }
 
@@ -104,6 +104,19 @@ const ALL_MODELS = [...Object.keys(AI_MODELS), 'clincoo/auto'];
 // Estimasi biaya (kredit) per panggilan — seluruh model alokasi gratis = 0.
 function estimateCost(modelId, tokens) { return 0; }
 
+function textOf(m) {
+  if (!m) return '';
+  if (typeof m.content === 'string') return m.content;
+  if (Array.isArray(m.content)) return m.content.filter(b => b && b.type === 'text').map(b => b.text || '').join('\n');
+  return '';
+}
+// Model publik yang mendukung input gambar (vision) — dipakai memilih rantai saat
+// request menyertakan blok image_url.
+const VISION_CHAIN = ['clincoo/omni-nano', 'clincoo/multimodal-27b', 'clincoo/dots-note', 'clincoo/gemini-3.8-flash', 'clincoo/gemini-3.5-flash'];
+const VISION_CAPABLE = new Set(VISION_CHAIN);
+function hasImages(messages) {
+  return messages.some(m => Array.isArray(m && m.content) && m.content.some(b => b && b.type === 'image_url' && b.image_url && b.image_url.url));
+}
 function normalizeMessages(messages) {
   const out = [];
   for (const m of (messages || [])) {
@@ -111,9 +124,16 @@ function normalizeMessages(messages) {
     let text = '';
     if (typeof m.content === 'string') text = m.content;
     else if (Array.isArray(m.content)) {
-      const parts = [];
-      for (const b of m.content) if (b && b.type === 'text' && b.text) parts.push(b.text);
-      text = parts.join('\n');
+      const blocks = m.content.filter(b => b && (b.type === 'text' || (b.type === 'image_url' && b.image_url && b.image_url.url)));
+      if (blocks.length === 1 && blocks[0].type === 'text') text = blocks[0].text || '';
+      else if (blocks.length) {
+        if (m.role === 'user') {
+          // pertahankan konten multimodal (teks + gambar) — jangan dibuang diam-diam
+          out.push({ role: 'user', content: blocks.map(b => b.type === 'text' ? { type: 'text', text: b.text } : { type: 'image_url', image_url: { url: b.image_url.url } }) });
+          continue;
+        }
+        text = blocks.filter(b => b.type === 'text').map(b => b.text || '').join('\n');
+      }
     }
     if (m.role === 'system') { if (text) out.push({ role: 'system', content: text }); }
     else if (m.role === 'user' || m.role === 'assistant') { if (text) out.push({ role: m.role, content: text }); }
@@ -162,7 +182,9 @@ async function tryCfModel(env, publicId, internal, messages) {
 async function tryExtModel(env, publicId, internal, messages) {
   const keys = await getExtKeys(env);
   if (!keys.length) return { error: `Model ${publicId} sedang tidak tersedia` };
-  const sys = messages.filter(m => m.role === 'system').map(m => m.content).join('\n');
+  const sys = messages.filter(m => m.role === 'system').map(textOf).join('\n');
+  // content diteruskan apa adanya (string ATAU array multimodal teks+image_url,
+  // format OpenAI — dipahami langsung oleh model vision di jaringan mitra)
   const chatMsgs = messages.filter(m => m.role !== 'system').map(m => ({ role: m.role, content: m.content }));
   const payload = { model: internal, messages: sys ? [{ role: 'system', content: sys }, ...chatMsgs] : chatMsgs, max_tokens: 4096 };
   for (const key of keys) {
@@ -201,8 +223,21 @@ async function getGeminiKeys(env) {
 async function tryGeminiModel(env, publicId, internal, messages) {
   const keys = await getGeminiKeys(env);
   if (!keys.length) return { error: `Model ${publicId} sedang tidak tersedia` };
-  const sys = messages.filter(m => m.role === 'system').map(m => m.content).join('\n');
-  const contents = messages.filter(m => m.role !== 'system').map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
+  const sys = messages.filter(m => m.role === 'system').map(textOf).join('\n');
+  const contents = messages.filter(m => m.role !== 'system').map(m => {
+    const parts = [];
+    if (typeof m.content === 'string') parts.push({ text: m.content });
+    else if (Array.isArray(m.content)) {
+      for (const b of m.content) {
+        if (b && b.type === 'text' && b.text) parts.push({ text: b.text });
+        else if (b && b.type === 'image_url' && b.image_url && b.image_url.url) {
+          const mm = /^data:(.+?);base64,(.+)$/.exec(b.image_url.url || '');
+          if (mm) parts.push({ inlineData: { mimeType: mm[1], data: mm[2] } });
+        }
+      }
+    }
+    return { role: m.role === 'assistant' ? 'model' : 'user', parts: parts.length ? parts : [{ text: ' ' }] };
+  });
   if (!contents.length) return { error: `Model ${publicId} sedang tidak tersedia` };
   for (const key of keys) {
     try {
@@ -220,7 +255,7 @@ async function tryGeminiModel(env, publicId, internal, messages) {
         for (const p of (c && c.content && c.content.parts) || []) if (p && p.text) text += p.text;
       }
       if (!text) continue;
-      const tokens = (data && data.usageMetadata && data.usageMetadata.totalTokenCount) || Math.ceil((messages.map(m => m.content).join(' ').length + text.length) / 4);
+      const tokens = (data && data.usageMetadata && data.usageMetadata.totalTokenCount) || Math.ceil((messages.map(textOf).join(' ').length + text.length) / 4);
       return { text, model: publicId, tokens };
     } catch (e) { /* coba kunci berikutnya */ }
   }
@@ -307,7 +342,17 @@ export async function onRequestPost({ request, env }) {
 
   const src = originOf(request);
   const t0 = Date.now();
-  const chain = model === 'clincoo/auto' ? AUTO_CHAIN : [model];
+  // Request bergambar (vision) hanya bisa dilayani model multimodal — kalau model
+  // yang diminta tidak support gambar, otomatis dialihkan ke rantai vision
+  // (bukan ditolak keras) supaya integrasi user tetap jalan.
+  const withImages = hasImages(messages);
+  let chain;
+  if (withImages) {
+    chain = (model !== 'clincoo/auto' && VISION_CAPABLE.has(model)) ? [model, ...VISION_CHAIN.filter(x => x !== model)] : VISION_CHAIN;
+    if (model !== 'clincoo/auto' && !VISION_CAPABLE.has(model)) model = 'clincoo/auto';
+  } else {
+    chain = model === 'clincoo/auto' ? AUTO_CHAIN : [model];
+  }
   let result = null;
   for (const step of chain) {
     result = await tryModel(env, step, messages);
@@ -324,6 +369,25 @@ export async function onRequestPost({ request, env }) {
 
   const cost = estimateCost(result.model, result.tokens);
   await logCall(db, projectId, result.model, 1, ms, result.tokens, cost, src, '');
+
+  // STREAMING (stream: true) — respons SSE kompatibel OpenAI (chat.completion.chunk).
+  // Jawaban model disusun dulu di rantai provider (fallback antar model tetap jalan),
+  // lalu dikirim ke klien per potongan — SDK modern (LangChain, Vercel AI, dll.)
+  // yang default stream:true akhirnya kompatibel penuh.
+  if (body.stream === true) {
+    const sid = 'chatcmpl-' + crypto.randomUUID();
+    const created = Math.floor(Date.now() / 1000);
+    const sse = (obj) => 'data: ' + JSON.stringify(obj) + '\n\n';
+    let out = '';
+    out += sse({ id: sid, object: 'chat.completion.chunk', created, model, choices: [{ index: 0, delta: { role: 'assistant' }, finish_reason: null }] });
+    const text = String(result.text || '');
+    for (let i = 0; i < text.length; i += 160) {
+      out += sse({ id: sid, object: 'chat.completion.chunk', created, model, choices: [{ index: 0, delta: { content: text.slice(i, i + 160) }, finish_reason: null }] });
+    }
+    out += sse({ id: sid, object: 'chat.completion.chunk', created, model, choices: [{ index: 0, delta: {}, finish_reason: 'stop' }], usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: result.tokens || 0 }, clincoo: { served_model: result.model, latency_ms: ms, cost } });
+    out += 'data: [DONE]\n\n';
+    return new Response(out, { status: 200, headers: { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive', ...CORS } });
+  }
 
   const completion = {
     id: 'chatcmpl-' + crypto.randomUUID(),
