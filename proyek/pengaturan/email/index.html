@@ -32,6 +32,10 @@
     <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
     body { font-family: 'Inter', sans-serif; }
     @keyframes emailCtaSpin { to { transform: rotate(360deg); } }
     .email-cta-spin { animation: emailCtaSpin 0.8s linear infinite; }

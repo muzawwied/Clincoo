@@ -28,6 +28,10 @@
     tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } } };
   </script>
   <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
     body { font-family: 'Inter', sans-serif; }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

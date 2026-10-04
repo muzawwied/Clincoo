@@ -20,6 +20,10 @@
     <link rel="icon" type="image/png" sizes="64x64" href="../../assets/favicon.png">
     <link rel="manifest" href="../../manifest.json">
     <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
         html, body { margin: 0; height: 100%; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #ffffff; display: flex; flex-direction: column; color: #18181b; }
         html[data-dark] body { background: #0a0a0a; color: #e5e7eb; }

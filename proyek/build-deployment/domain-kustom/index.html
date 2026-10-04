@@ -38,6 +38,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
     @keyframes domainShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     .domain-shimmer { background: linear-gradient(90deg,#f9fafb 25%,#f3f4f6 50%,#f9fafb 75%) !important; background-size: 200% 100% !important; animation: domainShimmer 1.4s infinite; color: transparent !important; }
     body { font-family: 'Inter', sans-serif; }
