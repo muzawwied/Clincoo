@@ -2100,7 +2100,7 @@
                                 umumSettingsMap[proj.id] = { app_name: d.app_name || '', app_desc: d.app_desc || '', app_logo: d.app_logo || '' };
                             }
                         }).catch(function () {});
-                })).then(function () { try { renderProjects(); } catch (e) {} });
+                })).then(function () { try { renderProjects(); } catch (e) {} try { renderSidebarDynamic(); } catch (e2) {} });
             } catch (e) {}
         })();
 
