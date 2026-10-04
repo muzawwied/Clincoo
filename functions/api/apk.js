@@ -32,6 +32,7 @@ on:
       package_id: { required: true }
       orientation: { required: true, default: portrait }
       fullscreen: { required: true, default: "true" }
+      keystore_b64: { required: false, default: "" }
 permissions:
   contents: read
 jobs:
@@ -44,6 +45,7 @@ jobs:
       PKG: \${{ inputs.package_id }}
       ORIENT: \${{ inputs.orientation }}
       FULLSCREEN: \${{ inputs.fullscreen }}
+      KEYSTORE_B64: \${{ inputs.keystore_b64 }}
     steps:
       - uses: actions/checkout@v4
       - name: Siapkan Java
@@ -59,13 +61,20 @@ jobs:
       - name: Signing APK
         run: |
           BT=$ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)
-          keytool -genkeypair -keystore forge.jks -storepass forgepass -keypass forgepass -alias forge -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=PressForge"
+          if [ -n "$KEYSTORE_B64" ]; then
+            printf '%s' "$KEYSTORE_B64" | base64 --decode > forge.jks
+          else
+            keytool -genkeypair -keystore forge.jks -storepass forgepass -keypass forgepass -alias forge -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=PressForge"
+          fi
           $BT/zipalign -p -f 4 app-src/app/build/outputs/apk/release/app-release-unsigned.apk aligned.apk
           mkdir -p out
           $BT/apksigner sign --ks forge.jks --ks-pass pass:forgepass --key-pass pass:forgepass --out out/app.apk aligned.apk
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with: { name: apk, path: out/app.apk, retention-days: 7 }
+      - name: Upload keystore
+        uses: actions/upload-artifact@v4
+        with: { name: keystore, path: forge.jks, retention-days: 7 }
 `;
 
 const GENERATOR = `import os, json, shutil, html
@@ -340,6 +349,30 @@ export async function onRequestGet({ request, env }) {
           updated_at: new Date().toISOString()
         })).run();
     } catch (e) {}
+
+    // build sukses pertama kali: ambil keystore dari artifact lalu simpan permanen per proyek.
+    // Build berikutnya otomatis pakai kunci ini — sertifikat konsisten, APK bisa diupdate tanpa uninstall.
+    if (run.status === 'completed' && run.conclusion === 'success') {
+      try {
+        const stored = await db.prepare(`SELECT value FROM ${T.projectSettings} WHERE project_id = ? AND key = 'apk_keystore'`).bind(projectId).first();
+        if (!stored) {
+          const arts = await ghJson(env, '/repos/' + repo + '/actions/runs/' + run.id + '/artifacts');
+          const art = (arts.artifacts || []).find(a => a.name === 'keystore' && !a.expired);
+          if (art) {
+            let res = await gh(env, '/repos/' + repo + '/actions/artifacts/' + art.id + '/zip');
+            const loc = res.headers.get('location');
+            if (res.status >= 300 && res.status < 400 && loc) res = await fetch(loc);
+            if (res.ok) {
+              const ks = await unzipOne(await res.arrayBuffer(), 'forge.jks');
+              let bin = '';
+              for (let i = 0; i < ks.length; i += 4096) bin += String.fromCharCode.apply(null, ks.subarray(i, i + 4096));
+              await db.prepare(`INSERT OR REPLACE INTO ${T.projectSettings} (project_id, key, value) VALUES (?, 'apk_keystore', ?)`)
+                .bind(projectId, JSON.stringify({ ks_b64: btoa(bin), run_id: run.id, created_at: new Date().toISOString() })).run();
+            }
+          }
+        }
+      } catch (e) {}
+    }
     return json(state);
   } catch (err) {
     return json({ error: err.message }, 500);
@@ -374,24 +407,31 @@ export async function onRequestPost({ request, env }) {
 
     const repo = await ensureRepo(env);
 
+    // keystore tetap per proyek: dipakai ulang tiap build supaya sertifikat konsisten
+    // (APK bisa diupdate langsung tanpa uninstall; reputasi Play Protect tidak reset tiap build)
+    const T = getProjectTables(db, projectId);
+    let ksB64 = '';
+    try {
+      const row = await db.prepare(`SELECT value FROM ${T.projectSettings} WHERE project_id = ? AND key = 'apk_keystore'`).bind(projectId).first();
+      if (row) ksB64 = (JSON.parse(row.value) || {}).ks_b64 || '';
+    } catch (e) {}
+
     // unggah ikon -> icons/<build_id>.png
     await ghJson(env, '/repos/' + repo + '/contents/icons/' + buildId + '.png', {
       method: 'PUT',
       body: JSON.stringify({ message: 'icon ' + buildId, content: iconBase64 })
     });
 
-    // dispatch workflow build.yml
-    const payload = JSON.stringify({
-      ref: 'main',
-      inputs: {
-        build_id: buildId,
-        url: url,
-        app_name: appName,
-        package_id: packageId,
-        orientation: orientation,
-        fullscreen: String(fullscreen)
-      }
-    });
+    const inputs = {
+      build_id: buildId,
+      url: url,
+      app_name: appName,
+      package_id: packageId,
+      orientation: orientation,
+      fullscreen: String(fullscreen)
+    };
+    if (ksB64) inputs.keystore_b64 = ksB64;
+    const payload = JSON.stringify({ ref: 'main', inputs });
     let dispatched = false;
     let lastErr = '';
     for (let i = 0; i < 5; i++) {
@@ -403,7 +443,6 @@ export async function onRequestPost({ request, env }) {
     if (!dispatched) return json({ error: 'Gagal memulai build: ' + lastErr }, 502);
 
     // catat job di settings (tahan refresh, lintas perangkat)
-    const T = getProjectTables(db, projectId);
     await db.prepare(`INSERT OR REPLACE INTO ${T.projectSettings} (project_id, key, value) VALUES (?, 'apk_job', ?)`)
       .bind(projectId, JSON.stringify({
         build_id: buildId, app_name: appName, url: url, package_id: packageId,
