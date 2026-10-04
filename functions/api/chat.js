@@ -501,18 +501,17 @@ async function quotaCheck(env, user, cost = 1) {
 // bukan flat 1 per pesan. Pre-flight quotaCheck memotong 1 sebagai reservasi;
 // setelah jawaban jadi, SELISIH harga sebenarnya dipotong di sini.
 const MODEL_PRICES = {
-  'gpt-6-luna-pro': 2,      // model utama (reasoning, biaya provider lebih tinggi)
-  'gpt-6.1-sol-pro': 20     // model premium: biaya provider ~20-40x Luna Pro -> harga
-                            // kredit harus menutup biaya supaya tidak merugikan
+  'gpt-6-luna-pro': 2,      // cadangan pertama (reasoning, biaya provider lebih tinggi)
+  'gpt-6.1-sol-pro': 3      // model utama sejak 4 Okt 2026: biaya provider premium
+                            // ditanggung margin platform; 3 kredit = tetap terjangkau
+                            // user gratis (25/hari ~ 8 jawaban) sambil menutup biaya
   // semua model lain (glm-5.3-flash, gemini, clouvia, workers-ai, nemotron) = 1
 };
 const OUTPUT_FREE_CHARS = 4000; // karakter output pertama tanpa biaya tambahan
 const OUTPUT_STEP_CHARS = 8000;  // +1 kredit tiap kelipatan 8rb karakter output
-// Model premium: komponen output dihitung lebih rapat (+1 kredit tiap 2rb karakter)
-// karena biaya output-nya di provider jauh lebih tinggi.
-const MODEL_OUTPUT_STEPS = {
-  'gpt-6.1-sol-pro': { free: 2000, step: 2000 }
-};
+// Output steps: standar untuk semua model (4000 karakter pertama gratis,
+// +1 kredit tiap 8rb karakter output) — Sol Pro kini model utama, bukan premium opt-in.
+const MODEL_OUTPUT_STEPS = {};
 function aiCostOf(model, outputChars) {
   const key = String(model || '').split(' ')[0].replace(':batch', '');
   const base = MODEL_PRICES[key] || 1;
