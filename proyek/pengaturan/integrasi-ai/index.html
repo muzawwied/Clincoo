@@ -866,91 +866,231 @@
       card.style.display = 'none'; // endpoint belum ada / gagal -> sembunyikan, jangan ganggu halaman
     }
   }
-  // ===== Playground API: uji /v1/chat/completions langsung dari halaman ini =====
-  // FAB kanan-bawah membuka sheet — model + prompt + jawaban + latensi + biaya,
-  // pakai secret proyek yang sudah dimuat. Biaya dipotong dari kredit paket.
+  // ===== Playground API: chat uji model — full-screen dari bawah, bisa dipeser =====
+  // Gaya obrolan seperti AI Clincoo: bubble user kanan / jawaban kiri + meta
+  // (model pelayan, latensi, biaya). Pemilih model = popover berlogo di baris
+  // input (bintang favorit ikut tersimpan sama dengan dropdown utama).
   var AI_OPEN_BASE = (AI_API_BASE === '/api') ? '' : 'https://clincoo-be2.pages.dev';
-  function aiPgPopulateModels() {
-    var sel = document.getElementById('ai-pg-model');
-    if (!sel || sel.options.length) return;
-    var cur = _aiModelValue || 'clincoo/auto';
-    AI_MODELS.forEach(function (m) {
-      var o = document.createElement('option');
-      o.value = m.id;
-      o.textContent = m.label + ' — ' + aiUsd(aiModelPrice(m.id)) + ' /panggilan';
-      if (m.id === cur) o.selected = true;
-      sel.appendChild(o);
-    });
+  var _aiPgModel = null;
+  var _aiPgMsgs = [];
+  var _aiPgBusy = false;
+
+  function aiPgCard() { return document.getElementById('ai-pg-card'); }
+  function aiPgStatus(t) { var el = document.getElementById('ai-pg-status'); if (el) el.textContent = t; }
+  function aiPgScroll() { var b = document.getElementById('ai-pg-msgs'); if (b) b.scrollTop = b.scrollHeight; }
+
+  function aiPgIntro() {
+    var b = document.getElementById('ai-pg-msgs');
+    if (b && b.childElementCount === 0) {
+      b.innerHTML = '<div data-intro="1" class="pt-[26%] px-6 text-center text-[12px] leading-relaxed text-gray-400 dark:text-gray-500">Tulis prompt untuk menguji model Clincoo.<br>Pilih model lewat tombol berlogo di bawah — jawaban menyertakan biaya per panggilan.</div>';
+    }
   }
+  function aiPgClearIntro() {
+    var b = document.getElementById('ai-pg-msgs');
+    var intro = b && b.querySelector('[data-intro]');
+    if (intro) b.removeChild(intro);
+  }
+  function aiPgAddMsg(role, content, meta) {
+    var b = document.getElementById('ai-pg-msgs');
+    if (!b) return;
+    aiPgClearIntro();
+    var user = role === 'user';
+    var wrap = document.createElement('div');
+    wrap.className = 'flex flex-col ' + (user ? 'items-end' : 'items-start');
+    var bub = document.createElement('div');
+    bub.className = 'max-w-[85%] ' + (user
+      ? 'rounded-2xl rounded-br-md bg-black dark:bg-white text-white dark:text-black'
+      : 'rounded-2xl rounded-bl-md bg-gray-100 dark:bg-slate-800/70 text-gray-800 dark:text-gray-100') +
+      ' px-3.5 py-2 text-[13px] leading-relaxed whitespace-pre-wrap break-words';
+    bub.textContent = content;
+    wrap.appendChild(bub);
+    if (meta) {
+      var m = document.createElement('div');
+      m.className = 'text-[10px] text-gray-400 dark:text-gray-500 mt-1 px-1.5';
+      m.textContent = meta;
+      wrap.appendChild(m);
+    }
+    b.appendChild(wrap);
+    aiPgScroll();
+  }
+  function aiPgTyping() {
+    var b = document.getElementById('ai-pg-msgs');
+    if (!b) return null;
+    aiPgClearIntro();
+    var wrap = document.createElement('div');
+    wrap.className = 'flex items-start';
+    var bub = document.createElement('div');
+    bub.className = 'rounded-2xl rounded-bl-md bg-gray-100 dark:bg-slate-800/70 px-4 py-3 flex gap-1';
+    bub.innerHTML = '<span class="ai-pg-dot w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500"></span><span class="ai-pg-dot w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500" style="animation-delay:.2s"></span><span class="ai-pg-dot w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500" style="animation-delay:.4s"></span>';
+    wrap.appendChild(bub);
+    b.appendChild(wrap);
+    aiPgScroll();
+    return wrap;
+  }
+  function aiPgRemove(el) { if (el && el.parentNode) el.parentNode.removeChild(el); }
+
   function aiPgOpenFn() {
     var modal = document.getElementById('ai-pg-modal');
-    if (!modal) return;
-    aiPgPopulateModels();
+    var card = aiPgCard();
+    if (!modal || !card) return;
+    if (!_aiPgModel) aiPgSetModel(_aiModelValue || 'clincoo/auto');
+    aiPgIntro();
     modal.style.display = '';
+    requestAnimationFrame(function () { requestAnimationFrame(function () { card.classList.add('ai-pg-open'); }); });
   }
   function aiPgCloseFn() {
     var modal = document.getElementById('ai-pg-modal');
-    if (modal) modal.style.display = 'none';
+    var card = aiPgCard();
+    if (!modal || !card) return;
+    card.style.transform = '';
+    card.classList.remove('ai-pg-open');
+    setTimeout(function () { if (!card.classList.contains('ai-pg-open')) modal.style.display = 'none'; }, 320);
   }
-  async function aiPgRun() {
-    var btn = document.getElementById('ai-pg-run');
-    var txt = document.getElementById('ai-pg-run-text');
-    var result = document.getElementById('ai-pg-result');
-    var meta = document.getElementById('ai-pg-meta');
-    var out = document.getElementById('ai-pg-out');
-    if (!result || !meta || !out) return;
-    if (!_aiSecret) {
-      result.style.display = '';
-      meta.textContent = '';
-      out.textContent = 'Secret proyek belum ada. Buat dulu di bagian Secret API di atas, lalu kembali ke Playground.';
-      return;
+
+  // Geser atas-bawah: seret header/handle ke bawah buat nutup, lepas balik kalau cuma sedikit.
+  function aiPgDrag() {
+    var grab = document.getElementById('ai-pg-grab');
+    var card = aiPgCard();
+    if (!grab || !card) return;
+    var startY = 0, dy = 0, active = false;
+    function down(e) {
+      if (e.target && e.target.closest && e.target.closest('#ai-pg-close')) return;
+      active = true; dy = 0;
+      startY = (e.touches ? e.touches[0].clientY : e.clientY);
+      card.classList.add('ai-pg-dragging');
     }
-    var promptEl = document.getElementById('ai-pg-prompt');
-    var prompt = String((promptEl && promptEl.value) || '').trim();
-    var modelEl = document.getElementById('ai-pg-model');
-    var model = (modelEl && modelEl.value) || 'clincoo/auto';
-    if (!prompt) return;
-    if (btn) btn.disabled = true;
-    if (txt) txt.textContent = 'Menjalankan…';
+    function move(e) {
+      if (!active) return;
+      dy = (e.touches ? e.touches[0].clientY : e.clientY) - startY;
+      if (dy < 0) dy = 0;
+      card.style.transform = 'translateY(' + dy + 'px)';
+      if (e.cancelable) e.preventDefault();
+    }
+    function up() {
+      if (!active) return;
+      active = false;
+      card.classList.remove('ai-pg-dragging');
+      card.style.transform = '';
+      if (dy > 130) aiPgCloseFn();
+    }
+    grab.addEventListener('touchstart', down, { passive: true });
+    grab.addEventListener('touchmove', move, { passive: false });
+    grab.addEventListener('touchend', up);
+    grab.addEventListener('mousedown', down);
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  }
+
+  function aiPgSetModel(id) {
+    _aiPgModel = id;
+    var name = document.getElementById('ai-pg-model-name');
+    var logo = document.getElementById('ai-pg-model-logo');
+    if (name) name.textContent = aiModelLabel(id);
+    if (logo) logo.innerHTML = aiModelIconChip(id);
+  }
+  function aiPgRenderPop() {
+    var pop = document.getElementById('ai-pg-mpop');
+    if (!pop) return;
+    var html = '';
+    AI_MODELS.forEach(function (m) {
+      var fav = isAiModelFav(m.id);
+      var sel = m.id === _aiPgModel;
+      html += '<div class="ai-pg-mrow flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer' + (sel ? ' bg-gray-50 dark:bg-white/5' : '') + '" data-id="' + m.id + '">' +
+        aiModelIconChip(m.id) +
+        '<span class="flex-1 min-w-0"><span class="block text-[13px] font-medium text-gray-900 dark:text-white truncate">' + m.label + '</span>' +
+        '<span class="block text-[10px] text-gray-400 dark:text-gray-500">' + aiUsd(aiModelPrice(m.id)) + ' /panggilan</span></span>' +
+        (sel ? '<svg class="w-4 h-4 shrink-0 text-gray-900 dark:text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>' : '') +
+        '<span role="button" class="ai-pg-star pl-1 text-[16px] leading-none ' + (fav ? 'text-yellow-400' : 'text-gray-300 dark:text-slate-600') + '" data-id="' + m.id + '">&#9733;</span>' +
+        '</div>';
+    });
+    pop.innerHTML = html;
+  }
+  function aiPgTogglePop(force) {
+    var pop = document.getElementById('ai-pg-mpop');
+    if (!pop) return;
+    var show = (typeof force === 'boolean') ? force : pop.style.display === 'none';
+    if (show) { aiPgRenderPop(); pop.style.display = ''; } else { pop.style.display = 'none'; }
+  }
+
+  function aiPgSendCheck() {
+    var input = document.getElementById('ai-pg-input');
+    var btn = document.getElementById('ai-pg-send');
+    if (btn) btn.disabled = _aiPgBusy || !String((input && input.value) || '').trim();
+  }
+
+  async function aiPgSend() {
+    if (_aiPgBusy) return;
+    var input = document.getElementById('ai-pg-input');
+    var text = String((input && input.value) || '').trim();
+    if (!text) return;
+    if (!_aiSecret) { aiPgAddMsg('assistant', 'Secret proyek belum ada. Buat dulu di bagian Secret API di halaman ini, lalu kembali ke Playground.'); return; }
+    _aiPgBusy = true;
+    aiPgSendCheck();
+    aiPgAddMsg('user', text);
+    _aiPgMsgs.push({ role: 'user', content: text });
+    if (input) input.value = '';
+    var typ = aiPgTyping();
+    aiPgStatus('Menjalankan ' + aiModelLabel(_aiPgModel) + '…');
     var t0 = Date.now();
     try {
       var res = await fetch(AI_OPEN_BASE + '/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _aiSecret },
-        body: JSON.stringify({ model: model, messages: [{ role: 'user', content: prompt }] })
+        body: JSON.stringify({ model: _aiPgModel, messages: _aiPgMsgs.slice(-12) })
       });
       var ms = Date.now() - t0;
       var data = {};
       try { data = await res.json(); } catch (e) {}
-      result.style.display = '';
+      aiPgRemove(typ);
       if (!res.ok) {
         var em = (data && data.error && data.error.message) || ('HTTP ' + res.status);
-        meta.textContent = 'Gagal · ' + ms + ' ms';
-        out.textContent = em;
+        aiPgAddMsg('assistant', 'Gagal: ' + em);
+        aiPgStatus('Gagal · ' + ms + ' ms');
       } else {
         var content = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '(jawaban kosong)';
         var c = data.clincoo || {};
-        meta.textContent = 'Sukses · ' + ms + ' ms · model: ' + (c.served_model || model) + ' · biaya: ' + aiUsd(c.cost);
-        out.textContent = content;
+        _aiPgMsgs.push({ role: 'assistant', content: content });
+        aiPgAddMsg('assistant', content, aiModelLabel(c.served_model || _aiPgModel) + ' · ' + ms + ' ms · ' + aiUsd(c.cost));
+        aiPgStatus('Selesai · ' + ms + ' ms · biaya ' + aiUsd(c.cost));
+        loadAiCredits(); // kartu sisa kredit ikut ter-update setelah dipotong
       }
     } catch (e) {
-      result.style.display = '';
-      meta.textContent = 'Gagal';
-      out.textContent = 'Koneksi gagal: ' + ((e && e.message) || e);
+      aiPgRemove(typ);
+      aiPgAddMsg('assistant', 'Koneksi gagal: ' + ((e && e.message) || e));
+      aiPgStatus('Gagal');
     }
-    if (btn) btn.disabled = false;
-    if (txt) txt.textContent = 'Jalankan';
-    loadAiCredits(); // kartu sisa kredit ikut ter-update setelah dipotong
+    _aiPgBusy = false;
+    aiPgSendCheck();
   }
+
+  document.addEventListener('click', function (e) {
+    var pop = document.getElementById('ai-pg-mpop');
+    if (!pop || pop.style.display === 'none') return;
+    if (e.target && e.target.closest && (e.target.closest('#ai-pg-mpop') || e.target.closest('#ai-pg-model-btn'))) return;
+    aiPgTogglePop(false);
+  });
   document.addEventListener('DOMContentLoaded', function () {
     var fab = document.getElementById('ai-pg-fab');
     if (fab) fab.addEventListener('click', aiPgOpenFn);
     var closeBtn = document.getElementById('ai-pg-close');
     if (closeBtn) closeBtn.addEventListener('click', aiPgCloseFn);
-    var bd = document.getElementById('ai-pg-backdrop');
-    if (bd) bd.addEventListener('click', aiPgCloseFn);
-    var runBtn = document.getElementById('ai-pg-run');
-    if (runBtn) runBtn.addEventListener('click', aiPgRun);
+    var mb = document.getElementById('ai-pg-model-btn');
+    if (mb) mb.addEventListener('click', function (e) { e.stopPropagation(); aiPgTogglePop(); });
+    var pop = document.getElementById('ai-pg-mpop');
+    if (pop) pop.addEventListener('click', function (e) {
+      var star = e.target.closest('.ai-pg-star');
+      if (star) { toggleAiModelFav(star.getAttribute('data-id')); aiPgRenderPop(); return; }
+      var row = e.target.closest('.ai-pg-mrow');
+      if (row) { aiPgSetModel(row.getAttribute('data-id')); aiPgTogglePop(false); }
+    });
+    var sendBtn = document.getElementById('ai-pg-send');
+    if (sendBtn) sendBtn.addEventListener('click', aiPgSend);
+    var input = document.getElementById('ai-pg-input');
+    if (input) {
+      input.addEventListener('input', aiPgSendCheck);
+      input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); aiPgSend(); } });
+    }
+    aiPgDrag();
   });
   async function loadAiSecret() {
     // tampilkan status memuat dulu — JANGAN tampilkan CTA "belum ada secret"
@@ -1920,28 +2060,44 @@ window.chatLivePreview = function () {
   <span class="text-sm font-semibold">Playground</span>
 </button>
 <div id="ai-pg-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Playground API Clincoo">
-  <div id="ai-pg-backdrop" class="fixed inset-0 z-[95] bg-black/45"></div>
-  <div class="fixed bottom-0 left-0 right-0 z-[96] flex justify-center pointer-events-none">
-    <div id="ai-pg-card" class="pointer-events-auto w-full max-w-md bg-white dark:bg-[#0a0a0a] rounded-t-3xl px-4 sm:px-5 pt-3 shadow-2xl" style="max-height:88dvh;overflow-y:auto;padding-bottom:calc(1.25rem + env(safe-area-inset-bottom,0px));">
-      <div class="flex justify-center"><div class="w-10 h-1.5 rounded-full bg-gray-200 dark:bg-slate-700 mb-2"></div></div>
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-base font-semibold text-gray-900 dark:text-white">Playground API</h3>
-        <button id="ai-pg-close" aria-label="Tutup" class="w-7 h-7 rounded-full bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-300 hover:text-black dark:hover:text-white flex items-center justify-center transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6 6 18M6 6l12 12"></path></svg></button>
+  <div id="ai-pg-backdrop" class="fixed inset-0 z-[95] bg-black/50"></div>
+  <div id="ai-pg-card" class="fixed inset-0 z-[96] bg-white dark:bg-[#0a0a0a] flex flex-col">
+    <div id="ai-pg-grab" class="shrink-0 touch-none select-none cursor-grab">
+      <div class="flex justify-center pt-2.5 pb-1"><div class="w-10 h-1.5 rounded-full bg-gray-200 dark:bg-slate-700"></div></div>
+      <div class="flex items-center justify-between px-4 pt-1.5 pb-2.5">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span class="w-9 h-9 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center shrink-0"><svg class="w-4.5 h-4.5" style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m6 15-4-8 6 2 4-7 4 7 6-2-4 8m-12 0v4a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-4"/></svg></span>
+          <div class="min-w-0">
+            <div class="text-[15px] font-semibold text-gray-900 dark:text-white leading-tight">Playground API</div>
+            <div id="ai-pg-status" class="text-[11px] text-gray-400 dark:text-gray-500 truncate">Uji model Clincoo langsung di sini</div>
+          </div>
+        </div>
+        <button id="ai-pg-close" aria-label="Tutup" class="w-8 h-8 shrink-0 rounded-full bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-300 hover:text-black dark:hover:text-white flex items-center justify-center transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6 6 18M6 6l12 12"></path></svg></button>
       </div>
-      <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Model</label>
-      <select id="ai-pg-model" class="w-full mb-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20"></select>
-      <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Prompt</label>
-      <textarea id="ai-pg-prompt" rows="4" placeholder="Tulis prompt untuk diuji, mis: Ringkas keunggulan Clincoo dalam 3 poin." class="w-full mb-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 resize-y"></textarea>
-      <button id="ai-pg-run" class="w-full py-2.5 rounded-xl text-[14px] font-semibold bg-black dark:bg-white text-white dark:text-black hover:opacity-90 active:scale-[.99] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-        <span id="ai-pg-run-text">Jalankan</span>
-      </button>
-      <div id="ai-pg-result" style="display:none" class="mt-3 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
-        <div id="ai-pg-meta" class="flex flex-wrap gap-x-3 gap-y-1 px-3 py-2 bg-gray-50 dark:bg-black/40 text-[11px] text-gray-500 dark:text-gray-400"></div>
-        <div id="ai-pg-out" class="px-3 py-2.5 text-[13px] leading-relaxed text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-words"></div>
+    </div>
+    <div id="ai-pg-msgs" class="flex-1 overflow-y-auto overscroll-contain px-4 py-3"></div>
+    <div class="relative shrink-0">
+      <div id="ai-pg-mpop" style="display:none" class="absolute bottom-full left-3 right-3 mb-2 max-h-[46vh] overflow-y-auto rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#111111] shadow-2xl p-1.5 z-10"></div>
+      <div class="px-3 pt-2.5 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] border-t border-gray-100 dark:border-slate-800/80">
+        <div class="flex items-center gap-2">
+          <button id="ai-pg-model-btn" aria-label="Pilih model" class="shrink-0 flex items-center gap-1.5 h-10 pl-1.5 pr-2.5 rounded-full border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 hover:border-gray-300 dark:hover:border-slate-600 transition-colors">
+            <span id="ai-pg-model-logo" class="flex items-center"></span>
+            <span id="ai-pg-model-name" class="text-[11px] font-semibold text-gray-900 dark:text-white max-w-[110px] truncate"></span>
+            <svg class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"></path></svg>
+          </button>
+          <input id="ai-pg-input" type="text" autocomplete="off" enterkeyhint="send" placeholder="Tulis prompt…" class="flex-1 min-w-0 h-10 rounded-full border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-black/40 px-4 text-[13px] text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-black/15 dark:focus:ring-white/15">
+          <button id="ai-pg-send" aria-label="Kirim" disabled class="w-10 h-10 shrink-0 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center active:scale-95 transition-all disabled:opacity-40"><svg class="w-4.5 h-4.5" style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5m0 0-6 6m6-6 6 6"></path></svg></button>
+        </div>
       </div>
-      <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-3">Setiap panggilan memotong kredit API sesuai harga model (lihat kartu Kredit API). Secret proyek dipakai otomatis.</p>
     </div>
   </div>
 </div>
+<style>
+#ai-pg-card{transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,.24,1)}
+#ai-pg-card.ai-pg-open{transform:translateY(0)}
+#ai-pg-card.ai-pg-dragging{transition:none}
+@keyframes aiPgBlink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.ai-pg-dot{animation:aiPgBlink 1.2s infinite}
+</style>
 </body>
 </html>
