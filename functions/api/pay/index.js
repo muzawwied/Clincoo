@@ -1002,7 +1002,6 @@ export async function onRequestPost({ request, env }) {
       qr_image: qrImageUrl(p.qr_url),
       qr_string: p.qr_url,
       va_number: '',
-      payment_url: p.payment_url || '',
       total_payment: total,
       expires_at: expiredAt,
       is_sandbox: false
