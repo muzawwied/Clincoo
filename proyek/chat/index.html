@@ -5913,12 +5913,43 @@ window.chatLivePreview = function () {
                             }
                             if (e.ctxOverflow && doneTools.length === 0) setQuotaLock(false);
                         } else {
-                        // FALLBACK: /api/chat gagal karena provider (bukan kuota) -> coba /api/ai
-                        // (Clincoo AI: Workers AI di backend, tanpa API key). Kuota habis TIDAK
-                        // difallback — UX kuota tetap seperti sebelumnya.
+                        // FALLBACK BERLAPIS: /api/chat (streaming) gagal karena provider
+                        // (bukan kuota). JANGAN langsung tampilkan error ke user — coba ulang
+                        // diam-diam lewat beberapa jalur dulu sebelum menyerah:
+                        // (1) /api/chat non-stream sekali lagi (hop ulang ke 4 provider dari awal:
+                        //     OpenRouter -> Clouvia -> Workers AI -> Gemini — kemungkinan transient
+                        //     sudah hilang), (2) /api/ai (Clincoo AI, Workers AI tanpa key) sampai
+                        // 3x dengan delay singkat. Kuota habis TIDAK difallback — UX kuota tetap.
                         let fbOk = false;
+                        const fbTok = (function () { try { return localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e4) { return ''; } })();
+                        if (isGenerating) {
+                            try {
+                                const rc = await fetch(GEMINI_PROXY_URL, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ messages: apiMessagesWithTools, session_id: currentSessionId || undefined, project_id: currentProjectId || undefined, workspace_tools: true, save_user_message: false }),
+                                    signal: abortController.signal
+                                });
+                                if (rc.ok) {
+                                    const rcJson = await rc.json().catch(() => null);
+                                    if (rcJson && !rcJson.error && String(rcJson.text || '').trim()) {
+                                        streamingBuffer = rcJson.text;
+                                        hasReceivedData = true;
+                                        if (rcJson.session_id) currentSessionId = rcJson.session_id;
+                                        if (quotaLocked) setQuotaLock(false);
+                                        clearTimeout(apiTimeout);
+                                        clearInterval(statusInterval);
+                                        const rcIdx = messages.findIndex(m => m.id === aiMsgObj.id);
+                                        if (rcIdx !== -1 && messages[rcIdx].isProcessing) { messages[rcIdx].isProcessing = false; messages[rcIdx].isTyping = true; }
+                                        isFetchComplete = true;
+                                        fbOk = true;
+                                    }
+                                }
+                            } catch (e3) { console.warn('Retry /api/chat non-stream gagal:', e3 && e3.message); }
+                        }
+                        for (let fbTry = 0; !fbOk && fbTry < 3 && isGenerating; fbTry++) {
+                        if (fbTry > 0) await new Promise(r => setTimeout(r, fbTry === 1 ? 3000 : 6000));
                         try {
-                            const fbTok = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || '';
                             const fbRes = await fetch(TOOL_API_BASE + '/api/ai', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json', ...(fbTok ? { Authorization: 'Bearer ' + fbTok } : {}) },
@@ -5939,12 +5970,16 @@ window.chatLivePreview = function () {
                                     fbOk = true;
                                 }
                             }
-                        } catch (e2) { console.warn('Fallback /api/ai gagal:', e2 && e2.message); }
+                        } catch (e2) { console.warn('Fallback /api/ai gagal (percobaan ' + (fbTry + 1) + '):', e2 && e2.message); }
+                        }
                         if (!fbOk) {
-                        streamingBuffer = "Maaf, terjadi kesalahan: " + (e.message || "Gagal menghubungi server AI") + ". Silakan coba lagi nanti.";
+                        // Semua jalur (streaming, non-stream, 3x fallback) gagal — sangat jarang
+                        // (butuh SEMUA provider down bersamaan). Jangan tampilkan teks error
+                        // teknis mentah: pesan ramah + tombol coba lagi, bukan bubble "rusak".
+                        streamingBuffer = "Lagi ada gangguan koneksi sebentar.";
                         isFetchComplete = true;
                         const msgIndex = messages.findIndex(m => m.id === aiMsgObj.id);
-                        if (msgIndex !== -1) messages[msgIndex].isError = true;
+                        if (msgIndex !== -1) { messages[msgIndex].isError = true; messages[msgIndex].retryable = true; }
                     }
                     }
                 }
