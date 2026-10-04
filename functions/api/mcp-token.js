@@ -93,7 +93,12 @@ function normalizeScopes(raw) {
 // ---- Cermin di project-settings (kompatibilitas versi lama sesi paralel) ----
 async function mirrorRead(token, projectId) {
   const r = await be2Json('/project-settings?project_id=' + encodeURIComponent(projectId) + '&key=mcp_token', token);
-  if (!r.ok || !r.data) return null;
+  if (!r.ok) {
+    // 404 = cermin memang belum ada; 5xx/0 = gagal cek — JANGAN disimpulkan "belum pernah buat server"
+    if (r.status >= 500 || r.status === 0) return { failed: true };
+    return null;
+  }
+  if (!r.data) return null;
   const tok = String(r.data.value || '').trim();
   if (!tok) return null;
   const [sc, ca] = await Promise.all([
@@ -127,6 +132,7 @@ export async function onRequestGet(context) {
   // menyimpan be2_token, jadi endpoint /api/mcp sebelumnya pasti menolaknya).
   if (!row) {
     const mir = await mirrorRead(g.token, projectId);
+    if (mir && mir.failed) return J({ error: 'Gagal memeriksa status server MCP (cermin proyek tidak terjangkau) — coba lagi sebentar' }, 503);
     if (mir && mir.token) {
       const scopes = normalizeScopes(mir.scopes);
       await env.DB.prepare(

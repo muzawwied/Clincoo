@@ -335,6 +335,14 @@
               Aktifkan Server MCP
             </button>
           </div>
+          <!-- Gagal CEK status: JANGAN tampilkan CTA buat server — server kemungkinan masih ada,
+               cuma statusnya gagal dicek sesaat (jaringan/lelet). Tampilkan panel error + coba lagi. -->
+          <div id="mcp-error" class="py-10 flex-col items-center justify-center text-center hidden">
+            <svg class="w-10 h-10 text-amber-400 mb-3 mx-auto" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path></svg>
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-200" id="mcp-error-msg">Gagal memeriksa status server MCP</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Server MCP kemungkinan masih aktif — statusnya hanya gagal dicek sesaat. Tidak perlu membuat ulang server.</p>
+            <button type="button" onclick="loadMcpRetry()" class="mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors cursor-pointer">Coba Lagi</button>
+          </div>
 
           <!-- Aktif -->
           <div id="mcp-active" class="hidden flex-col gap-5">
@@ -527,7 +535,9 @@ async function mcpRequest(method, body) {
   var r = await fetch(MCP_TOKEN_API + '?project_id=' + encodeURIComponent(_mcpPid() || ''), {
     method: method, headers: headers, body: body ? JSON.stringify(body) : undefined
   });
-  return r.json().catch(function () { return {}; });
+  var data = await r.json().catch(function () { return {}; });
+  if (data && typeof data === 'object') { try { data._status = r.status; } catch (e) {} }
+  return data;
 }
 
 function applyScopeSwitch(key) {
@@ -581,6 +591,8 @@ function renderMcp() {
   }
   var loading = document.getElementById('mcp-loading');
   if (loading) loading.style.display = 'none';
+  var errcard2 = document.getElementById('mcp-error');
+  if (errcard2) errcard2.style.display = 'none';
   var show = function (el, on) {
     if (!el) return;
     el.classList.remove('mcp-anim');
@@ -642,19 +654,18 @@ async function loadMcp() {
         if (r.token !== mcpState.token) { mcpState.token = r.token; mcpToast('Token diperbarui dari perangkat lain'); }
         _mcpCacheWrite(r); mcpState.scopes = _mcpNormScopes(r.scopes); mcpState.created_at = r.created_at || mcpState.created_at; renderMcp();
       }
-      else if (r && r.active === false) { _mcpCacheClear(); mcpState.active = false; mcpState.token = ''; mcpState.created_at = null; renderMcp(); }
+      else if (r && r.active === false && r._status === 200) { _mcpCacheClear(); mcpState.active = false; mcpState.token = ''; mcpState.created_at = null; renderMcp(); }
     } catch (e) { /* offline/lelet: tetap pakai cache */ }
     return;
   }
   // 3) Gak ada cache: ambil seperti biasa (skeleton), lalu simpan.
   var d = null;
   try { d = await mcpRequest('GET'); } catch (e) { d = null; }
-  if (d === null) {
-    mcpState.active = false; mcpState.token = '';
-    renderMcp();
-    mcpToast('Tidak bisa menghubungi server — periksa koneksi internet');
-    return;
-  }
+  // Gagal CEK status (jaringan putus / server lelet / 401 / 403 / 5xx) JANGAN
+  // ditampilkan sebagai "belum buat server" — itu bikin user salah buat ulang
+  // server dan token lamanya mati. Tampilkan panel error + tombol coba lagi.
+  if (d === null) { renderMcpError('Tidak bisa menghubungi server — periksa koneksi internet'); return; }
+  if (d._status !== 200) { renderMcpError(d.error ? d.error : 'Gagal memeriksa status server MCP — coba lagi'); return; }
   if (d && d.token) {
     mcpState.active = true;
     mcpState.token = d.token;
@@ -666,6 +677,32 @@ async function loadMcp() {
     mcpState.token = '';
   }
   renderMcp();
+}
+
+function renderMcpError(msg) {
+  var inactive = document.getElementById('mcp-inactive');
+  var active = document.getElementById('mcp-active');
+  var loading = document.getElementById('mcp-loading');
+  if (loading) loading.style.display = 'none';
+  if (inactive) inactive.style.display = 'none';
+  if (active) active.style.display = 'none';
+  var el = document.getElementById('mcp-error');
+  if (el) {
+    var m = document.getElementById('mcp-error-msg');
+    if (m && msg) m.textContent = msg;
+    el.classList.remove('mcp-anim');
+    el.style.display = 'flex';
+    void el.offsetWidth;
+    el.classList.add('mcp-anim');
+  }
+}
+
+function loadMcpRetry() {
+  var el = document.getElementById('mcp-error');
+  if (el) el.style.display = 'none';
+  var loading = document.getElementById('mcp-loading');
+  if (loading) loading.style.display = 'flex';
+  loadMcp();
 }
 
 async function activateMcp() {
