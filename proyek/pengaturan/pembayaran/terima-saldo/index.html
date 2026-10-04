@@ -136,14 +136,30 @@
   async function rcInit() {
     // tanpa login → ke halaman akun
     if (!_apiToken) { location.href = '/akun/'; return; }
+    // cache per-proyek (10 menit): kunjungan berikutnya tombol LANGSUNG aktif tanpa nunggu server,
+    // server tetap ditanya ulang di belakang untuk memastikan status terbaru
+    var ckey = 'clinqoo_rc_active_' + _pid();
+    try {
+      var c = JSON.parse(localStorage.getItem(ckey) || 'null');
+      if (c && c.active && Date.now() - c.ts < 10 * 60 * 1000) {
+        _rcActive = true;
+        rcUpdate();
+      }
+    } catch (e) {}
     for (var i = 0; i < 3; i++) {
       try {
         var res = await fetch(API_BASE + '/pay?action=config&project_id=' + encodeURIComponent(_pid()), { headers: { Authorization: 'Bearer ' + _apiToken } });
         var data = await res.json();
         if (res.ok && data.success) {
-          if (!data.active) return; // pembayaran belum aktif → tombol tetap terkunci, tanpa teks status
+          if (!data.active) {
+            // status server: belum aktif → kunci kembali & hapus cache
+            _rcActive = false; rcUpdate();
+            try { localStorage.removeItem(ckey); } catch (e) {}
+            return;
+          }
           _rcActive = true;
           rcUpdate();
+          try { localStorage.setItem(ckey, JSON.stringify({ active: true, ts: Date.now() })); } catch (e) {}
           return;
         }
       } catch (e) {}
