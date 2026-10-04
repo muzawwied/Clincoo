@@ -2829,11 +2829,11 @@ window.chatLivePreview = function () {
             'Ada beberapa bagian terakhir yang belum saya sentuh; tinggal konfirmasi untuk melanjutkan.'
         ];
         const CHECKPOINT_PROMPTS = [
-            'Tulis **lanjut** dan saya kerjakan sisanya.',
-            'Balas **lanjut** kalau kamu mau saya teruskan dari titik ini.',
-            'Cukup ketik **lanjut** — saya ambil lagi dari sini.',
-            'Ketik **lanjut** untuk meneruskan pengerjaannya.',
-            'Tulis **lanjut** kapan pun kamu siap — saya siap melanjutkan.'
+            'Ketuk tombol **Lanjutkan** di bawah — saya kerjakan sisanya.',
+            'Tekan **Lanjutkan** di bawah dan saya teruskan dari titik ini.',
+            'Cukup ketuk **Lanjutkan** — saya ambil lagi dari sini.',
+            'Tekan **Lanjutkan** untuk meneruskan pengerjaannya.',
+            'Kapan pun kamu siap, ketuk **Lanjutkan** — saya siap melanjutkan.'
         ];
         function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
         function buildCheckpointText(toolCalls, reason, recoveryNote) {
@@ -3054,7 +3054,7 @@ window.chatLivePreview = function () {
                                     </div>
                                 ` : ''}
                                 ${(msg.checkpoint && isLastAi && !msg.isProcessing && !msg.isTyping) ? `
-                                    <button type="button" class="checkpoint-chip fade-in" onclick="handlePromptClick('lanjut')" title="Lanjutkan tugas yang tertunda">
+                                    <button type="button" class="checkpoint-chip fade-in" onclick="resumeCheckpoint(this)" title="Lanjutkan tugas yang tertunda">
                                         <i class="ph-bold ph-arrow-clockwise"></i> Lanjutkan
                                     </button>
                                 ` : ''}
@@ -6342,7 +6342,18 @@ window.chatLivePreview = function () {
             currentAttachments = [];
             showAttachmentPreview();
 
+            // FIX TAMPILAN: "lanjut/lanjutkan/teruskan" yang diketik user saat AI
+            // berhenti di checkpoint TIDAK jadi bubble user besar (dulu numpuk
+            // berantakan tiap kali resume). Pesan tetap dikirim ke AI & tersimpan,
+            // hanya render-nya yang diringkas — AI langsung terlihat melanjutkan.
+            const CONTINUE_WORDS = ['lanjut', 'lanjutkan', 'lanjutin', 'teruskan', 'selesaikan', 'continue'];
+            const lastM = messages[messages.length - 1];
+            const isBareContinue = !attachmentsToKeep.length && CONTINUE_WORDS.indexOf(val.toLowerCase()) !== -1
+                && lastM && lastM.role === 'ai'
+                && (lastM.checkpoint || lastM.midPhase || lastM.stoppedByUser
+                    || finalLooksUnfinished(lastM.text, lastM));
             const userMsg = { id: generateId(), role: 'user', text: val, attachments: attachmentsToKeep };
+            if (isBareContinue) userMsg.silent = true;
             messages.push(userMsg);
             silentRounds = 0; // budget AUTO-LANJUT SILENT segar untuk tugas baru
             
@@ -6355,6 +6366,18 @@ window.chatLivePreview = function () {
             if (agentModeOn && val) { runAgentTask(val); return; }
             fetchAIResponse();
         }
+
+        // Resume via chip "Lanjutkan": kirim lanjutan secara silent (tanpa bubble user),
+        // tombol memberi feedback sesaat lalu menghilang bersama render berikutnya.
+        window.resumeCheckpoint = function(btn) {
+            if (isGenerating) return;
+            if (btn) { btn.disabled = true; btn.style.opacity = '0.55'; }
+            messages.push({ id: generateId(), role: 'user', text: 'lanjut', silent: true, time: Date.now() });
+            try { saveChatLog(); } catch (e) {}
+            renderMessages();
+            scrollToBottom(true);
+            fetchAIResponse();
+        };
 
         window.handlePromptClick = function(text) {
             chatInput.value = text;
