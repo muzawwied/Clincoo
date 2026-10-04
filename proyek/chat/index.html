@@ -2459,7 +2459,12 @@ window.chatLivePreview = function () {
                     fullscreen: true,
                     popover: false,
                     sent: false,
-                    sending: false
+                    sending: false,
+                    plan: null,
+                    planKnown: false,
+                    splash: true,
+                    splashForced: false,
+                    splashTouched: false
                 };
             }
             return m.apkSetupState;
@@ -2468,6 +2473,60 @@ window.chatLivePreview = function () {
             if (!m.apkBuildState) m.apkBuildState = { progress: 0, done: false, failed: false, downloading: false, downloaded: false, error: '', phaseLabel: '' };
             return m.apkBuildState;
         }
+
+        const apkPlanCache = { plan: null, ts: 0 };
+        function apkApplyPlan(msg, plan) {
+            if (!msg || !msg.apkSetup) return;
+            const st = apkSetupStateOf(msg);
+            if (st.sent) return;
+            const p = plan || 'Starter';
+            const isFree = (p === 'Starter');
+            if (st.planKnown && st.plan === p) return;
+            st.plan = p;
+            st.planKnown = true;
+            st.splashForced = isFree;
+            if (!st.splashTouched) st.splash = isFree; // gratis: aktif; berbayar: nonaktif
+            renderMessages();
+        }
+        async function apkResolvePlan(msg) {
+            if (!msg || !msg.apkSetup) return;
+            const st = apkSetupStateOf(msg);
+            let cached = apkPlanCache.plan;
+            try {
+                if (!cached && window.clinqooEditorPlan) cached = window.clinqooEditorPlan;
+                if (!cached) {
+                    const c = JSON.parse(localStorage.getItem('TM_SUB_CACHE_KEY') || 'null');
+                    if (c && c.plan) cached = c.plan;
+                }
+            } catch (e) {}
+            if (cached && !st.planKnown) apkApplyPlan(msg, cached);
+            if (apkPlanCache.plan && (Date.now() - apkPlanCache.ts) < 300000) return;
+            try {
+                const t = clinqooAuthToken();
+                const res = await fetch(clinqooApiBase() + '/api/subscription', { cache: 'no-store', headers: t ? { Authorization: 'Bearer ' + t } : {} });
+                if (res.ok) {
+                    const d = await res.json();
+                    if (d && d.plan) {
+                        apkPlanCache.plan = d.plan;
+                        apkPlanCache.ts = Date.now();
+                        try { localStorage.setItem('TM_SUB_CACHE_KEY', JSON.stringify({ plan: d.plan, billingCycle: d.billingCycle || 'Bulanan', ts: Date.now() })); } catch (e) {}
+                        try { window.clinqooEditorPlan = d.plan; } catch (e) {}
+                        apkApplyPlan(msg, d.plan);
+                        return;
+                    }
+                }
+            } catch (e) {}
+            if (!st.planKnown) apkApplyPlan(msg, 'Starter'); // tak diketahui: anggap gratis (server tetap pemutus)
+        }
+        window.apkSetSplash = function (msgId, v) {
+            const m = messages.find(x => x && x.id === msgId);
+            if (!m) return;
+            const st = apkSetupStateOf(m);
+            if (st.splashForced) return; // paket gratis: terkunci
+            st.splash = !!v;
+            st.splashTouched = true;
+            renderMessages();
+        };
 
         window.apkIconPick = function (msgId) {
             const inp = document.getElementById('apk-icon-input-' + msgId);
@@ -2548,6 +2607,7 @@ window.chatLivePreview = function () {
             lines.push('Orientasi: ' + (st.orientation === 'landscape' ? 'landscape (tiduran)' : 'portrait (berdiri)'));
             lines.push('Fullscreen: ' + (st.fullscreen ? 'ya' : 'tidak'));
             lines.push('Logo aplikasi: ' + (st.iconB64 ? 'sudah diunggah — panggil build_apk dengan icon "saved"' : 'tidak diunggah — pakai ikon default'));
+            lines.push('Splash logo Clincoo: ' + (st.splash ? 'aktif (kirim splash: true)' : 'nonaktif (kirim splash: false)') + (st.splashForced ? ' — paket gratis, selalu aktif' : ''));
             if (m.apkSetup.url) lines.push('URL situs: ' + m.apkSetup.url);
             lines.push('Lanjutkan proses build APK dengan pengaturan di atas.');
             const qaText = lines.join('\n');
@@ -2663,6 +2723,11 @@ window.chatLivePreview = function () {
                             </div>` : ''}
                         </div>
                     </div>
+                    <div class="apk-set-row" style="margin-top:0.625rem">
+                        <span class="apk-set-chip" style="cursor:default"><i class="ph-bold ph-image-square"></i> Splash Clincoo</span>
+                        <button type="button" class="apk-toggle ${st.splash ? 'on' : ''}" ${st.splashForced ? 'disabled style="opacity:0.55;cursor:not-allowed" title="Paket gratis: splash Clincoo selalu aktif"' : `title="${st.splash ? 'Klik untuk nonaktifkan splash Clincoo' : 'Klik untuk aktifkan splash Clincoo'}"`} onclick="apkSetSplash('${msg.id}', ${st.splash ? 'false' : 'true'})"><span></span></button>
+                        <span class="apk-card-hint">${st.splashForced ? 'Paket gratis: splash logo Clincoo selalu aktif.' : (st.splash ? 'Logo Clincoo tampil sekilas saat aplikasi dibuka.' : 'Tanpa splash logo Clincoo.')}</span>
+                    </div>
                     ${msg.apkSetup.url ? `<div class="apk-card-hint" style="margin-top:0.625rem">Situs: ${escText(msg.apkSetup.url)}</div>` : ''}
                     <div class="apk-cta-row">
                         <button type="button" class="apk-pill-btn" onclick="apkSetupSend('${msg.id}')"><i class="ph-bold ph-rocket-launch"></i> Lanjutkan Build</button>
@@ -2670,6 +2735,7 @@ window.chatLivePreview = function () {
                     </div>
                 </div>`;
         }
+        if (!st.planKnown) apkResolvePlan(msg);
 
         function renderApkBuildCard(msg) {
             if (!msg.apkBuild) return '';
@@ -4428,6 +4494,7 @@ window.chatLivePreview = function () {
                 package_id: a.package_id || '',
                 orientation: a.orientation || 'portrait',
                 fullscreen: a.fullscreen === false ? false : true,
+                splash: (typeof a.splash === 'boolean' ? a.splash : String(a.splash || '').toLowerCase() === 'true'),
                 build_id: a.build_id || '',
                 icon_base64: (function () {
                     if (a.icon_base64) return a.icon_base64;

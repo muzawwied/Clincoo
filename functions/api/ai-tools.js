@@ -470,6 +470,8 @@ async function buildApk(body, bearer, env) {
   // Clincoo, bukan dari parameter klien (tidak bisa di-spoof lewat tool call).
   let splash = true;
   let userPlan = null;
+  let splashForced = false;
+  let splashWanted = (body.splash === true || String(body.splash || '').toLowerCase() === 'true');
   try {
     if (bearer && env && env.DB) {
       await initAuthTables(env.DB);
@@ -477,7 +479,10 @@ async function buildApk(body, bearer, env) {
       if (u && u.id) {
         const planInfo = await getEffectivePlan(env.DB, u);
         userPlan = planInfo.plan;
-        splash = planInfo.plan === 'Starter';
+        // Paket gratis: splash Clincoo SELALU aktif (dipaksa server).
+        // Paket berbayar: splash mengikuti pilihan user (body.splash, default nonaktif).
+        splashForced = planInfo.plan === 'Starter';
+        splash = splashForced ? true : !!splashWanted;
       }
     }
   } catch (e) {}
@@ -519,7 +524,7 @@ async function buildApk(body, bearer, env) {
     let lastErr = '';
     for (let i = 0; i < 3; i++) {
       const r = await apkGh(token, `/repos/${repo}/actions/workflows/build.yml/dispatches`, { method: 'POST', body: dispatchBody, headers: { 'Content-Type': 'application/json' } });
-      if (r.status === 204) return jsonOut({ ok: true, success: true, build_id: buildId, app_name: appName, package_id: pkg, url: url, orientation: orientation, fullscreen: fullscreen === 'true', status: 'started', splash: splash, plan: userPlan, note: 'Build berjalan di GitHub Actions (~3-5 menit). Lanjutkan dengan action status memakai build_id ini, beri update singkat ke user, dan setelah done panggil action download. ' + (splash ? 'Paket gratis: APK otomatis menyertakan splash screen logo Clincoo (logo saja, tanpa teks) saat aplikasi dibuka; ikon aplikasi tetap milik user — sampaikan ini ke user.' : '') });
+      if (r.status === 204) return jsonOut({ ok: true, success: true, build_id: buildId, app_name: appName, package_id: pkg, url: url, orientation: orientation, fullscreen: fullscreen === 'true', status: 'started', splash: splash, splash_forced: splashForced, plan: userPlan, note: 'Build berjalan di GitHub Actions (~3-5 menit). Lanjutkan dengan action status memakai build_id ini, beri update singkat ke user, dan setelah done panggil action download. ' + (splashForced ? 'Paket gratis: APK otomatis menyertakan splash screen logo Clincoo (logo saja, tanpa teks) saat aplikasi dibuka; ikon aplikasi tetap milik user — sampaikan ini ke user.' : (splash ? 'Splash logo Clincoo AKTIF sesuai pilihan user.' : 'Splash logo Clincoo NONAKTIF sesuai pilihan user.')) });
       const t = await r.text().catch(() => '');
       lastErr = `HTTP ${r.status}: ${t.slice(0, 200)}`;
       if (r.status === 403 || r.status === 401) break;
