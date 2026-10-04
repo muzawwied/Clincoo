@@ -322,7 +322,13 @@ async function ensurePublicDomain(creds, pagesName) {
       method: 'POST', body: JSON.stringify({ name: domain })
     });
   } catch (e) {
-    if (e && e.code !== 8000013) return null; // 8000013 = sudah terpasang -> lanjut cek DNS
+    // 8000013 & 8000018 = domain sudah terpasang di project ini -> lanjut cek DNS & status.
+    // BUG FIX: dulu hanya 8000013 yang diizinkan, padahal Cloudflare membalas 8000018
+    // ("You have already added this custom domain") utk domain yang sudah terpasang.
+    // Akibatnya: deploy PERTAMA dapat <project>.clincoo.biz.id, tapi SEMUA deploy
+    // berikutnya ensurePublicDomain() menyerah -> response balik ke <project>.pages.dev
+    // (padahal subdomain biz.id aktif). Cocok dengan log deploy p_proj1791073192675.
+    if (e && e.code !== 8000013 && e.code !== 8000018) return null;
   }
   const dnsOk = await ensurePublicDomainDns(creds, domain, pagesName);
   // Domain baru saja dipasang -> status Cloudflare masih "pending" beberapa
