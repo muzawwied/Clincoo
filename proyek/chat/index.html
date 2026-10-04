@@ -4388,7 +4388,7 @@ window.chatLivePreview = function () {
                 const res = await fetch(TOOL_API_BASE + '/api/pay', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', key: key, amount: amount, description: String(a.description || 'Pembayaran') }) });
                 const d = await res.json().catch(function () { return {}; });
                 if (!res.ok || d.error) return { success: false, error: d.error || 'Gagal membuat order pembayaran.' };
-                return { success: true, order_id: d.order_id, checkout_url: d.checkout_url, amount: d.amount, total_payment: d.total_payment, qr_image: d.qr_image, expires_at: d.expires_at, message: 'Order dibuat. SERTAKAN checkout_url di jawabanmu SEKARANG — halaman bayar resmi Clincoo sudah siap (QRIS, cek status otomatis, halaman berhasil).' };
+                return { success: true, order_id: d.order_id, checkout_url: d.checkout_url, amount: d.amount, total_payment: d.total_payment, expires_at: d.expires_at, message: 'Order dibuat. checkout_url ADALAH SATU-SATUNYA link untuk user — SERTAKAN checkout_url di jawabanmu SEKARANG dan JANGAN menampilkan link bayar lain apapun (link gateway mentah/QR/internal dilarang).' };
             }
             if (action === 'status') {
                 const orderId = String(a.order_id || '').trim();
