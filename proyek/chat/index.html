@@ -2635,9 +2635,9 @@ window.chatLivePreview = function () {
             const iconHtml = savedIcon
                 ? '<img src="data:image/png;base64,' + savedIcon + '" alt="logo">'
                 : '<i class="ph-bold ph-android-logo"></i>';
-            let statusLine, dotCls = '';
-            if (st.failed) { statusLine = st.error || 'Build gagal.'; dotCls = 'fail'; }
-            else if (st.done) { statusLine = 'Build selesai — APK siap diunduh.'; dotCls = 'ok'; }
+            let statusLine;
+            if (st.failed) { statusLine = st.error || 'Build gagal.'; }
+            else if (st.done) { statusLine = 'Build selesai — APK siap didownload.'; }
             else { statusLine = st.phaseLabel || 'Menyiapkan build di GitHub Actions…'; }
             return `
                 <div class="apk-card fade-in">
@@ -2650,15 +2650,14 @@ window.chatLivePreview = function () {
                     </div>
                     <div class="apk-bar"><div class="apk-bar-fill" style="width:${st.progress || 4}%"></div></div>
                     <div class="apk-build-status">
-                        <span class="apk-dot ${dotCls}"></span>
                         <span>${escText(statusLine)}${!st.done && !st.failed ? ' (' + (st.progress || 0) + '%)' : ''}</span>
                     </div>
                     ${st.done ? `
                     <div class="apk-cta-row">
                         <button type="button" class="apk-dl-btn" ${st.downloading ? 'disabled' : ''} onclick="apkDownloadClick('${msg.id}')">
-                            <i class="ph-bold ph-download-simple"></i> ${st.downloading ? 'Menyiapkan…' : (st.downloaded ? 'Unduh ulang' : 'Unduh APK')}${!st.downloading && st.sizeKb ? ' (' + st.sizeKb + ' KB)' : ''}
+                            <i class="ph-bold ph-download-simple"></i> ${st.downloading ? 'Menyiapkan…' : (st.downloaded ? 'Download ulang' : 'Download APK')}${!st.downloading && st.sizeKb ? ' (' + st.sizeKb + ' KB)' : ''}
                         </button>
-                        ${st.downloaded ? '<span class="apk-card-hint">Sudah terunduh — buka file, izinkan "aplikasi tidak dikenal" bila diminta.</span>' : ''}
+                        ${st.downloaded ? '<span class="apk-card-hint">Sudah didownload — buka file, izinkan "aplikasi tidak dikenal" bila diminta.</span>' : ''}
                     </div>` : ''}
                     ${st.failed ? `
                     <div class="apk-cta-row">
