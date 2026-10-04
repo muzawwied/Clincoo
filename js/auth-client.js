@@ -142,11 +142,21 @@ try {
       var ov = document.createElement('div');
       ov.id = 'clq-logout-modal';
       ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:16px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
-      ov.innerHTML = '<div role="dialog" aria-modal="true" aria-label="Konfirmasi keluar" style="background:#fff;border-radius:12px;max-width:340px;width:100%;padding:24px;box-shadow:0 20px 50px rgba(15,23,42,.25);text-align:center">'
-        + '<h3 style="margin:0 0 8px;font-size:17px;font-weight:600;color:#0f172a">Keluar dari akun?</h3>'
-        + '<p style="margin:0 0 20px;font-size:14px;line-height:1.5;color:#64748b">Kamu akan dikeluarkan dari Clincoo dan perlu login ulang untuk kembali.</p>'
+      // Ikuti tema halaman: bg kotak menyesuaikan bg halaman (dark mode -> surface gelap, bukan putih menyala)
+      var dark = false;
+      try { dark = document.body.classList.contains('dark-mode'); } catch (e) {}
+      var boxBg = dark ? '#0a0a0a' : '#ffffff';
+      var boxBrd = dark ? 'border:1px solid #222222;' : '';
+      var hCol = dark ? '#f0f0f0' : '#0f172a';
+      var pCol = dark ? '#888888' : '#64748b';
+      var btnBrd = dark ? '#222222' : '#e2e8f0';
+      var btnBg = dark ? '#0a0a0a' : '#ffffff';
+      var btnCol = dark ? '#b0b0b0' : '#334155';
+      ov.innerHTML = '<div role="dialog" aria-modal="true" aria-label="Konfirmasi keluar" style="background:' + boxBg + ';' + boxBrd + 'border-radius:12px;max-width:340px;width:100%;padding:24px;box-shadow:0 20px 50px rgba(15,23,42,.25);text-align:center">'
+        + '<h3 style="margin:0 0 8px;font-size:17px;font-weight:600;color:' + hCol + '">Keluar dari akun?</h3>'
+        + '<p style="margin:0 0 20px;font-size:14px;line-height:1.5;color:' + pCol + '">Kamu akan dikeluarkan dari Clincoo dan perlu login ulang untuk kembali.</p>'
         + '<div style="display:flex;gap:10px">'
-        + '<button type="button" id="clq-logout-cancel" style="flex:1;padding:10px 0;border:1px solid #e2e8f0;background:#fff;color:#334155;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer">Batal</button>'
+        + '<button type="button" id="clq-logout-cancel" style="flex:1;padding:10px 0;border:1px solid ' + btnBrd + ';background:' + btnBg + ';color:' + btnCol + ';border-radius:10px;font-size:14px;font-weight:500;cursor:pointer">Batal</button>'
         + '<button type="button" id="clq-logout-yes" style="flex:1;padding:10px 0;border:none;background:transparent;color:#ef4444;font-size:14px;font-weight:600;cursor:pointer">Keluar</button>'
         + '</div></div>';
       document.body.appendChild(ov);
