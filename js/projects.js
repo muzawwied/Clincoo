@@ -259,7 +259,10 @@ function _ensureDeleteModal() {
         '<div id="confirm-delete-modal" class="fixed inset-0 z-[80] hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.45)">' +
         '<div class="bg-white rounded-md w-full max-w-xs px-5 pt-5 pb-4 text-center">' +
         '<h3 class="text-base font-semibold text-gray-900">Hapus proyek ini?</h3>' +
-        '<p id="confirm-delete-name" class="text-sm text-gray-500 mt-1 px-2 truncate"></p>' +
+'<div class="flex items-center justify-center gap-1.5 mt-1 px-2">' +
+        '<p id="confirm-delete-name" class="text-sm text-gray-500 truncate"></p>' +
+        '<button type="button" id="confirm-delete-copy" aria-label="Salin nama proyek" title="Salin nama proyek" class="shrink-0 p-0.5 text-gray-400 hover:text-gray-600 transition-colors rounded-sm focus-visible:outline-none"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>' +
+        '</div>' +
         '<p class="text-[13px] text-gray-400 mt-2 leading-snug">Semua data proyek akan dihapus, <span class="text-gray-500">termasuk situs yang sudah dipublish dan link publiknya</span>.</p>' +
         '<input id="confirm-delete-name-input" type="text" autocomplete="off" spellcheck="false" placeholder="Ketik nama proyek untuk konfirmasi" class="w-full mt-3 px-3 py-2 text-sm text-center border border-gray-200 rounded-md focus:outline-none focus:border-gray-400" />' +
         '<p id="confirm-delete-error" class="text-xs text-red-600 mt-2 hidden">Gagal menghapus proyek. Periksa koneksi lalu coba lagi.</p>' +
@@ -276,6 +279,29 @@ function _ensureDeleteModal() {
     const modal = document.getElementById('confirm-delete-modal');
     modal.addEventListener('click', function (e) { if (e.target === modal) _closeDeleteModal(); });
     document.getElementById('confirm-delete-cancel').addEventListener('click', _closeDeleteModal);
+    var _cpBtn = document.getElementById('confirm-delete-copy');
+    if (_cpBtn) _cpBtn.addEventListener('click', function () {
+        var nm = String((function(){var pr=getProjects().find(function(x){return x.id===_pendingDeleteId;});return pr?String(projCardTitle(pr)):'';})() || '').trim();
+        if (!nm) return;
+        var ICON_OK = '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>';
+        var ICON_COPY = '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+        var done = function () {
+            _cpBtn.innerHTML = ICON_OK;
+            setTimeout(function () { _cpBtn.innerHTML = ICON_COPY; }, 1400);
+        };
+        var fb = function () {
+            try {
+                var ta = document.createElement('textarea');
+                ta.value = nm; ta.style.cssText = 'position:fixed;opacity:0';
+                document.body.appendChild(ta); ta.select();
+                document.execCommand('copy'); ta.remove(); done();
+            } catch (e) {}
+        };
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(nm).then(done, fb);
+            else fb();
+        } catch (e) { fb(); }
+    });
     // Aktif/nonaktif tombol Hapus: harus ketik nama proyek persis (atau OTP 6 digit di step 2).
     function _syncDeleteOkBtn() {
         const okBtn = document.getElementById('confirm-delete-ok');
@@ -446,7 +472,7 @@ function deleteProject(id) {
     const proj = getProjects().find(p => p.id === id);
     _pendingDeleteId = id;
     const nameEl = document.getElementById('confirm-delete-name');
-    if (nameEl) nameEl.textContent = proj ? '"' + esc(projCardTitle(proj)) + '"' : 'Proyek ini';
+    if (nameEl) nameEl.textContent = proj ? String(projCardTitle(proj)) : 'Proyek ini';
     const modal = document.getElementById('confirm-delete-modal');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
