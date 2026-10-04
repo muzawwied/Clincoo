@@ -2637,7 +2637,7 @@ window.chatLivePreview = function () {
                 : '<i class="ph-bold ph-android-logo"></i>';
             let statusLine;
             if (st.failed) { statusLine = st.error || 'Build gagal.'; }
-            else if (st.done) { statusLine = 'Build selesai — APK siap didownload.'; }
+            else if (st.done) { statusLine = 'Selesai — siap didownload.'; }
             else { statusLine = st.phaseLabel || 'Menyiapkan build di GitHub Actions…'; }
             return `
                 <div class="apk-card fade-in">
@@ -2648,14 +2648,15 @@ window.chatLivePreview = function () {
                             <div class="apk-build-sub">${escText(msg.apkBuild.url || '')}</div>
                         </div>
                     </div>
-                    <div class="apk-bar"><div class="apk-bar-fill" style="width:${st.progress || 4}%"></div></div>
+                    ${!st.done && !st.failed ? `
+                    <div class="apk-bar"><div class="apk-bar-fill" style="width:${st.progress || 4}%"></div></div>` : ''}
                     <div class="apk-build-status">
                         <span>${escText(statusLine)}${!st.done && !st.failed ? ' (' + (st.progress || 0) + '%)' : ''}</span>
                     </div>
                     ${st.done ? `
                     <div class="apk-cta-row">
                         <button type="button" class="apk-dl-btn" ${st.downloading ? 'disabled' : ''} onclick="apkDownloadClick('${msg.id}')">
-                            <i class="ph-bold ph-download-simple"></i> ${st.downloading ? 'Menyiapkan…' : (st.downloaded ? 'Download ulang' : 'Download APK')}${!st.downloading && st.sizeKb ? ' (' + st.sizeKb + ' KB)' : ''}
+                            <i class="ph-bold ph-download-simple"></i> ${st.downloading ? 'Menyiapkan…' : 'Download'}${!st.downloading && st.sizeKb ? ' (' + st.sizeKb + ' KB)' : ''}
                         </button>
                         ${st.downloaded ? '<span class="apk-card-hint">Sudah didownload — buka file, izinkan "aplikasi tidak dikenal" bila diminta.</span>' : ''}
                     </div>` : ''}
