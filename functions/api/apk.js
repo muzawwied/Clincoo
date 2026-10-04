@@ -416,11 +416,17 @@ export async function onRequestPost({ request, env }) {
       if (row) ksB64 = (JSON.parse(row.value) || {}).ks_b64 || '';
     } catch (e) {}
 
-    // unggah ikon -> icons/<build_id>.png
-    await ghJson(env, '/repos/' + repo + '/contents/icons/' + buildId + '.png', {
-      method: 'PUT',
-      body: JSON.stringify({ message: 'icon ' + buildId, content: iconBase64 })
-    });
+    // unggah ikon -> icons/<build_id>.png (sha kalau file sudah ada, biar aman dipakai ulang)
+    {
+      const ipath = 'icons/' + buildId + '.png';
+      const cur = await gh(env, '/repos/' + repo + '/contents/' + ipath);
+      let sha;
+      if (cur.ok) sha = (await cur.json()).sha;
+      await ghJson(env, '/repos/' + repo + '/contents/' + ipath, {
+        method: 'PUT',
+        body: JSON.stringify({ message: 'icon ' + buildId, content: iconBase64, sha })
+      });
+    }
 
     const inputs = {
       build_id: buildId,
