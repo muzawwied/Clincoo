@@ -4153,9 +4153,9 @@ window.chatLivePreview = function () {
                     e.ctxOverflow = true;
                     throw e;
                 }
-                throw new Error(errObj.error || 'AI gagal memproses permintaan.');
+                { const appErr = new Error(errObj.error || 'AI gagal memproses permintaan.'); appErr.isAppError = true; throw appErr; } // error aplikasi resmi dari server, BUKAN gangguan jaringan — jangan ditandai net-drop
             }
-            if (!finalObj) throw new Error('Koneksi AI terputus. Silakan coba lagi.');
+            if (!finalObj) { const netErr = new Error('Koneksi AI terputus. Silakan coba lagi.'); netErr.isTransport = true; throw netErr; }
             return { text: finalObj.text || '', model: finalObj.model, session_id: finalObj.session_id, tool_calls: finalObj.tool_calls };
         }
 
@@ -5715,8 +5715,8 @@ window.chatLivePreview = function () {
                         // dari titik terhenti — user gak perlu minta "lanjut" manual.
                         const reconnectStream = async function (streamErr) {
                             netTry++;
-                            setAiStatus(netTry === 1 ? 'Koneksi terputus sesaat — menyambung ulang…' : 'Menyambung ulang tugas…');
-                            await new Promise(r => setTimeout(r, netTry === 1 ? 1500 : 4000));
+                            setAiStatus(netTry === 1 ? 'Menyambung ulang…' : 'Menyambung ulang tugas…');
+                            await new Promise(r => setTimeout(r, netTry === 1 ? 1500 : (netTry === 2 ? 4000 : 6000)));
                             if (!isGenerating) throw new DOMException('Aborted', 'AbortError');
                             // buang delta parsial hop ini agar re-stream tidak dobel teks
                             deltaStreamed = deltaStreamed.slice(0, deltaBaseLen);
@@ -5765,7 +5765,7 @@ window.chatLivePreview = function () {
                                 throw streamErr; // fallback menangani
                             }
                         };
-                        const isNetDrop = (e) => e && e.name !== 'AbortError' && e.message !== '__QUOTA__' && !e.providerBusy;
+                        const isNetDrop = (e) => e && e.name !== 'AbortError' && e.message !== '__QUOTA__' && !e.providerBusy && !e.isAppError;
                         const deltaBaseLen = deltaStreamed.length; // basis delta hop ini (utk reset saat reconnect)
                         // STALL WATCHDOG (fix kedua backgrounding): koneksi yang dibunuh
                         // OS saat app di-background KADANG tidak melempar error sama sekali —
@@ -5825,7 +5825,7 @@ window.chatLivePreview = function () {
                                 }
                                 // GANGGUAN JARINGAN (termasuk app di-background lalu dibuka lagi):
                                 // reconnect sampai 2x — tugas dilanjutkan, bukan error merah.
-                                if (isNetDrop(streamErr) && netTry < 2 && isGenerating) {
+                                if (isNetDrop(streamErr) && netTry < 3 && isGenerating) {
                                     await reconnectStream(streamErr);
                                     continue;
                                 }
