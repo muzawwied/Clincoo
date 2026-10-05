@@ -94,7 +94,15 @@ Log lebih lama dipotong agar wiki ringan.
 ### 2026-09-21 08:20 WIB — Superagent (Base44): PATCH KEAMANAN dompet
 - Fix (commit e638daf): resolveOwner fail-closed; kredit 'in' tanpa callback token WAJIB ClincooPay; clear/DELETE admin-only.
 
-## Log Interaksi Agent
+### 2026-10-05 11:4x WIB — Superagent (Base44): test E2E fitur Database di proyek user 5 + 3 bug fix (commits 8c37c020, d388b880-line, fix form tabel, fix CORS proxy db)
+
+- Test live via browser (sesi khusus owner lewat auth_sessions, dihapus setelah test): aktifasi sudah aktif → buat tabel "pelanggan" (kolom nama/email) → tambah baris pertama "Budi Santoso" (budi@contoh.id) → tampil di UI + terverifikasi via API. Screenshot terverifikasi.
+- BUG FIX 1: form buat tabel gagal total — kolom default 'id' reserved sistem (server menolak). Default kini nama/email (commit fix).
+- BUG FIX 2: pesan error server tidak diteruskan ke form (selalu "belum aktif di server"). Kini pesan asli server ditampilkan.
+- BUG FIX 3 (paling fatal): functions/api/db/tables.js & rows.js meneruskan respons gateway (clinqoo-db-gateway) MENTAH tanpa header CORS → browser gagal baca respons sukses ("Failed to fetch"), request sebenarnya JOS server-side → UI nyangkut "Menyimpan…". Semua respons gateway kini dibungkus CORS. Verifikasi: GET/POST dari browser 200 & UI sembuh.
+- Catatan: tabel test manual (tes_pelanggan, tes_browser) dihapus; tabel "pelanggan" + 1 baris data pertama dibiarkan sebagai hasil test sesuai arahan owner.
+- Arrow eksternal pada item "Eksport zip" menu pop-up Database dihapus (arah owner).
+
 ### 2026-10-05 11:2x WIB — Superagent (Base44): crown Editor menu header (17 halaman) + kunci editor utk Starter + menu Database disamakan (commit d388b880, 8c37c020)
 
 - Crown dipasang di item Editor pada menu pop-up "..." pojok kanan atas di 17 halaman (15 halaman paket + 2 halaman Database yang sekalian dapat mini-script visibility + gate).
