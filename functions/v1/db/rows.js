@@ -30,7 +30,11 @@ async function authProject(env, request) {
   const key = m ? m[1].trim() : new URL(request.url).searchParams.get('key') || '';
   if (!key) return { error: json({ error: 'Kunci proyek diperlukan (Authorization: Bearer <kunci>)' }, 401) };
   try {
-    const row = await env.DB.prepare('SELECT project_id FROM db_app_keys WHERE key = ?').bind(key).first();
+    let row = await env.DB.prepare('SELECT project_id FROM db_app_keys WHERE key = ?').bind(key).first();
+    if (!row && key.startsWith('clk_')) {
+      // kunci era lama berprefiks clk_ -> padanan clc_ (kompatibilitas, hex sama)
+      row = await env.DB.prepare('SELECT project_id FROM db_app_keys WHERE key = ?').bind('clc_' + key.slice(4)).first();
+    }
     if (!row) return { error: json({ error: 'Kunci tidak dikenali atau sudah dicabut' }, 401) };
     try { await env.DB.prepare('UPDATE db_app_keys SET last_used = ? WHERE project_id = ?').bind(new Date().toISOString(), row.project_id).run(); } catch (e) {}
     return { projectId: row.project_id };

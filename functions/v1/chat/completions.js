@@ -406,7 +406,11 @@ export async function onRequestPost({ request, env }) {
   try { await initSecretTable(db); } catch (e) {}
   let projectId = null;
   try {
-    const row = await db.prepare('SELECT project_id FROM ai_router_secrets WHERE secret = ?').bind(secret).first();
+    let row = await db.prepare('SELECT project_id FROM ai_router_secrets WHERE secret = ?').bind(secret).first();
+    if (!row && secret.startsWith('clk_')) {
+      // kunci era lama berprefiks clk_ -> padanan clc_ (kompatibilitas, hex sama)
+      row = await db.prepare('SELECT project_id FROM ai_router_secrets WHERE secret = ?').bind('clc_' + secret.slice(4)).first();
+    }
     if (row && row.project_id) {
       projectId = row.project_id;
       try { await db.prepare('UPDATE ai_router_secrets SET last_used = ? WHERE project_id = ?').bind(new Date().toISOString(), projectId).run(); } catch (e) {}
