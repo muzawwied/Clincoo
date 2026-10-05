@@ -326,9 +326,9 @@
 
           <!-- loading -->
           <div id="tb-loading" class="py-4 space-y-4">
-            <div class="h-12 rounded-lg pay-skel"></div>
-            <div class="h-12 rounded-lg pay-skel"></div>
-            <div class="h-12 rounded-lg pay-skel"></div>
+            <div class="h-12 rounded-xl pay-skel"></div>
+            <div class="h-12 rounded-xl pay-skel"></div>
+            <div class="h-12 rounded-xl pay-skel"></div>
           </div>
 
           <!-- error -->
@@ -339,7 +339,7 @@
 
           <!-- daftar baris: polos divide-y -->
           <div id="tb-rows-wrap" class="hidden">
-            <div id="tb-rows" class="divide-y divide-gray-100 dark:divide-slate-700/60"></div>
+            <div id="tb-rows" class="divide-y divide-gray-200 dark:divide-slate-700/60"></div>
             <button id="tb-more-btn" type="button" class="hidden w-full mt-4 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full transition-colors">Muat lagi</button>
             <p id="tb-count" class="hidden text-center text-xs text-gray-400 dark:text-gray-500 mt-4"></p>
           </div>
@@ -559,7 +559,10 @@
     function tbDelRow() {
       if (!tbEditId) return;
       fetch(TB_API + '/db/rows?project_id=' + encodeURIComponent(tbPid()) + '&table=' + encodeURIComponent(tbName) + '&id=' + encodeURIComponent(tbEditId), { method: 'DELETE', headers: tbHdrs(false) })
-        .then(function () { tbShow(null); tbOffset = 0; tbLoadRows(); })
+        .then(function (r) {
+          if (!r.ok) { tbFormError('Gagal menghapus baris.'); return; }
+          tbShow(null); tbOffset = 0; tbLoadRows();
+        })
         .catch(function () { tbFormError('Gagal menghapus baris.'); });
     }
 

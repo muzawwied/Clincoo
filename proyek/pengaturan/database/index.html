@@ -303,7 +303,7 @@
         <div class="py-5">
           <div class="flex items-start sm:items-center justify-between gap-3 mb-1">
             <div>
-              <h4 id="db-title" class="text-base font-semibold text-gray-900 dark:text-white">Database</h4>
+              <div class="flex items-center gap-2"><h4 id="db-title" class="text-base font-semibold text-gray-900 dark:text-white">Database</h4><span id="db-badge" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300">Aktif</span></div>
               <p id="db-sub" class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Simpan dan kelola data aplikasimu — dari pengguna, pesanan, sampai konten — dalam tabel rapi yang bisa diakses aplikasimu kapan saja lewat API.</p>
             </div>
             <button id="db-new-btn" type="button" class="hidden shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
@@ -329,9 +329,9 @@
 
           <!-- loading -->
           <div id="db-loading" class="py-4 space-y-4">
-            <div class="h-12 rounded-lg pay-skel"></div>
-            <div class="h-12 rounded-lg pay-skel"></div>
-            <div class="h-12 rounded-lg pay-skel"></div>
+            <div class="h-12 rounded-xl pay-skel"></div>
+            <div class="h-12 rounded-xl pay-skel"></div>
+            <div class="h-12 rounded-xl pay-skel"></div>
           </div>
 
           <!-- error -->
@@ -341,7 +341,7 @@
           </div>
 
           <!-- daftar tabel: baris polos tanpa card -->
-          <div id="db-list" class="hidden divide-y divide-gray-100 dark:divide-slate-700/60"></div>
+          <div id="db-list" class="hidden divide-y divide-gray-200 dark:divide-slate-700/60"></div>
 
           <!-- kosong -->
           <div id="db-empty" class="hidden py-12 flex flex-col items-center justify-center text-center">
@@ -356,7 +356,7 @@
         <div id="db-key-sec" class="hidden pt-8 mt-10 border-t border-gray-100 dark:border-slate-700/60">
           <p class="text-sm font-semibold text-gray-900 dark:text-white">Akses dari aplikasi</p>
           <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Pakai database ini dari aplikasi yang kamu deploy.</p>
-          <div class="divide-y divide-gray-100 dark:divide-slate-700/60">
+          <div class="divide-y divide-gray-200 dark:divide-slate-700/60">
             <div class="flex items-center justify-between gap-3 py-3.5">
               <div class="min-w-0">
                 <span class="block text-sm font-medium text-gray-800 dark:text-gray-200">Kunci API</span>
@@ -562,9 +562,9 @@
       var st = document.getElementById('db-key-status');
       var hint = document.getElementById('db-key-hint-wrap');
       if (d && d.active) {
-        st.textContent = 'Aktif · ' + dbKey.slice(0, 16) + '\u2022\u2022\u2022';
+        st.textContent = 'Aktif · ' + dbKey.slice(0, 10) + '\u2022\u2022\u2022';
         hint.classList.remove('hidden');
-        document.getElementById('db-key-host').textContent = location.origin === 'https://app.clincoo.buzz' ? 'https://app.clincoo.buzz' : 'https://app.clincoo.buzz';
+        document.getElementById('db-key-host').textContent = 'https://app.clincoo.buzz';
         document.getElementById('db-key-val').textContent = dbKey;
         dbKeyBtnHtml('active');
       } else {
@@ -599,6 +599,7 @@
     function dbGetActiveCache() { try { return localStorage.getItem(dbCacheKey()); } catch (e) { return null; } }
 
     function dbEnterActive() {
+      var bg = document.getElementById('db-badge'); if (bg) bg.classList.remove('hidden');
       dbLoad();
       dbKeyLoad();
     }
