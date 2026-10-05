@@ -220,6 +220,26 @@
     <main class="w-full max-w-5xl px-4 sm:px-6 pt-20 pb-28">
 <style>
         #settings-menu-pop.open { display: grid; }
+        /* kartu grafik database */
+        .db-chart-card { border-radius: 1rem; border: 1px solid rgb(229 231 235); background: #fff; padding: 1rem 1.15rem 1.15rem; }
+        body.dark-mode .db-chart-card { border-color: #1e293b; background: #0d0d0d; }
+        .db-chart-head { display: flex; align-items: flex-start; gap: 0.65rem; }
+        .db-chart-dot { width: 0.5rem; height: 0.5rem; border-radius: 9999px; margin-top: 0.3rem; flex-shrink: 0; }
+        .db-stat-card { border-radius: 1rem; border: 1px solid rgb(229 231 235); background: #fff; padding: 0.9rem 1rem 0.95rem; }
+        body.dark-mode .db-stat-card { border-color: #1e293b; background: #0d0d0d; }
+        .db-stat-num { font-size: 1.35rem; line-height: 1.1; font-weight: 700; color: #111827; font-variant-numeric: tabular-nums; }
+        body.dark-mode .db-stat-num { color: #f9fafb; }
+        /* popover pengganti dropdown (select native disembunyikan) */
+        .db-pop-wrap { position: relative; }
+        .db-pop-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; text-align: left; }
+        .db-pop-pop { position: absolute; left: 0; right: 0; margin-top: 0.3rem; border-radius: 0.85rem; border: 1px solid rgb(229 231 235); background: #fff; box-shadow: 0 12px 32px rgba(0,0,0,0.14); padding: 0.35rem; z-index: 60; max-height: 15rem; overflow-y: auto; }
+        body.dark-mode .db-pop-pop { border-color: #334155; background: #18181b; }
+        .db-pop-item { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.5rem 0.65rem; border-radius: 0.6rem; font-size: 0.825rem; color: #4b5563; cursor: pointer; }
+        .db-pop-item:hover { background: #f9fafb; color: #111827; }
+        body.dark-mode .db-pop-item { color: #d1d5db; }
+        body.dark-mode .db-pop-item:hover { background: #23272f; color: #f9fafb; }
+        .db-pop-item.sel { font-weight: 600; color: #111827; }
+        body.dark-mode .db-pop-item.sel { color: #f9fafb; }
         .settings-menu-item { cursor: pointer; }
         .settings-menu-item .text-sm { line-height: 1.3; }
         .settings-menu-item .text-xs { line-height: 1.15; }
@@ -422,33 +442,68 @@
           </div>
         </div>
 
-        <!-- grafik database: 5 chart (Chart.js), di bagian paling bawah -->
+        <!-- grafik database: statistik ringkas + 5 chart (Chart.js) dalam kartu -->
         <div id="db-chart-sec" class="hidden pt-8 mt-10 border-t border-gray-100 dark:border-slate-700/60">
-          <p class="text-sm font-semibold text-gray-900 dark:text-white">Grafik</p>
-          <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Ringkasan database proyekmu — terisi otomatis dari tabel dan barismu.</p>
-          <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-10">
-            <div class="sm:col-span-2">
-              <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Baris per tabel</p>
-              <div class="h-56 sm:h-64"><canvas id="db-chart-rows"></canvas></div>
-            </div>
+          <div class="flex items-end justify-between gap-3">
             <div>
-              <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Kolom per tabel</p>
-              <div class="h-56"><canvas id="db-chart-cols"></canvas></div>
-            </div>
-            <div>
-              <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Tabel dibuat per hari</p>
-              <div class="h-56"><canvas id="db-chart-created"></canvas></div>
-            </div>
-            <div>
-              <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Tipe kolom terpakai</p>
-              <div class="h-56"><canvas id="db-chart-types"></canvas></div>
-            </div>
-            <div>
-              <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Komposisi baris per tabel</p>
-              <div class="h-56"><canvas id="db-chart-share"></canvas></div>
+              <p class="text-sm font-semibold text-gray-900 dark:text-white">Grafik</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Ringkasan database proyekmu — terisi otomatis dari tabel dan barismu.</p>
             </div>
           </div>
-          <p id="db-chart-note" class="text-xs text-gray-400 dark:text-gray-500 mt-6"></p>
+          <div id="db-stats" class="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+          <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="db-chart-card sm:col-span-2">
+              <div class="db-chart-head">
+                <span class="db-chart-dot" style="background:#60a5fa"></span>
+                <div>
+                  <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Baris per tabel</p>
+                  <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Total baris tersimpan di tiap tabel</p>
+                </div>
+              </div>
+              <div class="h-56 sm:h-64 mt-4"><canvas id="db-chart-rows"></canvas></div>
+            </div>
+            <div class="db-chart-card">
+              <div class="db-chart-head">
+                <span class="db-chart-dot" style="background:#a78bfa"></span>
+                <div>
+                  <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Kolom per tabel</p>
+                  <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Jumlah kolom tiap tabel</p>
+                </div>
+              </div>
+              <div class="h-56 mt-4"><canvas id="db-chart-cols"></canvas></div>
+            </div>
+            <div class="db-chart-card">
+              <div class="db-chart-head">
+                <span class="db-chart-dot" style="background:#34d399"></span>
+                <div>
+                  <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Tabel dibuat per hari</p>
+                  <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Aktivitas pembuatan tabel</p>
+                </div>
+              </div>
+              <div class="h-56 mt-4"><canvas id="db-chart-created"></canvas></div>
+            </div>
+            <div class="db-chart-card">
+              <div class="db-chart-head">
+                <span class="db-chart-dot" style="background:#fbbf24"></span>
+                <div>
+                  <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Tipe kolom terpakai</p>
+                  <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Sebaran tipe data kolom</p>
+                </div>
+              </div>
+              <div class="h-56 mt-4"><canvas id="db-chart-types"></canvas></div>
+            </div>
+            <div class="db-chart-card">
+              <div class="db-chart-head">
+                <span class="db-chart-dot" style="background:#f472b6"></span>
+                <div>
+                  <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Komposisi baris per tabel</p>
+                  <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Porsi baris tiap tabel dari total</p>
+                </div>
+              </div>
+              <div class="h-56 mt-4"><canvas id="db-chart-share"></canvas></div>
+            </div>
+          </div>
+          <p id="db-chart-note" class="text-xs text-gray-400 dark:text-gray-500 mt-5"></p>
         </div>
 
         <!-- form buat tabel: baris polos divide-y, tanpa card -->
@@ -607,15 +662,16 @@
       dbTables = tables || [];
       dbRowMenuClose();
       var list = document.getElementById('db-list');
+      // kartu daftar tabel: rounded-xl (permintaan), border halus, overflow rapi
       list.innerHTML =
-        '<div class="rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-[#0d0d0d] overflow-hidden">' +
+        '<div class="rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-[#0d0d0d] overflow-hidden shadow-sm">' +
         '<div class="overflow-x-auto"><table class="w-full text-sm border-collapse">' +
-        '<thead><tr class="text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-slate-800/60">' +
-        '<th class="py-3 pl-5 pr-4 font-semibold">Tabel</th>' +
-        '<th class="py-3 pr-4 font-semibold">Kolom</th>' +
-        '<th class="py-3 pr-4 font-semibold">Baris</th>' +
-        '<th class="py-3 pr-4 font-semibold">Dibuat</th>' +
-        '<th class="py-3 pl-3 pr-4 font-semibold text-right">Aksi</th>' +
+        '<thead><tr class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 bg-gray-50/80 dark:bg-slate-800/60 border-b border-gray-100 dark:border-slate-800">' +
+        '<th class="py-3 pl-5 pr-4 font-semibold text-left">Tabel</th>' +
+        '<th class="py-3 px-4 font-semibold text-right">Kolom</th>' +
+        '<th class="py-3 px-4 font-semibold text-right">Baris</th>' +
+        '<th class="py-3 pl-4 pr-5 font-semibold text-right">Dibuat</th>' +
+        '<th class="py-3 pl-2 pr-4 font-semibold text-right">Aksi</th>' +
         '</tr></thead><tbody id="db-tbody" class="divide-y divide-gray-100 dark:divide-slate-800"></tbody></table></div></div>';
       var body = document.getElementById('db-tbody');
       (tables || []).forEach(function (t) {
@@ -623,11 +679,17 @@
         tr.className = 'group cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/40';
         var nm = String(t.name || '').replace(/[&<>]/g, function (s2) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[s2]; });
         tr.innerHTML =
-          '<td class="py-3.5 pl-5 pr-4 font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">' + nm + '</td>' +
-          '<td class="py-3.5 pr-4 text-gray-500 dark:text-gray-400 whitespace-nowrap">' + (t.columns || []).length + '</td>' +
-          '<td class="py-3.5 pr-4 text-gray-500 dark:text-gray-400 whitespace-nowrap">' + (typeof t.rows === 'number' ? t.rows : '\u2014') + '</td>' +
-          '<td class="py-3.5 pr-4 text-gray-400 dark:text-gray-500 whitespace-nowrap">' + (t.created_at ? dbDateShort(t.created_at) : '\u2014') + '</td>' +
-          '<td class="py-2.5 pl-3 pr-4 text-right whitespace-nowrap">' +
+          '<td class="py-3.5 pl-5 pr-4 whitespace-nowrap">' +
+          '<span class="inline-flex items-center gap-2.5 min-w-0">' +
+          '<span class="shrink-0 inline-flex w-7 h-7 items-center justify-center rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400">' +
+          '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8.5" ry="2.8"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3.5 5v14a8.5 2.8 0 0 0 17 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3.5 12a8.5 2.8 0 0 0 17 0"></path></svg>' +
+          '</span>' +
+          '<span class="font-medium text-gray-800 dark:text-gray-200 truncate">' + nm + '</span>' +
+          '</span></td>' +
+          '<td class="py-3.5 px-4 text-right text-gray-600 dark:text-gray-300 font-medium tabular-nums whitespace-nowrap">' + (t.columns || []).length + '</td>' +
+          '<td class="py-3.5 px-4 text-right text-gray-600 dark:text-gray-300 font-medium tabular-nums whitespace-nowrap">' + (typeof t.rows === 'number' ? t.rows : '\u2014') + '</td>' +
+          '<td class="py-3.5 pl-4 pr-5 text-right text-gray-400 dark:text-gray-500 tabular-nums whitespace-nowrap">' + (t.created_at ? dbDateShort(t.created_at) : '\u2014') + '</td>' +
+          '<td class="py-2.5 pl-2 pr-4 text-right whitespace-nowrap">' +
           '<button type="button" aria-label="Menu tabel" class="db-row-menu-btn inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">' +
           '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"></circle><circle cx="12" cy="12" r="1.7"></circle><circle cx="12" cy="19" r="1.7"></circle></svg>' +
           '</button></td>';
@@ -670,6 +732,26 @@
       var th = dbChartTheme();
       dbCharts.forEach(function (c) { try { c.destroy(); } catch (e) {} });
       dbCharts = [];
+      // baris statistik ringkas di atas grafik
+      var stEl = document.getElementById('db-stats');
+      if (stEl) {
+        var totRows = 0, totCols = 0, typeSet = {};
+        tables.forEach(function (t) {
+          totRows += (typeof t.rows === 'number' ? t.rows : 0);
+          (t.columns || []).forEach(function (c) { typeSet[c.type] = 1; });
+          totCols += (t.columns || []).length;
+        });
+        var stats = [
+          ['Tabel', tables.length],
+          ['Total baris', totRows],
+          ['Total kolom', totCols],
+          ['Tipe data dipakai', Object.keys(typeSet).length]
+        ];
+        stEl.innerHTML = stats.map(function (x) {
+          return '<div class="db-stat-card"><p class="text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">' + x[0] +
+            '</p><p class="db-stat-num mt-1">' + x[1] + '</p></div>';
+        }).join('');
+      }
       var names = tables.map(function (t) { return String(t.name).slice(0, 24); });
       function pal(offset) {
         // opsi scriptable Chart.js menerima SATU argumen: context (bukan value, index)
@@ -678,34 +760,39 @@
           return th.palette[(i + (offset || 0)) % th.palette.length];
         };
       }
+      // tooltip rapi: gelap, bulat, tanpa kotak warna utk chart satu-dataset
+      function tipOpts(pct) {
+        var base = { backgroundColor: 'rgba(17,24,39,0.96)', padding: 10, cornerRadius: 10, titleFont: { weight: '600', size: 12 }, bodyFont: { size: 12 }, displayColors: false };
+        return pct ? Object.assign(base, dbPctTooltip()) : base;
+      }
       function barOpts() {
         return { responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
-          plugins: { legend: { display: false } },
-          scales: { x: { ticks: { color: th.text, maxRotation: 45, autoSkip: true }, grid: { display: false } },
-            y: { ticks: { color: th.text, precision: 0 }, grid: { color: th.grid }, beginAtZero: true } } };
+          plugins: { legend: { display: false }, tooltip: tipOpts(false) },
+          scales: { x: { ticks: { color: th.text, maxRotation: 45, autoSkip: true, font: { size: 11 } }, grid: { display: false } },
+            y: { ticks: { color: th.text, precision: 0, font: { size: 11 } }, grid: { color: th.grid }, border: { display: false }, beginAtZero: true } } };
       }
       function hbarOpts() {
         return { responsive: true, maintainAspectRatio: false, animation: { duration: 300 }, indexAxis: 'y',
-          plugins: { legend: { display: false } },
-          scales: { x: { ticks: { color: th.text, precision: 0 }, grid: { color: th.grid }, beginAtZero: true },
-            y: { ticks: { color: th.text, autoSkip: true }, grid: { display: false } } } };
+          plugins: { legend: { display: false }, tooltip: tipOpts(false) },
+          scales: { x: { ticks: { color: th.text, precision: 0, font: { size: 11 } }, grid: { color: th.grid }, border: { display: false }, beginAtZero: true },
+            y: { ticks: { color: th.text, autoSkip: true, font: { size: 11 } }, grid: { display: false } } } };
       }
       function doughnutOpts() {
-        return { responsive: true, maintainAspectRatio: false, animation: { duration: 300 }, cutout: '62%',
-          plugins: { legend: { position: 'bottom', labels: { color: th.text, boxWidth: 10, boxHeight: 10, font: { size: 11 }, padding: 12 } },
-            tooltip: dbPctTooltip() } };
+        return { responsive: true, maintainAspectRatio: false, animation: { duration: 300 }, cutout: '68%',
+          plugins: { legend: { position: 'bottom', labels: { color: th.text, usePointStyle: true, pointStyle: 'circle', boxWidth: 6, boxHeight: 6, font: { size: 11 }, padding: 14 } },
+            tooltip: tipOpts(true) } };
       }
       function pieOpts() {
         return { responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
-          plugins: { legend: { position: 'bottom', labels: { color: th.text, boxWidth: 10, boxHeight: 10, font: { size: 11 }, padding: 12 } },
-            tooltip: dbPctTooltip() } };
+          plugins: { legend: { position: 'bottom', labels: { color: th.text, usePointStyle: true, pointStyle: 'circle', boxWidth: 6, boxHeight: 6, font: { size: 11 }, padding: 14 } },
+            tooltip: tipOpts(true) } };
       }
       // 1. baris per tabel — tiap batang beda warna
       dbCharts.push(new Chart(document.getElementById('db-chart-rows'), { type: 'bar',
-        data: { labels: names, datasets: [{ data: tables.map(function (t) { return typeof t.rows === 'number' ? t.rows : 0; }), backgroundColor: pal(0), borderRadius: 6, hoverOffset: 4, maxBarThickness: 42 }] }, options: barOpts() }));
+        data: { labels: names, datasets: [{ data: tables.map(function (t) { return typeof t.rows === 'number' ? t.rows : 0; }), backgroundColor: pal(0), borderRadius: 7, hoverOffset: 6, maxBarThickness: 44, categoryPercentage: 0.72 }] }, options: barOpts() }));
       // 2. kolom per tabel — batang datang biar tiap chart beda gaya
       dbCharts.push(new Chart(document.getElementById('db-chart-cols'), { type: 'bar',
-        data: { labels: names, datasets: [{ data: tables.map(function (t) { return (t.columns || []).length; }), backgroundColor: pal(4), borderRadius: 6, hoverOffset: 4, maxBarThickness: 34 }] }, options: hbarOpts() }));
+        data: { labels: names, datasets: [{ data: tables.map(function (t) { return (t.columns || []).length; }), backgroundColor: pal(4), borderRadius: 7, hoverOffset: 6, maxBarThickness: 30, categoryPercentage: 0.66 }] }, options: hbarOpts() }));
       // 3. tabel dibuat per hari
       var days = {};
       tables.forEach(function (t) { var d = String(t.created_at || '').slice(0, 10); if (d) days[d] = (days[d] || 0) + 1; });
@@ -781,6 +868,72 @@
         });
     }
 
+    // ---- popover select: pengganti dropdown native di halaman ini ----
+    // Select asli tetap di DOM (disembunyikan) supaya semua logika yang membaca
+    // .value / mengisi <option> tetap berjalan; yang tampil adalah tombol rapi
+    // yang membuka popover daftar pilihan.
+    var dbPopOpen = null;
+    function dbPopCloseAll() {
+      if (dbPopOpen) { dbPopOpen.pop.remove(); document.removeEventListener('click', dbPopOut, true); window.removeEventListener('resize', dbPopCloseAll); dbPopOpen = null; }
+    }
+    function dbPopOut(e) { if (dbPopOpen && !dbPopOpen.wrap.contains(e.target)) dbPopCloseAll(); }
+    function dbPopoverize(sel) {
+      if (!sel || sel.__pop) return;
+      sel.__pop = true;
+      sel.classList.add('hidden');
+      var parent = sel.parentElement;
+      var wrap = document.createElement('div');
+      wrap.className = 'db-pop-wrap w-full max-w-[11rem]';
+      parent.insertBefore(wrap, sel);
+      wrap.appendChild(sel);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'db-pop-btn px-3 py-2 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors';
+      btn.innerHTML = '<span class="db-pop-lab truncate text-gray-700 dark:text-gray-200"></span>' +
+        '<svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>';
+      wrap.appendChild(btn);
+      function sync() {
+        var o = sel.options[sel.selectedIndex];
+        var lab = btn.querySelector('.db-pop-lab');
+        if (lab) lab.textContent = o ? o.textContent : '';
+      }
+      sel.__popSync = sync;
+      function build() {
+        var frag = document.createDocumentFragment();
+        [].slice.call(sel.options).forEach(function (o) {
+          var it = document.createElement('button');
+          it.type = 'button';
+          it.className = 'db-pop-item' + (o.value === sel.value ? ' sel' : '');
+          it.innerHTML = '<span class="truncate">' + String(o.textContent).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }) + '</span>' +
+            (o.value === sel.value ? '<svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>' : '');
+          it.addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            sel.value = o.value;
+            sync();
+            dbPopCloseAll();
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+          });
+          frag.appendChild(it);
+        });
+        return frag;
+      }
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (dbPopOpen && dbPopOpen.wrap === wrap) { dbPopCloseAll(); return; }
+        dbPopCloseAll();
+        sync();
+        var pop = document.createElement('div');
+        pop.className = 'db-pop-pop fade-in';
+        pop.appendChild(build());
+        wrap.appendChild(pop);
+        dbPopOpen = { wrap: wrap, pop: pop };
+        document.addEventListener('click', dbPopOut, true);
+        window.addEventListener('resize', dbPopCloseAll);
+      });
+      sel.addEventListener('change', sync);
+      sync();
+    }
+
     // ---- form buat tabel ----
     function dbColRow(name, type) {
       var row = document.createElement('div');
@@ -796,6 +949,7 @@
       row.querySelector('.db-col-del').addEventListener('click', function () {
         if (document.querySelectorAll('#db-cols > div').length > 1) row.remove();
       });
+      dbPopoverize(row.querySelector('.db-col-type'));
       return row;
     }
     function dbFormOpen() {

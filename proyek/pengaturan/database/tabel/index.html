@@ -220,6 +220,17 @@
     <main class="w-full max-w-5xl px-4 sm:px-6 pt-20 pb-28">
 <style>
         #settings-menu-pop.open { display: grid; }
+        /* popover pengganti dropdown (select native disembunyikan) */
+        .db-pop-wrap { position: relative; }
+        .db-pop-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; text-align: left; }
+        .db-pop-pop { position: absolute; left: 0; right: 0; margin-top: 0.3rem; border-radius: 0.85rem; border: 1px solid rgb(229 231 235); background: #fff; box-shadow: 0 12px 32px rgba(0,0,0,0.14); padding: 0.35rem; z-index: 60; max-height: 15rem; overflow-y: auto; }
+        body.dark-mode .db-pop-pop { border-color: #334155; background: #18181b; }
+        .db-pop-item { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.5rem 0.65rem; border-radius: 0.6rem; font-size: 0.825rem; color: #4b5563; cursor: pointer; }
+        .db-pop-item:hover { background: #f9fafb; color: #111827; }
+        body.dark-mode .db-pop-item { color: #d1d5db; }
+        body.dark-mode .db-pop-item:hover { background: #23272f; color: #f9fafb; }
+        .db-pop-item.sel { font-weight: 600; color: #111827; }
+        body.dark-mode .db-pop-item.sel { color: #f9fafb; }
         .settings-menu-item { cursor: pointer; }
         .settings-menu-item .text-sm { line-height: 1.3; }
         .settings-menu-item .text-xs { line-height: 1.15; }
@@ -782,6 +793,7 @@
         numwrap.classList.remove('hidden');
         numSel.innerHTML = '<option value="__count">Jumlah baris</option>' + tbChartColsOf('number').map(function (c) { return '<option value="' + esc(c.name) + '">Total ' + esc(c.name) + '</option>'; }).join('');
       } else numwrap.classList.add('hidden');
+      [typeSel, colSel, numSel].forEach(function (sl) { if (sl.__popSync) sl.__popSync(); });
       return true;
     }
     function tbChartRender() {
@@ -845,6 +857,70 @@
     }
     document.getElementById('tb-chart-btn').addEventListener('click', tbOpenChart);
     document.getElementById('tb-chart-back').addEventListener('click', function (e) { e.preventDefault(); document.getElementById('vw-chart').classList.add('hidden'); tbShow(tbTotal === 0 ? 'tb-empty' : 'tb-rows-wrap'); });
+    // ---- popover select: pengganti dropdown native (chart) ----
+    // Select asli tetap di DOM (tersembunyi); tombol rapi membuka popover pilihan.
+    var dbPopOpen = null;
+    function dbPopCloseAll() {
+      if (dbPopOpen) { dbPopOpen.pop.remove(); document.removeEventListener('click', dbPopOut, true); window.removeEventListener('resize', dbPopCloseAll); dbPopOpen = null; }
+    }
+    function dbPopOut(e) { if (dbPopOpen && !dbPopOpen.wrap.contains(e.target)) dbPopCloseAll(); }
+    function dbPopoverize(sel) {
+      if (!sel || sel.__pop) return;
+      sel.__pop = true;
+      sel.classList.add('hidden');
+      var parent = sel.parentElement;
+      var wrap = document.createElement('div');
+      wrap.className = 'db-pop-wrap w-full';
+      parent.insertBefore(wrap, sel);
+      wrap.appendChild(sel);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'db-pop-btn px-3 py-2.5 text-sm bg-white dark:bg-black border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-gray-400 transition-colors';
+      btn.innerHTML = '<span class="db-pop-lab truncate text-gray-700 dark:text-gray-200"></span>' +
+        '<svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>';
+      wrap.appendChild(btn);
+      function sync() {
+        var o = sel.options[sel.selectedIndex];
+        var lab = btn.querySelector('.db-pop-lab');
+        if (lab) lab.textContent = o ? o.textContent : '';
+      }
+      sel.__popSync = sync;
+      function build() {
+        var frag = document.createDocumentFragment();
+        [].slice.call(sel.options).forEach(function (o) {
+          var it = document.createElement('button');
+          it.type = 'button';
+          it.className = 'db-pop-item' + (o.value === sel.value ? ' sel' : '');
+          it.innerHTML = '<span class="truncate">' + String(o.textContent).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }) + '</span>' +
+            (o.value === sel.value ? '<svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>' : '');
+          it.addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            sel.value = o.value;
+            sync();
+            dbPopCloseAll();
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+          });
+          frag.appendChild(it);
+        });
+        return frag;
+      }
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (dbPopOpen && dbPopOpen.wrap === wrap) { dbPopCloseAll(); return; }
+        dbPopCloseAll();
+        sync();
+        var pop = document.createElement('div');
+        pop.className = 'db-pop-pop fade-in';
+        pop.appendChild(build());
+        wrap.appendChild(pop);
+        dbPopOpen = { wrap: wrap, pop: pop };
+        document.addEventListener('click', dbPopOut, true);
+        window.addEventListener('resize', dbPopCloseAll);
+      });
+      sel.addEventListener('change', sync);
+      sync();
+    }
+    ['tb-chart-type', 'tb-chart-col', 'tb-chart-num'].forEach(function (id) { dbPopoverize(document.getElementById(id)); });
     document.getElementById('tb-chart-type').addEventListener('change', tbChartRefresh);
     document.getElementById('tb-chart-col').addEventListener('change', tbChartRender);
     document.getElementById('tb-chart-num').addEventListener('change', tbChartRender);
