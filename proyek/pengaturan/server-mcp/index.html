@@ -348,8 +348,8 @@
           <div id="mcp-error" class="py-10 flex-col items-center justify-center text-center hidden">
             <svg class="w-10 h-10 text-amber-400 mb-3 mx-auto" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path></svg>
             <p class="text-sm font-medium text-gray-700 dark:text-gray-200" id="mcp-error-msg">Gagal memeriksa status server MCP</p>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Server MCP kemungkinan masih aktif — pemeriksaan status hanya gagal untuk sementara. Tidak perlu membuat ulang server.</p>
-            <button type="button" onclick="loadMcpRetry()" class="mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors cursor-pointer">Coba Lagi</button>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto" id="mcp-error-sub">Server MCP kemungkinan masih aktif — pemeriksaan status hanya gagal untuk sementara. Tidak perlu membuat ulang server.</p>
+            <button type="button" onclick="loadMcpRetry()" id="mcp-error-btn" class="mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors cursor-pointer">Coba Lagi</button>
           </div>
 
           <!-- Aktif -->
@@ -705,6 +705,7 @@ async function loadMcp() {
   // ditampilkan sebagai "belum buat server" — itu bikin user salah buat ulang
   // server dan token lamanya mati. Tampilkan panel error + tombol coba lagi.
   if (d === null) { renderMcpError('Tidak bisa menghubungi server — periksa koneksi internet'); return; }
+  if (d && d.plan_gate === true) { renderMcpPlanGate(d); return; }
   if (d._status !== 200) { renderMcpError(d.error ? d.error : 'Gagal memeriksa status server MCP — coba lagi'); return; }
   if (d && d.token) {
     mcpState.active = true;
@@ -781,6 +782,29 @@ async function clearMcpActivity() {
   } catch (e) { mcpToast('Gagal menghapus riwayat aktivitas'); }
 }
 
+function renderMcpPlanGate(d) {
+  var inactive = document.getElementById('mcp-inactive');
+  var active = document.getElementById('mcp-active');
+  var loading = document.getElementById('mcp-loading');
+  if (loading) loading.style.display = 'none';
+  if (inactive) inactive.style.display = 'none';
+  if (active) active.style.display = 'none';
+  var min = (d && d.minPlan) || 'Bisnis';
+  var cur = (d && d.plan) || 'Starter';
+  var el = document.getElementById('mcp-error');
+  if (el) {
+    var m = document.getElementById('mcp-error-msg');
+    if (m) m.textContent = 'Pengelolaan Server MCP tersedia untuk paket ' + min;
+    var sub = document.getElementById('mcp-error-sub');
+    if (sub) sub.textContent = 'Paket kamu saat ini: ' + cur + '. Server yang sudah terhubung ke AI eksternal tetap berjalan normal — upgrade paket untuk mengelolanya dari halaman ini.';
+    var btn = document.getElementById('mcp-error-btn');
+    if (btn) { btn.textContent = 'Lihat Paket'; btn.onclick = function () { if (typeof clincooOpenPlansPopup === 'function') clincooOpenPlansPopup(); }; }
+    el.classList.remove('mcp-anim');
+    el.style.display = 'flex';
+    void el.offsetWidth;
+    el.classList.add('mcp-anim');
+  }
+}
 function renderMcpError(msg) {
   var inactive = document.getElementById('mcp-inactive');
   var active = document.getElementById('mcp-active');
@@ -792,6 +816,10 @@ function renderMcpError(msg) {
   if (el) {
     var m = document.getElementById('mcp-error-msg');
     if (m && msg) m.textContent = msg;
+    var sub = document.getElementById('mcp-error-sub');
+    if (sub) sub.textContent = 'Server MCP kemungkinan masih aktif — pemeriksaan status hanya gagal untuk sementara. Tidak perlu membuat ulang server.';
+    var btn = document.getElementById('mcp-error-btn');
+    if (btn) { btn.textContent = 'Coba Lagi'; btn.onclick = function () { loadMcpRetry(); }; }
     el.classList.remove('mcp-anim');
     el.style.display = 'flex';
     void el.offsetWidth;
@@ -887,7 +915,9 @@ async function toggleScope(key) {
   } else {
     mcpState.scopes = prev; // gagal simpan -> balik ke posisi sebelum toggle
     renderMcp();
-    mcpToast((d && d.error) ? d.error : 'Gagal menyimpan izin');
+    mcpToast(d && d.plan_gate === true
+      ? 'Pengelolaan izin Server MCP tersedia untuk paket ' + (d.minPlan || 'Bisnis')
+      : ((d && d.error) ? d.error : 'Gagal menyimpan izin'));
   }
 }
 
