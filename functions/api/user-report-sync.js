@@ -204,7 +204,15 @@ export async function syncUserReport(env, opts) {
   const ghHeaders = { 'Authorization': 'Bearer ' + token, 'User-Agent': 'clincoo-sync', 'Accept': 'application/vnd.github+json' };
   // CATATAN: JANGAN pakai '?ref=' di sini — runtime Cloudflare dapat 404 dari GitHub
   // padahal request sama dari luar 200 (diverifikasi 5 Okt 2026). Tanpa param, default branch.
-  const getRes = await fetch('https://api.github.com/repos/' + GH_REPO + '/contents/' + GH_PATH, { headers: ghHeaders, signal });
+  // GitHub kadang balas 404 flaky dari runtime Cloudflare (intermiten, diverifikasi
+  // 5 Okt 2026: request identik bisa 200 lalu 404 menit berikutnya) — retry sampai 3x.
+  let getRes = null;
+  for (let i = 0; i < 3; i++) {
+    getRes = await fetch('https://api.github.com/repos/' + GH_REPO + '/contents/' + GH_PATH, { headers: ghHeaders, signal });
+    if (getRes.ok) break;
+    if (getRes.status !== 404 || i === 2) break;
+    await new Promise(r => setTimeout(r, 800));
+  }
   let sha = null;
   if (getRes.ok) {
     const j = await getRes.json();
@@ -216,10 +224,15 @@ export async function syncUserReport(env, opts) {
     branch: GH_BRANCH
   };
   if (sha) putBody.sha = sha;
-  const putRes = await fetch('https://api.github.com/repos/' + GH_REPO + '/contents/' + GH_PATH, {
-    method: 'PUT', headers: { ...ghHeaders, 'Content-Type': 'application/json' },
-    body: JSON.stringify(putBody), signal
-  });
+  let putRes = null;
+  for (let i = 0; i < 3; i++) {
+    putRes = await fetch('https://api.github.com/repos/' + GH_REPO + '/contents/' + GH_PATH, {
+      method: 'PUT', headers: { ...ghHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify(putBody), signal
+    });
+    if (putRes.status !== 404 || i === 2) break;
+    await new Promise(r => setTimeout(r, 800));
+  }
   if (!putRes.ok) {
     const t = await putRes.text().catch(() => '');
     return { ok: 0, error: 'GitHub ' + putRes.status + ': ' + t.slice(0, 200) };
