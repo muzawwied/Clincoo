@@ -344,6 +344,25 @@
           </div>
         </div>
 
+        <!-- akses dari aplikasi: kunci API per proyek -->
+        <div id="db-key-sec" class="hidden pt-8 mt-10 border-t border-gray-100 dark:border-slate-700/60">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white">Akses dari aplikasi</p>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Pakai database ini dari aplikasi yang kamu deploy.</p>
+          <div class="divide-y divide-gray-100 dark:divide-slate-700/60">
+            <div class="flex items-center justify-between gap-3 py-3.5">
+              <div class="min-w-0">
+                <span class="block text-sm font-medium text-gray-800 dark:text-gray-200">Kunci API</span>
+                <span id="db-key-status" class="block text-xs text-gray-400 dark:text-gray-500 truncate">Memuat…</span>
+              </div>
+              <button id="db-key-btn" type="button" class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">Buat kunci</button>
+            </div>
+            <div id="db-key-hint-wrap" class="hidden py-3.5">
+              <p class="text-xs text-gray-400 dark:text-gray-500">Contoh pemakaian:</p>
+              <p class="text-[11px] leading-relaxed font-mono text-gray-500 dark:text-gray-400 mt-1.5 break-all">fetch('<span id="db-key-host"></span>/v1/db/rows?table=nama', { headers: { Authorization: 'Bearer <span id="db-key-val"></span>' } })</p>
+            </div>
+          </div>
+        </div>
+
         <!-- form buat tabel: baris polos divide-y, tanpa card -->
         <div id="db-form" class="hidden pb-10">
           <div class="pt-4">
@@ -523,7 +542,51 @@
     document.getElementById('db-cancel-btn').addEventListener('click', dbLoad);
     document.getElementById('db-retry-btn').addEventListener('click', dbLoad);
 
+    // ---- kunci API aplikasi ----
+    var dbKey = null;
+    function dbKeyBtnHtml(state) {
+      var b = document.getElementById('db-key-btn');
+      if (state === 'active') { b.textContent = 'Ganti kunci'; b.className = 'shrink-0 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors'; }
+      else { b.textContent = 'Buat kunci'; b.className = 'shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors'; }
+    }
+    function dbKeyRender(d) {
+      dbKey = d && d.key || null;
+      var st = document.getElementById('db-key-status');
+      var hint = document.getElementById('db-key-hint-wrap');
+      if (d && d.active) {
+        st.textContent = 'Aktif · ' + dbKey.slice(0, 16) + '\u2022\u2022\u2022';
+        hint.classList.remove('hidden');
+        document.getElementById('db-key-host').textContent = location.origin === 'https://app.clincoo.buzz' ? 'https://app.clincoo.buzz' : 'https://app.clincoo.buzz';
+        document.getElementById('db-key-val').textContent = dbKey;
+        dbKeyBtnHtml('active');
+      } else {
+        st.textContent = 'Belum dibuat';
+        hint.classList.add('hidden');
+        dbKeyBtnHtml('none');
+      }
+    }
+    function dbKeyLoad() {
+      fetch(DB_API + '/db/key?project_id=' + encodeURIComponent(dbPid()), { headers: dbHdrs(false) })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          var sec = document.getElementById('db-key-sec');
+          sec.classList.remove('hidden');
+          dbKeyRender(d);
+        })
+        .catch(function () {});
+    }
+    document.getElementById('db-key-btn').addEventListener('click', function () {
+      var btn = document.getElementById('db-key-btn');
+      if (dbKey && !confirm('Ganti kunci? Aplikasi lama yang memakai kunci sekarang akan berhenti bisa akses.')) return;
+      btn.disabled = true; btn.textContent = dbKey ? 'Mengganti…' : 'Membuat…';
+      fetch(DB_API + '/db/key', { method: 'POST', headers: dbHdrs(true), body: JSON.stringify({ project_id: dbPid() }) })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) { btn.disabled = false; dbKeyRender(d && d.key ? { active: true, key: d.key } : null); })
+        .catch(function () { btn.disabled = false; dbKeyRender(dbKey ? { active: true, key: dbKey } : null); });
+    });
+
     dbLoad();
+    dbKeyLoad();
   </script>
 </body>
 </html>
