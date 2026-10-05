@@ -1,0 +1,13 @@
+name = "clinqoo-db-gateway"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+account_id = "a393734931f2dcee965874fab656c1bd"
+workers_dev = true
+
+# D1 khusus database aplikasi user (akun Vylonium — TERPISAH dari D1 produksi
+# supaya beban query user tidak memakan limit harian D1 produksi).
+# Secret DB_GATEWAY_KEY dipasang via `wrangler secret put` (JANGAN hardcode di repo — repo publik).
+[[d1_databases]]
+binding = "APPDB"
+database_name = "clinqoo-appdb"
+database_id = "e8b996d8-630e-4321-bc4e-5aa2a063005d"
