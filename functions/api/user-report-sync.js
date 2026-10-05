@@ -206,14 +206,17 @@ export async function syncUserReport(env, opts) {
   // padahal request sama dari luar 200 (diverifikasi 5 Okt 2026). Tanpa param, default branch.
   // GitHub kadang balas 404 flaky dari runtime Cloudflare (intermiten, diverifikasi
   // 5 Okt 2026: request identik bisa 200 lalu 404 menit berikutnya) — retry sampai 3x.
-  // [DIAG sementara] bandingkan fetch pakai signal vs tanpa signal
+  // [DIAG sementara] dump header respons 404 dari GitHub + identitas token
   if (!globalThis.__sigTested) {
     globalThis.__sigTested = true;
     try {
       const u = 'https://api.github.com/repos/' + GH_REPO + '/contents/' + GH_PATH;
-      const rA = await fetch(u, { headers: ghHeaders });
-      const rB = await fetch(u, { headers: ghHeaders, signal });
-      globalThis.__sigResult = { tanpaSignal: rA.status, denganSignal: rB.status };
+      const rA = await fetch(u + '?cb=' + Date.now(), { headers: ghHeaders, cf: { cacheTtl: 0 } });
+      const hs = {};
+      ['x-oauth-scopes','x-github-authentication-token-expiration','x-ratelimit-limit','x-ratelimit-remaining','x-ratelimit-resource','x-ratelimit-used','x-github-request-id','x-github-media-type','cf-ray','via'].forEach(k => { const v = rA.headers.get(k); if (v) hs[k] = v; });
+      const rl = await fetch('https://api.github.com/rate_limit', { headers: ghHeaders });
+      const rlJ = await rl.json().catch(() => null);
+      globalThis.__sigResult = { status: rA.status, headers: hs, rlCore: rlJ && rlJ.resources && rlJ.resources.core };
     } catch (e) { globalThis.__sigResult = 'err ' + e.message; }
   }
   let getRes = null;
