@@ -1,7 +1,7 @@
 // Cloudflare Pages Functions - Admin Panel Backend Clincoo (/api/admin)
-import { currentUser } from './user-scope.js';
-import { ADMIN_EMAILS } from './plan-helpers.js';
-import { initTables as initAuthTables } from './auth/shared.js';
+import { currentUser } from '../user-scope.js';
+import { ADMIN_EMAILS } from '../plan-helpers.js';
+import { initTables as initAuthTables } from '../auth/shared.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
