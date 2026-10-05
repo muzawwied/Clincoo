@@ -10,22 +10,22 @@
     <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
     <link rel="manifest" href="../../../manifest.json">
     <link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
-  <title>Database — Clincoo</title>
-    <meta name="description" content="Pengaturan: Database — kelola tabel data aplikasi di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+  <title>Tabel — Database — Clincoo</title>
+    <meta name="description" content="Pengaturan: Database — lihat dan kelola baris tabel di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
     <meta name="robots" content="noindex">
     <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Clincoo">
-    <meta property="og:title" content="Database — Clincoo">
-    <meta property="og:description" content="Pengaturan: Database — kelola tabel data aplikasi di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:title" content="Tabel — Database — Clincoo">
+    <meta property="og:description" content="Pengaturan: Database — lihat dan kelola baris tabel di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Clincoo">
     <meta property="og:url" content="https://app.clincoo.buzz/">
     <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Pengaturan: Database — Clincoo">
-    <meta name="twitter:description" content="Pengaturan: Database — kelola tabel data aplikasi di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:title" content="Pengaturan: Tabel — Database — Clincoo">
+    <meta name="twitter:description" content="Pengaturan: Database — lihat dan kelola baris tabel di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
     <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
   <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -300,74 +300,79 @@
     </script>
 
             <div class="w-full flex flex-col">
-        <div class="py-5">
+        <!-- ===== tampilan utama ===== -->
+        <div id="vw-main" class="py-5">
           <div class="flex items-start sm:items-center justify-between gap-3 mb-1">
-            <div>
-              <h4 id="db-title" class="text-base font-semibold text-gray-900 dark:text-white">Database</h4>
-              <p id="db-sub" class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Tabel data untuk aplikasimu</p>
+            <div class="min-w-0">
+              <a href="/proyek/pengaturan/database/" class="inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors mb-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"></path></svg>
+                Database
+              </a>
+              <h4 id="tb-name" class="text-base font-semibold text-gray-900 dark:text-white truncate">Tabel</h4>
+              <p id="tb-meta" class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Memuat…</p>
             </div>
-            <button id="db-new-btn" type="button" class="hidden shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
+            <button id="tb-add-btn" type="button" class="hidden shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"></path></svg>
-              Buat tabel
+              Tambah baris
             </button>
           </div>
 
           <!-- perlu login -->
-          <div id="db-login" class="hidden py-12 flex flex-col items-center justify-center text-center">
+          <div id="tb-login" class="hidden py-12 flex flex-col items-center justify-center text-center">
             <svg class="w-8 h-8 text-gray-300 mb-3" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3 5v14a9 3 0 0 0 18 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 3 0 0 0 18 0"></path></svg>
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Masuk dulu untuk mengelola database</p>
             <a href="/auth/" class="mt-4 px-5 py-2.5 text-sm font-medium text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">Masuk</a>
           </div>
 
           <!-- loading -->
-          <div id="db-loading" class="py-4 space-y-4">
+          <div id="tb-loading" class="py-4 space-y-4">
             <div class="h-12 rounded-lg pay-skel"></div>
             <div class="h-12 rounded-lg pay-skel"></div>
             <div class="h-12 rounded-lg pay-skel"></div>
           </div>
 
           <!-- error -->
-          <div id="db-error" class="hidden py-8 text-center">
-            <p id="db-error-text" class="text-xs text-red-500 dark:text-red-400"></p>
-            <button id="db-retry-btn" type="button" class="mt-3 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors">Coba lagi</button>
+          <div id="tb-error" class="hidden py-8 text-center">
+            <p id="tb-error-text" class="text-xs text-red-500 dark:text-red-400"></p>
+            <button id="tb-retry-btn" type="button" class="mt-3 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors">Coba lagi</button>
           </div>
 
-          <!-- daftar tabel: baris polos tanpa card -->
-          <div id="db-list" class="hidden divide-y divide-gray-100 dark:divide-slate-700/60"></div>
+          <!-- daftar baris: polos divide-y -->
+          <div id="tb-rows-wrap" class="hidden">
+            <div id="tb-rows" class="divide-y divide-gray-100 dark:divide-slate-700/60"></div>
+            <button id="tb-more-btn" type="button" class="hidden w-full mt-4 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full transition-colors">Muat lagi</button>
+            <p id="tb-count" class="hidden text-center text-xs text-gray-400 dark:text-gray-500 mt-4"></p>
+          </div>
 
           <!-- kosong -->
-          <div id="db-empty" class="hidden py-12 flex flex-col items-center justify-center text-center">
-            <svg class="w-10 h-10 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3 5v14a9 3 0 0 0 18 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 3 0 0 0 18 0"></path></svg>
-            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Belum ada tabel</p>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-xs">Buat tabel pertamamu untuk mulai menyimpan data aplikasi, seperti pengguna, pesanan, atau konten.</p>
-            <button id="db-empty-btn" type="button" class="mt-5 px-5 py-2.5 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">Buat tabel</button>
+          <div id="tb-empty" class="hidden py-12 flex flex-col items-center justify-center text-center">
+            <svg class="w-10 h-10 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 12h18M3 17h10M17 17h4"></path></svg>
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Belum ada baris</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Tambahkan baris pertama ke tabel ini.</p>
+            <button id="tb-empty-btn" type="button" class="mt-5 px-5 py-2.5 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">Tambah baris</button>
+          </div>
+
+          <!-- hapus tabel -->
+          <div id="tb-danger" class="hidden mt-10 pt-6 border-t border-gray-100 dark:border-slate-700/60 text-center">
+            <button id="tb-drop-btn" type="button" class="text-xs font-semibold text-red-500 dark:text-red-400 hover:text-red-600 transition-colors">Hapus tabel ini</button>
           </div>
         </div>
 
-        <!-- form buat tabel: baris polos divide-y, tanpa card -->
-        <div id="db-form" class="hidden pb-10">
-          <div class="pt-4">
-            <p class="text-sm font-semibold text-gray-900 dark:text-white">Tabel baru</p>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Beri nama tabel dan tentukan kolomnya.</p>
+        <!-- ===== form tambah/edit baris ===== -->
+        <div id="vw-form" class="hidden py-5">
+          <a id="tb-form-back" href="#" class="inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors mb-3">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"></path></svg>
+            <span id="tb-form-back-label">Kembali</span>
+          </a>
+          <p id="tb-form-title" class="text-sm font-semibold text-gray-900 dark:text-white">Tambah baris</p>
+          <div id="tb-fields" class="mt-5 space-y-4"></div>
+          <p id="tb-form-error" class="hidden text-xs text-red-500 dark:text-red-400 mt-4"></p>
+          <div class="flex items-center gap-2 mt-7">
+            <button id="tb-save-btn" type="button" class="flex-1 py-2.5 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">Simpan</button>
+            <button id="tb-cancel-btn" type="button" class="flex-1 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Batal</button>
           </div>
-          <div class="mt-4">
-            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5" for="db-tbl-name">Nama tabel</label>
-            <input id="db-tbl-name" type="text" inputmode="text" placeholder="misal: pengguna" class="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">
-          </div>
-          <div class="mt-5">
-            <div class="flex items-center justify-between mb-1.5">
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Kolom</p>
-              <button id="db-add-col" type="button" class="inline-flex items-center gap-1 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"></path></svg>
-                Tambah kolom
-              </button>
-            </div>
-            <div id="db-cols" class="space-y-2"></div>
-            <p id="db-form-error" class="hidden text-xs text-red-500 dark:text-red-400 mt-3"></p>
-            <div class="flex items-center gap-2 mt-6">
-              <button id="db-save-btn" type="button" class="flex-1 py-2.5 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">Simpan tabel</button>
-              <button id="db-cancel-btn" type="button" class="flex-1 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Batal</button>
-            </div>
+          <div class="mt-8 pt-6 border-t border-gray-100 dark:border-slate-700/60 text-center hidden" id="tb-delrow-wrap">
+            <button id="tb-delrow-btn" type="button" class="text-xs font-semibold text-red-500 dark:text-red-400 hover:text-red-600 transition-colors">Hapus baris ini</button>
           </div>
         </div>
       </div>
@@ -389,141 +394,193 @@
       });
     })();
 
-    // ================= DATABASE proyek =================
-    var DB_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev' : '') + '/api';
-    function dbPid() { try { return localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) { return ''; } }
-    function dbHdrs(json) {
+    // ================= detail tabel =================
+    var TB_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev' : '') + '/api';
+    var tbName = (new URLSearchParams(location.search).get('name') || '').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    var tbCols = [], tbOffset = 0, tbTotal = 0, tbEditId = null, tbBusy = false;
+
+    function tbPid() { try { return localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) { return ''; } }
+    function tbHdrs(json) {
       var t = ''; try { t = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
       var h = t ? { Authorization: 'Bearer ' + t } : {};
       if (json) h['Content-Type'] = 'application/json';
       return h;
     }
-    var COL_TYPES = ['text', 'number', 'boolean', 'date'];
+    function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
-    function dbShow(id) {
-      ['db-loading', 'db-list', 'db-empty', 'db-error', 'db-login', 'db-form'].forEach(function (k) {
-        var el = document.getElementById(k);
-        if (el) el.classList.add('hidden');
-      });
+    function tbShow(id) {
+      ['tb-loading', 'tb-rows-wrap', 'tb-empty', 'tb-error', 'tb-login'].forEach(function (k) { document.getElementById(k).classList.add('hidden'); });
+      ['vw-form'].forEach(function (k) { document.getElementById(k).classList.add('hidden'); });
+      document.getElementById('vw-main').classList.remove('hidden');
       if (id) document.getElementById(id).classList.remove('hidden');
-      var nb = document.getElementById('db-new-btn');
-      if (nb) nb.classList.toggle('hidden', !(id === 'db-list' || id === 'db-empty'));
+      document.getElementById('tb-add-btn').classList.toggle('hidden', id !== 'tb-rows-wrap' && id !== 'tb-empty');
     }
-    function dbErr(msg) {
-      var et = document.getElementById('db-error-text');
-      if (et) et.textContent = msg;
-      dbShow('db-error');
-    }
-
-    function dbRender(tables) {
-      var list = document.getElementById('db-list');
-      list.innerHTML = '';
-      (tables || []).forEach(function (t) {
-        var a = document.createElement('a');
-        a.href = '#';
-        a.className = 'flex items-center justify-between gap-3 py-3.5 group';
-        var cols = (t.columns || []).map(function (c) { return c.name; });
-        var meta = (cols.length + ' kolom') + (typeof t.rows === 'number' ? (' · ' + t.rows + ' baris') : '');
-        a.innerHTML =
-          '<span class="min-w-0">' +
-          '<span class="block text-sm font-medium text-gray-800 dark:text-gray-200">' + String(t.name || '').replace(/[&<>]/g, function (s2) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[s2]; }) + '</span>' +
-          '<span class="block text-xs text-gray-400 dark:text-gray-500 truncate">' + meta + '</span>' +
-          '</span>' +
-          '<svg class="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0 group-hover:text-gray-500 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"></path></svg>';
-        a.href = '/proyek/pengaturan/database/tabel/?name=' + encodeURIComponent(t.name);
-        list.appendChild(a);
+    function tbShowForm(editing) {
+      tbEditId = editing ? editing.id : null;
+      document.getElementById('vw-main').classList.add('hidden');
+      document.getElementById('vw-form').classList.remove('hidden');
+      document.getElementById('tb-form-title').textContent = editing ? 'Edit baris' : 'Tambah baris';
+      document.getElementById('tb-form-back-label').textContent = editing ? 'Kembali ke tabel' : 'Kembali';
+      document.getElementById('tb-delrow-wrap').classList.toggle('hidden', !editing);
+      var f = document.getElementById('tb-fields');
+      f.innerHTML = '';
+      tbCols.forEach(function (c) {
+        var val = editing ? editing[c.name] : '';
+        var row = document.createElement('div');
+        var label = '<label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">' + esc(c.name) + '</label>';
+        if (c.type === 'boolean') {
+          var on = editing ? !!val : false;
+          row.innerHTML = label +
+            '<button type="button" data-col="' + esc(c.name) + '" class="tb-bool inline-flex items-center gap-2 text-sm font-medium ' + (on ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500') + '" data-on="' + (on ? '1' : '') + '">' +
+            '<span class="w-10 h-6 rounded-full transition-colors relative ' + (on ? 'bg-black dark:bg-white' : 'bg-gray-200 dark:bg-gray-700') + '">' +
+            '<span class="absolute top-0.5 w-5 h-5 rounded-full bg-white dark:bg-black shadow transition-all ' + (on ? 'left-[18px]' : 'left-0.5') + '"></span></span>' +
+            '<span class="tb-bool-label">' + (on ? 'Ya' : 'Tidak') + '</span></button>';
+          row.querySelector('.tb-bool').addEventListener('click', function () {
+            var on2 = this.getAttribute('data-on') === '1';
+            this.setAttribute('data-on', on2 ? '' : '1');
+            this.className = 'tb-bool inline-flex items-center gap-2 text-sm font-medium ' + (on2 ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white');
+            this.firstChild.setAttribute('class', 'w-10 h-6 rounded-full transition-colors relative ' + (on2 ? 'bg-gray-200 dark:bg-gray-700' : 'bg-black dark:bg-white'));
+            this.firstChild.firstChild.setAttribute('class', 'absolute top-0.5 w-5 h-5 rounded-full bg-white dark:bg-black shadow transition-all ' + (on2 ? 'left-0.5' : 'left-[18px]'));
+            this.lastChild.textContent = on2 ? 'Tidak' : 'Ya';
+          });
+        } else if (c.type === 'number') {
+          row.innerHTML = label + '<input type="text" inputmode="decimal" data-col="' + esc(c.name) + '" value="' + esc(val) + '" class="tb-in w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors" placeholder="0">';
+        } else if (c.type === 'date') {
+          row.innerHTML = label + '<input type="date" data-col="' + esc(c.name) + '" value="' + esc(val) + '" class="tb-in w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">';
+        } else {
+          row.innerHTML = label + '<input type="text" data-col="' + esc(c.name) + '" value="' + esc(val) + '" class="tb-in w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">';
+        }
+        f.appendChild(row);
       });
-      dbShow(tables && tables.length ? 'db-list' : 'db-empty');
+      document.getElementById('tb-form-error').classList.add('hidden');
+      window.scrollTo(0, 0);
+    }
+    function tbFormBack(e) { e.preventDefault(); tbShow(null); tbOffset = 0; tbLoadRows(); }
+
+    function tbCollect() {
+      var data = {};
+      document.querySelectorAll('#tb-fields [data-col]').forEach(function (el) {
+        var k = el.getAttribute('data-col');
+        if (el.classList.contains('tb-bool')) data[k] = el.getAttribute('data-on') === '1';
+        else if (el.getAttribute('type') === 'date') data[k] = el.value || '';
+        else if (el.getAttribute('inputmode') === 'decimal') data[k] = el.value === '' ? null : Number(el.value.replace(',', '.'));
+        else data[k] = el.value;
+      });
+      return data;
     }
 
-    var dbLoadBusy = false;
-    function dbLoad() {
-      var t = ''; try { t = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
-      if (!t) { dbShow('db-login'); return; }
-      if (!dbPid()) { dbErr('Proyek belum dipilih — buka dashboard proyekmu dulu.'); return; }
-      if (dbLoadBusy) return;
-      dbLoadBusy = true;
-      dbShow('db-loading');
-      fetch(DB_API + '/db/tables?project_id=' + encodeURIComponent(dbPid()), { headers: dbHdrs(false) })
-        .then(function (r) {
-          if (r.status === 401) { dbShow('db-login'); return null; }
-          if (!r.ok) throw new Error('HTTP ' + r.status);
-          return r.json();
-        })
+    function tbLoadMeta() {
+      return fetch(TB_API + '/db/tables?project_id=' + encodeURIComponent(tbPid()), { headers: tbHdrs(false) })
+        .then(function (r) { if (r.status === 401) { tbShow('tb-login'); throw new Error('login'); } return r.json(); })
         .then(function (d) {
-          dbLoadBusy = false;
-          if (d === null) return;
-          dbRender(d && d.tables);
-        })
-        .catch(function () {
-          dbLoadBusy = false;
-          dbErr('Fitur database belum aktif di server. Coba lagi nanti.');
+          var t = (d && d.tables || []).filter(function (x) { return x.name === tbName; })[0];
+          if (!t) throw new Error('notfound');
+          tbCols = t.columns || [];
+          document.getElementById('tb-name').textContent = t.name;
+          document.getElementById('tb-meta').textContent = tbCols.length + ' kolom · ' + (t.rows || 0) + ' baris';
         });
     }
 
-    // ---- form buat tabel ----
-    function dbColRow(name, type) {
-      var row = document.createElement('div');
-      row.className = 'flex items-center gap-2';
-      row.innerHTML =
-        '<input type="text" placeholder="nama kolom" class="db-col-name flex-1 min-w-0 px-3 py-2 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">' +
-        '<select class="db-col-type px-2.5 py-2 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">' +
-        COL_TYPES.map(function (tp) { return '<option value="' + tp + '"' + (tp === type ? ' selected' : '') + '>' + tp + '</option>'; }).join('') +
-        '</select>' +
-        '<button type="button" class="db-col-del shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" aria-label="Hapus kolom">' +
-        '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12"></path></svg></button>';
-      if (name) row.querySelector('.db-col-name').value = name;
-      row.querySelector('.db-col-del').addEventListener('click', function () {
-        if (document.querySelectorAll('#db-cols > div').length > 1) row.remove();
-      });
-      return row;
-    }
-    function dbFormOpen() {
-      var cols = document.getElementById('db-cols');
-      cols.innerHTML = '';
-      cols.appendChild(dbColRow('id', 'text'));
-      cols.appendChild(dbColRow('nama', 'text'));
-      document.getElementById('db-tbl-name').value = '';
-      var fe = document.getElementById('db-form-error');
-      fe.classList.add('hidden');
-      dbShow('db-form');
-      document.getElementById('db-tbl-name').focus();
-    }
-    function dbFormSave() {
-      var name = (document.getElementById('db-tbl-name').value || '').trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-      if (!name) { var fe = document.getElementById('db-form-error'); fe.textContent = 'Nama tabel wajib diisi.'; fe.classList.remove('hidden'); return; }
-      var columns = [];
-      document.querySelectorAll('#db-cols > div').forEach(function (row) {
-        var cn = (row.querySelector('.db-col-name').value || '').trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-        if (!cn) return;
-        columns.push({ name: cn, type: row.querySelector('.db-col-type').value });
-      });
-      if (!columns.length) { var fe2 = document.getElementById('db-form-error'); fe2.textContent = 'Minimal satu kolom wajib diisi.'; fe2.classList.remove('hidden'); return; }
-      var btn = document.getElementById('db-save-btn');
-      btn.disabled = true; btn.textContent = 'Menyimpan…';
-      fetch(DB_API + '/db/tables', {
-        method: 'POST',
-        headers: dbHdrs(true),
-        body: JSON.stringify({ project_id: dbPid(), name: name, columns: columns })
-      })
+    function tbLoadRows(append) {
+      if (!tbName) { document.getElementById('tb-error-text').textContent = 'Tabel tidak diketahui.'; tbShow('tb-error'); return; }
+      var tok = ''; try { tok = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
+      if (!tok) { tbShow('tb-login'); return; }
+      if (!tbPid()) { document.getElementById('tb-error-text').textContent = 'Proyek belum dipilih.'; tbShow('tb-error'); return; }
+      if (tbBusy) return;
+      tbBusy = true;
+      if (!append) tbShow('tb-loading');
+      return tbLoadMeta()
+        .then(function () { return fetch(TB_API + '/db/rows?project_id=' + encodeURIComponent(tbPid()) + '&table=' + encodeURIComponent(tbName) + '&limit=50&offset=' + tbOffset, { headers: tbHdrs(false) }); })
         .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-        .then(function () { btn.disabled = false; btn.textContent = 'Simpan tabel'; dbLoad(); })
-        .catch(function () {
-          btn.disabled = false; btn.textContent = 'Simpan tabel';
-          var fe3 = document.getElementById('db-form-error');
-          fe3.textContent = 'Fitur database belum aktif di server. Coba lagi nanti.';
-          fe3.classList.remove('hidden');
+        .then(function (d) {
+          tbBusy = false;
+          var rows = d.rows || [];
+          tbTotal = d.total || 0;
+          var wrap = document.getElementById('tb-rows');
+          if (!append) wrap.innerHTML = '';
+          rows.forEach(function (row) { wrap.appendChild(tbRowEl(row)); });
+          tbOffset += rows.length;
+          document.getElementById('tb-more-btn').classList.toggle('hidden', tbOffset >= tbTotal);
+          document.getElementById('tb-count').classList.toggle('hidden', !(tbTotal > 0 && tbOffset >= tbTotal));
+          document.getElementById('tb-count').textContent = tbTotal + ' baris total';
+          document.getElementById('tb-danger').classList.remove('hidden');
+          tbShow(tbTotal === 0 && tbOffset === 0 ? 'tb-empty' : 'tb-rows-wrap');
+        })
+        .catch(function (e) {
+          tbBusy = false;
+          if (e && e.message === 'login') return;
+          document.getElementById('tb-error-text').textContent = e && e.message === 'notfound' ? 'Tabel tidak ditemukan.' : 'Tidak bisa memuat baris. Coba lagi.';
+          tbShow('tb-error');
         });
     }
 
-    document.getElementById('db-new-btn').addEventListener('click', dbFormOpen);
-    document.getElementById('db-empty-btn').addEventListener('click', dbFormOpen);
-    document.getElementById('db-add-col').addEventListener('click', function () { document.getElementById('db-cols').appendChild(dbColRow('', 'text')); });
-    document.getElementById('db-save-btn').addEventListener('click', dbFormSave);
-    document.getElementById('db-cancel-btn').addEventListener('click', dbLoad);
-    document.getElementById('db-retry-btn').addEventListener('click', dbLoad);
+    function tbRowEl(row) {
+      var a = document.createElement('a');
+      a.href = '#';
+      a.className = 'flex items-center justify-between gap-3 py-3.5 group';
+      var firstText = '', others = [];
+      tbCols.forEach(function (c) {
+        var v = row[c.name];
+        if (v === null || v === undefined) return;
+        if (c.type === 'boolean') v = v ? 'Ya' : 'Tidak';
+        var s = c.name + ': ' + v;
+        if (!firstText && (c.type === 'text' || c.type === 'date')) { firstText = String(v); return; }
+        if (others.length < 3) others.push(s);
+      });
+      if (!firstText) firstText = 'Baris #' + row.id;
+      a.innerHTML =
+        '<span class="min-w-0">' +
+        '<span class="block text-sm font-medium text-gray-800 dark:text-gray-200 truncate">' + esc(firstText) + '</span>' +
+        (others.length ? '<span class="block text-xs text-gray-400 dark:text-gray-500 truncate">' + esc(others.join(' · ')) + '</span>' : '') +
+        '</span>' +
+        '<svg class="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0 group-hover:text-gray-500 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"></path></svg>';
+      a.addEventListener('click', function (ev) { ev.preventDefault(); tbShowForm(row); });
+      return a;
+    }
 
-    dbLoad();
+    function tbFormError(msg) { var el = document.getElementById('tb-form-error'); el.textContent = msg; el.classList.remove('hidden'); }
+
+    function tbSave() {
+      var data = tbCollect();
+      var btn = document.getElementById('tb-save-btn');
+      btn.disabled = true; btn.textContent = 'Menyimpan…';
+      var url = TB_API + '/db/rows';
+      var init = { method: tbEditId ? 'PATCH' : 'POST', headers: tbHdrs(true), body: JSON.stringify({ project_id: tbPid(), table: tbName, data: data, id: tbEditId || undefined }) };
+      fetch(url, init)
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) {
+          btn.disabled = false; btn.textContent = 'Simpan';
+          if (!res.ok) { tbFormError(res.d && res.d.error ? res.d.error : 'Gagal menyimpan baris.'); return; }
+          tbShow(null); tbOffset = 0; tbLoadRows();
+        })
+        .catch(function () { btn.disabled = false; btn.textContent = 'Simpan'; tbFormError('Tidak bisa menghubungi server.'); });
+    }
+
+    function tbDelRow() {
+      if (!tbEditId) return;
+      fetch(TB_API + '/db/rows?project_id=' + encodeURIComponent(tbPid()) + '&table=' + encodeURIComponent(tbName) + '&id=' + encodeURIComponent(tbEditId), { method: 'DELETE', headers: tbHdrs(false) })
+        .then(function () { tbShow(null); tbOffset = 0; tbLoadRows(); })
+        .catch(function () { tbFormError('Gagal menghapus baris.'); });
+    }
+
+    function tbDropTable() {
+      if (!confirm('Hapus tabel "' + tbName + '" beserta semua barisnya?')) return;
+      fetch(TB_API + '/db/tables?project_id=' + encodeURIComponent(tbPid()) + '&name=' + encodeURIComponent(tbName), { method: 'DELETE', headers: tbHdrs(false) })
+        .then(function (r) { if (r.ok) window.location.href = '/proyek/pengaturan/database/'; })
+        .catch(function () { document.getElementById('tb-error-text').textContent = 'Gagal menghapus tabel.'; tbShow('tb-error'); });
+    }
+
+    document.getElementById('tb-add-btn').addEventListener('click', function () { tbShowForm(null); });
+    document.getElementById('tb-empty-btn').addEventListener('click', function () { tbShowForm(null); });
+    document.getElementById('tb-save-btn').addEventListener('click', tbSave);
+    document.getElementById('tb-cancel-btn').addEventListener('click', tbFormBack);
+    document.getElementById('tb-form-back').addEventListener('click', tbFormBack);
+    document.getElementById('tb-delrow-btn').addEventListener('click', tbDelRow);
+    document.getElementById('tb-drop-btn').addEventListener('click', tbDropTable);
+    document.getElementById('tb-retry-btn').addEventListener('click', function () { tbOffset = 0; tbLoadRows(); });
+    document.getElementById('tb-more-btn').addEventListener('click', function () { tbLoadRows(true); });
+
+    tbLoadRows();
   </script>
 </body>
 </html>
