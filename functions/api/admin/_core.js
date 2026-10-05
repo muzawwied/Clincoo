@@ -280,9 +280,10 @@ export async function onRequestPost({ request, env }) {
 
     // Alur auth panel mandiri: PUBLIK (pra-autentikasi) — OTP & kunci panel.
     // Middleware tetap menjaga: rate-limit per IP + Origin wajib resmi (anti-CSRF).
-    if (reqAction === 'auth_request_otp') return await handleAuthRequestOtp(env, db, body);
-    if (reqAction === 'auth_verify_otp') return await handleAuthVerifyOtp(env, db, body);
-    if (reqAction === 'auth_verify_key') return await handleAuthVerifyKey(env, request, body);
+    const authPath = new URL(request.url).pathname.replace(/\/$/, '');
+    if (authPath.endsWith('/auth/request-otp') || reqAction === 'auth_request_otp') return await handleAuthRequestOtp(env, db, body);
+    if (authPath.endsWith('/auth/verify-otp') || reqAction === 'auth_verify_otp') return await handleAuthVerifyOtp(env, db, body);
+    if (authPath.endsWith('/auth/verify-key') || reqAction === 'auth_verify_key') return await handleAuthVerifyKey(env, request, body);
 
     const user = (await currentUser(env, request)) || keyAuthUser(env, request);
 
