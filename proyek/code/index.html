@@ -830,6 +830,38 @@
         return { ok: false, error: 'Gagal terhubung ke cloud: ' + (e && e.message ? e.message : String(e)) };
       }
     }
+    // ANTREAN UPLOAD: file besar diunggah maksimal 2 sekaligus — upload banyak file
+    // sekaligus tidak lagi saling rebut bandwidth sehingga sebagian gagal/hilang;
+    // tiap unggahan diulang otomatis 1x kalau gagal sebelum dilaporkan ke user.
+    var wsUploadQ = [];
+    var wsUploadRunning = 0;
+    function wsUploadPump() {
+      while (wsUploadRunning < 2 && wsUploadQ.length > 0) {
+        (function (job) {
+          wsUploadRunning++;
+          job.run().then(function (res) {
+            wsUploadRunning--;
+            job.done(res);
+            wsUploadPump();
+          });
+        })(wsUploadQ.shift());
+      }
+    }
+    function wsCloudUploadQueued(path, content) {
+      return new Promise(function (resolve) {
+        wsUploadQ.push({
+          run: function () {
+            return wsCloudSaveBig(path, content).then(function (r) {
+              if (r && r.ok) return r;
+              if (r && r.error && r.error.indexOf('Kuota') === 0) return r; // jangan diulang: habis kuota
+              return wsCloudSaveBig(path, content); // satu kali ulang otomatis
+            });
+          },
+          done: resolve
+        });
+        wsUploadPump();
+      });
+    }
     async function wsCloudFetchBig(path) {
       const pid = wsProjectId();
       if (!pid) return null;
@@ -2118,7 +2150,7 @@
             projectFilesData[targetPath].push(uploadingItem);
           }
           if (targetPath === currentFolderPath || targetPath.startsWith(currentFolderPath)) renderFileList();
-          wsCloudSaveBig(filePath, content).then(function (up) {
+          wsCloudUploadQueued(filePath, content).then(function (up) {
             if (!up.ok) {
               delete uploadingItem.uploading;
               if (existingIndex === -1) {
