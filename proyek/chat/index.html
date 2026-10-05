@@ -5093,7 +5093,8 @@ window.chatLivePreview = function () {
         // ===== TOOL clone_url: salin file situs (HTML/CSS/JS) dari sebuah URL ke workspace / AI Storage =====
         async function _cloneUrlFetchRaw(url) {
             try {
-                const res = await fetch(TOOL_API_BASE + '/api/fetch-raw', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: url }) });
+                let frTok = ''; try { frTok = localStorage.getItem('clinqoo_auth_token') || localStorage.getItem('clinqoo_token') || ''; } catch (e9) {}
+                const res = await fetch(TOOL_API_BASE + '/api/fetch-raw', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(frTok ? { Authorization: 'Bearer ' + frTok } : {}) }, body: JSON.stringify({ url: url }) });
                 const d = await res.json().catch(function () { return {}; });
                 if (!res.ok || d.error || !d.base64) return null;
                 return d;

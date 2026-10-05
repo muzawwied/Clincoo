@@ -22,8 +22,13 @@ export async function onRequestOptions() {
   });
 }
 
-export async function onRequestPost({ request }) {
+export async function onRequestPost({ request, env }) {
   try {
+    // Wajib sesi login Clincoo (audit keamanan: sebelumnya endpoint ini bisa dipakai
+    // pihak luar sebagai proxy fetch gratis tanpa autentikasi).
+    const authTok = String(request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+    const sess = authTok && env.DB ? await env.DB.prepare('SELECT user_id, expires_at FROM auth_sessions WHERE token = ?').bind(authTok).first() : null;
+    if (!sess || new Date(sess.expires_at) < new Date()) return jsonOut({ error: 'Login diperlukan untuk mengambil isi situs.' }, 401);
     const body = await request.json().catch(() => ({}));
     const url = String((body && body.url) || '').trim();
     if (!/^https?:\/\//i.test(url)) return jsonOut({ error: 'Parameter url wajib berupa URL lengkap (http/https).' }, 400);
