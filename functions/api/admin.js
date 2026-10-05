@@ -63,6 +63,18 @@ function isUserAdmin(user) {
   return false;
 }
 
+// Panel Admin mandiri (admin.clincoo.buzz): akses via kunci panel (env ADMIN_PANEL_KEY,
+// header x-admin-key) alih-alih login akun — user sintetis role owner untuk log aktivitas.
+function keyAuthUser(env, request) {
+  const expected = (env.ADMIN_PANEL_KEY || '').trim();
+  const given = (request.headers.get('x-admin-key') || '').trim();
+  if (!expected || !given || expected.length !== given.length) return null;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ given.charCodeAt(i);
+  if (diff !== 0) return null;
+  return { id: 0, email: 'panel-admin@clincoo', role: 'owner' };
+}
+
 function getAction(request, bodyAction = null) {
   if (bodyAction) return bodyAction;
   const url = new URL(request.url);
@@ -84,7 +96,7 @@ export async function onRequestGet({ request, env }) {
 
   try {
     await ensureAdminMigration(db);
-    const user = await currentUser(env, request);
+    const user = (await currentUser(env, request)) || keyAuthUser(env, request);
 
     const action = getAction(request);
 
@@ -127,7 +139,7 @@ export async function onRequestPost({ request, env }) {
 
   try {
     await ensureAdminMigration(db);
-    const user = await currentUser(env, request);
+    const user = (await currentUser(env, request)) || keyAuthUser(env, request);
 
     if (!user) return json({ error: 'unauthorized', need_login: true }, 401);
     if (!isUserAdmin(user)) return json({ error: 'forbidden' }, 403);
