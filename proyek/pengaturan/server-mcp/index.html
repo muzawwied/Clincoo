@@ -350,6 +350,7 @@
             <p class="text-sm font-medium text-gray-700 dark:text-gray-200" id="mcp-error-msg">Gagal memeriksa status server MCP</p>
             <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto" id="mcp-error-sub">Server MCP kemungkinan masih aktif — pemeriksaan status hanya gagal untuk sementara. Tidak perlu membuat ulang server.</p>
             <button type="button" onclick="loadMcpRetry()" id="mcp-error-btn" class="mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors cursor-pointer">Coba Lagi</button>
+            <a id="mcp-docs-cta" href="https://docs.clincoo.buzz/dokumentasi/server-mcp-clincoo/" target="_blank" rel="noopener" class="hidden mt-3 mx-auto px-5 py-2.5 text-sm font-medium rounded-full border border-gray-200 bg-transparent text-gray-500 hover:text-black hover:border-gray-400 dark:border-slate-700 dark:text-gray-400 dark:hover:text-white dark:hover:border-slate-500 transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer">Pelajari fitur Server MCP<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M7 17L17 7"></path><path d="M8 7h9v9"></path></svg></a>
           </div>
 
           <!-- Aktif -->
@@ -799,6 +800,8 @@ function renderMcpPlanGate(d) {
     if (sub) sub.textContent = 'Paket kamu saat ini: ' + cur + '. Server yang sudah terhubung ke AI eksternal tetap berjalan normal — upgrade paket untuk mengelolanya dari halaman ini.';
     var btn = document.getElementById('mcp-error-btn');
     if (btn) { btn.textContent = 'Lihat Paket'; btn.onclick = function () { if (typeof clincooOpenPlansPopup === 'function') clincooOpenPlansPopup(); }; }
+    var doc = document.getElementById('mcp-docs-cta');
+    if (doc) doc.classList.remove('hidden');
     el.classList.remove('mcp-anim');
     el.style.display = 'flex';
     void el.offsetWidth;
@@ -806,6 +809,8 @@ function renderMcpPlanGate(d) {
   }
 }
 function renderMcpError(msg) {
+  var doc = document.getElementById('mcp-docs-cta');
+  if (doc) doc.classList.add('hidden');
   var inactive = document.getElementById('mcp-inactive');
   var active = document.getElementById('mcp-active');
   var loading = document.getElementById('mcp-loading');
