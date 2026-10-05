@@ -3612,7 +3612,7 @@ window.chatLivePreview = function () {
                                     // Dorong nama & deskripsi buatan AI ke server (D1) agar sinkron
                                     // antar device — dipakai juga deploy engine untuk subdomain otomatis.
                                     try {
-                                        var _pushBase = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : '';
+                                        var _pushBase = (['clincoo-be2.pages.dev','app.clincoo.buzz','clincoo.biz.id','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : '';
                                         fetch(_pushBase + '/api/projects', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
@@ -3646,7 +3646,7 @@ window.chatLivePreview = function () {
             return '\n\nMODE WORKSPACE LANGSUNG (WAJIB DIPATUHI): Setiap kali user menyuruh membuat, mengubah, atau menghasilkan file/kode (HTML, CSS, JS, JSON, dll), JANGAN tampilkan isi kode sebagai blok kode di chat. LANGSUNG panggil tool write_file dengan path + isi file lengkap untuk menyimpannya ke workspace proyek (buat folder dulu dengan create_folder bila perlu; jika file sudah ada dan user minta perubahan, tulis ulang versi lengkapnya dengan write_file). Setelah tersimpan, jawab ringkas dan natural: file apa yang dibuat/diubah, path-nya, dan poin penting isinya. Blok kode HANYA boleh ditampilkan di chat jika user secara eksplisit meminta menampilkan kodenya di chat.';
         }
 
-        const TOOL_API_BASE = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : '';
+        const TOOL_API_BASE = (['clincoo-be2.pages.dev','app.clincoo.buzz','clincoo.biz.id','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : '';
         const GEMINI_PROXY_URL = TOOL_API_BASE + '/api/chat';
         // Model premium Sol Pro (gpt-6.1-sol-pro) tanpa tombol UI: frontend selalu
         // kirim premium:true ke /api/chat (server hanya pakai utk user login & tanpa
