@@ -734,9 +734,19 @@
       var canvas = document.getElementById('tb-canvas');
       if (tbChart) { tbChart.destroy(); tbChart = null; }
       var rows = tbAll || [];
-      if (!rows.length) { note.innerHTML = 'Belum ada baris di tabel ini — grafik otomatis muncul setelah kamu <a href="#" id="tb-chart-add" class="underline">menambahkan baris</a>.'; var add = document.getElementById('tb-chart-add'); if (add) add.addEventListener('click', function (e) { e.preventDefault(); tbShow(tbLastMain || null); tbShowForm(null); }); return; }
       var th = tbChartTheme();
       var opts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: type === 'doughnut', labels: { color: th.text, boxWidth: 12 } } }, scales: type === 'doughnut' ? {} : { x: { ticks: { color: th.text, maxRotation: 45, autoSkip: true }, grid: { display: false } }, y: { ticks: { color: th.text }, grid: { color: th.grid }, beginAtZero: true } } };
+      if (!rows.length) {
+        // grafik tetap digambar walau 0 baris — bidang kosong + ajakan tambah baris
+        note.innerHTML = 'Belum ada baris di tabel ini — grafik terisi otomatis setelah kamu <a href="#" id="tb-chart-add" class="underline">menambahkan baris</a>.';
+        var add = document.getElementById('tb-chart-add');
+        if (add) add.addEventListener('click', function (e) { e.preventDefault(); tbShow(tbLastMain || null); tbShowForm(null); });
+        var empty = type === 'line' ? { label: col, data: [], borderColor: '#111827', backgroundColor: 'rgba(17,24,39,0.08)', tension: 0.3, pointRadius: 1.5, fill: true }
+          : type === 'doughnut' ? { data: [], backgroundColor: TB_PALETTE, borderWidth: 0 }
+          : { data: [], backgroundColor: '#111827', borderRadius: 4, maxBarThickness: 42 };
+        tbChart = new Chart(canvas, { type: type, data: { labels: [], datasets: [empty] }, options: opts });
+        return;
+      }
       if (type === 'line') {
         var pts = rows.slice(0, 1000).sort(function (a, b) { return (a.id || 0) - (b.id || 0); }); // urut lama->baru biar tren natural
         tbChart = new Chart(canvas, { type: 'line', data: { labels: pts.map(function (r, i) { var lbl = (tbChartColsOf('cat')[0] && r[tbChartColsOf('cat')[0].name]) || ('#' + (i + 1)); return String(lbl).slice(0, 16); }), datasets: [{ label: col, data: pts.map(function (r) { return Number(r[col]) || 0; }), borderColor: '#111827', backgroundColor: 'rgba(17,24,39,0.08)', tension: 0.3, pointRadius: 1.5, fill: true }] }, options: opts });

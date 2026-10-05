@@ -507,7 +507,7 @@
     function dbChartRender() {
       var sec = document.getElementById('db-chart-sec');
       var tables = dbTables || [];
-      if (!tables.length) { sec.classList.add('hidden'); if (dbChart) { dbChart.destroy(); dbChart = null; } return; }
+      // grafik SELALU tampil — walau belum ada tabel/data (bidang kosong + catatan)
       sec.classList.remove('hidden');
       var modes = document.getElementById('db-chart-modes');
       modes.innerHTML =
@@ -525,7 +525,9 @@
         data: { labels: labels, datasets: [{ data: data, backgroundColor: '#111827', borderRadius: 4, maxBarThickness: 42 }] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: th.text, maxRotation: 45, autoSkip: true }, grid: { display: false } }, y: { ticks: { color: th.text, precision: 0 }, grid: { color: th.grid }, beginAtZero: true } } }
       });
-      document.getElementById('db-chart-note').textContent = tables.length + ' tabel · ' + (dbChartMode === 'cols' ? 'jumlah kolom' : 'jumlah baris') + ' per tabel';
+      document.getElementById('db-chart-note').textContent = tables.length
+        ? tables.length + ' tabel · ' + (dbChartMode === 'cols' ? 'jumlah kolom' : 'jumlah baris') + ' per tabel'
+        : 'Belum ada tabel — grafik terisi otomatis setelah tabel dan baris ditambahkan.';
     }
 
     // ---- cache lokal: data tersimpan di perangkat biar tiap refresh nggak load dari awal ----
