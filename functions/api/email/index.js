@@ -39,6 +39,10 @@ const CORS = {
 const PLAN_EMAIL_LIMITS = { Starter: 100, Pro: 500, Bisnis: 1000 };
 const EMAIL_LIMIT_FALLBACK = 100;
 
+// Batas jumlah kontak Audiens per proyek sesuai paket pemilik proyek: Starter 100 / Pro 500 / Bisnis 1000.
+const PLAN_AUDIENCE_LIMITS = { Starter: 100, Pro: 500, Bisnis: 1000 };
+const AUDIENCE_LIMIT_FALLBACK = 100;
+
 // Batas kuota untuk rute auth (config/history/activate) — user = pemilik proyek.
 async function emailQuotaLimitForUser(env, user) {
   try {
@@ -48,6 +52,18 @@ async function emailQuotaLimitForUser(env, user) {
     }
   } catch (e) {}
   return EMAIL_LIMIT_FALLBACK;
+}
+
+// Batas kontak audiens untuk rute audiens (per proyek, ikut paket pemilik).
+async function audienceLimitForProject(env, projectId) {
+  try {
+    const p = await env.DB.prepare('SELECT user_id FROM user_projects WHERE id = ?').bind(String(projectId)).first();
+    if (p && p.user_id != null) {
+      const eff = await getEffectivePlanByUserKey(env.DB, 'u' + p.user_id);
+      return PLAN_AUDIENCE_LIMITS[eff.plan] || AUDIENCE_LIMIT_FALLBACK;
+    }
+  } catch (e) {}
+  return AUDIENCE_LIMIT_FALLBACK;
 }
 
 // Batas kuota untuk rute publik (send via api_key): cari pemilik proyek dulu.
@@ -403,7 +419,7 @@ export async function onRequestGet({ request, env }) {
       ).bind(projectId).all();
     }
     const items = (rows && rows.results ? rows.results : []).map(function (r) { return { email: r.email, name: r.name || '', created_at: r.created_at || '' }; });
-    return json({ items: items, total: (total && total.c) || 0 });
+    return json({ items: items, total: (total && total.c) || 0, limit: await audienceLimitForProject(env, projectId) });
   }
 
   if (action === 'broadcast_list') {
@@ -532,14 +548,15 @@ export async function onRequestPost({ request, env }) {
 
   // ---- Broadcast: kirim ke banyak penerima sekaligus (login pemilik proyek) ----
   // ---- Audiens: kelola daftar kontak penerima (halaman /pengaturan/email/audiens/) ----
-  const AUDIENCE_MAX = 1000; // batas total kontak per proyek
+  // Batas kontak ikut paket pemilik proyek (Starter 100 / Pro 500 / Bisnis 1000).
+  const AUDIENCE_MAX = await audienceLimitForProject(env, projectId);
 
   if (action === 'audience_add') {
     const email = String(body.email || '').trim().toLowerCase();
     const name = String(body.name || '').trim().slice(0, 100);
     if (!validEmail(email)) return json({ error: 'Alamat email tidak valid' }, 422);
     const cnt = await env.DB.prepare('SELECT COUNT(*) AS c FROM email_audience WHERE project_id = ?').bind(projectId).first();
-    if ((cnt && cnt.c || 0) >= AUDIENCE_MAX) return json({ error: 'Audiens penuh: maksimal ' + AUDIENCE_MAX + ' kontak per proyek' }, 422);
+    if ((cnt && cnt.c || 0) >= AUDIENCE_MAX) return json({ error: 'Audiens penuh: batas paket kamu ' + AUDIENCE_MAX + ' kontak per proyek — upgrade paket untuk menambah' }, 422);
     const dup = await env.DB.prepare('SELECT id FROM email_audience WHERE project_id = ? AND email = ?').bind(projectId, email).first();
     if (dup) return json({ added: 0, duplicate: true });
     await env.DB.prepare('INSERT INTO email_audience (project_id, email, name) VALUES (?, ?, ?)').bind(projectId, email, name).run();
@@ -564,6 +581,7 @@ export async function onRequestPost({ request, env }) {
       if (!seen[email]) { seen[email] = 1; targets.push({ email: email, name: name }); }
     }
     if (!targets.length) return json({ error: 'Tidak ada alamat valid untuk diimpor' }, 422);
+    const AUDIENCE_MAX = await audienceLimitForProject(env, projectId); // batas per paket
     const cnt = await env.DB.prepare('SELECT COUNT(*) AS c FROM email_audience WHERE project_id = ?').bind(projectId).first();
     const existing = await env.DB.prepare('SELECT email FROM email_audience WHERE project_id = ?').bind(projectId).all();
     const have = {};
@@ -576,7 +594,7 @@ export async function onRequestPost({ request, env }) {
       await env.DB.prepare('INSERT INTO email_audience (project_id, email, name) VALUES (?, ?, ?)').bind(projectId, t.email, t.name).run();
       have[t.email] = 1; added++; room--;
     }
-    return json({ added: added, duplicates: duplicates, invalid: invalid, overflow: overflow });
+    return json({ added: added, duplicates: duplicates, invalid: invalid, overflow: overflow, limit: AUDIENCE_MAX });
   }
 
   if (action === 'audience_update') {
