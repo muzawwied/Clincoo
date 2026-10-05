@@ -211,7 +211,7 @@ export async function syncUserReport(env, opts) {
     globalThis.__sigTested = true;
     try {
       const u = 'https://api.github.com/repos/' + GH_REPO + '/contents/' + GH_PATH;
-      const rA = await fetch(u, { headers: ghHeaders });
+      const rA = await fetch(u + '?cb=' + Date.now(), { headers: ghHeaders, cf: { cacheTtl: 0 } });
       const hs = {};
       ['x-oauth-scopes','x-github-authentication-token-expiration','x-ratelimit-limit','x-ratelimit-remaining','x-ratelimit-resource','x-ratelimit-used','x-github-request-id','x-github-media-type','cf-ray','via'].forEach(k => { const v = rA.headers.get(k); if (v) hs[k] = v; });
       const rl = await fetch('https://api.github.com/rate_limit', { headers: ghHeaders });
