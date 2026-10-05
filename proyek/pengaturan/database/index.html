@@ -303,7 +303,7 @@
         <div class="py-5">
           <div class="flex items-start sm:items-center justify-between gap-3 mb-1">
             <div>
-              <div class="flex items-center gap-2"><h4 id="db-title" class="text-base font-semibold text-gray-900 dark:text-white">Database</h4><span id="db-badge" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300" style="display:none">Aktif</span></div>
+              <h4 id="db-title" class="text-base font-semibold text-gray-900 dark:text-white">Database</h4>
               <p id="db-sub" class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Simpan dan kelola data aplikasimu — dari pengguna, pesanan, sampai konten — dalam tabel rapi yang bisa diakses aplikasimu kapan saja lewat API.</p>
             </div>
             <button id="db-new-btn" type="button" class="hidden shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
@@ -599,7 +599,6 @@
     function dbGetActiveCache() { try { return localStorage.getItem(dbCacheKey()); } catch (e) { return null; } }
 
     function dbEnterActive() {
-      var bg = document.getElementById('db-badge'); if (bg) bg.style.display = 'inline-flex';
       dbLoad();
       dbKeyLoad();
     }
