@@ -209,9 +209,14 @@ export async function syncUserReport(env, opts) {
     const j = await getRes.json();
     sha = j.sha || null;
   } else if (globalThis.__diag) {
-    const gt = await getRes.text().catch(() => '');
-    const uRes = await fetch('https://api.github.com/user', { headers: ghHeaders }).catch(e => ({ status: 'err ' + e.message }));
-    globalThis.__diag.getDebug = { getStatus: getRes.status, getBody: gt.slice(0, 300), userStatus: uRes.status, reqId: getRes.headers.get('x-github-request-id') };
+    const probe = async (u) => { try { const r = await fetch(u, { headers: ghHeaders }); const t = await r.text().catch(() => ''); return { s: r.status, b: t.slice(0, 120) }; } catch (e) { return { s: 'err', b: e.message }; } };
+    const [meta, noref, pub, plain] = await Promise.all([
+      probe('https://api.github.com/repos/muzawwied/Clinqoo-Data'),
+      probe('https://api.github.com/repos/muzawwied/Clinqoo-Data/contents/users-live.md'),
+      probe('https://api.github.com/repos/muzawwied/Clincoo'),
+      probe('https://api.github.com/repos/muzawwied/Clinqoo-Data/contents/')
+    ]);
+    globalThis.__diag.getDebug = { asli: getRes.status, meta, noref, repoPublik: pub, daftarIsi: plain };
   }
   const putBody = {
     message: 'sync: data user live (' + now.toISOString() + ')',
