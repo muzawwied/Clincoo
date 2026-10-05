@@ -365,7 +365,14 @@
 
           <!-- daftar baris: polos divide-y -->
           <div id="tb-rows-wrap" class="hidden">
-            <div id="tb-rows" class="divide-y divide-gray-200 dark:divide-slate-700/60"></div>
+            <div class="overflow-x-auto -mx-1 px-1">
+              <table class="w-full text-sm border-collapse">
+                <thead id="tb-rows-head" class="hidden">
+                  <tr id="tb-rows-head-row" class="text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 border-b border-gray-200 dark:border-slate-700/60"></tr>
+                </thead>
+                <tbody id="tb-rows" class="divide-y divide-gray-200 dark:divide-slate-700/60"></tbody>
+              </table>
+            </div>
             <button id="tb-more-btn" type="button" class="hidden w-full mt-4 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full transition-colors">Muat lagi</button>
             <p id="tb-count" class="hidden text-center text-xs text-gray-400 dark:text-gray-500 mt-4"></p>
           </div>
@@ -374,8 +381,7 @@
           <div id="tb-empty" class="hidden py-12 flex flex-col items-center justify-center text-center">
             <svg class="w-10 h-10 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 12h18M3 17h10M17 17h4"></path></svg>
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Belum ada baris</p>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Tambahkan baris pertama ke tabel ini.</p>
-            <button id="tb-empty-btn" type="button" class="mt-5 px-5 py-2.5 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">Tambah baris</button>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Tambahkan baris pertama lewat tombol di atas.</p>
           </div>
 
           <!-- hapus tabel -->
@@ -540,6 +546,7 @@
           tbCols = t.columns || [];
           document.getElementById('tb-name').textContent = t.name;
           document.getElementById('tb-meta').textContent = tbCols.length + ' kolom · ' + (t.rows || 0) + ' baris';
+          tbBuildHead();
         });
     }
 
@@ -557,6 +564,7 @@
           // data tersimpan di perangkat: tampilkan SEKARANG tanpa loading
           tbCols = cached.cols;
           tbTotal = cached.total;
+          tbBuildHead();
           tbOffset = cached.rows.length;
           var cw = document.getElementById('tb-rows'); cw.innerHTML = '';
           cached.rows.forEach(function (row) { cw.appendChild(tbRowEl(row)); });
@@ -597,28 +605,69 @@
         });
     }
 
+    function tbBuildHead() {
+      var headRow = document.getElementById('tb-rows-head-row');
+      var html = '';
+      tbCols.forEach(function (c) {
+        html += '<th class="py-2.5 pr-4 font-semibold whitespace-nowrap">' + esc(c.name) + '</th>';
+      });
+      html += '<th class="py-2.5 font-semibold text-right">Aksi</th>';
+      headRow.innerHTML = html;
+      document.getElementById('tb-rows-head').classList.remove('hidden');
+    }
     function tbRowEl(row) {
-      var a = document.createElement('a');
-      a.href = '#';
-      a.className = 'flex items-center justify-between gap-3 py-3.5 group';
-      var firstText = '', others = [];
+      var tr = document.createElement('tr');
+      tr.className = 'group cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/40';
+      var tds = '';
       tbCols.forEach(function (c) {
         var v = row[c.name];
-        if (v === null || v === undefined) return;
+        if (v === null || v === undefined) v = '';
         if (c.type === 'boolean') v = v ? 'Ya' : 'Tidak';
-        var s = c.name + ': ' + v;
-        if (!firstText && (c.type === 'text' || c.type === 'date')) { firstText = String(v); return; }
-        if (others.length < 3) others.push(s);
+        tds += '<td class="py-3 pr-4 whitespace-nowrap max-w-[240px] truncate text-gray-700 dark:text-gray-300">' + esc(String(v)) + '</td>';
       });
-      if (!firstText) firstText = 'Baris #' + row.id;
-      a.innerHTML =
-        '<span class="min-w-0">' +
-        '<span class="block text-sm font-medium text-gray-800 dark:text-gray-200 truncate">' + esc(firstText) + '</span>' +
-        (others.length ? '<span class="block text-xs text-gray-400 dark:text-gray-500 truncate">' + esc(others.join(' · ')) + '</span>' : '') +
-        '</span>' +
-        '<svg class="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0 group-hover:text-gray-500 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"></path></svg>';
-      a.addEventListener('click', function (ev) { ev.preventDefault(); tbShowForm(row); });
-      return a;
+      tds +=
+        '<td class="py-3 text-right whitespace-nowrap">' +
+        '<span class="inline-flex items-center gap-1">' +
+        '<button type="button" class="tb-edit px-2.5 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">Ubah</button>' +
+        '<button type="button" class="tb-del px-2.5 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors">Hapus</button>' +
+        '</span></td>';
+      tr.innerHTML = tds;
+      tr.addEventListener('click', function (ev) {
+        var del = ev.target.closest('.tb-del');
+        if (del) { ev.stopPropagation(); tbDelRow(del, row); return; }
+        tbShowForm(row);
+      });
+      return tr;
+    }
+    // hapus baris: dua langkah (klik "Hapus" -> "Yakin?") supaya nggak sengaja kehapus
+    function tbDelRow(btn, row) {
+      if (btn.getAttribute('data-armed') !== '1') {
+        btn.setAttribute('data-armed', '1');
+        btn.textContent = 'Yakin?';
+        btn.className = 'px-2.5 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 rounded-lg transition-colors';
+        setTimeout(function () {
+          if (btn.isConnected) {
+            btn.removeAttribute('data-armed');
+            btn.textContent = 'Hapus';
+            btn.className = 'px-2.5 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors';
+          }
+        }, 3500);
+        return;
+      }
+      fetch(TB_API + '/db/rows?project_id=' + encodeURIComponent(tbPid()) + '&table=' + encodeURIComponent(tbName) + '&id=' + encodeURIComponent(row.id), { method: 'DELETE', headers: tbHdrs(false) })
+        .then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          tbBusy = false;
+          tbOffset = 0;
+          tbLoadRows();
+        })
+        .catch(function () {
+          btn.removeAttribute('data-armed');
+          btn.textContent = 'Hapus';
+          btn.className = 'px-2.5 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors';
+          document.getElementById('tb-error-text').textContent = 'Gagal menghapus baris. Coba lagi.';
+          tbShow('tb-error');
+        });
     }
 
     function tbFormError(msg) { var el = document.getElementById('tb-form-error'); el.textContent = msg; el.classList.remove('hidden'); }
@@ -817,7 +866,6 @@
     document.getElementById('tb-json-btn').addEventListener('click', function () { tbExport('json'); });
 
     document.getElementById('tb-add-btn').addEventListener('click', function () { tbShowForm(null); });
-    document.getElementById('tb-empty-btn').addEventListener('click', function () { tbShowForm(null); });
     document.getElementById('tb-save-btn').addEventListener('click', tbSave);
     document.getElementById('tb-cancel-btn').addEventListener('click', tbFormBack);
     document.getElementById('tb-form-back').addEventListener('click', tbFormBack);

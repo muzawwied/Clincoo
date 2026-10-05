@@ -353,20 +353,34 @@
           <!-- daftar tabel: baris polos tanpa card -->
           <div id="db-list" class="hidden divide-y divide-gray-200 dark:divide-slate-700/60"></div>
 
-          <!-- grafik ringkasan database (teks polos + canvas, bukan card) -->
-          <div id="db-chart-sec" class="hidden pt-8 mt-6 border-t border-gray-100 dark:border-slate-700/60">
-            <p class="text-sm font-semibold text-gray-900 dark:text-white">Grafik</p>
-            <div id="db-chart-modes" class="flex items-center gap-4 mt-3 text-xs font-semibold"></div>
-            <div class="mt-4 h-56 sm:h-64"><canvas id="db-chart"></canvas></div>
-            <p id="db-chart-note" class="text-xs text-gray-400 dark:text-gray-500 mt-2"></p>
-          </div>
-
           <!-- kosong -->
           <div id="db-empty" class="hidden py-12 flex flex-col items-center justify-center text-center">
             <svg class="w-10 h-10 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3 5v14a9 3 0 0 0 18 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 3 0 0 0 18 0"></path></svg>
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Belum ada tabel</p>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-xs">Buat tabel pertamamu untuk mulai menyimpan data aplikasi, seperti pengguna, pesanan, atau konten.</p>
-            <button id="db-empty-btn" type="button" class="mt-5 px-5 py-2.5 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">Buat tabel</button>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-xs">Buat tabel pertamamu lewat tombol di atas untuk mulai menyimpan data aplikasi.</p>
+          </div>
+        </div>
+
+        <!-- cara pemakaian: panduan singkat memakai database -->
+        <div id="db-how-sec" class="hidden pt-8 mt-10 border-t border-gray-100 dark:border-slate-700/60">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white">Cara pemakaian</p>
+          <div class="mt-4 space-y-4">
+            <div class="flex items-start gap-3">
+              <span class="shrink-0 w-6 h-6 rounded-full bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs font-semibold">1</span>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed"><span class="font-semibold text-gray-800 dark:text-gray-200">Buat tabel.</span> Klik <span class="font-semibold">Buat tabel</span> di atas, beri nama, lalu tentukan kolomnya — misal tabel <span class="font-mono text-[11px]">pengguna</span> dengan kolom nama dan email.</p>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="shrink-0 w-6 h-6 rounded-full bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs font-semibold">2</span>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed"><span class="font-semibold text-gray-800 dark:text-gray-200">Isi data.</span> Buka tabelnya, lalu tambah, ubah, atau hapus baris kapan saja — datanya langsung tersimpan.</p>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="shrink-0 w-6 h-6 rounded-full bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs font-semibold">3</span>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed"><span class="font-semibold text-gray-800 dark:text-gray-200">Buat kunci akses.</span> Di bagian <span class="font-semibold">Akses dari aplikasi</span> di bawah, buat kuncinya dan simpan di tempat aman.</p>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="shrink-0 w-6 h-6 rounded-full bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs font-semibold">4</span>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed"><span class="font-semibold text-gray-800 dark:text-gray-200">Sambungkan aplikasimu.</span> Tempel kunci sebagai Bearer token di kode aplikasi — contoh pemakaian lengkap tersedia tepat di bawah kuncinya.</p>
+            </div>
           </div>
         </div>
 
@@ -401,6 +415,35 @@
               </button>
             </div>
           </div>
+        </div>
+
+        <!-- grafik database: 5 chart (Chart.js), di bagian paling bawah -->
+        <div id="db-chart-sec" class="hidden pt-8 mt-10 border-t border-gray-100 dark:border-slate-700/60">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white">Grafik</p>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Ringkasan database proyekmu — terisi otomatis dari tabel dan barismu.</p>
+          <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-10">
+            <div class="sm:col-span-2">
+              <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Baris per tabel</p>
+              <div class="h-56 sm:h-64"><canvas id="db-chart-rows"></canvas></div>
+            </div>
+            <div>
+              <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Kolom per tabel</p>
+              <div class="h-56"><canvas id="db-chart-cols"></canvas></div>
+            </div>
+            <div>
+              <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Tabel dibuat per hari</p>
+              <div class="h-56"><canvas id="db-chart-created"></canvas></div>
+            </div>
+            <div>
+              <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Tipe kolom terpakai</p>
+              <div class="h-56"><canvas id="db-chart-types"></canvas></div>
+            </div>
+            <div>
+              <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Komposisi baris per tabel</p>
+              <div class="h-56"><canvas id="db-chart-share"></canvas></div>
+            </div>
+          </div>
+          <p id="db-chart-note" class="text-xs text-gray-400 dark:text-gray-500 mt-6"></p>
         </div>
 
         <!-- form buat tabel: baris polos divide-y, tanpa card -->
@@ -475,58 +518,129 @@
     }
 
     var dbTables = null;
+    function dbDateShort(s) {
+      try {
+        var d = new Date(String(s || '').replace(' ', 'T'));
+        if (isNaN(d.getTime())) return String(s || '').slice(0, 10);
+        return d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][d.getMonth()] + ' ' + String(d.getFullYear()).slice(2);
+      } catch (e) { return String(s || '').slice(0, 10); }
+    }
     function dbRender(tables) {
       dbTables = tables || [];
       var list = document.getElementById('db-list');
-      list.innerHTML = '';
+      list.innerHTML =
+        '<div class="overflow-x-auto"><table class="w-full text-sm border-collapse">' +
+        '<thead><tr class="text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 border-b border-gray-200 dark:border-slate-700/60">' +
+        '<th class="py-2.5 pr-4 font-semibold">Tabel</th>' +
+        '<th class="py-2.5 pr-4 font-semibold">Kolom</th>' +
+        '<th class="py-2.5 pr-4 font-semibold">Baris</th>' +
+        '<th class="py-2.5 pr-4 font-semibold">Dibuat</th>' +
+        '<th class="py-2.5 font-semibold text-right">Aksi</th>' +
+        '</tr></thead><tbody id="db-tbody"></tbody></table></div>';
+      var body = document.getElementById('db-tbody');
       (tables || []).forEach(function (t) {
-        var a = document.createElement('a');
-        a.href = '#';
-        a.className = 'flex items-center justify-between gap-3 py-3.5 group';
-        var cols = (t.columns || []).map(function (c) { return c.name; });
-        var meta = (cols.length + ' kolom') + (typeof t.rows === 'number' ? (' · ' + t.rows + ' baris') : '');
-        a.innerHTML =
-          '<span class="min-w-0">' +
-          '<span class="block text-sm font-medium text-gray-800 dark:text-gray-200">' + String(t.name || '').replace(/[&<>]/g, function (s2) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[s2]; }) + '</span>' +
-          '<span class="block text-xs text-gray-400 dark:text-gray-500 truncate">' + meta + '</span>' +
-          '</span>' +
-          '<svg class="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0 group-hover:text-gray-500 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"></path></svg>';
-        a.href = '/proyek/pengaturan/database/tabel/?name=' + encodeURIComponent(t.name);
-        list.appendChild(a);
+        var tr = document.createElement('tr');
+        tr.className = 'group cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/40';
+        var nm = String(t.name || '').replace(/[&<>]/g, function (s2) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[s2]; });
+        tr.innerHTML =
+          '<td class="py-3 pr-4 font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">' + nm + '</td>' +
+          '<td class="py-3 pr-4 text-gray-500 dark:text-gray-400 whitespace-nowrap">' + (t.columns || []).length + '</td>' +
+          '<td class="py-3 pr-4 text-gray-500 dark:text-gray-400 whitespace-nowrap">' + (typeof t.rows === 'number' ? t.rows : '\u2014') + '</td>' +
+          '<td class="py-3 pr-4 text-gray-400 dark:text-gray-500 whitespace-nowrap">' + (t.created_at ? dbDateShort(t.created_at) : '\u2014') + '</td>' +
+          '<td class="py-3 text-right whitespace-nowrap">' +
+          '<span class="inline-flex items-center gap-1">' +
+          '<button type="button" class="db-open px-2.5 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">Buka</button>' +
+          '<button type="button" data-name="' + nm + '" class="db-del px-2.5 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors">Hapus</button>' +
+          '</span></td>';
+        tr.addEventListener('click', function (ev) {
+          var del = ev.target.closest('.db-del');
+          if (del) { ev.stopPropagation(); dbDropTable(del, t.name); return; }
+          location.href = '/proyek/pengaturan/database/tabel/?name=' + encodeURIComponent(t.name);
+        });
+        body.appendChild(tr);
       });
       dbShow(tables && tables.length ? 'db-list' : 'db-empty');
       try { dbChartRender(); } catch (e) { var _cs = document.getElementById('db-chart-sec'); if (_cs) _cs.classList.add('hidden'); }
     }
+    // hapus tabel: dua langkah (klik "Hapus" -> "Yakin?") supaya nggak sengaja kehapus
+    function dbDropTable(btn, name) {
+      if (btn.getAttribute('data-armed') !== '1') {
+        btn.setAttribute('data-armed', '1');
+        btn.textContent = 'Yakin?';
+        btn.className = 'px-2.5 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 rounded-lg transition-colors';
+        setTimeout(function () {
+          if (btn.isConnected) {
+            btn.removeAttribute('data-armed');
+            btn.textContent = 'Hapus';
+            btn.className = 'px-2.5 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors';
+          }
+        }, 3500);
+        return;
+      }
+      fetch(DB_API + '/db/tables?project_id=' + encodeURIComponent(dbPid()) + '&name=' + encodeURIComponent(name), { method: 'DELETE', headers: dbHdrs(false) })
+        .then(function (r) { return r.ok ? null : r.json().catch(function () { return {}; }).then(function (d) { throw new Error((d && d.error) || 'Gagal menghapus tabel'); }); })
+        .then(function () { dbCacheClear(); dbLoadBusy = false; dbLoad(); })
+        .catch(function (e) { dbErr(e.message || 'Gagal menghapus tabel. Coba lagi.'); });
+    }
 
-    // ---- grafik ringkasan: jumlah baris & kolom per tabel ----
-    var dbChart = null, dbChartMode = 'rows';
+    // ---- grafik ringkasan database: 5 chart (Chart.js) ----
+    var dbCharts = [];
     function dbChartTheme() {
       var dark = document.body.classList.contains('dark-mode');
-      return { text: dark ? '#9aa0a6' : '#6b7280', grid: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' };
+      return {
+        text: dark ? '#9aa0a6' : '#6b7280',
+        grid: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+        accent: dark ? '#e5e7eb' : '#111827',
+        accent2: dark ? '#9ca3af' : '#4b5563',
+        accent3: dark ? '#6b7280' : '#9ca3af',
+        accent4: dark ? '#4b5563' : '#d1d5db'
+      };
     }
     function dbChartRender() {
       var sec = document.getElementById('db-chart-sec');
       var tables = dbTables || [];
       // grafik SELALU tampil — walau belum ada tabel/data (bidang kosong + catatan)
       sec.classList.remove('hidden');
-      var modes = document.getElementById('db-chart-modes');
-      modes.innerHTML =
-        '<button data-m="rows" class="db-chart-mode pb-0.5 ' + (dbChartMode === 'rows' ? 'text-black dark:text-white border-b-2 border-black dark:border-white' : 'text-gray-400 dark:text-gray-500') + '">Baris per tabel</button>' +
-        '<button data-m="cols" class="db-chart-mode pb-0.5 ' + (dbChartMode === 'cols' ? 'text-black dark:text-white border-b-2 border-black dark:border-white' : 'text-gray-400 dark:text-gray-500') + '">Kolom per tabel</button>';
-      [].forEach.call(modes.querySelectorAll('.db-chart-mode'), function (b) {
-        b.addEventListener('click', function () { dbChartMode = b.getAttribute('data-m'); dbChartRender(); });
-      });
       var th = dbChartTheme();
-      var labels = tables.map(function (t) { return String(t.name).slice(0, 24); });
-      var data = tables.map(function (t) { return dbChartMode === 'cols' ? (t.columns || []).length : (typeof t.rows === 'number' ? t.rows : 0); });
-      if (dbChart) dbChart.destroy();
-      dbChart = new Chart(document.getElementById('db-chart'), {
-        type: 'bar',
-        data: { labels: labels, datasets: [{ data: data, backgroundColor: '#111827', borderRadius: 4, maxBarThickness: 42 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: th.text, maxRotation: 45, autoSkip: true }, grid: { display: false } }, y: { ticks: { color: th.text, precision: 0 }, grid: { color: th.grid }, beginAtZero: true } } }
-      });
+      dbCharts.forEach(function (c) { try { c.destroy(); } catch (e) {} });
+      dbCharts = [];
+      var names = tables.map(function (t) { return String(t.name).slice(0, 24); });
+      function barOpts() {
+        return { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+          scales: { x: { ticks: { color: th.text, maxRotation: 45, autoSkip: true }, grid: { display: false } },
+            y: { ticks: { color: th.text, precision: 0 }, grid: { color: th.grid }, beginAtZero: true } } };
+      }
+      function doughnutOpts() {
+        return { responsive: true, maintainAspectRatio: false, cutout: '62%',
+          plugins: { legend: { position: 'right', labels: { color: th.text, boxWidth: 10, boxHeight: 10, font: { size: 11 } } } } };
+      }
+      var palette = [th.accent, th.accent2, th.accent3, th.accent4];
+      // 1. baris per tabel
+      dbCharts.push(new Chart(document.getElementById('db-chart-rows'), { type: 'bar',
+        data: { labels: names, datasets: [{ data: tables.map(function (t) { return typeof t.rows === 'number' ? t.rows : 0; }), backgroundColor: th.accent, borderRadius: 4, maxBarThickness: 42 }] }, options: barOpts() }));
+      // 2. kolom per tabel
+      dbCharts.push(new Chart(document.getElementById('db-chart-cols'), { type: 'bar',
+        data: { labels: names, datasets: [{ data: tables.map(function (t) { return (t.columns || []).length; }), backgroundColor: th.accent2, borderRadius: 4, maxBarThickness: 34 }] }, options: barOpts() }));
+      // 3. tabel dibuat per hari
+      var days = {};
+      tables.forEach(function (t) { var d = String(t.created_at || '').slice(0, 10); if (d) days[d] = (days[d] || 0) + 1; });
+      var dl = Object.keys(days).sort();
+      dbCharts.push(new Chart(document.getElementById('db-chart-created'), { type: 'bar',
+        data: { labels: dl.map(function (d) { return dbDateShort(d); }), datasets: [{ data: dl.map(function (d) { return days[d]; }), backgroundColor: th.accent, borderRadius: 4, maxBarThickness: 34 }] }, options: barOpts() }));
+      // 4. tipe kolom terpakai
+      var types = { text: 0, number: 0, boolean: 0, date: 0 };
+      tables.forEach(function (t) { (t.columns || []).forEach(function (c) { if (types[c.type] !== undefined) types[c.type]++; }); });
+      var tk = Object.keys(types).filter(function (k) { return types[k] > 0; });
+      dbCharts.push(new Chart(document.getElementById('db-chart-types'), { type: 'doughnut',
+        data: { labels: tk.length ? tk : ['text', 'number', 'boolean', 'date'], datasets: [{ data: tk.length ? tk.map(function (k) { return types[k]; }) : [0, 0, 0, 0], backgroundColor: palette, borderWidth: 0 }] }, options: doughnutOpts() }));
+      // 5. komposisi baris per tabel
+      var withRows = tables.filter(function (t) { return (t.rows || 0) > 0; });
+      dbCharts.push(new Chart(document.getElementById('db-chart-share'), { type: 'doughnut',
+        data: { labels: withRows.length ? withRows.map(function (t) { return String(t.name).slice(0, 20); }) : ['Belum ada baris'],
+          datasets: [{ data: withRows.length ? withRows.map(function (t) { return t.rows; }) : [1],
+            backgroundColor: withRows.length ? palette : [document.body.classList.contains('dark-mode') ? '#374151' : '#e5e7eb'], borderWidth: 0 }] }, options: doughnutOpts() }));
       document.getElementById('db-chart-note').textContent = tables.length
-        ? tables.length + ' tabel · ' + (dbChartMode === 'cols' ? 'jumlah kolom' : 'jumlah baris') + ' per tabel'
+        ? tables.length + ' tabel · ringkasan lengkap database proyekmu'
         : 'Belum ada tabel — grafik terisi otomatis setelah tabel dan baris ditambahkan.';
     }
 
@@ -640,7 +754,6 @@
     }
 
     document.getElementById('db-new-btn').addEventListener('click', dbFormOpen);
-    document.getElementById('db-empty-btn').addEventListener('click', dbFormOpen);
     document.getElementById('db-add-col').addEventListener('click', function () { document.getElementById('db-cols').appendChild(dbColRow('', 'text')); });
     document.getElementById('db-save-btn').addEventListener('click', dbFormSave);
     document.getElementById('db-cancel-btn').addEventListener('click', dbLoad);
@@ -709,6 +822,8 @@
         .then(function (d) {
           var sec = document.getElementById('db-key-sec');
           sec.classList.remove('hidden');
+          var how = document.getElementById('db-how-sec');
+          if (how) how.classList.remove('hidden');
           dbKeyRender(d);
         })
         .catch(function () {});
