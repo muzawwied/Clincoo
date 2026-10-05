@@ -25,7 +25,7 @@ async function initTable(db) {
 function newKey() {
   const b = new Uint8Array(24);
   crypto.getRandomValues(b);
-  return 'clk_db_' + Array.from(b).map(x => x.toString(16).padStart(2, '0')).join('');
+  return 'clc_db_' + Array.from(b).map(x => x.toString(16).padStart(2, '0')).join('');
 }
 
 async function guard(env, request, projectId) {
