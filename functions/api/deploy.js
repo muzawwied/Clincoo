@@ -825,6 +825,15 @@ export async function onRequestPost({ request, env }) {
     }
 
     await setPhase(db, T.projectSettings, projectId, 'Menyiapkan proyek Pages...');
+    // Guard ukuran: proyek raksasa membuat Worker kena batas CPU/memori/timeout 100 dtk
+    // proxy Cloudflare — errornya HTML (bukan JSON) dan sulit dipahami user. Tolak
+    // lebih awal dengan pesan jelas, sebelum resources dihabiskan percuma.
+    let totalChars = 0;
+    for (const f of files) totalChars += String(f.content || '').length;
+    if (totalChars > 45_000_000) {
+      await setPhase(db, T.projectSettings, projectId, '');
+      return json({ error: 'Proyek terlalu besar untuk sekali deploy (' + Math.round(totalChars / 1000000) + ' MB kode). Kurangi ukuran proyek — pecah jadi beberapa situs atau hapus file/aset terbesar — lalu deploy lagi.' }, 413);
+    }
     const targetName = isPreview ? prvNameFor(name) : name;
     await ensurePagesProject(creds, targetName);
     await setSetting(db, T.projectSettings, projectId, 'pages_project', name);
@@ -867,7 +876,7 @@ export async function onRequestPost({ request, env }) {
     const chunks = [];
     for (let i = 0; i < toUpload.length; i += 25) chunks.push(toUpload.slice(i, i + 25));
     let uploaded = 0;
-    const CONC = 3;
+    const CONC = 6; // 3 -> 6: batch upload lebih cepat, hindari timeout proxy 100 dtk di proyek besar
     for (let i = 0; i < chunks.length; i += CONC) {
       await Promise.all(chunks.slice(i, i + CONC).map(async (chunk) => {
         const batch = chunk.map(a => ({

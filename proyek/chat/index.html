@@ -4543,7 +4543,10 @@ window.chatLivePreview = function () {
             const pid = currentProjectId;
             if (!pid) return { success: false, error: 'Tidak ada proyek aktif. Buka proyek dulu dari daftar proyek.' };
             const res = await fetch(TOOL_API_BASE + '/api/deploy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project_id: pid }) });
-            const d = await res.json();
+            // Server deploy bisa dibunuh Cloudflare (timeout 100 dtk / batas CPU) saat proyek besar,
+            // yang balas HTML error page — jangan biarkan res.json() crash dengan "Unexpected token '<'".
+            const d = await res.json().catch(function () { return null; });
+            if (!d) return { success: false, error: 'Deploy gagal: server tidak merespons tepat waktu (HTTP ' + res.status + '). Proyek mungkin terlalu besar untuk sekali deploy. Tunggu sebentar lalu coba deploy lagi; kalau masih gagal, pecah proyek atau kurangi ukuran file terbesarnya.' };
             if (!res.ok || d.error) return { success: false, error: d.error || 'Deploy gagal.' };
             // DNS cache: hasil deploy langsung siap di halaman Domain Kustom (tanpa buka halaman itu dulu)
             try { var _dk = 'clincoo_' + pid + "_domain_cache", _dc = {}; try { _dc = JSON.parse(localStorage.getItem(_dk) || '{}') || {}; } catch (e) {} localStorage.setItem(_dk, JSON.stringify(Object.assign(_dc, { pagesUrl: d.pages_url || '', deployed: true, ts: Date.now() }))); } catch (e) {}
