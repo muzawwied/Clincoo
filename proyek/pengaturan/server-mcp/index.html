@@ -484,6 +484,15 @@
             </div>
 
             <div>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Aktivitas Terbaru</p>
+              <div id="mcp-activity"></div>
+              <div id="mcp-activity-footer" class="flex justify-between items-center mt-2 hidden">
+                <span id="mcp-activity-count" class="text-xs text-gray-400 dark:text-gray-500"></span>
+                <button type="button" onclick="clearMcpActivity()" class="text-xs font-medium text-gray-400 hover:text-red-500 underline underline-offset-4 cursor-pointer bg-transparent border-0 p-0">Hapus Riwayat</button>
+              </div>
+            </div>
+
+            <div>
               <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Catatan</p>
               <p class="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">Setiap perubahan yang dilakukan AI eksternal tersinkronisasi secara real-time ke workspace proyek ini. Tindakan "Putuskan semua akses" akan mencabut token secara permanen.</p>
             </div>
@@ -509,7 +518,7 @@ function _mcpPid() {
   try { return localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) { return ''; }
 }
 
-var mcpState = { active: false, token: '', scopes: { read: true, write: false, delete: false, chat: false, deploy: false, settings: false, email: false, notif: false }, created_at: null, url: '', urlToken: '' };
+var mcpState = { active: false, token: '', scopes: { read: true, write: false, delete: false, chat: false, deploy: false, settings: false, email: false, notif: false }, created_at: null, url: '', urlToken: '', activity: [] };
 // 8 izin MCP: read default ON, sisanya default OFF (least privilege).
 var MCP_SCOPE_KEYS = ['read', 'write', 'delete', 'chat', 'deploy', 'settings', 'email', 'notif'];
 function _mcpNormScopes(r) {
@@ -606,7 +615,7 @@ function renderMcp() {
   };
   show(inactive, !mcpState.active);
   show(active, mcpState.active);
-  if (!mcpState.active) return;
+  if (!mcpState.active) { renderMcpActivity(); return; }
   mcpState.url = mcpEndpointUrl();
   mcpState.urlToken = mcpState.url + '&token=' + encodeURIComponent(mcpState.token || '');
   var urlEl = document.getElementById('mcp-url');
@@ -630,6 +639,7 @@ function renderMcp() {
   }
   MCP_SCOPE_KEYS.forEach(function (k) { applyScopeSwitch(k); });
   renderMcpTools();
+  renderMcpActivity();
 }
 
 // ===== Cache lokal: refresh gak loading terus — state terakhir langsung tampil,
@@ -649,6 +659,7 @@ async function loadMcp() {
     mcpState.token = cached.token;
     mcpState.scopes = _mcpNormScopes(cached.scopes);
     mcpState.created_at = cached.created_at || null;
+    mcpState.activity = Array.isArray(cached.activity) ? cached.activity : [];
     renderMcp();
     // 2) Cegarkan diam-diam: gak ada skeleton, UI gak berkedip.
     //    Cukup tiap 10 menit; lebih baru dari itu percuma (datanya sama terus).
@@ -657,7 +668,7 @@ async function loadMcp() {
       var r = await mcpRequest('GET');
       if (r && r.token) {
         if (r.token !== mcpState.token) { mcpState.token = r.token; mcpToast('Token diperbarui dari perangkat lain'); }
-        _mcpCacheWrite(r); mcpState.scopes = _mcpNormScopes(r.scopes); mcpState.created_at = r.created_at || mcpState.created_at; renderMcp();
+        _mcpCacheWrite(r); mcpState.scopes = _mcpNormScopes(r.scopes); mcpState.created_at = r.created_at || mcpState.created_at; mcpState.activity = Array.isArray(r.activity) ? r.activity : []; renderMcp();
       }
       else if (r && r.active === false && r._status === 200) { _mcpCacheClear(); mcpState.active = false; mcpState.token = ''; mcpState.created_at = null; renderMcp(); }
     } catch (e) { /* offline/lelet: tetap pakai cache */ }
@@ -676,12 +687,74 @@ async function loadMcp() {
     mcpState.token = d.token;
     mcpState.scopes = _mcpNormScopes(d.scopes);
     mcpState.created_at = d.created_at || null;
+    mcpState.activity = Array.isArray(d.activity) ? d.activity : [];
     _mcpCacheWrite(d);
   } else {
     mcpState.active = false;
     mcpState.token = '';
+    mcpState.activity = [];
   }
   renderMcp();
+}
+
+function renderMcpActivity() {
+  var box = document.getElementById('mcp-activity');
+  var footer = document.getElementById('mcp-activity-footer');
+  var cnt = document.getElementById('mcp-activity-count');
+  if (!box) return;
+  var list = Array.isArray(mcpState.activity) ? mcpState.activity : [];
+  if (footer) footer.classList.toggle('hidden', list.length === 0 || !mcpState.active);
+  if (cnt) cnt.textContent = list.length + ' entri terakhir';
+  if (!list.length) {
+    box.innerHTML = mcpState.active
+      ? '<p class="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">Belum ada aktivitas AI eksternal yang tercatat pada proyek ini.</p>'
+      : '';
+    return;
+  }
+  var html = '<div class="rounded-xl border border-gray-200 dark:border-slate-700 divide-y divide-gray-100 dark:divide-slate-700/60 overflow-hidden">';
+  list.forEach(function (a) {
+    var ok = a && Number(a.ok) === 1;
+    var tool = String((a && a.tool) || '?').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    var detail = ok ? '' : ' <span class="text-red-400">&middot; ' + String((a && a.detail) || 'gagal').replace(/&/g, '&amp;').replace(/</g, '&lt;').slice(0, 60) + '</span>';
+    html += '<div class="flex items-center gap-2 px-3 py-2 bg-white dark:bg-transparent">'
+      + '<span class="w-1.5 h-1.5 rounded-full flex-shrink-0 ' + (ok ? 'bg-emerald-500' : 'bg-red-500') + '"></span>'
+      + '<span class="text-xs font-mono text-gray-600 dark:text-gray-300">' + tool + '</span>'
+      + '<span class="text-xs text-gray-400 dark:text-gray-500">' + (ok ? 'Berhasil' : 'Gagal') + detail + '</span>'
+      + '<span class="ml-auto text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">' + _mcpFmtTime(a && a.created_at) + '</span>'
+      + '</div>';
+  });
+  html += '</div>';
+  box.innerHTML = html;
+}
+
+function _mcpFmtTime(ts) {
+  if (!ts) return '';
+  try {
+    var d = new Date(String(ts).replace(' ', 'T') + 'Z');
+    if (isNaN(d.getTime())) return String(ts);
+    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ', '
+      + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  } catch (e) { return String(ts); }
+}
+
+async function clearMcpActivity() {
+  if (!confirm('Hapus seluruh riwayat aktivitas MCP pada proyek ini? Tindakan ini tidak dapat dibatalkan.')) return;
+  try {
+    var r = await fetch(MCP_TOKEN_API + '?project_id=' + encodeURIComponent(_mcpPid() || '') + '&scope=activity', {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + (_mcpUserToken || '') }
+    });
+    var d = await r.json().catch(function () { return {}; });
+    if (r.ok && d && d.ok) {
+      mcpState.activity = [];
+      var cached = _mcpCacheRead();
+      if (cached) { cached.activity = []; _mcpCacheWrite(cached); }
+      renderMcpActivity();
+      mcpToast('Riwayat aktivitas dihapus');
+    } else {
+      mcpToast((d && d.error) ? d.error : 'Gagal menghapus riwayat aktivitas');
+    }
+  } catch (e) { mcpToast('Gagal menghapus riwayat aktivitas'); }
 }
 
 function renderMcpError(msg) {

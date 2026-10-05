@@ -22,6 +22,7 @@ const CORS = {
 const J = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', ...CORS } });
 
 import { getUserByToken } from './auth/shared.js';
+import { tableFor } from './_tables.js';
 
 const BE2 = 'https://clincoo-be2.pages.dev/api';
 
@@ -170,11 +171,25 @@ export async function onRequestGet(context) {
   }
   let scopes = null;
   try { scopes = row && row.scopes ? JSON.parse(row.scopes) : null; } catch (e) {}
+  // Riwayat aktivitas AI eksternal (tabel terisolasi per proyek) — 30 entri terakhir
+  let activity = [];
+  if (row) {
+    try {
+      const at = tableFor('mcp_activity', projectId);
+      await env.DB.prepare(`CREATE TABLE IF NOT EXISTS ${at} (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT, tool TEXT NOT NULL,
+        ok INTEGER DEFAULT 1, detail TEXT, created_at TEXT DEFAULT (datetime('now'))
+      )`).run();
+      const rows = await env.DB.prepare(`SELECT tool, ok, detail, created_at FROM ${at} ORDER BY id DESC LIMIT 30`).all();
+      activity = rows.results || [];
+    } catch (e) {}
+  }
   return J({
     active: !!row,
     token: row ? row.token : null,
     scopes: normalizeScopes(scopes),
     created_at: row ? row.created_at : null,
+    activity,
     url: 'https://app.clincoo.buzz/api/mcp?project_id=' + encodeURIComponent(projectId)
   });
 }
@@ -228,6 +243,14 @@ export async function onRequestDelete(context) {
   const g = await guardOwner(request, env, projectId);
   if (g.res) return g.res;
   await ensureTables(env);
+  // scope=activity -> hanya hapus riwayat aktivitas, token tetap berlaku
+  if (url.searchParams.get('scope') === 'activity') {
+    try {
+      const at = tableFor('mcp_activity', projectId);
+      await env.DB.prepare(`DROP TABLE IF EXISTS ${at}`).run();
+    } catch (e) {}
+    return J({ ok: true });
+  }
   await env.DB.prepare('DELETE FROM mcp_tokens WHERE project_id = ?').bind(projectId).run();
   await mirrorWrite(g.token, projectId, { token: '', scopes: '', created_at: '' });
   return J({ ok: true });

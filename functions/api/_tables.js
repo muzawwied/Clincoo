@@ -4,7 +4,7 @@
 // antar-proyek tidak campur di satu tabel bersama.
 // File berprefix _ tidak dijadikan route oleh Pages Functions.
 
-const PROJECT_TABLES = ['chat_sessions', 'chat_messages', 'project_files', 'env_vars', 'project_settings', 'security_settings', 'deploy_logs'];
+const PROJECT_TABLES = ['chat_sessions', 'chat_messages', 'project_files', 'env_vars', 'project_settings', 'security_settings', 'deploy_logs', 'mcp_activity'];
 
 export function tableSuffix(projectId) {
   return String(projectId || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 24) || 'default';
@@ -90,6 +90,10 @@ export async function ensureProjectTables(db, projectId) {
   await db.prepare(`CREATE TABLE IF NOT EXISTS ${t('deploy_logs')} (
     id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT, status TEXT, url TEXT, message TEXT,
     created_at TEXT DEFAULT (datetime('now'))
+  )`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS ${t('mcp_activity')} (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT, tool TEXT NOT NULL,
+    ok INTEGER DEFAULT 1, detail TEXT, created_at TEXT DEFAULT (datetime('now'))
   )`).run();
 }
 

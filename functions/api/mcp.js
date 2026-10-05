@@ -6,6 +6,8 @@
 //        list_notifications, send_notification
 // Data file real-time diambil dari backend utama app.clincoo.buzz (/api/project-files, D1 produksi).
 
+import { tableFor } from './_tables.js';
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
@@ -130,6 +132,22 @@ function safePath(p) {
 }
 
 // Pemetaan tool -> izin yang dibutuhkan (null = selalu diizinkan)
+// Log aktivitas AI eksternal ke tabel terisolasi per proyek (p_<proj>_mcp_activity).
+// Best-effort: kegagalan logging tidak boleh menggagalkan eksekusi tool.
+// Riwayat dibatasi 200 entri terakhir per proyek (pruning otomatis).
+async function logActivity(env, projectId, tool, ok, detail) {
+  try {
+    const t = tableFor('mcp_activity', projectId);
+    await env.DB.prepare(`CREATE TABLE IF NOT EXISTS ${t} (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT, tool TEXT NOT NULL,
+      ok INTEGER DEFAULT 1, detail TEXT, created_at TEXT DEFAULT (datetime('now'))
+    )`).run();
+    await env.DB.prepare(`INSERT INTO ${t} (project_id, tool, ok, detail) VALUES (?, ?, ?, ?)`)
+      .bind(String(projectId || ''), String(tool || '?'), ok ? 1 : 0, String(detail || '').slice(0, 200)).run();
+    await env.DB.prepare(`DELETE FROM ${t} WHERE id NOT IN (SELECT id FROM ${t} ORDER BY id DESC LIMIT 200)`).run();
+  } catch (e) {}
+}
+
 const TOOL_SCOPES = {
   list_items: null, read_file: 'read', write_file: 'write', delete_item: 'delete', get_project_info: null,
   chat_ai: 'chat', deploy_project: 'deploy', deploy_status: 'deploy',
@@ -513,13 +531,16 @@ export async function onRequestPost(context) {
       const args = (body.params && body.params.arguments) || {};
       const denied = toolScope(name);
       if (denied && ctx.scopes[denied] === false) {
+        await logActivity(env, projectId, name, 0, 'izin "' + denied + '" tidak aktif');
         return rpcResult(id, { content: [{ type: 'text', text: 'Error: akses ditolak. Izin "' + denied + '" tidak diaktifkan untuk server MCP proyek ini (atur di halaman Server MCP Clincoo).' }], isError: true });
       }
       try {
         const result = await callTool(name, args, ctx);
+        await logActivity(env, projectId, name, 1, null);
         return rpcResult(id, result);
       } catch (e) {
         // error tool -> hasil isError (bukan error protokol)
+        await logActivity(env, projectId, name, 0, e.message);
         return rpcResult(id, { content: [{ type: 'text', text: 'Error: ' + e.message }], isError: true });
       }
     }
