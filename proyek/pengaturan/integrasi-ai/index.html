@@ -513,6 +513,7 @@
 
   var _aiModelValue = 'clincoo/auto';
   var _aiSecret = '';
+  var _aiModelQuery = '';
   // Daftar model: nama dirapikan (tanpa duplikasi brand, tanpa suffix teknis), dikelompokkan per brand.
   // Sumber: model gratis OpenRouter + model Workers AI Cloudflare (alokasi gratis), dialihkan Clincoo.
   var AI_MODELS = [
@@ -550,15 +551,22 @@
     { id: 'clincoo/laguna-s', label: 'Poolside: Laguna S 2.1', rate: '$0.000015 · serba guna', ctx: '128K token', vision: false, desc: 'Model serba guna dari Poolside untuk berbagai kebutuhan umum.' },
     { id: 'clincoo/north-code', label: 'Cohere: North Mini Code', rate: '$0.000015 · fokus kode', ctx: '128K token', vision: false, desc: 'Model Cohere yang difokuskan khusus untuk pemrograman.' },
     { id: 'clincoo/grok-4.7', label: 'xAI: Grok 4.7', rate: 'Segera — frontier reasoning', ctx: '500K token', vision: false, segera: true, desc: 'Model frontier xAI untuk reasoning tingkat tinggi, analisis mendalam, dan tugas kompleks.' },
+    { id: 'clincoo/grok-4.6', label: 'xAI: Grok 4.6', rate: 'Segera — reasoning', ctx: '500K token', vision: false, segera: true, desc: 'Generasi sebelumnya Grok untuk reasoning dan analisis yang tetap kuat.' },
+    { id: 'clincoo/grok-4.5', label: 'xAI: Grok 4.5', rate: 'Segera — reasoning', ctx: '500K token', vision: false, segera: true, desc: 'Varian Grok 4.5 untuk tugas reasoning dengan harga lebih hemat.' },
     { id: 'clincoo/gpt-6-astra', label: 'OpenAI: GPT-6 Astra', rate: 'Segera — flagship multimodal', ctx: '1M token', vision: true, segera: true, desc: 'Flagship OpenAI generasi 6, multimodal dengan reasoning dan kualitas jawaban tertinggi.' },
     { id: 'clincoo/gpt-6.1-sol', label: 'OpenAI: GPT-6.1 Sol', rate: 'Segera — generasi terbaru', ctx: '1M token', vision: true, segera: true, desc: 'Model generasi terbaru OpenAI, cepat dan presisi untuk berbagai tugas.' },
+    { id: 'clincoo/gpt-6-sol', label: 'OpenAI: GPT-6 Sol', rate: 'Segera — andalan', ctx: '1M token', vision: true, segera: true, desc: 'GPT-6 andalan OpenAI untuk beragam tugas dengan kualitas tinggi.' },
     { id: 'clincoo/gpt-6-luna-pro', label: 'OpenAI: GPT-6 Luna Pro', rate: 'Segera — varian pro hemat', ctx: '1M token', vision: true, segera: true, desc: 'Varian pro GPT-6 dengan harga hemat dan kualitas tinggi untuk tugas kompleks.' },
+    { id: 'clincoo/gpt-6-luna', label: 'OpenAI: GPT-6 Luna', rate: 'Segera — hemat', ctx: '1M token', vision: true, segera: true, desc: 'Varian GPT-6 yang hemat dengan kualitas tinggi untuk tugas sehari-hari.' },
     { id: 'clincoo/claude-sonnet-5.5', label: 'Anthropic: Claude Sonnet 5.5', rate: 'Segera — presisi & penulisan', ctx: '1M token', vision: true, segera: true, desc: 'Claude terbaru yang presisi, cocok untuk penulisan, analisis, dan tugas panjang.' },
     { id: 'clincoo/claude-opus-5.5', label: 'Anthropic: Claude Opus 5.5', rate: 'Segera — frontier', ctx: '1M token', vision: true, segera: true, desc: 'Model frontier Anthropic untuk reasoning dan penulisan paling dalam.' },
+    { id: 'clincoo/claude-fable-5.1', label: 'Anthropic: Claude Fable 5.1', rate: 'Segera — naratif & kreatif', ctx: '1M token', vision: false, segera: true, desc: 'Varian Claude yang kuat untuk penulisan naratif, kreatif, dan storytelling.' },
+    { id: 'clincoo/gemini-3.7-flash', label: 'Google: Gemini 3.7 Flash', rate: 'Segera — cepat · multimodal', ctx: '1M token', vision: true, segera: true, desc: 'Gemini 3.7 Flash untuk respons cepat dengan dukungan teks dan gambar.' },
     { id: 'clincoo/kimi-k3', label: 'Moonshot: Kimi K3', rate: 'Segera — generasi baru', ctx: '1M token', vision: false, segera: true, desc: 'Generasi terbaru Kimi dari Moonshot dengan reasoning dan kemampuan agentic lebih kuat.' },
     { id: 'clincoo/deepseek-v4.1-flash', label: 'DeepSeek V4.1 Flash', rate: 'Segera — cepat & hemat', ctx: '1M token', vision: false, segera: true, desc: 'Varian terbaru DeepSeek Flash, lebih cepat dan hemat untuk tugas harian.' },
     { id: 'clincoo/glm-5.3-prime', label: 'Z.ai: GLM 5.3 Prime', rate: 'Segera — agentic penuh', ctx: '1M token', vision: false, segera: true, desc: 'Varian tertinggi GLM 5.3 dengan kemampuan agentic dan coding terbaik.' },
     { id: 'clincoo/qwen-3.8-max', label: 'Qwen 3.8 Max', rate: 'Segera — frontier open', ctx: '1M token', vision: true, segera: true, desc: 'Varian terbesar Qwen 3.8 untuk tugas kompleks multibahasa dan multimodal.' },
+    { id: 'clincoo/qwen-3.8-omni-flash', label: 'Qwen 3.8 Omni Flash', rate: 'Segera — omni multimodal', ctx: '1M token', vision: true, segera: true, desc: 'Varian omni Qwen 3.8, cepat dan multimodal untuk berbagai input.' },
     { id: 'clincoo/llama-4-maverick', label: 'Meta: Llama 4 Maverick', rate: 'Segera — model besar open', ctx: '1M token', vision: true, segera: true, desc: 'Model open-weight besar Meta, kuat untuk reasoning dan pemahaman gambar.' },
     { id: 'clincoo/acak', label: 'Acak (jaringan mitra)', rate: '$0.000020 · otomatis', ctx: 'Bervariasi (jaringan mitra)', vision: false, desc: 'Memilih model secara acak dari jaringan mitra yang tersedia, cocok untuk pemerataan beban.' }
   ];
@@ -607,7 +615,12 @@
   function toggleAiModelPopover(e) {
     e.stopPropagation();
     var p = document.getElementById('ai-model-popover');
-    if (p) p.classList.toggle('hidden');
+    if (!p) return;
+    p.classList.toggle('hidden');
+    if (!p.classList.contains('hidden')) {
+      var si = document.getElementById('ai-model-search');
+      if (si) { _aiModelQuery = ''; si.value = ''; aiModelRenderRows(document.getElementById('ai-model-rows')); si.focus(); }
+    }
   }
   function aiModelLabel(id) {
     var m = AI_MODELS.filter(function (x) { return x.id === id; })[0];
@@ -655,6 +668,16 @@
     'clincoo/glm-5.3-prime': '../../../assets/ai-logos/zai.png',
     'clincoo/qwen-3.8-max': '../../../assets/ai-logos/qwen.png',
     'clincoo/llama-4-maverick': '../../../assets/ai-logos/meta-llama.png',
+    'clincoo/grok-4.7': '../../../assets/ai-logos/xai.svg',
+    'clincoo/grok-4.6': '../../../assets/ai-logos/xai.svg',
+    'clincoo/grok-4.5': '../../../assets/ai-logos/xai.svg',
+    'clincoo/claude-sonnet-5.5': '../../../assets/ai-logos/claude.svg',
+    'clincoo/claude-opus-5.5': '../../../assets/ai-logos/claude.svg',
+    'clincoo/claude-fable-5.1': '../../../assets/ai-logos/claude.svg',
+    'clincoo/gpt-6-sol': '../../../assets/ai-logos/openai.png',
+    'clincoo/gpt-6-luna': '../../../assets/ai-logos/openai.png',
+    'clincoo/gemini-3.7-flash': '../../../assets/ai-logos/gemini.png',
+    'clincoo/qwen-3.8-omni-flash': '../../../assets/ai-logos/qwen.png',
     'clincoo/acak': '../../../assets/logo-clincoo.png'
   };
   var AI_LOGO_FALLBACK = '../../../assets/logo-clincoo.png';
@@ -843,14 +866,32 @@
     var pop = document.getElementById('ai-model-popover');
     if (!pop) return;
     pop.innerHTML = '';
+    // kotak cari model di bagian atas popover — muncul setiap pop-up dibuka
+    var search = document.createElement('div');
+    search.className = 'sticky top-0 z-10 px-1 pt-1 pb-1 bg-white dark:bg-slate-800';
+    search.innerHTML = '<input id="ai-model-search" type="search" autocomplete="off" spellcheck="false" placeholder="Cari model…" class="w-full text-[13px] rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900/60 px-2.5 py-1.5 outline-none focus:border-indigo-400 dark:focus:border-indigo-500">';
+    pop.appendChild(search);
+    var rows = document.createElement('div');
+    rows.id = 'ai-model-rows';
+    pop.appendChild(rows);
+    search.querySelector('input').addEventListener('input', function () { _aiModelQuery = this.value; aiModelRenderRows(rows); });
+    aiModelRenderRows(rows);
+  }
+  function aiModelRenderRows(rows) {
+    if (!rows) return;
+    rows.innerHTML = '';
+    var q = String(_aiModelQuery || '').trim().toLowerCase();
+    var ada = false;
     AI_MODELS.forEach(function (m) {
+      if (q && m.label.toLowerCase().indexOf(q) === -1 && m.id.toLowerCase().indexOf(q) === -1) return;
+      ada = true;
       if (m.segera) {
         // model "Segera" (belum dialiri): teks abu-abu + tag, tidak bisa dipilih
         var sg = document.createElement('div');
         sg.className = 'w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg text-left cursor-default select-none';
         sg.innerHTML = aiModelIconChip(m.id) + '<span class="truncate text-gray-400 dark:text-slate-500">' + m.label + '</span>' +
           '<span class="ml-auto pl-2 flex-shrink-0 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500 bg-gray-100 dark:bg-slate-700/60 rounded-full px-2 py-0.5">Segera</span>';
-        pop.appendChild(sg);
+        rows.appendChild(sg);
         return;
       }
       // baris bersih: logo + nama saja; id & tombol salin pindah ke modal detail
@@ -862,8 +903,9 @@
         (sel ? '<span class="ml-auto pl-2 flex-shrink-0 text-gray-900 dark:text-white"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg></span>' : '') +
         '<span role="button" tabindex="0" data-id="' + m.id + '" aria-label="' + (isAiModelFav(m.id) ? 'Hapus dari favorit' : 'Tandai favorit') + '" onclick="event.stopPropagation();aiToggleFavStar(this)" class="' + (sel ? '' : 'ml-auto ') + 'pl-2 pr-1 flex-shrink-0 cursor-pointer transition-colors ' + (isAiModelFav(m.id) ? 'text-amber-500' : 'text-gray-300 dark:text-slate-600 hover:text-amber-400') + '"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="' + (isAiModelFav(m.id) ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.5a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385c.117.489-.417.874-.846.61l-4.725-2.885a.562.562 0 0 0-.588 0L5.973 20.54c-.429.264-.963-.12-.846-.61l1.285-5.385a.563.563 0 0 0-.182-.557L2.026 10.386c-.38-.325-.178-.948.321-.988l5.518-.442a.563.563 0 0 0 .475-.345L10.465 3.5Z"></path></svg></span>';
       b.addEventListener('click', function () { openAiModelDetail(m.id); });
-      pop.appendChild(b);
+      rows.appendChild(b);
     });
+    if (!ada) rows.innerHTML = '<div class="px-3 py-3 text-center text-[12px] text-gray-400 dark:text-slate-500">Tidak ada model yang cocok</div>';
     if (window.lucide) lucide.createIcons();
   }
   function updateAiRateHint() {
@@ -1092,11 +1134,25 @@
     if (name) name.textContent = aiModelLabel(id);
     if (logo) logo.innerHTML = aiModelIconChip(id);
   }
+  var _aiPgQuery = '';
   function aiPgRenderPop() {
     var pop = document.getElementById('ai-pg-mpop');
     if (!pop) return;
+    _aiPgQuery = '';
+    pop.innerHTML = '<div class="sticky top-0 z-10 px-1 pt-1 pb-1 bg-white dark:bg-[#111111]"><input id="ai-pg-search" type="search" autocomplete="off" spellcheck="false" placeholder="Cari model…" class="w-full text-[13px] rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900/60 px-2.5 py-1.5 outline-none focus:border-indigo-400 dark:focus:border-indigo-500"></div><div id="ai-pg-mrows"></div>';
+    var si = document.getElementById('ai-pg-search');
+    if (si) si.addEventListener('input', function () { _aiPgQuery = this.value; aiPgRenderRows(); });
+    aiPgRenderRows();
+  }
+  function aiPgRenderRows() {
+    var rows = document.getElementById('ai-pg-mrows');
+    if (!rows) return;
     var html = '';
+    var q = String(_aiPgQuery || '').trim().toLowerCase();
+    var ada = false;
     AI_MODELS.forEach(function (m) {
+      if (q && m.label.toLowerCase().indexOf(q) === -1 && m.id.toLowerCase().indexOf(q) === -1) return;
+      ada = true;
       if (m.segera) {
         html += '<div class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl opacity-70 select-none">' +
           aiModelIconChip(m.id) +
@@ -1115,13 +1171,14 @@
         '<span role="button" class="ai-pg-star pl-1 text-[16px] leading-none ' + (fav ? 'text-yellow-400' : 'text-gray-300 dark:text-slate-600') + '" data-id="' + m.id + '">&#9733;</span>' +
         '</div>';
     });
-    pop.innerHTML = html;
+    if (!ada) html = '<div class="px-3 py-3 text-center text-[12px] text-gray-400 dark:text-slate-500">Tidak ada model yang cocok</div>';
+    rows.innerHTML = html;
   }
   function aiPgTogglePop(force) {
     var pop = document.getElementById('ai-pg-mpop');
     if (!pop) return;
     var show = (typeof force === 'boolean') ? force : pop.style.display === 'none';
-    if (show) { aiPgRenderPop(); pop.style.display = ''; } else { pop.style.display = 'none'; }
+    if (show) { aiPgRenderPop(); pop.style.display = ''; var si = document.getElementById('ai-pg-search'); if (si) si.focus(); } else { pop.style.display = 'none'; }
   }
 
   function aiPgSendCheck() {
