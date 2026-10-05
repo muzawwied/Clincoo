@@ -315,7 +315,7 @@
           <div class="flex items-center justify-between mb-4">
             <div>
               <h4 class="text-base font-semibold text-gray-900 dark:text-white">Server MCP</h4>
-              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Sambungkan proyek ini ke AI platform lain (Claude, Cursor, Windsurf, dll.) lewat Model Context Protocol. AI luar bisa mengakses workspace proyek ini secara real-time sesuai izin yang kamu atur.</p>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Sambungkan proyek ini ke platform AI eksternal (Claude, Cursor, Windsurf, dll.) melalui Model Context Protocol. AI eksternal dapat mengakses workspace proyek ini secara real-time sesuai izin yang ditetapkan.</p>
             </div>
             <span id="mcp-status-badge" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300">Memuat…</span>
           </div>
@@ -344,7 +344,7 @@
           <div id="mcp-error" class="py-10 flex-col items-center justify-center text-center hidden">
             <svg class="w-10 h-10 text-amber-400 mb-3 mx-auto" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path></svg>
             <p class="text-sm font-medium text-gray-700 dark:text-gray-200" id="mcp-error-msg">Gagal memeriksa status server MCP</p>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Server MCP kemungkinan masih aktif — statusnya hanya gagal dicek sesaat. Tidak perlu membuat ulang server.</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Server MCP kemungkinan masih aktif — pemeriksaan status hanya gagal untuk sementara. Tidak perlu membuat ulang server.</p>
             <button type="button" onclick="loadMcpRetry()" class="mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors cursor-pointer">Coba Lagi</button>
           </div>
 
@@ -375,12 +375,12 @@
 
             <div>
               <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Konfigurasi Akses</p>
-              <p class="text-xs text-gray-400 dark:text-gray-500 mb-2">Tentukan apa saja yang boleh dilakukan AI luar di workspace proyek ini. Perubahan tersimpan otomatis.</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mb-2">Tentukan operasi yang diizinkan bagi AI eksternal pada workspace proyek ini. Perubahan tersimpan otomatis.</p>
               <div class="rounded-xl border border-gray-200 dark:border-slate-700 divide-y divide-gray-100 dark:divide-slate-800 overflow-hidden">
                 <div class="flex items-center justify-between gap-3 px-3.5 py-3 bg-white dark:bg-[#0a0a0a]">
                   <div class="min-w-0">
                     <p class="text-sm font-medium text-gray-900 dark:text-white">Lihat &amp; baca file</p>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI bisa melihat daftar file dan membaca isinya</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI dapat melihat daftar file dan membaca isinya</p>
                   </div>
                   <button type="button" onclick="toggleScope('read')" class="relative w-11 h-6 flex-shrink-0 cursor-pointer focus:outline-none" aria-label="Izinkan baca file">
                     <div id="sw-read-bg" class="w-11 h-6 rounded-full transition-colors duration-200"></div>
@@ -390,7 +390,7 @@
                 <div class="flex items-center justify-between gap-3 px-3.5 py-3 bg-white dark:bg-[#0a0a0a]">
                   <div class="min-w-0">
                     <p class="text-sm font-medium text-gray-900 dark:text-white">Tulis &amp; ubah file</p>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI bisa membuat file baru dan mengubah isi file</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI dapat membuat file baru dan mengubah isi file</p>
                   </div>
                   <button type="button" onclick="toggleScope('write')" class="relative w-11 h-6 flex-shrink-0 cursor-pointer focus:outline-none" aria-label="Izinkan tulis file">
                     <div id="sw-write-bg" class="w-11 h-6 rounded-full transition-colors duration-200"></div>
@@ -400,7 +400,7 @@
                 <div class="flex items-center justify-between gap-3 px-3.5 py-3 bg-white dark:bg-[#0a0a0a]">
                   <div class="min-w-0">
                     <p class="text-sm font-medium text-gray-900 dark:text-white">Hapus file</p>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI bisa menghapus file atau folder di workspace</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI dapat menghapus file atau folder di workspace</p>
                   </div>
                   <button type="button" onclick="toggleScope('delete')" class="relative w-11 h-6 flex-shrink-0 cursor-pointer focus:outline-none" aria-label="Izinkan hapus file">
                     <div id="sw-delete-bg" class="w-11 h-6 rounded-full transition-colors duration-200"></div>
@@ -410,7 +410,7 @@
                 <div class="flex items-center justify-between gap-3 px-3.5 py-3 bg-white dark:bg-[#0a0a0a]">
                   <div class="min-w-0">
                     <p class="text-sm font-medium text-gray-900 dark:text-white">Chat AI Clincoo</p>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI bisa minta bantuan AI Clincoo: kompilasi, refactor, tanya konteks proyek (gak makan kuota chat kamu)</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI dapat memanfaatkan AI Clincoo untuk kompilasi, refactor, dan analisis konteks proyek (tidak mengonsumsi kuota chat)</p>
                   </div>
                   <button type="button" onclick="toggleScope('chat')" class="relative w-11 h-6 flex-shrink-0 cursor-pointer focus:outline-none" aria-label="Izinkan chat AI Clincoo">
                     <div id="sw-chat-bg" class="w-11 h-6 rounded-full transition-colors duration-200"></div>
@@ -420,7 +420,7 @@
                 <div class="flex items-center justify-between gap-3 px-3.5 py-3 bg-white dark:bg-[#0a0a0a]">
                   <div class="min-w-0">
                     <p class="text-sm font-medium text-gray-900 dark:text-white">Deployment</p>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI bisa mempublikasikan situs proyek dan melihat status deployment</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI dapat mempublikasikan situs proyek dan melihat status deployment</p>
                   </div>
                   <button type="button" onclick="toggleScope('deploy')" class="relative w-11 h-6 flex-shrink-0 cursor-pointer focus:outline-none" aria-label="Izinkan deploy proyek">
                     <div id="sw-deploy-bg" class="w-11 h-6 rounded-full transition-colors duration-200"></div>
@@ -430,7 +430,7 @@
                 <div class="flex items-center justify-between gap-3 px-3.5 py-3 bg-white dark:bg-[#0a0a0a]">
                   <div class="min-w-0">
                     <p class="text-sm font-medium text-gray-900 dark:text-white">Pengaturan &amp; Integrasi</p>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI bisa membaca dan mengubah pengaturan proyek (nama app, deskripsi, webhook)</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI dapat membaca dan mengubah pengaturan proyek (nama app, deskripsi, webhook)</p>
                   </div>
                   <button type="button" onclick="toggleScope('settings')" class="relative w-11 h-6 flex-shrink-0 cursor-pointer focus:outline-none" aria-label="Izinkan kelola pengaturan">
                     <div id="sw-settings-bg" class="w-11 h-6 rounded-full transition-colors duration-200"></div>
@@ -440,7 +440,7 @@
                 <div class="flex items-center justify-between gap-3 px-3.5 py-3 bg-white dark:bg-[#0a0a0a]">
                   <div class="min-w-0">
                     <p class="text-sm font-medium text-gray-900 dark:text-white">Kirim Email</p>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI bisa mengirim email lewat email API proyek (mengikuti kuota bulanan proyek)</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI dapat mengirim email melalui email API proyek (mengikuti kuota bulanan proyek)</p>
                   </div>
                   <button type="button" onclick="toggleScope('email')" class="relative w-11 h-6 flex-shrink-0 cursor-pointer focus:outline-none" aria-label="Izinkan kirim email">
                     <div id="sw-email-bg" class="w-11 h-6 rounded-full transition-colors duration-200"></div>
@@ -450,7 +450,7 @@
                 <div class="flex items-center justify-between gap-3 px-3.5 py-3 bg-white dark:bg-[#0a0a0a]">
                   <div class="min-w-0">
                     <p class="text-sm font-medium text-gray-900 dark:text-white">Notifikasi</p>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI bisa membaca dan mengirim notifikasi ke dashboard Clincoo kamu</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI dapat membaca dan mengirim notifikasi ke dashboard Clincoo</p>
                   </div>
                   <button type="button" onclick="toggleScope('notif')" class="relative w-11 h-6 flex-shrink-0 cursor-pointer focus:outline-none" aria-label="Izinkan kelola notifikasi">
                     <div id="sw-notif-bg" class="w-11 h-6 rounded-full transition-colors duration-200"></div>
@@ -466,7 +466,7 @@
                 <code id="mcp-url-token" class="flex-1 text-[11px] font-mono text-gray-700 dark:text-gray-300 break-all select-all"></code>
                 <button type="button" onclick="copyMcpText(mcpState.urlToken, this)" class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-500 transition-colors cursor-pointer" title="Salin URL + token"><svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M5 15.4A2 2 0 0 1 3.6 14V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 1.4"></path></svg><span>Salin</span></button>
               </div>
-              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Kalau aplikasinya cuma minta nama + URL server dan gak ada tempat isi token, pakai yang ini. Token-nya udah nyatu di dalam URL — tinggal tempel, langsung jalan.</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Gunakan format ini jika aplikasi hanya menyediakan kolom nama + URL server tanpa kolom token. Token telah terintegrasi langsung di dalam URL.</p>
             </div>
 
             <div>
@@ -736,7 +736,7 @@ async function activateMcp() {
 }
 
 async function regenerateMcp() {
-  if (!confirm('Buat ulang token? Token lama langsung tidak berlaku.')) return;
+  if (!confirm('Buat ulang token? Token sebelumnya langsung tidak berlaku.')) return;
   var d;
   try { d = await mcpRequest('POST', { project_id: _mcpPid(), scopes: mcpState.scopes }); }
   catch (e) { d = null; }
@@ -753,7 +753,7 @@ async function regenerateMcp() {
 }
 
 async function revokeMcp() {
-  if (!confirm('Putuskan semua akses? AI luar tidak akan bisa mengakses proyek ini lagi sampai kamu mengaktifkan ulang.')) return;
+  if (!confirm('Putuskan semua akses? AI eksternal tidak akan dapat mengakses proyek ini hingga akses diaktifkan kembali.')) return;
   var d;
   try { d = await mcpRequest('DELETE'); }
   catch (e) { d = null; }
