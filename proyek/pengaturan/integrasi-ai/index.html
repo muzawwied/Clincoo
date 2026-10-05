@@ -549,6 +549,17 @@
     { id: 'clincoo/lfm-mini', label: 'Liquid AI: LFM 2.5 2.6B', rate: '$0.000010 · super ringan', ctx: '32K token', vision: false, desc: 'Model Liquid AI yang super ringan, cocok untuk tugas sederhana dan cepat.' },
     { id: 'clincoo/laguna-s', label: 'Poolside: Laguna S 2.1', rate: '$0.000015 · serba guna', ctx: '128K token', vision: false, desc: 'Model serba guna dari Poolside untuk berbagai kebutuhan umum.' },
     { id: 'clincoo/north-code', label: 'Cohere: North Mini Code', rate: '$0.000015 · fokus kode', ctx: '128K token', vision: false, desc: 'Model Cohere yang difokuskan khusus untuk pemrograman.' },
+    { id: 'clincoo/grok-4.7', label: 'xAI: Grok 4.7', rate: 'Segera — frontier reasoning', ctx: '500K token', vision: false, segera: true, desc: 'Model frontier xAI untuk reasoning tingkat tinggi, analisis mendalam, dan tugas kompleks.' },
+    { id: 'clincoo/gpt-6-astra', label: 'OpenAI: GPT-6 Astra', rate: 'Segera — flagship multimodal', ctx: '1M token', vision: true, segera: true, desc: 'Flagship OpenAI generasi 6, multimodal dengan reasoning dan kualitas jawaban tertinggi.' },
+    { id: 'clincoo/gpt-6.1-sol', label: 'OpenAI: GPT-6.1 Sol', rate: 'Segera — generasi terbaru', ctx: '1M token', vision: true, segera: true, desc: 'Model generasi terbaru OpenAI, cepat dan presisi untuk berbagai tugas.' },
+    { id: 'clincoo/gpt-6-luna-pro', label: 'OpenAI: GPT-6 Luna Pro', rate: 'Segera — varian pro hemat', ctx: '1M token', vision: true, segera: true, desc: 'Varian pro GPT-6 dengan harga hemat dan kualitas tinggi untuk tugas kompleks.' },
+    { id: 'clincoo/claude-sonnet-5.5', label: 'Anthropic: Claude Sonnet 5.5', rate: 'Segera — presisi & penulisan', ctx: '1M token', vision: true, segera: true, desc: 'Claude terbaru yang presisi, cocok untuk penulisan, analisis, dan tugas panjang.' },
+    { id: 'clincoo/claude-opus-5.5', label: 'Anthropic: Claude Opus 5.5', rate: 'Segera — frontier', ctx: '1M token', vision: true, segera: true, desc: 'Model frontier Anthropic untuk reasoning dan penulisan paling dalam.' },
+    { id: 'clincoo/kimi-k3', label: 'Moonshot: Kimi K3', rate: 'Segera — generasi baru', ctx: '1M token', vision: false, segera: true, desc: 'Generasi terbaru Kimi dari Moonshot dengan reasoning dan kemampuan agentic lebih kuat.' },
+    { id: 'clincoo/deepseek-v4.1-flash', label: 'DeepSeek V4.1 Flash', rate: 'Segera — cepat & hemat', ctx: '1M token', vision: false, segera: true, desc: 'Varian terbaru DeepSeek Flash, lebih cepat dan hemat untuk tugas harian.' },
+    { id: 'clincoo/glm-5.3-prime', label: 'Z.ai: GLM 5.3 Prime', rate: 'Segera — agentic penuh', ctx: '1M token', vision: false, segera: true, desc: 'Varian tertinggi GLM 5.3 dengan kemampuan agentic dan coding terbaik.' },
+    { id: 'clincoo/qwen-3.8-max', label: 'Qwen 3.8 Max', rate: 'Segera — frontier open', ctx: '1M token', vision: true, segera: true, desc: 'Varian terbesar Qwen 3.8 untuk tugas kompleks multibahasa dan multimodal.' },
+    { id: 'clincoo/llama-4-maverick', label: 'Meta: Llama 4 Maverick', rate: 'Segera — model besar open', ctx: '1M token', vision: true, segera: true, desc: 'Model open-weight besar Meta, kuat untuk reasoning dan pemahaman gambar.' },
     { id: 'clincoo/acak', label: 'Acak (jaringan mitra)', rate: '$0.000020 · otomatis', ctx: 'Bervariasi (jaringan mitra)', vision: false, desc: 'Memilih model secara acak dari jaringan mitra yang tersedia, cocok untuk pemerataan beban.' }
   ];
 
@@ -636,6 +647,14 @@
     'clincoo/sea-lion-27b': '../../../assets/ai-logos/aisingapore.png',
     'clincoo/dots-note': '../../../assets/ai-logos/dots.png',
     'clincoo/ling-flash': '../../../assets/ai-logos/inclusionai.png',
+    'clincoo/gpt-6-astra': '../../../assets/ai-logos/openai.png',
+    'clincoo/gpt-6.1-sol': '../../../assets/ai-logos/openai.png',
+    'clincoo/gpt-6-luna-pro': '../../../assets/ai-logos/openai.png',
+    'clincoo/kimi-k3': '../../../assets/ai-logos/moonshot.png',
+    'clincoo/deepseek-v4.1-flash': '../../../assets/ai-logos/deepseek.png',
+    'clincoo/glm-5.3-prime': '../../../assets/ai-logos/zai.png',
+    'clincoo/qwen-3.8-max': '../../../assets/ai-logos/qwen.png',
+    'clincoo/llama-4-maverick': '../../../assets/ai-logos/meta-llama.png',
     'clincoo/acak': '../../../assets/logo-clincoo.png'
   };
   var AI_LOGO_FALLBACK = '../../../assets/logo-clincoo.png';
@@ -825,6 +844,15 @@
     if (!pop) return;
     pop.innerHTML = '';
     AI_MODELS.forEach(function (m) {
+      if (m.segera) {
+        // model "Segera" (belum dialiri): teks abu-abu + tag, tidak bisa dipilih
+        var sg = document.createElement('div');
+        sg.className = 'w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg text-left cursor-default select-none';
+        sg.innerHTML = aiModelIconChip(m.id) + '<span class="truncate text-gray-400 dark:text-slate-500">' + m.label + '</span>' +
+          '<span class="ml-auto pl-2 flex-shrink-0 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500 bg-gray-100 dark:bg-slate-700/60 rounded-full px-2 py-0.5">Segera</span>';
+        pop.appendChild(sg);
+        return;
+      }
       // baris bersih: logo + nama saja; id & tombol salin pindah ke modal detail
       var b = document.createElement('button');
       b.type = 'button';
@@ -1069,6 +1097,14 @@
     if (!pop) return;
     var html = '';
     AI_MODELS.forEach(function (m) {
+      if (m.segera) {
+        html += '<div class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl opacity-70 select-none">' +
+          aiModelIconChip(m.id) +
+          '<span class="flex-1 min-w-0"><span class="block text-[13px] font-medium text-gray-400 dark:text-slate-500 truncate">' + m.label + '</span>' +
+          '<span class="block text-[10px] text-gray-400 dark:text-slate-500">Belum tersedia</span></span>' +
+          '<span class="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500 bg-gray-100 dark:bg-slate-700/60 rounded-full px-2 py-0.5">Segera</span></div>';
+        return;
+      }
       var fav = isAiModelFav(m.id);
       var sel = m.id === _aiPgModel;
       html += '<div class="ai-pg-mrow flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer' + (sel ? ' bg-gray-50 dark:bg-white/5' : '') + '" data-id="' + m.id + '">' +
