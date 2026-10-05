@@ -315,6 +315,7 @@
             <div>
               <h4 id="db-title" class="text-base font-semibold text-gray-900 dark:text-white">Database</h4>
               <p id="db-sub" class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Simpan dan kelola data aplikasimu — dari pengguna, pesanan, sampai konten — dalam tabel rapi yang bisa diakses aplikasimu kapan saja lewat API.</p>
+              <p id="db-proj" class="hidden text-xs mt-1.5 text-gray-400 dark:text-gray-500">Proyek aktif: <span id="db-proj-name" class="font-medium text-gray-600 dark:text-gray-300"></span></p>
             </div>
             <button id="db-new-btn" type="button" class="hidden shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"></path></svg>
@@ -332,8 +333,9 @@
           <!-- belum aktif untuk proyek ini -->
           <div id="db-inactive" class="hidden py-12 flex flex-col items-center justify-center text-center">
             <svg class="w-8 h-8 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3 5v14a9 3 0 0 0 18 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 3 0 0 0 18 0"></path></svg>
-            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Database proyek ini belum aktif</p>
+            <p id="db-inactive-title" class="text-sm font-medium text-gray-500 dark:text-gray-400">Database proyek ini belum aktif</p>
             <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Aktifkan fitur database untuk proyek ini — sekali klik.</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-3 max-w-sm mx-auto">Setiap proyek punya database terpisah — cek nama proyek di atas kalau tabel yang kamu cari tidak muncul.</p>
             <button type="button" id="db-cta" onclick="activateDatabase()" class="email-cta mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer">Aktifkan Database</button>
           </div>
 
@@ -494,6 +496,31 @@
     // ================= DATABASE proyek =================
     var DB_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev' : '') + '/api';
     function dbPid() { try { return localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) { return ''; } }
+    function dbProjName() {
+      var pid = dbPid(); if (!pid) return '';
+      var list = null;
+      try { list = JSON.parse(localStorage.getItem('clincoo_projects') || '[]'); } catch (e) {}
+      if (!Array.isArray(list) || !list.length) {
+        try {
+          for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i);
+            if (k && /(?:^|:)clincoo_projects$/.test(k)) { list = JSON.parse(localStorage.getItem(k) || '[]'); if (list.length) break; }
+          }
+        } catch (e) {}
+      }
+      var t = '';
+      (list || []).forEach(function (p) { if (p && p.id === pid) t = p.title || p.name || t; });
+      return t;
+    }
+    function dbShowProj() {
+      var n = dbProjName();
+      var wrap = document.getElementById('db-proj');
+      if (wrap) { wrap.classList.toggle('hidden', !n); }
+      var nm = document.getElementById('db-proj-name');
+      if (nm) nm.textContent = n || '';
+      var ct = document.getElementById('db-inactive-title');
+      if (ct) ct.textContent = n ? ('Database proyek «' + n + '» belum aktif') : 'Database proyek ini belum aktif';
+    }
     function dbHdrs(json) {
       var t = ''; try { t = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
       var h = t ? { Authorization: 'Bearer ' + t } : {};
@@ -855,6 +882,7 @@
       var t = ''; try { t = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
       if (!t) { dbShow('db-login'); return; }
       if (!dbPid()) { dbErr('Proyek belum dipilih — buka dashboard proyekmu dulu.'); return; }
+      dbShowProj();
       var cached = dbGetActiveCache();
       if (cached === '1') { dbEnterActive(); return; }
       if (cached === null) dbShow('db-loading'); else dbShow('db-inactive');
@@ -871,7 +899,7 @@
         })
         .catch(function () {
           if (cached === '1') { dbEnterActive(); return; }
-          dbShow('db-inactive');
+          dbErr('Tidak bisa memuat status database. Periksa koneksi lalu coba lagi.');
         });
     }
 
