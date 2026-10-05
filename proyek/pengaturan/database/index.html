@@ -496,7 +496,7 @@
         list.appendChild(a);
       });
       dbShow(tables && tables.length ? 'db-list' : 'db-empty');
-      dbChartRender();
+      try { dbChartRender(); } catch (e) { var _cs = document.getElementById('db-chart-sec'); if (_cs) _cs.classList.add('hidden'); }
     }
 
     // ---- grafik ringkasan: jumlah baris & kolom per tabel ----
@@ -566,14 +566,15 @@
           dbCacheWrite(d && d.tables || []);
           dbRender(d && d.tables);
         })
-        .catch(function () {
+        .catch(function (err) {
           dbLoadBusy = false;
           // blip jaringan/cold-start -> coba lagi diam-diam sampai budget retry habis
           if (attempt < DB_RETRY_DELAYS.length) { setTimeout(function () { dbLoad(attempt + 1); }, DB_RETRY_DELAYS[attempt]); return; }
           // punya cache? tampilkan data cache, nggak perlu error sama sekali
           var c = dbCacheRead();
-          if (c) { dbRender(c.tables); return; }
-          dbErr('Tidak bisa memuat tabel. Coba lagi.');
+          if (c) { try { dbRender(c.tables); return; } catch (e2) {} }
+          var why = err && err.message ? String(err.message).replace(/^Error:\s*/, '') : 'jaringan bermasalah';
+          dbErr('Tidak bisa memuat tabel (' + why + '). Coba lagi.');
         });
     }
 
