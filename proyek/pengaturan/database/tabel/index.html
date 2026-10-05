@@ -708,6 +708,13 @@
     // ================= grafik (Chart.js) & unduh =================
     var tbAll = null, tbAllBusy = false, tbChart = null;
     var TB_PALETTE = ['#111827', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#84cc16', '#f97316', '#6366f1', '#14b8a6', '#a855f7', '#eab308', '#64748b'];
+    // warna dasar & palet menyesuaikan tema: saat mode gelap jangan pakai warna gelap
+    function tbDark() { return document.body.classList.contains('dark-mode'); }
+    function tbChartBase() { return tbDark() ? '#e5e7eb' : '#111827'; }
+    function tbChartFill() { return tbDark() ? 'rgba(229,231,235,0.10)' : 'rgba(17,24,39,0.08)'; }
+    function tbChartPalette() { return tbDark()
+      ? ['#e5e7eb', '#60a5fa', '#fbbf24', '#34d399', '#a78bfa', '#f87171', '#22d3ee', '#f472b6', '#a3e635', '#fb923c', '#818cf8', '#2dd4bf', '#c084fc', '#facc15', '#94a3b8']
+      : TB_PALETTE; }
 
     function tbAllCacheRead() { try { var c = JSON.parse(localStorage.getItem(tbAllCacheKey()) || 'null'); return c && c.rows ? c : null; } catch (e) { return null; } }
 
@@ -790,15 +797,15 @@
         note.innerHTML = 'Belum ada baris di tabel ini — grafik terisi otomatis setelah kamu <a href="#" id="tb-chart-add" class="underline">menambahkan baris</a>.';
         var add = document.getElementById('tb-chart-add');
         if (add) add.addEventListener('click', function (e) { e.preventDefault(); tbShow(tbLastMain || null); tbShowForm(null); });
-        var empty = type === 'line' ? { label: col, data: [], borderColor: '#111827', backgroundColor: 'rgba(17,24,39,0.08)', tension: 0.3, pointRadius: 1.5, fill: true }
-          : type === 'doughnut' ? { data: [], backgroundColor: TB_PALETTE, borderWidth: 0 }
-          : { data: [], backgroundColor: '#111827', borderRadius: 4, maxBarThickness: 42 };
+        var empty = type === 'line' ? { label: col, data: [], borderColor: tbChartBase(), backgroundColor: tbChartFill(), tension: 0.3, pointRadius: 1.5, fill: true }
+          : type === 'doughnut' ? { data: [], backgroundColor: tbChartPalette(), borderWidth: 0 }
+          : { data: [], backgroundColor: tbChartBase(), borderRadius: 4, maxBarThickness: 42 };
         tbChart = new Chart(canvas, { type: type, data: { labels: [], datasets: [empty] }, options: opts });
         return;
       }
       if (type === 'line') {
         var pts = rows.slice(0, 1000).sort(function (a, b) { return (a.id || 0) - (b.id || 0); }); // urut lama->baru biar tren natural
-        tbChart = new Chart(canvas, { type: 'line', data: { labels: pts.map(function (r, i) { var lbl = (tbChartColsOf('cat')[0] && r[tbChartColsOf('cat')[0].name]) || ('#' + (i + 1)); return String(lbl).slice(0, 16); }), datasets: [{ label: col, data: pts.map(function (r) { return Number(r[col]) || 0; }), borderColor: '#111827', backgroundColor: 'rgba(17,24,39,0.08)', tension: 0.3, pointRadius: 1.5, fill: true }] }, options: opts });
+        tbChart = new Chart(canvas, { type: 'line', data: { labels: pts.map(function (r, i) { var lbl = (tbChartColsOf('cat')[0] && r[tbChartColsOf('cat')[0].name]) || ('#' + (i + 1)); return String(lbl).slice(0, 16); }), datasets: [{ label: col, data: pts.map(function (r) { return Number(r[col]) || 0; }), borderColor: tbChartBase(), backgroundColor: tbChartFill(), tension: 0.3, pointRadius: 1.5, fill: true }] }, options: opts });
       } else {
         var numSelVal = (type === 'bar') ? num : '__count';
         var agg = {}, order = [];
@@ -814,9 +821,9 @@
         var rest = order.slice(cap);
         if (rest.length) { labels.push('Lainnya (' + rest.length + ')'); data.push(rest.reduce(function (s, k) { return s + agg[k]; }, 0)); }
         if (type === 'doughnut') {
-          tbChart = new Chart(canvas, { type: 'doughnut', data: { labels: labels, datasets: [{ data: data, backgroundColor: TB_PALETTE, borderWidth: 0 }] }, options: opts });
+          tbChart = new Chart(canvas, { type: 'doughnut', data: { labels: labels, datasets: [{ data: data, backgroundColor: tbChartPalette(), borderWidth: 0 }] }, options: opts });
         } else {
-          tbChart = new Chart(canvas, { type: 'bar', data: { labels: labels, datasets: [{ data: data, backgroundColor: '#111827', borderRadius: 4, maxBarThickness: 42 }] }, options: opts });
+          tbChart = new Chart(canvas, { type: 'bar', data: { labels: labels, datasets: [{ data: data, backgroundColor: tbChartBase(), borderRadius: 4, maxBarThickness: 42 }] }, options: opts });
         }
       }
       note.textContent = rows.length + ' baris dimuat' + (rows.length >= 2000 ? ' (maksimal 2000 teratas)' : '') + ' · grafik diperbarui otomatis dari data terbaru perangkat ini';

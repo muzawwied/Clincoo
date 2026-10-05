@@ -618,9 +618,9 @@
         text: dark ? '#9aa0a6' : '#6b7280',
         grid: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
         accent: dark ? '#e5e7eb' : '#111827',
-        accent2: dark ? '#9ca3af' : '#4b5563',
-        accent3: dark ? '#6b7280' : '#9ca3af',
-        accent4: dark ? '#4b5563' : '#d1d5db'
+        accent2: dark ? '#c9cdd4' : '#4b5563',
+        accent3: dark ? '#a8adb6' : '#9ca3af',
+        accent4: dark ? '#8a919c' : '#d1d5db'
       };
     }
     function dbChartRender() {
@@ -665,7 +665,7 @@
       dbCharts.push(new Chart(document.getElementById('db-chart-share'), { type: 'doughnut',
         data: { labels: withRows.length ? withRows.map(function (t) { return String(t.name).slice(0, 20); }) : ['Belum ada baris'],
           datasets: [{ data: withRows.length ? withRows.map(function (t) { return t.rows; }) : [1],
-            backgroundColor: withRows.length ? palette : [document.body.classList.contains('dark-mode') ? '#374151' : '#e5e7eb'], borderWidth: 0 }] }, options: doughnutOpts() }));
+            backgroundColor: withRows.length ? palette : [document.body.classList.contains('dark-mode') ? 'rgba(255,255,255,0.22)' : '#e5e7eb'], borderWidth: 0 }] }, options: doughnutOpts() }));
       document.getElementById('db-chart-note').textContent = tables.length
         ? tables.length + ' tabel · ringkasan lengkap database proyekmu'
         : 'Belum ada tabel — grafik terisi otomatis setelah tabel dan baris ditambahkan.';
