@@ -20,7 +20,8 @@ const limits = (plan) => PLAN_DB_LIMITS[plan] || PLAN_DB_LIMITS.Starter;
 // Tipe spesifik (email/url/phone/longtext/json/datetime/currency) dipertahankan di katalog
 // supaya form baris di aplikasi merender input yang pas (keyboard email, textarea, dsb.).
 const TYPES = { text: 'TEXT', longtext: 'TEXT', email: 'TEXT', url: 'TEXT', phone: 'TEXT',
-  json: 'TEXT', number: 'REAL', currency: 'REAL', boolean: 'INTEGER', date: 'TEXT', datetime: 'TEXT' };
+  json: 'TEXT', image: 'TEXT', video: 'TEXT', audio: 'TEXT', file: 'TEXT', select: 'TEXT',
+  number: 'REAL', currency: 'REAL', boolean: 'INTEGER', date: 'TEXT', datetime: 'TEXT' };
 // Alias tipe umum dari SQL/klien luar (mis. Grok/AI mengirim "INTEGER"/"TEXT")
 const TYPE_ALIASES = { text: 'text', string: 'text', varchar: 'text', char: 'text',
   longtext: 'longtext', textarea: 'longtext', memo: 'longtext', text_long: 'longtext',
@@ -28,6 +29,11 @@ const TYPE_ALIASES = { text: 'text', string: 'text', varchar: 'text', char: 'tex
   url: 'url', link: 'url', website: 'url', uri: 'url',
   phone: 'phone', tel: 'phone', telephone: 'phone',
   json: 'json',
+  image: 'image', picture: 'image', foto: 'image', img: 'image',
+  video: 'video', movie: 'video',
+  audio: 'audio', mp3: 'audio', music: 'audio', sound: 'audio',
+  file: 'file', attachment: 'file', dokumen: 'file',
+  select: 'select', choice: 'select', option: 'select', enum: 'select', dropdown: 'select',
   number: 'number', numeric: 'number', real: 'number', float: 'number', double: 'number',
   integer: 'number', int: 'number', decimal: 'number',
   currency: 'currency', money: 'currency', rupiah: 'currency',
@@ -100,7 +106,14 @@ async function createTable(db, body) {
     if (seen.has(nm)) continue; // duplikat kolom: abaikan yang kedua
     seen.add(nm);
     const rawType = String((c && c.type) || '').toLowerCase().trim();
-    cols.push({ name: nm, type: TYPE_ALIASES[rawType] || 'text' });
+    const tp = TYPE_ALIASES[rawType] || 'text';
+    const col = { name: nm, type: tp };
+    if (tp === 'select') {
+      // opsi dropdown: terima array atau string "a, b, c" — disimpan di katalog
+      let opts = Array.isArray(c && c.options) ? c.options : String((c && c.options) || '').split(',');
+      col.options = opts.map(o => String(o).trim()).filter(Boolean).slice(0, 60);
+    }
+    cols.push(col);
   }
   if (!cols.length) return json({ error: 'Minimal satu kolom' }, 400);
   const lim = limits(plan);

@@ -564,6 +564,27 @@
           row.innerHTML = label + '<input type="url" inputmode="url" data-col="' + esc(c.name) + '" value="' + esc(val) + '" placeholder="https://contoh.com" class="tb-in w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">';
         } else if (c.type === 'phone') {
           row.innerHTML = label + '<input type="tel" inputmode="tel" data-col="' + esc(c.name) + '" value="' + esc(val) + '" placeholder="0812xxxxxxx" class="tb-in w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">';
+        } else if (c.type === 'image' || c.type === 'video' || c.type === 'audio' || c.type === 'file') {
+          var ph = { image: 'https://… link gambar', video: 'https://… link video', audio: 'https://… link audio', file: 'https://… link dokumen' }[c.type];
+          var prev = '';
+          if (c.type === 'image') prev = val ? '<img src="' + esc(val) + '" alt="" class="tb-prev mt-2 max-h-28 rounded-xl border border-gray-200 dark:border-slate-700 object-cover">' : '<div class="tb-prev hidden"></div>';
+          else if (c.type === 'video') prev = val ? '<video src="' + esc(val) + '" controls preload="metadata" class="tb-prev mt-2 w-full max-h-44 rounded-xl border border-gray-200 dark:border-slate-700 bg-black"></video>' : '<video controls preload="metadata" class="tb-prev hidden"></video>';
+          else if (c.type === 'audio') prev = val ? '<audio src="' + esc(val) + '" controls class="tb-prev mt-2 w-full"></audio>' : '<audio controls class="tb-prev hidden"></audio>';
+          row.innerHTML = label + '<input type="text" data-col="' + esc(c.name) + '" data-prev="' + c.type + '" value="' + esc(val) + '" placeholder="' + ph + '" class="tb-in w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">' + prev;
+          var inp = row.querySelector('.tb-in'), pv = row.querySelector('.tb-prev');
+          inp.addEventListener('input', function () {
+            var u = this.value.trim();
+            if (!pv) return;
+            if (!u) { pv.classList.add('hidden'); if (pv.tagName !== 'DIV') { pv.removeAttribute('src'); } return; }
+            pv.classList.remove('hidden'); if (pv.tagName !== 'DIV') pv.src = u;
+          });
+        } else if (c.type === 'select' && c.options && c.options.length) {
+          var opts = c.options.map(function (o) {
+            var sel = String(val) === String(o) ? ' selected' : '';
+            return '<option value="' + esc(String(o)) + '"' + sel + '>' + esc(String(o)) + '</option>';
+          }).join('');
+          row.innerHTML = label + '<select data-col="' + esc(c.name) + '" class="tb-sel w-full px-3 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-gray-400 transition-colors"><option value="">— pilih —</option>' + opts + '</select>';
+          dbPopoverize(row.querySelector('.tb-sel'));
         } else if (c.type === 'longtext' || c.type === 'json') {
           row.innerHTML = label + '<textarea rows="3" data-col="' + esc(c.name) + '" placeholder="' + (c.type === 'json' ? '{ &quot;kunci&quot;: &quot;nilai&quot; }' : 'Tulis teks panjang di sini…') + '" class="tb-in tb-area w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">' + esc(val) + '</textarea>';
         } else {
@@ -580,7 +601,8 @@
       var data = {};
       document.querySelectorAll('#tb-fields [data-col]').forEach(function (el) {
         var k = el.getAttribute('data-col');
-        if (el.classList.contains('tb-bool')) data[k] = el.getAttribute('data-on') === '1';
+        if (el.tagName === 'SELECT') data[k] = el.value || '';
+        else if (el.classList.contains('tb-bool')) data[k] = el.getAttribute('data-on') === '1';
         else if (el.getAttribute('type') === 'date') data[k] = el.value || '';
         else if (el.getAttribute('type') === 'datetime-local') data[k] = el.value ? el.value.replace('T', ' ') : '';
         else if (el.getAttribute('inputmode') === 'decimal') data[k] = el.value === '' ? null : Number(el.value.replace(',', '.'));
@@ -708,10 +730,23 @@
       tbCols.forEach(function (c, idx) {
         var v = row[c.name];
         if (v === null || v === undefined) v = '';
-        if (c.type === 'boolean') v = v ? 'Ya' : 'Tidak';
         var num = c.type === 'number' || c.type === 'currency' || c.type === 'date' || c.type === 'datetime';
+        var cell;
+        if (c.type === 'image' && v) {
+          cell = '<img src="' + esc(String(v)) + '" alt="" class="w-10 h-10 rounded-lg object-cover border border-gray-200 dark:border-slate-700" loading="lazy" onerror="this.replaceWith(document.createRange().createContextualFragment(\'<span class=&quot;text-xs text-gray-400&quot;>rusak</span>\'))">';
+        } else if ((c.type === 'video' || c.type === 'audio' || c.type === 'file') && v) {
+          var ic = c.type === 'video' ? 'M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.5v7l5-3.5-5-3.5z' : (c.type === 'audio' ? 'M17.5 8a5.5 5.5 0 10-11 0v8a3.5 3.5 0 107 0V8a1.5 1.5 0 10-3 0v7' : 'M9 12h6m-6 4h6M8 4h8a2 2 0 012 2v12a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2z');
+          cell = '<a href="' + esc(String(v)) + '" target="_blank" rel="noopener" class="tb-media inline-flex items-center gap-1.5 text-blue-600 dark:text-blue-400 hover:underline text-sm">' +
+            '<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="' + ic + '"></path></svg><span class="truncate max-w-[170px]">buka</span></a>';
+        } else if (c.type === 'select' && v) {
+          cell = '<span class="inline-block px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-slate-700/60 text-xs font-medium text-gray-700 dark:text-gray-200">' + esc(String(v)) + '</span>';
+        } else if (c.type === 'boolean') {
+          cell = v ? '<span class="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>Ya</span>' : '<span class="inline-flex items-center gap-1 text-xs font-medium text-gray-400 dark:text-gray-500"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>Tidak</span>';
+        } else {
+          cell = esc(String(v));
+        }
         tds += '<td class="py-3.5 ' + (idx === 0 ? 'pl-5 ' : '') + 'pr-4 whitespace-nowrap max-w-[240px] truncate ' +
-          (num ? 'text-right tabular-nums ' : '') + 'text-gray-700 dark:text-gray-300">' + esc(String(v)) + '</td>';
+          (num ? 'text-right tabular-nums ' : '') + 'text-gray-700 dark:text-gray-300">' + cell + '</td>';
       });
       tds +=
         '<td class="py-3 pl-3 pr-4 text-right whitespace-nowrap">' +
@@ -722,6 +757,7 @@
       tr.addEventListener('click', function (ev) {
         var m = ev.target.closest('.tb-row-menu');
         if (m) { ev.stopPropagation(); tbRowMenuOpen(m, row); return; }
+        if (ev.target.closest('a')) return; // klik tautan media: buka tautannya, jangan buka form
         tbShowForm(row);
       });
       return tr;
@@ -940,7 +976,7 @@
     function tbChartColsOf(kind) {
       // angka/uang: chart garis/gelembung/sebar; kategori: teks/email/link/telpon/tanggal/ya-tidak
       var numTypes = ['number', 'currency'];
-      var catTypes = ['text', 'email', 'url', 'phone', 'date', 'datetime', 'boolean'];
+      var catTypes = ['text', 'email', 'url', 'phone', 'date', 'datetime', 'boolean', 'select'];
       return tbCols.filter(function (c) {
         return kind === 'number' ? numTypes.indexOf(c.type) !== -1 : catTypes.indexOf(c.type) !== -1;
       });

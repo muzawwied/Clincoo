@@ -595,16 +595,21 @@
     // tipe kolom lengkap: [nilai, label] — nilai yang dikirim ke server, label yang tampil di dropdown
     var COL_TYPES = [
       ['text', 'Teks'],
-      ['longtext', 'Teks panjang'],
+      ['longtext', 'Paragraf'],
       ['number', 'Angka'],
-      ['currency', 'Uang (Rp)'],
-      ['boolean', 'Ya / Tidak'],
+      ['currency', 'Uang'],
+      ['boolean', 'Ya/Tidak'],
       ['date', 'Tanggal'],
-      ['datetime', 'Tanggal & waktu'],
+      ['datetime', 'Tanggal & jam'],
       ['email', 'Email'],
-      ['url', 'Link / URL'],
-      ['phone', 'Nomor telepon'],
-      ['json', 'JSON']
+      ['url', 'Tautan'],
+      ['phone', 'No. HP'],
+      ['json', 'Kode/JSON'],
+      ['image', 'Gambar'],
+      ['video', 'Video'],
+      ['audio', 'Audio/MP3'],
+      ['file', 'Dokumen'],
+      ['select', 'Pilihan (dropdown)']
     ];
 
     function dbShow(id) {
@@ -980,7 +985,7 @@
     }
 
     // ---- form buat tabel ----
-    function dbColRow(name, type) {
+    function dbColRow(name, type, optStr) {
       var row = document.createElement('div');
       row.className = 'flex items-center gap-2';
       row.innerHTML =
@@ -988,9 +993,15 @@
         '<select class="db-col-type px-2.5 py-2 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">' +
         COL_TYPES.map(function (tp) { return '<option value="' + tp[0] + '"' + (tp[0] === type ? ' selected' : '') + '>' + tp[1] + '</option>'; }).join('') +
         '</select>' +
+        '<input type="text" placeholder="opsi: satu, dua, tiga" class="db-col-opts hidden flex-1 min-w-0 px-3 py-2 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">' +
         '<button type="button" class="db-col-del shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" aria-label="Hapus kolom">' +
         '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12"></path></svg></button>';
       if (name) row.querySelector('.db-col-name').value = name;
+      var tSel = row.querySelector('.db-col-type');
+      var oIn = row.querySelector('.db-col-opts');
+      function syncOpts() { oIn.classList.toggle('hidden', tSel.value !== 'select'); }
+      tSel.addEventListener('change', syncOpts);
+      if (type === 'select') { oIn.classList.remove('hidden'); if (optStr) oIn.value = optStr; }
       row.querySelector('.db-col-del').addEventListener('click', function () {
         if (document.querySelectorAll('#db-cols > div').length > 1) row.remove();
       });
@@ -1012,11 +1023,24 @@
       var name = (document.getElementById('db-tbl-name').value || '').trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
       if (!name) { var fe = document.getElementById('db-form-error'); fe.textContent = 'Nama tabel wajib diisi.'; fe.classList.remove('hidden'); return; }
       var columns = [];
+      var badSel = null;
       document.querySelectorAll('#db-cols > div').forEach(function (row) {
         var cn = (row.querySelector('.db-col-name').value || '').trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
         if (!cn) return;
-        columns.push({ name: cn, type: row.querySelector('.db-col-type').value });
+        var tp = row.querySelector('.db-col-type').value;
+        var col = { name: cn, type: tp };
+        if (tp === 'select') {
+          var oi = row.querySelector('.db-col-opts');
+          col.options = (oi ? oi.value : '').split(',').map(function (x) { return x.trim(); }).filter(Boolean).slice(0, 60);
+          if (!col.options.length) badSel = cn;
+        }
+        columns.push(col);
       });
+      if (badSel) {
+        var fe0 = document.getElementById('db-form-error');
+        fe0.textContent = 'Kolom Pilihan "' + badSel + '" butuh minimal 1 opsi (pisahkan dengan koma).';
+        fe0.classList.remove('hidden'); return;
+      }
       if (!columns.length) { var fe2 = document.getElementById('db-form-error'); fe2.textContent = 'Minimal satu kolom wajib diisi.'; fe2.classList.remove('hidden'); return; }
       var btn = document.getElementById('db-save-btn');
       btn.disabled = true; btn.textContent = 'Menyimpan…';
