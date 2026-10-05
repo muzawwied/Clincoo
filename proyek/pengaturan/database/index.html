@@ -304,7 +304,7 @@
           <div class="flex items-start sm:items-center justify-between gap-3 mb-1">
             <div>
               <h4 id="db-title" class="text-base font-semibold text-gray-900 dark:text-white">Database</h4>
-              <p id="db-sub" class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Tabel data untuk aplikasimu</p>
+              <p id="db-sub" class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Simpan dan kelola data aplikasimu — dari pengguna, pesanan, sampai konten — dalam tabel rapi yang bisa diakses aplikasimu kapan saja lewat API.</p>
             </div>
             <button id="db-new-btn" type="button" class="hidden shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"></path></svg>
@@ -643,7 +643,16 @@
           if (btn) { btn.disabled = false; btn.textContent = 'Aktifkan Database'; }
         })
         .catch(function () {
-          if (btn) { btn.disabled = false; btn.textContent = 'Aktifkan Database'; }
+          if (btn) {
+            btn.disabled = false; btn.textContent = 'Aktifkan Database';
+            var old = document.getElementById('db-cta-error');
+            if (old) old.remove();
+            var pe = document.createElement('p');
+            pe.id = 'db-cta-error';
+            pe.style.cssText = 'margin-top:.5rem;font-size:.8rem;color:#dc2626;max-width:20rem;margin-left:auto;margin-right:auto';
+            pe.textContent = 'Gagal mengaktifkan. Periksa koneksi lalu coba lagi.';
+            btn.parentNode.appendChild(pe);
+          }
         });
     };
 
