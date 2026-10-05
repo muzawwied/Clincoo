@@ -928,7 +928,7 @@
       var cats = tbChartColsOf('cat');
       colSel.innerHTML = cats.map(function (c) { return '<option value="' + esc(c.name) + '">' + esc(c.name) + ' (per kategori)</option>'; }).join('');
       if (colSel.__popSync) colSel.__popSync();
-      document.getElementById('tb-chart-colwrap').classList.toggle('hidden', !cats.length);
+      var cw = document.getElementById('tb-chart-colwrap'); if (cw) cw.classList.toggle('hidden', !cats.length);
       return cats.length > 0 || tbChartColsOf('number').length > 0;
     }
     // tooltip gelap membulat; persen khusus pie/donat
@@ -1107,7 +1107,6 @@
       document.getElementById('vw-chart').classList.remove('hidden');
       tbChartRefresh();
     }
-    document.getElementById('tb-chart-btn').addEventListener('click', tbOpenChart);
     document.getElementById('tb-chart-back').addEventListener('click', function (e) { e.preventDefault(); document.getElementById('vw-chart').classList.add('hidden'); tbShow(tbTotal === 0 ? 'tb-empty' : 'tb-rows-wrap'); });
     document.getElementById('tb-chart-col').addEventListener('change', function () {
       if (document.getElementById('tb-chart-col').__popSync) document.getElementById('tb-chart-col').__popSync();
