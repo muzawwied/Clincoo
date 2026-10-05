@@ -120,6 +120,10 @@ const OPENROUTER_MODELS = ['openai/gpt-6-luna-pro', 'openai/gpt-6.1-sol-pro', 'z
 // Rantai khusus TAMU (anonim, gratis): TANPA Sol Pro — model premium hanya
 // untuk user login; tamu tidak boleh membakar biaya provider premium.
 const GUEST_OR_MODELS = ['openai/gpt-6-luna-pro', 'z-ai/glm-5.3-flash', 'nvidia/nemotron-3-ultra-550b-a55b'];
+// Batas output OpenRouter: sebagian kunci kena 402 saat max_tokens besar
+// (kredit per-kunci kecil). 4096 = nilai terbesar yang lolos di 4 dari 6 kunci.
+// Naikkan lagi setelah limit kredit per-kunci di OpenRouter dinaikkan.
+const OR_MAX_TOKENS = 4096;
 const oaiToolsOf = (gDecls) => (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
 
 // Pembatas waktu per-panggilan provider — fetch/binding AI TIDAK punya timeout
@@ -202,7 +206,7 @@ async function tryOpenRouterText(keys, messages, gDecls, models, onDelta) {
     // Gagal/tdk didukung -> otomatis jatuh ke panggilan non-stream di bawah.
     if (onDelta) {
       try {
-        const sp = { model, messages: baseMsgs, max_tokens: 24576, stream: true };
+        const sp = { model, messages: baseMsgs, max_tokens: OR_MAX_TOKENS, stream: true };
         if (oaiTools) sp.tools = oaiTools;
         const sr = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
@@ -222,7 +226,7 @@ async function tryOpenRouterText(keys, messages, gDecls, models, onDelta) {
       } catch (e) { lastErr = `OpenRouter ${model}: ${e && e.message}`; }
     }
     try {
-      const payload = { model, messages: baseMsgs, max_tokens: 24576 };
+      const payload = { model, messages: baseMsgs, max_tokens: OR_MAX_TOKENS };
       if (oaiTools) payload.tools = oaiTools;
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
@@ -254,7 +258,7 @@ async function tryOpenRouterText(keys, messages, gDecls, models, onDelta) {
         contMsgs.push({ role: 'user', content: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' });
         let dc = null;
         try {
-          const p3 = { model, messages: contMsgs, max_tokens: 12288 };
+          const p3 = { model, messages: contMsgs, max_tokens: OR_MAX_TOKENS };
           if (oaiTools) p3.tools = oaiTools;
           const rc = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
