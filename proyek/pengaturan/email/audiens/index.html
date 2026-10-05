@@ -328,81 +328,148 @@
           </div>
 
           <!-- Aktif: mini-app Audiens -->
+
           <div id="kirim-active" class="flex-col">
 
-            <!-- Bar atas: jumlah kontak + CTA kirim broadcast -->
+            <!-- Bar atas: label jumlah polos (tanpa card) + aksi -->
             <div class="flex flex-wrap items-center justify-between gap-2.5 mb-4">
-              <span id="aud-count-chip" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-slate-800 text-xs font-semibold text-gray-700 dark:text-gray-200">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path stroke-linecap="round" d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                <span id="aud-count">0</span> kontak
-                <span id="aud-count-limit" class="text-gray-400 dark:text-gray-500 font-normal"></span>
-              </span>
-              <span id="aud-full-hint" class="hidden text-[11px] font-medium text-amber-600 dark:text-amber-400">Penuh — upgrade paket untuk menambah kontak</span>
-              <a id="aud-bcast-link" href="#" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M22 2 11 13"></path><path d="M22 2 15 22l-4-9-9-4 20-7z"></path></svg>
-                Kirim ke Audiens
+              <div class="flex items-center gap-2">
+                <p class="text-sm font-medium text-gray-700 dark:text-gray-200"><span id="aud-count">0</span><span id="aud-count-limit" class="text-gray-400 dark:text-gray-500 font-normal"></span> kontak</p>
+                <p id="aud-full-hint" class="hidden text-[11px] font-medium text-amber-600 dark:text-amber-400">Penuh — upgrade paket untuk menambah</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" id="aud-import-open" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-full transition-colors">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5-5 5 5"></path><path stroke-linecap="round" d="M12 5v12"></path></svg>
+                  Impor
+                </button>
+                <button type="button" id="aud-add-open" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14M5 12h14"></path></svg>
+                  Tambah Kontak
+                </button>
+              </div>
+            </div>
+
+            <!-- Pencarian + pintasan kirim broadcast -->
+            <div class="flex gap-2 mb-4">
+              <div class="relative flex-1">
+                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path stroke-linecap="round" d="m21 21-4.3-4.3"></path></svg>
+                <input id="aud-search" type="text" placeholder="Cari kontak…" class="w-full pl-9 pr-3 py-2.5 text-sm bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-gray-400 dark:focus:border-slate-500 transition-colors">
+              </div>
+              <a id="aud-bcast-link" href="#" title="Kirim ke Audiens" class="shrink-0 w-[42px] flex items-center justify-center text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M22 2 11 13"></path><path d="M22 2 15 22l-4-9-9-4 20-7z"></path></svg>
               </a>
             </div>
 
-            <!-- Tambah kontak -->
-            <form id="aud-add-form" class="flex flex-col gap-2 mb-3" autocomplete="off">
-              <div class="flex flex-col sm:flex-row gap-2">
-                <input id="aud-add-email" type="email" inputmode="email" placeholder="email@contoh.com" class="flex-1 min-w-0 px-3.5 py-2.5 text-sm bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-gray-400 dark:focus:border-slate-500 transition-colors" required>
-                <input id="aud-add-name" type="text" maxlength="100" placeholder="Nama (opsional)" class="w-full sm:w-44 px-3.5 py-2.5 text-sm bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-gray-400 dark:focus:border-slate-500 transition-colors">
-              </div>
-              <button type="submit" id="aud-add-btn" class="self-start inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14M5 12h14"></path></svg>
-                Tambah Kontak
-              </button>
-            </form>
-
-            <!-- Impor massal -->
-            <div class="mb-3">
-              <button type="button" id="aud-import-toggle" class="text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors inline-flex items-center gap-1">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5-5 5 5"></path><path stroke-linecap="round" d="M12 5v12"></path></svg>
-                Impor massal
-              </button>
-              <div id="aud-import-box" class="hidden mt-2 p-3.5 bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-xl">
-                <textarea id="aud-import-list" rows="4" placeholder="Tempel daftar email di sini — satu per baris atau dipisah koma.&#10;Format: email@contoh.com atau Nama <email@contoh.com>" class="w-full px-3 py-2.5 text-sm bg-white dark:bg-slate-900/60 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-gray-400 dark:focus:border-slate-500 transition-colors" style="resize:vertical"></textarea>
-                <div class="flex items-center justify-between gap-2 mt-2">
-                  <p class="text-[11px] text-gray-400 dark:text-gray-500">Duplikat otomatis dilewati · batas kontak mengikuti paket</p>
-                  <button type="button" id="aud-import-btn" class="px-4 py-2 text-xs font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Impor Sekarang</button>
-                </div>
-              </div>
+            <!-- CRUD table kontak -->
+            <div id="aud-table-wrap" class="rounded-xl border border-gray-200 dark:border-slate-700/60 overflow-hidden">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-slate-800/60">
+                  <tr class="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    <th class="text-left font-semibold px-4 py-2.5">Kontak</th>
+                    <th class="text-left font-semibold px-4 py-2.5 hidden sm:table-cell">Ditambahkan</th>
+                    <th class="text-right font-semibold px-4 py-2.5">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="aud-tbody" class="divide-y divide-gray-200 dark:divide-slate-700/60"></tbody>
+              </table>
             </div>
-
-            <!-- Pencarian -->
-            <div class="relative mb-2">
-              <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path stroke-linecap="round" d="m21 21-4.3-4.3"></path></svg>
-              <input id="aud-search" type="text" placeholder="Cari kontak…" class="w-full pl-9 pr-3 py-2.5 text-sm bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-gray-400 dark:focus:border-slate-500 transition-colors">
-            </div>
-
-            <!-- Daftar kontak -->
-            <div id="aud-list" class="flex flex-col border-t border-gray-200 dark:border-slate-700/60"></div>
 
             <!-- State kosong -->
             <div id="aud-empty" class="hidden py-12 flex flex-col items-center justify-center text-center">
               <svg class="w-10 h-10 text-gray-300 dark:text-slate-600 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path stroke-linecap="round" d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
               <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Belum ada kontak</p>
-              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Tambahkan email penerima satu per satu atau impor massal — lalu kirim broadcast ke semuanya sekali klik.</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Tambahkan email penerima satu per satu atau impor dari file — lalu kirim broadcast ke semuanya sekali klik.</p>
+              <button type="button" id="aud-empty-add" class="mt-4 px-5 py-2.5 text-xs font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors">Tambah Kontak</button>
             </div>
 
             <!-- Zona hapus semua -->
-            <div id="aud-danger" class="hidden mt-6 pt-4 border-t border-gray-200 dark:border-slate-700/60">
+            <div id="aud-danger" class="hidden mt-5 pt-4 border-t border-gray-200 dark:border-slate-700/60">
               <button type="button" id="aud-clear-btn" class="text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors">Hapus semua kontak</button>
             </div>
 
-            <!-- Modal konfirmasi hapus semua (theme-aware) -->
-            <div id="aud-clear-modal" class="hidden fixed inset-0 z-[80] items-center justify-center p-4" style="background: rgba(0,0,0,0.45);">
-              <div class="bg-white dark:bg-slate-900 rounded-md w-full max-w-xs px-5 pt-5 pb-4 text-center">
-                <h3 class="text-sm font-bold text-gray-900 dark:text-white">Hapus semua kontak?</h3>
-                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Seluruh <span id="aud-clear-count">0</span> kontak audiens akan dihapus permanen dan tidak bisa dikembalikan.</p>
-                <div class="flex gap-2 mt-4">
-                  <button type="button" id="aud-clear-cancel" class="flex-1 py-2 text-xs font-medium bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 rounded-full transition-colors">Batal</button>
-                  <button type="button" id="aud-clear-ok" class="flex-1 py-2 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Hapus</button>
+            <!-- Pop-up: Tambah Kontak (radius xl) -->
+            <div id="aud-add-modal" class="hidden fixed inset-0 z-[80] items-center justify-center p-4" style="background: rgba(0,0,0,0.45);">
+              <div class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-sm shadow-xl overflow-hidden">
+                <div class="px-5 pt-5 pb-3">
+                  <h3 class="text-sm font-bold text-gray-900 dark:text-white">Tambah Kontak</h3>
+                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Kontak baru langsung tersimpan ke audiens proyek ini.</p>
+                </div>
+                <form id="aud-add-form" class="px-5 pb-5 flex flex-col gap-3" autocomplete="off">
+                  <div>
+                    <label for="aud-add-email" class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5">Email <span class="text-red-500">*</span></label>
+                    <input id="aud-add-email" type="email" inputmode="email" placeholder="email@contoh.com" class="w-full px-3.5 py-2.5 text-sm bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-gray-400 dark:focus:border-slate-500 transition-colors" required>
+                  </div>
+                  <div>
+                    <label for="aud-add-name" class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5">Nama <span class="text-gray-400 dark:text-gray-500 font-normal">(opsional)</span></label>
+                    <input id="aud-add-name" type="text" maxlength="100" placeholder="Nama kontak" class="w-full px-3.5 py-2.5 text-sm bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-gray-400 dark:focus:border-slate-500 transition-colors">
+                  </div>
+                  <div class="flex gap-2 pt-1">
+                    <button type="button" id="aud-add-cancel" class="flex-1 py-2.5 text-xs font-medium bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 rounded-full transition-colors">Batal</button>
+                    <button type="submit" id="aud-add-btn" class="flex-1 py-2.5 text-xs font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Tambah</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Pop-up: Impor (file / tempel, radius xl) -->
+            <div id="aud-import-modal" class="hidden fixed inset-0 z-[80] items-center justify-center p-4" style="background: rgba(0,0,0,0.45);">
+              <div class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-sm shadow-xl overflow-hidden">
+                <div class="px-5 pt-5 pb-3">
+                  <h3 class="text-sm font-bold text-gray-900 dark:text-white">Impor Kontak</h3>
+                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Dari file CSV/TXT atau tempel manual. Format: email per baris, atau Nama &lt;email&gt;.</p>
+                </div>
+                <div class="px-5 pb-5 flex flex-col gap-3">
+                  <label id="aud-import-filezone" for="aud-import-file" class="flex flex-col items-center justify-center gap-1.5 py-5 border border-dashed border-gray-300 dark:border-slate-600 rounded-xl cursor-pointer hover:border-gray-400 dark:hover:border-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
+                    <svg class="w-6 h-6 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg>
+                    <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Pilih file CSV / TXT</span>
+                    <span id="aud-import-fname" class="hidden text-[11px] text-gray-500 dark:text-gray-400"></span>
+                    <input id="aud-import-file" type="file" accept=".csv,.txt,text/csv,text/plain" class="hidden">
+                  </label>
+                  <textarea id="aud-import-list" rows="4" placeholder="atau tempel daftar email di sini — satu per baris atau dipisah koma" class="w-full px-3 py-2.5 text-sm bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-gray-400 dark:focus:border-slate-500 transition-colors" style="resize:vertical"></textarea>
+                  <p class="text-[11px] text-gray-400 dark:text-gray-500">Duplikat & alamat tidak valid otomatis dilewati · batas kontak mengikuti paket</p>
+                  <div class="flex gap-2 pt-1">
+                    <button type="button" id="aud-import-cancel" class="flex-1 py-2.5 text-xs font-medium bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 rounded-full transition-colors">Batal</button>
+                    <button type="button" id="aud-import-btn" class="flex-1 py-2.5 text-xs font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Impor Sekarang</button>
+                  </div>
                 </div>
               </div>
             </div>
+
+            <!-- Pop-up: Edit kontak (radius xl) -->
+            <div id="aud-edit-modal" class="hidden fixed inset-0 z-[80] items-center justify-center p-4" style="background: rgba(0,0,0,0.45);">
+              <div class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-sm shadow-xl overflow-hidden">
+                <div class="px-5 pt-5 pb-3">
+                  <h3 class="text-sm font-bold text-gray-900 dark:text-white">Edit Kontak</h3>
+                  <p id="aud-edit-email" class="mt-0.5 text-xs font-medium text-gray-500 dark:text-gray-400 truncate"></p>
+                </div>
+                <form id="aud-edit-form" class="px-5 pb-5 flex flex-col gap-3" autocomplete="off">
+                  <div>
+                    <label for="aud-edit-name" class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5">Nama</label>
+                    <input id="aud-edit-name" type="text" maxlength="100" placeholder="Nama kontak" class="w-full px-3.5 py-2.5 text-sm bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-gray-400 dark:focus:border-slate-500 transition-colors">
+                  </div>
+                  <div class="flex gap-2 pt-1">
+                    <button type="button" id="aud-edit-cancel" class="flex-1 py-2.5 text-xs font-medium bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 rounded-full transition-colors">Batal</button>
+                    <button type="submit" id="aud-edit-btn" class="flex-1 py-2.5 text-xs font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Simpan</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Pop-up: Hapus semua (radius xl) -->
+            <div id="aud-clear-modal" class="hidden fixed inset-0 z-[80] items-center justify-center p-4" style="background: rgba(0,0,0,0.45);">
+              <div class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-xs shadow-xl overflow-hidden">
+                <div class="px-5 pt-5 pb-3 text-center">
+                  <h3 class="text-sm font-bold text-gray-900 dark:text-white">Hapus semua kontak?</h3>
+                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Seluruh <span id="aud-clear-count">0</span> kontak audiens akan dihapus permanen dan tidak bisa dikembalikan.</p>
+                </div>
+                <div class="px-5 pb-5 flex gap-2">
+                  <button type="button" id="aud-clear-cancel" class="flex-1 py-2.5 text-xs font-medium bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 rounded-full transition-colors">Batal</button>
+                  <button type="button" id="aud-clear-ok" class="flex-1 py-2.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Hapus</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
 
           </div>
         </div>
@@ -419,11 +486,13 @@
 
 <script src="../email-core.js"></script>
 <script>
-// ====== Mini-app Audiens: daftar, tambah, impor, cari, hapus, hapus semua ======
+// ====== Mini-app Audiens: CRUD table + pop-up tambah/impor(file)/edit/hapus ======
 (function () {
   var audItems = [];
   var audTotal = 0;
   var audLimit = 0; // batas kontak sesuai paket pemilik proyek
+  var audInited = false;
+  var editEmail = '';
 
   function escHtml(t) {
     return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) {
@@ -435,65 +504,77 @@
       if (!iso) return '';
       var d = new Date(String(iso).replace(' ', 'T') + 'Z'); // D1 simpan UTC
       if (isNaN(d)) return '';
-      return 'Ditambahkan ' + d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+      return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
     } catch (e) { return ''; }
-  }
-  function btnSpin(btn, on, label) {
-    if (!btn) return;
-    if (on) { btn.disabled = true; btn.dataset.label = btn.innerHTML; btn.innerHTML = '<svg class="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-80" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v3a5 5 0 0 0-5 5H4z"></path></svg>'; }
-    else { btn.disabled = false; if (btn.dataset.label) btn.innerHTML = btn.dataset.label; }
-    if (label && !on) btn.innerHTML = label;
   }
   function validEmailLocal(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e || '').trim()); }
 
+  function openM(id) { var m = document.getElementById(id); m.classList.remove('hidden'); m.classList.add('flex'); }
+  function closeM(id) { var m = document.getElementById(id); m.classList.add('hidden'); m.classList.remove('flex'); }
+  function btnBusy(btn, on) {
+    if (!btn) return;
+    if (on) { btn.disabled = true; btn.dataset.label = btn.innerHTML; btn.innerHTML = '<svg class="animate-spin w-3.5 h-3.5 mx-auto" viewBox="0 0 24 24" fill="none"><circle class="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-80" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v3a5 5 0 0 0-5 5H4z"></path></svg>'; }
+    else { btn.disabled = false; if (btn.dataset.label) btn.innerHTML = btn.dataset.label; }
+  }
+
+  // ---------- render CRUD table ----------
   function audRender() {
-    var list = document.getElementById('aud-list');
+    var tbody = document.getElementById('aud-tbody');
+    var tableWrap = document.getElementById('aud-table-wrap');
     var empty = document.getElementById('aud-empty');
     var danger = document.getElementById('aud-danger');
     var full = audLimit > 0 && audTotal >= audLimit;
-    document.getElementById('aud-count').textContent = audLimit > 0 ? (audTotal + ' / ' + audLimit) : String(audTotal);
+
+    document.getElementById('aud-count').textContent = String(audTotal);
+    document.getElementById('aud-count-limit').textContent = audLimit > 0 ? (' / ' + audLimit) : '';
     document.getElementById('aud-full-hint').classList.toggle('hidden', !full);
-    // Saat penuh: tombol tambah & impor otomatis nonaktif
-    var addBtn = document.getElementById('aud-add-btn');
-    var addEmail = document.getElementById('aud-add-email');
-    var addName = document.getElementById('aud-add-name');
-    addBtn.disabled = full;
-    addEmail.disabled = full;
-    addName.disabled = full;
-    document.getElementById('aud-import-btn').disabled = full;
+    document.getElementById('aud-add-open').disabled = full;
+    document.getElementById('aud-import-open').disabled = full;
     danger.classList.toggle('hidden', audTotal === 0);
+
     if (!audItems.length) {
-      list.innerHTML = '';
+      tableWrap.classList.add('hidden');
       empty.classList.remove('hidden');
       return;
     }
     empty.classList.add('hidden');
+    tableWrap.classList.remove('hidden');
+
     var q = String(document.getElementById('aud-search').value || '').trim().toLowerCase();
     var rows = audItems.filter(function (it) {
       if (!q) return true;
       return (it.email || '').toLowerCase().indexOf(q) !== -1 || (it.name || '').toLowerCase().indexOf(q) !== -1;
     });
     if (!rows.length) {
-      list.innerHTML = '<div class="py-8 text-center text-xs text-gray-400 dark:text-gray-500">Tidak ada kontak cocok dengan pencarian.</div>';
+      tableWrap.classList.remove('hidden');
+      tbody.innerHTML = '<tr><td colspan="3" class="px-4 py-8 text-center text-xs text-gray-400 dark:text-gray-500">Tidak ada kontak cocok dengan pencarian.</td></tr>';
       return;
     }
-    list.innerHTML = rows.map(function (it) {
+    tbody.innerHTML = rows.map(function (it) {
       var initial = (it.name || it.email || '?').trim().charAt(0).toUpperCase();
-      var nameRow = it.name ? '<p class="text-sm font-medium text-gray-900 dark:text-white truncate">' + escHtml(it.name) + '</p>' : '';
       var dateLbl = audDateLabel(it.created_at);
-      return '<div class="flex items-center gap-3 py-3">'
-        + '<div class="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300 shrink-0">' + escHtml(initial) + '</div>'
-        + '<div class="flex-1 min-w-0">'
-        + nameRow
+      var nameHtml = it.name
+        ? '<p class="text-sm font-medium text-gray-900 dark:text-white truncate">' + escHtml(it.name) + '</p>'
+        : '<p class="text-sm text-gray-400 dark:text-gray-500 italic">Tanpa nama</p>';
+      return '<tr>'
+        + '<td class="px-4 py-3">'
+        + '<div class="flex items-center gap-3">'
+        + '<div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center text-[11px] font-bold text-gray-600 dark:text-gray-300 shrink-0">' + escHtml(initial) + '</div>'
+        + '<div class="min-w-0">'
+        + nameHtml
         + '<p class="text-xs text-gray-500 dark:text-gray-400 truncate">' + escHtml(it.email) + '</p>'
-        + (dateLbl ? '<p class="text-[11px] text-gray-400 dark:text-gray-600 mt-0.5">' + escHtml(dateLbl) + '</p>' : '')
-        + '</div>'
-        + '<button type="button" data-aud-del="' + escHtml(it.email) + '" title="Hapus kontak" class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors shrink-0">'
-        + '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>'
-        + '</button></div>';
+        + '</div></div></td>'
+        + '<td class="px-4 py-3 hidden sm:table-cell"><p class="text-xs text-gray-500 dark:text-gray-400">' + escHtml(dateLbl || '-') + '</p></td>'
+        + '<td class="px-4 py-3"><div class="flex items-center justify-end gap-1">'
+        + '<button type="button" data-aud-edit="' + escHtml(it.email) + '" title="Edit nama" class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">'
+        + '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"></path></svg></button>'
+        + '<button type="button" data-aud-del="' + escHtml(it.email) + '" title="Hapus kontak" class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">'
+        + '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg></button>'
+        + '</div></td></tr>';
     }).join('');
   }
 
+  // ---------- data ----------
   function audLoad() {
     fetch(API_BASE + '/email?action=audience_list&project_id=' + encodeURIComponent(_pid()), { headers: _hdrs() })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
@@ -506,44 +587,76 @@
       .catch(function () { emailToast('Gagal memuat audiens — coba lagi', false); });
   }
 
-  var audInited = false;
+  // ---------- init ----------
   function audInit() {
-    if (audInited) { audLoad(); return; } // cache hangat + fetch segar: jangan pasang listener dobel
+    if (audInited) { audLoad(); return; }
     audInited = true;
-    // CTA broadcast: bawa id proyek aktif
+
     var link = document.getElementById('aud-bcast-link');
     if (link) link.href = '/proyek/pengaturan/email/broadcast/kirim/' + (_pid() ? '?id=' + encodeURIComponent(_pid()) : '');
 
-    var form = document.getElementById('aud-add-form');
-    form.addEventListener('submit', function (ev) {
+    // Pop-up Tambah
+    document.getElementById('aud-add-open').addEventListener('click', function () {
+      document.getElementById('aud-add-form').reset();
+      openM('aud-add-modal');
+      setTimeout(function () { document.getElementById('aud-add-email').focus(); }, 60);
+    });
+    document.getElementById('aud-empty-add').addEventListener('click', function () {
+      document.getElementById('aud-add-open').click();
+    });
+    document.getElementById('aud-add-cancel').addEventListener('click', function () { closeM('aud-add-modal'); });
+    document.getElementById('aud-add-modal').addEventListener('click', function (ev) { if (ev.target === this) closeM('aud-add-modal'); });
+    document.getElementById('aud-add-form').addEventListener('submit', function (ev) {
       ev.preventDefault();
       var emailEl = document.getElementById('aud-add-email');
       var nameEl = document.getElementById('aud-add-name');
       var email = String(emailEl.value || '').trim().toLowerCase();
       if (!validEmailLocal(email)) { emailToast('Alamat email tidak valid', false); return; }
       var btn = document.getElementById('aud-add-btn');
-      btnSpin(btn, true);
+      btnBusy(btn, true);
       _apiPost('audience_add', { email: email, name: String(nameEl.value || '').trim() })
         .then(function (res) {
           if (res.duplicate) emailToast('Kontak sudah ada di audiens', false);
-          else { emailToast('Kontak ditambahkan', true); emailEl.value = ''; nameEl.value = ''; audLoad(); }
+          else { emailToast('Kontak ditambahkan', true); closeM('aud-add-modal'); audLoad(); }
         })
         .catch(function (e) { emailToast((e && e.error) || 'Gagal menambah kontak', false); })
-        .finally(function () { btnSpin(btn, false); });
+        .finally(function () { btnBusy(btn, false); });
     });
 
-    document.getElementById('aud-import-toggle').addEventListener('click', function () {
-      var box = document.getElementById('aud-import-box');
-      box.classList.toggle('hidden');
-      if (!box.classList.contains('hidden')) document.getElementById('aud-import-list').focus();
+    // Pop-up Impor (file / tempel)
+    document.getElementById('aud-import-open').addEventListener('click', function () {
+      document.getElementById('aud-import-list').value = '';
+      var fname = document.getElementById('aud-import-fname');
+      fname.classList.add('hidden'); fname.textContent = '';
+      document.getElementById('aud-import-file').value = '';
+      openM('aud-import-modal');
+    });
+    document.getElementById('aud-import-cancel').addEventListener('click', function () { closeM('aud-import-modal'); });
+    document.getElementById('aud-import-modal').addEventListener('click', function (ev) { if (ev.target === this) closeM('aud-import-modal'); });
+
+    // Baca file CSV/TXT -> isi textarea (diproses lokal, tidak diunggah ke mana pun)
+    document.getElementById('aud-import-file').addEventListener('change', function () {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      if (f.size > 2 * 1024 * 1024) { emailToast('File terlalu besar (maks. 2MB)', false); this.value = ''; return; }
+      var reader = new FileReader();
+      reader.onload = function () {
+        var txt = String(reader.result || '').trim();
+        document.getElementById('aud-import-list').value = txt;
+        var fname = document.getElementById('aud-import-fname');
+        fname.textContent = f.name + ' (' + Math.max(1, Math.round(f.size / 1024)) + ' KB)';
+        fname.classList.remove('hidden');
+      };
+      reader.onerror = function () { emailToast('File gagal dibaca — coba lagi', false); };
+      reader.readAsText(f);
     });
 
     document.getElementById('aud-import-btn').addEventListener('click', function () {
       var ta = document.getElementById('aud-import-list');
       var raw = String(ta.value || '').trim();
-      if (!raw) { emailToast('Tempel dulu daftar emailnya', false); return; }
+      if (!raw) { emailToast('Pilih file atau tempel daftar emailnya dulu', false); return; }
       var btn = document.getElementById('aud-import-btn');
-      btnSpin(btn, true);
+      btnBusy(btn, true);
       _apiPost('audience_import', { list: raw })
         .then(function (res) {
           var msg = res.added + ' kontak diimpor';
@@ -551,40 +664,69 @@
           if (res.invalid) msg += ' · ' + res.invalid + ' alamat tidak valid';
           if (res.overflow) msg += ' · ' + res.overflow + ' melebihi batas paket (' + (res.limit || audLimit) + ' kontak)';
           emailToast(msg, res.added > 0);
-          if (res.added > 0) { ta.value = ''; document.getElementById('aud-import-box').classList.add('hidden'); audLoad(); }
+          if (res.added > 0) { closeM('aud-import-modal'); audLoad(); }
         })
         .catch(function (e) { emailToast((e && e.error) || 'Impor gagal — coba lagi', false); })
-        .finally(function () { btnSpin(btn, false); });
+        .finally(function () { btnBusy(btn, false); });
     });
 
+    // Pencarian
     document.getElementById('aud-search').addEventListener('input', audRender);
 
-    // Hapus satu kontak (delegasi)
-    document.getElementById('aud-list').addEventListener('click', function (ev) {
-      var btn = ev.target.closest('[data-aud-del]');
-      if (!btn) return;
-      var email = btn.getAttribute('data-aud-del');
-      btn.disabled = true;
-      _apiPost('audience_delete', { email: email })
-        .then(function () { emailToast('Kontak dihapus', true); audLoad(); })
-        .catch(function (e) { emailToast((e && e.error) || 'Gagal menghapus kontak', false); });
+    // Aksi tabel (delegasi): edit + hapus
+    document.getElementById('aud-tbody').addEventListener('click', function (ev) {
+      var editBtn = ev.target.closest('[data-aud-edit]');
+      if (editBtn) {
+        editEmail = editBtn.getAttribute('data-aud-edit');
+        document.getElementById('aud-edit-email').textContent = editEmail;
+        var it = audItems.filter(function (x) { return x.email === editEmail; })[0];
+        document.getElementById('aud-edit-name').value = (it && it.name) || '';
+        openM('aud-edit-modal');
+        setTimeout(function () { document.getElementById('aud-edit-name').focus(); }, 60);
+        return;
+      }
+      var delBtn = ev.target.closest('[data-aud-del]');
+      if (delBtn) {
+        var email = delBtn.getAttribute('data-aud-del');
+        delBtn.disabled = true;
+        _apiPost('audience_delete', { email: email })
+          .then(function () { emailToast('Kontak dihapus', true); audLoad(); })
+          .catch(function (e) { emailToast((e && e.error) || 'Gagal menghapus kontak', false); });
+      }
     });
 
-    // Hapus semua: modal konfirmasi
-    var modal = document.getElementById('aud-clear-modal');
-    function closeModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); document.getElementById('aud-clear-ok').disabled = false; }
+    // Pop-up Edit
+    document.getElementById('aud-edit-cancel').addEventListener('click', function () { closeM('aud-edit-modal'); });
+    document.getElementById('aud-edit-modal').addEventListener('click', function (ev) { if (ev.target === this) closeM('aud-edit-modal'); });
+    document.getElementById('aud-edit-form').addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      if (!editEmail) return;
+      var btn = document.getElementById('aud-edit-btn');
+      btnBusy(btn, true);
+      _apiPost('audience_update', { email: editEmail, name: String(document.getElementById('aud-edit-name').value || '').trim() })
+        .then(function () { emailToast('Kontak diperbarui', true); closeM('aud-edit-modal'); audLoad(); })
+        .catch(function (e) { emailToast((e && e.error) || 'Gagal memperbarui kontak', false); })
+        .finally(function () { btnBusy(btn, false); });
+    });
+
+    // Pop-up Hapus semua
     document.getElementById('aud-clear-btn').addEventListener('click', function () {
       document.getElementById('aud-clear-count').textContent = String(audTotal);
-      modal.classList.remove('hidden'); modal.classList.add('flex');
+      openM('aud-clear-modal');
     });
-    document.getElementById('aud-clear-cancel').addEventListener('click', closeModal);
-    modal.addEventListener('click', function (ev) { if (ev.target === modal) closeModal(); });
+    document.getElementById('aud-clear-cancel').addEventListener('click', function () { closeM('aud-clear-modal'); });
+    document.getElementById('aud-clear-modal').addEventListener('click', function (ev) { if (ev.target === this) closeM('aud-clear-modal'); });
     document.getElementById('aud-clear-ok').addEventListener('click', function () {
       var btn = document.getElementById('aud-clear-ok');
       btn.disabled = true;
       _apiPost('audience_delete_all', { confirm: 'HAPUS SEMUA' })
-        .then(function () { emailToast('Semua kontak dihapus', true); closeModal(); audLoad(); })
+        .then(function () { emailToast('Semua kontak dihapus', true); closeM('aud-clear-modal'); audLoad(); })
         .catch(function (e) { btn.disabled = false; emailToast((e && e.error) || 'Gagal menghapus', false); });
+    });
+
+    // Tutup semua pop-up dengan Esc
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') ['aud-add-modal', 'aud-import-modal', 'aud-edit-modal', 'aud-clear-modal'].forEach(closeM);
     });
 
     audLoad();
