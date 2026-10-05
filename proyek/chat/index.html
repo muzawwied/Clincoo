@@ -5438,13 +5438,28 @@ window.chatLivePreview = function () {
             // padahal webnya belum ada. Frasa niat ("sekarang saya buat...") terlalu
             // beragam untuk ditangkap satu regex kaku, jadi deteksi lewat FAKTA kerja:
             // kalau user jelas minta web/halaman/situs lengkap TAPI seluruh tool_calls
-            // di giliran ini HANYA generate_image (nol write_file/deploy_project) —
-            // tugas pasti belum tuntas, apa pun bunyi kalimat penutupnya.
+            // di giliran ini cuma tool PERSIAPAN (generate_image/list_items/read_file/
+            // search_items — cek folder, lihat gambar, dsb) TANPA write_file/deploy_project
+            // sama sekali — tugas pasti belum tuntas, apa pun bunyi kalimat penutupnya.
+            // GENERALISASI (laporan user ke-2, screenshot): kasus pertama AI cuma
+            // generate_image lalu bilang "sekarang saya buat..." dan ditutup; sekarang
+            // bahkan setelah user klik "Lanjut", AI cuma list_items ("Viewing folder:
+            // root/images") TANPA generate_image ataupun write_file, lalu bilang
+            // "sekarang saya bangun landing page lengkapnya" dan ditutup LAGI. Deteksi
+            // generate_image-only tidak cukup — sekarang cek: tool_calls giliran ini ADA
+            // tapi SEMUANYA tool persiapan (bukan write_file/deploy_project).
             const toolNamesSoFar = (aiMsgObj && aiMsgObj.toolCalls || []).map(function (tc) { return tc.name; });
-            const onlyImagesSoFar = toolNamesSoFar.length > 0 && toolNamesSoFar.every(function (n) { return n === 'generate_image'; });
-            if (onlyImagesSoFar) {
-                const lastUserMsgForCheck = [...messages].reverse().find(function (m) { return m.role === 'user' && !m.silent; });
-                const wantsFullSite = /landing\s*page|halaman\s*web|website|situs|webnya|aplikasi\s*web|web\s*app|toko\s*online|e-?commerce/i.test((lastUserMsgForCheck && lastUserMsgForCheck.text) || '');
+            const PREP_ONLY_TOOLS = ['generate_image', 'list_items', 'read_file', 'read_files', 'search_items'];
+            const prepOnlySoFar = toolNamesSoFar.length > 0 && toolNamesSoFar.every(function (n) { return PREP_ONLY_TOOLS.indexOf(n) !== -1; });
+            if (prepOnlySoFar) {
+                // PENTING: jangan cuma cek pesan user TERAKHIR — kalau user cuma balas
+                // "Lanjut" (seperti di laporan ke-2), permintaan "landing page kedai
+                // burger" aslinya ada di pesan SEBELUMNYA. Scan semua pesan user non-silent
+                // di percakapan ini (sama seperti variabel hasWork di atas), bukan cuma yang
+                // paling akhir, supaya giliran "Lanjut" tetap kena deteksi.
+                const wantsFullSite = messages.some(function (m) {
+                    return m.role === 'user' && !m.silent && /landing\s*page|halaman\s*web|website|situs|webnya|aplikasi\s*web|web\s*app|toko\s*online|e-?commerce/i.test(m.text || '');
+                });
                 if (wantsFullSite) return true;
             }
             return false;
