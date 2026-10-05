@@ -85,6 +85,16 @@ async function saveFile(db, table, chunksTable, projectId, path, contentStr, con
     isBig = true;
     b64Str = contentB64;
     sizeBytes = decB64Bytes(b64Str);
+    // File media (mp3/gambar/video) dikirim sebagai data-URL; ukuran data-URL
+    // ~1.37x ukuran file asli. Hitung ukuran file ASLinya dari base64 payload
+    // di dalam data-URL supaya file 20-25MB tidak salah ditolak "terlalu besar".
+    try {
+      const decoded = atob(b64Str);
+      if (decoded.startsWith('data:')) {
+        const comma = decoded.indexOf(',');
+        if (comma > 0) sizeBytes = decB64Bytes(decoded.slice(comma + 1));
+      }
+    } catch (e) {}
   } else if (String(contentStr || '').length > SMALL_MAX_CHARS) {
     // pengaman: klien lama masih mengirim konten mentah gede -> jadikan file besar
     isBig = true;
