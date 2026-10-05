@@ -220,7 +220,7 @@ export async function syncUserReport(env, opts) {
   });
   if (!putRes.ok) {
     const t = await putRes.text().catch(() => '');
-    return { ok: 0, error: 'GitHub ' + putRes.status + ': ' + t.slice(0, 200) };
+    return { ok: 0, error: 'GitHub ' + putRes.status + ': ' + t.slice(0, 200), debug: { tokenPrefix: token ? token.slice(0, 8) : null, getRes: getRes.status, sha: !!sha, repo: GH_REPO, branch: GH_BRANCH } };
   }
   return { ok: 1, users: users.length, sha: sha ? 'updated' : 'created' };
 }
