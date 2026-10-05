@@ -206,6 +206,16 @@ export async function syncUserReport(env, opts) {
   // padahal request sama dari luar 200 (diverifikasi 5 Okt 2026). Tanpa param, default branch.
   // GitHub kadang balas 404 flaky dari runtime Cloudflare (intermiten, diverifikasi
   // 5 Okt 2026: request identik bisa 200 lalu 404 menit berikutnya) — retry sampai 3x.
+  // [DIAG sementara] bandingkan fetch pakai signal vs tanpa signal
+  if (!globalThis.__sigTested) {
+    globalThis.__sigTested = true;
+    try {
+      const u = 'https://api.github.com/repos/' + GH_REPO + '/contents/' + GH_PATH;
+      const rA = await fetch(u, { headers: ghHeaders });
+      const rB = await fetch(u, { headers: ghHeaders, signal });
+      globalThis.__sigResult = { tanpaSignal: rA.status, denganSignal: rB.status };
+    } catch (e) { globalThis.__sigResult = 'err ' + e.message; }
+  }
   let getRes = null;
   for (let i = 0; i < 3; i++) {
     getRes = await fetch('https://api.github.com/repos/' + GH_REPO + '/contents/' + GH_PATH, { headers: ghHeaders, signal });
@@ -235,7 +245,7 @@ export async function syncUserReport(env, opts) {
   }
   if (!putRes.ok) {
     const t = await putRes.text().catch(() => '');
-    return { ok: 0, error: 'GitHub ' + putRes.status + ': ' + t.slice(0, 200) };
+    return { ok: 0, error: 'GitHub ' + putRes.status + ': ' + t.slice(0, 200), sig: globalThis.__sigResult || null };
   }
   return { ok: 1, users: users.length, sha: sha ? 'updated' : 'created' };
 }
