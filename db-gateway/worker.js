@@ -17,6 +17,14 @@ const PLAN_DB_LIMITS = {
 const limits = (plan) => PLAN_DB_LIMITS[plan] || PLAN_DB_LIMITS.Starter;
 
 const TYPES = { text: 'TEXT', number: 'REAL', boolean: 'INTEGER', date: 'TEXT' };
+// Alias tipe umum dari SQL/klien luar (mis. Grok/AI mengirim "INTEGER"/"TEXT")
+const TYPE_ALIASES = { text: 'text', string: 'text', varchar: 'text', char: 'text',
+  number: 'number', numeric: 'number', real: 'number', float: 'number', double: 'number',
+  integer: 'number', int: 'number', decimal: 'number',
+  boolean: 'boolean', bool: 'boolean',
+  date: 'date', datetime: 'date', timestamp: 'date', time: 'date' };
+// Nama kolom milik sistem — tidak boleh dipakai kolom user (tabelfisik punya kolom ini)
+const RESERVED_COLS = ['id', 'created_at', 'updated_at'];
 const slug = (s) => String(s || '').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
 const physical = (pid, name) => 't_' + slug(pid) + '_' + slug(name);
 
@@ -71,8 +79,18 @@ async function createTable(db, body) {
   const name = slug(body.name);
   if (!projectId) return json({ error: 'project_id wajib' }, 400);
   if (!name || name.length > 60) return json({ error: 'Nama tabel tidak valid' }, 400);
-  const cols = (body.columns || []).map(c => ({ name: slug(c.name), type: TYPES[c.type] ? c.type : 'text' }))
-    .filter(c => c.name);
+  const seen = new Set();
+  const cols = [];
+  for (const c of (body.columns || [])) {
+    const nm = slug(c && c.name);
+    if (!nm) continue;
+    if (RESERVED_COLS.indexOf(nm) !== -1)
+      return json({ error: "Kolom '" + nm + "' dipakai sistem dan tidak boleh dipakai — Clincoo sudah menyediakan kolom id, created_at, updated_at otomatis di setiap tabel." }, 400);
+    if (seen.has(nm)) continue; // duplikat kolom: abaikan yang kedua
+    seen.add(nm);
+    const rawType = String((c && c.type) || '').toLowerCase().trim();
+    cols.push({ name: nm, type: TYPE_ALIASES[rawType] || 'text' });
+  }
   if (!cols.length) return json({ error: 'Minimal satu kolom' }, 400);
   const lim = limits(plan);
   const cnt = await db.prepare('SELECT COUNT(*) c FROM db_catalog WHERE project_id = ?').bind(projectId).first();
