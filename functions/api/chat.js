@@ -471,10 +471,11 @@ async function tryWorkersAIText(env, messages, gDecls) {
   if (!env || !env.AI) return null;
   const { system, chatMsgs } = toOAIChat(messages);
   const oaiTools = (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
+  const sysMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
   for (const model of WORKERS_AI_MODELS) {
     let result = null;
     try {
-      const payload = { messages: chatMsgs };
+      const payload = { messages: sysMsgs };
       if (system) payload.system = system;
       if (oaiTools) payload.tools = oaiTools;
       result = await env.AI.run(model, payload);
@@ -482,7 +483,7 @@ async function tryWorkersAIText(env, messages, gDecls) {
     // Gagal saat membawa tools (model belum support param tools) -> coba sekali tanpa tools
     if (!result && oaiTools) {
       try {
-        const p2 = { messages: chatMsgs };
+        const p2 = { messages: sysMsgs };
         if (system) p2.system = system;
         result = await env.AI.run(model, p2);
       } catch (e2) { result = null; }
@@ -510,7 +511,7 @@ async function tryWorkersAIText(env, messages, gDecls) {
       // Maksimal 3 sambungan per jawaban.
       const finishOf = (rr) => (rr && rr.finish_reason) || (rr && Array.isArray(rr.choices) && rr.choices[0] && rr.choices[0].finish_reason) || '';
       let full = text, seg = text, finish = finishOf(result);
-      const contMsgs = chatMsgs.slice();
+      const contMsgs = sysMsgs.slice();
       for (let ac = 0; ac < 3 && finish === 'length'; ac++) {
         contMsgs.push({ role: 'assistant', content: seg });
         contMsgs.push({ role: 'user', content: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' });
