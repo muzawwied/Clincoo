@@ -1260,8 +1260,16 @@
           row.onclick = () => openFolder(item.path);
           row.innerHTML = `<div class="flex-shrink-0 w-6 h-6 flex items-center justify-center text-[#a0aec0]"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg></div><div class="flex-1 min-w-0"><h3 class="text-[#222222] font-medium text-[15px] leading-tight hover:text-black transition-colors truncate">${item.name}</h3><p class="text-gray-500 text-[12px] mt-0.5">Berkas (${subItems.length}) - <span class="text-[#16a34a]">Folder</span></p></div>${actionBtnHTML}`;
         } else {
-          row.onclick = () => openFileInEditor(item.name);
-          row.innerHTML = `${getFileIcon(item.name)}<div class="flex-1 min-w-0"><h3 class="text-[#222222] font-medium text-[15px] leading-tight hover:text-black transition-colors truncate">${item.name}</h3><p class="text-gray-500 text-[12px] mt-0.5">${item.size || '0,00 B'}</p></div>${actionBtnHTML}`;
+          // Sedang mengunggah: tombol titik-tiga diganti spinner loading — file baru
+          // langsung terlihat di daftar sejak unggah dimulai (tidak "hilang" dulu).
+          if (item.uploading) {
+            row.onclick = null;
+            row.className = 'flex items-center gap-4 py-3 border-b border-gray-200 px-1 group';
+            row.innerHTML = `${getFileIcon(item.name)}<div class="flex-1 min-w-0"><h3 class="text-[#222222] font-medium text-[15px] leading-tight hover:text-black transition-colors truncate">${item.name}</h3><p class="text-gray-500 text-[12px] mt-0.5">Mengunggah...</p></div><span class="p-1.5 inline-flex items-center justify-center flex-shrink-0" title="Sedang mengunggah..."><svg class="w-5 h-5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg></span>`;
+          } else {
+            row.onclick = () => openFileInEditor(item.name);
+            row.innerHTML = `${getFileIcon(item.name)}<div class="flex-1 min-w-0"><h3 class="text-[#222222] font-medium text-[15px] leading-tight hover:text-black transition-colors truncate">${item.name}</h3><p class="text-gray-500 text-[12px] mt-0.5">${item.size || '0,00 B'}</p></div>${actionBtnHTML}`;
+          }
         }
         container.appendChild(row);
       });
@@ -2099,19 +2107,33 @@
         // FILE BESAR (>600 ribu karakter / ~10MB+ di data-URL): isi TIDAK masuk
         // localStorage (kuota browser ~5MB) — unggah ke cloud, simpan penanda saja.
         if (content.length > WS_BIG_LIMIT) {
+          // Baris langsung tampil di daftar (dengan spinner di posisi titik-tiga)
+          // begitu unggah dimulai — sebelumnya file besar "hilang" sampai unggah selesai.
+          let uploadingItem;
+          if (existingIndex !== -1) {
+            uploadingItem = projectFilesData[targetPath][existingIndex];
+            uploadingItem.uploading = true;
+          } else {
+            uploadingItem = { type: 'file', name: file.name, size: sizeStr, path: filePath, content: '', cloud: true, cloudSize: file.size, uploading: true };
+            projectFilesData[targetPath].push(uploadingItem);
+          }
+          if (targetPath === currentFolderPath || targetPath.startsWith(currentFolderPath)) renderFileList();
           wsCloudSaveBig(filePath, content).then(function (up) {
             if (!up.ok) {
+              delete uploadingItem.uploading;
+              if (existingIndex === -1) {
+                const idx = projectFilesData[targetPath].indexOf(uploadingItem);
+                if (idx !== -1) projectFilesData[targetPath].splice(idx, 1);
+              }
+              if (targetPath === currentFolderPath || targetPath.startsWith(currentFolderPath)) renderFileList();
               try { addNotification('Workspace', 'Gagal mengunggah berkas besar ' + file.name + ': ' + up.error); } catch (e) {}
               return;
             }
-            if (existingIndex !== -1) {
-              projectFilesData[targetPath][existingIndex].content = '';
-              projectFilesData[targetPath][existingIndex].cloud = true;
-              projectFilesData[targetPath][existingIndex].cloudSize = file.size;
-              projectFilesData[targetPath][existingIndex].size = sizeStr;
-            } else {
-              projectFilesData[targetPath].push({ type: 'file', name: file.name, size: sizeStr, path: filePath, content: '', cloud: true, cloudSize: file.size });
-            }
+            delete uploadingItem.uploading;
+            uploadingItem.content = '';
+            uploadingItem.cloud = true;
+            uploadingItem.cloudSize = file.size;
+            uploadingItem.size = sizeStr;
             saveData();
             if (targetPath === currentFolderPath || targetPath.startsWith(currentFolderPath)) renderFileList();
           });
