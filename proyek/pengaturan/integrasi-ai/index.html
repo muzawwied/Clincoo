@@ -305,7 +305,7 @@
           <div class="flex items-center justify-between mb-4">
             <div>
               <h4 class="text-base font-semibold text-gray-900 dark:text-white">Clincoo Open API</h4>
-              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">API AI Clincoo — format kompatibel OpenAI. Semua model dikelola dan disediakan Clincoo di server (alokasi gratis); proyek ini cukup pakai secret sendiri.</p>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">API AI Clincoo — format kompatibel OpenAI. Semua model dikelola dan disediakan Clincoo di server.</p>
             </div>
             <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300">Aktif</span>
           </div>
@@ -1610,83 +1610,14 @@
   function aiPgStatus(t) { var el = document.getElementById('ai-pg-status'); if (el) el.textContent = t; }
   function aiPgScroll() { var b = document.getElementById('ai-pg-msgs'); if (b) b.scrollTop = b.scrollHeight; }
 
-  function aiPgTplIcon(k) {
-    var p = {
-      bulb: '<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2z"/>',
-      star: '<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.3-6.2 3.3L7 14.2 2 9.3l6.9-1L12 2z"/>',
-      mail: '<path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="m22 6-10 7L2 6"/>',
-      rocket: '<path d="M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2 0-2.8-.8-.7-2-.8-3-.2z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.9A14.9 14.9 0 0 1 21 2c.9 2.4 1.4 4.9 1.4 6.9 0 1.5-.4 3-1.2 4.3A22 22 0 0 1 17.5 15l-3-3-2.5 3z"/>',
-      globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>'
-    }[k];
-    return '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>';
-  }
-  var _aiPgTplIdx = 0;
-  function aiPgTplGo(i) {
-    var track = document.getElementById('ai-pg-tpl-track'); if (!track) return;
-    var n = track.children.length; if (!n) return;
-    _aiPgTplIdx = Math.max(0, Math.min(n - 1, i));
-    track.style.transform = 'translateX(-' + (_aiPgTplIdx * 100) + '%)';
-    var prev = document.getElementById('ai-pg-tpl-prev'), next = document.getElementById('ai-pg-tpl-next');
-    if (prev) prev.style.opacity = _aiPgTplIdx === 0 ? '0' : '1';
-    if (next) next.style.opacity = _aiPgTplIdx === n - 1 ? '0' : '1';
-    var dots = document.querySelectorAll('#ai-pg-tpl-dots button');
-    for (var d = 0; d < dots.length; d++) dots[d].className = d === _aiPgTplIdx ? 'w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500 transition-all' : 'w-1.5 h-1.5 rounded-full bg-gray-200 dark:bg-slate-700 transition-all';
-  }
   function aiPgIntro() {
     var b = document.getElementById('ai-pg-msgs');
     if (b && b.childElementCount === 0) {
-      var tpl = [
-        ['Jelaskan konsep AI dengan sederhana', 'Jelaskan konsep AI', 'Penjelasan ringan soal kecerdasan buatan', 'bulb'],
-        ['Ringkas keunggulan Clincoo dalam 3 poin', 'Ringkas keunggulan Clincoo', 'Poin singkat kenapa Clincoo oke', 'star'],
-        ['Tuliskan email profesional untuk klien', 'Tulis email', 'Email profesional siap kirim untuk klien', 'mail'],
-        ['Buatkan 5 ide nama aplikasi kreatif', 'Ide nama aplikasi', 'Lima ide nama aplikasi yang kreatif', 'rocket'],
-        ['Terjemahkan ke bahasa Inggris: Selamat datang di Clincoo', 'Contoh terjemahan', 'Terjemahan teks ke bahasa Inggris', 'globe']
-      ];
-      var cards = tpl.map(function (t) {
-        return '<button type="button" onclick="aiPgPickPrompt(\'' + t[0] + '\')" class="ai-pg-tpl-card shrink-0 w-full text-left rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 hover:border-gray-300 dark:hover:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-800 p-4 sm:p-5 transition-all shadow-sm active:scale-[0.99] cursor-pointer">' +
-          '<div class="flex items-start gap-3">' +
-            '<span class="shrink-0 w-9 h-9 rounded-xl bg-gray-100 dark:bg-slate-700/70 text-gray-500 dark:text-gray-300 flex items-center justify-center">' + aiPgTplIcon(t[3]) + '</span>' +
-            '<span class="min-w-0">' +
-              '<span class="block text-sm font-semibold text-gray-800 dark:text-gray-100">' + t[1] + '</span>' +
-              '<span class="block text-[12.5px] text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">' + t[2] + '</span>' +
-            '</span>' +
-          '</div>' +
-        '</button>';
-      }).join('');
-      var dots = tpl.map(function (t, i) {
-        return '<button type="button" onclick="aiPgTplGo(' + i + ')" aria-label="Template ' + (i + 1) + '" class="w-1.5 h-1.5 rounded-full bg-gray-200 dark:bg-slate-700 transition-all"></button>';
-      }).join('');
-      b.innerHTML = '<div data-intro="1" class="h-full flex flex-col items-center justify-center gap-6 px-4 ai-pg-fade">' +
-        '<div class="text-center">' +
-          '<h2 class="text-2xl sm:text-3xl text-gray-800 dark:text-gray-100 tracking-tight" style="font-weight:400">Mau uji apa hari ini?</h2>' +
-          '<p class="text-[13px] text-gray-500 dark:text-gray-400 mt-2">Geser atau pilih template, atau tulis prompt sendiri di bawah</p>' +
-        '</div>' +
-        '<div class="w-full max-w-sm relative">' +
-          '<button type="button" id="ai-pg-tpl-prev" onclick="aiPgTplGo(_aiPgTplIdx-1)" aria-label="Sebelumnya" style="opacity:0" class="absolute -left-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-md flex items-center justify-center text-gray-500 dark:text-gray-300 hover:text-black dark:hover:text-white transition-all cursor-pointer"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6"/></svg></button>' +
-          '<div id="ai-pg-tpl-viewport" class="overflow-hidden px-1 -mx-1">' +
-            '<div id="ai-pg-tpl-track" class="flex transition-transform duration-300 ease-out">' + cards + '</div>' +
-          '</div>' +
-          '<button type="button" id="ai-pg-tpl-next" onclick="aiPgTplGo(_aiPgTplIdx+1)" aria-label="Berikutnya" class="absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-md flex items-center justify-center text-gray-500 dark:text-gray-300 hover:text-black dark:hover:text-white transition-all cursor-pointer"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></svg></button>' +
-          '<div id="ai-pg-tpl-dots" class="flex justify-center gap-2 mt-4">' + dots + '</div>' +
-        '</div>' +
+      b.innerHTML = '<div data-intro="1" class="h-full flex flex-col items-center justify-center gap-2 px-4 ai-pg-fade">' +
+        '<h2 class="text-2xl sm:text-3xl text-gray-800 dark:text-gray-100 tracking-tight" style="font-weight:400">Mau uji apa hari ini?</h2>' +
+        '<p class="text-[13px] text-gray-500 dark:text-gray-400 mt-2">Tulis prompt sendiri di bawah</p>' +
       '</div>';
-      var vp = document.getElementById('ai-pg-tpl-viewport');
-      if (vp) {
-        var sx = 0, sy = 0;
-        vp.addEventListener('touchstart', function (e) { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
-        vp.addEventListener('touchend', function (e) {
-          var dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
-          if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) aiPgTplGo(_aiPgTplIdx + (dx < 0 ? 1 : -1));
-        }, { passive: true });
-      }
-      aiPgTplGo(0);
     }
-  }
-  function aiPgPickPrompt(text) {
-    var input = document.getElementById('ai-pg-input');
-    if (input) { input.value = text; input.style.height = 'auto'; }
-    aiPgSendCheck();
-    aiPgSend();
   }
   function aiPgClearIntro() {
     var b = document.getElementById('ai-pg-msgs');
