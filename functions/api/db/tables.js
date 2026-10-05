@@ -27,20 +27,21 @@ async function gw(env, method, url, bodyObj) {
   if (!key) return json({ error: 'Fitur database belum dikonfigurasi di server' }, 503);
   const init = { method, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key } };
   if (bodyObj) init.body = JSON.stringify(bodyObj);
-  // Timeout + retry sekali — gateway kadang cold-start/lambat, jangan biarkan request
-  // menggantung tanpa batas atau pecah jadi exception mentah (bikin frontend tampil error generik).
-  for (let attempt = 0; attempt < 2; attempt++) {
+  // Gateway (Worker) kadang cold-start/lambat. Timeout longgar + 3 percobaan dengan
+  // jeda naik supaya blip gateway tidak pernah pecah jadi error ke user/frontend.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt) await new Promise(r => setTimeout(r, 500 * attempt));
     const ac = new AbortController();
-    const t = setTimeout(() => ac.abort(), 8000);
+    const t = setTimeout(() => ac.abort(), 12000);
     try {
       const res = await fetch(GATEWAY + url, { ...init, signal: ac.signal });
       clearTimeout(t);
       return res;
     } catch (e) {
       clearTimeout(t);
-      if (attempt === 1) return json({ error: 'Database sedang tidak bisa dihubungi. Coba lagi sebentar.' }, 502);
     }
   }
+  return json({ error: 'Database sedang tidak bisa dihubungi. Coba lagi sebentar.' }, 502);
 }
 
 async function guard(env, request, projectId) {
