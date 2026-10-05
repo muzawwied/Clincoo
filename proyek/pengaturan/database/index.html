@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../../js/accent-init.js"></script>
+<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clincoo_current_project_id',__p);}else{var __go=function(__pid){try{localStorage.setItem('clincoo_current_project_id',__pid);}catch(e){}var __sp=new URLSearchParams(location.search);__sp.set('id',__pid);var __q=__sp.toString();location.replace(location.pathname+(__q?'?'+__q:'')+location.hash);};var __c='';try{__c=localStorage.getItem('clincoo_current_project_id')||'';}catch(e){}if(__c){var __l=null;try{__l=JSON.parse(localStorage.getItem('clincoo_projects')||'[]');}catch(e){}if(!Array.isArray(__l)||!__l.length||__l.some(function(p){return p&&p.id===__c;})){__go(__c);return;}try{localStorage.removeItem('clincoo_current_project_id');}catch(e){}}var __t='';try{__t=localStorage.getItem('clincoo_auth_token')||localStorage.getItem('clincoo_token')||'';}catch(e){}var __o=(['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname)===-1)?'https://clincoo-be2.pages.dev':'';fetch(__o+'/api/projects',{headers:__t?{'Authorization':'Bearer '+__t}:{}}).then(function(r){return r.ok?r.json():null;}).then(function(d){var __l2=(d&&d.projects)||[];if(!__l2.length){location.replace('/');return;}__l2.sort(function(a,b){return String(b.updatedAt||'').localeCompare(String(a.updatedAt||''));});__go(String(__l2[0].id));}).catch(function(){location.replace('/');});}}catch(e){}})();</script>
+  <script src="../../../js/current-project.js?v=1"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
+    <link rel="manifest" href="../../../manifest.json">
+    <link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
+  <title>Database — Clincoo</title>
+    <meta name="description" content="Pengaturan: Database — kelola tabel data aplikasi di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clincoo">
+    <meta property="og:title" content="Database — Clincoo">
+    <meta property="og:description" content="Pengaturan: Database — kelola tabel data aplikasi di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Pengaturan: Database — Clincoo">
+    <meta name="twitter:description" content="Pengaturan: Database — kelola tabel data aplikasi di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+  <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+    body { font-family: 'Inter', sans-serif; }
+    @keyframes emailCtaSpin { to { transform: rotate(360deg); } }
+    .email-cta-spin { animation: emailCtaSpin 0.8s linear infinite; }
+    .email-cta { box-shadow: 0 2px 8px -2px rgba(0,0,0,0.15); }
+    .email-cta:not(:disabled):active { transform: scale(0.97); }
+    ::-webkit-scrollbar { display: none; width: 0; height: 0; background: transparent; }
+    * { -ms-overflow-style: none; scrollbar-width: none; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    body.dark-mode { background-color: #000000; color: #e0e0e0; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800 { color: #f0f0f0; }
+    body.dark-mode .text-gray-700 { color: #b0b0b0; }
+    body.dark-mode .text-gray-500, body.dark-mode .text-gray-600 { color: #888888; }
+    body.dark-mode .text-gray-400 { color: #666666; }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode header button[onclick="history.back()"], body.dark-mode header button[aria-label="Kembali"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
+    body.dark-mode header button[onclick="history.back()"] svg, body.dark-mode header button[aria-label="Kembali"] svg { color: #ffffff !important; stroke: #ffffff !important; }
+    body.dark-mode header button[onclick="history.back()"]:hover, body.dark-mode header button[aria-label="Kembali"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
+    body.dark-mode .bg-gray-50 { background-color: #222222 !important; }
+    body.dark-mode .bg-gray-100 { background-color: #222222 !important; }
+    body.dark-mode .border-gray-200, body.dark-mode .border-gray-100 { border-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-200:hover { background-color: #222222 !important; }
+    body.dark-mode input, body.dark-mode select, body.dark-mode textarea { background-color: #0a0a0a; color: #ffffff; border-color: #222222; }
+    body.dark-mode input:focus, body.dark-mode select:focus, body.dark-mode textarea:focus { border-color: #222222; outline: none; }
+    body.dark-mode header { background-color: #000000 !important; }
+    body.dark-mode .bg-black { background-color: #ffffff !important; color: #000000 !important; }
+  /* auto-dark-fix v1 */
+    body.dark-mode .bg-gray-50\/80 { background-color: #141414 !important; }
+    body.dark-mode .bg-gray-200 { background-color: #262626 !important; }
+    body.dark-mode .bg-gray-300 { background-color: #333333 !important; }
+    body.dark-mode .bg-gray-400 { background-color: #444444 !important; }
+    body.dark-mode .border-gray-50 { border-color: #0a0a0a !important; }
+    body.dark-mode .border-gray-200\/50,
+    body.dark-mode .border-gray-200\/60,
+    body.dark-mode .border-gray-200\/70 { border-color: #222222 !important; }
+    body.dark-mode .border-gray-300 { border-color: #333333 !important; }
+    body.dark-mode .border-gray-400 { border-color: #444444 !important; }
+    body.dark-mode .bg-blue-50,
+    body.dark-mode .bg-blue-50\/50 { background-color: #0d1a26 !important; }
+    body.dark-mode .border-blue-100,
+    body.dark-mode .border-blue-200 { border-color: #1e3a52 !important; }
+    body.dark-mode .bg-red-50,
+    body.dark-mode .bg-red-50\/50 { background-color: #2a1414 !important; }
+    body.dark-mode .bg-red-100 { background-color: #3a1a1a !important; }
+    body.dark-mode .border-red-100,
+    body.dark-mode .border-red-200 { border-color: #4a2020 !important; }
+    body.dark-mode .bg-green-100 { background-color: #14301c !important; }
+    body.dark-mode .bg-white\/95 { background-color: rgba(10,10,10,0.95) !important; }
+    body.dark-mode .hover\:bg-gray-50:hover,
+    body.dark-mode .hover\:bg-gray-50\/50:hover,
+    body.dark-mode .hover\:bg-gray-50\/80:hover { background-color: #1a1a1a !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #262626 !important; }
+    body.dark-mode .hover\:bg-gray-200:hover,
+    body.dark-mode .hover\:bg-gray-200\/50:hover { background-color: #333333 !important; }
+    body.dark-mode .hover\:bg-blue-50:hover,
+    body.dark-mode .hover\:bg-blue-100:hover { background-color: #163247 !important; }
+    body.dark-mode .hover\:bg-red-50:hover,
+    body.dark-mode .hover\:bg-red-100:hover { background-color: #3a1a1a !important; }
+    body.dark-mode .hover\:border-gray-300:hover,
+    body.dark-mode .hover\:border-gray-400:hover,
+    body.dark-mode .hover\:border-gray-900:hover { border-color: #555555 !important; }
+    body.dark-mode .focus\:border-gray-400:focus,
+    body.dark-mode .focus\:border-gray-900:focus { border-color: #666666 !important; }
+    body.dark-mode input::placeholder, body.dark-mode textarea::placeholder { color: #666666 !important; }
+#chat-header-capsule { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        /* Kapsul: mobile 2 menu (Workspace|Dashboard), desktop 3 menu (Live preview|Workspace|Dashboard) */
+        .chat-nav-link[data-nav="agent"] { display: none !important; }
+        .chat-nav-link[data-nav="live"] { display: none; }
+        @media (min-width: 900px) { .chat-nav-link[data-nav="live"] { display: inline-flex; } }
+        #chat-nav-pill { display: none; }
+        @view-transition { navigation: auto; }
+        /* pindah antar halaman: crossfade singkat + pill morph singkat, biar gak kedip */
+        @media (prefers-reduced-motion: no-preference) {
+            ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; animation-timing-function: cubic-bezier(.2,.7,.3,1); }
+            ::view-transition-group(chat-nav-pill) { animation-duration: .18s; animation-timing-function: cubic-bezier(.2,.7,.3,1); }
+        }
+        /* fallback browser tanpa cross-doc view transition: fade-in halus (bukan pop putih keras) */
+        @keyframes clq-page-in { from { opacity: 0 } to { opacity: 1 } }
+        @media (prefers-reduced-motion: no-preference) {
+            body { animation: clq-page-in .18s cubic-bezier(.2,.7,.3,1) both; }
+            html:active-view-transition body { animation: none; }
+        }
+        .chat-nav-link.is-active { color: #111111; background: #e9e9ec; view-transition-name: chat-nav-pill; }
+        #header-more-menu.open { display: flex; opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto; }
+        .header-menu-item { -webkit-tap-highlight-color: transparent; }
+        .header-menu-item:focus, .header-menu-item:focus-visible { outline: none; box-shadow: none; }
+        button.header-menu-item { -webkit-appearance: none; appearance: none; background: transparent; border: none; margin: 0; font: inherit; color: inherit; }
+        button.header-menu-item:active { background: rgba(0,0,0,0.04); }
+        body.dark-mode button.header-menu-item:active { background: rgba(255,255,255,0.08); }
+        .header-menu-item { cursor: pointer; }
+        body.dark-mode #chat-header-capsule { background-color: #0a0a0a; border-color: rgba(255,255,255,0.15); box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
+        body.dark-mode #chat-nav-pill { background: #ffffff !important; }
+        body.dark-mode .chat-nav-link { color: #9ca3af !important; }
+        body.dark-mode .chat-nav-link.is-active { color: #0a0a0a !important; background: #ffffff !important; }
+        body.dark-mode #sidebar-toggle, body.dark-mode #header-more-btn { background-color: #000000; border: 1.5px solid rgba(255,255,255,0.4); color: #ffffff; }
+        body.dark-mode #sidebar-toggle:hover, body.dark-mode #header-more-btn:hover { background-color: #1a1a1a; border-color: rgba(255,255,255,0.7); }
+        body.dark-mode #sidebar-toggle svg, body.dark-mode #header-more-btn svg { color: #ffffff; stroke: #ffffff; }
+        body.dark-mode #header-more-menu { background-color: #0a0a0a; border-color: rgba(255,255,255,0.15); }
+        body.dark-mode .header-menu-item { color: #e5e7eb; }
+        body.dark-mode .header-menu-item:hover { background-color: #1a1a1a; color: #ffffff; }
+        body.dark-mode .header-menu-item svg { color: #9ca3af; }
+        @media (max-width: 384px) { #sidebar-toggle, #header-more-btn { width: 38px; height: 38px; } }
+        @media (max-width: 330px) { #sidebar-toggle, #header-more-btn { width: 34px; height: 34px; } .chat-nav-link { padding-left: 0.5rem; padding-right: 0.5rem; } }
+      /* Animasi & skeleton halaman Pembayaran */
+    @keyframes payFadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .pay-fade { animation: payFadeUp .35s ease both; }
+    @keyframes payShimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+    .pay-skel { background: linear-gradient(90deg, rgba(0,0,0,.06) 25%, rgba(0,0,0,.12) 37%, rgba(0,0,0,.06) 63%); background-size: 400% 100%; animation: payShimmer 1.2s ease infinite; }
+    .dark-mode .pay-skel { background: linear-gradient(90deg, rgba(255,255,255,.06) 25%, rgba(255,255,255,.12) 37%, rgba(255,255,255,.06) 63%); background-size: 400% 100%; }
+    </style>
+
+  <script>(function(){var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var isDark=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(isDark)document.documentElement.classList.add('dark-mode');})();</script>
+<!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';var tm=document.querySelector('meta[name="theme-color"]');if(tm){tm.setAttribute('content','#0a0a0a');}}}catch(e){}})();</script>
+
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
+(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<3;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
+    </script>
+<!-- Google tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+<!-- End Google tag -->
+<script src="../../../js/i18n-dict.js" defer></script>
+<script src="../../../js/i18n.js" defer></script>
+</head>
+<body class="text-gray-900 antialiased h-screen w-full overflow-hidden relative bg-white">
+  <script>(function(){var t=localStorage.getItem("clincoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+  <div class="w-full h-full overflow-y-auto hide-scrollbar flex flex-col items-center">
+    <header class="fixed top-0 left-0 right-0 z-30 px-3 pt-3 pointer-events-none flex justify-between items-center">
+        <button id="sidebar-toggle" type="button" class="pointer-events-auto flex-shrink-0 flex items-center justify-center text-[#222222] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:text-black hover:bg-gray-100 transition-all rounded-full w-11 h-11" aria-label="Kembali ke Beranda">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+        <div class="pointer-events-auto inline-flex items-center gap-1 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-gray-100/80 rounded-full pl-1.5 pr-1.5 h-11" id="chat-header-capsule">
+            <nav id="chat-top-nav" class="relative inline-flex items-center h-full">
+                <div id="chat-nav-pill" class="absolute bg-gray-100 rounded-full pointer-events-none" style="top:0;left:0;width:0;height:0"></div>
+                <a href="/proyek/chat/" data-nav="agent" class="chat-nav-link relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Agent</a>
+                <a href="/proyek/preview/" data-nav="live" class="chat-nav-link relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Live preview</a>
+                <a href="/proyek/code/" data-nav="code" class="chat-nav-link relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Workspace</a>
+                <a href="/proyek/dashboard/" data-nav="dashboard" class="chat-nav-link is-active relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Dashboard</a>
+            </nav>
+        </div>
+        <div class="relative flex items-center gap-1.5 flex-shrink-0 pointer-events-auto"><button id="header-more-btn" type="button" onclick="toggleHeaderMenu(event)" class="w-11 h-11 rounded-full flex items-center justify-center text-[#222222] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:bg-gray-100 hover:text-black transition-all" aria-label="Menu lainnya">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle>
+                </svg>
+            </button>
+            <div id="header-more-menu" class="absolute top-full right-0 mt-1 w-56 bg-white rounded-xl shadow-xl p-1.5 flex-col gap-0.5 opacity-0 invisible translate-y-1 pointer-events-none transition-all duration-200 z-50 hidden">
+                <a id="header-editor" href="/proyek/workspace/editor/" onclick="var __pid='';try{__pid=localStorage.getItem('clincoo_current_project_id')||''}catch(e){}if(__pid){this.href='/proyek/workspace/editor/?id='+encodeURIComponent(__pid)}" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 18l6-6-6-6M8 6l-6 6 6 6"></path></svg>
+                    Editor
+                    <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg>
+                </a>
+                <a href="/integrasi/github/" class="header-menu-item flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path><path stroke-linecap="round" stroke-linejoin="round" d="M9 18c-4.51 2-5-2-7-2"></path></svg>
+                    Koneksi git
+                </a>
+                <a href="https://blog.clincoo.buzz/panduan/" target="_blank" rel="noopener" class="header-menu-item flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"></path></svg>
+                    Pusat bantuan
+                </a>
+            </div>
+        </div>
+    </header>
+    <main class="w-full max-w-5xl px-4 sm:px-6 pt-20 pb-28">
+<style>
+        #settings-menu-pop.open { display: grid; }
+        .settings-menu-item { cursor: pointer; }
+        .settings-menu-item .text-sm { line-height: 1.3; }
+        .settings-menu-item .text-xs { line-height: 1.15; }
+        body.dark-mode #settings-menu-btn { background-color: #1c1c1c !important; border-color: rgba(255,255,255,0.22) !important; color: #f3f4f6 !important; }
+        body.dark-mode #settings-menu-pop { background-color: #1c1c1c !important; border-color: rgba(255,255,255,0.22) !important; }
+        body.dark-mode .settings-menu-item:hover { background-color: #1a1a1a; }
+        body.dark-mode .settings-menu-item .block.text-sm { color: #e5e7eb !important; }
+        body.dark-mode .settings-menu-item .block.text-xs { color: #6b7280 !important; }
+    </style>
+    <div class="relative mb-5" id="settings-menu-wrap">
+            <button id="settings-menu-btn" type="button" onclick="toggleSettingsMenu(event)" class="w-full flex items-center justify-between rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-800 shadow-sm transition-all">
+                <span class="flex items-center gap-2.5">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3 5v14a9 3 0 0 0 18 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 3 0 0 0 18 0"></path></svg>
+                    Database
+                </span>
+                <svg id="settings-menu-chev" class="w-4 h-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div id="settings-menu-pop" class="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-12px)] sm:w-[860px] mt-0 bg-white rounded-2xl shadow-xl p-1 grid grid-cols-1 sm:grid-cols-2 gap-px z-40 hidden">
+                                <a href="/proyek/dashboard/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Umum</span><span class="block text-xs text-gray-400 truncate">Nama, deskripsi, dan runtime aplikasi</span></span>
+                </a>
+<a href="/proyek/build-deployment/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Build &amp; Deployment</span><span class="block text-xs text-gray-400 truncate">Sumber branch dan konfigurasi deployment</span></span>
+                </a>
+                <a href="/proyek/pengaturan/keamanan-https/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Keamanan &amp; HTTPS</span><span class="block text-xs text-gray-400 truncate">Sertifikat SSL dan protokol HTTPS</span></span>
+                </a>
+                <a href="/proyek/pengaturan/visibilitas-akses/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Visibilitas Akses</span><span class="block text-xs text-gray-400 truncate">Atur hak akses dan visibilitas</span></span>
+                </a>
+                <a href="/proyek/pengaturan/integrasi-webhook/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17H7a5 5 0 1 1 0-10h2M15 7h2a5 5 0 1 1 0 10h-2M8 12h8"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Webhook</span><span class="block text-xs text-gray-400 truncate">Notifikasi event lewat webhook</span></span>
+                </a>
+<a href="/proyek/pengaturan/integrasi-ai/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 5.7a2 2 0 001.4 1.4L21 12l-5.7 1.9a2 2 0 00-1.4 1.4L12 21l-1.9-5.7a2 2 0 00-1.4-1.4L3 12l5.7-1.9a2 2 0 001.4-1.4L12 3z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Integrasi AI</span><span class="block text-xs text-gray-400 truncate">AI Router: model dan secret per proyek</span></span>
+                </a>
+                <a href="/proyek/pengaturan/server-mcp/" class="settings-menu-item settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.01M6 18h.01"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Server MCP</span><span class="block text-xs text-gray-400 truncate">Sambungkan proyek ke platform AI lain (MCP)</span></span>
+                </a>
+<a href="/proyek/pengaturan/database/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3 5v14a9 3 0 0 0 18 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 3 0 0 0 18 0"></path></svg>
+                <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Database</span><span class="block text-xs text-gray-400 truncate">Tabel data untuk aplikasimu</span></span>
+                </a>
+                <a href="/proyek/pengaturan/pembayaran/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Pembayaran</span><span class="block text-xs text-gray-400 truncate">Terima pembayaran lewat QRIS</span></span>
+                </a>
+                <a href="/proyek/pengaturan/email/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Email</span><span class="block text-xs text-gray-400 truncate">Kirim email otomatis lewat API Clincoo</span></span>
+                </a>
+                <a href="/proyek/pengaturan/zona-bahaya/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-red-50/60 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-red-600">Zona Bahaya</span><span class="block text-xs text-red-500/70 truncate">Hapus situs atau proyek</span></span>
+                </a>
+            </div>
+    </div>
+    <script>
+    (function () {
+        var btn = document.getElementById('settings-menu-btn');
+        var pop = document.getElementById('settings-menu-pop');
+        var chev = document.getElementById('settings-menu-chev');
+        window.toggleSettingsMenu = function (e) {
+            e.stopPropagation();
+            var open = pop.classList.toggle('open');
+            chev.style.transform = open ? 'rotate(180deg)' : '';
+        };
+        document.addEventListener('click', function (e) {
+            if (pop.classList.contains('open') && !pop.contains(e.target) && !btn.contains(e.target)) {
+                pop.classList.remove('open');
+                chev.style.transform = '';
+            }
+        });
+        window.addEventListener('scroll', function () {
+            if (pop.classList.contains('open')) {
+                pop.classList.remove('open');
+                chev.style.transform = '';
+            }
+        }, true);
+    })();
+    </script>
+
+            <div class="w-full flex flex-col">
+        <div class="py-5">
+          <div class="flex items-start sm:items-center justify-between gap-3 mb-1">
+            <div>
+              <h4 id="db-title" class="text-base font-semibold text-gray-900 dark:text-white">Database</h4>
+              <p id="db-sub" class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Tabel data untuk aplikasimu</p>
+            </div>
+            <button id="db-new-btn" type="button" class="hidden shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"></path></svg>
+              Buat tabel
+            </button>
+          </div>
+
+          <!-- perlu login -->
+          <div id="db-login" class="hidden py-12 flex flex-col items-center justify-center text-center">
+            <svg class="w-8 h-8 text-gray-300 mb-3" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3 5v14a9 3 0 0 0 18 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 3 0 0 0 18 0"></path></svg>
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Masuk dulu untuk mengelola database</p>
+            <a href="/auth/" class="mt-4 px-5 py-2.5 text-sm font-medium text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">Masuk</a>
+          </div>
+
+          <!-- loading -->
+          <div id="db-loading" class="py-4 space-y-4">
+            <div class="h-12 rounded-lg pay-skel"></div>
+            <div class="h-12 rounded-lg pay-skel"></div>
+            <div class="h-12 rounded-lg pay-skel"></div>
+          </div>
+
+          <!-- error -->
+          <div id="db-error" class="hidden py-8 text-center">
+            <p id="db-error-text" class="text-xs text-red-500 dark:text-red-400"></p>
+            <button id="db-retry-btn" type="button" class="mt-3 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors">Coba lagi</button>
+          </div>
+
+          <!-- daftar tabel: baris polos tanpa card -->
+          <div id="db-list" class="hidden divide-y divide-gray-100 dark:divide-slate-700/60"></div>
+
+          <!-- kosong -->
+          <div id="db-empty" class="hidden py-12 flex flex-col items-center justify-center text-center">
+            <svg class="w-10 h-10 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3 5v14a9 3 0 0 0 18 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 3 0 0 0 18 0"></path></svg>
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Belum ada tabel</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-xs">Buat tabel pertamamu untuk mulai menyimpan data aplikasi, seperti pengguna, pesanan, atau konten.</p>
+            <button id="db-empty-btn" type="button" class="mt-5 px-5 py-2.5 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">Buat tabel</button>
+          </div>
+        </div>
+
+        <!-- form buat tabel: baris polos divide-y, tanpa card -->
+        <div id="db-form" class="hidden pb-10">
+          <div class="pt-4">
+            <p class="text-sm font-semibold text-gray-900 dark:text-white">Tabel baru</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Beri nama tabel dan tentukan kolomnya.</p>
+          </div>
+          <div class="mt-4">
+            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5" for="db-tbl-name">Nama tabel</label>
+            <input id="db-tbl-name" type="text" inputmode="text" placeholder="misal: pengguna" class="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">
+          </div>
+          <div class="mt-5">
+            <div class="flex items-center justify-between mb-1.5">
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Kolom</p>
+              <button id="db-add-col" type="button" class="inline-flex items-center gap-1 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"></path></svg>
+                Tambah kolom
+              </button>
+            </div>
+            <div id="db-cols" class="space-y-2"></div>
+            <p id="db-form-error" class="hidden text-xs text-red-500 dark:text-red-400 mt-3"></p>
+            <div class="flex items-center gap-2 mt-6">
+              <button id="db-save-btn" type="button" class="flex-1 py-2.5 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">Simpan tabel</button>
+              <button id="db-cancel-btn" type="button" class="flex-1 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Batal</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    lucide.createIcons();
+    document.getElementById('sidebar-toggle').addEventListener('click', function () { window.location.href = '/'; });
+    (function () {
+      var btn = document.getElementById('header-more-btn');
+      var menu = document.getElementById('header-more-menu');
+      window.toggleHeaderMenu = function (e) {
+        e.stopPropagation();
+        menu.classList.contains('open') ? menu.classList.remove('open') : menu.classList.add('open');
+      };
+      document.addEventListener('click', function (e) {
+        if (menu.classList.contains('open') && !menu.contains(e.target) && e.target !== btn) menu.classList.remove('open');
+      });
+    })();
+
+    // ================= DATABASE proyek =================
+    var DB_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev' : '') + '/api';
+    function dbPid() { try { return localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) { return ''; } }
+    function dbHdrs(json) {
+      var t = ''; try { t = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
+      var h = t ? { Authorization: 'Bearer ' + t } : {};
+      if (json) h['Content-Type'] = 'application/json';
+      return h;
+    }
+    var COL_TYPES = ['text', 'number', 'boolean', 'date'];
+
+    function dbShow(id) {
+      ['db-loading', 'db-list', 'db-empty', 'db-error', 'db-login', 'db-form'].forEach(function (k) {
+        var el = document.getElementById(k);
+        if (el) el.classList.add('hidden');
+      });
+      if (id) document.getElementById(id).classList.remove('hidden');
+      var nb = document.getElementById('db-new-btn');
+      if (nb) nb.classList.toggle('hidden', !(id === 'db-list' || id === 'db-empty'));
+    }
+    function dbErr(msg) {
+      var et = document.getElementById('db-error-text');
+      if (et) et.textContent = msg;
+      dbShow('db-error');
+    }
+
+    function dbRender(tables) {
+      var list = document.getElementById('db-list');
+      list.innerHTML = '';
+      (tables || []).forEach(function (t) {
+        var a = document.createElement('a');
+        a.href = '#';
+        a.className = 'flex items-center justify-between gap-3 py-3.5 group';
+        var cols = (t.columns || []).map(function (c) { return c.name; });
+        var meta = (cols.length + ' kolom') + (typeof t.rows === 'number' ? (' · ' + t.rows + ' baris') : '');
+        a.innerHTML =
+          '<span class="min-w-0">' +
+          '<span class="block text-sm font-medium text-gray-800 dark:text-gray-200">' + String(t.name || '').replace(/[&<>]/g, function (s2) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[s2]; }) + '</span>' +
+          '<span class="block text-xs text-gray-400 dark:text-gray-500 truncate">' + meta + '</span>' +
+          '</span>' +
+          '<svg class="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0 group-hover:text-gray-500 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"></path></svg>';
+        a.addEventListener('click', function (ev) { ev.preventDefault(); /* detail tabel menyusul bersama backend */ });
+        list.appendChild(a);
+      });
+      dbShow(tables && tables.length ? 'db-list' : 'db-empty');
+    }
+
+    var dbLoadBusy = false;
+    function dbLoad() {
+      var t = ''; try { t = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
+      if (!t) { dbShow('db-login'); return; }
+      if (!dbPid()) { dbErr('Proyek belum dipilih — buka dashboard proyekmu dulu.'); return; }
+      if (dbLoadBusy) return;
+      dbLoadBusy = true;
+      dbShow('db-loading');
+      fetch(DB_API + '/db/tables?project_id=' + encodeURIComponent(dbPid()), { headers: dbHdrs(false) })
+        .then(function (r) {
+          if (r.status === 401) { dbShow('db-login'); return null; }
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function (d) {
+          dbLoadBusy = false;
+          if (d === null) return;
+          dbRender(d && d.tables);
+        })
+        .catch(function () {
+          dbLoadBusy = false;
+          dbErr('Fitur database belum aktif di server. Coba lagi nanti.');
+        });
+    }
+
+    // ---- form buat tabel ----
+    function dbColRow(name, type) {
+      var row = document.createElement('div');
+      row.className = 'flex items-center gap-2';
+      row.innerHTML =
+        '<input type="text" placeholder="nama kolom" class="db-col-name flex-1 min-w-0 px-3 py-2 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">' +
+        '<select class="db-col-type px-2.5 py-2 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">' +
+        COL_TYPES.map(function (tp) { return '<option value="' + tp + '"' + (tp === type ? ' selected' : '') + '>' + tp + '</option>'; }).join('') +
+        '</select>' +
+        '<button type="button" class="db-col-del shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" aria-label="Hapus kolom">' +
+        '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12"></path></svg></button>';
+      if (name) row.querySelector('.db-col-name').value = name;
+      row.querySelector('.db-col-del').addEventListener('click', function () {
+        if (document.querySelectorAll('#db-cols > div').length > 1) row.remove();
+      });
+      return row;
+    }
+    function dbFormOpen() {
+      var cols = document.getElementById('db-cols');
+      cols.innerHTML = '';
+      cols.appendChild(dbColRow('id', 'text'));
+      cols.appendChild(dbColRow('nama', 'text'));
+      document.getElementById('db-tbl-name').value = '';
+      var fe = document.getElementById('db-form-error');
+      fe.classList.add('hidden');
+      dbShow('db-form');
+      document.getElementById('db-tbl-name').focus();
+    }
+    function dbFormSave() {
+      var name = (document.getElementById('db-tbl-name').value || '').trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+      if (!name) { var fe = document.getElementById('db-form-error'); fe.textContent = 'Nama tabel wajib diisi.'; fe.classList.remove('hidden'); return; }
+      var columns = [];
+      document.querySelectorAll('#db-cols > div').forEach(function (row) {
+        var cn = (row.querySelector('.db-col-name').value || '').trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+        if (!cn) return;
+        columns.push({ name: cn, type: row.querySelector('.db-col-type').value });
+      });
+      if (!columns.length) { var fe2 = document.getElementById('db-form-error'); fe2.textContent = 'Minimal satu kolom wajib diisi.'; fe2.classList.remove('hidden'); return; }
+      var btn = document.getElementById('db-save-btn');
+      btn.disabled = true; btn.textContent = 'Menyimpan…';
+      fetch(DB_API + '/db/tables', {
+        method: 'POST',
+        headers: dbHdrs(true),
+        body: JSON.stringify({ project_id: dbPid(), name: name, columns: columns })
+      })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function () { btn.disabled = false; btn.textContent = 'Simpan tabel'; dbLoad(); })
+        .catch(function () {
+          btn.disabled = false; btn.textContent = 'Simpan tabel';
+          var fe3 = document.getElementById('db-form-error');
+          fe3.textContent = 'Fitur database belum aktif di server. Coba lagi nanti.';
+          fe3.classList.remove('hidden');
+        });
+    }
+
+    document.getElementById('db-new-btn').addEventListener('click', dbFormOpen);
+    document.getElementById('db-empty-btn').addEventListener('click', dbFormOpen);
+    document.getElementById('db-add-col').addEventListener('click', function () { document.getElementById('db-cols').appendChild(dbColRow('', 'text')); });
+    document.getElementById('db-save-btn').addEventListener('click', dbFormSave);
+    document.getElementById('db-cancel-btn').addEventListener('click', dbLoad);
+    document.getElementById('db-retry-btn').addEventListener('click', dbLoad);
+
+    dbLoad();
+  </script>
+</body>
+</html>
