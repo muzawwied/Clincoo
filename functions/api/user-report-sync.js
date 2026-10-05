@@ -60,6 +60,7 @@ function botVerdict(u, hasOauth, projCount, visitCount) {
 export async function syncUserReport(env, opts) {
   const db = env.DB;
   if (!db) return { ok: 0, error: 'D1 not bound' };
+  globalThis.__diag = true;
   const token = await getSecret(env, 'GITHUB_DATA_TOKEN');
   if (!token) return { ok: 0, error: 'GITHUB_DATA_TOKEN tidak tersedia di env_vars' };
 
@@ -207,6 +208,10 @@ export async function syncUserReport(env, opts) {
   if (getRes.ok) {
     const j = await getRes.json();
     sha = j.sha || null;
+  } else if (globalThis.__diag) {
+    const gt = await getRes.text().catch(() => '');
+    const uRes = await fetch('https://api.github.com/user', { headers: ghHeaders }).catch(e => ({ status: 'err ' + e.message }));
+    globalThis.__diag.getDebug = { getStatus: getRes.status, getBody: gt.slice(0, 300), userStatus: uRes.status, reqId: getRes.headers.get('x-github-request-id') };
   }
   const putBody = {
     message: 'sync: data user live (' + now.toISOString() + ')',
@@ -220,7 +225,7 @@ export async function syncUserReport(env, opts) {
   });
   if (!putRes.ok) {
     const t = await putRes.text().catch(() => '');
-    return { ok: 0, error: 'GitHub ' + putRes.status + ': ' + t.slice(0, 200), debug: { tokenPrefix: token ? token.slice(0, 8) : null, getRes: getRes.status, sha: !!sha, repo: GH_REPO, branch: GH_BRANCH } };
+    return { ok: 0, error: 'GitHub ' + putRes.status + ': ' + t.slice(0, 200), debug: { tokenPrefix: token ? token.slice(0, 8) : null, getRes: getRes.status, sha: !!sha, repo: GH_REPO, branch: GH_BRANCH, getDebug: globalThis.__diag ? globalThis.__diag.getDebug : 'nodiag', user: globalThis.__userDebug || null } };
   }
   return { ok: 1, users: users.length, sha: sha ? 'updated' : 'created' };
 }
