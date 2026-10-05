@@ -60,7 +60,7 @@ function botVerdict(u, hasOauth, projCount, visitCount) {
 export async function syncUserReport(env, opts) {
   const db = env.DB;
   if (!db) return { ok: 0, error: 'D1 not bound' };
-  globalThis.__diag = true;
+  globalThis.__diag = {};
   const token = await getSecret(env, 'GITHUB_DATA_TOKEN');
   if (!token) return { ok: 0, error: 'GITHUB_DATA_TOKEN tidak tersedia di env_vars' };
 
