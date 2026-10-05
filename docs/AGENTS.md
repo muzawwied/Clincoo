@@ -110,6 +110,11 @@ Log lebih lama dipotong agar wiki ringan.
 - Menu "..." halaman Database (index & tabel) kini identik halaman lain: Live preview, Editor (crown), Eksport zip, Koneksi git, Pusat bantuan + handler chatLivePreview/chatExportZip standar (ekspor gabung berkas lokal + cloud).
 - Verifikasi live: deploy success; menu Database tampil 5 item + crown (screenshot); gate editor ada di HTML live; perilaku gate identik versi yang sudah diverifikasi live sebelumnya.
 
+### 2026-10-05 12:4x WIB — Superagent (Base44): artikel docs Server MCP + CTA docs di gate paket (commit feacd3c7)
+
+- docs.clincoo.buzz (repo Clinqoo-Blog, commit dc9724bb): artikel baru /dokumentasi/server-mcp-clincoo/ — panduan lengkap fitur Pengelolaan Server MCP (ringkasan, akses paket Bisnis, 10 izin, 13 tools, konfigurasi klien mcp.json, manajemen token & keamanan, kelebihan & manfaat), ID+EN, 4 tabel, SEO lengkap (title/desc unik, canonical, hreflang, OG, JSON-LD Article), masuk sitemap.xml + registry data_clincoo.js. Terverifikasi live (ID 200, EN 200 via redirect clean-URL).
+- app.clincoo (commit feacd3c7): CTA sekunder "Pelajari fitur Server MCP" (bg transparan, border abu/putih, teks abu) di bawah tombol Lihat Paket pada gate paket Bisnis halaman Pengelolaan Server MCP — tautan ke artikel docs tsb. Hanya tampil saat gate paket; tersembunyi saat error koneksi. Terverifikasi live di /proyek/pengaturan/server-mcp/.
+
 ### 2026-10-05 10:5x WIB — Superagent (Base44): penegakan asli fitur premium per paket + crown per level paket (commit ab194932)
 
 Arahan owner: fitur bermahkota harus dicegah ASLI di server (bukan cuma teks), crown dilabeli per paket user (Starter = semua crown, Pro = hanya level Bisnis), tanpa teks Pro/Bisnis di UI — label "Fitur ini hanya untuk paket N" hanya di gate layar penuh. Editor kode = fitur Starter (yang di Workspace); tarik saldo = Pro, terima pembayaran tetap terbuka semua paket.
