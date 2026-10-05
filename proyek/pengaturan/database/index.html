@@ -672,7 +672,11 @@
       dbCharts = [];
       var names = tables.map(function (t) { return String(t.name).slice(0, 24); });
       function pal(offset) {
-        return function (_, i) { return th.palette[(i + (offset || 0)) % th.palette.length]; };
+        // opsi scriptable Chart.js menerima SATU argumen: context (bukan value, index)
+        return function (ctx) {
+          var i = ctx && ctx.dataIndex !== undefined ? ctx.dataIndex : (ctx && ctx.index) || 0;
+          return th.palette[(i + (offset || 0)) % th.palette.length];
+        };
       }
       function barOpts() {
         return { responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
