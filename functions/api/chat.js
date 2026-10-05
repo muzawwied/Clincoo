@@ -120,10 +120,12 @@ const OPENROUTER_MODELS = ['z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro', 'opena
 // Rantai khusus TAMU (anonim, gratis): TANPA Sol Pro — model premium hanya
 // untuk user login; tamu tidak boleh membakar biaya provider premium.
 const GUEST_OR_MODELS = ['z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro', 'nvidia/nemotron-3-ultra-550b-a55b'];
-// Batas output OpenRouter: sebagian kunci kena 402 saat max_tokens besar
-// (kredit per-kunci kecil). 4096 = nilai terbesar yang lolos di 4 dari 6 kunci.
-// Naikkan lagi setelah limit kredit per-kunci di OpenRouter dinaikkan.
-const OR_MAX_TOKENS = 4096;
+// Batas output OpenRouter: kunci 402 "requires more credits / fewer max_tokens" saat
+// reservasi kredit di muka besar. Uji langsung 5 Okt 2026: 4096 GAGAL di SEMUA kunci,
+// 2048 gagal di 1 kunci, 1024 = nilai terbesar yang lolos di SEMUA kunci sehat.
+// Jawaban panjang tetap aman: AUTO-CONTINUE (jalur stream & non-stream) menyambung
+// otomatis saat finish_reason=length. Naikkan lagi setelah kredit OpenRouter diisi.
+const OR_MAX_TOKENS = 1024;
 const oaiToolsOf = (gDecls) => (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
 
 // Pembatas waktu per-panggilan provider — fetch/binding AI TIDAK punya timeout
@@ -217,7 +219,28 @@ async function tryOpenRouterText(keys, messages, gDecls, models, onDelta) {
           const st = await readOAICompatStream(sr, onDelta);
           if (st.text || st.tcs.length) {
             if (st.tcs.length) return { tool_calls: normStreamToolCalls(st.tcs), text: st.text, model: model.split('/').pop() + ' (OpenRouter)' };
-            return { text: st.text, model: model.split('/').pop() + ' (OpenRouter)' };
+            // AUTO-CONTINUE STREAM: max_tokens kecil (hemat kredit) berpotensi memotong
+            // jawaban; sambung otomatis per segmen sambil tetap streaming ke user.
+            let full = st.text, seg = st.text, fin2 = st.fin;
+            const contMsgs = baseMsgs.slice();
+            for (let sc = 0; sc < 5 && fin2 === 'length'; sc++) {
+              contMsgs.push({ role: 'assistant', content: seg });
+              contMsgs.push({ role: 'user', content: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' });
+              try {
+                const cp = { model, messages: contMsgs, max_tokens: OR_MAX_TOKENS, stream: true };
+                if (oaiTools) cp.tools = oaiTools;
+                const cr = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.pages.dev', 'X-Title': 'Clincoo' },
+                  body: JSON.stringify(cp)
+                });
+                if (!cr.ok || !cr.body) break;
+                const st2 = await readOAICompatStream(cr, onDelta);
+                if (!st2.text) break;
+                full += st2.text; seg = st2.text; fin2 = st2.fin;
+              } catch (e2) { break; }
+            }
+            return { text: full, model: model.split('/').pop() + ' (OpenRouter)' };
           }
           lastErr = `OpenRouter ${model}: stream kosong`;
           continue; // stream bener-bener kosong -> model berikutnya
