@@ -60,7 +60,6 @@ function botVerdict(u, hasOauth, projCount, visitCount) {
 export async function syncUserReport(env, opts) {
   const db = env.DB;
   if (!db) return { ok: 0, error: 'D1 not bound' };
-  globalThis.__diag = {};
   const token = await getSecret(env, 'GITHUB_DATA_TOKEN');
   if (!token) return { ok: 0, error: 'GITHUB_DATA_TOKEN tidak tersedia di env_vars' };
 
@@ -203,21 +202,14 @@ export async function syncUserReport(env, opts) {
 
   // ---- push ke GitHub ----
   const ghHeaders = { 'Authorization': 'Bearer ' + token, 'User-Agent': 'clincoo-sync', 'Accept': 'application/vnd.github+json' };
-  const getRes = await fetch('https://api.github.com/repos/' + GH_REPO + '/contents/' + GH_PATH + '?ref=' + GH_BRANCH, { headers: ghHeaders, signal });
+  // CATATAN: JANGAN pakai '?ref=' di sini — runtime Cloudflare dapat 404 dari GitHub
+  // padahal request sama dari luar 200 (diverifikasi 5 Okt 2026). Tanpa param, default branch.
+  const getRes = await fetch('https://api.github.com/repos/' + GH_REPO + '/contents/' + GH_PATH, { headers: ghHeaders, signal });
   let sha = null;
   if (getRes.ok) {
     const j = await getRes.json();
     sha = j.sha || null;
-  } else if (globalThis.__diag) {
-    const probe = async (u) => { try { const r = await fetch(u, { headers: ghHeaders }); const t = await r.text().catch(() => ''); return { s: r.status, b: t.slice(0, 120) }; } catch (e) { return { s: 'err', b: e.message }; } };
-    const [meta, noref, pub, plain] = await Promise.all([
-      probe('https://api.github.com/repos/muzawwied/Clinqoo-Data'),
-      probe('https://api.github.com/repos/muzawwied/Clinqoo-Data/contents/users-live.md'),
-      probe('https://api.github.com/repos/muzawwied/Clincoo'),
-      probe('https://api.github.com/repos/muzawwied/Clinqoo-Data/contents/')
-    ]);
-    globalThis.__diag.getDebug = { asli: getRes.status, meta, noref, repoPublik: pub, daftarIsi: plain };
-  }
+
   const putBody = {
     message: 'sync: data user live (' + now.toISOString() + ')',
     content: b64utf8(md),
@@ -230,7 +222,7 @@ export async function syncUserReport(env, opts) {
   });
   if (!putRes.ok) {
     const t = await putRes.text().catch(() => '');
-    return { ok: 0, error: 'GitHub ' + putRes.status + ': ' + t.slice(0, 200), debug: { tokenPrefix: token ? token.slice(0, 8) : null, getRes: getRes.status, sha: !!sha, repo: GH_REPO, branch: GH_BRANCH, getDebug: globalThis.__diag ? globalThis.__diag.getDebug : 'nodiag', user: globalThis.__userDebug || null } };
+    return { ok: 0, error: 'GitHub ' + putRes.status + ': ' + t.slice(0, 200) };
   }
   return { ok: 1, users: users.length, sha: sha ? 'updated' : 'created' };
 }
