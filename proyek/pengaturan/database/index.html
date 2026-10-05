@@ -477,13 +477,13 @@
     }
 
     var dbLoadBusy = false;
-    function dbLoad() {
+    function dbLoad(isRetry) {
       var t = ''; try { t = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
       if (!t) { dbShow('db-login'); return; }
       if (!dbPid()) { dbErr('Proyek belum dipilih — buka dashboard proyekmu dulu.'); return; }
       if (dbLoadBusy) return;
       dbLoadBusy = true;
-      dbShow('db-loading');
+      if (!isRetry) dbShow('db-loading');
       fetch(DB_API + '/db/tables?project_id=' + encodeURIComponent(dbPid()), { headers: dbHdrs(false) })
         .then(function (r) {
           if (r.status === 401) { dbShow('db-login'); return null; }
@@ -497,6 +497,8 @@
         })
         .catch(function () {
           dbLoadBusy = false;
+          // blip jaringan/cold-start sekali tidak langsung dianggap error — coba sekali lagi diam-diam
+          if (!isRetry) { setTimeout(function () { dbLoad(true); }, 1200); return; }
           dbErr('Tidak bisa memuat tabel. Coba lagi.');
         });
     }
