@@ -1355,23 +1355,32 @@ window.chatLivePreview = function () {
     }catch(e){}
   }
   // Capture hanya mahkota: cegah handler modal lama atau navigasi induknya.
-    // ===== Pop-up gate overlay (klik fitur bermahkota oleh user Starter) =====
+  // ===== Gate layar penuh (klik fitur bermahkota oleh user Starter) =====
   function clincooCrownGateClose(){var g=document.getElementById('cc-crown-gate');if(g)g.remove();}
+  function clincooCrownTheme(){
+    var bg='',nodes=[document.body,document.documentElement];
+    for(var i=0;i<nodes.length;i++){try{if(!nodes[i])continue;var v=getComputedStyle(nodes[i]).backgroundColor;if(v&&v!=='transparent'&&v!=='rgba(0, 0, 0, 0)'){bg=v;break;}}catch(e){}}
+    var m=bg.match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/i),lum=m?(0.299*+m[1]+0.587*+m[2]+0.114*+m[3]):-1;
+    if(lum<0){var dk=false;try{dk=!!(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);}catch(e){}bg=dk?'#0b0b0d':'#ffffff';lum=dk?20:255;}
+    return lum<128
+      ?{bg:bg,fg:'#f5f6f7',muted:'#9aa0a6',btnA:'#ffffff',btnAf:'#111111',bd:'rgba(255,255,255,.22)'}
+      :{bg:bg,fg:'#111111',muted:'#555555',btnA:'#111111',btnAf:'#ffffff',bd:'#e5e7eb'};
+  }
   function clincooCrownGate(c){
     if(typeof isPaid==='function'&&isPaid())return;
     clincooCrownGateClose();
     var min=(c&&c.id==='export-crown-label')?'Bisnis':'Pro';
+    var t=clincooCrownTheme();
     var ov=document.createElement('div');ov.id='cc-crown-gate';
-    ov.style.cssText='position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;padding:24px;';
-    ov.innerHTML='<div style="max-width:420px;width:100%;background:#fff;border-radius:24px;padding:32px 24px;text-align:center">'+
+    ov.style.cssText='position:fixed;inset:0;z-index:2147483000;background:'+t.bg+';color:'+t.fg+';display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;padding:24px;';
+    ov.innerHTML='<div style="max-width:420px;width:100%;text-align:center">'+
       '<div style="font-size:44px;line-height:1">&#128081;</div>'+
-      '<h2 style="font-size:20px;margin:14px 0 8px;color:#111">Fitur ini tersedia mulai paket '+min+'</h2>'+
-      '<p style="font-size:14px;color:#555;margin:0 0 20px">Paket kamu saat ini '+(currentPlan()||'Starter')+'. Upgrade untuk membuka fitur ini.</p>'+
-      '<button id="cc-gate-plans" style="display:block;width:100%;padding:13px;background:#111;color:#fff;border:0;border-radius:12px;font-weight:600;font-size:14px;cursor:pointer">Lihat Paket</button>'+
-      '<button id="cc-gate-close" style="display:block;width:100%;margin-top:10px;padding:13px;border:2px solid #e5e7eb;background:#fff;color:#111;border-radius:12px;font-weight:600;font-size:14px;cursor:pointer">Tutup</button>'+
+      '<h2 style="font-size:20px;margin:14px 0 8px;color:'+t.fg+';font-weight:700">Fitur ini tersedia mulai paket '+min+'</h2>'+
+      '<p style="font-size:14px;color:'+t.muted+';margin:0 0 20px">Paket kamu saat ini '+(currentPlan()||'Starter')+'. Upgrade untuk membuka fitur ini.</p>'+
+      '<button id="cc-gate-plans" style="display:block;width:100%;padding:13px;background:'+t.btnA+';color:'+t.btnAf+';border:0;border-radius:12px;font-weight:600;font-size:14px;cursor:pointer">Lihat Paket</button>'+
+      '<button id="cc-gate-close" style="display:block;width:100%;margin-top:10px;padding:13px;border:1.5px solid '+t.bd+';background:transparent;color:'+t.fg+';border-radius:12px;font-weight:600;font-size:14px;cursor:pointer">Tutup</button>'+
       '</div>';
     (document.body||document.documentElement).appendChild(ov);
-    ov.addEventListener('click',function(ev){if(ev.target===ov)clincooCrownGateClose();});
     ov.querySelector('#cc-gate-plans').addEventListener('click',function(){clincooCrownGateClose();openSheet(c);});
     ov.querySelector('#cc-gate-close').addEventListener('click',clincooCrownGateClose);
     document.addEventListener('keydown',function esc(ev){if(ev.key==='Escape'){clincooCrownGateClose();document.removeEventListener('keydown',esc,true);}},true);
