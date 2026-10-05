@@ -86,6 +86,7 @@ function getAction(request, bodyAction = null) {
   if (path.endsWith('/stats')) return 'stats';
   if (path.endsWith('/users')) return 'users';
   if (path.endsWith('/reports')) return 'reports';
+  if (path.endsWith('/activity')) return 'activity';
 
   return null;
 }
