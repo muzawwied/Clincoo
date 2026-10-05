@@ -1433,9 +1433,14 @@ export async function onRequestPost({ request, env, waitUntil }) {
     let r = null;
     for (let sHop = 0; sHop <= 4; sHop++) {
       r = null;
-      // SOL PRO UTAMA via Clouvia (gratis, tanpa kartu): hanya user login —
-      // tamu tidak boleh membakar model premium. Reasoning model: napas 60s.
-      if (!isGuest && !hasImages && cvKeysEarly.length) {
+      // [5 Okt 2026, permintaan owner] JALUR CLOUVIA-SOLPRO DIMATIKAN sebagai UTAMA:
+      // model Clouvia (deepseek/glm) terbukti sering berhenti setelah cek folder/gambar
+      // tanpa menulis file ("gak punya jiwa builder" — 3x laporan screenshot). Model
+      // utama user login kini Sol Pro ASLI (OpenRouter) -> Luna Pro berikutnya.
+      // Clouvia tetap ada di bawah sebagai cadangan (blok generic setelah OpenRouter).
+      // Nyalakan lagi jalur ini dengan mengganti USE_CLOUVIA_FIRST di bawah jadi true.
+      const USE_CLOUVIA_FIRST = false;
+      if (USE_CLOUVIA_FIRST && !isGuest && !hasImages && cvKeysEarly.length) {
         const sp = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, CLOUVIA_SOL_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 40000, 'ClouviaSolPro').catch(e => ({ error: e.message }));
         if (sp) r = sp;
       }
