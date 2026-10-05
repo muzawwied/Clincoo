@@ -209,7 +209,7 @@ export async function syncUserReport(env, opts) {
   if (getRes.ok) {
     const j = await getRes.json();
     sha = j.sha || null;
-
+  }
   const putBody = {
     message: 'sync: data user live (' + now.toISOString() + ')',
     content: b64utf8(md),
