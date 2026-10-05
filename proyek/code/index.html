@@ -2312,13 +2312,18 @@
       if (e) e.preventDefault();
       var pid = ''; try { pid = localStorage.getItem('clincoo_current_project_id') || ''; } catch (err) {}
       if (!pid) { try { addNotification('Editor', 'Buka proyek dulu untuk mengakses editor.'); } catch (err) {} return; }
-      // Editor kode Workspace = fitur paket Starter (semua paket bisa membuka).
-      // Fitur premium di dalam editor (version control, ekspor, Git) digate per fitur.
-      if (window.clincooEditorPlan) { clincooLaunchEditor(pid); clincooRevalidatePlan(); return; }
+      // Editor = fitur paket Pro. Keputusan instan dari state/cache (tanpa menunggu server) —
+      // revalidasi dilakukan di belakang supaya keputusan klik berikutnya tetap segar.
+      if (window.clincooEditorPlan === 'Starter') {
+        if (typeof window.clincooOpenPlansPopup === 'function') { window.clincooOpenPlansPopup(); return; }
+        clincooLaunchEditor(pid); return;
+      }
+      if (window.clincooEditorPlan) { clincooLaunchEditor(pid); return; }
       var _cSub = clincooReadSubCache();
       if (_cSub && _cSub.plan) {
         window.clincooEditorPlan = _cSub.plan;
         clincooShowCrowns(_cSub.plan === 'Starter');
+        if (_cSub.plan === 'Starter' && typeof window.clincooOpenPlansPopup === 'function') { window.clincooOpenPlansPopup(); return; }
         clincooLaunchEditor(pid);
         clincooRevalidatePlan();
         return;
@@ -2336,6 +2341,8 @@
           window.clincooEditorPlan = _d.plan;
           try { localStorage.setItem('TM_SUB_CACHE_KEY', JSON.stringify({ plan: _d.plan, billingCycle: _d.billingCycle || 'Bulanan', ts: Date.now() })); } catch (_e) {}
           clincooShowCrowns(_d.plan === 'Starter');
+          if (_d.plan !== 'Starter') { clincooLaunchEditor(pid); return; }
+          if (typeof window.clincooOpenPlansPopup === 'function') { window.clincooOpenPlansPopup(); return; }
         }
         clincooLaunchEditor(pid);
       })();
