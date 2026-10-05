@@ -1527,6 +1527,15 @@ export async function onRequestPost({ request, env, waitUntil }) {
         const sp = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, CLOUVIA_SOL_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 40000, 'ClouviaSolPro').catch(e => ({ error: e.message }));
         if (sp) r = sp;
       }
+      // [5 Okt 2026, arahan owner: "Ubah via Cloudflare"] WORKERS AI JADI UTAMA.
+      // Kredit OpenRouter nyaris habis (2 dari 6 kunci mati total, sisanya tipis),
+      // jadi jalur Cloudflare Workers AI (glm-4.7-flash) — gratis, stabil, sekali
+      // origin dengan hosting — dipakai duluan untuk semua user. OpenRouter turun
+      // jadi cadangan pertama, lalu Clouvia, lalu Gemini.
+      if ((!r || r.error) && aiMain) {
+        const w = await withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 45000, 'WorkersAI-utama').catch(e => ({ error: e.message }));
+        if (w) r = w;
+      }
       if ((!r || r.error) && orKeys.length && !hasImages) {
         // Sol Pro = model utama user login (Luna Pro berikutnya); tamu pakai rantai
         // non-premium. Reasoning model lebih lambat dari flash, butuh napas lebih
