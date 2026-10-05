@@ -79,7 +79,9 @@ async function authMcp(request, env, projectId) {
     deploy: !!(scopes && scopes.deploy === true),
     settings: !!(scopes && scopes.settings === true),
     email: !!(scopes && scopes.email === true),
-    notif: !!(scopes && scopes.notif === true)
+    notif: !!(scopes && scopes.notif === true),
+    database: !!(scopes && scopes.database === true),
+    payment: !!(scopes && scopes.payment === true)
   };
   return { token: tok, be2Token: row.be2_token, scopes };
 }
