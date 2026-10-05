@@ -1357,7 +1357,14 @@ window.chatLivePreview = function () {
                 } catch(e) {}
                 chatSyncBusy = false;
             };
-            chatSyncTimer = setTimeout(send, immediate ? 0 : 2000);
+            // FIX HEMAT D1 (5 Okt 2026): badai sync tiap 2 detik saat streaming bikin
+            // 1.280 POST /api/project-settings per hari -> miliaran-beban D1 baca/tulis
+            // (limit 5 juta baris baca/hari KENA pada 4 Okt). Saat AI masih generasi
+            // (isGenerating) log berubah tiap detik tapi nilai sinkronnya sama saja ->
+            // perlambat jadi 15 detik. Setelah selesai (isGenerating false) balik ke 2
+            // detik. Flush immediate (tutup tab/pindah halaman) tetap instan.
+            const syncDelay = immediate ? 0 : (isGenerating ? 15000 : 2000);
+            chatSyncTimer = setTimeout(send, syncDelay);
         }
 
         let currentSessionId = null;
