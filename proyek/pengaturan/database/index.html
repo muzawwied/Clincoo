@@ -29,6 +29,7 @@
     <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
   <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../../../assets/vendor/chart.umd.min.js"></script>
     <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -343,6 +344,14 @@
           <!-- daftar tabel: baris polos tanpa card -->
           <div id="db-list" class="hidden divide-y divide-gray-200 dark:divide-slate-700/60"></div>
 
+          <!-- grafik ringkasan database (teks polos + canvas, bukan card) -->
+          <div id="db-chart-sec" class="hidden pt-8 mt-6 border-t border-gray-100 dark:border-slate-700/60">
+            <p class="text-sm font-semibold text-gray-900 dark:text-white">Grafik</p>
+            <div id="db-chart-modes" class="flex items-center gap-4 mt-3 text-xs font-semibold"></div>
+            <div class="mt-4 h-56 sm:h-64"><canvas id="db-chart"></canvas></div>
+            <p id="db-chart-note" class="text-xs text-gray-400 dark:text-gray-500 mt-2"></p>
+          </div>
+
           <!-- kosong -->
           <div id="db-empty" class="hidden py-12 flex flex-col items-center justify-center text-center">
             <svg class="w-10 h-10 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3 5v14a9 3 0 0 0 18 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 3 0 0 0 18 0"></path></svg>
@@ -453,7 +462,9 @@
       dbShow('db-error');
     }
 
+    var dbTables = null;
     function dbRender(tables) {
+      dbTables = tables || [];
       var list = document.getElementById('db-list');
       list.innerHTML = '';
       (tables || []).forEach(function (t) {
@@ -472,6 +483,37 @@
         list.appendChild(a);
       });
       dbShow(tables && tables.length ? 'db-list' : 'db-empty');
+      dbChartRender();
+    }
+
+    // ---- grafik ringkasan: jumlah baris & kolom per tabel ----
+    var dbChart = null, dbChartMode = 'rows';
+    function dbChartTheme() {
+      var dark = document.body.classList.contains('dark-mode');
+      return { text: dark ? '#9aa0a6' : '#6b7280', grid: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' };
+    }
+    function dbChartRender() {
+      var sec = document.getElementById('db-chart-sec');
+      var tables = dbTables || [];
+      if (!tables.length) { sec.classList.add('hidden'); if (dbChart) { dbChart.destroy(); dbChart = null; } return; }
+      sec.classList.remove('hidden');
+      var modes = document.getElementById('db-chart-modes');
+      modes.innerHTML =
+        '<button data-m="rows" class="db-chart-mode pb-0.5 ' + (dbChartMode === 'rows' ? 'text-black dark:text-white border-b-2 border-black dark:border-white' : 'text-gray-400 dark:text-gray-500') + '">Baris per tabel</button>' +
+        '<button data-m="cols" class="db-chart-mode pb-0.5 ' + (dbChartMode === 'cols' ? 'text-black dark:text-white border-b-2 border-black dark:border-white' : 'text-gray-400 dark:text-gray-500') + '">Kolom per tabel</button>';
+      [].forEach.call(modes.querySelectorAll('.db-chart-mode'), function (b) {
+        b.addEventListener('click', function () { dbChartMode = b.getAttribute('data-m'); dbChartRender(); });
+      });
+      var th = dbChartTheme();
+      var labels = tables.map(function (t) { return String(t.name).slice(0, 24); });
+      var data = tables.map(function (t) { return dbChartMode === 'cols' ? (t.columns || []).length : (typeof t.rows === 'number' ? t.rows : 0); });
+      if (dbChart) dbChart.destroy();
+      dbChart = new Chart(document.getElementById('db-chart'), {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ data: data, backgroundColor: '#111827', borderRadius: 4, maxBarThickness: 42 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: th.text, maxRotation: 45, autoSkip: true }, grid: { display: false } }, y: { ticks: { color: th.text, precision: 0 }, grid: { color: th.grid }, beginAtZero: true } } }
+      });
+      document.getElementById('db-chart-note').textContent = tables.length + ' tabel · ' + (dbChartMode === 'cols' ? 'jumlah kolom' : 'jumlah baris') + ' per tabel';
     }
 
     // ---- cache lokal: data tersimpan di perangkat biar tiap refresh nggak load dari awal ----

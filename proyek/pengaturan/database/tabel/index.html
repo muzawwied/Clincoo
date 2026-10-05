@@ -29,7 +29,7 @@
     <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
   <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <script src="../../../assets/vendor/chart.umd.min.js"></script>
     <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -725,7 +725,7 @@
       var canvas = document.getElementById('tb-canvas');
       if (tbChart) { tbChart.destroy(); tbChart = null; }
       var rows = tbAll || [];
-      if (!rows.length) { note.textContent = 'Belum ada baris untuk digrafik.'; return; }
+      if (!rows.length) { note.innerHTML = 'Belum ada baris di tabel ini — grafik otomatis muncul setelah kamu <a href="#" id="tb-chart-add" class="underline">menambahkan baris</a>.'; var add = document.getElementById('tb-chart-add'); if (add) add.addEventListener('click', function (e) { e.preventDefault(); tbShow(tbLastMain || null); tbShowForm(null); }); return; }
       var th = tbChartTheme();
       var opts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: type === 'doughnut', labels: { color: th.text, boxWidth: 12 } } }, scales: type === 'doughnut' ? {} : { x: { ticks: { color: th.text, maxRotation: 45, autoSkip: true }, grid: { display: false } }, y: { ticks: { color: th.text }, grid: { color: th.grid }, beginAtZero: true } } };
       if (type === 'line') {
