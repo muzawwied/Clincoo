@@ -1,4 +1,3 @@
-import { json, CORS } from './shared.js';
 // POST /api/auth/forgot-password — kirim link atur ulang kata sandi via email (Brevo)
 // Selalu balas success agar tidak membocorkan keberadaan akun.
 import { initTables, json, validEmail, randomHex } from './shared.js';

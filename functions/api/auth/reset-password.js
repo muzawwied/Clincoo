@@ -1,4 +1,3 @@
-import { json, CORS } from './shared.js';
 // POST /api/auth/reset-password — set kata sandi baru dengan token dari email
 import { initTables, json, makePasswordHash } from './shared.js';
 
