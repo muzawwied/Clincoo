@@ -349,7 +349,7 @@
           </div>
 
           <!-- daftar tabel: CTA di atas daftar -->
-          <div id="db-list-head" class="hidden items-center justify-between gap-3 mt-6">
+          <div id="db-list-head" class="hidden items-center justify-between gap-3 mt-6 mb-4">
             <p class="text-sm font-semibold text-gray-900 dark:text-white">Daftar tabel</p>
             <button id="db-new-btn" type="button" class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"></path></svg>
@@ -639,7 +639,7 @@
         body.appendChild(tr);
       });
       dbShow(tables && tables.length ? 'db-list' : 'db-empty');
-      try { dbChartRender(); } catch (e) { var _cs = document.getElementById('db-chart-sec'); if (_cs) _cs.classList.add('hidden'); }
+      try { dbChartRender(); window.__dbChartErr = null; } catch (e) { window.__dbChartErr = (e && e.stack) || String(e); var _cs = document.getElementById('db-chart-sec'); if (_cs) _cs.classList.add('hidden'); }
     }
 
     // ---- grafik ringkasan database: 5 chart (Chart.js), warna-warni ala chart integrasi AI ----
