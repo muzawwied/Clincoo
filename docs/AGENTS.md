@@ -95,6 +95,25 @@ Log lebih lama dipotong agar wiki ringan.
 - Fix (commit e638daf): resolveOwner fail-closed; kredit 'in' tanpa callback token WAJIB ClincooPay; clear/DELETE admin-only.
 
 ## Log Interaksi Agent
+### 2026-10-05 10:5x WIB — Superagent (Base44): penegakan asli fitur premium per paket + crown per level paket (commit ab194932)
+
+Arahan owner: fitur bermahkota harus dicegah ASLI di server (bukan cuma teks), crown dilabeli per paket user (Starter = semua crown, Pro = hanya level Bisnis), tanpa teks Pro/Bisnis di UI — label "Fitur ini hanya untuk paket N" hanya di gate layar penuh. Editor kode = fitur Starter (yang di Workspace); tarik saldo = Pro, terima pembayaran tetap terbuka semua paket.
+
+**Server (sistem asli):**
+- plan-helpers.js: PLAN_FEATURES, featureGateResponse, countUserDomains
+- /api/pay: gate `withdraw`/`withdraw_otp`/`wd_confirm` (Pro) — activate/create/transactions/callback terbuka
+- github-oauth.js: integrasi Git = Pro; export-data.js: ekspor akun = Bisnis; mcp-token.js: server MCP = Bisnis
+- fns.js + fn-db.js + fn/[name].js + tool AI di chat.js: backend functions & database tanpa server = Bisnis
+- project-settings.js: Starter maks 1 domain per akun; proteksi password situs = Bisnis
+- Pesan gate server seragam: "Fitur ini hanya untuk paket N."
+
+**Klien:**
+- 27 halaman: visibility crown per plan (body[data-pps-plan]), ikon/ukuran/warna crown seragam, gate layar penuh label baru
+- Editor Workspace dibuka untuk Starter; fitur premium DI DALAM editor (version control, ekspor ZIP) digate per fitur + crown (Starter saja)
+- Crown nav Editor dihapus (15 halaman); crown dipasang: CTA Tarik Saldo, judul Server MCP, judul Password Akses; teks label "Paket Bisnis" di visibilitas diganti crown; alert diganti gate layar penuh
+
+**Deploy & verifikasi:** push ke main → Pages build deploy success; live dicek: gate lama editor 0, crown baru ada di editor/pembayaran/server-mcp/visibilitas, smoke test /api/pay, /api/fns, /api/project-settings respons normal.
+
 ### 2026-10-02 04:5x WIB — Superagent (Base44): 6 perbaikan Clincoo (disetujui owner)
 - `functions/api/security-events.js` BARU: endpoint yang hilang (akar error "Gagal memuat notifikasi keamanan"); `proyek/pengaturan/keamanan/index.html` kini pakai base URL dinamis + header Bearer. Live: `/api/security-events` balas 401 JSON, bukan 404 HTML.
 - FIX "failed to fetch" pasca-deploy di `proyek/build-deployment/{config,dashboard}/index.html`: koneksi putus saat deploy panjang tidak lagi langsung dianggap gagal — halaman cek log sukses baru di status deploy; bila deploy ternyata sukses, user diarahkan ke dashboard link.
