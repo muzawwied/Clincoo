@@ -2922,7 +2922,7 @@ window.chatLivePreview = function () {
                     : (msg.midPhase
                         ? 'Partially done — continuing…'
                         : (errCount > 0
-                            ? `Everything's finished (${errCount} gagal)`
+                            ? `Everything's finished (${errCount} failed)`
                             : "Everything's finished")));
             const badgeClass = running ? '' : (reportFailed || errCount > 0 ? ' err' : ' ok');
             const summaryIcon = running
@@ -6254,7 +6254,28 @@ window.chatLivePreview = function () {
                 }
             }
 
-            if (!isGenerating || !currentAiMessageId) return;
+            if (!isGenerating || !currentAiMessageId) {
+                // BUG LAMA: panggilan ini ditimpa panggilan fetchAIResponse() lain yang lebih
+                // baru (mis. reload berturutan saat koneksi lagi putus) sebelum sempat
+                // selesai — bubble "aiMsgObj" ditinggal macet isProcessing:true SELAMANYA
+                // ("Thinking..." nyangkut, menumpuk tiap reload). FIX: tutup rapi bubble
+                // milik panggilan INI sendiri sebelum keluar, jangan dibiarkan jadi bangkai.
+                const orphanIdx = messages.findIndex(m => m.id === aiMsgObj.id);
+                if (orphanIdx !== -1 && messages[orphanIdx].isProcessing) {
+                    messages[orphanIdx].isProcessing = false;
+                    messages[orphanIdx].isTyping = false;
+                    if (!String(messages[orphanIdx].text || '').trim()) {
+                        messages[orphanIdx].text = 'Lagi ada gangguan koneksi sebentar.';
+                        messages[orphanIdx].isError = true;
+                        messages[orphanIdx].retryable = true;
+                        messages[orphanIdx].checkpoint = true;
+                    }
+                    messages[orphanIdx].completed = true;
+                    renderMessages();
+                    try { saveChatLog(); } catch (e) {}
+                }
+                return;
+            }
             if (typingInterval) clearInterval(typingInterval);
 
             let localText = "";
