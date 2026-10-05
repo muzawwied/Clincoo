@@ -912,6 +912,50 @@ const WORKSPACE_FUNCTION_DECLARATIONS = [
       branch: { type: 'STRING', description: 'Branch tujuan (opsional, default "main"). Repo harus sudah punya branch ini.' },
       commit_message: { type: 'STRING', description: 'Pesan commit (opsional).' }
     }, required: ['repo'] } },
+  // ===== TOOLS DATABASE (CRUD database proyek — sama data dengan halaman Database) =====
+  { name: 'db_list_tables',
+    description: 'Lihat semua tabel di DATABASE proyek aktif (nama, kolom, jumlah baris). Gunakan saat user bertanya isi database-nya, atau sebelum membuat/mengubah tabel & baris.',
+    parameters: { type: 'OBJECT', properties: {} } },
+  { name: 'db_create_table',
+    description: 'Buat tabel baru di DATABASE proyek aktif — tabel yang sama persis dengan halaman Database Clincoo (data permanen, bisa dibaca aplikasi user lewat API /v1/db). WAJIB dipakai saat user minta membuat tabel/database, mis. "buat tabel produk dengan kolom nama dan harga". Batas jumlah tabel mengikuti paket (Starter: 2 tabel).',
+    parameters: { type: 'OBJECT', properties: {
+      table_name: { type: 'STRING', description: 'Nama tabel, contoh: "produk".' },
+      columns: { type: 'ARRAY', description: 'Definisi kolom tabel (minimal 1).', items: { type: 'OBJECT', properties: {
+        name: { type: 'STRING', description: 'Nama kolom, contoh: "nama".' },
+        type: { type: 'STRING', description: 'Tipe kolom: "text", "number", "boolean", atau "date".' }
+      }, required: ['name', 'type'] } }
+    }, required: ['table_name', 'columns'] } },
+  { name: 'db_drop_table',
+    description: 'Hapus tabel dari DATABASE proyek aktif beserta SELURUH barisnya. PERMANEN — konfirmasi dulu ke user kecuali user sudah jelas meminta penghapusan.',
+    parameters: { type: 'OBJECT', properties: {
+      table_name: { type: 'STRING', description: 'Nama tabel yang dihapus.' }
+    }, required: ['table_name'] } },
+  { name: 'db_add_row',
+    description: 'Tambah satu baris data ke tabel di DATABASE proyek aktif. WAJIB saat user minta menambah/menyimpan data ke tabel, mis. "tambahkan produk kopi susu harga 15000". Kembalikan id baris baru ke user.',
+    parameters: { type: 'OBJECT', properties: {
+      table_name: { type: 'STRING', description: 'Nama tabel tujuan.' },
+      data: { type: 'OBJECT', description: 'Objek pasangan kolom:nilai, contoh: {"nama": "Kopi Susu", "harga": 15000}. Hanya kolom yang ada di tabel.' }
+    }, required: ['table_name', 'data'] } },
+  { name: 'db_list_rows',
+    description: 'Baca baris data dari tabel di DATABASE proyek aktif (terbaru dulu). Gunakan saat user minta melihat isi tabel, laporan, rekap, atau data tertentu.',
+    parameters: { type: 'OBJECT', properties: {
+      table_name: { type: 'STRING', description: 'Nama tabel.' },
+      limit: { type: 'NUMBER', description: 'Jumlah baris per baca, 1-200. Default 50.' },
+      offset: { type: 'NUMBER', description: 'Lewati N baris pertama (untuk paging). Default 0.' }
+    }, required: ['table_name'] } },
+  { name: 'db_update_row',
+    description: 'Ubah nilai kolom pada satu baris (berdasarkan id) di tabel DATABASE proyek aktif. Gunakan saat user minta mengubah data, mis. "ubah harga produk id 3 jadi 20000".',
+    parameters: { type: 'OBJECT', properties: {
+      table_name: { type: 'STRING', description: 'Nama tabel.' },
+      id: { type: 'NUMBER', description: 'ID baris yang diubah.' },
+      data: { type: 'OBJECT', description: 'Pasangan kolom:nilai baru, contoh: {"harga": 20000}.' }
+    }, required: ['table_name', 'id', 'data'] } },
+  { name: 'db_delete_row',
+    description: 'Hapus satu baris data dari tabel di DATABASE proyek aktif berdasarkan id. Konfirmasi dulu ke user kecuali user sudah jelas meminta penghapusan.',
+    parameters: { type: 'OBJECT', properties: {
+      table_name: { type: 'STRING', description: 'Nama tabel.' },
+      id: { type: 'NUMBER', description: 'ID baris yang dihapus.' }
+    }, required: ['table_name', 'id'] } },
   // ===== TOOLS BACKEND FUNCTION (dieksekusi otomatis di server) =====
   { name: 'create_backend_function',
     description: 'Buat backend function baru milik user (ala platform builder): tulis kode -> terpasang -> bisa dipanggil via URL /api/fn/<nama>. Kode adalah badan fungsi async dengan parameter `args` (objek), boleh pakai `fetch`, `JSON`, dan `db` (DATABASE BAWAAN: await db.get(k), db.set(k,v), db.del(k), db.list(prefix), db.count() — data bertahan permanen, kuota mengikuti paket langganan). WAJIB return nilai. Contoh kode: "await db.set(args.id, args); return { ok: true }". BATAS RUNTIME: eksekusi maksimal 14 detik per panggilan (lebih dari itu = timeout). Tiap db.get/db.set adalah network call yang lambat: DILARANG loop berurutan lebih dari 20 get dalam satu function — gunakan db.list(prefix) untuk membaca banyak data sekaligus, dan simpan index/agregat saat menulis data agar laporan cukup membaca 1-2 kunci saja. Untuk WEBHOOK PUBLIK (callback payment gateway Midtrans/Xendit/Tripay, layanan eksternal): set is_public true — respons berisi webhook_url berisi key rahasia yang WAJIB diberikan ke user untuk dipasang di dashboard gateway. Gunakan saat user minta API endpoint, webhook, payment backend, integrasi data, atau logika backend.',
