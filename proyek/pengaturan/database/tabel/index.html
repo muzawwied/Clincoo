@@ -29,6 +29,7 @@
     <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
   <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
     <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -317,6 +318,22 @@
             </button>
           </div>
 
+          <!-- aksi tabel: grafik & unduh (teks polos, bukan card) -->
+          <div id="tb-tools" class="hidden mt-3 flex items-center gap-5 text-xs font-semibold">
+            <button id="tb-chart-btn" type="button" class="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M7 17V9m5 8V5m5 12v-6"></path></svg>
+              Grafik
+            </button>
+            <button id="tb-csv-btn" type="button" class="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"></path></svg>
+              Unduh CSV
+            </button>
+            <button id="tb-json-btn" type="button" class="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"></path></svg>
+              Unduh JSON
+            </button>
+          </div>
+
           <!-- perlu login -->
           <div id="tb-login" class="hidden py-12 flex flex-col items-center justify-center text-center">
             <svg class="w-8 h-8 text-gray-300 mb-3" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3 5v14a9 3 0 0 0 18 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 3 0 0 0 18 0"></path></svg>
@@ -375,6 +392,31 @@
             <button id="tb-delrow-btn" type="button" class="text-xs font-semibold text-red-500 dark:text-red-400 hover:text-red-600 transition-colors">Hapus baris ini</button>
           </div>
         </div>
+
+        <!-- ===== tampilan grafik ===== -->
+        <div id="vw-chart" class="hidden py-5">
+          <a id="tb-chart-back" href="#" class="inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors mb-3">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"></path></svg>
+            Kembali ke tabel
+          </a>
+          <p id="tb-chart-title" class="text-sm font-semibold text-gray-900 dark:text-white">Grafik</p>
+          <div class="mt-4 grid grid-cols-2 gap-3">
+            <label class="block">
+              <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Jenis grafik</span>
+              <select id="tb-chart-type" class="w-full px-3 py-2.5 text-sm bg-white dark:bg-black border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none"></select>
+            </label>
+            <label class="block">
+              <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Kolom</span>
+              <select id="tb-chart-col" class="w-full px-3 py-2.5 text-sm bg-white dark:bg-black border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none"></select>
+            </label>
+          </div>
+          <label id="tb-chart-numwrap" class="block mt-3 hidden">
+            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Nilai</span>
+            <select id="tb-chart-num" class="w-full px-3 py-2.5 text-sm bg-white dark:bg-black border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none"></select>
+          </label>
+          <p id="tb-chart-note" class="text-xs text-gray-400 dark:text-gray-500 mt-3">Memuat data…</p>
+          <div class="mt-4 h-64 sm:h-80"><canvas id="tb-canvas"></canvas></div>
+        </div>
       </div>
     </main>
   </div>
@@ -397,7 +439,17 @@
     // ================= detail tabel =================
     var TB_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev' : '') + '/api';
     var tbName = (new URLSearchParams(location.search).get('name') || '').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-    var tbCols = [], tbOffset = 0, tbTotal = 0, tbEditId = null, tbBusy = false;
+    var tbCols = [], tbOffset = 0, tbTotal = 0, tbEditId = null, tbBusy = false, tbLastMain = null;
+
+    // ---- cache lokal: data tersimpan di perangkat biar refresh nggak load dari awal ----
+    function tbPageCacheKey() { return 'clincoo_tb_page_' + tbPid() + '_' + tbName; }
+    function tbAllCacheKey() { return 'clincoo_tb_all_' + tbPid() + '_' + tbName; }
+    function tbPageCacheRead() { try { var c = JSON.parse(localStorage.getItem(tbPageCacheKey()) || 'null'); return c && c.rows && c.cols ? c : null; } catch (e) { return null; } }
+    function tbPageCacheWrite(cols, rows, total) { try { localStorage.setItem(tbPageCacheKey(), JSON.stringify({ ts: Date.now(), cols: cols, rows: rows.slice(0, 100), total: total })); } catch (e) {} }
+    function tbCacheClearAll() {
+      try { localStorage.removeItem(tbPageCacheKey()); localStorage.removeItem(tbAllCacheKey()); } catch (e) {}
+      try { localStorage.removeItem('clincoo_db_data_' + tbPid()); } catch (e) {}
+    }
 
     function tbPid() { try { return localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) { return ''; } }
     function tbHdrs(json) {
@@ -410,10 +462,11 @@
 
     function tbShow(id) {
       ['tb-loading', 'tb-rows-wrap', 'tb-empty', 'tb-error', 'tb-login'].forEach(function (k) { document.getElementById(k).classList.add('hidden'); });
-      ['vw-form'].forEach(function (k) { document.getElementById(k).classList.add('hidden'); });
+      ['vw-form', 'vw-chart'].forEach(function (k) { document.getElementById(k).classList.add('hidden'); });
       document.getElementById('vw-main').classList.remove('hidden');
-      if (id) document.getElementById(id).classList.remove('hidden');
+      if (id) { document.getElementById(id).classList.remove('hidden'); tbLastMain = id; }
       document.getElementById('tb-add-btn').classList.toggle('hidden', id !== 'tb-rows-wrap' && id !== 'tb-empty');
+      document.getElementById('tb-tools').classList.toggle('hidden', id !== 'tb-rows-wrap' && id !== 'tb-empty');
     }
     function tbShowForm(editing) {
       tbEditId = editing ? editing.id : null;
@@ -488,18 +541,37 @@
       if (!tbPid()) { document.getElementById('tb-error-text').textContent = 'Proyek belum dipilih.'; tbShow('tb-error'); return; }
       if (tbBusy) return;
       tbBusy = true;
-      if (!append) tbShow('tb-loading');
+      var cached = null;
+      if (!append) {
+        cached = tbPageCacheRead();
+        if (cached) {
+          // data tersimpan di perangkat: tampilkan SEKARANG tanpa loading
+          tbCols = cached.cols;
+          tbTotal = cached.total;
+          tbOffset = cached.rows.length;
+          var cw = document.getElementById('tb-rows'); cw.innerHTML = '';
+          cached.rows.forEach(function (row) { cw.appendChild(tbRowEl(row)); });
+          document.getElementById('tb-more-btn').classList.toggle('hidden', tbOffset >= tbTotal);
+          document.getElementById('tb-count').classList.toggle('hidden', !(tbTotal > 0 && tbOffset >= tbTotal));
+          document.getElementById('tb-count').textContent = tbTotal + ' baris total';
+          document.getElementById('tb-danger').classList.remove('hidden');
+          tbShow(tbTotal === 0 ? 'tb-empty' : 'tb-rows-wrap');
+        } else {
+          tbShow('tb-loading');
+        }
+      }
       return tbLoadMeta()
-        .then(function () { return fetch(TB_API + '/db/rows?project_id=' + encodeURIComponent(tbPid()) + '&table=' + encodeURIComponent(tbName) + '&limit=50&offset=' + tbOffset, { headers: tbHdrs(false) }); })
+        .then(function () { return fetch(TB_API + '/db/rows?project_id=' + encodeURIComponent(tbPid()) + '&table=' + encodeURIComponent(tbName) + '&limit=50&offset=' + (append ? tbOffset : 0), { headers: tbHdrs(false) }); })
         .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
         .then(function (d) {
           tbBusy = false;
           var rows = d.rows || [];
           tbTotal = d.total || 0;
           var wrap = document.getElementById('tb-rows');
-          if (!append) wrap.innerHTML = '';
+          if (!append) { wrap.innerHTML = ''; tbOffset = rows.length; }
+          else tbOffset += rows.length;
+          if (!append) tbPageCacheWrite(tbCols, rows, tbTotal);
           rows.forEach(function (row) { wrap.appendChild(tbRowEl(row)); });
-          tbOffset += rows.length;
           document.getElementById('tb-more-btn').classList.toggle('hidden', tbOffset >= tbTotal);
           document.getElementById('tb-count').classList.toggle('hidden', !(tbTotal > 0 && tbOffset >= tbTotal));
           document.getElementById('tb-count').textContent = tbTotal + ' baris total';
@@ -509,6 +581,8 @@
         .catch(function (e) {
           tbBusy = false;
           if (e && e.message === 'login') return;
+          // punya cache? data cache tetap tampil, tidak perlu error
+          if (cached) return;
           document.getElementById('tb-error-text').textContent = e && e.message === 'notfound' ? 'Tabel tidak ditemukan.' : 'Tidak bisa memuat baris. Coba lagi.';
           tbShow('tb-error');
         });
@@ -551,7 +625,7 @@
         .then(function (res) {
           btn.disabled = false; btn.textContent = 'Simpan';
           if (!res.ok) { tbFormError(res.d && res.d.error ? res.d.error : 'Gagal menyimpan baris.'); return; }
-          tbShow(null); tbOffset = 0; tbLoadRows();
+          tbCacheClearAll(); tbShow(null); tbOffset = 0; tbLoadRows();
         })
         .catch(function () { btn.disabled = false; btn.textContent = 'Simpan'; tbFormError('Tidak bisa menghubungi server.'); });
     }
@@ -561,7 +635,7 @@
       fetch(TB_API + '/db/rows?project_id=' + encodeURIComponent(tbPid()) + '&table=' + encodeURIComponent(tbName) + '&id=' + encodeURIComponent(tbEditId), { method: 'DELETE', headers: tbHdrs(false) })
         .then(function (r) {
           if (!r.ok) { tbFormError('Gagal menghapus baris.'); return; }
-          tbShow(null); tbOffset = 0; tbLoadRows();
+          tbCacheClearAll(); tbShow(null); tbOffset = 0; tbLoadRows();
         })
         .catch(function () { tbFormError('Gagal menghapus baris.'); });
     }
@@ -569,9 +643,159 @@
     function tbDropTable() {
       if (!confirm('Hapus tabel "' + tbName + '" beserta semua barisnya?')) return;
       fetch(TB_API + '/db/tables?project_id=' + encodeURIComponent(tbPid()) + '&name=' + encodeURIComponent(tbName), { method: 'DELETE', headers: tbHdrs(false) })
-        .then(function (r) { if (r.ok) window.location.href = '/proyek/pengaturan/database/'; })
+        .then(function (r) { if (r.ok) { tbCacheClearAll(); window.location.href = '/proyek/pengaturan/database/'; } })
         .catch(function () { document.getElementById('tb-error-text').textContent = 'Gagal menghapus tabel.'; tbShow('tb-error'); });
     }
+
+    // ================= grafik (Chart.js) & unduh =================
+    var tbAll = null, tbAllBusy = false, tbChart = null;
+    var TB_PALETTE = ['#111827', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#84cc16', '#f97316', '#6366f1', '#14b8a6', '#a855f7', '#eab308', '#64748b'];
+
+    function tbAllCacheRead() { try { var c = JSON.parse(localStorage.getItem(tbAllCacheKey()) || 'null'); return c && c.rows ? c : null; } catch (e) { return null; } }
+
+    // muat SEMUA baris (bertahap, maks 2000) — untuk grafik & unduh; hasil disimpan ke perangkat
+    function tbLoadAll() {
+      if (tbAllBusy) return Promise.resolve(tbAll);
+      var c = tbAllCacheRead();
+      if (c) { tbAll = c.rows; if (Date.now() - (c.ts || 0) < 60000) return Promise.resolve(tbAll); }
+      var key = tbAllCacheKey();
+      if (tbAllPending[key]) return tbAllPending[key];
+      tbAllBusy = true;
+      var p = new Promise(function (resolve, reject) {
+        var out = [], offset = 0, total = Infinity;
+        function page() {
+          return fetch(TB_API + '/db/rows?project_id=' + encodeURIComponent(tbPid()) + '&table=' + encodeURIComponent(tbName) + '&limit=200&offset=' + offset, { headers: tbHdrs(false) })
+            .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+            .then(function (d) {
+              out = out.concat(d.rows || []);
+              total = d.total || 0;
+              offset += (d.rows || []).length;
+              if (offset < total && offset < 2000) return page();
+            });
+        }
+        page().then(function () {
+          tbAll = out; tbAllBusy = false; delete tbAllPending[key];
+          try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), rows: out.slice(0, 2000) })); } catch (e) {}
+          resolve(out);
+        }).catch(function (e) { tbAllBusy = false; delete tbAllPending[key]; reject(e); });
+      });
+      tbAllPending[key] = p;
+      return p;
+    }
+    var tbAllPending = {};
+
+    function tbChartTheme() {
+      var dark = document.body.classList.contains('dark-mode');
+      return { text: dark ? '#9aa0a6' : '#6b7280', grid: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' };
+    }
+    function tbChartColsOf(kind) {
+      // kategori: teks/tanggal/boolean; garis: angka
+      return tbCols.filter(function (c) {
+        return kind === 'number' ? c.type === 'number' : (c.type === 'text' || c.type === 'date' || c.type === 'boolean');
+      });
+    }
+    function tbChartPopulate() {
+      var typeSel = document.getElementById('tb-chart-type');
+      var colSel = document.getElementById('tb-chart-col');
+      var numSel = document.getElementById('tb-chart-num');
+      var hasCat = tbChartColsOf('cat').length > 0, hasNum = tbChartColsOf('number').length > 0;
+      var prevType = typeSel.value;
+      typeSel.innerHTML = '';
+      if (hasCat) typeSel.insertAdjacentHTML('beforeend', '<option value="bar">Batang</option><option value="doughnut">Donat</option>');
+      if (hasNum) typeSel.insertAdjacentHTML('beforeend', '<option value="line">Garis</option>');
+      if (!typeSel.options.length) { document.getElementById('tb-chart-note').textContent = 'Tabel ini belum punya kolom yang bisa digrafik.'; return false; }
+      typeSel.value = ([].slice.call(typeSel.options).some(function (o) { return o.value === prevType; })) ? prevType : typeSel.options[0].value;
+      var type = typeSel.value;
+      // kolom utama
+      var cols = type === 'line' ? tbChartColsOf('number') : tbChartColsOf('cat');
+      colSel.innerHTML = cols.map(function (c) { return '<option value="' + esc(c.name) + '">' + esc(c.name) + (type === 'line' ? '' : ' (per kategori)') + '</option>'; }).join('');
+      // pemilih nilai (khusus batang: jumlah baris atau total nilai kolom angka)
+      var numwrap = document.getElementById('tb-chart-numwrap');
+      if (type === 'bar' && hasNum) {
+        numwrap.classList.remove('hidden');
+        numSel.innerHTML = '<option value="__count">Jumlah baris</option>' + tbChartColsOf('number').map(function (c) { return '<option value="' + esc(c.name) + '">Total ' + esc(c.name) + '</option>'; }).join('');
+      } else numwrap.classList.add('hidden');
+      return true;
+    }
+    function tbChartRender() {
+      var type = document.getElementById('tb-chart-type').value;
+      var col = document.getElementById('tb-chart-col').value;
+      var num = document.getElementById('tb-chart-num').value;
+      var note = document.getElementById('tb-chart-note');
+      var canvas = document.getElementById('tb-canvas');
+      if (tbChart) { tbChart.destroy(); tbChart = null; }
+      var rows = tbAll || [];
+      if (!rows.length) { note.textContent = 'Belum ada baris untuk digrafik.'; return; }
+      var th = tbChartTheme();
+      var opts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: type === 'doughnut', labels: { color: th.text, boxWidth: 12 } } }, scales: type === 'doughnut' ? {} : { x: { ticks: { color: th.text, maxRotation: 45, autoSkip: true }, grid: { display: false } }, y: { ticks: { color: th.text }, grid: { color: th.grid }, beginAtZero: true } } };
+      if (type === 'line') {
+        var pts = rows.slice(0, 1000);
+        tbChart = new Chart(canvas, { type: 'line', data: { labels: pts.map(function (r, i) { var lbl = (tbChartColsOf('cat')[0] && r[tbChartColsOf('cat')[0].name]) || ('#' + (i + 1)); return String(lbl).slice(0, 16); }), datasets: [{ label: col, data: pts.map(function (r) { return Number(r[col]) || 0; }), borderColor: '#111827', backgroundColor: 'rgba(17,24,39,0.08)', tension: 0.3, pointRadius: 1.5, fill: true }] }, options: opts });
+      } else {
+        var numSelVal = (type === 'bar') ? num : '__count';
+        var agg = {}, order = [];
+        rows.forEach(function (r) {
+          var k = r[col]; if (k === null || k === undefined || k === '') k = '(kosong)';
+          k = String(k).slice(0, 40);
+          if (!(k in agg)) { agg[k] = 0; order.push(k); }
+          agg[k] += numSelVal === '__count' ? 1 : (Number(r[numSelVal]) || 0);
+        });
+        order.sort(function (a, b) { return agg[b] - agg[a]; });
+        var cap = type === 'doughnut' ? 8 : 15;
+        var labels = order.slice(0, cap), data = labels.map(function (k) { return agg[k]; });
+        var rest = order.slice(cap);
+        if (rest.length) { labels.push('Lainnya (' + rest.length + ')'); data.push(rest.reduce(function (s, k) { return s + agg[k]; }, 0)); }
+        if (type === 'doughnut') {
+          tbChart = new Chart(canvas, { type: 'doughnut', data: { labels: labels, datasets: [{ data: data, backgroundColor: TB_PALETTE, borderWidth: 0 }] }, options: opts });
+        } else {
+          tbChart = new Chart(canvas, { type: 'bar', data: { labels: labels, datasets: [{ data: data, backgroundColor: '#111827', borderRadius: 4, maxBarThickness: 42 }] }, options: opts });
+        }
+      }
+      note.textContent = rows.length + ' baris dimuat' + (rows.length >= 2000 ? ' (maksimal 2000 teratas)' : '') + ' · grafik diperbarui otomatis dari data terbaru perangkat ini';
+    }
+    function tbChartRefresh() {
+      var ok = tbChartPopulate();
+      if (!ok) return;
+      var note = document.getElementById('tb-chart-note');
+      note.textContent = 'Memuat data…';
+      tbLoadAll().then(function () { tbChartRender(); }).catch(function () { note.textContent = 'Gagal memuat data. ' + (tbAll ? 'Menampilkan data tersimpan di perangkat.' : 'Coba lagi.'); if (tbAll) tbChartRender(); });
+    }
+    function tbOpenChart() {
+      document.getElementById('tb-chart-title').textContent = 'Grafik ' + tbName;
+      document.getElementById('vw-main').classList.add('hidden');
+      document.getElementById('vw-chart').classList.remove('hidden');
+      tbChartRefresh();
+    }
+    document.getElementById('tb-chart-btn').addEventListener('click', tbOpenChart);
+    document.getElementById('tb-chart-back').addEventListener('click', function (e) { e.preventDefault(); document.getElementById('vw-chart').classList.add('hidden'); tbShow(tbTotal === 0 ? 'tb-empty' : 'tb-rows-wrap'); });
+    document.getElementById('tb-chart-type').addEventListener('change', tbChartRefresh);
+    document.getElementById('tb-chart-col').addEventListener('change', tbChartRender);
+    document.getElementById('tb-chart-num').addEventListener('change', tbChartRender);
+
+    // ---- unduh CSV / JSON ----
+    function tbDownload(fname, blob) {
+      var u = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = u; a.download = fname;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(u); }, 3000);
+    }
+    function tbExport(fmt) {
+      tbLoadAll().then(function (rows) {
+        if (!rows.length) { alert('Belum ada baris untuk diunduh.'); return; }
+        var heads = tbCols.map(function (c) { return c.name; });
+        if (fmt === 'json') {
+          var out = rows.map(function (r) { var o = {}; tbCols.forEach(function (c) { o[c.name] = r[c.name]; }); return o; });
+          tbDownload(tbName + '.json', new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }));
+        } else {
+          function cell(v) { if (v === null || v === undefined) return ''; v = String(v); if (/[",\n]/.test(v)) v = '"' + v.replace(/"/g, '""') + '"'; return v; }
+          var csv = '\ufeff' + heads.map(cell).join(',') + '\n' + rows.map(function (r) { return heads.map(function (h) { return cell(r[h]); }).join(','); }).join('\n');
+          tbDownload(tbName + '.csv', new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+        }
+      }).catch(function () { alert('Gagal memuat data untuk diunduh. Coba lagi.'); });
+    }
+    document.getElementById('tb-csv-btn').addEventListener('click', function () { tbExport('csv'); });
+    document.getElementById('tb-json-btn').addEventListener('click', function () { tbExport('json'); });
 
     document.getElementById('tb-add-btn').addEventListener('click', function () { tbShowForm(null); });
     document.getElementById('tb-empty-btn').addEventListener('click', function () { tbShowForm(null); });

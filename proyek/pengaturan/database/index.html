@@ -476,6 +476,16 @@
       dbShow(tables && tables.length ? 'db-list' : 'db-empty');
     }
 
+    // ---- cache lokal: data tersimpan di perangkat biar tiap refresh nggak load dari awal ----
+    function dbDataCacheKey() { return 'clincoo_db_data_' + dbPid(); }
+    function dbCacheRead() {
+      try { var c = JSON.parse(localStorage.getItem(dbDataCacheKey()) || 'null'); return c && c.tables ? c : null; } catch (e) { return null; }
+    }
+    function dbCacheWrite(tables) {
+      try { localStorage.setItem(dbDataCacheKey(), JSON.stringify({ ts: Date.now(), tables: tables })); } catch (e) {}
+    }
+    function dbCacheClear() { try { localStorage.removeItem(dbDataCacheKey()); } catch (e) {} }
+
     var dbLoadBusy = false;
     function dbLoad(isRetry) {
       var t = ''; try { t = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
@@ -483,7 +493,9 @@
       if (!dbPid()) { dbErr('Proyek belum dipilih — buka dashboard proyekmu dulu.'); return; }
       if (dbLoadBusy) return;
       dbLoadBusy = true;
-      if (!isRetry) dbShow('db-loading');
+      var cached = dbCacheRead();
+      // tampilkan cache SEKARANG (kalau ada), loading hanya kalau benar-benar belum ada data
+      if (!isRetry) { if (cached) dbRender(cached.tables); else dbShow('db-loading'); }
       fetch(DB_API + '/db/tables?project_id=' + encodeURIComponent(dbPid()), { headers: dbHdrs(false) })
         .then(function (r) {
           if (r.status === 401) { dbShow('db-login'); return null; }
@@ -493,12 +505,16 @@
         .then(function (d) {
           dbLoadBusy = false;
           if (d === null) return;
+          dbCacheWrite(d && d.tables || []);
           dbRender(d && d.tables);
         })
         .catch(function () {
           dbLoadBusy = false;
           // blip jaringan/cold-start sekali tidak langsung dianggap error — coba sekali lagi diam-diam
           if (!isRetry) { setTimeout(function () { dbLoad(true); }, 1200); return; }
+          // punya cache? tampilkan data cache, nggak perlu error sama sekali
+          var c = dbCacheRead();
+          if (c) { dbRender(c.tables); return; }
           dbErr('Tidak bisa memuat tabel. Coba lagi.');
         });
     }
