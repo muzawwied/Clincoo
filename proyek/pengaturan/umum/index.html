@@ -286,6 +286,20 @@
                 </div>
             </div>
 
+            <!-- 7. Cadangan Proyek (ZIP) -->
+            <div class="py-4 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="min-w-0 flex-1">
+                    <h4 class="text-base font-bold text-gray-900 tracking-tight">Cadangan Proyek</h4>
+                    <p class="text-sm text-gray-500 mt-1">Unduh seluruh file workspace sebagai arsip ZIP</p>
+                </div>
+                <div class="w-full sm:w-80">
+                    <button type="button" id="btn-export-zip" class="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-2xl bg-gray-900 dark:bg-white text-white dark:text-black font-semibold text-sm transition-all hover:opacity-90 active:scale-[0.98]">
+                        <i data-lucide="archive" class="w-4 h-4"></i>
+                        <span id="btn-export-label">Unduh Cadangan (ZIP)</span>
+                    </button>
+                </div>
+            </div>
+
         </div>
     </main>
 
@@ -395,6 +409,79 @@
             });
         }
         if (!Object.keys(readCache()).length) showSkeletons(true);
+
+        // ===== Cadangan Proyek: ekspor seluruh workspace sebagai arsip ZIP =====
+        // Sumber file SAMA dengan editor workspace (BE2 lintas-origin di produksi),
+        // sehingga isi cadangan selalu identik dengan yang tampil di editor.
+        const EXPORT_WS_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-files';
+
+        function _exportSlug() {
+            var n = (document.getElementById('input-app-name') || {}).value || '';
+            n = String(n).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+            return n || 'proyek';
+        }
+
+        function _loadJsZip() {
+            if (window.JSZip) return Promise.resolve();
+            return new Promise(function (resolve, reject) {
+                var sc = document.createElement('script');
+                sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+                sc.onload = function () { resolve(); };
+                sc.onerror = function () { reject(new Error('Gagal memuat pustaka arsip')); };
+                document.head.appendChild(sc);
+            });
+        }
+
+        async function exportProjectZip() {
+            var btn = document.getElementById('btn-export-zip');
+            var lbl = document.getElementById('btn-export-label');
+            var busy = function (t) { if (lbl) lbl.textContent = t; if (btn) btn.disabled = true; btn && btn.classList.add('opacity-60'); };
+            var done = function () { if (lbl) lbl.textContent = 'Unduh Cadangan (ZIP)'; if (btn) { btn.disabled = false; btn.classList.remove('opacity-60'); } };
+            busy('Menyiapkan arsip…');
+            try {
+                var pidv = pid();
+                var res = await fetch(EXPORT_WS_API + '?project_id=' + encodeURIComponent(pidv), { headers: authHeaders() });
+                var data = await res.json().catch(function () { return {}; });
+                if (!res.ok || data.error) throw new Error(data.error || 'Gagal membaca daftar file');
+                var files = (data && data.files) || [];
+                if (!files.length) { done(); alert('Workspace proyek ini tidak memiliki file yang dapat diekspor.'); return; }
+                await _loadJsZip();
+                var zip = new window.JSZip();
+                var big = 0;
+                for (var i = 0; i < files.length; i++) {
+                    var f = files[i];
+                    if (f.is_big) {
+                        big++;
+                        if (lbl) lbl.textContent = 'Mengambil file besar (' + big + ')…';
+                        var r2 = await fetch(EXPORT_WS_API + '?project_id=' + encodeURIComponent(pidv) + '&path=' + encodeURIComponent(f.path) + '&content=1', { headers: authHeaders() });
+                        var d2 = await r2.json().catch(function () { return {}; });
+                        if (!r2.ok || d2.error) throw new Error(d2.error || 'Gagal membaca file: ' + f.path);
+                        if (d2.content_b64) zip.file(f.path, d2.content_b64, { base64: true });
+                        else zip.file(f.path, d2.content || '');
+                    } else {
+                        zip.file(f.path, f.content || '');
+                    }
+                }
+                if (lbl) lbl.textContent = 'Mengompres ' + files.length + ' file…';
+                var blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+                var d = new Date();
+                var stamp = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'cadangan-' + _exportSlug() + '-' + stamp + '.zip';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+            } catch (e) {
+                alert('Ekspor cadangan gagal: ' + e.message);
+            }
+            done();
+        }
+
+        (function bindExport() {
+            var b = document.getElementById('btn-export-zip');
+            if (b) b.addEventListener('click', exportProjectZip);
+        })();
 
         async function loadUmum() {
             try {
