@@ -567,7 +567,7 @@
         } else if (c.type === 'image' || c.type === 'video' || c.type === 'audio' || c.type === 'file') {
           var ph = { image: 'https://… link gambar', video: 'https://… link video', audio: 'https://… link audio', file: 'https://… link dokumen' }[c.type];
           var prev = '';
-          if (c.type === 'image') prev = val ? '<img src="' + esc(val) + '" alt="" class="tb-prev mt-2 max-h-28 rounded-xl border border-gray-200 dark:border-slate-700 object-cover">' : '<div class="tb-prev hidden"></div>';
+          if (c.type === 'image') prev = '<img src="' + esc(val) + '" alt="" class="tb-prev mt-2 rounded-xl border border-gray-200 dark:border-slate-700 object-cover max-h-28' + (val ? '' : ' hidden') + '">';
           else if (c.type === 'video') prev = val ? '<video src="' + esc(val) + '" controls preload="metadata" class="tb-prev mt-2 w-full max-h-44 rounded-xl border border-gray-200 dark:border-slate-700 bg-black"></video>' : '<video controls preload="metadata" class="tb-prev hidden"></video>';
           else if (c.type === 'audio') prev = val ? '<audio src="' + esc(val) + '" controls class="tb-prev mt-2 w-full"></audio>' : '<audio controls class="tb-prev hidden"></audio>';
           row.innerHTML = label + '<input type="text" data-col="' + esc(c.name) + '" data-prev="' + c.type + '" value="' + esc(val) + '" placeholder="' + ph + '" class="tb-in w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">' + prev;
@@ -575,8 +575,8 @@
           inp.addEventListener('input', function () {
             var u = this.value.trim();
             if (!pv) return;
-            if (!u) { pv.classList.add('hidden'); if (pv.tagName !== 'DIV') { pv.removeAttribute('src'); } return; }
-            pv.classList.remove('hidden'); if (pv.tagName !== 'DIV') pv.src = u;
+            if (!u) { pv.classList.add('hidden'); pv.removeAttribute('src'); return; }
+            pv.classList.remove('hidden'); pv.src = u;
           });
         } else if (c.type === 'select' && c.options && c.options.length) {
           var opts = c.options.map(function (o) {
