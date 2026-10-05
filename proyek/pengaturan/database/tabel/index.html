@@ -224,7 +224,6 @@
         .db-chart-card { border-radius: 1rem; border: 1px solid rgb(229 231 235); background: #fff; padding: 1rem 1.15rem 1.15rem; }
         body.dark-mode .db-chart-card { border-color: #1e293b; background: #0d0d0d; }
         .db-chart-head { display: flex; align-items: flex-start; gap: 0.65rem; }
-        .db-chart-dot { width: 0.5rem; height: 0.5rem; border-radius: 9999px; margin-top: 0.3rem; flex-shrink: 0; }
         .db-stat-card { border-radius: 1rem; border: 1px solid rgb(229 231 235); background: #fff; padding: 0.9rem 1rem 0.95rem; }
         body.dark-mode .db-stat-card { border-color: #1e293b; background: #0d0d0d; }
         .db-stat-num { font-size: 1.35rem; line-height: 1.1; font-weight: 700; color: #111827; font-variant-numeric: tabular-nums; }
@@ -341,26 +340,24 @@
               <h4 id="tb-name" class="text-base font-semibold text-gray-900 dark:text-white truncate">Tabel</h4>
               <p id="tb-meta" class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Memuat…</p>
             </div>
-            <button id="tb-add-btn" type="button" class="hidden shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"></path></svg>
-              Tambah baris
-            </button>
+            <div class="hidden shrink-0 flex items-center gap-2" id="tb-head-actions">
+              <button id="tb-add-btn" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"></path></svg>
+                Tambah baris
+              </button>
+              <button id="tb-menu-btn" type="button" class="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-100 transition-colors">
+                <svg class="w-4.5 h-4.5 w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.7"></circle><circle cx="12" cy="12" r="1.7"></circle><circle cx="12" cy="19" r="1.7"></circle></svg>
+              </button>
+            </div>
           </div>
 
-          <!-- aksi tabel: grafik & unduh (teks polos, bukan card) -->
-          <div id="tb-tools" class="hidden mt-3 flex items-center gap-5 text-xs font-semibold">
-            <button id="tb-chart-btn" type="button" class="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M7 17V9m5 8V5m5 12v-6"></path></svg>
-              Grafik
-            </button>
-            <button id="tb-csv-btn" type="button" class="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"></path></svg>
-              Unduh CSV
-            </button>
-            <button id="tb-json-btn" type="button" class="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"></path></svg>
-              Unduh JSON
-            </button>
+          <!-- statistik ringkas tabel -->
+          <div id="tb-main-stats" class="hidden mt-3 grid grid-cols-3 gap-3"></div>
+
+          <!-- cari baris (filter muatan yang sudah tampil) -->
+          <div id="tb-search-wrap" class="hidden mt-3 relative">
+            <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 1 1-12 0 6 6 0 0 1 12 0z"></path></svg>
+            <input id="tb-search" type="text" inputmode="search" placeholder="Cari baris di data yang sudah dimuat…" class="w-full pl-9 pr-3 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">
           </div>
 
           <!-- perlu login -->
@@ -385,7 +382,7 @@
 
           <!-- daftar baris: polos divide-y -->
           <div id="tb-rows-wrap" class="hidden">
-            <div class="rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-[#0d0d0d] overflow-hidden">
+            <div class="rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-[#0d0d0d] overflow-hidden">
               <div class="overflow-x-auto">
                 <table class="w-full text-sm border-collapse">
                   <thead id="tb-rows-head" class="hidden bg-gray-50 dark:bg-slate-800/60">
@@ -406,10 +403,6 @@
             <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Tambahkan baris pertama lewat tombol di atas.</p>
           </div>
 
-          <!-- hapus tabel -->
-          <div id="tb-danger" class="hidden mt-10 pt-6 border-t border-gray-100 dark:border-slate-700/60 text-center">
-            <button id="tb-drop-btn" type="button" class="text-xs font-semibold text-red-500 dark:text-red-400 hover:text-red-600 transition-colors">Hapus tabel ini</button>
-          </div>
         </div>
 
         <!-- ===== form tambah/edit baris ===== -->
@@ -438,30 +431,42 @@
           </a>
           <p id="tb-chart-title" class="text-sm font-semibold text-gray-900 dark:text-white">Grafik</p>
           <div id="tb-chart-stats" class="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
-          <div class="mt-4 grid grid-cols-2 gap-3">
-            <label class="block">
-              <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Jenis grafik</span>
-              <select id="tb-chart-type" class="w-full px-3 py-2.5 text-sm bg-white dark:bg-black border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none"></select>
-            </label>
-            <label class="block">
-              <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Kolom</span>
-              <select id="tb-chart-col" class="w-full px-3 py-2.5 text-sm bg-white dark:bg-black border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none"></select>
-            </label>
-          </div>
-          <label id="tb-chart-numwrap" class="block mt-3 hidden">
-            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Nilai</span>
-            <select id="tb-chart-num" class="w-full px-3 py-2.5 text-sm bg-white dark:bg-black border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none"></select>
+          <label id="tb-chart-colwrap" class="block mt-4 max-w-xs">
+            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Kolom kategori</span>
+            <select id="tb-chart-col" class="w-full px-3 py-2.5 text-sm bg-white dark:bg-black border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none"></select>
           </label>
           <p id="tb-chart-note" class="text-xs text-gray-400 dark:text-gray-500 mt-3">Memuat data…</p>
-          <div class="db-chart-card mt-4">
+          <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="db-chart-card sm:col-span-2">
             <div class="db-chart-head">
-              <span class="db-chart-dot" style="background:#60a5fa"></span>
-              <div>
-                <p id="tb-chart-card-title" class="text-xs font-semibold text-gray-700 dark:text-gray-200">Visualisasi data tabel</p>
-                <p id="tb-chart-card-sub" class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Grafik terisi otomatis dari baris tabel</p>
+              <div class="flex-1 min-w-0">
+                <p id="tb-c1-title" class="text-xs font-semibold text-gray-700 dark:text-gray-200">Grafik</p>
+                <p id="tb-c1-sub" class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Terisi otomatis dari baris tabel</p>
               </div>
+              <button type="button" class="db-save-img shrink-0 inline-flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors" data-canvas="tb-chart-1" data-name="grafik-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"></path></svg> Simpan</button>
             </div>
-            <div class="h-64 sm:h-80 mt-4"><canvas id="tb-canvas"></canvas></div>
+            <div class="h-64 sm:h-72 mt-4"><canvas id="tb-chart-1"></canvas></div>
+          </div>
+          <div class="db-chart-card">
+            <div class="db-chart-head">
+              <div class="flex-1 min-w-0">
+                <p id="tb-c2-title" class="text-xs font-semibold text-gray-700 dark:text-gray-200">Grafik</p>
+                <p id="tb-c2-sub" class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Terisi otomatis dari baris tabel</p>
+              </div>
+              <button type="button" class="db-save-img shrink-0 inline-flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors" data-canvas="tb-chart-2" data-name="grafik-2"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"></path></svg> Simpan</button>
+            </div>
+            <div class="h-64 mt-4"><canvas id="tb-chart-2"></canvas></div>
+          </div>
+          <div class="db-chart-card">
+            <div class="db-chart-head">
+              <div class="flex-1 min-w-0">
+                <p id="tb-c3-title" class="text-xs font-semibold text-gray-700 dark:text-gray-200">Grafik</p>
+                <p id="tb-c3-sub" class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Terisi otomatis dari baris tabel</p>
+              </div>
+              <button type="button" class="db-save-img shrink-0 inline-flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors" data-canvas="tb-chart-3" data-name="grafik-3"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"></path></svg> Simpan</button>
+            </div>
+            <div class="h-64 mt-4"><canvas id="tb-chart-3"></canvas></div>
+          </div>
           </div>
         </div>
       </div>
@@ -512,8 +517,11 @@
       ['vw-form', 'vw-chart'].forEach(function (k) { document.getElementById(k).classList.add('hidden'); });
       document.getElementById('vw-main').classList.remove('hidden');
       if (id) { document.getElementById(id).classList.remove('hidden'); tbLastMain = id; }
-      document.getElementById('tb-add-btn').classList.toggle('hidden', id !== 'tb-rows-wrap' && id !== 'tb-empty');
-      document.getElementById('tb-tools').classList.toggle('hidden', id !== 'tb-rows-wrap' && id !== 'tb-empty');
+      var onList = id === 'tb-rows-wrap' || id === 'tb-empty';
+      document.getElementById('tb-head-actions').classList.toggle('hidden', !onList);
+      document.getElementById('tb-main-stats').classList.toggle('hidden', !onList);
+      document.getElementById('tb-search-wrap').classList.toggle('hidden', id !== 'tb-rows-wrap');
+      if (tbMenuEl) tbMenuClose();
     }
     function tbShowForm(editing) {
       tbEditId = editing ? editing.id : null;
@@ -578,6 +586,16 @@
           tbCols = t.columns || [];
           document.getElementById('tb-name').textContent = t.name;
           document.getElementById('tb-meta').textContent = tbCols.length + ' kolom · ' + (t.rows || 0) + ' baris';
+          var mst = document.getElementById('tb-main-stats');
+          if (mst) {
+            var tset = {};
+            tbCols.forEach(function (c) { tset[c.type] = 1; });
+            var ms = [ ['Baris', t.rows || 0], ['Kolom', tbCols.length], ['Tipe data', Object.keys(tset).length] ];
+            mst.innerHTML = ms.map(function (x) {
+              return '<div class="db-stat-card"><p class="text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">' + x[0] +
+                '</p><p class="db-stat-num mt-1">' + x[1] + '</p></div>';
+            }).join('');
+          }
           tbBuildHead();
         });
     }
@@ -637,40 +655,154 @@
         });
     }
 
+    var tbSortState = null;
     function tbBuildHead() {
       var headRow = document.getElementById('tb-rows-head-row');
       var html = '';
       tbCols.forEach(function (c, i) {
-        html += '<th class="py-3 ' + (i === 0 ? 'pl-5 ' : '') + 'pr-4 font-semibold whitespace-nowrap">' + esc(c.name) + '</th>';
+        var dir = tbSortState && tbSortState.col === c.name ? (tbSortState.dir > 0 ? ' ↑' : ' ↓') : '';
+        html += '<th class="py-3 ' + (i === 0 ? 'pl-5 ' : '') + 'pr-4 font-semibold whitespace-nowrap">' +
+          '<button type="button" class="tb-sort inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" data-col="' + esc(c.name) + '">' + esc(c.name) + '<span class="text-gray-400 dark:text-gray-500">' + dir + '</span></button></th>';
       });
       html += '<th class="py-3 pl-3 pr-4 font-semibold text-right">Aksi</th>';
       headRow.innerHTML = html;
       document.getElementById('tb-rows-head').classList.remove('hidden');
+      [].slice.call(headRow.querySelectorAll('.tb-sort')).forEach(function (b) {
+        b.addEventListener('click', function () {
+          var col = b.getAttribute('data-col');
+          if (tbSortState && tbSortState.col === col) { tbSortState.dir = -tbSortState.dir; } else { tbSortState = { col: col, dir: 1 }; }
+          tbSortLoaded();
+        });
+      });
+    }
+    // sortir baris yang sudah dimuat (klik judul kolom)
+    function tbSortLoaded() {
+      var body = document.getElementById('tb-rows');
+      var trs = [].slice.call(body.children);
+      if (!trs.length || !tbSortState) return;
+      trs.sort(function (a, b) {
+        var va = (a.__row || {})[tbSortState.col], vb = (b.__row || {})[tbSortState.col];
+        if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * tbSortState.dir;
+        return String(va === null || va === undefined ? '' : va).localeCompare(String(vb === null || vb === undefined ? '' : vb)) * tbSortState.dir;
+      });
+      trs.forEach(function (tr) { body.appendChild(tr); });
+      tbBuildHead();
     }
     function tbRowEl(row) {
       var tr = document.createElement('tr');
       tr.className = 'group cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/40';
+      tr.__row = row;
       var tds = '';
       tbCols.forEach(function (c, idx) {
         var v = row[c.name];
         if (v === null || v === undefined) v = '';
         if (c.type === 'boolean') v = v ? 'Ya' : 'Tidak';
-        tds += '<td class="py-3.5 ' + (idx === 0 ? 'pl-5 ' : '') + 'pr-4 whitespace-nowrap max-w-[240px] truncate text-gray-700 dark:text-gray-300">' + esc(String(v)) + '</td>';
+        var num = c.type === 'number' || c.type === 'date';
+        tds += '<td class="py-3.5 ' + (idx === 0 ? 'pl-5 ' : '') + 'pr-4 whitespace-nowrap max-w-[240px] truncate ' +
+          (num ? 'text-right tabular-nums ' : '') + 'text-gray-700 dark:text-gray-300">' + esc(String(v)) + '</td>';
       });
       tds +=
-        '<td class="py-3 text-right whitespace-nowrap">' +
-        '<span class="inline-flex items-center gap-1">' +
-        '<button type="button" class="tb-edit px-2.5 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">Ubah</button>' +
-        '<button type="button" class="tb-del px-2.5 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors">Hapus</button>' +
-        '</span></td>';
+        '<td class="py-3 pl-3 pr-4 text-right whitespace-nowrap">' +
+        '<button type="button" class="tb-row-menu inline-flex p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200 transition-colors" aria-label="Menu baris">' +
+        '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.7"></circle><circle cx="12" cy="12" r="1.7"></circle><circle cx="12" cy="19" r="1.7"></circle></svg></button>' +
+        '</td>';
       tr.innerHTML = tds;
       tr.addEventListener('click', function (ev) {
-        var del = ev.target.closest('.tb-del');
-        if (del) { ev.stopPropagation(); tbDelRow(del, row); return; }
+        var m = ev.target.closest('.tb-row-menu');
+        if (m) { ev.stopPropagation(); tbRowMenuOpen(m, row); return; }
         tbShowForm(row);
       });
       return tr;
     }
+    // menu ⋮ per baris: ubah & hapus (hapus pakai konfirmasi dua langkah)
+    var tbRowMenuEl = null;
+    function tbRowMenuClose() {
+      if (tbRowMenuEl) { tbRowMenuEl.remove(); tbRowMenuEl = null; document.removeEventListener('click', tbRowMenuOut, true); }
+    }
+    function tbRowMenuOut(e) { if (tbRowMenuEl && !tbRowMenuEl.contains(e.target) && !e.target.closest('.tb-row-menu')) tbRowMenuClose(); }
+    function tbRowMenuOpen(btn, row) {
+      tbRowMenuClose();
+      var pop = document.createElement('div');
+      pop.className = 'fixed z-50 w-44 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl py-1.5';
+      var rect = btn.getBoundingClientRect();
+      pop.style.top = Math.min(rect.bottom + 6, window.innerHeight - 140) + 'px';
+      pop.style.left = Math.max(8, Math.min(rect.right - 176, window.innerWidth - 184)) + 'px';
+      pop.innerHTML =
+        '<button type="button" class="tb-rm-edit w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors inline-flex items-center gap-2.5"><svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>Ubah baris</button>' +
+        '<button type="button" class="tb-rm-del w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors inline-flex items-center gap-2.5"><svg class="w-3.5 h-3.5 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"></path></svg>Hapus baris</button>';
+      document.body.appendChild(pop);
+      tbRowMenuEl = pop;
+      document.addEventListener('click', tbRowMenuOut, true);
+      pop.querySelector('.tb-rm-edit').addEventListener('click', function () { tbRowMenuClose(); tbShowForm(row); });
+      pop.querySelector('.tb-rm-del').addEventListener('click', function () {
+        pop.innerHTML =
+          '<p class="px-4 pt-2 pb-1 text-xs font-semibold text-gray-800 dark:text-gray-200">Hapus baris ini?</p>' +
+          '<p class="px-4 pb-2.5 text-[11px] text-gray-400 dark:text-gray-500">Tindakan ini nggak bisa dibatalkan.</p>' +
+          '<div class="flex gap-2 px-4 pb-3">' +
+          '<button type="button" class="tb-rm-yes flex-1 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">Hapus</button>' +
+          '<button type="button" class="tb-rm-no flex-1 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg transition-colors">Batal</button></div>';
+        pop.querySelector('.tb-rm-yes').addEventListener('click', function () {
+          tbRowMenuClose();
+          fetch(TB_API + '/db/rows?project_id=' + encodeURIComponent(tbPid()) + '&table=' + encodeURIComponent(tbName) + '&id=' + encodeURIComponent(row.id), { method: 'DELETE', headers: tbHdrs(false) })
+            .then(function (r) {
+              if (!r.ok) throw new Error('HTTP ' + r.status);
+              tbBusy = false; tbOffset = 0; tbLoadRows();
+            })
+            .catch(function () { document.getElementById('tb-error-text').textContent = 'Gagal menghapus baris. Coba lagi.'; tbShow('tb-error'); });
+        });
+        pop.querySelector('.tb-rm-no').addEventListener('click', tbRowMenuClose);
+      });
+    }
+    // menu ⋮ halaman: grafik, unduh, hapus tabel
+    var tbMenuEl = null;
+    function tbMenuClose() {
+      if (tbMenuEl) { tbMenuEl.remove(); tbMenuEl = null; document.removeEventListener('click', tbMenuOut, true); }
+    }
+    function tbMenuOut(e) { if (tbMenuEl && !tbMenuEl.contains(e.target) && !e.target.closest('#tb-menu-btn')) tbMenuClose(); }
+    function tbMenuOpen(btn) {
+      tbMenuClose();
+      var pop = document.createElement('div');
+      pop.className = 'fixed z-50 w-52 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl py-1.5';
+      var rect = btn.getBoundingClientRect();
+      pop.style.top = Math.min(rect.bottom + 6, window.innerHeight - 220) + 'px';
+      pop.style.left = Math.max(8, Math.min(rect.right - 208, window.innerWidth - 216)) + 'px';
+      pop.innerHTML =
+        '<button type="button" class="tb-mm-chart w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors inline-flex items-center gap-2.5"><svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M7 17V9m5 8V5m5 12v-6"></path></svg>Lihat grafik</button>' +
+        '<button type="button" class="tb-mm-csv w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors inline-flex items-center gap-2.5"><svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"></path></svg>Unduh CSV</button>' +
+        '<button type="button" class="tb-mm-json w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors inline-flex items-center gap-2.5"><svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>Unduh JSON</button>' +
+        '<div class="my-1 border-t border-gray-100 dark:border-slate-800"></div>' +
+        '<button type="button" class="tb-mm-drop w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors inline-flex items-center gap-2.5"><svg class="w-3.5 h-3.5 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"></path></svg>Hapus tabel</button>';
+      document.body.appendChild(pop);
+      tbMenuEl = pop;
+      document.addEventListener('click', tbMenuOut, true);
+      pop.querySelector('.tb-mm-chart').addEventListener('click', function () { tbMenuClose(); tbOpenChart(); });
+      pop.querySelector('.tb-mm-csv').addEventListener('click', function () { tbMenuClose(); tbExport('csv'); });
+      pop.querySelector('.tb-mm-json').addEventListener('click', function () { tbMenuClose(); tbExport('json'); });
+      pop.querySelector('.tb-mm-drop').addEventListener('click', function () {
+        var nm = String(tbName || '').replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; });
+        pop.innerHTML =
+          '<p class="px-4 pt-2 pb-1 text-xs font-semibold text-gray-800 dark:text-gray-200">Hapus tabel "' + nm + '"?</p>' +
+          '<p class="px-4 pb-2.5 text-[11px] text-gray-400 dark:text-gray-500">Semua barisnya juga ikut terhapus.</p>' +
+          '<div class="flex gap-2 px-4 pb-3">' +
+          '<button type="button" class="tb-mm-yes flex-1 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">Hapus</button>' +
+          '<button type="button" class="tb-mm-no flex-1 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg transition-colors">Batal</button></div>';
+        pop.querySelector('.tb-mm-yes').addEventListener('click', function () { tbMenuClose(); tbDropTable(); });
+        pop.querySelector('.tb-mm-no').addEventListener('click', tbMenuClose);
+      });
+    }
+    // cari baris: filter teks pada baris yang sudah dimuat
+    document.getElementById('tb-search').addEventListener('input', function () {
+      var q = this.value.trim().toLowerCase();
+      var trs = document.querySelectorAll('#tb-rows tr');
+      var shown = 0;
+      trs.forEach(function (tr) {
+        var hit = !q || tr.textContent.toLowerCase().indexOf(q) !== -1;
+        tr.style.display = hit ? '' : 'none';
+        if (hit) shown++;
+      });
+      var cnt = document.getElementById('tb-count');
+      if (cnt && q) cnt.textContent = shown + ' baris cocok';
+    });
     // hapus baris: dua langkah (klik "Hapus" -> "Yakin?") supaya nggak sengaja kehapus
     function tbDelRow(btn, row) {
       if (btn.getAttribute('data-armed') !== '1') {
@@ -783,7 +915,7 @@
 
     function tbChartTheme() {
       var dark = document.body.classList.contains('dark-mode');
-      return { text: dark ? '#9aa0a6' : '#6b7280', grid: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' };
+      return { text: dark ? '#9aa0a6' : '#6b7280', grid: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', border: dark ? '#0d0d0d' : '#ffffff' };
     }
     function tbChartColsOf(kind) {
       // kategori: teks/tanggal/boolean; garis: angka
@@ -792,30 +924,14 @@
       });
     }
     function tbChartPopulate() {
-      var typeSel = document.getElementById('tb-chart-type');
       var colSel = document.getElementById('tb-chart-col');
-      var numSel = document.getElementById('tb-chart-num');
-      var hasCat = tbChartColsOf('cat').length > 0, hasNum = tbChartColsOf('number').length > 0;
-      var prevType = typeSel.value;
-      typeSel.innerHTML = '';
-      if (hasCat) typeSel.insertAdjacentHTML('beforeend', '<option value="bar">Batang</option><option value="doughnut">Donat</option>');
-      if (hasNum) typeSel.insertAdjacentHTML('beforeend', '<option value="line">Garis</option>');
-      if (!typeSel.options.length) { document.getElementById('tb-chart-note').textContent = 'Tabel ini belum punya kolom yang bisa digrafik.'; return false; }
-      typeSel.value = ([].slice.call(typeSel.options).some(function (o) { return o.value === prevType; })) ? prevType : typeSel.options[0].value;
-      var type = typeSel.value;
-      // kolom utama
-      var cols = type === 'line' ? tbChartColsOf('number') : tbChartColsOf('cat');
-      colSel.innerHTML = cols.map(function (c) { return '<option value="' + esc(c.name) + '">' + esc(c.name) + (type === 'line' ? '' : ' (per kategori)') + '</option>'; }).join('');
-      // pemilih nilai (khusus batang: jumlah baris atau total nilai kolom angka)
-      var numwrap = document.getElementById('tb-chart-numwrap');
-      if (type === 'bar' && hasNum) {
-        numwrap.classList.remove('hidden');
-        numSel.innerHTML = '<option value="__count">Jumlah baris</option>' + tbChartColsOf('number').map(function (c) { return '<option value="' + esc(c.name) + '">Total ' + esc(c.name) + '</option>'; }).join('');
-      } else numwrap.classList.add('hidden');
-      [typeSel, colSel, numSel].forEach(function (sl) { if (sl.__popSync) sl.__popSync(); });
-      return true;
+      var cats = tbChartColsOf('cat');
+      colSel.innerHTML = cats.map(function (c) { return '<option value="' + esc(c.name) + '">' + esc(c.name) + ' (per kategori)</option>'; }).join('');
+      if (colSel.__popSync) colSel.__popSync();
+      document.getElementById('tb-chart-colwrap').classList.toggle('hidden', !cats.length);
+      return cats.length > 0 || tbChartColsOf('number').length > 0;
     }
-    // tooltip gelap membulat; persen khusus doughnut
+    // tooltip gelap membulat; persen khusus pie/donat
     function tbChartTip(pct) {
       var base = { backgroundColor: 'rgba(17,24,39,0.96)', padding: 10, cornerRadius: 10, titleFont: { weight: '600', size: 12 }, bodyFont: { size: 12 }, displayColors: false };
       if (pct) base.callbacks = { label: function (ctx) {
@@ -826,7 +942,6 @@
       } };
       return base;
     }
-    // warna tiap batang/irisan beda (scriptable) — palet sama dengan halaman database
     function tbChartColors() {
       return function (ctx) {
         var p = tbChartPalette();
@@ -834,7 +949,6 @@
         return p[i % p.length];
       };
     }
-    // kartu statistik ringkas di atas grafik
     function tbChartStats() {
       var el = document.getElementById('tb-chart-stats');
       if (!el) return;
@@ -846,68 +960,143 @@
           '</p><p class="db-stat-num mt-1">' + x[1] + '</p></div>';
       }).join('');
     }
-    function tbChartCardHead(type, col, num) {
-      var t = document.getElementById('tb-chart-card-title');
-      var sub = document.getElementById('tb-chart-card-sub');
-      if (!t || !sub) return;
-      var map = { bar: 'Baris per kategori', line: 'Tren ' + col, doughnut: 'Komposisi per kategori' };
-      t.textContent = map[type] || 'Visualisasi data tabel';
-      sub.textContent = 'Tabel ' + tbName + (type === 'bar' ? (num && num !== '__count' ? ' · total kolom ' + num : ' · dihitung dari jumlah baris') : (type === 'line' ? ' · urut dari terlama' : ' · porsi dari total'));
+    // simpan chart sebagai gambar PNG
+    function tbSavePng(canvas, filename) {
+      try {
+        var tmp = document.createElement('canvas');
+        tmp.width = canvas.width; tmp.height = canvas.height;
+        var c2 = tmp.getContext('2d');
+        c2.fillStyle = tbDark() ? '#0d0d0d' : '#ffffff';
+        c2.fillRect(0, 0, tmp.width, tmp.height);
+        c2.drawImage(canvas, 0, 0);
+        var a = document.createElement('a');
+        a.href = tmp.toDataURL('image/png');
+        a.download = (filename || 'grafik') + '.png';
+        document.body.appendChild(a); a.click(); a.remove();
+      } catch (e) {}
     }
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('.db-save-img');
+      if (!b) return;
+      var c = document.getElementById(b.getAttribute('data-canvas'));
+      if (c) tbSavePng(c, b.getAttribute('data-name') || 'grafik');
+    });
+    function tbCardSet(n, title, sub) {
+      var t = document.getElementById('tb-c' + n + '-title'), su = document.getElementById('tb-c' + n + '-sub');
+      if (t) t.textContent = title;
+      if (su) su.textContent = sub;
+    }
+    function tbAgg(rows, col, cap) {
+      var agg = {}, order = [];
+      rows.forEach(function (r) {
+        var k = r[col]; if (k === null || k === undefined || k === '') k = '(kosong)';
+        k = String(k).slice(0, 40);
+        if (!(k in agg)) { agg[k] = 0; order.push(k); }
+        agg[k] += 1;
+      });
+      order.sort(function (a, b) { return agg[b] - agg[a]; });
+      var labels = order.slice(0, cap), data = labels.map(function (k) { return agg[k]; });
+      var rest = order.slice(cap);
+      if (rest.length) { labels.push('Lainnya (' + rest.length + ')'); data.push(rest.reduce(function (t, k) { return t + agg[k]; }, 0)); }
+      return { labels: labels, data: data };
+    }
+    // 3 chart langsung tampil: bar + pie per kategori, plus chart ketiga otomatis
+    // (bubble bila 3+ kolom angka, scatter bila 2, line bila 1; fallback bar kategori kedua)
+    var tbCharts = [];
     function tbChartRender() {
-      var type = document.getElementById('tb-chart-type').value;
-      var col = document.getElementById('tb-chart-col').value;
-      var num = document.getElementById('tb-chart-num').value;
       var note = document.getElementById('tb-chart-note');
-      var canvas = document.getElementById('tb-canvas');
-      if (tbChart) { tbChart.destroy(); tbChart = null; }
-      var rows = tbAll || [];
+      var rows = (tbAll || []).slice(0, 1000);
       var th = tbChartTheme();
+      tbCharts.forEach(function (c) { try { c.destroy(); } catch (e) {} });
+      tbCharts = [];
       tbChartStats();
-      tbChartCardHead(type, col, num);
-      var opts = { responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
-        plugins: { legend: { display: type === 'doughnut', labels: { color: th.text, usePointStyle: true, pointStyle: 'circle', boxWidth: 6, boxHeight: 6, font: { size: 11 }, padding: 14 } },
-          tooltip: tbChartTip(type === 'doughnut') },
-        scales: type === 'doughnut' ? {} : { x: { ticks: { color: th.text, maxRotation: 45, autoSkip: true, font: { size: 11 } }, grid: { display: false } }, y: { ticks: { color: th.text, font: { size: 11 } }, grid: { color: th.grid }, border: { display: false }, beginAtZero: true } } };
+      var cats = tbChartColsOf('cat');
+      var colSel = document.getElementById('tb-chart-col');
+      var cat = null;
+      if (cats.length) {
+        cat = colSel.value && cats.some(function (c) { return c.name === colSel.value; }) ? colSel.value : cats[0].name;
+      }
+      var nums = tbChartColsOf('number').map(function (c) { return c.name; });
+      var barOpts = { responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+        plugins: { legend: { display: false }, tooltip: tbChartTip(false) },
+        scales: { x: { ticks: { color: th.text, maxRotation: 45, autoSkip: true, font: { size: 11 } }, grid: { display: false } }, y: { ticks: { color: th.text, precision: 0, font: { size: 11 } }, grid: { color: th.grid }, border: { display: false }, beginAtZero: true } } };
+      var pieOpts = { responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+        plugins: { legend: { position: 'bottom', labels: { color: th.text, usePointStyle: true, pointStyle: 'circle', boxWidth: 6, boxHeight: 6, font: { size: 11 }, padding: 14 } }, tooltip: tbChartTip(true) } };
+      function xyOpts(xLab, yLab) {
+        return { responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+          plugins: { legend: { display: false }, tooltip: Object.assign(tbChartTip(false), { callbacks: { label: function (ctx) {
+            var p = ctx.raw || {};
+            return (xLab || 'x') + ': ' + (p.x !== undefined ? p.x : '') + ' · ' + (yLab || 'y') + ': ' + (p.y !== undefined ? p.y : '');
+          } } }) },
+          scales: { x: { type: 'linear', position: 'bottom', ticks: { color: th.text, precision: 0, font: { size: 11 } }, grid: { color: th.grid }, border: { display: false } },
+            y: { ticks: { color: th.text, precision: 0, font: { size: 11 } }, grid: { color: th.grid }, border: { display: false }, beginAtZero: true } } };
+      }
+      function cardOf(n) { var c = document.getElementById('tb-chart-' + n); return c ? c.closest('.db-chart-card') : null; }
+      // chart 1: bar per kategori
+      var c1 = cardOf(1);
+      if (cat && c1) {
+        c1.classList.remove('hidden');
+        var a1 = tbAgg(rows, cat, 15);
+        tbCardSet(1, 'Baris per ' + cat, 'Tabel ' + tbName + ' · jumlah baris tiap kategori');
+        tbCharts.push(new Chart(document.getElementById('tb-chart-1'), { type: 'bar',
+          data: { labels: a1.labels, datasets: [{ data: a1.data, backgroundColor: tbChartColors(), borderRadius: 7, maxBarThickness: 44, hoverOffset: 6, categoryPercentage: 0.72 }] }, options: barOpts }));
+      } else if (c1) c1.classList.add('hidden');
+      // chart 2: pie komposisi kategori
+      var c2 = cardOf(2);
+      if (cat && c2) {
+        c2.classList.remove('hidden');
+        var a2 = tbAgg(rows, cat, 8);
+        tbCardSet(2, 'Komposisi ' + cat, 'Porsi tiap kategori dari total baris');
+        tbCharts.push(new Chart(document.getElementById('tb-chart-2'), { type: 'pie',
+          data: { labels: a2.labels, datasets: [{ data: a2.data, backgroundColor: tbChartColors(), borderColor: tbDark() ? '#0d0d0d' : '#ffffff', borderWidth: 2, hoverOffset: 6 }] }, options: pieOpts }));
+      } else if (c2) c2.classList.add('hidden');
+      // chart 3: bubble / scatter / line otomatis
+      var c3 = cardOf(3);
+      if (c3) {
+        if (nums.length >= 3) {
+          c3.classList.remove('hidden');
+          var n0 = nums[0], n1 = nums[1], n2 = nums[2];
+          var pts = rows.map(function (r) { return { x: Number(r[n0]) || 0, y: Number(r[n1]) || 0, v: Number(r[n2]) || 0 }; });
+          var maxV = Math.max.apply(null, pts.map(function (p) { return Math.abs(p.v); }).concat([1]));
+          var bub = pts.map(function (p) { return { x: p.x, y: p.y, r: 5 + 13 * (Math.abs(p.v) / maxV) }; }).slice(0, 300);
+          tbCardSet(3, 'Sebaran ' + n0 + ' vs ' + n1, 'Ukuran gelembung = ' + n2 + ' · tiap gelembung 1 baris');
+          tbCharts.push(new Chart(document.getElementById('tb-chart-3'), { type: 'bubble',
+            data: { datasets: [{ data: bub, backgroundColor: 'rgba(96,165,250,0.45)', borderColor: tbChartBase(), borderWidth: 1.5, hoverBackgroundColor: 'rgba(96,165,250,0.7)' }] },
+            options: xyOpts(n0, n1) }));
+        } else if (nums.length === 2) {
+          c3.classList.remove('hidden');
+          var sc = rows.map(function (r) { return { x: Number(r[nums[0]]) || 0, y: Number(r[nums[1]]) || 0 }; }).slice(0, 300);
+          tbCardSet(3, 'Sebaran ' + nums[0] + ' vs ' + nums[1], 'Tiap titik = 1 baris');
+          tbCharts.push(new Chart(document.getElementById('tb-chart-3'), { type: 'scatter',
+            data: { datasets: [{ data: sc, pointBackgroundColor: tbChartColors(), pointBorderColor: th.border, pointRadius: 5, pointHoverRadius: 7, borderWidth: 1.5 }] },
+            options: xyOpts(nums[0], nums[1]) }));
+        } else if (nums.length === 1) {
+          c3.classList.remove('hidden');
+          var ptsL = rows.slice().sort(function (a, b) { return (a.id || 0) - (b.id || 0); });
+          tbCardSet(3, 'Tren ' + nums[0], 'Nilai tiap baris, urut dari baris terlama');
+          tbCharts.push(new Chart(document.getElementById('tb-chart-3'), { type: 'line',
+            data: { labels: ptsL.map(function (r, i) { return '#' + (i + 1); }), datasets: [{ label: nums[0], data: ptsL.map(function (r) { return Number(r[nums[0]]) || 0; }), borderColor: tbChartBase(), backgroundColor: tbChartFill(), tension: 0.35, pointRadius: 3, pointHoverRadius: 5, pointBackgroundColor: tbChartColors(), fill: true }] }, options: barOpts }));
+        } else if (cats.length >= 2) {
+          c3.classList.remove('hidden');
+          var a3 = tbAgg(rows, cats[1].name, 12);
+          tbCardSet(3, 'Baris per ' + cats[1].name, 'Jumlah baris tiap kategori ' + cats[1].name);
+          tbCharts.push(new Chart(document.getElementById('tb-chart-3'), { type: 'bar',
+            data: { labels: a3.labels, datasets: [{ data: a3.data, backgroundColor: tbChartColors(), borderRadius: 7, maxBarThickness: 44, hoverOffset: 6, categoryPercentage: 0.72 }] }, options: barOpts }));
+        } else {
+          c3.classList.add('hidden');
+        }
+      }
       if (!rows.length) {
-        // grafik tetap digambar walau 0 baris — bidang kosong + ajakan tambah baris
         note.innerHTML = 'Belum ada baris di tabel ini — grafik terisi otomatis setelah kamu <a href="#" id="tb-chart-add" class="underline">menambahkan baris</a>.';
         var add = document.getElementById('tb-chart-add');
         if (add) add.addEventListener('click', function (e) { e.preventDefault(); tbShow(tbLastMain || null); tbShowForm(null); });
-        var empty = type === 'line' ? { label: col, data: [], borderColor: tbChartBase(), backgroundColor: tbChartFill(), tension: 0.35, pointRadius: 3, pointHoverRadius: 5, pointBackgroundColor: tbChartColors(), fill: true }
-          : type === 'doughnut' ? { data: [], backgroundColor: tbChartColors(), borderWidth: 0 }
-          : { data: [], backgroundColor: tbChartColors(), borderRadius: 7, maxBarThickness: 44, categoryPercentage: 0.72 };
-        tbChart = new Chart(canvas, { type: type, data: { labels: [], datasets: [empty] }, options: opts });
-        return;
-      }
-      if (type === 'line') {
-        var pts = rows.slice(0, 1000).sort(function (a, b) { return (a.id || 0) - (b.id || 0); }); // urut lama->baru biar tren natural
-        tbChart = new Chart(canvas, { type: 'line', data: { labels: pts.map(function (r, i) { var lbl = (tbChartColsOf('cat')[0] && r[tbChartColsOf('cat')[0].name]) || ('#' + (i + 1)); return String(lbl).slice(0, 16); }), datasets: [{ label: col, data: pts.map(function (r) { return Number(r[col]) || 0; }), borderColor: tbChartBase(), backgroundColor: tbChartFill(), tension: 0.35, pointRadius: 3, pointHoverRadius: 5, pointBackgroundColor: tbChartColors(), fill: true }] }, options: opts });
       } else {
-        var numSelVal = (type === 'bar') ? num : '__count';
-        var agg = {}, order = [];
-        rows.forEach(function (r) {
-          var k = r[col]; if (k === null || k === undefined || k === '') k = '(kosong)';
-          k = String(k).slice(0, 40);
-          if (!(k in agg)) { agg[k] = 0; order.push(k); }
-          agg[k] += numSelVal === '__count' ? 1 : (Number(r[numSelVal]) || 0);
-        });
-        order.sort(function (a, b) { return agg[b] - agg[a]; });
-        var cap = type === 'doughnut' ? 8 : 15;
-        var labels = order.slice(0, cap), data = labels.map(function (k) { return agg[k]; });
-        var rest = order.slice(cap);
-        if (rest.length) { labels.push('Lainnya (' + rest.length + ')'); data.push(rest.reduce(function (s, k) { return s + agg[k]; }, 0)); }
-        if (type === 'doughnut') {
-          tbChart = new Chart(canvas, { type: 'doughnut', data: { labels: labels, datasets: [{ data: data, backgroundColor: tbChartColors(), borderWidth: 2, borderColor: tbDark() ? '#0d0d0d' : '#ffffff', hoverOffset: 6 }] }, options: Object.assign({ cutout: '68%' }, opts) });
-        } else {
-          tbChart = new Chart(canvas, { type: 'bar', data: { labels: labels, datasets: [{ data: data, backgroundColor: tbChartColors(), borderRadius: 7, maxBarThickness: 44, hoverOffset: 6, categoryPercentage: 0.72 }] }, options: opts });
-        }
+        note.textContent = rows.length + ' baris dimuat' + (rows.length >= 2000 ? ' (maksimal 2000 teratas)' : '') + ' · grafik diperbarui otomatis dari data terbaru perangkat ini';
       }
-      note.textContent = rows.length + ' baris dimuat' + (rows.length >= 2000 ? ' (maksimal 2000 teratas)' : '') + ' · grafik diperbarui otomatis dari data terbaru perangkat ini';
     }
     function tbChartRefresh() {
       var ok = tbChartPopulate();
-      if (!ok) return;
+      if (!ok) { document.getElementById('tb-chart-note').textContent = 'Tabel ini belum punya kolom yang bisa digrafik.'; return; }
       var note = document.getElementById('tb-chart-note');
       note.textContent = 'Memuat data…';
       tbLoadAll().then(function () { tbChartRender(); }).catch(function () { note.textContent = 'Gagal memuat data. ' + (tbAll ? 'Menampilkan data tersimpan di perangkat.' : 'Coba lagi.'); if (tbAll) tbChartRender(); });
@@ -920,6 +1109,10 @@
     }
     document.getElementById('tb-chart-btn').addEventListener('click', tbOpenChart);
     document.getElementById('tb-chart-back').addEventListener('click', function (e) { e.preventDefault(); document.getElementById('vw-chart').classList.add('hidden'); tbShow(tbTotal === 0 ? 'tb-empty' : 'tb-rows-wrap'); });
+    document.getElementById('tb-chart-col').addEventListener('change', function () {
+      if (document.getElementById('tb-chart-col').__popSync) document.getElementById('tb-chart-col').__popSync();
+      if (tbAll) tbChartRender(); else tbChartRefresh();
+    });
     // ---- popover select: pengganti dropdown native (chart) ----
     // Select asli tetap di DOM (tersembunyi); tombol rapi membuka popover pilihan.
     var dbPopOpen = null;
@@ -983,10 +1176,7 @@
       sel.addEventListener('change', sync);
       sync();
     }
-    ['tb-chart-type', 'tb-chart-col', 'tb-chart-num'].forEach(function (id) { dbPopoverize(document.getElementById(id)); });
-    document.getElementById('tb-chart-type').addEventListener('change', tbChartRefresh);
-    document.getElementById('tb-chart-col').addEventListener('change', tbChartRender);
-    document.getElementById('tb-chart-num').addEventListener('change', tbChartRender);
+    dbPopoverize(document.getElementById('tb-chart-col'));
 
     // ---- unduh CSV / JSON ----
     function tbDownload(fname, blob) {
@@ -1010,15 +1200,12 @@
         }
       }).catch(function () { alert('Gagal memuat data untuk diunduh. Coba lagi.'); });
     }
-    document.getElementById('tb-csv-btn').addEventListener('click', function () { tbExport('csv'); });
-    document.getElementById('tb-json-btn').addEventListener('click', function () { tbExport('json'); });
-
     document.getElementById('tb-add-btn').addEventListener('click', function () { tbShowForm(null); });
+    document.getElementById('tb-menu-btn').addEventListener('click', function (e) { e.stopPropagation(); tbMenuEl ? tbMenuClose() : tbMenuOpen(this); });
     document.getElementById('tb-save-btn').addEventListener('click', tbSave);
     document.getElementById('tb-cancel-btn').addEventListener('click', tbFormBack);
     document.getElementById('tb-form-back').addEventListener('click', tbFormBack);
-    document.getElementById('tb-delrow-btn').addEventListener('click', tbDelRow);
-    document.getElementById('tb-drop-btn').addEventListener('click', tbDropTable);
+    document.getElementById('tb-delrow-btn').addEventListener('click', function () { var btn = this; if (tbEditId) { tbDelRow(btn, { id: tbEditId }); } });
     document.getElementById('tb-retry-btn').addEventListener('click', function () { tbOffset = 0; tbLoadRows(); });
     document.getElementById('tb-more-btn').addEventListener('click', function () { tbLoadRows(true); });
 
