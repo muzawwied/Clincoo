@@ -684,23 +684,36 @@
           scales: { x: { ticks: { color: th.text, maxRotation: 45, autoSkip: true }, grid: { display: false } },
             y: { ticks: { color: th.text, precision: 0 }, grid: { color: th.grid }, beginAtZero: true } } };
       }
+      function hbarOpts() {
+        return { responsive: true, maintainAspectRatio: false, animation: { duration: 300 }, indexAxis: 'y',
+          plugins: { legend: { display: false } },
+          scales: { x: { ticks: { color: th.text, precision: 0 }, grid: { color: th.grid }, beginAtZero: true },
+            y: { ticks: { color: th.text, autoSkip: true }, grid: { display: false } } } };
+      }
       function doughnutOpts() {
         return { responsive: true, maintainAspectRatio: false, animation: { duration: 300 }, cutout: '62%',
+          plugins: { legend: { position: 'bottom', labels: { color: th.text, boxWidth: 10, boxHeight: 10, font: { size: 11 }, padding: 12 } },
+            tooltip: dbPctTooltip() } };
+      }
+      function pieOpts() {
+        return { responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
           plugins: { legend: { position: 'bottom', labels: { color: th.text, boxWidth: 10, boxHeight: 10, font: { size: 11 }, padding: 12 } },
             tooltip: dbPctTooltip() } };
       }
       // 1. baris per tabel — tiap batang beda warna
       dbCharts.push(new Chart(document.getElementById('db-chart-rows'), { type: 'bar',
         data: { labels: names, datasets: [{ data: tables.map(function (t) { return typeof t.rows === 'number' ? t.rows : 0; }), backgroundColor: pal(0), borderRadius: 6, hoverOffset: 4, maxBarThickness: 42 }] }, options: barOpts() }));
-      // 2. kolom per tabel
+      // 2. kolom per tabel — batang datang biar tiap chart beda gaya
       dbCharts.push(new Chart(document.getElementById('db-chart-cols'), { type: 'bar',
-        data: { labels: names, datasets: [{ data: tables.map(function (t) { return (t.columns || []).length; }), backgroundColor: pal(4), borderRadius: 6, hoverOffset: 4, maxBarThickness: 34 }] }, options: barOpts() }));
+        data: { labels: names, datasets: [{ data: tables.map(function (t) { return (t.columns || []).length; }), backgroundColor: pal(4), borderRadius: 6, hoverOffset: 4, maxBarThickness: 34 }] }, options: hbarOpts() }));
       // 3. tabel dibuat per hari
       var days = {};
       tables.forEach(function (t) { var d = String(t.created_at || '').slice(0, 10); if (d) days[d] = (days[d] || 0) + 1; });
       var dl = Object.keys(days).sort();
-      dbCharts.push(new Chart(document.getElementById('db-chart-created'), { type: 'bar',
-        data: { labels: dl.map(function (d) { return dbDateShort(d); }), datasets: [{ data: dl.map(function (d) { return days[d]; }), backgroundColor: pal(8), borderRadius: 6, hoverOffset: 4, maxBarThickness: 34 }] }, options: barOpts() }));
+      dbCharts.push(new Chart(document.getElementById('db-chart-created'), { type: 'line',
+        data: { labels: dl.map(function (d) { return dbDateShort(d); }), datasets: [{ data: dl.map(function (d) { return days[d]; }),
+          borderColor: th.palette[0], backgroundColor: 'rgba(96,165,250,0.12)', pointBackgroundColor: pal(8),
+          pointBorderColor: th.border, pointRadius: 4, pointHoverRadius: 6, tension: 0.35, fill: true, borderWidth: 2 }] }, options: barOpts() }));
       // 4. tipe kolom terpakai
       var types = { text: 0, number: 0, boolean: 0, date: 0 };
       tables.forEach(function (t) { (t.columns || []).forEach(function (c) { if (types[c.type] !== undefined) types[c.type]++; }); });
@@ -710,10 +723,10 @@
           backgroundColor: pal(0), borderColor: th.border, borderWidth: 2, hoverOffset: 6 }] }, options: doughnutOpts() }));
       // 5. komposisi baris per tabel
       var withRows = tables.filter(function (t) { return (t.rows || 0) > 0; });
-      dbCharts.push(new Chart(document.getElementById('db-chart-share'), { type: 'doughnut',
+      dbCharts.push(new Chart(document.getElementById('db-chart-share'), { type: 'pie',
         data: { labels: withRows.length ? withRows.map(function (t) { return String(t.name).slice(0, 20); }) : ['Belum ada baris'],
           datasets: [{ data: withRows.length ? withRows.map(function (t) { return t.rows; }) : [1],
-            backgroundColor: withRows.length ? pal(0) : [document.body.classList.contains('dark-mode') ? 'rgba(255,255,255,0.18)' : '#e5e7eb'], borderColor: th.border, borderWidth: 2, hoverOffset: 6 }] }, options: doughnutOpts() }));
+            backgroundColor: withRows.length ? pal(0) : [document.body.classList.contains('dark-mode') ? 'rgba(255,255,255,0.18)' : '#e5e7eb'], borderColor: th.border, borderWidth: 2, hoverOffset: 6 }] }, options: pieOpts() }));
       document.getElementById('db-chart-note').textContent = tables.length
         ? tables.length + ' tabel · ringkasan lengkap database proyekmu'
         : 'Belum ada tabel — grafik terisi otomatis setelah tabel dan baris ditambahkan.';
