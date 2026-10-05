@@ -597,8 +597,8 @@
     function dbFormOpen() {
       var cols = document.getElementById('db-cols');
       cols.innerHTML = '';
-      cols.appendChild(dbColRow('id', 'text'));
       cols.appendChild(dbColRow('nama', 'text'));
+      cols.appendChild(dbColRow('email', 'text'));
       document.getElementById('db-tbl-name').value = '';
       var fe = document.getElementById('db-form-error');
       fe.classList.add('hidden');
@@ -622,12 +622,17 @@
         headers: dbHdrs(true),
         body: JSON.stringify({ project_id: dbPid(), name: name, columns: columns })
       })
-        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function (r) {
+          return r.json().catch(function () { return null; }).then(function (d) {
+            if (!r.ok) throw new Error((d && d.error) || ('HTTP ' + r.status));
+            return d;
+          });
+        })
         .then(function () { btn.disabled = false; btn.textContent = 'Simpan tabel'; dbLoad(); })
-        .catch(function () {
+        .catch(function (e) {
           btn.disabled = false; btn.textContent = 'Simpan tabel';
           var fe3 = document.getElementById('db-form-error');
-          fe3.textContent = 'Fitur database belum aktif di server. Coba lagi nanti.';
+          fe3.textContent = (e && e.message) || 'Gagal menyimpan tabel. Periksa koneksi lalu coba lagi.';
           fe3.classList.remove('hidden');
         });
     }
