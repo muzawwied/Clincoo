@@ -16,6 +16,40 @@
   }catch(e){location.replace('/proyek/workspace/');}
 })();
 </script>
+<script>/* Gate paket: Editor = fitur Pro — blokir akses langsung user Starter (celah: halaman bisa dibuka via URL/entry lain) */
+(function(){
+  if(location.hash.indexOf('#view=')===0)return; // pratinjau tetap boleh
+  var overlayShown=false;
+  function showGate(){
+    if(overlayShown)return; overlayShown=true;
+    document.documentElement.style.visibility='visible';
+    var ov=document.createElement('div'); ov.id='cc-plan-gate';
+    ov.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#fff;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;padding:24px;';
+    ov.innerHTML='<div style="max-width:420px;text-align:center">'+
+      '<div style="font-size:44px;line-height:1">&#128081;</div>'+
+      '<h2 style="font-size:20px;margin:14px 0 8px">Editor kode adalah fitur paket Pro</h2>'+
+      '<p style="font-size:14px;color:#555;margin:0 0 20px">Paket kamu saat ini Starter. Upgrade ke Pro untuk membuka editor kode full-stack: bangun &amp; publikasikan situs langsung dari browser.</p>'+
+      '<a href="/akun/langganan/upgrade/" style="display:block;padding:13px;background:#111;color:#fff;border-radius:12px;text-decoration:none;font-weight:600;font-size:14px">Lihat Paket</a>'+
+      '<a href="/proyek/chat/" style="display:block;margin-top:10px;padding:13px;border:2px solid #e5e7eb;color:#111;border-radius:12px;text-decoration:none;font-weight:600;font-size:14px">Kembali ke Proyek</a>'+
+      '</div>';
+    (document.body||document.documentElement).appendChild(ov);
+    try{localStorage.setItem('cc_editor_gate','starter');}catch(e){}
+  }
+  function isStarter(p){return !!p&&String(p).toLowerCase()==='starter';}
+  // Keputusan instan dari cache supaya tidak kedip; revalidasi server menyusul.
+  try{
+    var c=JSON.parse(localStorage.getItem('TM_SUB_CACHE_KEY')||'null');
+    if(c&&c.plan){ if(isStarter(c.plan))showGate(); else return; }
+  }catch(e){}
+  fetch('https://clincoo-be2.pages.dev/api/subscription?fields=plan',{cache:'no-store',headers:(function(){var t=localStorage.getItem('clincoo_auth_token')||localStorage.getItem('clincoo_token')||'';return t?{'Authorization':'Bearer '+t}:{};})()})
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(d){
+      if(!d||!d.plan)return; // API gagal: fail-open (jangan kunci user berbayar saat gangguan)
+      if(isStarter(d.plan)){showGate();}
+      else if(overlayShown){var ov=document.getElementById('cc-plan-gate');if(ov)ov.remove();overlayShown=false;try{localStorage.setItem('TM_SUB_CACHE_KEY',JSON.stringify({plan:d.plan,ts:Date.now()}));}catch(e){}}
+    }).catch(function(){});
+})();
+</script>
 <script>
 if(location.hash.indexOf('#view=')===0){document.documentElement.style.visibility='hidden';window.__CC_VIEW=1;(async function(){try{var b=location.hash.slice(6).replace(/-/g,'+').replace(/_/g,'/');var bin=Uint8Array.from(atob(b),function(c){return c.charCodeAt(0);});var t=await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();document.open();document.write(t);document.close();}catch(e){document.open();document.write('<p style="font-family:sans-serif;padding:24px">Tautan pratinjau rusak atau tidak lengkap.</p>');document.close();}})();}
 </script>
