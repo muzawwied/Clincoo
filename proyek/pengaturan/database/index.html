@@ -311,16 +311,12 @@
 
             <div class="w-full flex flex-col">
         <div class="py-5">
-          <div class="flex items-start sm:items-center justify-between gap-3 mb-1">
-            <div>
-              <h4 id="db-title" class="text-base font-semibold text-gray-900 dark:text-white">Database</h4>
-              <p id="db-sub" class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Simpan dan kelola data aplikasimu — dari pengguna, pesanan, sampai konten — dalam tabel rapi yang bisa diakses aplikasimu kapan saja lewat API.</p>
-              <p id="db-proj" class="hidden text-xs mt-1.5 text-gray-400 dark:text-gray-500">Proyek aktif: <span id="db-proj-name" class="font-medium text-gray-600 dark:text-gray-300"></span></p>
-            </div>
-            <button id="db-new-btn" type="button" class="hidden shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"></path></svg>
-              Buat tabel
-            </button>
+          <div class="mb-1">
+            <h4 id="db-title" class="text-base font-semibold text-gray-900 dark:text-white">Database</h4>
+            <p id="db-sub" class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Simpan dan kelola data aplikasimu dalam tabel yang rapi — bisa diakses lewat API kapan saja.</p>
+            <p id="db-proj" class="hidden mt-2">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 dark:bg-slate-800 text-[11px] font-medium text-gray-600 dark:text-gray-300">Proyek aktif:&nbsp;<span id="db-proj-name" class="font-semibold"></span></span>
+            </p>
           </div>
 
           <!-- perlu login -->
@@ -352,8 +348,15 @@
             <button id="db-retry-btn" type="button" class="mt-3 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors">Coba lagi</button>
           </div>
 
-          <!-- daftar tabel: baris polos tanpa card -->
-          <div id="db-list" class="hidden divide-y divide-gray-200 dark:divide-slate-700/60"></div>
+          <!-- daftar tabel: CTA di atas daftar -->
+          <div id="db-list-head" class="hidden items-center justify-between gap-3 mt-6">
+            <p class="text-sm font-semibold text-gray-900 dark:text-white">Daftar tabel</p>
+            <button id="db-new-btn" type="button" class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"></path></svg>
+              Buat tabel
+            </button>
+          </div>
+          <div id="db-list" class="hidden"></div>
 
           <!-- kosong -->
           <div id="db-empty" class="hidden py-12 flex flex-col items-center justify-center text-center">
@@ -535,8 +538,12 @@
         if (el) el.classList.add('hidden');
       });
       if (id) document.getElementById(id).classList.remove('hidden');
-      var nb = document.getElementById('db-new-btn');
-      if (nb) nb.classList.toggle('hidden', !(id === 'db-list' || id === 'db-empty'));
+      var nb = document.getElementById('db-list-head');
+      if (nb) {
+        var on = id === 'db-list' || id === 'db-empty';
+        nb.classList.toggle('hidden', !on);
+        nb.classList.toggle('flex', on);
+      }
     }
     function dbErr(msg) {
       var et = document.getElementById('db-error-text');
@@ -552,62 +559,87 @@
         return d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][d.getMonth()] + ' ' + String(d.getFullYear()).slice(2);
       } catch (e) { return String(s || '').slice(0, 10); }
     }
+
+    // ---- aksi per baris: menu titik tiga (popup) ----
+    var dbMenuEl = null;
+    function dbRowMenuClose() {
+      if (dbMenuEl) { dbMenuEl.remove(); dbMenuEl = null; document.removeEventListener('click', dbRowMenuOutClose, true); }
+    }
+    function dbRowMenuOutClose(e) { if (dbMenuEl && !dbMenuEl.contains(e.target)) dbRowMenuClose(); }
+    function dbRowMenu(btn, t) {
+      dbRowMenuClose();
+      var nm = String(t.name || '').replace(/[&<>]/g, function (s2) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[s2]; });
+      var pop = document.createElement('div');
+      pop.className = 'fixed z-50 w-48 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl py-1.5';
+      var rect = btn.getBoundingClientRect();
+      pop.style.top = Math.min(rect.bottom + 6, window.innerHeight - 150) + 'px';
+      pop.style.left = Math.max(8, Math.min(rect.right - 192, window.innerWidth - 200)) + 'px';
+      pop.innerHTML =
+        '<button type="button" class="db-m-open w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">Buka tabel</button>' +
+        '<button type="button" class="db-m-del w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">Hapus tabel</button>';
+      document.body.appendChild(pop);
+      pop.querySelector('.db-m-open').addEventListener('click', function () {
+        dbRowMenuClose();
+        location.href = '/proyek/pengaturan/database/tabel/?name=' + encodeURIComponent(t.name);
+      });
+      pop.querySelector('.db-m-del').addEventListener('click', function () {
+        pop.innerHTML =
+          '<p class="px-4 pt-2 pb-1 text-xs font-semibold text-gray-800 dark:text-gray-200">Hapus tabel "' + nm + '"?</p>' +
+          '<p class="px-4 pb-2.5 text-[11px] text-gray-400 dark:text-gray-500">Semua barisnya juga ikut terhapus.</p>' +
+          '<div class="flex gap-2 px-4 pb-3">' +
+          '<button type="button" class="db-m-yes flex-1 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">Hapus</button>' +
+          '<button type="button" class="db-m-no flex-1 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg transition-colors">Batal</button>' +
+          '</div>';
+        pop.querySelector('.db-m-yes').addEventListener('click', function () { dbRowMenuClose(); dbDeleteTable(t.name); });
+        pop.querySelector('.db-m-no').addEventListener('click', dbRowMenuClose);
+      });
+      dbMenuEl = pop;
+      setTimeout(function () { document.addEventListener('click', dbRowMenuOutClose, true); }, 0);
+    }
+    function dbDeleteTable(name) {
+      fetch(DB_API + '/db/tables?project_id=' + encodeURIComponent(dbPid()) + '&name=' + encodeURIComponent(name), { method: 'DELETE', headers: dbHdrs(false) })
+        .then(function (r) { return r.ok ? null : r.json().catch(function () { return {}; }).then(function (d) { throw new Error((d && d.error) || 'Gagal menghapus tabel'); }); })
+        .then(function () { dbCacheClear(); dbLoadBusy = false; dbLoad(); })
+        .catch(function (e) { dbErr(e.message || 'Gagal menghapus tabel. Coba lagi.'); });
+    }
+
     function dbRender(tables) {
       dbTables = tables || [];
+      dbRowMenuClose();
       var list = document.getElementById('db-list');
       list.innerHTML =
+        '<div class="rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-[#0d0d0d] overflow-hidden">' +
         '<div class="overflow-x-auto"><table class="w-full text-sm border-collapse">' +
-        '<thead><tr class="text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 border-b border-gray-200 dark:border-slate-700/60">' +
-        '<th class="py-2.5 pr-4 font-semibold">Tabel</th>' +
-        '<th class="py-2.5 pr-4 font-semibold">Kolom</th>' +
-        '<th class="py-2.5 pr-4 font-semibold">Baris</th>' +
-        '<th class="py-2.5 pr-4 font-semibold">Dibuat</th>' +
-        '<th class="py-2.5 font-semibold text-right">Aksi</th>' +
-        '</tr></thead><tbody id="db-tbody"></tbody></table></div>';
+        '<thead><tr class="text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-slate-800/60">' +
+        '<th class="py-3 pl-5 pr-4 font-semibold">Tabel</th>' +
+        '<th class="py-3 pr-4 font-semibold">Kolom</th>' +
+        '<th class="py-3 pr-4 font-semibold">Baris</th>' +
+        '<th class="py-3 pr-4 font-semibold">Dibuat</th>' +
+        '<th class="py-3 pl-3 pr-4 font-semibold text-right">Aksi</th>' +
+        '</tr></thead><tbody id="db-tbody" class="divide-y divide-gray-100 dark:divide-slate-800"></tbody></table></div></div>';
       var body = document.getElementById('db-tbody');
       (tables || []).forEach(function (t) {
         var tr = document.createElement('tr');
-        tr.className = 'group cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/40';
+        tr.className = 'group cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/40';
         var nm = String(t.name || '').replace(/[&<>]/g, function (s2) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[s2]; });
         tr.innerHTML =
-          '<td class="py-3 pr-4 font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">' + nm + '</td>' +
-          '<td class="py-3 pr-4 text-gray-500 dark:text-gray-400 whitespace-nowrap">' + (t.columns || []).length + '</td>' +
-          '<td class="py-3 pr-4 text-gray-500 dark:text-gray-400 whitespace-nowrap">' + (typeof t.rows === 'number' ? t.rows : '\u2014') + '</td>' +
-          '<td class="py-3 pr-4 text-gray-400 dark:text-gray-500 whitespace-nowrap">' + (t.created_at ? dbDateShort(t.created_at) : '\u2014') + '</td>' +
-          '<td class="py-3 text-right whitespace-nowrap">' +
-          '<span class="inline-flex items-center gap-1">' +
-          '<button type="button" class="db-open px-2.5 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">Buka</button>' +
-          '<button type="button" data-name="' + nm + '" class="db-del px-2.5 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors">Hapus</button>' +
-          '</span></td>';
+          '<td class="py-3.5 pl-5 pr-4 font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">' + nm + '</td>' +
+          '<td class="py-3.5 pr-4 text-gray-500 dark:text-gray-400 whitespace-nowrap">' + (t.columns || []).length + '</td>' +
+          '<td class="py-3.5 pr-4 text-gray-500 dark:text-gray-400 whitespace-nowrap">' + (typeof t.rows === 'number' ? t.rows : '\u2014') + '</td>' +
+          '<td class="py-3.5 pr-4 text-gray-400 dark:text-gray-500 whitespace-nowrap">' + (t.created_at ? dbDateShort(t.created_at) : '\u2014') + '</td>' +
+          '<td class="py-2.5 pl-3 pr-4 text-right whitespace-nowrap">' +
+          '<button type="button" aria-label="Menu tabel" class="db-row-menu-btn inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">' +
+          '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"></circle><circle cx="12" cy="12" r="1.7"></circle><circle cx="12" cy="19" r="1.7"></circle></svg>' +
+          '</button></td>';
         tr.addEventListener('click', function (ev) {
-          var del = ev.target.closest('.db-del');
-          if (del) { ev.stopPropagation(); dbDropTable(del, t.name); return; }
+          var mb = ev.target.closest('.db-row-menu-btn');
+          if (mb) { ev.stopPropagation(); dbRowMenu(mb, t); return; }
           location.href = '/proyek/pengaturan/database/tabel/?name=' + encodeURIComponent(t.name);
         });
         body.appendChild(tr);
       });
       dbShow(tables && tables.length ? 'db-list' : 'db-empty');
       try { dbChartRender(); } catch (e) { var _cs = document.getElementById('db-chart-sec'); if (_cs) _cs.classList.add('hidden'); }
-    }
-    // hapus tabel: dua langkah (klik "Hapus" -> "Yakin?") supaya nggak sengaja kehapus
-    function dbDropTable(btn, name) {
-      if (btn.getAttribute('data-armed') !== '1') {
-        btn.setAttribute('data-armed', '1');
-        btn.textContent = 'Yakin?';
-        btn.className = 'px-2.5 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 rounded-lg transition-colors';
-        setTimeout(function () {
-          if (btn.isConnected) {
-            btn.removeAttribute('data-armed');
-            btn.textContent = 'Hapus';
-            btn.className = 'px-2.5 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors';
-          }
-        }, 3500);
-        return;
-      }
-      fetch(DB_API + '/db/tables?project_id=' + encodeURIComponent(dbPid()) + '&name=' + encodeURIComponent(name), { method: 'DELETE', headers: dbHdrs(false) })
-        .then(function (r) { return r.ok ? null : r.json().catch(function () { return {}; }).then(function (d) { throw new Error((d && d.error) || 'Gagal menghapus tabel'); }); })
-        .then(function () { dbCacheClear(); dbLoadBusy = false; dbLoad(); })
-        .catch(function (e) { dbErr(e.message || 'Gagal menghapus tabel. Coba lagi.'); });
     }
 
     // ---- grafik ringkasan database: 5 chart (Chart.js) ----

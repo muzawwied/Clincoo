@@ -365,13 +365,15 @@
 
           <!-- daftar baris: polos divide-y -->
           <div id="tb-rows-wrap" class="hidden">
-            <div class="overflow-x-auto -mx-1 px-1">
-              <table class="w-full text-sm border-collapse">
-                <thead id="tb-rows-head" class="hidden">
-                  <tr id="tb-rows-head-row" class="text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 border-b border-gray-200 dark:border-slate-700/60"></tr>
-                </thead>
-                <tbody id="tb-rows" class="divide-y divide-gray-200 dark:divide-slate-700/60"></tbody>
-              </table>
+            <div class="rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-[#0d0d0d] overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm border-collapse">
+                  <thead id="tb-rows-head" class="hidden bg-gray-50 dark:bg-slate-800/60">
+                    <tr id="tb-rows-head-row" class="text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500"></tr>
+                  </thead>
+                  <tbody id="tb-rows" class="divide-y divide-gray-100 dark:divide-slate-800"></tbody>
+                </table>
+              </div>
             </div>
             <button id="tb-more-btn" type="button" class="hidden w-full mt-4 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full transition-colors">Muat lagi</button>
             <p id="tb-count" class="hidden text-center text-xs text-gray-400 dark:text-gray-500 mt-4"></p>
@@ -608,10 +610,10 @@
     function tbBuildHead() {
       var headRow = document.getElementById('tb-rows-head-row');
       var html = '';
-      tbCols.forEach(function (c) {
-        html += '<th class="py-2.5 pr-4 font-semibold whitespace-nowrap">' + esc(c.name) + '</th>';
+      tbCols.forEach(function (c, i) {
+        html += '<th class="py-3 ' + (i === 0 ? 'pl-5 ' : '') + 'pr-4 font-semibold whitespace-nowrap">' + esc(c.name) + '</th>';
       });
-      html += '<th class="py-2.5 font-semibold text-right">Aksi</th>';
+      html += '<th class="py-3 pl-3 pr-4 font-semibold text-right">Aksi</th>';
       headRow.innerHTML = html;
       document.getElementById('tb-rows-head').classList.remove('hidden');
     }
@@ -619,11 +621,11 @@
       var tr = document.createElement('tr');
       tr.className = 'group cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/40';
       var tds = '';
-      tbCols.forEach(function (c) {
+      tbCols.forEach(function (c, idx) {
         var v = row[c.name];
         if (v === null || v === undefined) v = '';
         if (c.type === 'boolean') v = v ? 'Ya' : 'Tidak';
-        tds += '<td class="py-3 pr-4 whitespace-nowrap max-w-[240px] truncate text-gray-700 dark:text-gray-300">' + esc(String(v)) + '</td>';
+        tds += '<td class="py-3.5 ' + (idx === 0 ? 'pl-5 ' : '') + 'pr-4 whitespace-nowrap max-w-[240px] truncate text-gray-700 dark:text-gray-300">' + esc(String(v)) + '</td>';
       });
       tds +=
         '<td class="py-3 text-right whitespace-nowrap">' +
