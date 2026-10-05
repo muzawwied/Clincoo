@@ -613,15 +613,46 @@
   function aiUsd(micro) { return '$' + ((micro || 0) / 1000000).toFixed(6); }
 
   function toggleAiModelPopover(e) {
+    if (e && e.target && e.target.id === 'ai-model-search-cta') return; // klik di kotak cari: jangan tutup
     e.stopPropagation();
     var p = document.getElementById('ai-model-popover');
     if (!p) return;
     p.classList.toggle('hidden');
-    if (!p.classList.contains('hidden')) {
-      var si = document.getElementById('ai-model-search');
-      if (si) { _aiModelQuery = ''; si.value = ''; aiModelRenderRows(document.getElementById('ai-model-rows')); si.focus(); }
-    }
+    if (!p.classList.contains('hidden')) aiModelSearchOpenCta();
   }
+  // Saat dropdown terbuka, bagian nama model pada tombol CTA (mis. 'Auto (rantai
+  // otomatis)') berubah jadi kotak cari; nama dipulihkan saat popover tertutup.
+  function aiModelSearchOpenCta() {
+    var lb = document.getElementById('ai-model-label');
+    if (!lb || document.getElementById('ai-model-search-cta')) return;
+    lb.style.display = 'none';
+    var si = document.createElement('input');
+    si.id = 'ai-model-search-cta';
+    si.type = 'search';
+    si.autocomplete = 'off';
+    si.spellcheck = false;
+    si.placeholder = 'Cari model…';
+    si.className = 'flex-1 min-w-0 bg-transparent border-0 outline-none text-sm font-medium text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500';
+    lb.parentNode.appendChild(si);
+    si.addEventListener('input', function () { _aiModelQuery = this.value; aiModelRenderRows(document.getElementById('ai-model-rows')); });
+    si.addEventListener('keydown', function (ev) { ev.stopPropagation(); if (ev.key === 'Escape') { var pp = document.getElementById('ai-model-popover'); if (pp) pp.classList.add('hidden'); } });
+    _aiModelQuery = '';
+    aiModelRenderRows(document.getElementById('ai-model-rows'));
+    setTimeout(function () { si.focus(); }, 0);
+  }
+  // Pulihkan nama model di CTA setiap popover ditutup (pilih model, klik luar, scroll, dsb.)
+  document.addEventListener('DOMContentLoaded', function () {
+    var p = document.getElementById('ai-model-popover');
+    if (!p || typeof MutationObserver === 'undefined') return;
+    new MutationObserver(function () {
+      if (!p.classList.contains('hidden')) return;
+      _aiModelQuery = '';
+      var si = document.getElementById('ai-model-search-cta');
+      if (si) si.remove();
+      var lb = document.getElementById('ai-model-label');
+      if (lb) lb.style.display = '';
+    }).observe(p, { attributes: true, attributeFilter: ['class'] });
+  });
   function aiModelLabel(id) {
     var m = AI_MODELS.filter(function (x) { return x.id === id; })[0];
     return m ? m.label : id;
@@ -866,15 +897,9 @@
     var pop = document.getElementById('ai-model-popover');
     if (!pop) return;
     pop.innerHTML = '';
-    // kotak cari model di bagian atas popover — muncul setiap pop-up dibuka
-    var search = document.createElement('div');
-    search.className = 'sticky top-0 z-10 px-1 pt-1 pb-1 bg-white dark:bg-slate-800';
-    search.innerHTML = '<input id="ai-model-search" type="search" autocomplete="off" spellcheck="false" placeholder="Cari model…" class="w-full text-[13px] rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900/60 px-2.5 py-1.5 outline-none focus:border-indigo-400 dark:focus:border-indigo-500">';
-    pop.appendChild(search);
     var rows = document.createElement('div');
     rows.id = 'ai-model-rows';
     pop.appendChild(rows);
-    search.querySelector('input').addEventListener('input', function () { _aiModelQuery = this.value; aiModelRenderRows(rows); });
     aiModelRenderRows(rows);
   }
   function aiModelRenderRows(rows) {
