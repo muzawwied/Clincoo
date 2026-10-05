@@ -36,7 +36,10 @@ async function gw(env, method, url, bodyObj) {
     try {
       const res = await fetch(GATEWAY + url, { ...init, signal: ac.signal });
       clearTimeout(t);
-      return res;
+      // Bungkus dengan CORS: respons gateway mentah tidak punya header CORS,
+      // kalau diteruskan apa adanya browser menolak membacanya (Failed to fetch).
+      const h = { 'Content-Type': res.headers.get('Content-Type') || 'application/json', ...CORS };
+      return new Response(res.body, { status: res.status, headers: h });
     } catch (e) {
       clearTimeout(t);
     }
