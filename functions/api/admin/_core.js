@@ -2,6 +2,7 @@
 import { currentUser } from '../user-scope.js';
 import { ADMIN_EMAILS } from '../plan-helpers.js';
 import { initTables as initAuthTables } from '../auth/shared.js';
+import { flatTemplate, sendEmail } from '../notify-helpers.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -75,6 +76,135 @@ function keyAuthUser(env, request) {
   return { id: 0, email: 'panel-admin@clincoo', role: 'owner' };
 }
 
+// ===================================================================
+// AUTH PANEL MANDIRI (alur publik, TANPA kunci/admin guard dulu):
+//   1. POST action=auth_request_otp {email}  -> kirim OTP 6 digit ke email
+//   2. POST action=auth_verify_otp {email, otp}
+//      - email PANEL_AUTH_EMAIL + OTP benar -> { next: 'key', otp_token }
+//      - email lain + OTP benar             -> { next: 'app', redirect } (diam, tanpa petunjuk)
+//   3. POST action=auth_verify_key {otp_token} + header x-admin-key -> masuk panel
+// ===================================================================
+const PANEL_AUTH_EMAIL = 'devconium@gmail.com';
+const PANEL_APP_REDIRECT = 'https://app.clincoo.buzz';
+
+async function sha256hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+async function hmacHex(keyStr, msg) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(keyStr),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(msg));
+  return [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function ensurePanelAuthTable(db) {
+  await db.prepare(`CREATE TABLE IF NOT EXISTS panel_auth_otps (
+    email TEXT PRIMARY KEY,
+    code_hash TEXT,
+    expires_at TEXT,
+    attempts INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    request_count INTEGER DEFAULT 1,
+    hour_at TEXT DEFAULT (strftime('%Y-%m-%d %H', 'now'))
+  )`).run();
+}
+
+async function handleAuthRequestOtp(env, db, body) {
+  const email = String(body.email || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return json({ success: false, error: 'Email tidak valid.' }, 400);
+  await ensurePanelAuthTable(db);
+  const row = await db.prepare('SELECT * FROM panel_auth_otps WHERE email = ?').bind(email).first();
+  const now = Date.now();
+  if (row && row.created_at) {
+    const t = Date.parse(String(row.created_at).replace(' ', 'T') + 'Z');
+    if (!isNaN(t) && now - t < 60 * 1000) return json({ success: false, error: 'Tunggu 1 menit sebelum minta kode OTP baru.' }, 429);
+  }
+  // Batas per email: maks 5 permintaan per jam (anti-spam)
+  if (row && row.hour_at && row.hour_at === new Date().toISOString().slice(0, 13)) {
+    if ((row.request_count || 0) >= 5) return json({ success: false, error: 'Terlalu banyak permintaan kode. Coba lagi nanti.' }, 429);
+  }
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const codeHash = await sha256hex(email + ':' + code);
+  await db.prepare(`INSERT INTO panel_auth_otps (email, code_hash, expires_at, attempts, created_at, request_count, hour_at)
+    VALUES (?, ?, datetime('now', '+10 minutes'), 0, datetime('now'), 1, strftime('%Y-%m-%d %H', 'now'))
+    ON CONFLICT(email) DO UPDATE SET code_hash = excluded.code_hash, expires_at = excluded.expires_at,
+      attempts = 0, created_at = datetime('now'),
+      request_count = CASE WHEN hour_at = excluded.hour_at THEN request_count + 1 ELSE 1 END,
+      hour_at = excluded.hour_at`).bind(email, codeHash).run();
+  const sent = await sendEmail(env, {
+    toEmail: email,
+    subject: 'Kode OTP Panel — Clincoo',
+    html: flatTemplate('Kode OTP Panel', null,
+      '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">Seseorang baru meminta kode akses panel Clincoo dengan email ini. Masukkan kode 6 digit di bawah untuk melanjutkan. Kode berlaku <b>10 menit</b> dan hanya bisa dipakai satu kali.</p>' +
+      '<p style="margin:0 0 20px;color:#374151;font-size:14px;line-height:1.7">Kalau ini bukan Anda, abaikan email ini — tidak ada tindakan lebih lanjut yang diperlukan.</p>',
+      null, null, null, null, code)
+  });
+  if (!sent || !sent.sent) return json({ success: false, error: 'Kode OTP gagal dikirim. Coba lagi sebentar.' }, 500);
+  return json({ success: true, sent: true });
+}
+
+async function handleAuthVerifyOtp(env, db, body) {
+  const email = String(body.email || '').trim().toLowerCase();
+  const otp = String(body.otp || '').trim();
+  if (!email || !otp) return json({ success: false, error: 'Email dan kode OTP wajib diisi.' }, 400);
+  await ensurePanelAuthTable(db);
+  const row = await db.prepare('SELECT * FROM panel_auth_otps WHERE email = ?').bind(email).first();
+  const expired = !row || !row.expires_at || Date.parse(String(row.expires_at).replace(' ', 'T') + 'Z') <= Date.now();
+  if (!row || expired || (row.attempts || 0) >= 5) {
+    if (row) await db.prepare('DELETE FROM panel_auth_otps WHERE email = ?').bind(email).run();
+    return json({ success: false, error: 'Kode OTP salah atau kedaluwarsa. Minta kode baru.' }, 401);
+  }
+  const given = await sha256hex(email + ':' + otp);
+  if (given !== row.code_hash) {
+    await db.prepare('UPDATE panel_auth_otps SET attempts = attempts + 1 WHERE email = ?').bind(email).run();
+    return json({ success: false, error: 'Kode OTP salah atau kedaluwarsa. Minta kode baru.' }, 401);
+  }
+  await db.prepare('DELETE FROM panel_auth_otps WHERE email = ?').bind(email).run();
+  if (email === PANEL_AUTH_EMAIL) {
+    const exp = Date.now() + 10 * 60 * 1000;
+    const token = exp + '.' + (await hmacHex((env.ADMIN_PANEL_KEY || '').trim(), email + '|' + exp));
+    return json({ success: true, next: 'key', otp_token: token });
+  }
+  // Email non-panel: OTP-nya tetap benar, arahkan ke aplikasi utama — DIAM tanpa petunjuk apa pun.
+  return json({ success: true, next: 'app', redirect: PANEL_APP_REDIRECT });
+}
+
+async function handleAuthVerifyKey(env, request, body) {
+  const token = String(body.otp_token || '');
+  const key = (request.headers.get('x-admin-key') || '').trim();
+  const expected = (env.ADMIN_PANEL_KEY || '').trim();
+  if (!token || !expected || !key || expected.length !== key.length) return json({ success: false, error: 'Verifikasi gagal.' }, 401);
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ key.charCodeAt(i);
+  const dot = token.lastIndexOf('.');
+  if (dot < 12) return json({ success: false, error: 'Verifikasi gagal.' }, 401);
+  const exp = Number(token.slice(0, dot));
+  const sig = token.slice(dot + 1);
+  if (!exp || exp <= Date.now()) return json({ success: false, error: 'Verifikasi gagal.' }, 401);
+  const want = await hmacHex(expected, PANEL_AUTH_EMAIL + '|' + exp);
+  if (want.length !== sig.length) return json({ success: false, error: 'Verifikasi gagal.' }, 401);
+  let diff2 = 0;
+  for (let i = 0; i < want.length; i++) diff2 |= want.charCodeAt(i) ^ sig.charCodeAt(i);
+  if (diff !== 0 || diff2 !== 0) return json({ success: false, error: 'Verifikasi gagal.' }, 401);
+  return json({ success: true, is_admin: true });
+}
+
+async function handleGetSecurity(db, request) {
+  const url = new URL(request.url);
+  const limit = Math.min(Math.max(parseInt(url.searchParams.get('limit') || '100', 10) || 100, 1), 300);
+  let events = [], byType = [];
+  try {
+    const r = await db.prepare('SELECT id, type, ip, email, detail, created_at FROM security_events ORDER BY id DESC LIMIT ?').bind(limit).all();
+    events = r.results || [];
+  } catch (e) {}
+  try {
+    const r = await db.prepare("SELECT type, COUNT(*) AS c FROM security_events WHERE created_at >= datetime('now', '-7 days') GROUP BY type ORDER BY c DESC").all();
+    byType = r.results || [];
+  } catch (e) {}
+  return json({ success: true, events, by_type: byType });
+}
+
 function getAction(request, bodyAction = null) {
   if (bodyAction) return bodyAction;
   const url = new URL(request.url);
@@ -87,6 +217,7 @@ function getAction(request, bodyAction = null) {
   if (path.endsWith('/users')) return 'users';
   if (path.endsWith('/reports')) return 'reports';
   if (path.endsWith('/activity')) return 'activity';
+  if (path.endsWith('/security')) return 'security';
 
   return null;
 }
@@ -128,6 +259,10 @@ export async function onRequestGet({ request, env }) {
       return await handleGetActivity(db, request);
     }
 
+    if (action === 'security') {
+      return await handleGetSecurity(db, request);
+    }
+
     return json({ error: 'Aksi GET tidak valid: ' + action }, 400);
   } catch (e) {
     return json({ error: e.message || String(e) }, 500);
@@ -140,13 +275,19 @@ export async function onRequestPost({ request, env }) {
 
   try {
     await ensureAdminMigration(db);
+    const body = await request.json().catch(() => ({}));
+    const reqAction = getAction(request, body.action);
+
+    // Alur auth panel mandiri: PUBLIK (pra-autentikasi) — OTP & kunci panel.
+    // Middleware tetap menjaga: rate-limit per IP + Origin wajib resmi (anti-CSRF).
+    if (reqAction === 'auth_request_otp') return await handleAuthRequestOtp(env, db, body);
+    if (reqAction === 'auth_verify_otp') return await handleAuthVerifyOtp(env, db, body);
+    if (reqAction === 'auth_verify_key') return await handleAuthVerifyKey(env, request, body);
+
     const user = (await currentUser(env, request)) || keyAuthUser(env, request);
 
     if (!user) return json({ error: 'unauthorized', need_login: true }, 401);
     if (!isUserAdmin(user)) return json({ error: 'forbidden' }, 403);
-
-    const body = await request.json().catch(() => ({}));
-    const reqAction = getAction(request, body.action);
 
     if (['suspend', 'unsuspend', 'delete', 'set_role', 'adjust_balance'].includes(reqAction) || getAction(request) === 'users') {
       return await handlePostUsers(db, user, body, reqAction);
