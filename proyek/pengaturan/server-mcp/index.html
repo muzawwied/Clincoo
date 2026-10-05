@@ -461,6 +461,26 @@
                     <div id="sw-notif-knob" class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200"></div>
                   </button>
                 </div>
+                <div class="flex items-center justify-between gap-3 px-3.5 py-3 bg-white dark:bg-[#0a0a0a] border-t border-gray-100 dark:border-slate-800">
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white">Kelola database aplikasi</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI dapat melihat status, membuat tabel, serta mengelola baris data pada database bawaan</p>
+                  </div>
+                  <button type="button" onclick="toggleScope('database')" class="relative w-11 h-6 flex-shrink-0 cursor-pointer focus:outline-none" aria-label="Izinkan kelola database aplikasi">
+                    <div id="sw-database-bg" class="w-11 h-6 rounded-full transition-colors duration-200"></div>
+                    <div id="sw-database-knob" class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200"></div>
+                  </button>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-3.5 py-3 bg-white dark:bg-[#0a0a0a] border-t border-gray-100 dark:border-slate-800">
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white">Kelola pembayaran (ClincooPay)</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">AI dapat melihat konfigurasi, saldo, dan riwayat transaksi proyek ini (bersifat baca saja)</p>
+                  </div>
+                  <button type="button" onclick="toggleScope('payment')" class="relative w-11 h-6 flex-shrink-0 cursor-pointer focus:outline-none" aria-label="Izinkan kelola pembayaran">
+                    <div id="sw-payment-bg" class="w-11 h-6 rounded-full transition-colors duration-200"></div>
+                    <div id="sw-payment-knob" class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200"></div>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -522,9 +542,9 @@ function _mcpPid() {
   try { return localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) { return ''; }
 }
 
-var mcpState = { active: false, token: '', scopes: { read: true, write: false, delete: false, chat: false, deploy: false, settings: false, email: false, notif: false }, created_at: null, url: '', urlToken: '', activity: [] };
+var mcpState = { active: false, token: '', scopes: { read: true, write: false, delete: false, chat: false, deploy: false, settings: false, email: false, notif: false, database: false, payment: false }, created_at: null, url: '', urlToken: '', activity: [] };
 // 8 izin MCP: read default ON, sisanya default OFF (least privilege).
-var MCP_SCOPE_KEYS = ['read', 'write', 'delete', 'chat', 'deploy', 'settings', 'email', 'notif'];
+var MCP_SCOPE_KEYS = ['read', 'write', 'delete', 'chat', 'deploy', 'settings', 'email', 'notif', 'database', 'payment'];
 function _mcpNormScopes(r) {
   r = (r && typeof r === 'object') ? r : {};
   var o = {};

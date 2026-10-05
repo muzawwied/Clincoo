@@ -3,6 +3,7 @@
 // Transport: Streamable HTTP (JSON-RPC 2.0), auth Bearer token MCP per proyek.
 // Tools: list_items, read_file, write_file, delete_item, get_project_info,
 //        chat_ai, deploy_project, deploy_status, get_settings, update_settings, send_email,
+//        db_info, db_tables, db_rows (izin database), pay_info (izin payment),
 //        list_notifications, send_notification
 // Data file real-time diambil dari backend utama app.clincoo.buzz (/api/project-files, D1 produksi).
 
@@ -152,7 +153,8 @@ const TOOL_SCOPES = {
   list_items: null, read_file: 'read', write_file: 'write', delete_item: 'delete', get_project_info: null,
   chat_ai: 'chat', deploy_project: 'deploy', deploy_status: 'deploy',
   get_settings: 'settings', update_settings: 'settings', send_email: 'email',
-  list_notifications: 'notif', send_notification: 'notif'
+  list_notifications: 'notif', send_notification: 'notif',
+  db_info: 'database', db_tables: 'database', db_rows: 'database', pay_info: 'payment'
 };
 function toolScope(name) {
   return TOOL_SCOPES[name] !== undefined ? TOOL_SCOPES[name] : 'unknown';
@@ -235,6 +237,45 @@ const TOOLS = [
   {
     name: 'deploy_status',
     description: 'Status deployment situs proyek: URL publik, waktu deploy terakhir, domain kustom, log singkat.',
+    inputSchema: { type: 'object', properties: {}, required: [] }
+  },
+  {
+    name: 'db_info',
+    description: 'Status database bawaan aplikasi Clincoo: status aktifasi, daftar tabel beserta jumlah baris, dan status kunci API aplikasi (nilai kunci disamarkan).',
+    inputSchema: { type: 'object', properties: {}, required: [] }
+  },
+  {
+    name: 'db_tables',
+    description: 'Kelola tabel pada database bawaan aplikasi. action: "list" (daftar tabel), "create" (buat tabel baru — wajib name + columns), "delete" (hapus tabel — wajib name).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        action: { type: 'string', enum: ['list', 'create', 'delete'], description: 'Operasi yang dilakukan (default: list)' },
+        name: { type: 'string', description: 'Nama tabel (wajib untuk create/delete)' },
+        columns: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, type: { type: 'string', description: 'mis. text, number, boolean, date' } }, required: ['name'] }, description: 'Definisi kolom tabel baru (wajib untuk create)' }
+      },
+      required: []
+    }
+  },
+  {
+    name: 'db_rows',
+    description: 'Kelola baris data pada database bawaan aplikasi. action: "list" (baca baris), "create" (tambah baris — wajib data), "update" (ubah baris — wajib id + data), "delete" (hapus baris — wajib id).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        action: { type: 'string', enum: ['list', 'create', 'update', 'delete'], description: 'Operasi yang dilakukan (default: list)' },
+        table: { type: 'string', description: 'Nama tabel (wajib)' },
+        id: { type: 'string', description: 'ID baris (wajib untuk update/delete)' },
+        data: { type: 'object', description: 'Isi baris untuk create/update (pasangan kolom: nilai)' },
+        limit: { type: 'number', description: 'Jumlah baris maksimum untuk list (default 50)' },
+        offset: { type: 'number', description: 'Offset untuk paginasi list (default 0)' }
+      },
+      required: ['table']
+    }
+  },
+  {
+    name: 'pay_info',
+    description: 'Informasi pembayaran ClincooPay proyek ini: status aktifasi, kredensial (pay_key disamarkan), saldo, 25 transaksi terakhir, dan 25 permintaan penarikan terakhir. Bersifat baca saja — penarikan dana tidak dapat dilakukan lewat MCP.',
     inputSchema: { type: 'object', properties: {}, required: [] }
   },
   {
@@ -408,6 +449,107 @@ async function callTool(name, args, ctx) {
       const r = await selfJson('/deploy?project_id=' + encodeURIComponent(projectId), ctx.be2Token);
       if (!r.ok) throw new Error('Gagal mengambil status deployment (' + r.status + ')');
       return { content: [{ type: 'text', text: JSON.stringify(r.data, null, 2) }] };
+    }
+    case 'db_info': {
+      const pid = encodeURIComponent(projectId);
+      const act = await selfJson('/db/activate?project_id=' + pid, ctx.be2Token);
+      const tbl = await selfJson('/db/tables?project_id=' + pid, ctx.be2Token);
+      const key = await selfJson('/db/key?project_id=' + pid, ctx.be2Token);
+      if (!act.ok || !tbl.ok) throw new Error('Database bawaan tidak dapat dihubungi (' + (tbl.status || act.status) + ') — coba lagi sebentar');
+      const k = key.data && key.data.key ? String(key.data.key) : '';
+      const out = {
+        database_aktif: !!(act.data && act.data.active),
+        diaktifkan_pada: (act.data && act.data.created_at) || null,
+        kunci_api: k ? k.slice(0, 12) + '••• (lengkap di halaman Database)' : null,
+        kunci_terakhir_dipakai: (key.data && key.data.last_used) || null,
+        tabel: tbl.data && Array.isArray(tbl.data.tables) ? tbl.data.tables : (tbl.data || [])
+      };
+      return { content: [{ type: 'text', text: JSON.stringify(out, null, 2) }] };
+    }
+    case 'db_tables': {
+      const action = String(args.action || 'list');
+      const pid = encodeURIComponent(projectId);
+      if (action === 'create') {
+        const name = String(args.name || '').trim();
+        const cols = args.columns;
+        if (!name) throw new Error('Parameter "name" wajib diisi untuk membuat tabel');
+        if (!Array.isArray(cols) || !cols.length) throw new Error('Parameter "columns" wajib berisi minimal satu kolom ({ name, type })');
+        const r = await selfJson('/db/tables', ctx.be2Token, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ project_id: projectId, name, columns: cols })
+        });
+        if (!r.ok) throw new Error((r.data && r.data.error) || 'Gagal membuat tabel (' + r.status + ')');
+        return { content: [{ type: 'text', text: 'Tabel "' + name + '" berhasil dibuat.' }] };
+      }
+      if (action === 'delete') {
+        const name = String(args.name || '').trim();
+        if (!name) throw new Error('Parameter "name" wajib diisi untuk menghapus tabel');
+        const r = await selfJson('/db/tables?project_id=' + pid + '&name=' + encodeURIComponent(name), ctx.be2Token, { method: 'DELETE' });
+        if (!r.ok) throw new Error((r.data && r.data.error) || 'Gagal menghapus tabel (' + r.status + ')');
+        return { content: [{ type: 'text', text: 'Tabel "' + name + '" berhasil dihapus.' }] };
+      }
+      const r = await selfJson('/db/tables?project_id=' + pid, ctx.be2Token);
+      if (!r.ok) throw new Error((r.data && r.data.error) || 'Gagal membaca daftar tabel (' + r.status + ')');
+      return { content: [{ type: 'text', text: JSON.stringify(r.data, null, 2) }] };
+    }
+    case 'db_rows': {
+      const action = String(args.action || 'list');
+      const table = String(args.table || '');
+      if (!table) throw new Error('Parameter "table" wajib diisi');
+      const pid = encodeURIComponent(projectId);
+      if (action === 'list') {
+        const limit = Number(args.limit) > 0 ? Math.min(Number(args.limit), 200) : 50;
+        const offset = Number(args.offset) > 0 ? Number(args.offset) : 0;
+        const r = await selfJson('/db/rows?project_id=' + pid + '&table=' + encodeURIComponent(table) + '&limit=' + limit + '&offset=' + offset, ctx.be2Token);
+        if (!r.ok) throw new Error((r.data && r.data.error) || 'Gagal membaca baris (' + r.status + ')');
+        return { content: [{ type: 'text', text: JSON.stringify(r.data, null, 2) }] };
+      }
+      if (action === 'create' || action === 'update') {
+        const data = args.data && typeof args.data === 'object' && !Array.isArray(args.data) ? args.data : null;
+        if (!data) throw new Error('Parameter "data" wajib berisi objek kolom: nilai');
+        const body = { project_id: projectId, table, data };
+        let method = 'POST';
+        if (action === 'update') {
+          if (!args.id) throw new Error('Parameter "id" wajib diisi untuk update');
+          body.id = String(args.id);
+          method = 'PATCH';
+        }
+        const r = await selfJson('/db/rows', ctx.be2Token, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (!r.ok) throw new Error((r.data && r.data.error) || 'Gagal ' + (action === 'create' ? 'menambah' : 'memperbarui') + ' baris (' + r.status + ')');
+        return { content: [{ type: 'text', text: JSON.stringify(r.data, null, 2) }] };
+      }
+      if (action === 'delete') {
+        if (!args.id) throw new Error('Parameter "id" wajib diisi untuk delete');
+        const r = await selfJson('/db/rows?project_id=' + pid + '&table=' + encodeURIComponent(table) + '&id=' + encodeURIComponent(String(args.id)), ctx.be2Token, { method: 'DELETE' });
+        if (!r.ok) throw new Error((r.data && r.data.error) || 'Gagal menghapus baris (' + r.status + ')');
+        return { content: [{ type: 'text', text: JSON.stringify(r.data, null, 2) }] };
+      }
+      throw new Error('Action tidak dikenal: ' + action + ' (gunakan list/create/update/delete)');
+    }
+    case 'pay_info': {
+      const pid = encodeURIComponent(projectId);
+      const cfg = await selfJson('/pay?action=config&project_id=' + pid, ctx.be2Token);
+      const tx = await selfJson('/pay', ctx.be2Token, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'transactions', project_id: projectId })
+      });
+      const wd = await selfJson('/pay', ctx.be2Token, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'withdrawals', project_id: projectId })
+      });
+      if (!cfg.ok) throw new Error((cfg.data && cfg.data.error) || 'Gagal membaca konfigurasi pembayaran (' + cfg.status + ')');
+      const pk = cfg.data && cfg.data.pay_key ? String(cfg.data.pay_key) : '';
+      const out = Object.assign({}, cfg.data, {
+        pay_key: pk ? pk.slice(0, 16) + '••• (lengkap di halaman Pembayaran)' : null,
+        transaksi_terakhir: tx.ok && tx.data ? (tx.data.transactions || []) : [],
+        penarikan_terakhir: wd.ok && wd.data ? (wd.data.withdrawals || []) : []
+      });
+      return { content: [{ type: 'text', text: JSON.stringify(out, null, 2) }] };
     }
     case 'get_settings': {
       const r = await selfJson('/project-settings?project_id=' + encodeURIComponent(projectId), ctx.be2Token);

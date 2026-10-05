@@ -124,7 +124,9 @@ function normalizeScopes(raw) {
     deploy: r.deploy === true,
     settings: r.settings === true,
     email: r.email === true,
-    notif: r.notif === true
+    notif: r.notif === true,
+    database: r.database === true,
+    payment: r.payment === true
   };
 }
 
