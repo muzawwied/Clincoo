@@ -16,13 +16,24 @@ const PLAN_DB_LIMITS = {
 };
 const limits = (plan) => PLAN_DB_LIMITS[plan] || PLAN_DB_LIMITS.Starter;
 
-const TYPES = { text: 'TEXT', number: 'REAL', boolean: 'INTEGER', date: 'TEXT' };
+// Tipe lengkap: semua varian teks disimpan TEXT, angka/uang REAL, ya-tidak INTEGER.
+// Tipe spesifik (email/url/phone/longtext/json/datetime/currency) dipertahankan di katalog
+// supaya form baris di aplikasi merender input yang pas (keyboard email, textarea, dsb.).
+const TYPES = { text: 'TEXT', longtext: 'TEXT', email: 'TEXT', url: 'TEXT', phone: 'TEXT',
+  json: 'TEXT', number: 'REAL', currency: 'REAL', boolean: 'INTEGER', date: 'TEXT', datetime: 'TEXT' };
 // Alias tipe umum dari SQL/klien luar (mis. Grok/AI mengirim "INTEGER"/"TEXT")
 const TYPE_ALIASES = { text: 'text', string: 'text', varchar: 'text', char: 'text',
+  longtext: 'longtext', textarea: 'longtext', memo: 'longtext', text_long: 'longtext',
+  email: 'email', mail: 'email',
+  url: 'url', link: 'url', website: 'url', uri: 'url',
+  phone: 'phone', tel: 'phone', telephone: 'phone',
+  json: 'json',
   number: 'number', numeric: 'number', real: 'number', float: 'number', double: 'number',
   integer: 'number', int: 'number', decimal: 'number',
+  currency: 'currency', money: 'currency', rupiah: 'currency',
   boolean: 'boolean', bool: 'boolean',
-  date: 'date', datetime: 'date', timestamp: 'date', time: 'date' };
+  date: 'date',
+  datetime: 'datetime', timestamp: 'datetime', time: 'datetime' };
 // Nama kolom milik sistem — tidak boleh dipakai kolom user (tabelfisik punya kolom ini)
 const RESERVED_COLS = ['id', 'created_at', 'updated_at'];
 const slug = (s) => String(s || '').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');

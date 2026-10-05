@@ -592,7 +592,20 @@
       if (json) h['Content-Type'] = 'application/json';
       return h;
     }
-    var COL_TYPES = ['text', 'number', 'boolean', 'date'];
+    // tipe kolom lengkap: [nilai, label] — nilai yang dikirim ke server, label yang tampil di dropdown
+    var COL_TYPES = [
+      ['text', 'Teks'],
+      ['longtext', 'Teks panjang'],
+      ['number', 'Angka'],
+      ['currency', 'Uang (Rp)'],
+      ['boolean', 'Ya / Tidak'],
+      ['date', 'Tanggal'],
+      ['datetime', 'Tanggal & waktu'],
+      ['email', 'Email'],
+      ['url', 'Link / URL'],
+      ['phone', 'Nomor telepon'],
+      ['json', 'JSON']
+    ];
 
     function dbShow(id) {
       ['db-loading', 'db-list', 'db-empty', 'db-error', 'db-login', 'db-form', 'db-inactive'].forEach(function (k) {
@@ -973,7 +986,7 @@
       row.innerHTML =
         '<input type="text" placeholder="nama kolom" class="db-col-name flex-1 min-w-0 px-3 py-2 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">' +
         '<select class="db-col-type px-2.5 py-2 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">' +
-        COL_TYPES.map(function (tp) { return '<option value="' + tp + '"' + (tp === type ? ' selected' : '') + '>' + tp + '</option>'; }).join('') +
+        COL_TYPES.map(function (tp) { return '<option value="' + tp[0] + '"' + (tp[0] === type ? ' selected' : '') + '>' + tp[1] + '</option>'; }).join('') +
         '</select>' +
         '<button type="button" class="db-col-del shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" aria-label="Hapus kolom">' +
         '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12"></path></svg></button>';
@@ -988,7 +1001,7 @@
       var cols = document.getElementById('db-cols');
       cols.innerHTML = '';
       cols.appendChild(dbColRow('nama', 'text'));
-      cols.appendChild(dbColRow('email', 'text'));
+      cols.appendChild(dbColRow('email', 'email'));
       document.getElementById('db-tbl-name').value = '';
       var fe = document.getElementById('db-form-error');
       fe.classList.add('hidden');
