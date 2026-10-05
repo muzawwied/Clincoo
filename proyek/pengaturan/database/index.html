@@ -193,7 +193,7 @@
             <div id="header-more-menu" class="absolute top-full right-0 mt-1 w-56 bg-white rounded-xl shadow-xl p-1.5 flex-col gap-0.5 opacity-0 invisible translate-y-1 pointer-events-none transition-all duration-200 z-50 hidden">
                 <a id="header-editor" href="/proyek/workspace/editor/" onclick="var __pid='';try{__pid=localStorage.getItem('clincoo_current_project_id')||''}catch(e){}if(__pid){this.href='/proyek/workspace/editor/?id='+encodeURIComponent(__pid)}" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
                     <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 18l6-6-6-6M8 6l-6 6 6 6"></path></svg>
-                    Editor
+                    Editor <svg class="clincoo-premium-crown w-3.5 h-3.5 text-amber-500 shrink-0" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#f59e0b" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"></path></svg>
                     <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg>
                 </a>
                 <a href="/integrasi/github/" class="header-menu-item flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
@@ -725,5 +725,38 @@
 
     dbGate();
   </script>
+<script>/* Crown Editor (menu pojok kanan atas) — visibility per paket + gate layar penuh */
+(function(){
+  function readCache(k){try{var v=localStorage.getItem(k);if(!v)return null;var c=JSON.parse(v);return c&&c.plan?c:null;}catch(e){return null;}}
+  function plan(){var a=readCache('TM_SUB_CACHE_KEY'),b=readCache('clincoo_subscription_cache');var c=(a&&b)?((a.ts||0)>(b.ts||0)?a:b):(a||b);return (c&&c.plan)||'Starter';}
+  function apply(){
+    var p=plan();var paid=(p&&p.toLowerCase()!=='starter');
+    document.querySelectorAll('.clincoo-premium-crown').forEach(function(c){c.style.display=paid?'none':'inline';});
+    if(!paid)return;
+  }
+  function theme(){
+    var dark=true;
+    try{dark=!!(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);}catch(e){}
+    if(dark)return {bg:'#141416',fg:'#f5f6f7',muted:'#9aa0a6',btnA:'#ffffff',btnAf:'#111111',bd:'rgba(255,255,255,.22)'};
+    return {bg:'#f4f4f6',fg:'#111111',muted:'#555555',btnA:'#111111',btnAf:'#ffffff',bd:'#e5e7eb'};
+  }
+  function gate(){
+    var t=theme();
+    var ov=document.createElement('div');ov.id='cc-crown-gate';
+    ov.style.cssText='position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;padding:24px;background:'+t.bg+';color:'+t.fg+';';
+    ov.innerHTML='<div style="max-width:420px;width:100%;text-align:center"><div style="font-size:44px;line-height:1">&#128081;</div><h2 style="font-size:20px;margin:14px 0 8px;font-weight:700;color:'+t.fg+'">Fitur ini hanya untuk paket Pro</h2><p style="font-size:14px;margin:0 0 20px;color:'+t.muted+'">Editor kode tersedia setelah upgrade paket.</p><a href="/akun/langganan/upgrade/" style="display:block;padding:13px;border-radius:12px;text-decoration:none;font-weight:600;font-size:14px;background:'+t.btnA+';color:'+t.btnAf+'">Lihat Paket</a><button id="cc-cg-close" style="display:block;width:100%;margin-top:10px;padding:13px;border:1.5px solid '+t.bd+';background:transparent;color:'+t.fg+';border-radius:12px;font-weight:600;font-size:14px;cursor:pointer">Tutup</button></div>';
+    document.body.appendChild(ov);
+    ov.querySelector('#cc-cg-close').addEventListener('click',function(){ov.remove();});
+    document.addEventListener('keydown',function esc(ev){if(ev.key==='Escape'){ov.remove();document.removeEventListener('keydown',esc,true);}},true);
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    apply();
+    document.querySelectorAll('#header-editor .clincoo-premium-crown').forEach(function(c){
+      c.style.cursor='pointer';
+      c.addEventListener('click',function(ev){ev.preventDefault();ev.stopPropagation();gate();});
+    });
+  });
+})();
+</script>
 </body>
 </html>
