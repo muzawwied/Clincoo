@@ -5431,6 +5431,22 @@ window.chatLivePreview = function () {
             // benar-benar sedang berjalan), supaya kalimat santai yang kebetulan
             // diakhiri ':' tidak memicu bubble lanjutan baru secara keliru.
             if (/[:：]\s*$/.test(t) && aiMsgObj && aiMsgObj.toolCalls && aiMsgObj.toolCalls.length) return true;
+            // KASUS NYATA (dilaporkan user, screenshot): user minta DIBUATKAN WEBSITE/
+            // LANDING PAGE penuh, AI cuma generate_image (logo+foto produk) lalu nulis
+            // teks "Sekarang saya buat landing page-nya." TANPA sempat memanggil
+            // write_file sama sekali di giliran yang sama — lalu sesi ditutup "selesai"
+            // padahal webnya belum ada. Frasa niat ("sekarang saya buat...") terlalu
+            // beragam untuk ditangkap satu regex kaku, jadi deteksi lewat FAKTA kerja:
+            // kalau user jelas minta web/halaman/situs lengkap TAPI seluruh tool_calls
+            // di giliran ini HANYA generate_image (nol write_file/deploy_project) —
+            // tugas pasti belum tuntas, apa pun bunyi kalimat penutupnya.
+            const toolNamesSoFar = (aiMsgObj && aiMsgObj.toolCalls || []).map(function (tc) { return tc.name; });
+            const onlyImagesSoFar = toolNamesSoFar.length > 0 && toolNamesSoFar.every(function (n) { return n === 'generate_image'; });
+            if (onlyImagesSoFar) {
+                const lastUserMsgForCheck = [...messages].reverse().find(function (m) { return m.role === 'user' && !m.silent; });
+                const wantsFullSite = /landing\s*page|halaman\s*web|website|situs|webnya|aplikasi\s*web|web\s*app|toko\s*online|e-?commerce/i.test((lastUserMsgForCheck && lastUserMsgForCheck.text) || '');
+                if (wantsFullSite) return true;
+            }
             return false;
         }
         // Tutup bubble AI "sebagian selesai" lalu mulai ronde lanjutan secara diam-diam
