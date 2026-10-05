@@ -300,7 +300,7 @@
                 </button>
                     <a id="header-editor" href="/proyek/workspace/editor/" onclick="var __pid='';try{__pid=localStorage.getItem('clincoo_current_project_id')||''}catch(e){}if(__pid){this.href='/proyek/workspace/editor/?id='+encodeURIComponent(__pid)}" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
                         <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 18l6-6-6-6M8 6l-6 6 6 6"></path></svg>
-<span class="flex items-center gap-1.5">Editor <svg class="clincoo-premium-crown w-3.5 h-3.5 text-amber-500 shrink-0" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#f59e0b" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"></path></svg></span>                        <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg>
+<span class="flex items-center gap-1.5">Editor </span>                        <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg>
                     </a>
                 <button id="header-export-zip" type="button" onclick="chatExportZip()" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
                     <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>
@@ -1288,8 +1288,14 @@ window.chatLivePreview = function () {
   function currentPlan(){ var c=cacheSub(); return verifiedPlan||(c&&c.plan)||window.clincooEditorPlan||null; }
   function isPaid(){ var p=currentPlan(); return !!p && String(p).toLowerCase()!=='starter'; }
   var crownCss=document.createElement('style');
-  crownCss.textContent='body[data-pps-paid="true"] .clincoo-premium-crown,body[data-pps-paid="true"] .clincoo-editor-crown,body[data-pps-paid="true"] #export-crown-label,body[data-pps-paid="true"] #premium-invite-chip,body[data-pps-paid="true"] #gh-connect-crown{display:none!important;}';
-  document.head.appendChild(crownCss);
+    crownCss.textContent=
+    '/* Crown seragam: satu ikon & warna di seluruh halaman */' +
+    '.clincoo-premium-crown,.clincoo-editor-crown,#export-crown-label,#gh-connect-crown,#premium-invite-chip,[data-min-crown]{color:#f59e0b!important;}' +
+    '.clincoo-premium-crown svg,.clincoo-editor-crown svg,#export-crown-label svg,#gh-connect-crown svg,#premium-invite-chip svg,[data-min-crown] svg{width:15px!important;height:15px!important;fill:none!important;stroke:#f59e0b!important;stroke-width:2.2!important;display:inline-block;vertical-align:-2px;}' +
+    '/* Visibility crown per paket: Starter = semua; Pro = hanya level Bisnis; Bisnis = tanpa crown */' +
+    'body[data-pps-plan="Pro"] .clincoo-premium-crown,body[data-pps-plan="Pro"] .clincoo-editor-crown,body[data-pps-plan="Pro"] #gh-connect-crown,body[data-pps-plan="Pro"] #premium-invite-chip,body[data-pps-plan="Pro"] [data-min-crown][data-min="Pro"]{display:none!important;}' +
+    'body[data-pps-plan="Bisnis"] .clincoo-premium-crown,body[data-pps-plan="Bisnis"] .clincoo-editor-crown,body[data-pps-plan="Bisnis"] #export-crown-label,body[data-pps-plan="Bisnis"] #gh-connect-crown,body[data-pps-plan="Bisnis"] #premium-invite-chip,body[data-pps-plan="Bisnis"] [data-min-crown]{display:none!important;}';
+document.head.appendChild(crownCss);
   function currentBilling(){ var c=cacheSub(); return (c&&c.billingCycle)||'Bulanan'; }
   var sheetEl=null, idx=1, featureMinimum='Pro';
   // ===== Data paket: identik dengan halaman Upgrade (akun/langganan/upgrade) =====
@@ -1339,7 +1345,7 @@ window.chatLivePreview = function () {
           '<div class="flex justify-center"><div class="w-10 h-1.5 rounded-full bg-gray-200 mb-2"></div></div>'+
           '<div class="flex items-start justify-between px-1">'+
             '<div class="pr-8"><h3 class="text-base font-semibold text-gray-900">Paket Clincoo</h3>'+
-            '<p id="pps-feature-hint" class="text-[12.5px] text-gray-500 mt-0.5 leading-snug">Fitur ini tersedia mulai paket Pro. Paket kamu saat ini: <b>'+current+'</b>.</p></div>'+
+            '<p id="pps-feature-hint" class="text-[12.5px] text-gray-500 mt-0.5 leading-snug">Fitur ini hanya untuk paket Pro. Paket kamu saat ini: <b>'+current+'</b>.</p></div>'+
             '<button id="pps-x" aria-label="Tutup" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-black flex items-center justify-center transition-colors shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6 6 18M6 6l12 12"></path></svg></button>'+
           '</div>'+
           '<div class="relative mt-3">'+
@@ -1369,13 +1375,13 @@ window.chatLivePreview = function () {
     render();
   }
   async function openSheet(crown){
-    if(isPaid()) return;
+    if(isPaid()&&crownMin(crown)!=='Bisnis') return;
     await refreshSubscription();
-    if(isPaid()||(token()&&!currentPlan())) return;
-    featureMinimum=crown&&crown.id==='export-crown-label'?'Bisnis':'Pro';
+    if((isPaid()&&crownMin(crown)!=='Bisnis')||(token()&&!currentPlan())) return;
+    featureMinimum=crownMin(crown);
     buildSheet();
     sheetEl.querySelector('#pps-track').innerHTML=plans.map(function(p){return cardHtml(p,currentPlan()||'Starter');}).join('');
-    sheetEl.querySelector('#pps-feature-hint').textContent='Fitur ini tersedia mulai paket '+featureMinimum+'. '+(currentPlan()?'Paket kamu saat ini: '+currentPlan()+'.':'Pilih paket yang sesuai kebutuhanmu.');
+    sheetEl.querySelector('#pps-feature-hint').textContent='Fitur ini hanya untuk paket '+featureMinimum+'. '+(currentPlan()?'Paket kamu saat ini: '+currentPlan()+'.':'Pilih paket yang sesuai kebutuhanmu.');
     idx=featureMinimum==='Bisnis'?2:1; sheetEl.__render();
     if(closeTimer){clearTimeout(closeTimer);closeTimer=null;}
     if(sheetEl.style.display==='none'||!sheetEl.__open) previousOverflow=document.body.style.overflow;
@@ -1391,15 +1397,35 @@ window.chatLivePreview = function () {
     b.classList.add('opacity-0'); c.classList.add('translate-y-full');
     closeTimer=setTimeout(function(){ sheetEl.style.display='none'; closeTimer=null; },300);
   }
-  function applyCrownState(){
-    var show=!isPaid();
-    document.body.setAttribute('data-pps-paid',show?'false':'true');
+  function crownMin(c){
+    try{ if(c&&c.getAttribute&&c.getAttribute('data-min')==='Bisnis') return 'Bisnis';
+      if(c&&c.id==='export-crown-label') return 'Bisnis'; }catch(e){}
+    return 'Pro';
+  }
+  // Crown seragam: samakan ikon, ukuran & warna mahkota di seluruh halaman.
+  var CLINCOO_CROWN_PATH='M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z';
+  function clincooUniformCrowns(){
     document.querySelectorAll(crownSelector).forEach(function(c){
+      try{ c.setAttribute('data-min-crown','1'); c.setAttribute('data-min',crownMin(c)); }catch(e){}
+      var sv=c.querySelector('svg');
+      if(sv){ sv.setAttribute('viewBox','0 0 24 24'); sv.setAttribute('aria-hidden','true');
+        var p=sv.querySelector('path'); if(p){ p.setAttribute('d',CLINCOO_CROWN_PATH); p.setAttribute('stroke-linecap','round'); p.setAttribute('stroke-linejoin','round'); } }
+      if(!c.title) c.title='Fitur premium — ketuk untuk lihat paket';
+    });
+  }
+  function applyCrownState(){
+    var plan=currentPlan()||'Starter';
+    document.body.setAttribute('data-pps-paid',isPaid()?'true':'false');
+    document.body.setAttribute('data-pps-plan',plan);
+    document.querySelectorAll(crownSelector).forEach(function(c){
+      // Starter = lihat semua crown (level Pro & Bisnis); Pro = hanya level Bisnis; Bisnis = tanpa crown.
+      var show=!isPaid()?true:(plan==='Pro'&&crownMin(c)==='Bisnis');
       c.style.display=show?'':'none'; c.style.cursor='pointer';
       c.setAttribute('role','button'); c.setAttribute('tabindex',show?'0':'-1');
       c.setAttribute('aria-label','Lihat daftar paket');
     });
-    if(!show) closeSheet();
+    clincooUniformCrowns();
+    if(plan==='Bisnis') closeSheet();
   }
   async function refreshSubscription(){
     try{
@@ -1427,15 +1453,15 @@ window.chatLivePreview = function () {
       :{bg:bg,fg:'#111111',muted:'#555555',btnA:'#111111',btnAf:'#ffffff',bd:'#e5e7eb'};
   }
   function clincooCrownGate(c){
-    if(typeof isPaid==='function'&&isPaid())return;
     clincooCrownGateClose();
-    var min=(c&&c.id==='export-crown-label')?'Bisnis':'Pro';
+    var min=crownMin(c);
+    if(typeof isPaid==='function'&&isPaid()&&!((currentPlan()||'')==='Pro'&&min==='Bisnis'))return;
     var t=clincooCrownTheme();
     var ov=document.createElement('div');ov.id='cc-crown-gate';
     ov.style.cssText='position:fixed;inset:0;z-index:2147483000;background:'+t.bg+';color:'+t.fg+';display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;padding:24px;';
     ov.innerHTML='<div style="max-width:420px;width:100%;text-align:center">'+
       '<div style="font-size:44px;line-height:1">&#128081;</div>'+
-      '<h2 style="font-size:20px;margin:14px 0 8px;color:'+t.fg+';font-weight:700">Fitur ini tersedia mulai paket '+min+'</h2>'+
+      '<h2 style="font-size:20px;margin:14px 0 8px;color:'+t.fg+';font-weight:700">Fitur ini hanya untuk paket '+min+'</h2>'+
       '<p style="font-size:14px;color:'+t.muted+';margin:0 0 20px">Paket kamu saat ini '+(currentPlan()||'Starter')+'. Upgrade untuk membuka fitur ini.</p>'+
       '<button id="cc-gate-plans" style="display:block;width:100%;padding:13px;background:'+t.btnA+';color:'+t.btnAf+';border:0;border-radius:12px;font-weight:600;font-size:14px;cursor:pointer">Lihat Paket</button>'+
       '<button id="cc-gate-close" style="display:block;width:100%;margin-top:10px;padding:13px;border:1.5px solid '+t.bd+';background:transparent;color:'+t.fg+';border-radius:12px;font-weight:600;font-size:14px;cursor:pointer">Tutup</button>'+
@@ -1451,6 +1477,7 @@ function crownAction(e){
     if(e.type==='keydown'&&e.key!=='Enter'&&e.key!==' ') return;
     e.preventDefault(); e.stopImmediatePropagation();
     if(!isPaid()){ (async function(){ await refreshSubscription(); if(isPaid()||(token()&&!currentPlan())) return; clincooCrownGate(c); })(); return; }
+    if((currentPlan()||'')==='Pro'&&crownMin(c)==='Bisnis'){ (async function(){ await refreshSubscription(); if((currentPlan()||'')==='Pro') clincooCrownGate(c); })(); return; }
     openSheet(c);
   }
   document.addEventListener('click',crownAction,true);
@@ -1461,6 +1488,8 @@ function crownAction(e){
   document.addEventListener('DOMContentLoaded',applyCrownState);
   refreshSubscription();
   window.clincooOpenPlansPopup=function(){clincooCrownGate(null);};
+  window.clincooFeatureGate=function(min){clincooCrownGate({id:'cc-gate-'+(min||'Pro'),getAttribute:function(k){return k==='data-min'?(min||'Pro'):null;}});};
+  clincooUniformCrowns();
   // Syarat promo dan harga mengikuti halaman Upgrade, bukan harga promo tanpa eligibility.
   fetch(apiBase()+'/api/promo',{cache:'no-store'}).then(function(r){return r.json();}).then(function(p){
     if(!p||p.active!==true||p.remaining<=0||!p.eligible)return;

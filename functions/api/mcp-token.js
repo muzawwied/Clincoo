@@ -13,6 +13,8 @@
 // otomatis DIMIGRASI ke tabel (be2_token = sesi pemilik yang sedang login),
 // sehingga token lama langsung dipakai endpoint /api/mcp tanpa aktivasi ulang.
 
+import { getEffectivePlanByUserKey, featureAllowed, featureGateResponse } from './plan-helpers.js';
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
@@ -52,6 +54,16 @@ async function ensureTables(env) {
 // Selama ini guard memvalidasi ke BE2 lama — padahal login Clincoo sekarang
 // lokal, jadi sesi yang SAH ditolak "Token tidak valid" (apalagi tiap sesi
 // BE2 terhapus saat redeploy). BE2 hanya fallback untuk sesi era lama.
+// Server MCP (hubungkan ke tool eksternal) = fitur paket Bisnis — ditegakkan server.
+async function mcpPlanGate(env, g) {
+  try {
+    if (!g || !g.userId || !env || !env.DB) return null;
+    const eff = await getEffectivePlanByUserKey(env.DB, 'u' + g.userId);
+    if (!featureAllowed(eff.plan, 'mcpServer')) return featureGateResponse('mcpServer', eff.plan);
+  } catch (e) {}
+  return null;
+}
+
 async function guardOwner(request, env, projectId) {
   if (!projectId) return { res: J({ error: 'Parameter project_id wajib' }, 400) };
   const h = request.headers.get('Authorization') || '';
@@ -66,7 +78,7 @@ async function guardOwner(request, env, projectId) {
       // row ada & milik user lain => tolak, JANGAN fallback ke be2.
       try {
         const own = await env.DB.prepare('SELECT user_id FROM user_projects WHERE id = ?').bind(String(projectId)).first();
-        if (!own || own.user_id == null || Number(own.user_id) === Number(u.id)) return { token: tok, local: true };
+        if (!own || own.user_id == null || Number(own.user_id) === Number(u.id)) return { token: tok, local: true, userId: u.id };
         return { res: J({ error: 'Proyek tidak ditemukan atau bukan milik akun ini' }, 403) };
       } catch (e) { /* tabel belum ada => proyek era lama, lanjut fallback be2 */ }
     }
@@ -151,6 +163,8 @@ export async function onRequestGet(context) {
   const projectId = url.searchParams.get('project_id') || '';
   const g = await guardOwner(request, env, projectId);
   if (g.res) return g.res;
+  const _mcpGate = await mcpPlanGate(env, g);
+  if (_mcpGate) return _mcpGate;
   await ensureTables(env);
   await refreshStoredToken(env, g, projectId);
   let row = await env.DB.prepare('SELECT token, scopes, created_at FROM mcp_tokens WHERE project_id = ?').bind(projectId).first();
@@ -201,6 +215,8 @@ export async function onRequestPost(context) {
   const projectId = body.project_id || new URL(request.url).searchParams.get('project_id') || '';
   const g = await guardOwner(request, env, projectId);
   if (g.res) return g.res;
+  const _mcpGate = await mcpPlanGate(env, g);
+  if (_mcpGate) return _mcpGate;
   await ensureTables(env);
   const token = newMcpToken();
   // Izin akses default (least privilege): hanya baca. Halaman Server MCP bisa mengubahnya per proyek.
@@ -228,6 +244,8 @@ export async function onRequestPatch(context) {
   const projectId = body.project_id || '';
   const g = await guardOwner(request, env, projectId);
   if (g.res) return g.res;
+  const _mcpGate = await mcpPlanGate(env, g);
+  if (_mcpGate) return _mcpGate;
   await ensureTables(env);
   const scopes = normalizeScopes(body.scopes);
   const r = await env.DB.prepare('UPDATE mcp_tokens SET scopes = ? WHERE project_id = ?').bind(JSON.stringify(scopes), projectId).run();
@@ -242,6 +260,8 @@ export async function onRequestDelete(context) {
   const projectId = url.searchParams.get('project_id') || '';
   const g = await guardOwner(request, env, projectId);
   if (g.res) return g.res;
+  const _mcpGate = await mcpPlanGate(env, g);
+  if (_mcpGate) return _mcpGate;
   await ensureTables(env);
   // scope=activity -> hanya hapus riwayat aktivitas, token tetap berlaku
   if (url.searchParams.get('scope') === 'activity') {

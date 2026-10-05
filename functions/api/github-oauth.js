@@ -1,3 +1,6 @@
+import { currentUser } from './user-scope.js';
+import { getEffectivePlan, featureAllowed, featureGateResponse } from './plan-helpers.js';
+
 // Cloudflare Pages Functions - GitHub OAuth token exchange
 // Reads GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET from D1 database.
 // Exchanges an OAuth authorization code for an access token.
@@ -63,6 +66,14 @@ export async function onRequestPost({ request, env }) {
 
     const body = await request.json();
     const code = body.code;
+
+    // Integrasi Git (connect/impor repo GitHub) = fitur paket Pro —
+    // ditegakkan di server untuk user yang teridentifikasi lewat token login.
+    const ghUser = await currentUser(env, request);
+    if (ghUser) {
+      const eff = await getEffectivePlan(env.DB, ghUser);
+      if (!featureAllowed(eff.plan, 'gitIntegration')) return featureGateResponse('gitIntegration', eff.plan);
+    }
     if (!code) {
       return new Response(JSON.stringify({ error: 'Authorization code required' }), {
         status: 400,

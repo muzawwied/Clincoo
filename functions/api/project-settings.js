@@ -2,6 +2,12 @@
 // Stores project-scoped settings (domain, webhooks, collaboration, visibility, etc) in D1
 
 import { getProjectTables } from './_tables.js';
+import { currentUser } from './user-scope.js';
+import { getEffectivePlan, featureAllowed, featureGateResponse, countUserDomains, PLAN_FEATURES } from './plan-helpers.js';
+
+function j(obj, status) {
+  return new Response(JSON.stringify(obj), { status: status || 200, headers: { 'Content-Type': 'application/json', ...CORS } });
+}
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -65,6 +71,35 @@ export async function onRequestPost({ request, env }) {
     const projectId = body.project_id || '';
     if (!projectId) {
       return new Response(JSON.stringify({ error: 'project_id required' }), { status: 400, headers: { 'Content-Type': 'application/json', ...CORS } });
+    }
+
+    // ===== GATE PAKET (sistem asli, bukan cuma teks daftar manfaat) =====
+    // Domain kustom: paket Starter maksimal 1 domain per akun.
+    if (body.domain_settings !== undefined) {
+      let newDom = '';
+      try { newDom = String(((JSON.parse(body.domain_settings) || {}).domain) || '').trim(); } catch (e) {}
+      if (newDom) {
+        const u = await currentUser(env, request);
+        if (!u) return j({ error: 'Login diperlukan untuk mengatur domain.', need_login: true }, 401);
+        const eff = await getEffectivePlan(db, u);
+        const domLimit = (PLAN_FEATURES[eff.plan] || PLAN_FEATURES.Starter).domainLimit;
+        if (domLimit !== null && domLimit !== undefined) {
+          const used = await countUserDomains(db, u.id, projectId);
+          if (used >= domLimit) {
+            return j({ error: 'Fitur ini hanya untuk paket Pro. Paket Starter maksimal 1 domain kustom per akun (sudah terpakai di ' + used + ' proyek lain).', plan_gate: true, feature: 'domain', minPlan: 'Pro', plan: eff.plan, upgrade_needed: true }, 403);
+          }
+        }
+      }
+    }
+    // Proteksi password situs: fitur paket Bisnis.
+    if (body.visibility_settings !== undefined) {
+      let vs = null; try { vs = JSON.parse(body.visibility_settings); } catch (e) {}
+      if (vs && (vs.mode === 'password' || (vs.pass_hash && String(vs.pass_hash).trim()))) {
+        const u = await currentUser(env, request);
+        if (!u) return j({ error: 'Login diperlukan untuk mengatur proteksi password.', need_login: true }, 401);
+        const eff = await getEffectivePlan(db, u);
+        if (!featureAllowed(eff.plan, 'sitePassword')) return featureGateResponse('sitePassword', eff.plan);
+      }
     }
 
     const updates = {};

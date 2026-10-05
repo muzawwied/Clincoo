@@ -3,6 +3,7 @@
 // Data akun lain & key global (kredensial deploy) tidak pernah ikut.
 
 import { currentUser, userPrefix } from './user-scope.js';
+import { getEffectivePlan, featureAllowed, featureGateResponse } from './plan-helpers.js';
 import { tableSuffix } from './_tables.js';
 
 const CORS = {
@@ -24,6 +25,8 @@ export async function onRequestGet({ request, env }) {
   if (!db) return json({ error: 'D1 not bound' }, 500);
   const user = await currentUser(env, request);
   if (!user) return json({ error: 'Login diperlukan', need_login: true }, 401);
+  const effPlan = await getEffectivePlan(db, user);
+  if (!featureAllowed(effPlan.plan, 'fullAccountExport')) return featureGateResponse('fullAccountExport', effPlan.plan);
   const uid = user.id;
   const prefix = userPrefix(user); // u<id>:
 

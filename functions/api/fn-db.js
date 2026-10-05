@@ -75,6 +75,9 @@ export async function onRequestPost({ request, env }) {
   if (!(await bridgeRateLimit(env.DB, payload.u))) return json({ error: 'Terlalu banyak operasi database. Coba lagi sebentar.' }, 429);
   try {
     const plan = await getPlan(env.DB, payload.u);
+    // Database tanpa server (bagian Backend functions) = paket Bisnis —
+    // ditegakkan di server untuk semua operasi (get/set/del/list/count).
+    if (plan !== 'Bisnis') return json({ error: 'Fitur ini hanya untuk paket Bisnis.', plan_gate: true, minPlan: 'Bisnis', plan: plan, upgrade_needed: true }, 403);
     const db = makeDb(env.DB, payload.u, plan);
     if (op === 'get') return json({ ok: 1, result: await db.get(String(body.k || '')) });
     if (op === 'set') {

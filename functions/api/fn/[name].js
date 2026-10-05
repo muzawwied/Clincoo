@@ -5,6 +5,7 @@
 // Private: hanya pemilik function (Bearer) yang bisa memanggil.
 
 import { invokeFunction } from '../fns.js';
+import { getEffectivePlanByUserKey, featureAllowed, featureGateResponse } from '../plan-helpers.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -33,6 +34,11 @@ async function handle({ request, env, params }) {
   const name = String((params || {}).name || '').toLowerCase();
   if (!name) return json({ error: 'Nama function kosong' }, 400);
   const user = await resolveUser(env, request);
+  if (user) {
+    // Pemanggilan backend function = fitur paket Bisnis — gate server-side.
+    const eff = await getEffectivePlanByUserKey(env.DB, user.key);
+    if (!featureAllowed(eff.plan, 'backendFunctions')) return featureGateResponse('backendFunctions', eff.plan);
+  }
   if (!user) {
     // ===== WEBHOOK PUBLIK =====
     // Function yang ditandai is_public bisa dipanggil TANPA login dengan

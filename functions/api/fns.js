@@ -10,6 +10,8 @@
 // Fungsi milik user (user_key) — private, hanya pemilik yang bisa memanggil.
 // Tool chat AI: create/list/delete/call_backend_function (dieksekusi server di chat.js).
 
+import { getEffectivePlanByUserKey, featureAllowed, featureGateResponse } from './plan-helpers.js';
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -416,6 +418,13 @@ export async function onRequestPost({ request, env }) {
   let body = null;
   try { body = await request.json(); } catch (e) { return json({ error: 'Body JSON tidak valid' }, 400); }
   const action = body?.action || '';
+  // Backend functions (API & database tanpa server) = fitur paket Bisnis —
+  // ditegakkan di server untuk create/update/delete/invoke; 'list' tetap terbuka
+  // supaya UI bisa menampilkan status & ajakan upgrade.
+  if (action && action !== 'list') {
+    const eff = await getEffectivePlanByUserKey(env.DB, user.key);
+    if (!featureAllowed(eff.plan, 'backendFunctions')) return featureGateResponse('backendFunctions', eff.plan);
+  }
   try {
     if (action === 'create' || action === 'update') return json(await createFunction(env.DB, user.key, body.name, body.description, body.code, { is_public: !!body.is_public, origin: new URL(request.url).origin }));
     if (action === 'list') return json(await listFunctions(env.DB, user.key, new URL(request.url).origin));

@@ -1,4 +1,6 @@
 // Cloudflare Pages Functions — Helper Batas Paket Langganan
+import { tableFor } from './_tables.js';
+
 // Dipakai bersama oleh projects.js (batas jumlah proyek) dan collab.js (batas kolaborator).
 // Paket & start_date dibaca real-time dari tabel `subscription` (per-akun, prefix "u<id>:").
 // Langganan berbayar yang kedaluwarsa (Bulanan 30 hari / Tahunan 365 hari dari start_date)
@@ -132,5 +134,69 @@ export async function countPendingInvites(db, projectId) {
   try {
     const r = await db.prepare("SELECT COUNT(*) AS c FROM collab_invites WHERE project_id = ? AND status = 'pending'").bind(projectId).first();
     return r?.c || 0;
+  } catch (e) { return 0; }
+}
+
+// ===== FITUR PREMIUM PER PAKET (sistem asli — bukan cuma teks daftar manfaat) =====
+// true = aktif di paket itu; null = tanpa batas. Setiap endpoint terkait
+// memeriksa tabel ini di server, jadi daftar manfaat paket = kenyataan sistem.
+export const PLAN_FEATURES = {
+  Starter: { gitIntegration: false, versionControl: false, projectExport: false, payGateway: false, sitePassword: false, fullAccountExport: false, backendFunctions: false, mcpServer: false, domainLimit: 1,   contactLimit: 100 },
+  Pro:     { gitIntegration: true,  versionControl: true,  projectExport: true,  payGateway: true,  sitePassword: false, fullAccountExport: false, backendFunctions: false, mcpServer: false, domainLimit: null, contactLimit: 500 },
+  Bisnis:  { gitIntegration: true,  versionControl: true,  projectExport: true,  payGateway: true,  sitePassword: true,  fullAccountExport: true,  backendFunctions: true,  mcpServer: true,  domainLimit: null, contactLimit: 1000 }
+};
+
+export const FEATURE_MIN_PLAN = {
+  gitIntegration: 'Pro', versionControl: 'Pro', projectExport: 'Pro', payGateway: 'Pro',
+  sitePassword: 'Bisnis', fullAccountExport: 'Bisnis', backendFunctions: 'Bisnis', mcpServer: 'Bisnis'
+};
+
+const FEATURE_LABELS = {
+  gitIntegration: 'Integrasi Git',
+  versionControl: 'Version control & riwayat versi',
+  projectExport: 'Ekspor proyek (HTML/ZIP)',
+  payGateway: 'Penarikan saldo (tarik dana hasil pembayaran)',
+  sitePassword: 'Proteksi password situs',
+  fullAccountExport: 'Ekspor data penuh akun',
+  backendFunctions: 'Backend functions (API & database tanpa server)',
+  mcpServer: 'Server MCP (hubungkan ke tool eksternal)'
+};
+
+// Respons 403 standar untuk fitur premium — pesannya siap tampil ke user.
+export function featureGateResponse(feature, plan) {
+  const min = FEATURE_MIN_PLAN[feature] || 'Pro';
+  const label = FEATURE_LABELS[feature] || feature;
+  return new Response(JSON.stringify({
+    error: 'Fitur "' + label + '" hanya untuk paket ' + min + '.',
+    plan_gate: true, feature, minPlan: min, plan: plan || 'Starter', upgrade_needed: true
+  }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+}
+
+export function featureAllowed(plan, feature) {
+  const f = PLAN_FEATURES[plan] || PLAN_FEATURES.Starter;
+  return !!(f && f[feature]);
+}
+
+// Hitung jumlah domain kustom aktif milik user (key 'domain_settings' di tabel
+// project_settings per-proyek). dipakai untuk batas "1 domain" paket Starter.
+export async function countUserDomains(db, userId, excludeProjectId) {
+  try {
+    if (!db || !userId) return 0;
+    const projects = await db.prepare('SELECT id FROM user_projects WHERE user_id = ?').bind(userId).all();
+    let count = 0;
+    for (const p of (projects.results || [])) {
+      if (excludeProjectId && String(p.id) === String(excludeProjectId)) continue;
+      try {
+        const tbl = tableFor('project_settings', p.id);
+        const row = await db.prepare(`SELECT value FROM ${tbl} WHERE project_id = ? AND key = 'domain_settings'`).bind(p.id).first();
+        if (row && row.value) {
+          try {
+            const s = JSON.parse(row.value);
+            if (s && typeof s.domain === 'string' && s.domain.trim()) count++;
+          } catch (e) { if (String(row.value).trim()) count++; }
+        }
+      } catch (e) {}
+    }
+    return count;
   } catch (e) { return 0; }
 }

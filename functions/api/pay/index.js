@@ -28,6 +28,8 @@ async function guardPay(env, request, projectId) {
   return await guardProject(env, request, projectId);
 }
 
+import { getEffectivePlan, featureAllowed } from '../plan-helpers.js';
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -849,6 +851,16 @@ export async function onRequestPost({ request, env }) {
 
   // ===== Kirim OTP penarikan ke email pemilik proyek =====
   if (action === 'withdraw_otp') {
+    // ===== Penarikan saldo = fitur paket Pro — ditegakkan di server.
+    // (Menerima pembayaran QRIS tetap terbuka untuk semua paket.)
+    {
+      const _wdUser = await currentUser(env, request);
+      if (_wdUser) {
+        const _eff = await getEffectivePlan(env.DB, _wdUser);
+        if (!featureAllowed(_eff.plan, 'payGateway')) return json({ success: false, message: 'Fitur ini hanya untuk paket Pro.', plan_gate: true, minPlan: 'Pro', plan: _eff.plan, upgrade_needed: true }, 403);
+      }
+    }
+
     const deny = await guardPay(env, request, projectId);
     if (deny) return deny;
     const amount = Math.floor(Number(body.amount || 0));
@@ -877,6 +889,16 @@ export async function onRequestPost({ request, env }) {
   }
 
   if (action === 'withdraw') {
+    // ===== Penarikan saldo = fitur paket Pro — ditegakkan di server.
+    // (Menerima pembayaran QRIS tetap terbuka untuk semua paket.)
+    {
+      const _wdUser = await currentUser(env, request);
+      if (_wdUser) {
+        const _eff = await getEffectivePlan(env.DB, _wdUser);
+        if (!featureAllowed(_eff.plan, 'payGateway')) return json({ success: false, message: 'Fitur ini hanya untuk paket Pro.', plan_gate: true, minPlan: 'Pro', plan: _eff.plan, upgrade_needed: true }, 403);
+      }
+    }
+
     const deny = await guardPay(env, request, projectId);
     if (deny) return deny;
     const user = await currentUser(env, request);
@@ -935,6 +957,16 @@ export async function onRequestPost({ request, env }) {
 
   // ===== Konfirmasi penarikan (admin saja) =====
   if (action === 'wd_confirm') {
+    // ===== Penarikan saldo = fitur paket Pro — ditegakkan di server.
+    // (Menerima pembayaran QRIS tetap terbuka untuk semua paket.)
+    {
+      const _wdUser = await currentUser(env, request);
+      if (_wdUser) {
+        const _eff = await getEffectivePlan(env.DB, _wdUser);
+        if (!featureAllowed(_eff.plan, 'payGateway')) return json({ success: false, message: 'Fitur ini hanya untuk paket Pro.', plan_gate: true, minPlan: 'Pro', plan: _eff.plan, upgrade_needed: true }, 403);
+      }
+    }
+
     const deny = await guardPay(env, request, projectId);
     if (deny) return deny;
     const { user, isAdmin } = await wdAdminCheck(env, request);

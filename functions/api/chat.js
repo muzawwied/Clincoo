@@ -11,7 +11,7 @@
 // dalam satu request — Gemini API menolak kombinasi itu (HTTP 400), dan itulah
 // akar bug "AI pura-pura membuat file". Mode tools = functionDeclarations saja.
 
-import { PLAN_AI_LIMITS, ADMIN_EMAILS, getEffectivePlanByUserKey } from './plan-helpers.js';
+import { PLAN_AI_LIMITS, ADMIN_EMAILS, getEffectivePlanByUserKey, featureAllowed } from './plan-helpers.js';
 import { searchClincooBlog } from './blogsearch.js';
 import { paymentDocsFor } from './payment-kb-data.js';
 import { aiStorageSave, aiStorageGet, aiStorageList, aiStorageDelete } from './ai-storage.js';
@@ -1120,6 +1120,11 @@ async function executeServerTool(env, user, tc, origin) {
       return await m.takeScreenshot(a.url, a.width);
     }
     const m = await import('./fns.js');
+    // Backend functions = fitur paket Bisnis — gate juga jalur tool AI.
+    if (tc.name !== 'list_backend_functions') {
+      const _effFns = await getEffectivePlanByUserKey(env.DB, user.key);
+      if (!featureAllowed(_effFns.plan, 'backendFunctions')) return { error: 'Fitur ini hanya untuk paket Bisnis. Sampaikan ke user singkat bahwa fitur ini butuh upgrade paket Bisnis, lalu lanjutkan bangun bagian situs yang tidak butuh backend function.' };
+    }
     if (tc.name === 'create_backend_function') return await m.createFunction(env.DB, user.key, a.name, a.description, a.code, { is_public: !!a.is_public, origin: origin || '' });
     if (tc.name === 'list_backend_functions') return await m.listFunctions(env.DB, user.key, origin || '');
     if (tc.name === 'delete_backend_function') return await m.deleteFunction(env.DB, user.key, a.name);
