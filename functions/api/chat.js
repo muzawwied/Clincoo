@@ -111,15 +111,15 @@ async function getOpenRouterKeys(env) {
   return keys;
 }
 
-// ===== Provider utama: GPT-6 Luna Pro via OpenRouter =====
-// UTAMA: GPT-6 Luna Pro (5 Okt 2026, arahan pemilik: "ganti model jadi Luna Pro").
-// GPT-6.1 Sol Pro turun jadi cadangan pertama, lalu GLM 5.3 Flash, Nemotron terakhir.
-// Toggle premium (body.premium=true) tetap ada tapi kini setara — jalur utama semua
-// user login bukan lagi model opt-in.
-const OPENROUTER_MODELS = ['openai/gpt-6-luna-pro', 'openai/gpt-6.1-sol-pro', 'z-ai/glm-5.3-flash', 'nvidia/nemotron-3-ultra-550b-a55b'];
+// ===== Provider utama: GLM 5.3 Flash via OpenRouter =====
+// UTAMA: GLM 5.3 Flash (5 Okt 2026, arahan pemilik: "ganti model ke glm 5.3 flash
+// langsung dan dari open router lalu minimalkan error"). Model flash jauh lebih cepat
+// dan jarang timeout dibanding reasoning model -> jumlah error "gangguan koneksi"
+// turun. Cadangan berurutan: Luna Pro, Sol Pro (login saja), Nemotron terakhir.
+const OPENROUTER_MODELS = ['z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro', 'openai/gpt-6.1-sol-pro', 'nvidia/nemotron-3-ultra-550b-a55b'];
 // Rantai khusus TAMU (anonim, gratis): TANPA Sol Pro — model premium hanya
 // untuk user login; tamu tidak boleh membakar biaya provider premium.
-const GUEST_OR_MODELS = ['openai/gpt-6-luna-pro', 'z-ai/glm-5.3-flash', 'nvidia/nemotron-3-ultra-550b-a55b'];
+const GUEST_OR_MODELS = ['z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro', 'nvidia/nemotron-3-ultra-550b-a55b'];
 // Batas output OpenRouter: sebagian kunci kena 402 saat max_tokens besar
 // (kredit per-kunci kecil). 4096 = nilai terbesar yang lolos di 4 dari 6 kunci.
 // Naikkan lagi setelah limit kredit per-kunci di OpenRouter dinaikkan.
@@ -222,7 +222,12 @@ async function tryOpenRouterText(keys, messages, gDecls, models, onDelta) {
           lastErr = `OpenRouter ${model}: stream kosong`;
           continue; // stream bener-bener kosong -> model berikutnya
         }
-        if (!sr.ok) lastErr = `OpenRouter ${model}: HTTP ${sr.status}`;
+        if (!sr.ok) {
+          lastErr = `OpenRouter ${model}: HTTP ${sr.status}`;
+          // MINIMALKAN ERROR: status transient (rate-limit/limbur server) kasih jeda
+          // singkat lalu non-stream di bawah otomatis mencoba ulang model yang sama.
+          if (sr.status === 429 || sr.status === 502 || sr.status === 503 || sr.status === 529) await new Promise(r2 => setTimeout(r2, 900));
+        }
       } catch (e) { lastErr = `OpenRouter ${model}: ${e && e.message}`; }
     }
     try {
