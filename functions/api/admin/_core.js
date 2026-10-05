@@ -530,7 +530,7 @@ async function handleGetReports(db) {
        FROM activity_log a
        LEFT JOIN auth_users u ON a.user_id = u.id
        WHERE a.created_at >= datetime('now', '-30 days')
-       ORDER BY a.created_at DESC`
+       ORDER BY a.created_at DESC LIMIT 500`
     ).all();
 
     for (const log of logs.results || []) {
@@ -612,7 +612,7 @@ async function handlePostReports(db, adminUser, body, reqAction) {
         `SELECT a.id, a.action, a.details, a.user_id, a.created_at
          FROM activity_log a
          WHERE a.created_at >= datetime('now', '-30 days')
-         ORDER BY a.created_at ASC`
+         ORDER BY a.created_at ASC LIMIT 2000`
       ).all();
 
       for (const log of logs.results || []) {
