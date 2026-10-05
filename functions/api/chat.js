@@ -122,10 +122,12 @@ const OPENROUTER_MODELS = ['z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro', 'opena
 const GUEST_OR_MODELS = ['z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro', 'nvidia/nemotron-3-ultra-550b-a55b'];
 // Batas output OpenRouter: kunci 402 "requires more credits / fewer max_tokens" saat
 // reservasi kredit di muka besar. Uji langsung 5 Okt 2026: 4096 GAGAL di SEMUA kunci,
-// 2048 gagal di 1 kunci, 1024 = nilai terbesar yang lolos di SEMUA kunci sehat.
-// Jawaban panjang tetap aman: AUTO-CONTINUE (jalur stream & non-stream) menyambung
-// otomatis saat finish_reason=length. Naikkan lagi setelah kredit OpenRouter diisi.
-const OR_MAX_TOKENS = 1024;
+// 2048 lolos di 3 kunci sehat (1 kunci 402 lalu dilewati cepat), 1024 lolos semua.
+// 2048 dipilih: setengah jumlah lanjutan auto-continue dibanding 1024, jadi jawaban
+// panjang selesai lebih jauh di bawah timeout frontend 120 detik.
+// Jawaban panjang tetap utuh: AUTO-CONTINUE (stream & non-stream) menyambung saat
+// finish_reason=length. Naikkan lagi setelah kredit OpenRouter diisi.
+const OR_MAX_TOKENS = 2048;
 const oaiToolsOf = (gDecls) => (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
 
 // Pembatas waktu per-panggilan provider — fetch/binding AI TIDAK punya timeout
