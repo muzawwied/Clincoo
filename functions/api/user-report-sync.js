@@ -31,14 +31,6 @@ const DISPOSABLE_DOMAINS = [
   'trashmail.com', 'throwawaymail.com', 'dispostable.com', 'maildrop.cc'
 ];
 
-function b64utf8(s) {
-  const bytes = new TextEncoder().encode(s);
-  let bin = '';
-  const CH = 0x8000;
-  for (let i = 0; i < bytes.length; i += CH) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CH));
-  return btoa(bin);
-}
-
 function rp(n) {
   const v = Number(n) || 0;
   return 'Rp' + v.toLocaleString('id-ID');
@@ -201,56 +193,22 @@ export async function syncUserReport(env, opts) {
   md += `- **Aksi**: tautan langsung ke panel admin (\`akun/profile/admin/users\`) — Tangguhkan / Aktifkan / Hapus (butuh login admin). Admin/Owner dilindungi (tidak bisa di-suspend/hapus dari UI).\n`;
 
   // ---- push ke GitHub ----
-  const ghHeaders = { 'Authorization': 'Bearer ' + token, 'User-Agent': 'clincoo-sync', 'Accept': 'application/vnd.github+json' };
-  // CATATAN: JANGAN pakai '?ref=' di sini — runtime Cloudflare dapat 404 dari GitHub
-  // padahal request sama dari luar 200 (diverifikasi 5 Okt 2026). Tanpa param, default branch.
-  // GitHub kadang balas 404 flaky dari runtime Cloudflare (intermiten, diverifikasi
-  // 5 Okt 2026: request identik bisa 200 lalu 404 menit berikutnya) — retry sampai 3x.
-  // [DIAG sementara] dump header respons 404 dari GitHub + identitas token
-  if (!globalThis.__sigTested) {
-    globalThis.__sigTested = true;
-    try {
-      const u = 'https://api.github.com/repos/' + GH_REPO + '/contents/' + GH_PATH;
-      const rA = await fetch(u + '?cb=' + Date.now(), { headers: ghHeaders, cf: { cacheTtl: 0 } });
-      const hs = {};
-      ['x-oauth-scopes','x-github-authentication-token-expiration','x-ratelimit-limit','x-ratelimit-remaining','x-ratelimit-resource','x-ratelimit-used','x-github-request-id','x-github-media-type','cf-ray','via'].forEach(k => { const v = rA.headers.get(k); if (v) hs[k] = v; });
-      const rl = await fetch('https://api.github.com/rate_limit', { headers: ghHeaders });
-      const rlJ = await rl.json().catch(() => null);
-      globalThis.__sigResult = { status: rA.status, headers: hs, rlCore: rlJ && rlJ.resources && rlJ.resources.core };
-    } catch (e) { globalThis.__sigResult = 'err ' + e.message; }
+  // 5 Okt 2026: push DIPINDAH ke relay Base44 (functions/clincooUserSync di agent Koda).
+  // Dari runtime Cloudflare, api.github.com menolak repo private dengan 404
+  // (token valid + scope penuh, request identik dari jalur lain dapat 200);
+  // GET sha + PUT konten kini dikerjakan function Base44.
+  const cronSecret = await getSecret(env, 'CRON_SECRET');
+  const relayRes = await fetch('https://koda-da05205d.base44.app/functions/clincooUserSync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sync_key: cronSecret, md, token }),
+    signal
+  });
+  const relay = await relayRes.json().catch(() => ({ ok: 0, error: 'relay invalid JSON' }));
+  if (!relay.ok) {
+    return { ok: 0, error: 'Relay: ' + String(relay.error || relayRes.status).slice(0, 200) };
   }
-  let getRes = null;
-  for (let i = 0; i < 3; i++) {
-    getRes = await fetch('https://api.github.com/repos/' + GH_REPO + '/contents/' + GH_PATH, { headers: ghHeaders, signal });
-    if (getRes.ok) break;
-    if (getRes.status !== 404 || i === 2) break;
-    await new Promise(r => setTimeout(r, 800));
-  }
-  let sha = null;
-  if (getRes.ok) {
-    const j = await getRes.json();
-    sha = j.sha || null;
-  }
-  const putBody = {
-    message: 'sync: data user live (' + now.toISOString() + ')',
-    content: b64utf8(md),
-    branch: GH_BRANCH
-  };
-  if (sha) putBody.sha = sha;
-  let putRes = null;
-  for (let i = 0; i < 3; i++) {
-    putRes = await fetch('https://api.github.com/repos/' + GH_REPO + '/contents/' + GH_PATH, {
-      method: 'PUT', headers: { ...ghHeaders, 'Content-Type': 'application/json' },
-      body: JSON.stringify(putBody), signal
-    });
-    if (putRes.status !== 404 || i === 2) break;
-    await new Promise(r => setTimeout(r, 800));
-  }
-  if (!putRes.ok) {
-    const t = await putRes.text().catch(() => '');
-    return { ok: 0, error: 'GitHub ' + putRes.status + ': ' + t.slice(0, 200), sig: globalThis.__sigResult || null };
-  }
-  return { ok: 1, users: users.length, sha: sha ? 'updated' : 'created' };
+  return { ok: 1, users: users.length, sha: relay.mode };
 }
 
 
