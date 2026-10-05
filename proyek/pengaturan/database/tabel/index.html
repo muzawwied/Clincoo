@@ -7,9 +7,9 @@
   <script src="../../../js/current-project.js?v=1"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
-    <link rel="manifest" href="../../../manifest.json">
-    <link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../../../assets/favicon.png">
+    <link rel="manifest" href="../../../../manifest.json">
+    <link rel="apple-touch-icon" href="../../../../assets/icons/apple-touch-icon.png">
   <title>Tabel — Database — Clincoo</title>
     <meta name="description" content="Pengaturan: Database — lihat dan kelola baris tabel di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
     <meta name="robots" content="noindex">
@@ -220,6 +220,15 @@
     <main class="w-full max-w-5xl px-4 sm:px-6 pt-20 pb-28">
 <style>
         #settings-menu-pop.open { display: grid; }
+        /* kartu grafik per-tabel */
+        .db-chart-card { border-radius: 1rem; border: 1px solid rgb(229 231 235); background: #fff; padding: 1rem 1.15rem 1.15rem; }
+        body.dark-mode .db-chart-card { border-color: #1e293b; background: #0d0d0d; }
+        .db-chart-head { display: flex; align-items: flex-start; gap: 0.65rem; }
+        .db-chart-dot { width: 0.5rem; height: 0.5rem; border-radius: 9999px; margin-top: 0.3rem; flex-shrink: 0; }
+        .db-stat-card { border-radius: 1rem; border: 1px solid rgb(229 231 235); background: #fff; padding: 0.9rem 1rem 0.95rem; }
+        body.dark-mode .db-stat-card { border-color: #1e293b; background: #0d0d0d; }
+        .db-stat-num { font-size: 1.35rem; line-height: 1.1; font-weight: 700; color: #111827; font-variant-numeric: tabular-nums; }
+        body.dark-mode .db-stat-num { color: #f9fafb; }
         /* popover pengganti dropdown (select native disembunyikan) */
         .db-pop-wrap { position: relative; }
         .db-pop-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; text-align: left; }
@@ -428,6 +437,7 @@
             Kembali ke tabel
           </a>
           <p id="tb-chart-title" class="text-sm font-semibold text-gray-900 dark:text-white">Grafik</p>
+          <div id="tb-chart-stats" class="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
           <div class="mt-4 grid grid-cols-2 gap-3">
             <label class="block">
               <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Jenis grafik</span>
@@ -443,7 +453,16 @@
             <select id="tb-chart-num" class="w-full px-3 py-2.5 text-sm bg-white dark:bg-black border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none"></select>
           </label>
           <p id="tb-chart-note" class="text-xs text-gray-400 dark:text-gray-500 mt-3">Memuat data…</p>
-          <div class="mt-4 h-64 sm:h-80"><canvas id="tb-canvas"></canvas></div>
+          <div class="db-chart-card mt-4">
+            <div class="db-chart-head">
+              <span class="db-chart-dot" style="background:#60a5fa"></span>
+              <div>
+                <p id="tb-chart-card-title" class="text-xs font-semibold text-gray-700 dark:text-gray-200">Visualisasi data tabel</p>
+                <p id="tb-chart-card-sub" class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Grafik terisi otomatis dari baris tabel</p>
+              </div>
+            </div>
+            <div class="h-64 sm:h-80 mt-4"><canvas id="tb-canvas"></canvas></div>
+          </div>
         </div>
       </div>
     </main>
@@ -796,6 +815,45 @@
       [typeSel, colSel, numSel].forEach(function (sl) { if (sl.__popSync) sl.__popSync(); });
       return true;
     }
+    // tooltip gelap membulat; persen khusus doughnut
+    function tbChartTip(pct) {
+      var base = { backgroundColor: 'rgba(17,24,39,0.96)', padding: 10, cornerRadius: 10, titleFont: { weight: '600', size: 12 }, bodyFont: { size: 12 }, displayColors: false };
+      if (pct) base.callbacks = { label: function (ctx) {
+        var d = ctx.dataset.data || [];
+        var tot = d.reduce(function (a, b) { return a + (b || 0); }, 0);
+        var p = tot ? Math.round((ctx.parsed || 0) / tot * 100) : 0;
+        return ' ' + ctx.label + ': ' + ctx.parsed + ' (' + p + '%)';
+      } };
+      return base;
+    }
+    // warna tiap batang/irisan beda (scriptable) — palet sama dengan halaman database
+    function tbChartColors() {
+      return function (ctx) {
+        var p = tbChartPalette();
+        var i = ctx && ctx.dataIndex !== undefined ? ctx.dataIndex : 0;
+        return p[i % p.length];
+      };
+    }
+    // kartu statistik ringkas di atas grafik
+    function tbChartStats() {
+      var el = document.getElementById('tb-chart-stats');
+      if (!el) return;
+      var types = {};
+      (tbCols || []).forEach(function (c) { types[c.type] = 1; });
+      var stats = [ ['Total baris', (tbAll || []).length], ['Jumlah kolom', (tbCols || []).length], ['Tipe data', Object.keys(types).length] ];
+      el.innerHTML = stats.map(function (x) {
+        return '<div class="db-stat-card"><p class="text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">' + x[0] +
+          '</p><p class="db-stat-num mt-1">' + x[1] + '</p></div>';
+      }).join('');
+    }
+    function tbChartCardHead(type, col, num) {
+      var t = document.getElementById('tb-chart-card-title');
+      var sub = document.getElementById('tb-chart-card-sub');
+      if (!t || !sub) return;
+      var map = { bar: 'Baris per kategori', line: 'Tren ' + col, doughnut: 'Komposisi per kategori' };
+      t.textContent = map[type] || 'Visualisasi data tabel';
+      sub.textContent = 'Tabel ' + tbName + (type === 'bar' ? (num && num !== '__count' ? ' · total kolom ' + num : ' · dihitung dari jumlah baris') : (type === 'line' ? ' · urut dari terlama' : ' · porsi dari total'));
+    }
     function tbChartRender() {
       var type = document.getElementById('tb-chart-type').value;
       var col = document.getElementById('tb-chart-col').value;
@@ -805,21 +863,26 @@
       if (tbChart) { tbChart.destroy(); tbChart = null; }
       var rows = tbAll || [];
       var th = tbChartTheme();
-      var opts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: type === 'doughnut', labels: { color: th.text, boxWidth: 12 } } }, scales: type === 'doughnut' ? {} : { x: { ticks: { color: th.text, maxRotation: 45, autoSkip: true }, grid: { display: false } }, y: { ticks: { color: th.text }, grid: { color: th.grid }, beginAtZero: true } } };
+      tbChartStats();
+      tbChartCardHead(type, col, num);
+      var opts = { responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+        plugins: { legend: { display: type === 'doughnut', labels: { color: th.text, usePointStyle: true, pointStyle: 'circle', boxWidth: 6, boxHeight: 6, font: { size: 11 }, padding: 14 } },
+          tooltip: tbChartTip(type === 'doughnut') },
+        scales: type === 'doughnut' ? {} : { x: { ticks: { color: th.text, maxRotation: 45, autoSkip: true, font: { size: 11 } }, grid: { display: false } }, y: { ticks: { color: th.text, font: { size: 11 } }, grid: { color: th.grid }, border: { display: false }, beginAtZero: true } } };
       if (!rows.length) {
         // grafik tetap digambar walau 0 baris — bidang kosong + ajakan tambah baris
         note.innerHTML = 'Belum ada baris di tabel ini — grafik terisi otomatis setelah kamu <a href="#" id="tb-chart-add" class="underline">menambahkan baris</a>.';
         var add = document.getElementById('tb-chart-add');
         if (add) add.addEventListener('click', function (e) { e.preventDefault(); tbShow(tbLastMain || null); tbShowForm(null); });
-        var empty = type === 'line' ? { label: col, data: [], borderColor: tbChartBase(), backgroundColor: tbChartFill(), tension: 0.3, pointRadius: 1.5, fill: true }
-          : type === 'doughnut' ? { data: [], backgroundColor: tbChartPalette(), borderWidth: 0 }
-          : { data: [], backgroundColor: tbChartBase(), borderRadius: 4, maxBarThickness: 42 };
+        var empty = type === 'line' ? { label: col, data: [], borderColor: tbChartBase(), backgroundColor: tbChartFill(), tension: 0.35, pointRadius: 3, pointHoverRadius: 5, pointBackgroundColor: tbChartColors(), fill: true }
+          : type === 'doughnut' ? { data: [], backgroundColor: tbChartColors(), borderWidth: 0 }
+          : { data: [], backgroundColor: tbChartColors(), borderRadius: 7, maxBarThickness: 44, categoryPercentage: 0.72 };
         tbChart = new Chart(canvas, { type: type, data: { labels: [], datasets: [empty] }, options: opts });
         return;
       }
       if (type === 'line') {
         var pts = rows.slice(0, 1000).sort(function (a, b) { return (a.id || 0) - (b.id || 0); }); // urut lama->baru biar tren natural
-        tbChart = new Chart(canvas, { type: 'line', data: { labels: pts.map(function (r, i) { var lbl = (tbChartColsOf('cat')[0] && r[tbChartColsOf('cat')[0].name]) || ('#' + (i + 1)); return String(lbl).slice(0, 16); }), datasets: [{ label: col, data: pts.map(function (r) { return Number(r[col]) || 0; }), borderColor: tbChartBase(), backgroundColor: tbChartFill(), tension: 0.3, pointRadius: 1.5, fill: true }] }, options: opts });
+        tbChart = new Chart(canvas, { type: 'line', data: { labels: pts.map(function (r, i) { var lbl = (tbChartColsOf('cat')[0] && r[tbChartColsOf('cat')[0].name]) || ('#' + (i + 1)); return String(lbl).slice(0, 16); }), datasets: [{ label: col, data: pts.map(function (r) { return Number(r[col]) || 0; }), borderColor: tbChartBase(), backgroundColor: tbChartFill(), tension: 0.35, pointRadius: 3, pointHoverRadius: 5, pointBackgroundColor: tbChartColors(), fill: true }] }, options: opts });
       } else {
         var numSelVal = (type === 'bar') ? num : '__count';
         var agg = {}, order = [];
@@ -835,9 +898,9 @@
         var rest = order.slice(cap);
         if (rest.length) { labels.push('Lainnya (' + rest.length + ')'); data.push(rest.reduce(function (s, k) { return s + agg[k]; }, 0)); }
         if (type === 'doughnut') {
-          tbChart = new Chart(canvas, { type: 'doughnut', data: { labels: labels, datasets: [{ data: data, backgroundColor: tbChartPalette(), borderWidth: 0 }] }, options: opts });
+          tbChart = new Chart(canvas, { type: 'doughnut', data: { labels: labels, datasets: [{ data: data, backgroundColor: tbChartColors(), borderWidth: 2, borderColor: tbDark() ? '#0d0d0d' : '#ffffff', hoverOffset: 6 }] }, options: Object.assign({ cutout: '68%' }, opts) });
         } else {
-          tbChart = new Chart(canvas, { type: 'bar', data: { labels: labels, datasets: [{ data: data, backgroundColor: tbChartBase(), borderRadius: 4, maxBarThickness: 42 }] }, options: opts });
+          tbChart = new Chart(canvas, { type: 'bar', data: { labels: labels, datasets: [{ data: data, backgroundColor: tbChartColors(), borderRadius: 7, maxBarThickness: 44, hoverOffset: 6, categoryPercentage: 0.72 }] }, options: opts });
         }
       }
       note.textContent = rows.length + ' baris dimuat' + (rows.length >= 2000 ? ' (maksimal 2000 teratas)' : '') + ' · grafik diperbarui otomatis dari data terbaru perangkat ini';
