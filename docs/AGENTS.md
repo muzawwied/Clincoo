@@ -95,6 +95,13 @@ Log lebih lama dipotong agar wiki ringan.
 - Fix (commit e638daf): resolveOwner fail-closed; kredit 'in' tanpa callback token WAJIB ClincooPay; clear/DELETE admin-only.
 
 ## Log Interaksi Agent
+### 2026-10-05 11:2x WIB — Superagent (Base44): crown Editor menu header (17 halaman) + kunci editor utk Starter + menu Database disamakan (commit d388b880, 8c37c020)
+
+- Crown dipasang di item Editor pada menu pop-up "..." pojok kanan atas di 17 halaman (15 halaman paket + 2 halaman Database yang sekalian dapat mini-script visibility + gate).
+- Arahan owner: crown tanpa penolakan percuma → editor DIKUNCI lagi untuk Starter: gate masuk layar penuh "Fitur ini hanya untuk paket Pro" di /proyek/workspace/editor/ (cache instan + verifikasi server, bg sesuai halaman; /api/subscription 401/anonim tidak digate — halaman editor sendiri wajib login). openFullEditor di chat & code menolak Starter dengan popup daftar paket.
+- Menu "..." halaman Database (index & tabel) kini identik halaman lain: Live preview, Editor (crown), Eksport zip, Koneksi git, Pusat bantuan + handler chatLivePreview/chatExportZip standar (ekspor gabung berkas lokal + cloud).
+- Verifikasi live: deploy success; menu Database tampil 5 item + crown (screenshot); gate editor ada di HTML live; perilaku gate identik versi yang sudah diverifikasi live sebelumnya.
+
 ### 2026-10-05 10:5x WIB — Superagent (Base44): penegakan asli fitur premium per paket + crown per level paket (commit ab194932)
 
 Arahan owner: fitur bermahkota harus dicegah ASLI di server (bukan cuma teks), crown dilabeli per paket user (Starter = semua crown, Pro = hanya level Bisnis), tanpa teks Pro/Bisnis di UI — label "Fitur ini hanya untuk paket N" hanya di gate layar penuh. Editor kode = fitur Starter (yang di Workspace); tarik saldo = Pro, terima pembayaran tetap terbuka semua paket.
