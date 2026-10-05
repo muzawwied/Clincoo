@@ -487,7 +487,12 @@
     function dbCacheClear() { try { localStorage.removeItem(dbDataCacheKey()); } catch (e) {} }
 
     var dbLoadBusy = false;
-    function dbLoad(isRetry) {
+    // RETRY BERLAPIS: cold-start/blip jaringan jangan langsung jadi error ke user.
+    // Total 4 percobaan (1 awal + 3 retry diam-diam) dengan jeda makin panjang
+    // sebelum benar-benar menampilkan pesan error.
+    var DB_RETRY_DELAYS = [1500, 3000, 6000];
+    function dbLoad(retryIdx) {
+      var attempt = retryIdx || 0;
       var t = ''; try { t = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
       if (!t) { dbShow('db-login'); return; }
       if (!dbPid()) { dbErr('Proyek belum dipilih — buka dashboard proyekmu dulu.'); return; }
@@ -495,7 +500,7 @@
       dbLoadBusy = true;
       var cached = dbCacheRead();
       // tampilkan cache SEKARANG (kalau ada), loading hanya kalau benar-benar belum ada data
-      if (!isRetry) { if (cached) dbRender(cached.tables); else dbShow('db-loading'); }
+      if (!attempt) { if (cached) dbRender(cached.tables); else dbShow('db-loading'); }
       fetch(DB_API + '/db/tables?project_id=' + encodeURIComponent(dbPid()), { headers: dbHdrs(false) })
         .then(function (r) {
           if (r.status === 401) { dbShow('db-login'); return null; }
@@ -510,8 +515,8 @@
         })
         .catch(function () {
           dbLoadBusy = false;
-          // blip jaringan/cold-start sekali tidak langsung dianggap error — coba sekali lagi diam-diam
-          if (!isRetry) { setTimeout(function () { dbLoad(true); }, 1200); return; }
+          // blip jaringan/cold-start -> coba lagi diam-diam sampai budget retry habis
+          if (attempt < DB_RETRY_DELAYS.length) { setTimeout(function () { dbLoad(attempt + 1); }, DB_RETRY_DELAYS[attempt]); return; }
           // punya cache? tampilkan data cache, nggak perlu error sama sekali
           var c = dbCacheRead();
           if (c) { dbRender(c.tables); return; }
@@ -579,7 +584,7 @@
     document.getElementById('db-add-col').addEventListener('click', function () { document.getElementById('db-cols').appendChild(dbColRow('', 'text')); });
     document.getElementById('db-save-btn').addEventListener('click', dbFormSave);
     document.getElementById('db-cancel-btn').addEventListener('click', dbLoad);
-    document.getElementById('db-retry-btn').addEventListener('click', dbLoad);
+    document.getElementById('db-retry-btn').addEventListener('click', function () { dbLoad(); });
 
     // ---- kunci API aplikasi ----
     var dbKey = null;
