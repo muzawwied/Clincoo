@@ -111,12 +111,12 @@ async function getOpenRouterKeys(env) {
   return keys;
 }
 
-// ===== Provider utama: GPT-6.1 Sol Pro via OpenRouter =====
-// UTAMA: GPT-6.1 Sol Pro (4 Okt 2026, arahan pemilik: "Sol Pro jadiin model utama").
-// GPT-6 Luna Pro turun jadi cadangan pertama, lalu GLM 5.3 Flash, Nemotron terakhir.
-// Toggle premium (body.premium=true) tetap ada tapi kini setara — Sol Pro sudah jadi
-// jalur utama semua user login, bukan lagi model opt-in.
-const OPENROUTER_MODELS = ['openai/gpt-6.1-sol-pro', 'openai/gpt-6-luna-pro', 'z-ai/glm-5.3-flash', 'nvidia/nemotron-3-ultra-550b-a55b'];
+// ===== Provider utama: GPT-6 Luna Pro via OpenRouter =====
+// UTAMA: GPT-6 Luna Pro (5 Okt 2026, arahan pemilik: "ganti model jadi Luna Pro").
+// GPT-6.1 Sol Pro turun jadi cadangan pertama, lalu GLM 5.3 Flash, Nemotron terakhir.
+// Toggle premium (body.premium=true) tetap ada tapi kini setara — jalur utama semua
+// user login bukan lagi model opt-in.
+const OPENROUTER_MODELS = ['openai/gpt-6-luna-pro', 'openai/gpt-6.1-sol-pro', 'z-ai/glm-5.3-flash', 'nvidia/nemotron-3-ultra-550b-a55b'];
 // Rantai khusus TAMU (anonim, gratis): TANPA Sol Pro — model premium hanya
 // untuk user login; tamu tidak boleh membakar biaya provider premium.
 const GUEST_OR_MODELS = ['openai/gpt-6-luna-pro', 'z-ai/glm-5.3-flash', 'nvidia/nemotron-3-ultra-550b-a55b'];
