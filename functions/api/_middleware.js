@@ -230,6 +230,19 @@ export async function onRequest({ request, env, next }) {
 
   let publicRoute = false;
   for (const re of PUBLIC) if (re.test(path)) { publicRoute = true; break; }
+
+  // Panel Admin mandiri (admin.clincoo.buzz): /api/admin/* boleh lolos via kunci panel
+  // (header x-admin-key, env ADMIN_PANEL_KEY) — divalidasi ketat di sini DAN lagi di
+  // handler admin.js (keyAuthUser). Origin mutasi tetap wajib lolos strictOriginOk.
+  if (!publicRoute && /^\/api\/admin(\/|$)/.test(path) && env.ADMIN_PANEL_KEY) {
+    const expected = String(env.ADMIN_PANEL_KEY).trim();
+    const given = (request.headers.get('x-admin-key') || '').trim();
+    if (given && given.length === expected.length) {
+      let diff = 0;
+      for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ given.charCodeAt(i);
+      if (diff === 0) publicRoute = true;
+    }
+  }
   // /api/fn/<nama>?key=... = WEBHOOK PUBLIK: validasi name+key rahasia dilakukan
   // sendiri di handler fn/[name].js (is_public + webhook_secret + rate limit per IP).
   if (!publicRoute && /^\/api\/fn\/[^/]+$/.test(path) && url.searchParams.get('key')) publicRoute = true;
