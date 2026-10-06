@@ -350,7 +350,9 @@ async function getCfAiCreds(env) {
   return (t.token && t.accountId) ? t : null;
 }
 
-const CF_AI_MODELS = ['@cf/zai-org/glm-4.7-flash', '@cf/meta/llama-3.3-70b-instruct-fp8-fast'];
+// [6 Okt 2026] llama-3.3-70b utama (TTFB ~1.1s, tools valid, teruji); glm-4.7-flash
+// di akun baru terbukti lambat (30s+) dan sering balas kosong -> hanya cadangan.
+const CF_AI_MODELS = ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/zai-org/glm-4.7-flash'];
 
 async function tryCfAiRest(creds, messages, gDecls, onDelta) {
   if (!creds || !creds.token || !creds.accountId) return null;
