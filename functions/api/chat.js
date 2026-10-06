@@ -329,6 +329,88 @@ async function getClouviaKeys(env) {
   return keys;
 }
 
+// ===== Workers AI via REST — akun C (token cfut_, kuota gratis 10k neuron/hari segar) =====
+// [6 Okt 2026, arahan owner: "manfaatin ai gratisnya"] Pool AI gratis KEDUA yang
+// terpisah dari kuota Workers AI akun utama. Respon format OpenAI penuh:
+// tool_calls + streaming SSE teruji valid (write_files 6 Okt 2026).
+async function getCfAiCreds(env) {
+  const token = String(env.CF_AI_TOKEN || '').trim();
+  const accountId = String(env.CF_AI_ACCOUNT_ID || '').trim();
+  if (!env.DB) return (token && accountId) ? { token, accountId } : null;
+  const t = { token, accountId };
+  try {
+    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('CF_AI_TOKEN','CF_AI_ACCOUNT_ID')").all();
+    for (const r of rows.results || []) {
+      const v = String(r.value || '').trim();
+      if (!v) continue;
+      if (r.key === 'CF_AI_TOKEN' && !t.token) t.token = v;
+      if (r.key === 'CF_AI_ACCOUNT_ID' && !t.accountId) t.accountId = v;
+    }
+  } catch {}
+  return (t.token && t.accountId) ? t : null;
+}
+
+const CF_AI_MODELS = ['@cf/zai-org/glm-4.7-flash', '@cf/meta/llama-3.3-70b-instruct-fp8-fast'];
+
+async function tryCfAiRest(creds, messages, gDecls, onDelta) {
+  if (!creds || !creds.token || !creds.accountId) return null;
+  const { system, chatMsgs } = toOAIChat(messages);
+  const oaiTools = (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
+  const sysMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
+  for (const model of CF_AI_MODELS) {
+    const modelLabel = model.split('/').pop() + ' (WorkersAI-REST)';
+    // AUTO-CONTINUE (finish_reason "length"): state parsial menempel sebagai pesan
+    // assistant, sistem kirim "lanjutkan" tanpa sesi baru — konsep yang sama dengan
+    // jalur lain; maks 2 sambungan per jawaban.
+    const contMsgs = sysMsgs.slice();
+    let full = '', seg = '', finish = '', tcsOut = null;
+    for (let ac = 0; ac < 3; ac++) {
+      let st = null;
+      try {
+        const body = { messages: contMsgs, max_tokens: 8192 };
+        if (oaiTools && ac === 0) body.tools = oaiTools; // tools hanya di segmen awal
+        if (onDelta && ac === 0) body.stream = true;
+        const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${creds.accountId}/ai/run/${model}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + creds.token },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) { seg = ''; break; }
+        if (onDelta && ac === 0 && res.body) {
+          st = await readOAICompatStream(res, onDelta); // SSE format OpenAI
+          seg = st.text || ''; finish = st.fin || '';
+          if (st.tcs && st.tcs.length) tcsOut = st.tcs;
+        } else {
+          const j = await res.json();
+          const rj = (j && j.result) || {};
+          const ch = (Array.isArray(rj.choices) && rj.choices[0]) || {};
+          const m = ch.message || {};
+          seg = m.content || rj.response || (typeof rj === 'string' ? rj : '') || '';
+          finish = ch.finish_reason || rj.finish_reason || '';
+          const rtcs = (Array.isArray(m.tool_calls) && m.tool_calls.length) ? m.tool_calls : (Array.isArray(rj.tool_calls) ? rj.tool_calls : null);
+          if (rtcs) { tcsOut = rtcs; finish = 'tool_calls'; }
+        }
+      } catch (e) { seg = ''; break; }
+      if (!seg && !tcsOut) break;
+      full += seg;
+      if (tcsOut && tcsOut.length) {
+        const norm = [];
+        for (const c of tcsOut) {
+          let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
+          if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
+        }
+        if (norm.length) return { tool_calls: norm, text: full, model: modelLabel };
+      }
+      if (finish !== 'length') break;
+      // terpotong batas token -> sambung otomatis dari titik terakhir
+      contMsgs.push({ role: 'assistant', content: seg });
+      contMsgs.push({ role: 'user', content: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' });
+    }
+    if (full) return { text: full, model: modelLabel };
+  }
+  return null;
+}
+
 // ===== Provider cadangan #1: Clouvia Router (setelah OpenRouter, sebelum Workers AI) =====
 // Router AI Indonesia (router.clouvia.id/v1) — API kompatibel penuh OpenAI.
 // Dipakai saat OpenRouter gagal (limit/kredit) supaya chat tidak langsung jatuh
@@ -1467,8 +1549,9 @@ export async function onRequestPost({ request, env, waitUntil }) {
     const apiKey = await getGeminiKeys(env); // array kunci Gemini (cadangan + jalur vision)
     const orKeysEarly = await getOpenRouterKeys(env); // kunci OpenRouter (GLM 5.3 — utama)
     const cvKeysEarly = await getClouviaKeys(env); // kunci Clouvia Router — cadangan #1
+    const cfAiCreds = await getCfAiCreds(env); // Workers AI REST akun C — pool gratis kedua
 
-    if (!orKeysEarly.length && !cvKeysEarly.length && !apiKey.length && !env.AI) {
+    if (!orKeysEarly.length && !cvKeysEarly.length && !apiKey.length && !env.AI && !cfAiCreds) {
       return new Response(JSON.stringify({ error: 'Kunci AI belum dikonfigurasi. Tambahkan lewat Pengaturan → Environment (global).' }), {
         status: 500, headers: { 'Content-Type': 'application/json', ...CORS }
       });
@@ -1563,6 +1646,11 @@ export async function onRequestPost({ request, env, waitUntil }) {
         }
         // KANDIDAT W: Workers AI (hanya bila binding ada; gagal cepat bila kuota habis)
         if (aiMain) cands.push(cand('W', withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 20000, 'WorkersAI-race')));
+        // KANDIDAT W2: Workers AI via REST — akun C (pool kuota gratis kedua; TTFB ~1-2s,
+        // tools OK). 429 saat kuota habis -> gagal cepat, tak menahan kandidat lain.
+        if (cfAiCreds) {
+          cands.push(cand('W2', withTimeout(tryCfAiRest(cfAiCreds, workMessages, toolDecls, makeOnDelta('W2')), 45000, 'WorkersAI-REST-race')));
+        }
         // KANDIDAT F: model :free OpenRouter (cohere north-mini-code, spesialis koding,
         // model reasoning). Gratis — jalan untuk guest maupun user login. Gagal cepat
         // (429/402) bila kuota hariannya habis; tidak menahan kandidat lain.
@@ -1597,6 +1685,11 @@ export async function onRequestPost({ request, env, waitUntil }) {
       if ((!r || r.error) && aiMain) {
         const w = await withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 25000, 'Workers AI').catch(e => ({ error: e.message }));
         if (w) r = w;
+      }
+      // [6 Okt 2026] Fallback REST akun C — pool kuota Workers AI kedua (gratis)
+      if ((!r || r.error) && cfAiCreds && !hasImages) {
+        const w2 = await withTimeout(tryCfAiRest(cfAiCreds, workMessages, toolDecls, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 30000, 'WorkersAI-REST').catch(e => ({ error: e.message }));
+        if (w2) r = w2;
       }
       if ((!r || r.error) && apiKey.length) {
         const { systemInstruction, contents } = toGeminiPayload(workMessages);
