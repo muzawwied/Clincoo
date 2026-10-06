@@ -5456,6 +5456,13 @@ window.chatLivePreview = function () {
         // SATU kali per tugas; kalau masih belum tuntas, AI berhenti & tunggu user bilang
         // "lanjut" sendiri — daripada terus-terusan membuat giliran jawaban baru sendiri.
         const SILENT_MAX_ROUNDS = 1;
+        // [6 Okt 2026, arahan owner: "pastikan AI bisa mengerjakan tugas dalam 1 sesi"]
+        // Tugas terpotong di TENGAH pengerjaan karena kuota/limit provider WAJIB
+        // diteruskan otomatis — plafon ini terpisah dari SILENT_MAX_ROUNDS (nudge
+        // heuristik jawaban "belum tuntas" tetap dibatasi 1 sesuai keluhan lama).
+        // Kartu checkpoint manual hanya fallback TERAKHIR bila provider benar-benar
+        // mati setelah percobaan ini.
+        const QUOTA_MAX_ROUNDS = 2;
 
         // ROOT CAUSE ditemukan dari video keluhan user: payload riwayat tool
         // membengkak TANPA BATAS dalam SATU generasi (sampai 20 hop/giliran via
@@ -6266,21 +6273,27 @@ window.chatLivePreview = function () {
                                 // AUTO-LANJUT SILENT: konteks penuh di TENGAH tugas — server memangkas
                                 // riwayat otomatis pada request berikutnya, jadi TIDAK perlu menunggu
                                 // user mengetik "lanjut": teruskan diam-diam sampai tugas tuntas.
-                                if (e.ctxOverflow && silentRounds < SILENT_MAX_ROUNDS && isGenerating) {
+                                if (isGenerating && silentRounds < (e.ctxOverflow ? SILENT_MAX_ROUNDS : QUOTA_MAX_ROUNDS)) {
                                     silentRounds++;
                                     hasReceivedData = true;
                                     clearTimeout(apiTimeout);
                                     clearInterval(statusInterval);
                                     try {
-                                        await continueSilently(aiMsgObj,
-                                            buildCheckpointText(doneTools, 'Konteks dipangkas otomatis — saya lanjutkan sisa tugasnya.'),
-                                            'Riwayat lama sudah dipangkas otomatis — lanjutkan HANYA sisa tugas yang belum selesai, tanpa mengulang bagian yang sudah beres.');
+                                        if (e.ctxOverflow) {
+                                            await continueSilently(aiMsgObj,
+                                                buildCheckpointText(doneTools, 'Konteks dipangkas otomatis — saya lanjutkan sisa tugasnya.'),
+                                                'Riwayat lama sudah dipangkas otomatis — lanjutkan HANYA sisa tugas yang belum selesai, tanpa mengulang bagian yang sudah beres.');
+                                        } else {
+                                            await continueSilently(aiMsgObj,
+                                                buildCheckpointText(doneTools, 'Limit AI tercapai sebentar — saya lanjutkan sisa tugasnya.'),
+                                                'Limit kuota AI barusan tercapai di tengah pengerjaan dan kini sudah pulih — lanjutkan HANYA sisa tugas yang belum selesai dari titik terakhir, tanpa mengulang bagian yang sudah beres.');
+                                        }
                                     } catch (e2) {}
                                     return;
                                 }
-                                // Kehabisan token di TENGAH tugas (limit provider, sementara):
-                                // jangan gagalkan seluruh proses — tampilkan checkpoint ringkas
-                                // (sudah dikerjakan / sisa) lalu minta konfirmasi "lanjut" dari user.
+                                // FALLBACK TERAKHIR: percobaan auto-lanjut di atas sudah habis
+                                // (provider benar-benar tidak bisa dilanjutkan sekarang) — tampilkan
+                                // checkpoint ringkas (sudah dikerjakan / sisa) sebagai titipan state.
                                 streamingBuffer = buildCheckpointText(
                                     doneTools,
                                     e.ctxOverflow ? 'Konteks percakapan penuh — kodenya sudah aman tersimpan.' : qMsg,
