@@ -423,26 +423,36 @@ async function bigFileContent(db, chunksTable, path) {
 // potongan. Puncak memori ~2x payload — bukan ~5x seperti decode penuh
 // (atob + Uint8Array + TextDecoder + concat) yang bikin Worker 1102.
 async function bigFileValue(db, chunksTable, path) {
-  let chunks = null;
+  // Baca chunk PER-GROUP (8 chunk ≈ 5 MB per kueri), bukan semua sekaligus:
+  // satu kueri besar (60 baris × 600 KB = 36 MB) memuncakkan memori Worker
+  // dan memicu error 1102 saat deploy file besar.
+  let count = 0;
   try {
-    const ch = await db.prepare(`SELECT chunk FROM ${chunksTable} WHERE path = ? ORDER BY idx ASC`).bind(path).all();
-    chunks = (ch.results || []).map(c => c.chunk || '');
+    const r = await db.prepare(`SELECT COUNT(*) c FROM ${chunksTable} WHERE path = ?`).bind(path).first();
+    count = (r && Number(r.c)) || 0;
   } catch (e) { return null; }
-  if (!chunks.length) return null;
-  const first = unb64(chunks[0]);
+  if (!count) return null;
+  let firstChunk = '';
+  try {
+    const r0 = await db.prepare(`SELECT chunk FROM ${chunksTable} WHERE path = ? AND idx = 0`).bind(path).first();
+    firstChunk = (r0 && r0.chunk) || '';
+  } catch (e) { return null; }
+  const first = unb64(firstChunk);
+  let decodeMode = false, skip = 0;
   if (first.startsWith('data:')) {
     const comma = first.indexOf(',');
-    if (comma > 0 && /;base64$/i.test(first.slice(0, comma))) {
-      const parts = [first.slice(comma + 1)];
-      for (let i = 1; i < chunks.length; i++) parts.push(unb64(chunks[i]));
-      chunks = null; // lepas referensi baris D1 sebelum join besar
-      return parts.join('');
-    }
+    if (comma > 0 && /;base64$/i.test(first.slice(0, comma))) { decodeMode = true; skip = comma + 1; }
   }
-  // bukan data-URL: chunk = base64 isi file apa adanya — join langsung
-  const joined = chunks.join('');
-  chunks = null;
-  return joined;
+  const parts = [decodeMode ? first.slice(skip) : firstChunk];
+  const PAGE = 8;
+  for (let i = 1; i < count; i += PAGE) {
+    let rows = null;
+    try {
+      rows = await db.prepare(`SELECT chunk FROM ${chunksTable} WHERE path = ? AND idx >= ? AND idx < ? ORDER BY idx ASC`).bind(path, i, i + PAGE).all();
+    } catch (e) { continue; }
+    for (const r of (rows.results || [])) parts.push(decodeMode ? unb64(r.chunk || '') : (r.chunk || ''));
+  }
+  return parts.length === 1 ? parts[0] : parts.join('');
 }
 
 // Kunci aset = 32 karakter pertama SHA-256(base64 + ekstensi) — hasil identik

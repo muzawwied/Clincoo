@@ -189,7 +189,7 @@
                     <button id="btn-visit-site" class="flex-1 md:flex-none px-4 py-2 border border-gray-300 bg-white rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 opacity-50 cursor-not-allowed" disabled>
                         <i data-lucide="external-link" class="w-4 h-4"></i> Kunjungi situs
                     </button>
-                    <button onclick="unpublishSite()" class="flex-1 md:flex-none px-4 py-2 border border-red-200 bg-red-50 text-red-600 rounded-lg text-sm font-semibold hover:bg-red-100 transition-colors dark:bg-red-900/20 dark:border-red-900/50 dark:hover:bg-red-900/40">
+                    <button id="btn-unpublish" onclick="unpublishSite()" class="flex-1 md:flex-none px-4 py-2 border border-red-200 bg-red-50 text-red-600 rounded-lg text-sm font-semibold hover:bg-red-100 transition-colors dark:bg-red-900/20 dark:border-red-900/50 dark:hover:bg-red-900/40">
                         Batalkan publikasi
                     </button>
                 </div>
@@ -630,7 +630,11 @@
             if (_cb) _cb.classList.add('hidden');
             writeDeploySession({ status: 'deploying', started_at: Date.now() });
             try {
-                const res = await apiFetch('/deploy', { method: 'POST', body: JSON.stringify({ project_id: pid() }) });
+                const ctl = new AbortController();
+                const to = setTimeout(() => ctl.abort(), 120000); // batas keras: tidak menggantung selamanya
+                let res;
+                try { res = await apiFetch('/deploy', { method: 'POST', body: JSON.stringify({ project_id: pid() }), signal: ctl.signal }); }
+                finally { clearTimeout(to); }
                 deployState.deploying = false;
                 // DNS cache: hasil deploy langsung siap di halaman Domain Kustom (tanpa buka halaman itu dulu)
                 try { var _dk = 'clincoo_' + pid() + "_domain_cache", _dc = {}; try { _dc = JSON.parse(localStorage.getItem(_dk) || '{}') || {}; } catch (e) {} localStorage.setItem(_dk, JSON.stringify(Object.assign(_dc, { pagesUrl: (res && res.pages_url) || '', deployed: true, ts: Date.now() }))); } catch (e) {}
@@ -638,7 +642,7 @@
             } catch (err) {
                 deployState.deploying = false;
                 writeDeploySession({ status: 'failed' });
-                showDeployErrorModal(err);
+                showDeployErrorModal((err && err.name === 'AbortError') ? new Error('Deploy terlalu lama (lebih dari 2 menit) — proyek mungkin sangat besar atau koneksi sedang lambat. Coba lagi.') : err);
             }
         }
 
@@ -803,15 +807,24 @@
 
         async function unpublishSite() {
             if (!confirm("Apakah Anda yakin ingin menarik publikasi dan menonaktifkan situs ini?")) return;
+            const btn = document.getElementById('btn-unpublish');
+            const htmlAsli = btn ? btn.innerHTML : '';
+            if (btn) { btn.disabled = true; btn.classList.add('opacity-60','cursor-not-allowed'); btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Menarik publikasi...'; lucide.createIcons(); }
+            const ctl = new AbortController();
+            const to = setTimeout(() => ctl.abort(), 90000); // tidak menunggu diam selamanya
             try {
-                await apiFetch('/deploy', { method: 'POST', body: JSON.stringify({ project_id: pid(), action: 'unpublish' }) });
+                await apiFetch('/deploy', { method: 'POST', body: JSON.stringify({ project_id: pid(), action: 'unpublish' }), signal: ctl.signal });
+                clearTimeout(to);
                 localStorage.removeItem('clincoo_is_deployed');
                 localStorage.removeItem('clincoo_deploy_time');
                 clearDeploySession();
                 window.ClincooBack('../');
             } catch (err) {
+                clearTimeout(to);
+                if (btn) { btn.disabled = false; btn.classList.remove('opacity-60','cursor-not-allowed'); btn.innerHTML = htmlAsli; lucide.createIcons(); }
                 console.warn('Gagal: ' + err.message);
-                alert('Gagal membatalkan publikasi: ' + ((err && err.message) ? err.message : 'coba lagi beberapa saat.'));
+                const pesan = (err && err.name === 'AbortError') ? 'Menarik publikasi terlalu lama (koneksi lambat) — coba lagi.' : (((err && err.message) ? err.message : 'coba lagi beberapa saat.'));
+                alert('Gagal membatalkan publikasi: ' + pesan);
             }
         }
 
