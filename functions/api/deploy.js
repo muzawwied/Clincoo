@@ -418,6 +418,33 @@ async function bigFileContent(db, chunksTable, path) {
   } catch (e) { return ''; }
 }
 
+// Nilai base64 file besar LANGSUNG dari chunk D1, tanpa membangun string
+// data-URL utuh: chunk pertama diperiksa headernya, payload digabung per
+// potongan. Puncak memori ~2x payload — bukan ~5x seperti decode penuh
+// (atob + Uint8Array + TextDecoder + concat) yang bikin Worker 1102.
+async function bigFileValue(db, chunksTable, path) {
+  let chunks = null;
+  try {
+    const ch = await db.prepare(`SELECT chunk FROM ${chunksTable} WHERE path = ? ORDER BY idx ASC`).bind(path).all();
+    chunks = (ch.results || []).map(c => c.chunk || '');
+  } catch (e) { return null; }
+  if (!chunks.length) return null;
+  const first = unb64(chunks[0]);
+  if (first.startsWith('data:')) {
+    const comma = first.indexOf(',');
+    if (comma > 0 && /;base64$/i.test(first.slice(0, comma))) {
+      const parts = [first.slice(comma + 1)];
+      for (let i = 1; i < chunks.length; i++) parts.push(unb64(chunks[i]));
+      chunks = null; // lepas referensi baris D1 sebelum join besar
+      return parts.join('');
+    }
+  }
+  // bukan data-URL: chunk = base64 isi file apa adanya — join langsung
+  const joined = chunks.join('');
+  chunks = null;
+  return joined;
+}
+
 // Kunci aset = 32 karakter pertama SHA-256(base64 + ekstensi) — hasil identik
 // sha256hex(value + ext), tapi encodeInto memakai satu buffer TANPA menyalin
 // string raksasa, supaya file 25 MB tidak menggandakan memori.
@@ -909,26 +936,30 @@ export async function onRequestPost({ request, env }) {
     // dari chunk D1 hanya di sini, dipakai untuk kunci, lalu dibuang. Memori
     // tetap seukuran satu file terbesar (25 MB), bukan seluruh proyek — jadi
     // proyek berisi banyak file besar tidak lagi membuat Worker OOM.
+    // Nilai base64 satu file: file besar STREAMING dari chunk (tanpa data-URL
+    // utuh), file kecil dari baris/override (bisa berupa data-URL kecil —
+    // di-decode jadi base64 murni supaya terunggah sebagai file asli).
+    const assetValue = async f => {
+      if (f.is_big) {
+        const value = await bigFileValue(db, chunksTable, String(f.path));
+        return value === null ? { value: '', est: 0 } : { value, est: value.length };
+      }
+      const raw = String(f.content || '');
+      const dm = raw.startsWith('data:') && /^data:([a-z0-9.+-]+\/\/[a-z0-9.+-]+)?;base64,([A-Za-z0-9+/=]+)$/i.exec(raw);
+      if (dm && raw.length < 34_000_000) return { value: dm[2], est: raw.length };
+      return { value: b64(raw), est: raw.length };
+    };
     const assets = [];
     for (const f of files) {
       const ext = (String(f.path).split('.').pop() || '').toLowerCase();
-      // File biner (logo/ikon) disimpan di workspace sebagai data URL — decode
-      // jadi base64 murni supaya terunggah sebagai file gambar asli, bukan teks.
-      let value;
-      const raw = await fileContent(f);
-      const dm = raw.startsWith('data:') && /^data:([a-z0-9.+-]+\/\/[a-z0-9.+-]+)?;base64,([A-Za-z0-9+/=]+)$/i.exec(raw);
-      if (dm && raw.length < 34_000_000) {
-        value = dm[2];
-      } else {
-        value = b64(raw);
-      }
+      const { value, est } = await assetValue(f);
       assets.push({
         key: await assetKey(value, ext),
-        est: raw.length, // perkiraan ukuran payload — dasar pembagian batch upload
+        est: est, // perkiraan ukuran payload — dasar pembagian batch upload
         ext,
         path: f.path,
         contentType: MIME[ext] || 'application/octet-stream',
-        src: f // baris aslinya — konten dimuat ulang saat giliran upload
+        src: f // baris aslinya — nilai dimuat ulang saat giliran upload
       });
     }
 
@@ -962,9 +993,7 @@ export async function onRequestPost({ request, env }) {
     const uploadBatch = async batch => {
       const payload = [];
       for (const a of batch) {
-        const raw = await fileContent(a.src);
-        const dm = raw.startsWith('data:') && /^data:([a-z0-9.+-]+\/\/[a-z0-9.+-]+)?;base64,([A-Za-z0-9+/=]+)$/i.exec(raw);
-        const value = (dm && raw.length < 34_000_000) ? dm[2] : b64(raw);
+        const { value } = await assetValue(a.src);
         payload.push({ key: a.key, value, metadata: { contentType: a.contentType }, base64: true });
       }
       await cfFetch('/pages/assets/upload', creds.apiKey, {
