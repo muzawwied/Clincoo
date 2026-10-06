@@ -179,7 +179,7 @@
                     <!-- URL Preview: ter-update otomatis setiap perubahan kode (deploy latar belakang ke branch preview) -->
                     <div id="preview-url-block" class="hidden mt-3">
                         <p class="text-xs text-gray-500 flex items-center gap-1.5">
-                            <i data-lucide="eye" class="w-3.5 h-3.5 shrink-0"></i> URL Preview <span class="text-gray-400">(otomatis ter-update setiap perubahan kode)</span>
+                            <i data-lucide="eye" class="w-3.5 h-3.5 shrink-0"></i> URL Preview
                         </p>
                         <a id="preview-link" href="#" target="_blank" class="hidden text-blue-600 dark:text-blue-400 font-medium text-sm hover:underline break-all"></a>
                         <p id="preview-note" class="text-xs text-gray-400 mt-0.5">Preview aktif otomatis setelah perubahan kode disimpan di Workspace.</p>
@@ -201,9 +201,21 @@
                     <span class="w-2 h-2 rounded-full bg-gray-900 animate-pulse shrink-0"></span>
                     <span>Perubahan kode terdeteksi — situs live masih versi lama</span>
                 </div>
-                <button id="btn-deploy-changes" type="button" class="px-5 py-2.5 rounded-2xl bg-gray-900 text-white text-sm font-semibold transition-all hover:opacity-90 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60">
-                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> Deploy Sekarang
-                </button>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button id="btn-sub-toggle" type="button" class="px-3.5 py-2.5 rounded-2xl border border-gray-200 bg-white text-gray-700 text-sm font-semibold hover:bg-gray-100 transition-colors flex items-center gap-1.5">
+                        <i data-lucide="pencil" class="w-4 h-4"></i> <span class="hidden sm:inline">Ganti</span> subdomain
+                    </button>
+                    <button id="btn-deploy-changes" type="button" class="px-5 py-2.5 rounded-2xl bg-gray-900 text-white text-sm font-semibold transition-all hover:opacity-90 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i> Deploy Sekarang
+                    </button>
+                </div>
+                <div id="sub-rename-row" class="hidden w-full flex-col gap-2">
+                    <div class="flex items-center gap-2">
+                        <input id="input-sub-rename" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="biarkan kosong: subdomain tetap" oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/^-+/g, '')" class="flex-1 min-w-0 px-4 py-2.5 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-gray-900">
+                        <span class="text-sm text-gray-400 font-medium whitespace-nowrap select-none">.clincoo.biz.id</span>
+                    </div>
+                    <p class="text-xs text-gray-400 leading-relaxed">Isi untuk mengganti subdomain publik saat deploy pembaruan ini (huruf kecil, angka, tanda hubung). Kosongkan agar subdomain tetap seperti sekarang.</p>
+                </div>
             </div>
 
             <hr class="border-gray-200">
@@ -599,16 +611,31 @@
                 if (tl && st.last_deployment && st.last_deployment.created) tl.innerText = timeAgoIso(st.last_deployment.created);
             } catch (e) {}
         }
+        var subToggle = document.getElementById('btn-sub-toggle');
+        if (subToggle) subToggle.addEventListener('click', function () {
+            var row = document.getElementById('sub-rename-row');
+            if (!row) return;
+            var hiddenNow = row.classList.toggle('hidden');
+            row.classList.toggle('flex', !hiddenNow);
+            // saat baris input terbuka, banner ditumpuk ke bawah (juga di layar lebar)
+            var banner = document.getElementById('changes-banner');
+            if (banner) banner.classList.toggle('sm:flex-row', hiddenNow);
+        });
         document.getElementById('btn-deploy-changes').addEventListener('click', async function () {
             if (deployState.deploying) return;
+            var subIn = document.getElementById('input-sub-rename');
+            var subdomain = (subIn && subIn.value.trim()) || '';
             const btn = document.getElementById('btn-deploy-changes');
             btn.disabled = true;
             const lbl = btn.innerHTML;
             btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Mendeploy pembaruan…';
             try { lucide.createIcons(); } catch (e) {}
             try {
-                await processDeploy();
+                await processDeploy({ subdomain: subdomain });
                 await refreshLive();
+                if (subIn) subIn.value = '';
+                var row = document.getElementById('sub-rename-row');
+                if (row) { row.classList.add('hidden'); row.classList.remove('flex'); }
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = lbl;
@@ -684,8 +711,11 @@
             return parts.join('');
         }
 
-        async function deployOrchestrated() {
-            const prep = await apiFetchT('/deploy', { method: 'POST', body: JSON.stringify({ project_id: pid(), action: 'prepare' }) }, 90000);
+        async function deployOrchestrated(opts) {
+            var _b = { project_id: pid(), action: 'prepare' };
+            var _sub = opts && opts.subdomain;
+            if (_sub) _b.subdomain = _sub;
+            const prep = await apiFetchT('/deploy', { method: 'POST', body: JSON.stringify(_b) }, 90000);
             const jwt = prep.jwt, patch = prep.patch || {}, files = prep.files || [];
             if (!files.length) throw new Error('Workspace proyek masih kosong — tidak ada file untuk dideploy.');
             const setPhaseSrv = function (t) { return apiFetchT('/deploy', { method: 'POST', body: JSON.stringify({ project_id: pid(), action: 'phase', text: t }) }, 30000).catch(function () {}); };
@@ -754,7 +784,7 @@
             return await apiFetchT('/deploy', { method: 'POST', body: JSON.stringify({ project_id: pid(), action: 'finalize', manifest: manifest }) }, 180000);
         }
 
-        async function processDeploy() {
+        async function processDeploy(opts) {
             if (!pid()) { window.location.replace('../'); return; }
             if (deployState.deploying) return;
             deployState.deploying = true;
@@ -762,7 +792,7 @@
             if (_cb) _cb.classList.add('hidden');
             writeDeploySession({ status: 'deploying', started_at: Date.now() });
             try {
-                const res = await deployOrchestrated();
+                const res = await deployOrchestrated(opts);
                 deployState.deploying = false;
                 // DNS cache: hasil deploy langsung siap di halaman Domain Kustom (tanpa buka halaman itu dulu)
                 try { var _dk = 'clincoo_' + pid() + "_domain_cache", _dc = {}; try { _dc = JSON.parse(localStorage.getItem(_dk) || '{}') || {}; } catch (e) {} localStorage.setItem(_dk, JSON.stringify(Object.assign(_dc, { pagesUrl: (res && res.pages_url) || '', deployed: true, ts: Date.now() }))); } catch (e) {}
@@ -937,7 +967,7 @@
             if (!confirm("Apakah Anda yakin ingin menarik publikasi dan menonaktifkan situs ini?")) return;
             const btn = document.getElementById('btn-unpublish');
             const htmlAsli = btn ? btn.innerHTML : '';
-            if (btn) { btn.disabled = true; btn.classList.add('opacity-60','cursor-not-allowed'); btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Menarik publikasi...'; lucide.createIcons(); }
+            if (btn) { btn.disabled = true; btn.classList.add('opacity-60','cursor-not-allowed'); btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>'; lucide.createIcons(); }
             const ctl = new AbortController();
             const to = setTimeout(() => ctl.abort(), 90000); // tidak menunggu diam selamanya
             try {
