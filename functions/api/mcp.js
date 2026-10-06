@@ -20,7 +20,11 @@ const BE2 = 'https://clincoo-be2.pages.dev/api';
 // Domain utama deployment INI — dipakai tools baru (chat/deploy/settings/email),
 // karena endpoint-nya divalidasi middleware D1 LOKAL (sesi user pemilik proyek),
 // bukan backend paralel lama.
-const SELF_API = 'https://app.clincoo.buzz/api';
+// FIX (2026-10-06): aturan challenge/bot zona app.clincoo.buzz bisa memblokir
+// subrequest worker->dirinya sendiri (403 challenge, dibaca tool sebagai
+// 'Gagal mengambil file (403)'). Pakai domain pages.dev deployment produksi
+// yang sama — bebas aturan zona, terbukti tak terchallenge.
+const SELF_API = 'https://clincoo-be2.pages.dev/api';
 const PROTOCOL_VERSION = '2025-06-18';
 const SERVER_INFO = { name: 'clincoo-mcp', version: '1.0.0' };
 
