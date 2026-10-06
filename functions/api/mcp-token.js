@@ -143,11 +143,11 @@ export const SCOPE_GROUPS = [
     { key: 'file.write', label: 'Buat & tulis file', ready: true },
     { key: 'file.update', label: 'Ubah isi file yang ada', ready: true },
     { key: 'file.delete', label: 'Hapus file atau folder', ready: true },
-    { key: 'file.rename', label: 'Ganti nama file', ready: false },
-    { key: 'file.copy', label: 'Duplikat file', ready: false },
-    { key: 'file.move', label: 'Pindahkan file antar folder', ready: false },
-    { key: 'file.search', label: 'Cari file & isi konten', ready: false },
-    { key: 'file.stats', label: 'Statistik penggunaan file', ready: false }
+    { key: 'file.rename', label: 'Ganti nama file', ready: true },
+    { key: 'file.copy', label: 'Duplikat file', ready: true },
+    { key: 'file.move', label: 'Pindahkan file antar folder', ready: true },
+    { key: 'file.search', label: 'Cari file & isi konten', ready: true },
+    { key: 'file.stats', label: 'Statistik penggunaan file', ready: true }
   ] },
   { id: 'chat', label: 'Chat & AI', scopes: [
     { key: 'chat.ai', label: 'Gunakan AI Clincoo (kompilasi, refactor, analisis)', ready: true },
@@ -164,11 +164,11 @@ export const SCOPE_GROUPS = [
   { id: 'deploy', label: 'Deploy & Domain', scopes: [
     { key: 'deploy.run', label: 'Terbitkan situs ke Cloudflare Pages', ready: true },
     { key: 'deploy.status', label: 'Baca status deploy real-time', ready: true },
-    { key: 'deploy.log_read', label: 'Baca log build & deploy', ready: false },
-    { key: 'deploy.domain_add', label: 'Tambah domain kustom', ready: false },
-    { key: 'deploy.domain_remove', label: 'Lepas domain kustom', ready: false },
-    { key: 'deploy.domain_verify', label: 'Verifikasi DNS domain', ready: false },
-    { key: 'deploy.unpublish', label: 'Batalkan publikasi situs', ready: false },
+    { key: 'deploy.log_read', label: 'Baca log build & deploy', ready: true },
+    { key: 'deploy.domain_add', label: 'Tambah domain kustom', ready: true },
+    { key: 'deploy.domain_remove', label: 'Lepas domain kustom', ready: true },
+    { key: 'deploy.domain_verify', label: 'Verifikasi DNS domain', ready: true },
+    { key: 'deploy.unpublish', label: 'Batalkan publikasi situs', ready: true },
     { key: 'deploy.config_read', label: 'Baca konfigurasi deploy', ready: false },
     { key: 'deploy.config_update', label: 'Ubah konfigurasi deploy', ready: false },
     { key: 'deploy.rollback', label: 'Kembali ke versi deploy lama', ready: false }
@@ -188,20 +188,20 @@ export const SCOPE_GROUPS = [
   { id: 'email', label: 'Email', scopes: [
     { key: 'email.send', label: 'Kirim email lewat email API proyek', ready: true },
     { key: 'email.test', label: 'Kirim email uji coba', ready: false },
-    { key: 'email.audience_list', label: 'Lihat daftar audiens', ready: false },
+    { key: 'email.audience_list', label: 'Lihat daftar audiens', ready: true },
     { key: 'email.audience_create', label: 'Tambah audiens', ready: false },
     { key: 'email.audience_update', label: 'Ubah audiens', ready: false },
     { key: 'email.audience_delete', label: 'Hapus audiens', ready: false },
-    { key: 'email.broadcast_list', label: 'Lihat daftar broadcast', ready: false },
+    { key: 'email.broadcast_list', label: 'Lihat daftar broadcast', ready: true },
     { key: 'email.broadcast_create', label: 'Buat broadcast', ready: false },
-    { key: 'email.broadcast_send', label: 'Kirim broadcast massal', ready: false },
-    { key: 'email.metrics_read', label: 'Baca metrik & statistik email', ready: false }
+    { key: 'email.broadcast_send', label: 'Kirim broadcast massal', ready: true },
+    { key: 'email.metrics_read', label: 'Baca metrik & statistik email', ready: true }
   ] },
   { id: 'notif', label: 'Notifikasi', scopes: [
     { key: 'notif.list', label: 'Baca notifikasi dashboard', ready: true },
     { key: 'notif.send', label: 'Kirim notifikasi ke dashboard', ready: true },
-    { key: 'notif.delete', label: 'Hapus satu notifikasi', ready: false },
-    { key: 'notif.clear', label: 'Bersihkan semua notifikasi', ready: false },
+    { key: 'notif.delete', label: 'Hapus satu notifikasi', ready: true },
+    { key: 'notif.clear', label: 'Bersihkan semua notifikasi', ready: true },
     { key: 'notif.template_read', label: 'Baca template notifikasi', ready: false },
     { key: 'notif.template_update', label: 'Ubah template notifikasi', ready: false },
     { key: 'notif.subscribe', label: 'Kelola langganan notifikasi', ready: false },
@@ -234,10 +234,10 @@ export const SCOPE_GROUPS = [
     { key: 'pay.payout_read', label: 'Baca status payout', ready: false }
   ] },
   { id: 'sec', label: 'Keamanan & Akses', scopes: [
-    { key: 'sec.token_rotate', label: 'Putar ulang token MCP', ready: false },
-    { key: 'sec.scopes_manage', label: 'Ubah izin lewat MCP', ready: false },
-    { key: 'sec.activity_read', label: 'Baca log aktivitas MCP', ready: false },
-    { key: 'sec.activity_clear', label: 'Hapus log aktivitas MCP', ready: false },
+    { key: 'sec.token_rotate', label: 'Putar ulang token MCP', ready: true },
+    { key: 'sec.scopes_manage', label: 'Ubah izin lewat MCP', ready: true },
+    { key: 'sec.activity_read', label: 'Baca log aktivitas MCP', ready: true },
+    { key: 'sec.activity_clear', label: 'Hapus log aktivitas MCP', ready: true },
     { key: 'sec.sessions_list', label: 'Daftar sesi aktif', ready: false },
     { key: 'sec.sessions_revoke', label: 'Cabut sesi', ready: false },
     { key: 'sec.audit_read', label: 'Baca audit trail proyek', ready: false },

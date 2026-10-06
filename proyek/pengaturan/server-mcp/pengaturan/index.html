@@ -322,6 +322,7 @@
               <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Sambungkan proyek ini ke platform AI eksternal (Claude, Cursor, Windsurf, dll.) melalui Model Context Protocol. AI eksternal dapat mengakses workspace proyek ini secara real-time sesuai izin yang ditetapkan.</p>
             </div>
             <span id="mcp-status-badge" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300">Memuat…</span>
+          <span id="mcp-project-chip" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300"></span>
           </div>
 
           <!-- Memuat: skeleton animasi biar gak blank saat data diambil -->
@@ -591,6 +592,23 @@ function _mcpCacheWrite(d) {
 }
 function _mcpCacheClear() { try { localStorage.removeItem(_mcpCacheKey()); } catch (e) {} }
 
+
+// Chip judul proyek — bikin jelas PROYEK MANA yang sedang dikelola/dikonekkan
+// (laporan user: bingung karena AI eksternya nyambung ke proyek LAMA padahal
+// proyek baru dibuat; izin per-proyek).
+async function loadMcpProjectChip() {
+  var el = document.getElementById('mcp-project-chip');
+  if (!el) return;
+  try {
+    var r = await fetch(MCP_TOKEN_API.replace(/mcp-token\/?$/, 'projects'), { headers: { Authorization: 'Bearer ' + _mcpUserToken } });
+    var d = await r.json();
+    var list = (d && d.projects) || [];
+    var p = list.filter(function (x) { return x && x.id === _mcpPid(); })[0];
+    el.textContent = 'Proyek: ' + ((p && (p.title || p.name)) || _mcpPid() || '-');
+    el.classList.remove('hidden');
+  } catch (e) {}
+}
+
 async function loadMcp() {
   // 1) Ada cache? Tampilin LANGSUNG tanpa skeleton.
   var cached = _mcpCacheRead();
@@ -694,6 +712,7 @@ function loadMcpRetry() {
   if (el) el.style.display = 'none';
   var loading = document.getElementById('mcp-loading');
   if (loading) loading.style.display = 'flex';
+  loadMcpProjectChip();
   loadMcp();
 }
 

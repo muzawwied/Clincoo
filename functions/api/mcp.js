@@ -109,11 +109,11 @@ const SCOPE_GROUPS = [
     { key: 'file.write', label: 'Buat & tulis file', ready: true },
     { key: 'file.update', label: 'Ubah isi file yang ada', ready: true },
     { key: 'file.delete', label: 'Hapus file atau folder', ready: true },
-    { key: 'file.rename', label: 'Ganti nama file', ready: false },
-    { key: 'file.copy', label: 'Duplikat file', ready: false },
-    { key: 'file.move', label: 'Pindahkan file antar folder', ready: false },
-    { key: 'file.search', label: 'Cari file & isi konten', ready: false },
-    { key: 'file.stats', label: 'Statistik penggunaan file', ready: false }
+    { key: 'file.rename', label: 'Ganti nama file', ready: true },
+    { key: 'file.copy', label: 'Duplikat file', ready: true },
+    { key: 'file.move', label: 'Pindahkan file antar folder', ready: true },
+    { key: 'file.search', label: 'Cari file & isi konten', ready: true },
+    { key: 'file.stats', label: 'Statistik penggunaan file', ready: true }
   ] },
   { id: 'chat', label: 'Chat & AI', scopes: [
     { key: 'chat.ai', label: 'Gunakan AI Clincoo (kompilasi, refactor, analisis)', ready: true },
@@ -130,11 +130,11 @@ const SCOPE_GROUPS = [
   { id: 'deploy', label: 'Deploy & Domain', scopes: [
     { key: 'deploy.run', label: 'Terbitkan situs ke Cloudflare Pages', ready: true },
     { key: 'deploy.status', label: 'Baca status deploy real-time', ready: true },
-    { key: 'deploy.log_read', label: 'Baca log build & deploy', ready: false },
-    { key: 'deploy.domain_add', label: 'Tambah domain kustom', ready: false },
-    { key: 'deploy.domain_remove', label: 'Lepas domain kustom', ready: false },
-    { key: 'deploy.domain_verify', label: 'Verifikasi DNS domain', ready: false },
-    { key: 'deploy.unpublish', label: 'Batalkan publikasi situs', ready: false },
+    { key: 'deploy.log_read', label: 'Baca log build & deploy', ready: true },
+    { key: 'deploy.domain_add', label: 'Tambah domain kustom', ready: true },
+    { key: 'deploy.domain_remove', label: 'Lepas domain kustom', ready: true },
+    { key: 'deploy.domain_verify', label: 'Verifikasi DNS domain', ready: true },
+    { key: 'deploy.unpublish', label: 'Batalkan publikasi situs', ready: true },
     { key: 'deploy.config_read', label: 'Baca konfigurasi deploy', ready: false },
     { key: 'deploy.config_update', label: 'Ubah konfigurasi deploy', ready: false },
     { key: 'deploy.rollback', label: 'Kembali ke versi deploy lama', ready: false }
@@ -154,20 +154,20 @@ const SCOPE_GROUPS = [
   { id: 'email', label: 'Email', scopes: [
     { key: 'email.send', label: 'Kirim email lewat email API proyek', ready: true },
     { key: 'email.test', label: 'Kirim email uji coba', ready: false },
-    { key: 'email.audience_list', label: 'Lihat daftar audiens', ready: false },
+    { key: 'email.audience_list', label: 'Lihat daftar audiens', ready: true },
     { key: 'email.audience_create', label: 'Tambah audiens', ready: false },
     { key: 'email.audience_update', label: 'Ubah audiens', ready: false },
     { key: 'email.audience_delete', label: 'Hapus audiens', ready: false },
-    { key: 'email.broadcast_list', label: 'Lihat daftar broadcast', ready: false },
+    { key: 'email.broadcast_list', label: 'Lihat daftar broadcast', ready: true },
     { key: 'email.broadcast_create', label: 'Buat broadcast', ready: false },
-    { key: 'email.broadcast_send', label: 'Kirim broadcast massal', ready: false },
-    { key: 'email.metrics_read', label: 'Baca metrik & statistik email', ready: false }
+    { key: 'email.broadcast_send', label: 'Kirim broadcast massal', ready: true },
+    { key: 'email.metrics_read', label: 'Baca metrik & statistik email', ready: true }
   ] },
   { id: 'notif', label: 'Notifikasi', scopes: [
     { key: 'notif.list', label: 'Baca notifikasi dashboard', ready: true },
     { key: 'notif.send', label: 'Kirim notifikasi ke dashboard', ready: true },
-    { key: 'notif.delete', label: 'Hapus satu notifikasi', ready: false },
-    { key: 'notif.clear', label: 'Bersihkan semua notifikasi', ready: false },
+    { key: 'notif.delete', label: 'Hapus satu notifikasi', ready: true },
+    { key: 'notif.clear', label: 'Bersihkan semua notifikasi', ready: true },
     { key: 'notif.template_read', label: 'Baca template notifikasi', ready: false },
     { key: 'notif.template_update', label: 'Ubah template notifikasi', ready: false },
     { key: 'notif.subscribe', label: 'Kelola langganan notifikasi', ready: false },
@@ -200,10 +200,10 @@ const SCOPE_GROUPS = [
     { key: 'pay.payout_read', label: 'Baca status payout', ready: false }
   ] },
   { id: 'sec', label: 'Keamanan & Akses', scopes: [
-    { key: 'sec.token_rotate', label: 'Putar ulang token MCP', ready: false },
-    { key: 'sec.scopes_manage', label: 'Ubah izin lewat MCP', ready: false },
-    { key: 'sec.activity_read', label: 'Baca log aktivitas MCP', ready: false },
-    { key: 'sec.activity_clear', label: 'Hapus log aktivitas MCP', ready: false },
+    { key: 'sec.token_rotate', label: 'Putar ulang token MCP', ready: true },
+    { key: 'sec.scopes_manage', label: 'Ubah izin lewat MCP', ready: true },
+    { key: 'sec.activity_read', label: 'Baca log aktivitas MCP', ready: true },
+    { key: 'sec.activity_clear', label: 'Hapus log aktivitas MCP', ready: true },
     { key: 'sec.sessions_list', label: 'Daftar sesi aktif', ready: false },
     { key: 'sec.sessions_revoke', label: 'Cabut sesi', ready: false },
     { key: 'sec.audit_read', label: 'Baca audit trail proyek', ready: false },
@@ -270,7 +270,14 @@ function normalizeScopes(raw) {
   return o;
 }
   scopes = normalizeScopes(scopes);
-  return { token: tok, be2Token: be2, scopes };
+  // Judul proyek — bikin respons tool self-identifying (AI eksternal tahu
+  // persis proyek mana yang sedang dipegangnya).
+  let title = null;
+  try {
+    const pr = await env.DB.prepare('SELECT title FROM user_projects WHERE id = ?').bind(projectId).first();
+    title = pr && pr.title;
+  } catch (e) {}
+  return { token: tok, be2Token: be2, scopes, title };
 }
 
 function json(data, status = 200, headers = {}) {
@@ -343,15 +350,28 @@ const TOOL_SCOPES = {
   get_project_info: null, chat_ai: 'chat.ai', deploy_project: 'deploy.run', deploy_status: 'deploy.status',
   get_settings: 'settings.read', update_settings: 'settings.update', send_email: 'email.send',
   list_notifications: 'notif.list', send_notification: 'notif.send',
-  db_info: 'db.info', db_tables: 'db.tables', db_rows: 'db.rows', pay_info: 'pay.info'
+  db_info: 'db.info', db_tables: 'db.tables', db_rows: 'db.rows', pay_info: 'pay.info',
+  search_files: 'file.search', file_stats: 'file.stats', rename_item: 'file.rename', copy_item: 'file.copy', move_item: 'file.move',
+  notif_delete: 'notif.delete', notif_clear: 'notif.clear',
+  email_audience: 'email.audience_list', email_broadcast: 'email.broadcast', email_metrics: 'email.metrics_read', email_config: 'email.metrics_read',
+  deploy_domain: 'deploy.domain', deploy_unpublish: 'deploy.unpublish', deploy_logs: 'deploy.log_read',
+  mcp_activity: 'sec.activity', rotate_mcp_token: 'sec.token_rotate', update_mcp_scopes: 'sec.scopes_manage'
 };
-// Izin per-aksi untuk tool database (granular): setiap aksi cek izinnya sendiri.
+// Tool multi-aksi: izin granular per-aksi (setiap aksi cek izinnya sendiri).
+const SCOPE_MULTI = {
+  'db.tables': { suffixes: ['_list', '_create', '_delete'], def: '_list', map: { list: '_list', create: '_create', delete: '_delete' } },
+  'db.rows': { suffixes: ['_list', '_create', '_update', '_delete'], def: '_list', map: { list: '_list', create: '_create', update: '_update', delete: '_delete' } },
+  'deploy.domain': { suffixes: ['_add', '_remove', '_verify'], def: '_verify', map: { add: '_add', remove: '_remove', verify: '_verify' } },
+  'email.broadcast': { suffixes: ['_list', '_send'], def: '_list', map: { list: '_list', send: '_send' } },
+  'sec.activity': { suffixes: ['_read', '_clear'], def: '_read', map: { read: '_read', clear: '_clear' } }
+};
 function toolScopeFor(name, args) {
   const base = TOOL_SCOPES[name];
   if (base === undefined) return 'unknown';
-  if (base === 'db.tables' || base === 'db.rows') {
-    const a = String((args && args.action) || 'list');
-    return base + '_' + (a === 'create' || a === 'update' || a === 'delete' ? a : 'list');
+  const m = SCOPE_MULTI[base];
+  if (m) {
+    const a = String((args && args.action) || '');
+    return base + (m.map[a] || m.def);
   }
   return base;
 }
@@ -363,9 +383,8 @@ function allowedTools(scopes) {
   return TOOLS.filter(t => {
     const need = toolScope(t.name);
     if (need === null) return true;
-    if (need === 'db.tables' || need === 'db.rows') {
-      return ['_list', '_create', '_update', '_delete'].some(sfx => scopes[need + sfx] !== false);
-    }
+    const m = SCOPE_MULTI[need];
+    if (m) return m.suffixes.some(sfx => scopes[need + sfx] !== false);
     return scopes[need] !== false;
   });
 }
@@ -544,6 +563,151 @@ const TOOLS = [
       },
       required: ['to', 'subject', 'html']
     }
+  },
+  {
+    name: 'search_files',
+    description: 'Cari di workspace proyek: cocokkan query terhadap nama path DAN isi file. Mengembalikan path yang cocok + cuplikan konteks.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Teks yang dicari (case-insensitive)' },
+        folder: { type: 'string', description: 'Batasi pencarian ke folder tertentu (opsional)' }
+      },
+      required: ['query']
+    }
+  },
+  {
+    name: 'file_stats',
+    description: 'Statistik workspace proyek: jumlah file/folder, total ukuran, file terbesar.',
+    inputSchema: { type: 'object', properties: {}, required: [] }
+  },
+  {
+    name: 'rename_item',
+    description: 'Ganti nama file atau folder (beserta seluruh isinya) di workspace proyek.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Path file/folder lama' },
+        new_path: { type: 'string', description: 'Path baru' }
+      },
+      required: ['path', 'new_path']
+    }
+  },
+  {
+    name: 'copy_item',
+    description: 'Duplikat file atau folder (beserta isinya) ke path baru di workspace proyek.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Path file/folder sumber' },
+        new_path: { type: 'string', description: 'Path salinan baru' }
+      },
+      required: ['path', 'new_path']
+    }
+  },
+  {
+    name: 'move_item',
+    description: 'Pindahkan file atau folder (beserta isinya) ke path baru di workspace proyek.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Path file/folder lama' },
+        new_path: { type: 'string', description: 'Path tujuan' }
+      },
+      required: ['path', 'new_path']
+    }
+  },
+  {
+    name: 'notif_delete',
+    description: 'Hapus satu notifikasi dashboard pemilik proyek berdasarkan ID (lihat ID lewat list_notifications).',
+    inputSchema: {
+      type: 'object',
+      properties: { id: { type: 'string', description: 'ID notifikasi yang dihapus' } },
+      required: ['id']
+    }
+  },
+  {
+    name: 'notif_clear',
+    description: 'Hapus SEMUA notifikasi dashboard pemilik proyek.',
+    inputSchema: { type: 'object', properties: {}, required: [] }
+  },
+  {
+    name: 'email_audience',
+    description: 'Daftar kontak audiens email proyek (untuk broadcast).',
+    inputSchema: { type: 'object', properties: {}, required: [] }
+  },
+  {
+    name: 'email_broadcast',
+    description: 'Kelola broadcast email proyek. action "list" = riwayat broadcast; action "send" = kirim massal (maks 50 penerima, wajib array to, subject, html).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        action: { type: 'string', enum: ['list', 'send'], description: 'Operasi (default: list)' },
+        to: { type: 'array', items: { type: 'string' }, description: 'Alamat penerima untuk action send (maks 50)' },
+        subject: { type: 'string', description: 'Subjek email untuk action send' },
+        html: { type: 'string', description: 'Isi email HTML untuk action send' }
+      },
+      required: []
+    }
+  },
+  {
+    name: 'email_metrics',
+    description: 'Metrik & statistik email proyek: status aktifasi, kuota, dan histori kirim terbaru.',
+    inputSchema: { type: 'object', properties: {}, required: [] }
+  },
+  {
+    name: 'email_config',
+    description: 'Baca konfigurasi email proyek (status, pengirim, kuota). API key disamarkan.',
+    inputSchema: { type: 'object', properties: {}, required: [] }
+  },
+  {
+    name: 'deploy_domain',
+    description: 'Kelola domain kustom situs proyek. action "add" = pasang domain; "remove" = lepas domain; "verify" = cek status DNS/CNAME domain.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        action: { type: 'string', enum: ['add', 'remove', 'verify'], description: 'Operasi domain (default: verify)' },
+        domain: { type: 'string', description: 'Nama domain, mis. "tokoku.com"' }
+      },
+      required: ['domain']
+    }
+  },
+  {
+    name: 'deploy_unpublish',
+    description: 'Batalkan publikasi situs proyek — situs live dinonaktifkan. PERHATIAN: bersifat permanen untuk deployment saat ini.',
+    inputSchema: { type: 'object', properties: {}, required: [] }
+  },
+  {
+    name: 'deploy_logs',
+    description: 'Baca log build & deploy terbaru proyek.',
+    inputSchema: {
+      type: 'object',
+      properties: { limit: { type: 'number', description: 'Jumlah entri maksimum (default 15, maks 50)' } },
+      required: []
+    }
+  },
+  {
+    name: 'mcp_activity',
+    description: 'Log aktivitas server MCP proyek ini. action "read" = 30 aktivitas terakhir; action "clear" = hapus riwayat.',
+    inputSchema: {
+      type: 'object',
+      properties: { action: { type: 'string', enum: ['read', 'clear'], description: 'Operasi (default: read)' } },
+      required: []
+    }
+  },
+  {
+    name: 'rotate_mcp_token',
+    description: 'Buat ulang token MCP proyek ini. Token lama LANGSUNG tidak berlaku — pemanggil harus memakai URL + token baru dari respons ini. Gunakan hanya bila diminta pemilik.',
+    inputSchema: { type: 'object', properties: {}, required: [] }
+  },
+  {
+    name: 'update_mcp_scopes',
+    description: 'Ubah izin (scopes) server MCP proyek ini dari AI eksternal. scopes: { "<key.izin>": true/false }, mis. { "deploy.run": true }. Daftar grup key: file.*, chat.*, deploy.*, settings.*, email.*, notif.*, db.*, pay.*, sec.*, sys.*.',
+    inputSchema: {
+      type: 'object',
+      properties: { scopes: { type: 'object', description: 'Peta izin baru (key -> boolean)' } },
+      required: ['scopes']
+    }
   }
 ];
 
@@ -564,9 +728,10 @@ async function callTool(name, args, ctx) {
         const size = new Blob([f.content || '']).size;
         lines.push('- ' + rel + ' (' + (size > 1024 ? (size / 1024).toFixed(1) + ' KB' : size + ' B') + ')');
       });
+      const t = ctx.title ? '"' + ctx.title + '" ' : '';
       const text = lines.length
-        ? 'Workspace proyek (' + files.length + ' item):\n' + lines.join('\n')
-        : 'Workspace proyek kosong.';
+        ? 'Workspace proyek ' + t + '(' + files.length + ' item):\n' + lines.join('\n')
+        : 'Workspace proyek ' + t + 'kosong (belum ada file).';
       return { content: [{ type: 'text', text }] };
     }
     case 'read_file': {
@@ -620,7 +785,7 @@ async function callTool(name, args, ctx) {
         fetchFiles(be2Token, projectId)
       ]);
       const settings = (st.ok && st.data && !st.data.error) ? (st.data.settings || {}) : {};
-      let info = { project_id: projectId, total_files: files.filter(f => !String(f.path).endsWith('/')).length, app_name: settings.app_name || null };
+      let info = { project_id: projectId, title: ctx.title || null, total_files: files.filter(f => !String(f.path).endsWith('/')).length, app_name: settings.app_name || null };
       return { content: [{ type: 'text', text: JSON.stringify(info, null, 2) }] };
     }
     case 'chat_ai': {
@@ -836,6 +1001,219 @@ async function callTool(name, args, ctx) {
       if (!r.ok) throw new Error('Gagal mengirim email (' + r.status + '): ' + ((r.data && (r.data.error || r.data.message)) || ''));
       return { content: [{ type: 'text', text: 'Email terkirim ke ' + to + '. ' + JSON.stringify(r.data) }] };
     }
+    case 'search_files': {
+      const q = String(args.query == null ? '' : args.query).toLowerCase();
+      if (!q) throw new Error('Parameter "query" wajib diisi');
+      const files = await fetchFiles(be2Token, projectId);
+      const folder = args.folder ? String(args.folder).trim().replace(/^\/|\/$/g, '') : '';
+      const hits = [];
+      let bigFetched = 0;
+      for (const f of files) {
+        const p = String(f.path || '');
+        if (!p || p.endsWith('/')) continue;
+        if (folder && !p.toLowerCase().startsWith(folder.toLowerCase() + '/')) continue;
+        if (p.toLowerCase().includes(q)) { hits.push(p + ' (cocok di nama)'); continue; }
+        let content = String(f.content || '');
+        if (!content && f.is_big && bigFetched < 5) {
+          bigFetched++;
+          const r = await selfJson('/project-files?project_id=' + encodeURIComponent(projectId) + '&path=' + encodeURIComponent(p) + '&content=1', be2Token);
+          if (r.ok && r.data) content = r.data.content_b64 ? atob(r.data.content_b64) : String(r.data.content || '');
+        }
+        const idx = content.toLowerCase().indexOf(q);
+        if (idx !== -1) hits.push(p + ': …' + content.slice(Math.max(0, idx - 40), idx + 80).replace(/\s+/g, ' ') + '…');
+        if (hits.length >= 50) break;
+      }
+      return { content: [{ type: 'text', text: hits.length ? hits.length + ' hasil untuk "' + q + '":\n' + hits.join('\n') : 'Tidak ada hasil untuk "' + q + '".' }] };
+    }
+    case 'file_stats': {
+      const files = await fetchFiles(be2Token, projectId);
+      let nFiles = 0, nFolders = 0, total = 0;
+      const sizes = [];
+      for (const f of files) {
+        const p = String(f.path || '');
+        if (!p) continue;
+        if (p.endsWith('/')) { nFolders++; continue; }
+        nFiles++;
+        const sz = Number(f.size) || new Blob([f.content || '']).size;
+        total += sz;
+        sizes.push({ p, sz });
+      }
+      sizes.sort((a, b) => b.sz - a.sz);
+      const fmt = n => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : (n > 1024 ? (n / 1024).toFixed(1) + ' KB' : n + ' B');
+      const top = sizes.slice(0, 5).map(x => '- ' + x.p + ' (' + fmt(x.sz) + ')').join('\n');
+      return { content: [{ type: 'text', text: 'Workspace proyek "' + (ctx.title || projectId) + '": ' + nFiles + ' file, ' + nFolders + ' folder, total ' + fmt(total) + '.\nTerbesar:\n' + (top || '-') }] };
+    }
+    case 'rename_item':
+    case 'move_item': {
+      const fromN = safePath(args.path).replace(/\/+$/, '');
+      const toN = safePath(args.new_path).replace(/\/+$/, '');
+      if (fromN.toLowerCase() === toN.toLowerCase()) throw new Error('Path baru sama dengan path lama');
+      const files = await fetchFiles(be2Token, projectId);
+      const map = [];
+      files.forEach(f => {
+        const p = String(f.path || '').replace(/^\/+|\/+$/g, '');
+        if (!p) return;
+        const isExact = p.toLowerCase() === fromN.toLowerCase();
+        const isChild = p.toLowerCase().startsWith(fromN.toLowerCase() + '/');
+        if (isExact || isChild) map.push({ f, old: p, neu: isExact ? toN : toN + p.slice(fromN.length) });
+      });
+      if (!map.length) throw new Error('File/folder tidak ditemukan: ' + fromN);
+      const taken = new Set(files.map(f => String(f.path || '').toLowerCase()));
+      for (const m of map) if (taken.has(m.neu.toLowerCase()) && !map.some(x => x.old.toLowerCase() === m.neu.toLowerCase())) throw new Error('Path tujuan sudah ada: ' + m.neu);
+      for (const m of map) {
+        if (m.f.is_big && !m.f.content) {
+          const r = await selfJson('/project-files?project_id=' + encodeURIComponent(projectId) + '&path=' + encodeURIComponent(m.old) + '&content=1', be2Token);
+          if (r.ok && r.data) {
+            if (r.data.content_b64) { m.f.content_b64 = r.data.content_b64; m.f.content = ''; }
+            else m.f.content = String(r.data.content || '');
+            if (r.data.size) m.f.size = r.data.size;
+          }
+        }
+      }
+      map.forEach(m => { m.f.path = m.neu; });
+      await pushFiles(be2Token, projectId, files);
+      return { content: [{ type: 'text', text: 'Berhasil ' + (name === 'rename_item' ? 'mengganti nama' : 'memindahkan') + ' ' + map.length + ' item: ' + fromN + ' → ' + toN + '.' }] };
+    }
+    case 'copy_item': {
+      const fromN = safePath(args.path).replace(/\/+$/, '');
+      const toN = safePath(args.new_path).replace(/\/+$/, '');
+      if (fromN.toLowerCase() === toN.toLowerCase()) throw new Error('Path salinan harus berbeda dengan sumber');
+      const files = await fetchFiles(be2Token, projectId);
+      const map = [];
+      files.forEach(f => {
+        const p = String(f.path || '').replace(/^\/+|\/+$/g, '');
+        if (!p) return;
+        const isExact = p.toLowerCase() === fromN.toLowerCase();
+        const isChild = p.toLowerCase().startsWith(fromN.toLowerCase() + '/');
+        if (isExact || isChild) map.push({ f, old: p, neu: isExact ? toN : toN + p.slice(fromN.length) });
+      });
+      if (!map.length) throw new Error('File/folder tidak ditemukan: ' + fromN);
+      const taken = new Set(files.map(f => String(f.path || '').toLowerCase()));
+      for (const m of map) if (taken.has(m.neu.toLowerCase())) throw new Error('Path tujuan sudah ada: ' + m.neu);
+      const copies = [];
+      for (const m of map) {
+        const nf = { path: m.neu, content: String(m.f.content || '') };
+        if (m.f.is_big && !m.f.content) {
+          const r = await selfJson('/project-files?project_id=' + encodeURIComponent(projectId) + '&path=' + encodeURIComponent(m.old) + '&content=1', be2Token);
+          if (r.ok && r.data) {
+            if (r.data.content_b64) { nf.content = ''; nf.content_b64 = r.data.content_b64; }
+            else nf.content = String(r.data.content || '');
+            if (r.data.size) nf.size = r.data.size;
+          }
+        }
+        copies.push(nf);
+      }
+      files.push(...copies);
+      await pushFiles(be2Token, projectId, files);
+      return { content: [{ type: 'text', text: 'Berhasil menyalin ' + copies.length + ' item: ' + fromN + ' → ' + toN + '.' }] };
+    }
+    case 'notif_delete': {
+      const id = String(args.id == null ? '' : args.id).trim();
+      if (!id) throw new Error('Parameter "id" wajib diisi');
+      const r = await selfJson('/notifications?id=' + encodeURIComponent(id), ctx.be2Token, { method: 'DELETE' });
+      if (!r.ok) throw new Error('Gagal menghapus notifikasi (' + r.status + '): ' + ((r.data && (r.data.error || r.data.message)) || ''));
+      return { content: [{ type: 'text', text: 'Notifikasi ' + id + ' dihapus.' }] };
+    }
+    case 'notif_clear': {
+      const r = await selfJson('/notifications', ctx.be2Token, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear_all' }) });
+      if (!r.ok) throw new Error('Gagal membersihkan notifikasi (' + r.status + '): ' + ((r.data && (r.data.error || r.data.message)) || ''));
+      return { content: [{ type: 'text', text: 'Semua notifikasi dashboard proyek dihapus.' }] };
+    }
+    case 'email_audience': {
+      const r = await selfJson('/email?action=audience_list&project_id=' + encodeURIComponent(projectId), ctx.be2Token);
+      if (!r.ok) throw new Error('Gagal membaca audiens (' + r.status + '): ' + ((r.data && (r.data.error || r.data.message)) || ''));
+      return { content: [{ type: 'text', text: JSON.stringify(r.data, null, 2) }] };
+    }
+    case 'email_broadcast': {
+      const action = String(args.action || 'list');
+      if (action === 'send') {
+        const to = Array.isArray(args.to) ? args.to.map(String) : [];
+        if (!to.length) throw new Error('Parameter "to" wajib berisi minimal satu alamat email');
+        if (to.length > 50) throw new Error('Maksimum 50 penerima per broadcast');
+        const r = await selfJson('/email', ctx.be2Token, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'broadcast', project_id: projectId, to, subject: String(args.subject == null ? '' : args.subject), html: String(args.html == null ? '' : args.html) }) });
+        if (!r.ok) throw new Error('Gagal mengirim broadcast (' + r.status + '): ' + ((r.data && (r.data.error || r.data.message)) || ''));
+        return { content: [{ type: 'text', text: 'Broadcast terkirim ke ' + to.length + ' penerima. ' + JSON.stringify(r.data) }] };
+      }
+      const r = await selfJson('/email?action=broadcast_list&project_id=' + encodeURIComponent(projectId), ctx.be2Token);
+      if (!r.ok) throw new Error('Gagal membaca riwayat broadcast (' + r.status + ')');
+      return { content: [{ type: 'text', text: JSON.stringify(r.data, null, 2) }] };
+    }
+    case 'email_metrics': {
+      const pid = encodeURIComponent(projectId);
+      const [cfg, hist] = await Promise.all([
+        selfJson('/email?action=config&project_id=' + pid, ctx.be2Token),
+        selfJson('/email?action=history&project_id=' + pid, ctx.be2Token)
+      ]);
+      if (!cfg.ok && !hist.ok) throw new Error('Gagal membaca metrik email (' + cfg.status + ')');
+      const c = (cfg.ok && cfg.data) || {};
+      if (c.api_key) c.api_key = String(c.api_key).slice(0, 8) + '…(disamarkan)';
+      const h = (hist.ok && hist.data) || {};
+      return { content: [{ type: 'text', text: 'Konfigurasi: ' + JSON.stringify(c) + '\nHistori: ' + JSON.stringify(h).slice(0, 4000) }] };
+    }
+    case 'email_config': {
+      const r = await selfJson('/email?action=config&project_id=' + encodeURIComponent(projectId), ctx.be2Token);
+      if (!r.ok) throw new Error('Gagal membaca konfigurasi email (' + r.status + '): ' + ((r.data && (r.data.error || r.data.message)) || ''));
+      const c = r.data || {};
+      if (c.api_key) c.api_key = String(c.api_key).slice(0, 8) + '…(disamarkan)';
+      return { content: [{ type: 'text', text: JSON.stringify(c, null, 2) }] };
+    }
+    case 'deploy_domain': {
+      const action = String(args.action || 'verify');
+      const domain = String(args.domain == null ? '' : args.domain).trim().toLowerCase();
+      if (!domain || !/^([a-z0-9-]+\.)+[a-z]{2,}$/.test(domain)) throw new Error('Parameter "domain" wajib berisi domain yang valid, mis. "tokoku.com"');
+      const act = action === 'add' ? 'add_domain' : (action === 'remove' ? 'remove_domain' : 'dns_status');
+      const r = await selfJson('/deploy', ctx.be2Token, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project_id: projectId, action: act, domain }) });
+      if (!r.ok) throw new Error('Gagal ' + action + ' domain (' + r.status + '): ' + ((r.data && (r.data.error || r.data.message)) || ''));
+      return { content: [{ type: 'text', text: 'Domain ' + domain + ' (' + action + '): ' + JSON.stringify(r.data) }] };
+    }
+    case 'deploy_unpublish': {
+      const r = await selfJson('/deploy', ctx.be2Token, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project_id: projectId, action: 'unpublish' }) });
+      if (!r.ok) throw new Error('Gagal membatalkan publikasi (' + r.status + '): ' + ((r.data && (r.data.error || r.data.message)) || ''));
+      return { content: [{ type: 'text', text: 'Publikasi situs proyek dibatalkan. ' + JSON.stringify(r.data) }] };
+    }
+    case 'deploy_logs': {
+      const limit = Math.min(parseInt(args.limit || '15', 10) || 15, 50);
+      const r = await selfJson('/deploy-logs?project_id=' + encodeURIComponent(projectId) + '&limit=' + limit, ctx.be2Token);
+      if (!r.ok) throw new Error('Gagal membaca log deploy (' + r.status + ')');
+      const logs = (r.data && r.data.logs) || [];
+      const lines = logs.map(l => '- ' + (l.created_at || '') + ' [' + (l.status || l.phase || '-') + '] ' + (l.message || l.detail || JSON.stringify(l).slice(0, 120)));
+      return { content: [{ type: 'text', text: logs.length ? logs.length + ' log deploy terbaru:\n' + lines.join('\n') : 'Belum ada log deploy.' }] };
+    }
+    case 'mcp_activity': {
+      const action = String(args.action || 'read');
+      const t = tableFor('mcp_activity', projectId);
+      if (action === 'clear') {
+        await ctx.env.DB.prepare('DROP TABLE IF EXISTS ' + t).run();
+        return { content: [{ type: 'text', text: 'Riwayat aktivitas MCP proyek ini dihapus.' }] };
+      }
+      await ctx.env.DB.prepare("CREATE TABLE IF NOT EXISTS " + t + " (id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT, tool TEXT NOT NULL, ok INTEGER DEFAULT 1, detail TEXT, created_at TEXT DEFAULT (datetime('now')))").run();
+      const rows = await ctx.env.DB.prepare('SELECT tool, ok, detail, created_at FROM ' + t + ' ORDER BY id DESC LIMIT 30').all();
+      const list = rows.results || [];
+      const lines = list.map(r => '- ' + (r.created_at || '') + ' ' + r.tool + ' → ' + (r.ok ? 'Berhasil' : 'Gagal' + (r.detail ? ': ' + r.detail : '')));
+      return { content: [{ type: 'text', text: list.length ? list.length + ' aktivitas MCP terbaru:\n' + lines.join('\n') : 'Belum ada aktivitas MCP.' }] };
+    }
+    case 'rotate_mcp_token': {
+      const r = await selfJson('/mcp-token', ctx.be2Token, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project_id: projectId, scopes: ctx.scopes }) });
+      if (!r.ok || !r.data || !r.data.token) throw new Error('Gagal membuat ulang token (' + r.status + '): ' + ((r.data && (r.data.error || r.data.message)) || ''));
+      const url = 'https://app.clincoo.buzz/api/mcp?project_id=' + encodeURIComponent(projectId);
+      return { content: [{ type: 'text', text: 'Token baru dibuat — token lama TIDAK berlaku lagi. Segera perbarui konfigurasi klien MCP dengan:\nURL: ' + url + '\nToken: ' + r.data.token + '\nURL lengkap: ' + url + '&token=' + r.data.token }] };
+    }
+    case 'update_mcp_scopes': {
+      const input = (args.scopes && typeof args.scopes === 'object' && !Array.isArray(args.scopes)) ? args.scopes : null;
+      if (!input) throw new Error('Parameter "scopes" wajib berupa objek { "key.izin": true/false }');
+      const next = Object.assign({}, ctx.scopes);
+      let n = 0;
+      Object.keys(input).forEach(k => {
+        if (!/^[a-z]+\.[a-z_]+$/.test(k)) return;
+        if (typeof input[k] !== 'boolean') return;
+        next[k] = input[k]; n++;
+      });
+      if (!n) throw new Error('Tidak ada izin valid yang diubah');
+      const r = await selfJson('/mcp-token', ctx.be2Token, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project_id: projectId, scopes: next }) });
+      if (!r.ok || !r.data || !r.data.ok) throw new Error('Gagal menyimpan izin (' + r.status + '): ' + ((r.data && (r.data.error || r.data.message)) || ''));
+      const on = Object.keys(r.data.scopes || {}).filter(k => k.indexOf('.') !== -1 && r.data.scopes[k] === true).length;
+      return { content: [{ type: 'text', text: n + ' izin diperbarui. Total aktif: ' + on + '/100.' }] };
+    }
     default:
       throw new Error('Tool tidak dikenal: ' + name);
   }
@@ -860,7 +1238,7 @@ export async function onRequestPost(context) {
   const projectId = url.searchParams.get('project_id') || request.headers.get('X-Project-Id') || '';
   const auth = await authMcp(request, env, projectId);
   if (auth.res) return auth.res;
-  const ctx = { be2Token: auth.be2Token, projectId, scopes: auth.scopes };
+  const ctx = { be2Token: auth.be2Token, projectId, scopes: auth.scopes, env, title: auth.title };
 
   let body;
   try {
