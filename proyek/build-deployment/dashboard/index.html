@@ -707,6 +707,14 @@
                 if (Object.prototype.hasOwnProperty.call(patch, f.path)) value = valueFromContent(patch[f.path]);
                 else if (f.is_big) value = await bigValueClient(f.path);
                 else value = valueFromContent(smalls.get(f.path) || '');
+                // base64 wajib kelipatan 4 — jika tidak, file tersimpan tidak utuh
+                // (contoh: penyimpanan lama terpotong karena kuota D1 penuh).
+                // Upload file rusak ditolak Cloudflare di tengah jalan dan
+                // memunculkan error 1101 yang membingungkan — tolak di sini
+                // dengan pesan yang jelas dan solusinya.
+                if (value && value.length % 4) {
+                    throw new Error('File ' + f.path + ' rusak (tersimpan tidak utuh di server — kemungkinan penyimpanannya terpotong di tengah proses). Hapus file ini di Workspace lalu unggah ulang, atau edit isinya, sebelum deploy.');
+                }
                 const key = await assetKeyBrowser(value, f.ext || '');
                 entries.push({ path: f.path, key: key, value: value, contentType: f.contentType || 'application/octet-stream' });
                 done++;
