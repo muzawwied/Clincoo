@@ -2,16 +2,16 @@
 <html lang="id">
 <head>
 <script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
-  <script src="../../../js/accent-init.js"></script>
+  <script src="../../../../js/accent-init.js"></script>
 <script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clincoo_current_project_id',__p);}else{var __c=localStorage.getItem('clincoo_current_project_id')||'';if(__c){var __l=null;try{__l=JSON.parse(localStorage.getItem('clincoo_projects')||'[]');}catch(e){}if(Array.isArray(__l)&&__l.length&&!__l.some(function(p){return p&&p.id===__c;})){localStorage.removeItem('clincoo_current_project_id');}}}}catch(e){}})();</script>
-  <script src="../../../js/current-project.js?v=1"></script>
+  <script src="../../../../js/current-project.js?v=1"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>/* embed=1: halaman ini di dalam panel split view chat (kolom kanan halaman chat) */(function(){try{if(/(^|[?&])embed=1(&|$)/.test(location.search)){document.documentElement.classList.add('embed-mode');}}catch(e){}})();</script>
-    <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
-    <link rel="manifest" href="../../../manifest.json">
-    <link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
-  <title>Pengaturan: Server MCP — Clincoo</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="../../../../assets/favicon.png">
+    <link rel="manifest" href="../../../../manifest.json">
+    <link rel="apple-touch-icon" href="../../../../assets/icons/apple-touch-icon.png">
+  <title>Pengaturan: Pengaturan Server MCP — Clincoo</title>
     <meta name="description" content="Pengaturan: Integrasi AI — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
     <meta name="robots" content="noindex">
     <meta name="theme-color" content="#ffffff">
@@ -161,8 +161,8 @@
   gtag('config', 'G-KMQ8WBZF6E');
 </script>
 <!-- End Google tag -->
-<script src="../../../js/i18n-dict.js" defer></script>
-<script src="../../../js/i18n.js" defer></script>
+<script src="../../../../js/i18n-dict.js" defer></script>
+<script src="../../../../js/i18n.js" defer></script>
 <style>
 @keyframes mcpIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .mcp-anim{animation:mcpIn .38s ease both}
@@ -355,36 +355,65 @@
 
           <!-- Aktif -->
           <div id="mcp-active" class="hidden flex-col gap-5">
-            <div class="flex flex-wrap items-center gap-2">
-              <span id="mcp-scope-count" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300">…</span>
-              <span id="mcp-created" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300">…</span>
-            </div>
-
-            <a id="mcp-settings-link" href="/proyek/pengaturan/server-mcp/pengaturan/" class="group flex items-center justify-between gap-3 p-4 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#0a0a0a] hover:border-gray-400 dark:hover:border-slate-500 transition-colors cursor-pointer">
-              <div class="min-w-0">
-                <p class="text-sm font-medium text-gray-900 dark:text-white">Pengaturan &amp; Izin</p>
-                <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Endpoint, token, konfigurasi klien, dan izin granular untuk AI eksternal</p>
-              </div>
-              <svg class="h-4 w-4 flex-shrink-0 text-gray-400 group-hover:text-black dark:group-hover:text-white transition-all group-hover:translate-x-0.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
-            </a>
-
             <div>
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Tools untuk AI</p>
-              <div id="mcp-tools" class="flex flex-wrap gap-1.5"></div>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Endpoint MCP</p>
+              <div class="flex items-center gap-2 p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-[#0f0f0f]">
+                <code id="mcp-url" class="flex-1 text-xs font-mono text-gray-700 dark:text-gray-300 break-all select-all"></code>
+                <button type="button" onclick="copyMcpText(mcpState.url, this)" class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-500 transition-colors cursor-pointer" title="Salin URL"><svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M5 15.4A2 2 0 0 1 3.6 14V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 1.4"></path></svg><span>Salin</span></button>
+              </div>
             </div>
 
             <div>
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Aktivitas Terbaru</p>
-              <div id="mcp-activity"></div>
-              <div id="mcp-activity-footer" class="flex justify-between items-center mt-2 hidden">
-                <span id="mcp-activity-count" class="text-xs text-gray-400 dark:text-gray-500"></span>
-                <button type="button" onclick="clearMcpActivity()" class="text-xs font-medium text-gray-400 hover:text-red-500 underline underline-offset-4 cursor-pointer bg-transparent border-0 p-0">Hapus Riwayat</button>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Token Akses</p>
+              <div class="flex items-center gap-1 p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-[#0f0f0f]">
+                <code id="mcp-token" class="flex-1 text-xs font-mono text-gray-700 dark:text-gray-300 break-all"></code>
+                <button type="button" onclick="toggleMcpTokenVisible()" id="mcp-eye-btn" class="flex-shrink-0 inline-flex items-center justify-center px-2.5 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-500 transition-colors cursor-pointer" title="Tampilkan/sembunyikan token">
+                  <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                </button>
+                <button type="button" onclick="copyMcpText(mcpState.token, this)" class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-500 transition-colors cursor-pointer" title="Salin token"><svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M5 15.4A2 2 0 0 1 3.6 14V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 1.4"></path></svg><span>Salin</span></button>
               </div>
+              <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+                <button type="button" onclick="regenerateMcp()" class="text-xs font-medium text-gray-500 hover:text-black dark:hover:text-white underline underline-offset-4 cursor-pointer bg-transparent border-0 p-0">Buat ulang token</button>
+                <button type="button" onclick="revokeMcp()" class="text-xs font-medium text-red-500 hover:text-red-600 underline underline-offset-4 cursor-pointer bg-transparent border-0 p-0">Putuskan semua akses</button>
+              </div>
+            </div>
+
+            <div>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">URL + Token</p>
+              <div class="flex items-center gap-1 p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-[#0f0f0f]">
+                <code id="mcp-url-token" class="flex-1 text-[11px] font-mono text-gray-700 dark:text-gray-300 break-all select-all"></code>
+                <button type="button" onclick="copyMcpText(mcpState.urlToken, this)" class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-500 transition-colors cursor-pointer" title="Salin URL + token"><svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M5 15.4A2 2 0 0 1 3.6 14V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 1.4"></path></svg><span>Salin</span></button>
+              </div>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Gunakan format ini jika aplikasi hanya menyediakan kolom nama + URL server tanpa kolom token. Token telah terintegrasi langsung di dalam URL.</p>
+            </div>
+
+            <div>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Konfigurasi Klien</p>
+              <div class="relative">
+                <pre id="mcp-config" class="p-3 pr-12 rounded-xl bg-gray-900 dark:bg-black text-gray-100 text-[11px] leading-relaxed font-mono overflow-x-auto whitespace-pre"></pre>
+                <button type="button" onclick="copyMcpText(document.getElementById('mcp-config').textContent, this)" class="absolute top-2.5 right-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-white/10 text-gray-300 hover:text-white hover:bg-white/20 transition-colors cursor-pointer" title="Salin konfigurasi"><svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M5 15.4A2 2 0 0 1 3.6 14V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 1.4"></path></svg><span>Salin</span></button>
+              </div>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Tempel ke pengaturan MCP aplikasi AI kamu (Cursor/Windsurf: file mcp.json). Untuk klien yang belum mendukung server remote, gunakan wrapper mcp-remote.</p>
+            </div>
+
+            <div>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Konfigurasi Akses</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mb-2">Tentukan operasi yang diizinkan bagi AI eksternal pada workspace proyek ini. Perubahan tersimpan otomatis.</p>
+              <div class="flex flex-wrap items-center gap-2 mb-3">
+                <input id="scope-filter" type="text" placeholder="Cari izin…" oninput="renderScopeUI()" class="flex-1 min-w-[180px] px-3.5 py-1.5 text-xs rounded-full border border-gray-200 dark:border-slate-700 bg-white dark:bg-[#0a0a0a] text-gray-700 dark:text-gray-300 outline-none focus:border-gray-400 dark:focus:border-slate-500" />
+                <span id="scope-count" class="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">…</span>
+              </div>
+              <div id="mcp-scopes" class="flex flex-col gap-3"></div>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">Izin bertanda <span class="font-medium text-gray-500 dark:text-gray-400">segera</span> belum punya tool aktif — akan berfungsi otomatis saat tool terkait tersedia.</p>
+            </div>
+
+            <div class="flex justify-between items-center">
+              <a href="/proyek/pengaturan/server-mcp/" class="text-xs font-medium text-gray-500 hover:text-black dark:hover:text-white underline underline-offset-4">&larr; Kembali ke Server MCP</a>
             </div>
 
             <div>
               <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Catatan</p>
-              <p class="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">Setiap perubahan yang dilakukan AI eksternal tersinkronisasi secara real-time ke workspace proyek ini. Pengelolaan endpoint, token, konfigurasi klien, dan izin kini berada di halaman Pengaturan &amp; Izin.</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">Tindakan "Putuskan semua akses" akan mencabut token secara permanen — AI eksternal tidak akan dapat mengakses proyek ini hingga diaktifkan kembali.</p>
             </div>
           </div>
         </div>
@@ -408,9 +437,8 @@ function _mcpPid() {
   try { return localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) { return ''; }
 }
 
-var mcpState = { active: false, token: '', scopes: { 'file.list': true, 'file.read': true }, created_at: null, url: '', urlToken: '', activity: [] };
-// IZIN GRANULAR (2026-10-06): peta 100 izin (10 grup) — server selalu balikin
-// peta lengkap; cache lama era 10-izin lewat apa adanya (revalidate <10 menit).
+var mcpState = { active: false, token: '', scopes: { 'file.list': true, 'file.read': true }, created_at: null, url: '', urlToken: '', activity: [], scopeMeta: null };
+// IZIN GRANULAR (2026-10-06): peta 100 izin datang dari server (scope_groups).
 function _mcpNormScopes(r) {
   return (r && typeof r === 'object') ? r : {};
 }
@@ -441,34 +469,66 @@ async function mcpRequest(method, body) {
   return data;
 }
 
-function renderMcpTools() {
-  var wrap = document.getElementById('mcp-tools');
+function applyScopeSwitch(key) {
+  var bg = document.getElementById('sw-' + key + '-bg');
+  var knob = document.getElementById('sw-' + key + '-knob');
+  if (!bg || !knob) return;
+  var on = mcpState.scopes[key] === true;
+  if (on) {
+    bg.className = 'w-11 h-6 bg-blue-500 rounded-full transition-colors duration-200';
+    knob.classList.add('translate-x-5');
+  } else {
+    bg.className = 'w-11 h-6 bg-gray-200 dark:bg-slate-700 rounded-full transition-colors duration-200';
+    knob.classList.remove('translate-x-5');
+  }
+}
+
+// ===== UI izin granular: 10 grup × 10 izin, render dari meta server =====
+function renderScopeUI() {
+  var wrap = document.getElementById('mcp-scopes');
   if (!wrap) return;
-  var defs = [
-    ['list_items', 'file.list'],
-    ['read_file', 'file.read'],
-    ['write_file', 'file.write'],
-    ['delete_item', 'file.delete'],
-    ['get_project_info', null],
-    ['chat_ai', 'chat.ai'],
-    ['deploy_project', 'deploy.run'],
-    ['deploy_status', 'deploy.status'],
-    ['get_settings', 'settings.read'],
-    ['update_settings', 'settings.update'],
-    ['send_email', 'email.send'],
-    ['list_notifications', 'notif.list'],
-    ['send_notification', 'notif.send'],
-    ['db_info', 'db.info'],
-    ['db_tables', 'db.tables_list'],
-    ['db_rows', 'db.rows_list'],
-    ['pay_info', 'pay.info']
-  ];
-  wrap.innerHTML = defs.map(function (d) {
-    var enabled = !d[1] || mcpState.scopes[d[1]] === true;
-    return '<span class="inline-flex items-center px-2 py-0.5 text-[11px] font-mono rounded-full ' +
-      (enabled ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-gray-500') +
-      '">' + d[0] + (enabled ? '' : ' (nonaktif)') + '</span>';
-  }).join('');
+  var meta = mcpState.scopeMeta;
+  var q = '';
+  try { q = (document.getElementById('scope-filter').value || '').toLowerCase().trim(); } catch (e) {}
+  if (!meta || !meta.length) {
+    wrap.innerHTML = '<p class="text-xs text-gray-400 dark:text-gray-500 py-6 text-center">Memuat daftar izin…</p>';
+    return;
+  }
+  var totalOn = 0, total = 0, html = '';
+  meta.forEach(function (grp) {
+    var rows = '', on = 0;
+    grp.scopes.forEach(function (s) {
+      total++;
+      if (mcpState.scopes[s.key] === true) { on++; totalOn++; }
+      if (q && (grp.label + ' ' + s.label + ' ' + s.key).toLowerCase().indexOf(q) === -1) return;
+      rows += '<div class="flex items-center justify-between gap-3 px-3.5 py-2.5 bg-white dark:bg-[#0a0a0a]">' +
+        '<div class="min-w-0">' +
+        '<p class="text-[13px] font-medium text-gray-900 dark:text-white">' + s.label +
+        (s.ready ? '' : ' <span class="ml-1 px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-slate-800 text-[10px] font-medium text-gray-400 dark:text-gray-500 align-middle">segera</span>') +
+        '</p>' +
+        '<p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 font-mono">' + s.key + '</p>' +
+        '</div>' +
+        '<button type="button" onclick="toggleScope(\'' + s.key + '\')" class="relative w-11 h-6 flex-shrink-0 cursor-pointer focus:outline-none" aria-label="Izinkan ' + s.label + '">' +
+        '<div id="sw-' + s.key + '-bg" class="w-11 h-6 rounded-full transition-colors duration-200"></div>' +
+        '<div id="sw-' + s.key + '-knob" class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200"></div>' +
+        '</button></div>';
+    });
+    if (q && !rows) return;
+    var allOn = on === grp.scopes.length;
+    html += '<div class="rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">' +
+      '<div class="flex items-center justify-between gap-3 px-3.5 py-2.5 bg-gray-50 dark:bg-[#0f0f0f] border-b border-gray-100 dark:border-slate-800">' +
+      '<div class="min-w-0">' +
+      '<p class="text-xs font-semibold text-gray-700 dark:text-gray-200">' + grp.label + '</p>' +
+      '<p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">' + on + '/' + grp.scopes.length + ' aktif</p>' +
+      '</div>' +
+      '<button type="button" onclick="toggleScopeGroup(\'' + grp.id + '\')" class="text-[11px] font-medium px-2.5 py-1 rounded-full border border-gray-200 dark:border-slate-700 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white cursor-pointer bg-transparent whitespace-nowrap">' + (allOn ? 'Matikan semua' : 'Aktifkan semua') + '</button>' +
+      '</div>' +
+      '<div class="divide-y divide-gray-100 dark:divide-slate-800">' + rows + '</div>' +
+      '</div>';
+  });
+  wrap.innerHTML = html;
+  var cnt = document.getElementById('scope-count');
+  if (cnt) cnt.textContent = totalOn + '/' + total + ' izin aktif';
 }
 
 function renderMcp() {
@@ -492,20 +552,29 @@ function renderMcp() {
   };
   show(inactive, !mcpState.active);
   show(active, mcpState.active);
-  if (!mcpState.active) { renderMcpActivity(); return; }
-  // Ringkasan izin aktif (dari peta granular 100 izin)
-  var on = 0, tot = 0;
-  Object.keys(mcpState.scopes || {}).forEach(function (k) {
-    if (k.indexOf('.') === -1) return; // lewati kunci legacy
-    tot++;
-    if (mcpState.scopes[k] === true) on++;
-  });
-  var cnt = document.getElementById('mcp-scope-count');
-  if (cnt) cnt.textContent = on + ' izin aktif' + (tot ? ' / ' + tot : '');
-  var cr = document.getElementById('mcp-created');
-  if (cr) cr.textContent = mcpState.created_at ? 'Aktif sejak ' + new Date(mcpState.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
-  renderMcpTools();
-  renderMcpActivity();
+  if (!mcpState.active) return;
+  mcpState.url = mcpEndpointUrl();
+  mcpState.urlToken = mcpState.url + '&token=' + encodeURIComponent(mcpState.token || '');
+  var urlEl = document.getElementById('mcp-url');
+  if (urlEl) urlEl.textContent = mcpState.url;
+  var urlTokEl = document.getElementById('mcp-url-token');
+  if (urlTokEl) urlTokEl.textContent = mcpState.urlToken;
+  var tkEl = document.getElementById('mcp-token');
+  if (tkEl) {
+    tkEl.textContent = mcpTokenVisible ? mcpState.token : (mcpState.token ? mcpState.token.slice(0, 6) + '••••••••••••' + mcpState.token.slice(-4) : '');
+  }
+  var cfg = document.getElementById('mcp-config');
+  if (cfg) {
+    cfg.textContent = JSON.stringify({
+      mcpServers: {
+        clincoo: {
+          url: mcpState.url,
+          headers: { Authorization: 'Bearer ' + mcpState.token }
+        }
+      }
+    }, null, 2);
+  }
+  renderScopeUI();
 }
 
 // ===== Cache lokal: refresh gak loading terus — state terakhir langsung tampil,
@@ -526,15 +595,16 @@ async function loadMcp() {
     mcpState.scopes = _mcpNormScopes(cached.scopes);
     mcpState.created_at = cached.created_at || null;
     mcpState.activity = Array.isArray(cached.activity) ? cached.activity : [];
+    mcpState.scopeMeta = cached.scope_groups || null;
     renderMcp();
     // 2) Cegarkan diam-diam: gak ada skeleton, UI gak berkedip.
     //    Cukup tiap 10 menit; lebih baru dari itu percuma (datanya sama terus).
-    if (Date.now() - (cached.ts || 0) < 10 * 60 * 1000) return;
+    if (Date.now() - (cached.ts || 0) < 10 * 60 * 1000 && mcpState.scopeMeta) return;
     try {
       var r = await mcpRequest('GET');
       if (r && r.token) {
         if (r.token !== mcpState.token) { mcpState.token = r.token; mcpToast('Token diperbarui dari perangkat lain'); }
-        _mcpCacheWrite(r); mcpState.scopes = _mcpNormScopes(r.scopes); mcpState.created_at = r.created_at || mcpState.created_at; mcpState.activity = Array.isArray(r.activity) ? r.activity : []; renderMcp();
+        _mcpCacheWrite(r); mcpState.scopes = _mcpNormScopes(r.scopes); mcpState.created_at = r.created_at || mcpState.created_at; mcpState.activity = Array.isArray(r.activity) ? r.activity : []; mcpState.scopeMeta = r.scope_groups || mcpState.scopeMeta; renderMcp();
       }
       else if (r && r.active === false && r._status === 200) { _mcpCacheClear(); mcpState.active = false; mcpState.token = ''; mcpState.created_at = null; renderMcp(); }
     } catch (e) { /* offline/lelet: tetap pakai cache */ }
@@ -555,6 +625,7 @@ async function loadMcp() {
     mcpState.scopes = _mcpNormScopes(d.scopes);
     mcpState.created_at = d.created_at || null;
     mcpState.activity = Array.isArray(d.activity) ? d.activity : [];
+    mcpState.scopeMeta = d.scope_groups || mcpState.scopeMeta;
     _mcpCacheWrite(d);
   } else {
     mcpState.active = false;
@@ -562,66 +633,6 @@ async function loadMcp() {
     mcpState.activity = [];
   }
   renderMcp();
-}
-
-function renderMcpActivity() {
-  var box = document.getElementById('mcp-activity');
-  var footer = document.getElementById('mcp-activity-footer');
-  var cnt = document.getElementById('mcp-activity-count');
-  if (!box) return;
-  var list = Array.isArray(mcpState.activity) ? mcpState.activity : [];
-  if (footer) footer.classList.toggle('hidden', list.length === 0 || !mcpState.active);
-  if (cnt) cnt.textContent = list.length + ' entri terakhir';
-  if (!list.length) {
-    box.innerHTML = mcpState.active
-      ? '<p class="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">Belum ada aktivitas AI eksternal yang tercatat pada proyek ini.</p>'
-      : '';
-    return;
-  }
-  var html = '<div class="rounded-xl border border-gray-200 dark:border-slate-700 divide-y divide-gray-100 dark:divide-slate-700/60 overflow-hidden">';
-  list.forEach(function (a) {
-    var ok = a && Number(a.ok) === 1;
-    var tool = String((a && a.tool) || '?').replace(/&/g, '&amp;').replace(/</g, '&lt;');
-    var detail = ok ? '' : ' <span class="text-red-400">&middot; ' + String((a && a.detail) || 'gagal').replace(/&/g, '&amp;').replace(/</g, '&lt;').slice(0, 60) + '</span>';
-    html += '<div class="flex items-center gap-2 px-3 py-2 bg-white dark:bg-transparent">'
-      + '<span class="w-1.5 h-1.5 rounded-full flex-shrink-0 ' + (ok ? 'bg-emerald-500' : 'bg-red-500') + '"></span>'
-      + '<span class="text-xs font-mono text-gray-600 dark:text-gray-300">' + tool + '</span>'
-      + '<span class="text-xs text-gray-400 dark:text-gray-500">' + (ok ? 'Berhasil' : 'Gagal') + detail + '</span>'
-      + '<span class="ml-auto text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">' + _mcpFmtTime(a && a.created_at) + '</span>'
-      + '</div>';
-  });
-  html += '</div>';
-  box.innerHTML = html;
-}
-
-function _mcpFmtTime(ts) {
-  if (!ts) return '';
-  try {
-    var d = new Date(String(ts).replace(' ', 'T') + 'Z');
-    if (isNaN(d.getTime())) return String(ts);
-    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ', '
-      + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-  } catch (e) { return String(ts); }
-}
-
-async function clearMcpActivity() {
-  if (!confirm('Hapus seluruh riwayat aktivitas MCP pada proyek ini? Tindakan ini tidak dapat dibatalkan.')) return;
-  try {
-    var r = await fetch(MCP_TOKEN_API + '?project_id=' + encodeURIComponent(_mcpPid() || '') + '&scope=activity', {
-      method: 'DELETE',
-      headers: { 'Authorization': 'Bearer ' + (_mcpUserToken || '') }
-    });
-    var d = await r.json().catch(function () { return {}; });
-    if (r.ok && d && d.ok) {
-      mcpState.activity = [];
-      var cached = _mcpCacheRead();
-      if (cached) { cached.activity = []; _mcpCacheWrite(cached); }
-      renderMcpActivity();
-      mcpToast('Riwayat aktivitas dihapus');
-    } else {
-      mcpToast((d && d.error) ? d.error : 'Gagal menghapus riwayat aktivitas');
-    }
-  } catch (e) { mcpToast('Gagal menghapus riwayat aktivitas'); }
 }
 
 function renderMcpPlanGate(d) {
@@ -690,7 +701,7 @@ async function activateMcp() {
     btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path></svg><span>Mengaktifkan\u2026</span>';
   }
   var d;
-  try { d = await mcpRequest('POST', { project_id: _mcpPid(), scopes: { 'file.list': true, 'file.read': true } }); }
+  try { d = await mcpRequest('POST', { project_id: _mcpPid(), scopes: _mcpNormScopes({ read: true }) }); }
   catch (e) { d = null; }
   if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.innerHTML = orig; }
   if (d && d.token) {
@@ -741,6 +752,42 @@ async function revokeMcp() {
   }
 }
 
+async function toggleScope(key) {
+  if (!mcpState.active) return;
+  var next = Object.assign({}, mcpState.scopes);
+  next[key] = !(next[key] === true);
+  await saveScopes(next);
+}
+
+async function toggleScopeGroup(gid) {
+  if (!mcpState.active) return;
+  var grp = (mcpState.scopeMeta || []).filter(function (g) { return g.id === gid; })[0];
+  if (!grp) return;
+  var next = Object.assign({}, mcpState.scopes);
+  var target = !grp.scopes.every(function (s) { return next[s.key] === true; });
+  grp.scopes.forEach(function (s) { next[s.key] = target; });
+  await saveScopes(next);
+}
+
+async function saveScopes(next) {
+  var prev = mcpState.scopes;
+  mcpState.scopes = next;
+  renderScopeUI();
+  var d;
+  try { d = await mcpRequest('PATCH', { project_id: _mcpPid(), scopes: next }); }
+  catch (e) { d = null; }
+  if (d && d.ok) {
+    _mcpCacheWrite({ token: mcpState.token, scopes: mcpState.scopes, created_at: mcpState.created_at, scope_groups: mcpState.scopeMeta });
+    mcpToast('Izin diperbarui');
+  } else {
+    mcpState.scopes = prev; // gagal simpan -> balik ke posisi sebelum toggle
+    renderScopeUI();
+    mcpToast(d && d.plan_gate === true
+      ? 'Pengelolaan izin Server MCP tersedia untuk paket ' + (d.minPlan || 'Bisnis')
+      : ((d && d.error) ? d.error : 'Gagal menyimpan izin'));
+  }
+}
+
 function toggleMcpTokenVisible() {
   mcpTokenVisible = !mcpTokenVisible;
   renderMcp();
@@ -779,7 +826,7 @@ document.addEventListener('DOMContentLoaded', loadMcp);
 
 
     <script>/* clincoo-sw-register */
-    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../sw.js').catch(function () {}); }); }
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../../sw.js').catch(function () {}); }); }
     </script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
 <script>

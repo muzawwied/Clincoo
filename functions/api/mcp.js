@@ -101,20 +101,175 @@ async function authMcp(request, env, projectId) {
   }
   let scopes = null;
   try { scopes = row.scopes ? JSON.parse(row.scopes) : null; } catch (e) {}
-  // Normalisasi (2026-10-03): token lama tanpa izin baru (chat/deploy/settings/email)
-  // dianggap TIDAK punya izin baru (least privilege), bukan kebetulan terbuka.
-  scopes = {
-    read: !scopes || scopes.read !== false,
-    write: !!(scopes && scopes.write === true),
-    delete: !!(scopes && scopes.delete === true),
-    chat: !!(scopes && scopes.chat === true),
-    deploy: !!(scopes && scopes.deploy === true),
-    settings: !!(scopes && scopes.settings === true),
-    email: !!(scopes && scopes.email === true),
-    notif: !!(scopes && scopes.notif === true),
-    database: !!(scopes && scopes.database === true),
-    payment: !!(scopes && scopes.payment === true)
-  };
+  // ==== IZIN GRANULAR (2026-10-06): 100 izin; token era 10-izin dimigrasi otomatis. ====
+const SCOPE_GROUPS = [
+  { id: 'file', label: 'File & Workspace', scopes: [
+    { key: 'file.list', label: 'Lihat daftar file & folder', ready: true },
+    { key: 'file.read', label: 'Baca isi file', ready: true },
+    { key: 'file.write', label: 'Buat & tulis file', ready: true },
+    { key: 'file.update', label: 'Ubah isi file yang ada', ready: true },
+    { key: 'file.delete', label: 'Hapus file atau folder', ready: true },
+    { key: 'file.rename', label: 'Ganti nama file', ready: false },
+    { key: 'file.copy', label: 'Duplikat file', ready: false },
+    { key: 'file.move', label: 'Pindahkan file antar folder', ready: false },
+    { key: 'file.search', label: 'Cari file & isi konten', ready: false },
+    { key: 'file.stats', label: 'Statistik penggunaan file', ready: false }
+  ] },
+  { id: 'chat', label: 'Chat & AI', scopes: [
+    { key: 'chat.ai', label: 'Gunakan AI Clincoo (kompilasi, refactor, analisis)', ready: true },
+    { key: 'chat.tools_use', label: 'AI dapat memakai tool workspace', ready: false },
+    { key: 'chat.history_read', label: 'Baca riwayat chat proyek', ready: false },
+    { key: 'chat.history_clear', label: 'Hapus riwayat chat', ready: false },
+    { key: 'chat.model_set', label: 'Pilih model AI', ready: false },
+    { key: 'chat.system_prompt', label: 'Atur system prompt proyek', ready: false },
+    { key: 'chat.prompt_template', label: 'Kelola template prompt', ready: false },
+    { key: 'chat.memory_read', label: 'Baca memori konteks proyek', ready: false },
+    { key: 'chat.memory_write', label: 'Tulis memori konteks proyek', ready: false },
+    { key: 'chat.stream', label: 'Streaming respons AI', ready: false }
+  ] },
+  { id: 'deploy', label: 'Deploy & Domain', scopes: [
+    { key: 'deploy.run', label: 'Terbitkan situs ke Cloudflare Pages', ready: true },
+    { key: 'deploy.status', label: 'Baca status deploy real-time', ready: true },
+    { key: 'deploy.log_read', label: 'Baca log build & deploy', ready: false },
+    { key: 'deploy.domain_add', label: 'Tambah domain kustom', ready: false },
+    { key: 'deploy.domain_remove', label: 'Lepas domain kustom', ready: false },
+    { key: 'deploy.domain_verify', label: 'Verifikasi DNS domain', ready: false },
+    { key: 'deploy.unpublish', label: 'Batalkan publikasi situs', ready: false },
+    { key: 'deploy.config_read', label: 'Baca konfigurasi deploy', ready: false },
+    { key: 'deploy.config_update', label: 'Ubah konfigurasi deploy', ready: false },
+    { key: 'deploy.rollback', label: 'Kembali ke versi deploy lama', ready: false }
+  ] },
+  { id: 'settings', label: 'Pengaturan Proyek', scopes: [
+    { key: 'settings.read', label: 'Baca pengaturan proyek', ready: true },
+    { key: 'settings.update', label: 'Ubah pengaturan proyek', ready: true },
+    { key: 'settings.general_read', label: 'Baca pengaturan umum', ready: false },
+    { key: 'settings.general_update', label: 'Ubah pengaturan umum', ready: false },
+    { key: 'settings.seo_read', label: 'Baca pengaturan SEO', ready: false },
+    { key: 'settings.seo_update', label: 'Ubah pengaturan SEO', ready: false },
+    { key: 'settings.branding_read', label: 'Baca identitas visual proyek', ready: false },
+    { key: 'settings.branding_update', label: 'Ubah identitas visual proyek', ready: false },
+    { key: 'settings.export', label: 'Ekspor konfigurasi proyek', ready: false },
+    { key: 'settings.import', label: 'Impor konfigurasi proyek', ready: false }
+  ] },
+  { id: 'email', label: 'Email', scopes: [
+    { key: 'email.send', label: 'Kirim email lewat email API proyek', ready: true },
+    { key: 'email.test', label: 'Kirim email uji coba', ready: false },
+    { key: 'email.audience_list', label: 'Lihat daftar audiens', ready: false },
+    { key: 'email.audience_create', label: 'Tambah audiens', ready: false },
+    { key: 'email.audience_update', label: 'Ubah audiens', ready: false },
+    { key: 'email.audience_delete', label: 'Hapus audiens', ready: false },
+    { key: 'email.broadcast_list', label: 'Lihat daftar broadcast', ready: false },
+    { key: 'email.broadcast_create', label: 'Buat broadcast', ready: false },
+    { key: 'email.broadcast_send', label: 'Kirim broadcast massal', ready: false },
+    { key: 'email.metrics_read', label: 'Baca metrik & statistik email', ready: false }
+  ] },
+  { id: 'notif', label: 'Notifikasi', scopes: [
+    { key: 'notif.list', label: 'Baca notifikasi dashboard', ready: true },
+    { key: 'notif.send', label: 'Kirim notifikasi ke dashboard', ready: true },
+    { key: 'notif.delete', label: 'Hapus satu notifikasi', ready: false },
+    { key: 'notif.clear', label: 'Bersihkan semua notifikasi', ready: false },
+    { key: 'notif.template_read', label: 'Baca template notifikasi', ready: false },
+    { key: 'notif.template_update', label: 'Ubah template notifikasi', ready: false },
+    { key: 'notif.subscribe', label: 'Kelola langganan notifikasi', ready: false },
+    { key: 'notif.unsubscribe', label: 'Berhenti langganan notifikasi', ready: false },
+    { key: 'notif.preferences_read', label: 'Baca preferensi notifikasi', ready: false },
+    { key: 'notif.preferences_update', label: 'Ubah preferensi notifikasi', ready: false }
+  ] },
+  { id: 'db', label: 'Database', scopes: [
+    { key: 'db.info', label: 'Info database & kuota proyek', ready: true },
+    { key: 'db.schema_read', label: 'Baca skema tabel', ready: false },
+    { key: 'db.tables_list', label: 'Daftar tabel aplikasi', ready: true },
+    { key: 'db.tables_create', label: 'Buat tabel baru', ready: true },
+    { key: 'db.tables_delete', label: 'Hapus tabel', ready: true },
+    { key: 'db.rows_list', label: 'Baca baris data', ready: true },
+    { key: 'db.rows_create', label: 'Tambah baris data', ready: true },
+    { key: 'db.rows_update', label: 'Ubah baris data', ready: true },
+    { key: 'db.rows_delete', label: 'Hapus baris data', ready: true },
+    { key: 'db.backup', label: 'Backup & ekspor data', ready: false }
+  ] },
+  { id: 'pay', label: 'Pembayaran', scopes: [
+    { key: 'pay.info', label: 'Info ClincooPay: saldo, transaksi, penarikan', ready: true },
+    { key: 'pay.config_read', label: 'Baca konfigurasi pembayaran', ready: false },
+    { key: 'pay.config_update', label: 'Ubah konfigurasi pembayaran', ready: false },
+    { key: 'pay.transactions_read', label: 'Baca riwayat transaksi lengkap', ready: false },
+    { key: 'pay.refunds_read', label: 'Baca data refund', ready: false },
+    { key: 'pay.plans_read', label: 'Baca paket & harga', ready: false },
+    { key: 'pay.webhook_read', label: 'Baca webhook pembayaran', ready: false },
+    { key: 'pay.webhook_update', label: 'Atur webhook pembayaran', ready: false },
+    { key: 'pay.withdraw_request', label: 'Ajukan penarikan saldo', ready: false },
+    { key: 'pay.payout_read', label: 'Baca status payout', ready: false }
+  ] },
+  { id: 'sec', label: 'Keamanan & Akses', scopes: [
+    { key: 'sec.token_rotate', label: 'Putar ulang token MCP', ready: false },
+    { key: 'sec.scopes_manage', label: 'Ubah izin lewat MCP', ready: false },
+    { key: 'sec.activity_read', label: 'Baca log aktivitas MCP', ready: false },
+    { key: 'sec.activity_clear', label: 'Hapus log aktivitas MCP', ready: false },
+    { key: 'sec.sessions_list', label: 'Daftar sesi aktif', ready: false },
+    { key: 'sec.sessions_revoke', label: 'Cabut sesi', ready: false },
+    { key: 'sec.audit_read', label: 'Baca audit trail proyek', ready: false },
+    { key: 'sec.ip_allowlist_manage', label: 'Kelola allowlist IP', ready: false },
+    { key: 'sec.rate_limit_manage', label: 'Atur batas rate limit', ready: false },
+    { key: 'sec.keys_read', label: 'Baca kunci API (disamarkan)', ready: false }
+  ] },
+  { id: 'sys', label: 'Integrasi & Sistem', scopes: [
+    { key: 'sys.info', label: 'Info sistem & runtime proyek', ready: false },
+    { key: 'sys.health', label: 'Cek kesehatan layanan', ready: false },
+    { key: 'sys.usage_read', label: 'Baca pemakaian kuota proyek', ready: false },
+    { key: 'sys.limits_read', label: 'Baca batas paket', ready: false },
+    { key: 'sys.logs_read', label: 'Baca log sistem', ready: false },
+    { key: 'sys.github_import', label: 'Impor repositori GitHub', ready: false },
+    { key: 'sys.github_repos_read', label: 'Daftar repositori GitHub', ready: false },
+    { key: 'sys.webhook_manage', label: 'Kelola webhook integrasi', ready: false },
+    { key: 'sys.ai_providers_read', label: 'Baca penyedia AI terhubung', ready: false },
+    { key: 'sys.ai_providers_update', label: 'Atur penyedia AI', ready: false }
+  ] }
+];
+const SCOPE_TOTAL = 100;
+const LEGACY_KEYS = ["read", "write", "delete", "chat", "deploy", "settings", "email", "notif", "database", "payment"];
+// Normalisasi izin granular (2026-10-06): 100 izin dalam 10 grup. Token era 10-izin
+// dimigrasi otomatis (kunci lama dipertahankan agar kompatibel mundur). Izin yang
+// ready=false belum punya tool aktif — nilainya tersimpan, mengikat begitu tool tersedia.
+const LEGACY_SCOPE_CHILD = {
+  "file.list": "read",
+  "file.read": "read",
+  "file.write": "write",
+  "file.update": "write",
+  "file.delete": "delete",
+  "chat.ai": "chat",
+  "deploy.run": "deploy",
+  "deploy.status": "deploy",
+  "settings.read": "settings",
+  "settings.update": "settings",
+  "email.send": "email",
+  "notif.list": "notif",
+  "notif.send": "notif",
+  "pay.info": "payment",
+  "db.info": "database",
+  "db.tables_list": "database",
+  "db.tables_create": "database",
+  "db.tables_delete": "database",
+  "db.rows_list": "database",
+  "db.rows_create": "database",
+  "db.rows_update": "database",
+  "db.rows_delete": "database"
+};
+function normalizeScopes(raw) {
+  const r = raw && typeof raw === 'object' ? raw : {};
+  const o = {};
+  SCOPE_GROUPS.forEach(g => g.scopes.forEach(s => {
+    let v = null;
+    if (typeof r[s.key] === 'boolean') v = r[s.key];
+    else {
+      const lg = LEGACY_SCOPE_CHILD[s.key];
+      if (lg && typeof r[lg] === 'boolean') v = r[lg];
+      else v = s.key === 'file.list' || s.key === 'file.read';
+    }
+    o[s.key] = v;
+  }));
+  LEGACY_KEYS.forEach(k => { if (typeof r[k] === 'boolean') o[k] = r[k]; });
+  return o;
+}
+  scopes = normalizeScopes(scopes);
   return { token: tok, be2Token: be2, scopes };
 }
 
@@ -184,12 +339,22 @@ async function logActivity(env, projectId, tool, ok, detail) {
 }
 
 const TOOL_SCOPES = {
-  list_items: null, read_file: 'read', write_file: 'write', delete_item: 'delete', get_project_info: null,
-  chat_ai: 'chat', deploy_project: 'deploy', deploy_status: 'deploy',
-  get_settings: 'settings', update_settings: 'settings', send_email: 'email',
-  list_notifications: 'notif', send_notification: 'notif',
-  db_info: 'database', db_tables: 'database', db_rows: 'database', pay_info: 'payment'
+  list_items: 'file.list', read_file: 'file.read', write_file: 'file.write', delete_item: 'file.delete',
+  get_project_info: null, chat_ai: 'chat.ai', deploy_project: 'deploy.run', deploy_status: 'deploy.status',
+  get_settings: 'settings.read', update_settings: 'settings.update', send_email: 'email.send',
+  list_notifications: 'notif.list', send_notification: 'notif.send',
+  db_info: 'db.info', db_tables: 'db.tables', db_rows: 'db.rows', pay_info: 'pay.info'
 };
+// Izin per-aksi untuk tool database (granular): setiap aksi cek izinnya sendiri.
+function toolScopeFor(name, args) {
+  const base = TOOL_SCOPES[name];
+  if (base === undefined) return 'unknown';
+  if (base === 'db.tables' || base === 'db.rows') {
+    const a = String((args && args.action) || 'list');
+    return base + '_' + (a === 'create' || a === 'update' || a === 'delete' ? a : 'list');
+  }
+  return base;
+}
 function toolScope(name) {
   return TOOL_SCOPES[name] !== undefined ? TOOL_SCOPES[name] : 'unknown';
 }
@@ -197,7 +362,11 @@ function toolScope(name) {
 function allowedTools(scopes) {
   return TOOLS.filter(t => {
     const need = toolScope(t.name);
-    return need === null || scopes[need] !== false;
+    if (need === null) return true;
+    if (need === 'db.tables' || need === 'db.rows') {
+      return ['_list', '_create', '_update', '_delete'].some(sfx => scopes[need + sfx] !== false);
+    }
+    return scopes[need] !== false;
   });
 }
 
@@ -717,7 +886,7 @@ export async function onRequestPost(context) {
     if (method === 'tools/call') {
       const name = body.params && body.params.name;
       const args = (body.params && body.params.arguments) || {};
-      const denied = toolScope(name);
+      const denied = toolScopeFor(name, args);
       if (denied && ctx.scopes[denied] === false) {
         await logActivity(env, projectId, name, 0, 'izin "' + denied + '" tidak aktif');
         return rpcResult(id, { content: [{ type: 'text', text: 'Error: akses ditolak. Izin "' + denied + '" tidak diaktifkan untuk server MCP proyek ini (atur di halaman Server MCP Clincoo).' }], isError: true });
