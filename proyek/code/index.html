@@ -941,6 +941,29 @@
       return data;
     }
 
+    // MERGE CLOUD (2026-10-06): sebelum push pohon lokal (replace:true), gabung
+    // dulu file cloud yang belum ada di lokal (mis. buatan AI eksternal via MCP
+    // atau AI chat dari perangkat lain). Dulu: dirty => pohon lama didorong apa
+    // adanya => file cloud yang belum pernah dimuat perangkat ini DIHAPUS dari
+    // cloud, dan pohon lokal tetap basi (file baru "tidak muncul di Workspace").
+    // Kini: cloud jadi dasar, item lokal menimpa path yang sama (edit user tetap
+    // menang), file lokal-only tetap masuk — push versi gabungan.
+    function wsMergeCloudIntoLocal(files) {
+      const base = wsUnflatten(files);
+      Object.keys(projectFilesData || {}).forEach(function(fk) {
+        if (!Array.isArray(projectFilesData[fk])) return;
+        if (!Array.isArray(base[fk])) base[fk] = [];
+        projectFilesData[fk].forEach(function(it) {
+          if (!it || !it.path) return;
+          const arr = base[fk];
+          let i = arr.length;
+          while (i--) { if (arr[i] && arr[i].path && arr[i].path.toLowerCase() === it.path.toLowerCase()) { arr[i] = it; return; } }
+          arr.push(it);
+        });
+      });
+      return base;
+    }
+
     // Status sinkronisasi awal: selama true, daftar berkas menampilkan skeleton
     // pemuatan (bukan "tidak ada berkas") supaya tidak terasa data kosong/lama dulu.
     let wsInitialSync = true;
@@ -952,9 +975,24 @@
         if (!pid) { wsInitialSync = false; renderFileList(); }
         return;
       }
-      if (wsDirtyIs()) { // ada edit lokal yang belum terkirim ke cloud: kirim ulang, jangan ditimpa
-        wsCloudPushSchedule();
-        wsInitialSync = false; renderFileList();
+      if (wsDirtyIs()) { // ada edit lokal belum terkirim: gabung cloud dulu, lalu dorong versi gabungan
+        fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { headers: wsAuthHeaders() })
+          .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
+          .then(function(d) { return (d && d.files) || []; })
+          .then(function(files) {
+            if (files.length) {
+              const merged = wsMergeCloudIntoLocal(files);
+              const mergedStr = JSON.stringify(merged);
+              if (mergedStr !== JSON.stringify(projectFilesData)) {
+                projectFilesData = merged;
+                try { localStorage.setItem(wsFilesKey(), mergedStr); } catch (e) {}
+                renderFileList();
+              }
+            }
+            wsCloudPushSchedule();
+          })
+          .catch(function() { wsCloudPushSchedule(); })
+          .then(function() { if (wsInitialSync) { wsInitialSync = false; renderFileList(); } });
         return;
       }
       fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { headers: wsAuthHeaders() })

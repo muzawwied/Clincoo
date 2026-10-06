@@ -67,6 +67,34 @@ async function authMcp(request, env, projectId) {
   if (!row || row.token !== tok) {
     return { res: json({ jsonrpc: '2.0', id: null, error: { code: -32001, message: 'Token MCP tidak valid atau sudah dicabut untuk proyek ini' } }, 401) };
   }
+  // UTAMA (2026-10-06): sesi tersimpan (be2_token) tadinya = sesi browser user —
+  // bisa kedaluwarsa/rotasi kapanpun, dan tiap itu terjadi SEMUA tool MCP gagal
+  // ("Sesi backend Clincoo kedaluwarsa") sampai user membuka halaman Server MCP lagi.
+  // Pemulihan otomatis: bila sesi tersimpan mati, cetak sesi DEDIKASI berumur
+  // panjang untuk PEMILIK proyek (lookup user_projects) dan simpan permanen —
+  // server MCP tidak pernah lagi bergantung pada sesi browser.
+  let be2 = row.be2_token || '';
+  if (env.DB) {
+    try {
+      let alive = false;
+      if (be2) {
+        const sess = await env.DB.prepare('SELECT token, expires_at FROM auth_sessions WHERE token = ?').bind(be2).first();
+        alive = !!(sess && new Date(sess.expires_at) >= new Date());
+      }
+      if (!alive) {
+        const own = await env.DB.prepare('SELECT user_id FROM user_projects WHERE id = ?').bind(String(projectId)).first();
+        if (own && own.user_id) {
+          const b = new Uint8Array(24);
+          crypto.getRandomValues(b);
+          const tk = 'mcp_svc_' + Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
+          await env.DB.prepare('INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)')
+            .bind(tk, own.user_id, new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000).toISOString()).run();
+          await env.DB.prepare('UPDATE mcp_tokens SET be2_token = ? WHERE project_id = ?').bind(tk, projectId).run();
+          be2 = tk;
+        }
+      }
+    } catch (e) { /* pakai nilai tersimpan */ }
+  }
   let scopes = null;
   try { scopes = row.scopes ? JSON.parse(row.scopes) : null; } catch (e) {}
   // Normalisasi (2026-10-03): token lama tanpa izin baru (chat/deploy/settings/email)
@@ -83,7 +111,7 @@ async function authMcp(request, env, projectId) {
     database: !!(scopes && scopes.database === true),
     payment: !!(scopes && scopes.payment === true)
   };
-  return { token: tok, be2Token: row.be2_token, scopes };
+  return { token: tok, be2Token: be2, scopes };
 }
 
 function json(data, status = 200, headers = {}) {

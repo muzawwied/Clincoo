@@ -3696,6 +3696,15 @@ window.chatLivePreview = function () {
         // ===== Sinkronisasi workspace ke Cloudflare D1 (data per-proyek) =====
         const WS_CLOUD_API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-files';
 
+        // FIX (2026-10-06): semua panggilan cloud di blok ini tadinya TANPA
+        // header Authorization => ditolak 401 diam-diam => pull/push/file-besar
+        // tidak pernah jalan di halaman chat (pohon file tampil dari cache lama).
+        function wsAuthHeaders() {
+            var t = '';
+            try { t = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
+            return t ? { Authorization: 'Bearer ' + t } : {};
+        }
+
         function wsProjectId() {
             try { return (typeof currentProjectId !== 'undefined' && currentProjectId) ? String(currentProjectId) : ''; } catch (e) { return ''; }
         }
@@ -3726,7 +3735,7 @@ window.chatLivePreview = function () {
             try {
                 const res = await fetch(WS_CLOUD_API, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()),
                     body: JSON.stringify({ project_id: pid, files: [{ path: path, content_b64: wsB64Encode(content) }] })
                 });
                 const d = await res.json().catch(() => ({}));
@@ -3741,7 +3750,7 @@ window.chatLivePreview = function () {
             const pid = wsProjectId();
             if (!pid) return null;
             try {
-                const res = await fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&path=' + encodeURIComponent(path) + '&content=1');
+                const res = await fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&path=' + encodeURIComponent(path) + '&content=1', { headers: wsAuthHeaders() });
                 if (!res.ok) return null;
                 const d = await res.json();
                 if (d && typeof d.content_b64 === 'string') return { content: wsB64Decode(d.content_b64), size: d.size || 0 };
@@ -3826,7 +3835,7 @@ window.chatLivePreview = function () {
                 // replace:true (bukan DELETE-dulu): chunk file besar TIDAK ikut terhapus,
                 // dan tidak ada jendela "cloud kosong" bila POST-nya gagal.
                 const payload = { project_id: pid, files: wsFlatten(wsLoad()), replace: true };
-                fetch(WS_CLOUD_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+                fetch(WS_CLOUD_API, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()), body: JSON.stringify(payload) })
                     .catch(function() {});
             }, 3000);
         }
@@ -3835,7 +3844,7 @@ window.chatLivePreview = function () {
         function wsCloudPull() {
             const pid = wsProjectId();
             if (!pid || wsCloudTimer) return;
-            fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid))
+            fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { headers: wsAuthHeaders() })
                 .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
                 .then(function(d) {
                     const files = (d && d.files) || [];
@@ -3849,8 +3858,8 @@ window.chatLivePreview = function () {
                     } else {
                         const localRaw = localStorage.getItem(wsFilesKey());
                         if (localRaw && localRaw !== JSON.stringify({ 'root': [] })) {
-                            fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { method: 'DELETE' }).catch(function() {});
-                            fetch(WS_CLOUD_API, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { method: 'DELETE', headers: wsAuthHeaders() }).catch(function() {});
+                            fetch(WS_CLOUD_API, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()),
                                 body: JSON.stringify({ project_id: pid, files: wsFlatten(wsLoad()) }) }).catch(function() {});
                         }
                     }

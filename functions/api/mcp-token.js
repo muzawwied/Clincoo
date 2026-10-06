@@ -97,7 +97,28 @@ async function guardOwner(request, env, projectId) {
 // sesi user mana pun yang valid) tiap guard lokal berhasil — jadi tool MCP
 // selalu pegang sesi segar tanpa minta user buat ulang token.
 async function refreshStoredToken(env, g, projectId) {
-  if (!g || !g.local || !g.token) return;
+  // UTAMA (2026-10-06): jangan timpa sesi valid yang tersimpan dengan sesi browser —
+  // sesi browser berumur pendek; menggantikannya hanya menghidupkan ulang masalah
+  // "Sesi backend Clincoo kedaluwarsa". Simpan sesi DEDIKASI berumur panjang untuk
+  // pemilik proyek; fallback ke sesi browser hanya bila pemilik tak tercatat.
+  if (!env || !env.DB || !g || !g.local) return;
+  try {
+    const row = await env.DB.prepare('SELECT be2_token FROM mcp_tokens WHERE project_id = ?').bind(projectId).first();
+    const cur = row && row.be2_token ? row.be2_token : '';
+    if (cur) {
+      const sess = await env.DB.prepare('SELECT token, expires_at FROM auth_sessions WHERE token = ?').bind(cur).first();
+      if (sess && new Date(sess.expires_at) >= new Date()) return; // masih valid — biarkan
+    }
+    if (g.userId) {
+      const b = new Uint8Array(24);
+      crypto.getRandomValues(b);
+      const tk = 'mcp_svc_' + Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
+      await env.DB.prepare('INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)')
+        .bind(tk, g.userId, new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000).toISOString()).run();
+      await env.DB.prepare('UPDATE mcp_tokens SET be2_token = ? WHERE project_id = ?').bind(tk, projectId).run();
+      return;
+    }
+  } catch (e) {}
   try { await env.DB.prepare('UPDATE mcp_tokens SET be2_token = ? WHERE project_id = ?').bind(g.token, projectId).run(); } catch (e) {}
 }
 
