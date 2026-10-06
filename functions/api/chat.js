@@ -1532,11 +1532,50 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // UTAMA kembali: glm-5.3-flash + key baru sehat (tanpa batas reservasi 402).
       // Workers AI (glm-4.7-flash, gratis) tetap sebagai fallback sebelum Gemini.
       if ((!r || r.error) && orKeys.length && !hasImages) {
-        // Sol Pro = model utama user login (Luna Pro berikutnya); tamu pakai rantai
-        // non-premium. Reasoning model lebih lambat dari flash, butuh napas lebih
-        // panjang per panggilan (90s) supaya jawaban panjang tidak terpotong timeout.
+        // [6 Okt 2026, arahan owner: "percepat jawaban ai"] MODE RACE:
+        // GLM 5.3 Flash (OpenRouter, jalur utama + streaming) balapan dengan
+        // Workers AI glm-4.7-flash (binding internal, gratis, tanpa API eksternal
+        // — biasanya TTFB tercepat). Konten lebih dulu menang, kandidat lain
+        // dibuang begitu kalah (biaya sisa hanya token sebelum selesai sendiri).
+        // Streaming: delta HANYA diteruskan setelah pemenang pasti — kalau P
+        // (OpenRouter) kirim delta duluan, P menang dan delta mengalir langsung;
+        // kalau W (Workers AI) selesai duluan, teksnya dikirim utuh satu delta.
+        // Kedua kandidat punya dukungan tool_calls normal — jalur tool tak berubah.
+        // W kalah/gagal total tidak mengganggu: jalur OpenRouter tetap utuh, dan
+        // bila P gagal, W masih dipakai sebelum cascade turun ke Clouvia dst.
         const chainModels = isGuest ? GUEST_OR_MODELS : OPENROUTER_MODELS;
-        const o = await withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, chainModels, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 90000, 'OpenRouter').catch(e => ({ error: e.message }));
+        let raceDecided = false; // pemenang sudah ditetapkan?
+        let winnerId = null;     // 'P' (OpenRouter) | 'W' (Workers AI)
+        const sendDelta = streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null;
+        const pOnDelta = sendDelta ? (tx) => {
+          if (winnerId === 'W') return;           // W sudah menang -> buang semua delta P
+          if (winnerId === 'P') { sendDelta(tx); return; } // P menang -> teruskan SEMUA delta
+          raceDecided = true; winnerId = 'P';     // belum ada pemenang: delta pertama P menang
+          sendDelta(tx);
+        } : null;
+        const P = withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, chainModels, pOnDelta), 90000, 'OpenRouter').catch(e => ({ error: e.message }));
+        const W = aiMain
+          ? withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 20000, 'WorkersAI-race').catch(e => null)
+          : Promise.resolve(null);
+        const W2 = W.then(w => {
+          if (raceDecided) return null; // P sudah unggul -> buang hasil W
+          if (w && (w.text || (w.tool_calls && w.tool_calls.length))) {
+            raceDecided = true; winnerId = 'W';
+            if (sendDelta && w.text) sendDelta(w.text); // teks utuh W ke user
+            return w;
+          }
+          return null; // W gagal/kosong -> abaikan
+        });
+        const o = await new Promise((resolve) => {
+          let settled = false;
+          const fin = (v) => { if (!settled) { settled = true; resolve(v); } };
+          W2.then(w => { if (w) fin(w); }); // W menang duluan -> langsung pakai
+          P.then(p => {
+            if (winnerId === 'W') return;           // W sudah dipakai; P selesai di latar
+            if (p && !p.error) { raceDecided = true; winnerId = 'P'; fin(p); return; }
+            W2.then(w => fin(w || p || null));      // P gagal -> beri W kesempatan terakhir
+          });
+        });
         if (o) r = o;
       }
       if ((!r || r.error) && cvKeysEarly.length && !hasImages) {
