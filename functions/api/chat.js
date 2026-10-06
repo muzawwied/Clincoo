@@ -120,6 +120,10 @@ const OPENROUTER_MODELS = ['z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro', 'opena
 // Rantai khusus TAMU (anonim, gratis): TANPA Sol Pro — model premium hanya
 // untuk user login; tamu tidak boleh membakar biaya provider premium.
 const GUEST_OR_MODELS = ['z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro', 'nvidia/nemotron-3-ultra-550b-a55b'];
+// [6 Okt 2026, arahan owner: "ambil ai gratis baru"] Model :free OpenRouter — gratis
+// (limit per kunci ~50 req/hari), tools didukung. Kandidat F balapan + pengaman saat
+// kredit berbayar OR habis (402). Teruji memenangkan balapan di labs (jawaban bersih ~4s).
+const FREE_OR_MODELS = ['cohere/north-mini-code:free', 'google/gemma-4-26b-a4b-it:free'];
 // Batas output OpenRouter: kunci 402 "requires more credits / fewer max_tokens" saat
 // reservasi kredit di muka besar. Uji langsung 5 Okt 2026: 4096 GAGAL di SEMUA kunci,
 // 2048 lolos di 3 kunci sehat (1 kunci 402 lalu dilewati cepat), 1024 lolos semua.
@@ -1559,6 +1563,12 @@ export async function onRequestPost({ request, env, waitUntil }) {
         }
         // KANDIDAT W: Workers AI (hanya bila binding ada; gagal cepat bila kuota habis)
         if (aiMain) cands.push(cand('W', withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 20000, 'WorkersAI-race')));
+        // KANDIDAT F: model :free OpenRouter (cohere north-mini-code, spesialis koding,
+        // model reasoning). Gratis — jalan untuk guest maupun user login. Gagal cepat
+        // (429/402) bila kuota hariannya habis; tidak menahan kandidat lain.
+        if (orKeys.length && !hasImages) {
+          cands.push(cand('F', withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, FREE_OR_MODELS, makeOnDelta('F')), 45000, 'OpenRouterFree')));
+        }
         const o = await new Promise((resolve) => {
           let settled = false;
           const fin = (v) => { if (!settled) { settled = true; resolve(v); } };
