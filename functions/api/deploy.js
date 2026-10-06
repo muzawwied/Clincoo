@@ -400,21 +400,36 @@ async function readFiles(db, table, projectId) {
   try {
     // kolom is_big wajib ada sebelum dipakai (proyek lama belum punya kolom ini)
     try { await db.prepare(`ALTER TABLE ${table} ADD COLUMN is_big INTEGER DEFAULT 0`).run(); } catch (e) {}
-    const { results } = await db.prepare(`SELECT path, content, is_big FROM ${table} WHERE project_id = ?`).bind(projectId).all();
-    const rows = results || [];
-    const bigs = rows.filter(r => r.is_big);
-    if (!bigs.length) return rows;
-    // File besar: konten utuh dibangun ulang dari chunk di p_<pid>_file_chunks
-    const chunksTable = tableFor('file_chunks', projectId);
-    for (const r of bigs) {
-      try {
-        const ch = await db.prepare(`SELECT chunk FROM ${chunksTable} WHERE path = ? ORDER BY idx ASC`).bind(r.path).all();
-        const b64Str = (ch.results || []).map(c => c.chunk || '').join('');
-        r.content = b64Str ? unb64(b64Str) : '';
-      } catch (e) { r.content = ''; }
-    }
-    return rows;
+    // Muat file KECIL utuh; file BESAR hanya metadata (is_big=1, content='') —
+    // kontennya diambil dari chunk D1 satu-per-satu hanya saat dibutuhkan.
+    // Ini yang membuat proyek berisi BANYAK FILE BESAR bisa dideploy tanpa
+    // meledakkan batas memori Worker (128 MB): memori puncak = satu file.
+    const { results } = await db.prepare(`SELECT path, content, is_big, size FROM ${table} WHERE project_id = ?`).bind(projectId).all();
+    return (results || []).map(r => ({ path: r.path, content: r.is_big ? '' : (r.content || ''), is_big: r.is_big ? 1 : 0, size: Number(r.size) || 0 }));
   } catch (e) { return []; }
+}
+
+// Konten file besar (dibangun ulang dari chunk D1) — dipakai saat hash/upload.
+async function bigFileContent(db, chunksTable, path) {
+  try {
+    const ch = await db.prepare(`SELECT chunk FROM ${chunksTable} WHERE path = ? ORDER BY idx ASC`).bind(path).all();
+    const b64Str = (ch.results || []).map(c => c.chunk || '').join('');
+    return b64Str ? unb64(b64Str) : '';
+  } catch (e) { return ''; }
+}
+
+// Kunci aset = 32 karakter pertama SHA-256(base64 + ekstensi) — hasil identik
+// sha256hex(value + ext), tapi encodeInto memakai satu buffer TANPA menyalin
+// string raksasa, supaya file 25 MB tidak menggandakan memori.
+async function assetKey(value, ext) {
+  const enc = new TextEncoder();
+  const buf = new Uint8Array(value.length + ext.length);
+  enc.encodeInto(value, buf);
+  enc.encodeInto(ext, buf.subarray(value.length));
+  const h = new Uint8Array(await crypto.subtle.digest('SHA-256', buf));
+  let hex = '';
+  for (let i = 0; i < 16; i++) hex += h[i].toString(16).padStart(2, '0');
+  return hex;
 }
 
 export async function onRequestOptions() {
@@ -708,6 +723,21 @@ export async function onRequestPost({ request, env }) {
 
     const files = await readFiles(db, T.files, projectId);
 
+    // File besar: konten dimuat satu-per-satu; mutasi konten saat deploy
+    // (favicon, tulis ulang .ts -> .js, _headers) ditampung di contentOverrides.
+    const chunksTable = tableFor('file_chunks', projectId);
+    const contentOverrides = new Map();
+    const fileContent = async f => {
+      const ov = contentOverrides.get(String(f.path));
+      if (ov !== undefined) return ov;
+      if (f.is_big) return await bigFileContent(db, chunksTable, String(f.path));
+      return String(f.content || '');
+    };
+    const setContent = (f, c) => {
+      if (f.is_big) { contentOverrides.set(String(f.path), c); f.content = ''; }
+      else f.content = c;
+    };
+
     // === Transpile otomatis TypeScript/JSX saat deploy (fitur "AI masak, Clincoo deploy") ===
     // File .ts/.tsx/.jsx di workspace dikompilasi server-side menjadi .js murni (sucrase:
     // hapus tipe/interface, JSX klasik -> React.createElement). Referensi ekstensi di HTML
@@ -728,7 +758,7 @@ export async function onRequestPost({ request, env }) {
           const transforms = /\.(tsx|jsx)$/i.test(String(f.path)) ? ['typescript', 'jsx'] : ['typescript'];
           let code;
           try {
-            code = tsTransform(String(f.content || ''), { transforms, jsxRuntime: 'classic', production: true }).code;
+            code = tsTransform(String(await fileContent(f) || ''), { transforms, jsxRuntime: 'classic', production: true }).code;
           } catch (e) {
             return json({ error: 'Gagal mengompilasi ' + f.path + ': ' + (e && e.message ? e.message : String(e)) }, 400);
           }
@@ -751,9 +781,9 @@ export async function onRequestPost({ request, env }) {
         }
         // tulis ulang referensi ekstensi TS di HTML -> .js
         for (const f of files) {
-          if (/\.html?$/i.test(String(f.path)) && typeof f.content === 'string') {
-            f.content = f.content.replace(/\.(tsx?|jsx)(["'?#\s])/g, '.js$2');
-          }
+          if (!/\.html?$/i.test(String(f.path))) continue;
+          const c = await fileContent(f);
+          setContent(f, c.replace(/\.(tsx?|jsx)(["'?#\s])/g, '.js$2'));
         }
         const keep = files.filter(f => !drop.has(String(f.path)) && !/\.d\.ts$/i.test(String(f.path)));
         for (const [p, c] of compiled) keep.push({ path: p, content: c });
@@ -776,11 +806,11 @@ export async function onRequestPost({ request, env }) {
       for (const f of files) {
         if (!/\.html?$/i.test(String(f.path))) continue;
         try {
-          let html = String(f.content || '');
+          let html = await fileContent(f);
           html = html.replace(/<link[^>]+rel=["']?(apple-touch-icon|shortcut icon|icon)["']?[^>]*>/gi, '');
           if (/<\/head>/i.test(html)) html = html.replace(/<\/head>/i, iconTag + '</head>');
           else html = iconTag + html;
-          f.content = html;
+          setContent(f, html);
         } catch (e) {}
       }
       await setPhase(db, T.projectSettings, projectId, 'Memasang logo sebagai favicon...');
@@ -843,8 +873,9 @@ export async function onRequestPost({ request, env }) {
       const NOINDEX = 'X-Robots-Tag: noindex, nofollow';
       const ex = files.findIndex(function (f) { return f.path === '_headers'; });
       if (ex > -1) {
-        if (files[ex].content.indexOf('X-Robots-Tag') === -1) {
-          files[ex].content = files[ex].content.replace(/\n*$/, '') + '\n/*\n  ' + NOINDEX + '\n';
+        const hc = await fileContent(files[ex]);
+        if (hc.indexOf('X-Robots-Tag') === -1) {
+          setContent(files[ex], hc.replace(/\n*$/, '') + '\n/*\n  ' + NOINDEX + '\n');
         }
       } else {
         files.push({ path: '_headers', content: '/*\n  ' + NOINDEX + '\n' });
@@ -852,14 +883,20 @@ export async function onRequestPost({ request, env }) {
     }
 
     await setPhase(db, T.projectSettings, projectId, 'Menyiapkan proyek Pages...');
-    // Guard ukuran: proyek raksasa membuat Worker kena batas CPU/memori/timeout 100 dtk
-    // proxy Cloudflare — errornya HTML (bukan JSON) dan sulit dipahami user. Tolak
-    // lebih awal dengan pesan jelas, sebelum resources dihabiskan percuma.
-    let totalChars = 0;
-    for (const f of files) totalChars += String(f.content || '').length;
-    if (totalChars > 45_000_000) {
+    // Guard ukuran: deploy kini STREAMING — file besar diproses satu-per-satu
+    // dari chunk D1 (memori puncak = satu file terbesar), jadi batas deploy
+    // dinaikkan dari 45 MB ke 250 MB total, masih aman di bawah timeout ~100
+    // detik proxy Cloudflare. Lebih dari itu ditolak lebih awal dengan pesan
+    // jelas — bukan 524/HTML misterius yang sulit dipahami user.
+    const MAX_DEPLOY_BYTES = 250 * 1024 * 1024;
+    let totalBytes = 0;
+    for (const f of files) {
+      const ov = contentOverrides.get(String(f.path));
+      totalBytes += ov !== undefined ? ov.length : (f.is_big ? (Number(f.size) || 0) : String(f.content || '').length);
+    }
+    if (totalBytes > MAX_DEPLOY_BYTES) {
       await setPhase(db, T.projectSettings, projectId, '');
-      return json({ error: 'Proyek terlalu besar untuk sekali deploy (' + Math.round(totalChars / 1000000) + ' MB kode). Kurangi ukuran proyek — pecah jadi beberapa situs atau hapus file/aset terbesar — lalu deploy lagi.' }, 413);
+      return json({ error: 'Proyek terlalu besar untuk sekali deploy (' + Math.round(totalBytes / (1024 * 1024)) + ' MB, maksimal 250 MB per deploy). Kurangi ukuran proyek — pecah jadi beberapa situs atau hapus file/aset terbesar — lalu deploy lagi.' }, 413);
     }
     const targetName = isPreview ? prvNameFor(name) : name;
     await ensurePagesProject(creds, targetName);
@@ -868,25 +905,30 @@ export async function onRequestPost({ request, env }) {
     const tokenRes = await cfFetch('/accounts/' + creds.accountId + '/pages/projects/' + targetName + '/upload-token', creds.apiKey);
     const jwt = tokenRes.jwt;
 
+    // Kunci aset dihitung SATU FILE PADA SATU WAKTU: konten file besar dibaca
+    // dari chunk D1 hanya di sini, dipakai untuk kunci, lalu dibuang. Memori
+    // tetap seukuran satu file terbesar (25 MB), bukan seluruh proyek — jadi
+    // proyek berisi banyak file besar tidak lagi membuat Worker OOM.
     const assets = [];
     for (const f of files) {
       const ext = (String(f.path).split('.').pop() || '').toLowerCase();
       // File biner (logo/ikon) disimpan di workspace sebagai data URL — decode
       // jadi base64 murni supaya terunggah sebagai file gambar asli, bukan teks.
       let value;
-      const raw = String(f.content || '');
+      const raw = await fileContent(f);
       const dm = raw.startsWith('data:') && /^data:([a-z0-9.+-]+\/\/[a-z0-9.+-]+)?;base64,([A-Za-z0-9+/=]+)$/i.exec(raw);
       if (dm && raw.length < 34_000_000) {
         value = dm[2];
       } else {
-        value = b64(f.content);
+        value = b64(raw);
       }
       assets.push({
-        key: (await sha256hex(value + ext)).slice(0, 32),
-        value,
+        key: await assetKey(value, ext),
+        est: raw.length, // perkiraan ukuran payload — dasar pembagian batch upload
         ext,
         path: f.path,
-        contentType: MIME[ext] || 'application/octet-stream'
+        contentType: MIME[ext] || 'application/octet-stream',
+        src: f // baris aslinya — konten dimuat ulang saat giliran upload
       });
     }
 
@@ -900,22 +942,43 @@ export async function onRequestPost({ request, env }) {
 
     const toUpload = assets.filter(a => missing.indexOf(a.key) > -1);
     if (toUpload.length) await setPhase(db, T.projectSettings, projectId, 'Mengunggah ' + toUpload.length + ' file (0/' + toUpload.length + ')...');
-    const chunks = [];
-    for (let i = 0; i < toUpload.length; i += 25) chunks.push(toUpload.slice(i, i + 25));
-    let uploaded = 0;
-    const CONC = 6; // 3 -> 6: batch upload lebih cepat, hindari timeout proxy 100 dtk di proyek besar
-    for (let i = 0; i < chunks.length; i += CONC) {
-      await Promise.all(chunks.slice(i, i + CONC).map(async (chunk) => {
-        const batch = chunk.map(a => ({
-          key: a.key, value: a.value, metadata: { contentType: a.contentType }, base64: true
-        }));
-        await cfFetch('/pages/assets/upload', creds.apiKey, {
-          method: 'POST', headers: { Authorization: 'Bearer ' + jwt }, body: JSON.stringify(batch)
-        });
-        uploaded += chunk.length;
-        await setPhase(db, T.projectSettings, projectId, 'Mengunggah ' + toUpload.length + ' file (' + uploaded + '/' + toUpload.length + ')...');
-      }));
+    // Pembagian batch kini berdasarkan ANGGARAN BYTE, bukan jumlah file: payload
+    // /pages/assets/upload dibatasi ~50 MB oleh Cloudflare, jadi batch lama
+    // (apa adanya 25 file) ditolak kalau isinya file besar. File > 8 MB dikirim
+    // SATU-SATU supaya memori payload + salinan JSON.stringify tetap aman.
+    const SMALL_BATCH_BYTES = 8_000_000;
+    const BIG_SOLO = 8_000_000;
+    const smallBatches = [];
+    const bigs = [];
+    let cur = [], curBytes = 0;
+    for (const a of toUpload) {
+      const est = a.est || 0;
+      if (est > BIG_SOLO) { bigs.push(a); continue; }
+      if (curBytes + est > SMALL_BATCH_BYTES) { smallBatches.push(cur); cur = []; curBytes = 0; }
+      cur.push(a); curBytes += est;
     }
+    if (cur.length) smallBatches.push(cur);
+    let uploaded = 0;
+    const uploadBatch = async batch => {
+      const payload = [];
+      for (const a of batch) {
+        const raw = await fileContent(a.src);
+        const dm = raw.startsWith('data:') && /^data:([a-z0-9.+-]+\/\/[a-z0-9.+-]+)?;base64,([A-Za-z0-9+/=]+)$/i.exec(raw);
+        const value = (dm && raw.length < 34_000_000) ? dm[2] : b64(raw);
+        payload.push({ key: a.key, value, metadata: { contentType: a.contentType }, base64: true });
+      }
+      await cfFetch('/pages/assets/upload', creds.apiKey, {
+        method: 'POST', headers: { Authorization: 'Bearer ' + jwt }, body: JSON.stringify(payload)
+      });
+      uploaded += batch.length;
+      await setPhase(db, T.projectSettings, projectId, 'Mengunggah ' + toUpload.length + ' file (' + uploaded + '/' + toUpload.length + ')...');
+    };
+    // File kecil: batch paralel (maks 3 in-flight ≈ 24 MB payload, jauh di bawah 50 MB/batch)
+    for (let i = 0; i < smallBatches.length; i += 3) {
+      await Promise.all(smallBatches.slice(i, i + 3).map(uploadBatch));
+    }
+    // File besar: satu per satu — memori puncak hanya ~2 salinan file terbesar
+    for (const a of bigs) await uploadBatch([a]);
 
     try {
       await cfFetch('/pages/assets/upsert-hashes', creds.apiKey, {
