@@ -527,6 +527,11 @@ function renderScopeUI() {
       '</div>';
   });
   wrap.innerHTML = html;
+  // BUG FIX (2026-10-07): applyScopeSwitch tak pernah dipanggil setelah DOM
+  // toggle dibuat -> SEMUA switch tampil polos tanpa warna biru, termasuk
+  // yang aktif (laporan user: "ko ga ada google birunya"). Terapkan warna
+  // + posisi knob tiap toggle yang baru dirender.
+  meta.forEach(function (grp) { grp.scopes.forEach(function (s) { applyScopeSwitch(s.key); }); });
   var cnt = document.getElementById('scope-count');
   if (cnt) cnt.textContent = totalOn + '/' + total + ' izin aktif';
 }
