@@ -1532,49 +1532,51 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // UTAMA kembali: glm-5.3-flash + key baru sehat (tanpa batas reservasi 402).
       // Workers AI (glm-4.7-flash, gratis) tetap sebagai fallback sebelum Gemini.
       if ((!r || r.error) && orKeys.length && !hasImages) {
-        // [6 Okt 2026, arahan owner: "percepat jawaban ai"] MODE RACE:
-        // GLM 5.3 Flash (OpenRouter, jalur utama + streaming) balapan dengan
-        // Workers AI glm-4.7-flash (binding internal, gratis, tanpa API eksternal
-        // — biasanya TTFB tercepat). Konten lebih dulu menang, kandidat lain
-        // dibuang begitu kalah (biaya sisa hanya token sebelum selesai sendiri).
-        // Streaming: delta HANYA diteruskan setelah pemenang pasti — kalau P
-        // (OpenRouter) kirim delta duluan, P menang dan delta mengalir langsung;
-        // kalau W (Workers AI) selesai duluan, teksnya dikirim utuh satu delta.
-        // Kedua kandidat punya dukungan tool_calls normal — jalur tool tak berubah.
-        // W kalah/gagal total tidak mengganggu: jalur OpenRouter tetap utuh, dan
-        // bila P gagal, W masih dipakai sebelum cascade turun ke Clouvia dst.
+        // [6 Okt 2026, arahan owner: "percepat jawaban ai"] MODE RACE 3 KANDIDAT:
+        // (P) GLM 5.3 Flash OpenRouter — jalur utama (tools + streaming penuh);
+        // (G) Gemini 3.6 Flash — biasanya TTFB tercepat (di labs menang 20/22 balapan);
+        // (W) Workers AI glm-4.7-flash — gratis, ikut kalau kuota neuron masih ada
+        //     (kuota harian gratis cepat habis; 4006 gagal dalam ~200ms, tak menahan apa pun).
+        // Delta HANYA diteruskan dari pemenang: kandidat pertama yang mengirim delta
+        // (atau selesai duluan dengan hasil valid) menang; kandidat lain dibuang begitu kalah.
+        // Semua kandidat punya dukungan tool_calls — jalur tool tak berubah.
+        // Bila P gagal total, hasil kandidat lain dipakai sebelum cascade turun ke Clouvia dst.
         const chainModels = isGuest ? GUEST_OR_MODELS : OPENROUTER_MODELS;
-        let raceDecided = false; // pemenang sudah ditetapkan?
-        let winnerId = null;     // 'P' (OpenRouter) | 'W' (Workers AI)
+        let winner = null; // id kandidat pemenang ('P' | 'G' | 'W')
         const sendDelta = streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null;
-        const pOnDelta = sendDelta ? (tx) => {
-          if (winnerId === 'W') return;           // W sudah menang -> buang semua delta P
-          if (winnerId === 'P') { sendDelta(tx); return; } // P menang -> teruskan SEMUA delta
-          raceDecided = true; winnerId = 'P';     // belum ada pemenang: delta pertama P menang
+        const makeOnDelta = (id) => sendDelta ? (tx) => {
+          if (winner && winner !== id) return;      // sudah ada pemenang lain -> buang delta
+          if (!winner) winner = id;                 // delta pertama -> kandidat ini menang
           sendDelta(tx);
         } : null;
-        const P = withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, chainModels, pOnDelta), 90000, 'OpenRouter').catch(e => ({ error: e.message }));
-        const W = aiMain
-          ? withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 20000, 'WorkersAI-race').catch(e => null)
-          : Promise.resolve(null);
-        const W2 = W.then(w => {
-          if (raceDecided) return null; // P sudah unggul -> buang hasil W
-          if (w && (w.text || (w.tool_calls && w.tool_calls.length))) {
-            raceDecided = true; winnerId = 'W';
-            if (sendDelta && w.text) sendDelta(w.text); // teks utuh W ke user
-            return w;
-          }
-          return null; // W gagal/kosong -> abaikan
-        });
+        const cand = (id, p) => p.then((res) => ({ id, res })).catch((e) => ({ id, res: { error: e.message } }));
+        // KANDIDAT P: OpenRouter (utama, napas 90s utk reasoning + auto-continue)
+        const cands = [cand('P', withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, chainModels, makeOnDelta('P')), 90000, 'OpenRouter'))];
+        // KANDIDAT G: Gemini 3.6 Flash (napas 25s — sama dengan jalur cadangan lamanya)
+        if (apiKey.length) {
+          const { systemInstruction, contents } = toGeminiPayload(workMessages);
+          cands.push(cand('G', withTimeout(tryModels(apiKey, systemInstruction, contents, gTools, makeOnDelta('G')), 25000, 'Gemini-race')));
+        }
+        // KANDIDAT W: Workers AI (hanya bila binding ada; gagal cepat bila kuota habis)
+        if (aiMain) cands.push(cand('W', withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 20000, 'WorkersAI-race')));
         const o = await new Promise((resolve) => {
           let settled = false;
           const fin = (v) => { if (!settled) { settled = true; resolve(v); } };
-          W2.then(w => { if (w) fin(w); }); // W menang duluan -> langsung pakai
-          P.then(p => {
-            if (winnerId === 'W') return;           // W sudah dipakai; P selesai di latar
-            if (p && !p.error) { raceDecided = true; winnerId = 'P'; fin(p); return; }
-            W2.then(w => fin(w || p || null));      // P gagal -> beri W kesempatan terakhir
-          });
+          for (const C of cands) {
+            C.then(({ id, res }) => {
+              if (winner && winner !== id) return;  // pemenang delta lain sedang streaming
+              if (res && !res.error && (res.text || (res.tool_calls && res.tool_calls.length))) {
+                if (!winner) { winner = id; if (sendDelta && res.text) sendDelta(res.text); }
+                fin(res); return;                   // pemenang selesai -> hasil finalnya
+              }
+              // kandidat ini gagal: tunggu semua selesai; tanpa pemenang -> lanjut cascade
+              Promise.all(cands).then((all) => {
+                let pRes = null;
+                for (const a of all) if (a.id === 'P') pRes = a.res; // utamakan error P (label cascade)
+                fin(pRes || (res && res.error ? res : null));
+              });
+            });
+          }
         });
         if (o) r = o;
       }
