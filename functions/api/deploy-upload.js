@@ -11,15 +11,15 @@
 // 'prepare' pada /api/deploy, berumur pendek, khusus upload aset).
 
 import { guardProject } from './user-scope.js';
-import { getCreds, resolvePagesName } from './deploy.js';
-import { getProjectTables } from './_tables.js';
 
 const API_BASE = 'https://api.cloudflare.com/client/v4';
 
+// Endpoint aset Pages diautentikasi oleh JWT upload itu sendiri
+// (sama seperti jalur legacy): /client/v4/pages/assets/* — tanpa account id.
 const SUBS = {
-  'check-missing': p => '/accounts/' + p.accountId + '/pages/projects/' + p.name + '/assets/check-missing',
-  'upsert-hashes': p => '/accounts/' + p.accountId + '/pages/projects/' + p.name + '/assets/upsert-hashes',
-  'upload': p => '/accounts/' + p.accountId + '/pages/projects/' + p.name + '/assets/upload'
+  'check-missing': '/pages/assets/check-missing',
+  'upsert-hashes': '/pages/assets/upsert-hashes',
+  'upload': '/pages/assets/upload'
 };
 
 function jerr(msg, status) {
@@ -41,14 +41,7 @@ export async function onRequestPost({ request, env }) {
   if (!SUBS[sub]) return jerr('sub tidak dikenal: ' + sub, 400);
   if (!jwt) return jerr('token upload (x-upload-jwt) kosong — jalankan action prepare dulu.', 400);
 
-  const db = env.DB;
-  const creds = await getCreds(db);
-  if (!creds.apiKey) return jerr('Cloudflare API key belum dikonfigurasi', 500);
-  const T = await getProjectTables(db, projectId);
-  // Nama project Pages diambil dari server — TIDAK dari input klien,
-  // supaya proxy tidak bisa dipakai meng-upload ke project Pages lain.
-  const name = await resolvePagesName(db, T.projectSettings, projectId);
-  const target = SUBS[sub]({ accountId: creds.accountId, name: name });
+  const target = SUBS[sub];
 
   try {
     // Streaming passthrough: request.body (stream dari browser) diteruskan
