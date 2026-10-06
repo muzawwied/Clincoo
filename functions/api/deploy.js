@@ -59,16 +59,43 @@ async function cfFetch(path, apiKey, opts = {}) {
   const headers = { ...(opts.headers || {}) };
   if (opts.body && typeof opts.body === 'string' && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
   if (!headers['Authorization']) headers['Authorization'] = 'Bearer ' + apiKey;
-  const res = await fetch(API_BASE + path, { ...opts, headers });
-  let data = null;
-  try { data = await res.json(); } catch (e) { throw new Error('Cloudflare API tidak merespons'); }
-  if (!data.success) {
-    const first = (data.errors && data.errors[0]) || {};
-    const err = new Error(first.message || ('HTTP ' + res.status));
-    err.code = first.code;
-    throw err;
+  let lastErr = null;
+  // Maks 3 percobaan: fetch timeout (30 detik), jaringan terputus, atau API balas
+  // 5xx/429 dicoba ulang dengan jeda — hickup Cloudflare sesaat tidak lagi
+  // menggagalkan publish dengan "Cloudflare API tidak merespons".
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    let res = null;
+    try {
+      res = await fetch(API_BASE + path, { ...opts, headers, signal: AbortSignal.timeout(30000) });
+    } catch (e) {
+      lastErr = new Error('Cloudflare API tidak merespons (' + (e && e.name === 'TimeoutError' ? 'timeout' : 'jaringan') + ')');
+      if (attempt < 3) { await new Promise(r => setTimeout(r, 1200 * attempt)); continue; }
+      throw lastErr;
+    }
+    let data = null;
+    try { data = await res.json(); } catch (e) { data = null; }
+    if (!data) {
+      lastErr = new Error('Cloudflare API tidak merespons (HTTP ' + res.status + ')');
+      if ((res.status >= 500 || res.status === 429) && attempt < 3) {
+        await new Promise(r => setTimeout(r, 1200 * attempt));
+        continue;
+      }
+      throw lastErr;
+    }
+    if (!data.success) {
+      const first = (data.errors && data.errors[0]) || {};
+      if (res.status === 429 && attempt < 3) { // rate limit: jeda lebih lama lalu coba lagi
+        lastErr = new Error(first.message || ('HTTP ' + res.status));
+        await new Promise(r => setTimeout(r, 2000 * attempt));
+        continue;
+      }
+      const err = new Error(first.message || ('HTTP ' + res.status));
+      err.code = first.code;
+      throw err;
+    }
+    return data.result;
   }
-  return data.result;
+  throw lastErr || new Error('Cloudflare API tidak merespons');
 }
 
 async function getSetting(db, table, projectId, key) {
