@@ -622,6 +622,130 @@
         }
 
         // Lanjut deploy otomatis (auto-resume) — tombol konfigurasi tidak ada di halaman ini
+        // ===== Deploy orkestrasi browser (proyek besar) =====
+        // Server Clincoo jalan di paket gratis Worker (limit CPU ~10ms/request),
+        // jadi file besar didecode, di-hash SHA-256, dan di-upload ke Cloudflare
+        // dari BROWSER lewat proxy streaming /api/deploy-upload. Server hanya
+        // menyiapkan token ('prepare') dan membuat deployment ('finalize').
+        async function apiFetchT(path, opts, ms) {
+            const ctl = new AbortController();
+            const to = setTimeout(() => ctl.abort(), ms || 60000);
+            try { return await apiFetch(path, Object.assign({}, opts, { signal: ctl.signal })); }
+            finally { clearTimeout(to); }
+        }
+
+        function b64Client(str) { return btoa(unescape(encodeURIComponent(String(str || '')))); }
+
+        function valueFromContent(content) {
+            const raw = String(content || '');
+            if (raw.startsWith('data:')) {
+                const m = /^data:([a-z0-9.+-]+\/+[a-z0-9.+-]+)?;base64,([A-Za-z0-9+\/=]+)$/i.exec(raw);
+                if (m && raw.length < 34000000) return m[2];
+            }
+            return b64Client(raw);
+        }
+
+        async function assetKeyBrowser(value, ext) {
+            const enc = new TextEncoder();
+            const buf = new Uint8Array(value.length + ext.length);
+            enc.encodeInto(value, buf);
+            enc.encodeInto(ext, buf.subarray(value.length));
+            const h = new Uint8Array(await crypto.subtle.digest('SHA-256', buf));
+            let hex = '';
+            for (let i = 0; i < 16; i++) hex += h[i].toString(16).padStart(2, '0');
+            return hex;
+        }
+
+        // Nilai base64 file besar: chunk diambil per-halaman (8 chunk) lalu
+        // didecode di klien. Data-URL (media hasil unggahan) dibuang headernya,
+        // file teks besar dipakai base64 chunk-nya apa adanya.
+        async function bigValueClient(path) {
+            let from = 0, total = 1, isData = false, skip = 0;
+            const parts = [];
+            while (from < total) {
+                const pg = await apiFetchT('/project-files?project_id=' + encodeURIComponent(pid()) + '&path=' + encodeURIComponent(path) + '&chunks=1&from=' + from + '&count=8', { method: 'GET' }, 60000);
+                total = pg.total_chunks || 0;
+                const chunks = pg.chunks || [];
+                if (!chunks.length) break;
+                if (from === 0) {
+                    const dec = chunks.map(function (c) { return atob(c); }).join('');
+                    if (dec.startsWith('data:')) {
+                        const comma = dec.indexOf(',');
+                        if (comma > 0 && /;base64$/i.test(dec.slice(0, comma))) { isData = true; skip = comma + 1; }
+                    }
+                    parts.push(isData ? dec.slice(skip) : chunks.join(''));
+                } else if (isData) {
+                    for (const c of chunks) parts.push(atob(c));
+                } else {
+                    parts.push(chunks.join(''));
+                }
+                from += chunks.length;
+            }
+            return parts.join('');
+        }
+
+        async function deployOrchestrated() {
+            const prep = await apiFetchT('/deploy', { method: 'POST', body: JSON.stringify({ project_id: pid(), action: 'prepare' }) }, 90000);
+            const jwt = prep.jwt, patch = prep.patch || {}, files = prep.files || [];
+            if (!files.length) throw new Error('Workspace proyek masih kosong — tidak ada file untuk dideploy.');
+            const setPhaseSrv = function (t) { return apiFetchT('/deploy', { method: 'POST', body: JSON.stringify({ project_id: pid(), action: 'phase', text: t }) }, 30000).catch(function () {}); };
+            // 1) konten file kecil diambil per-halaman (~2.5MB/request) supaya server tetap ringan
+            const smalls = new Map();
+            {
+                let off = 0, pg = null;
+                do {
+                    pg = await apiFetchT('/project-files?project_id=' + encodeURIComponent(pid()) + '&deploy_content=1&offset=' + off, { method: 'GET' }, 60000);
+                    for (const f of (pg.files || [])) smalls.set(f.path, f.content);
+                    off = pg.next_offset || 0;
+                } while (pg.has_more);
+            }
+            // 2) hash satu-per-satu dari browser (crypto.subtle — tanpa limit CPU)
+            const entries = [];
+            let done = 0;
+            for (const f of files) {
+                let value;
+                if (Object.prototype.hasOwnProperty.call(patch, f.path)) value = valueFromContent(patch[f.path]);
+                else if (f.is_big) value = await bigValueClient(f.path);
+                else value = valueFromContent(smalls.get(f.path) || '');
+                const key = await assetKeyBrowser(value, f.ext || '');
+                entries.push({ path: f.path, key: key, value: value, contentType: f.contentType || 'application/octet-stream' });
+                done++;
+                if (done % 10 === 0 || done === files.length) await setPhaseSrv('Menghitung ' + files.length + ' file (' + done + '/' + files.length + ')...');
+            }
+            // 3) dedup: hanya aset yang belum ada di Cloudflare yang di-upload
+            const hashes = entries.map(function (e) { return e.key; });
+            let missingSet = new Set(hashes);
+            try {
+                const cm = await apiFetchT('/deploy-upload?project_id=' + encodeURIComponent(pid()) + '&sub=check-missing', { method: 'POST', headers: { 'x-upload-jwt': jwt }, body: JSON.stringify({ hashes: hashes }) }, 60000);
+                if (cm && Array.isArray(cm.result)) {
+                    const have = new Set(cm.result);
+                    missingSet = new Set(hashes.filter(function (h) { return have.has(h); }));
+                }
+            } catch (e) { /* gagal cek -> aman: upload semua */ }
+            const list = entries.filter(function (e) { return missingSet.has(e.key); });
+            // 4) upload: batch <=8MB, file besar satu-per-satu
+            const BATCH = 8000000;
+            let up = 0, i = 0;
+            while (i < list.length) {
+                const batch = [];
+                let bytes = 0;
+                if (list[i].value.length > BATCH) { batch.push(list[i]); i++; }
+                else {
+                    while (i < list.length && list[i].value.length <= BATCH && bytes + list[i].value.length <= BATCH) { batch.push(list[i]); bytes += list[i].value.length; i++; }
+                }
+                const payload = batch.map(function (e) { return { key: e.key, value: e.value, metadata: { contentType: e.contentType }, base64: true }; });
+                await apiFetchT('/deploy-upload?project_id=' + encodeURIComponent(pid()) + '&sub=upload', { method: 'POST', headers: { 'x-upload-jwt': jwt }, body: JSON.stringify(payload) }, 300000);
+                up += batch.length;
+                await setPhaseSrv('Mengunggah ' + list.length + ' file (' + up + '/' + list.length + ')...');
+            }
+            // 5) daftarkan semua hash + finalize deployment di server
+            await apiFetchT('/deploy-upload?project_id=' + encodeURIComponent(pid()) + '&sub=upsert-hashes', { method: 'POST', headers: { 'x-upload-jwt': jwt }, body: JSON.stringify({ hashes: hashes }) }, 60000).catch(function () {});
+            const manifest = {};
+            for (const e of entries) manifest[e.path] = e.key;
+            await setPhaseSrv('Memproses deployment di Cloudflare...');
+            return await apiFetchT('/deploy', { method: 'POST', body: JSON.stringify({ project_id: pid(), action: 'finalize', manifest: manifest }) }, 180000);
+        }
+
         async function processDeploy() {
             if (!pid()) { window.location.replace('../'); return; }
             if (deployState.deploying) return;
@@ -630,11 +754,7 @@
             if (_cb) _cb.classList.add('hidden');
             writeDeploySession({ status: 'deploying', started_at: Date.now() });
             try {
-                const ctl = new AbortController();
-                const to = setTimeout(() => ctl.abort(), 120000); // batas keras: tidak menggantung selamanya
-                let res;
-                try { res = await apiFetch('/deploy', { method: 'POST', body: JSON.stringify({ project_id: pid() }), signal: ctl.signal }); }
-                finally { clearTimeout(to); }
+                const res = await deployOrchestrated();
                 deployState.deploying = false;
                 // DNS cache: hasil deploy langsung siap di halaman Domain Kustom (tanpa buka halaman itu dulu)
                 try { var _dk = 'clincoo_' + pid() + "_domain_cache", _dc = {}; try { _dc = JSON.parse(localStorage.getItem(_dk) || '{}') || {}; } catch (e) {} localStorage.setItem(_dk, JSON.stringify(Object.assign(_dc, { pagesUrl: (res && res.pages_url) || '', deployed: true, ts: Date.now() }))); } catch (e) {}
@@ -642,7 +762,7 @@
             } catch (err) {
                 deployState.deploying = false;
                 writeDeploySession({ status: 'failed' });
-                showDeployErrorModal((err && err.name === 'AbortError') ? new Error('Deploy terlalu lama (lebih dari 2 menit) — proyek mungkin sangat besar atau koneksi sedang lambat. Coba lagi.') : err);
+                showDeployErrorModal((err && err.name === 'AbortError') ? new Error('Koneksi ke server timeout saat deploy — periksa koneksi internet lalu coba lagi.') : err);
             }
         }
 

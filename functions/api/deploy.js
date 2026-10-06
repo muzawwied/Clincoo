@@ -148,7 +148,7 @@ async function setSetting(db, table, projectId, key, value) {
   } catch (e) {}
 }
 
-async function getCreds(db) {
+export async function getCreds(db) {
   const keyRow = await db.prepare("SELECT value FROM user_preferences WHERE key = 'cloudflare_api_key'").first();
   const acctRow = await db.prepare("SELECT value FROM user_preferences WHERE key = 'cloudflare_account_id'").first();
   return { apiKey: keyRow ? keyRow.value : '', accountId: acctRow ? acctRow.value : '' };
@@ -179,7 +179,7 @@ async function getPreferredName(db, table, projectId) {
   return '';
 }
 
-async function resolvePagesName(db, table, projectId) {
+export async function resolvePagesName(db, table, projectId) {
   const stored = await getSetting(db, table, projectId, 'pages_project');
   if (stored) return stored;
   const preferred = await getPreferredName(db, table, projectId);
@@ -469,6 +469,155 @@ async function assetKey(value, ext) {
   return hex;
 }
 
+// ==== Mutasi konten saat deploy — dipakai jalur legacy maupun action 'prepare' ====
+// transpile TS/JSX, favicon otomatis dari logo, gerbang password (_worker.js),
+// noindex _headers. Memutasi array files lewat helper fileContent/setContent.
+async function applyDeployMutations(db, T, projectId, files, fileContent, setContent, user, planInfo) {
+    // === Transpile otomatis TypeScript/JSX saat deploy (fitur "AI masak, Clincoo deploy") ===
+    // File .ts/.tsx/.jsx di workspace dikompilasi server-side menjadi .js murni (sucrase:
+    // hapus tipe/interface, JSX klasik -> React.createElement). Referensi ekstensi di HTML
+    // (mis. src="app.ts") dan import relatif antar file ditulis ulang ke ".js".
+    // Hasil deploy tetap 100% statis — tidak butuh Node/npm di server.
+    {
+      const jsPathOf = p => String(p).replace(/\.(tsx?|jsx)$/i, '.js');
+      const existing = new Set(files.map(f => String(f.path)));
+      const isTSSrc = p => /\.(ts|tsx|jsx)$/i.test(String(p)) && !/\.d\.ts$/i.test(String(p));
+      const tsSources = files.filter(f => isTSSrc(f.path));
+      if (tsSources.length) {
+        await setPhase(db, T.projectSettings, projectId, 'Mengompilasi TypeScript (' + tsSources.length + ' file)...');
+        const compiled = new Map(); // path .js hasil kompilasi -> content
+        const drop = new Set();     // file sumber .ts/.tsx/.jsx yang TIDAK dideploy
+        for (const f of tsSources) {
+          const jsPath = jsPathOf(f.path);
+          if (existing.has(jsPath)) { drop.add(f.path); continue; } // .js eksplisit di workspace menang
+          const transforms = /\.(tsx|jsx)$/i.test(String(f.path)) ? ['typescript', 'jsx'] : ['typescript'];
+          let code;
+          try {
+            code = tsTransform(String(await fileContent(f) || ''), { transforms, jsxRuntime: 'classic', production: true }).code;
+          } catch (e) {
+            return json({ error: 'Gagal mengompilasi ' + f.path + ': ' + (e && e.message ? e.message : String(e)) }, 400);
+          }
+          // import relatif antar file TS: perbaiki ekstensi & tambahkan .js bila tanpa ekstensi.
+          const norm = (dir, spec) => (dir + spec).replace(/^\.\//, '');
+          const dir = String(f.path).replace(/[^/]+$/, '');
+          code = code.replace(/(from\s*["'])(\.[^"']+)(["'])/g, (m, a, spec, z) => {
+            if (/\.(tsx?|jsx)$/i.test(spec)) return a + spec.replace(/\.(tsx?|jsx)$/i, '.js') + z;
+            if (/\.[a-z0-9]+$/i.test(spec)) return m; // sudah ada ekstensi lain (mis. .json)
+            const base = norm(dir, spec);
+            for (const cand of [base + '.js', base + '.ts', base + '.tsx']) {
+              if (existing.has(cand)) { return a + spec + '.js' + z; }
+            }
+            return m;
+          });
+          // import CSS side-effect tidak berlaku di browser — hapus.
+          code = code.replace(/^import\s+["'][^"']+\.css["'];?\s*$/gm, '');
+          compiled.set(jsPath, code);
+          drop.add(f.path);
+        }
+        // tulis ulang referensi ekstensi TS di HTML -> .js
+        for (const f of files) {
+          if (!/\.html?$/i.test(String(f.path))) continue;
+          const c = await fileContent(f);
+          setContent(f, c.replace(/\.(tsx?|jsx)(["'?#\s])/g, '.js$2'));
+        }
+        const keep = files.filter(f => !drop.has(String(f.path)) && !/\.d\.ts$/i.test(String(f.path)));
+        for (const [p, c] of compiled) keep.push({ path: p, content: c });
+        keep.sort((a, b) => String(a.path).localeCompare(String(b.path)));
+        files.length = 0;
+        files.push(...keep);
+      }
+    }
+
+    // === Logo Aplikasi -> favicon otomatis (Pengaturan > Umum) ===
+    // Logo yang diunggah di Pengaturan > Umum dipasang sebagai favicon situs:
+    // tag <link rel="icon"> lama diganti dengan logo, jadi ikon tab browser
+    // otomatis mengikuti logo aplikasi sejak deploy berikutnya.
+    let logoPath = null;
+    try { logoPath = await getSetting(db, T.projectSettings, projectId, 'app_logo'); } catch (e) {}
+    logoPath = String(logoPath || '').replace(/^[\/\\]+/, '');
+    if (logoPath && files.some(function (f) { return f.path === logoPath; })) {
+      const iconTag = '<link rel="icon" href="/' + logoPath + '">' +
+                      '<link rel="apple-touch-icon" href="/' + logoPath + '">';
+      for (const f of files) {
+        if (!/\.html?$/i.test(String(f.path))) continue;
+        try {
+          let html = await fileContent(f);
+          html = html.replace(/<link[^>]+rel=["']?(apple-touch-icon|shortcut icon|icon)["']?[^>]*>/gi, '');
+          if (/<\/head>/i.test(html)) html = html.replace(/<\/head>/i, iconTag + '</head>');
+          else html = iconTag + html;
+          setContent(f, html);
+        } catch (e) {}
+      }
+      await setPhase(db, T.projectSettings, projectId, 'Memasang logo sebagai favicon...');
+    }
+    if (!files.length) {
+      return json({ error: 'Workspace proyek masih kosong — tidak ada file untuk dideploy. Buat file dulu di halaman Workspace.' }, 400);
+    }
+
+    // === Visibilitas & Akses (dari halaman Pengaturan > Visibilitas & Akses) ===
+    // - mode 'password'  -> gerbang auth sebelum situs bisa dibuka (_worker.js + __gate.html)
+    // - indexSearch = 0   -> _headers X-Robots-Tag: noindex (mesin pencari tidak mengindeks)
+    let vis = null;
+    try {
+      const visRaw = await getSetting(db, T.projectSettings, projectId, 'visibility_settings');
+      vis = visRaw ? JSON.parse(visRaw) : null;
+    } catch (e) { vis = null; }
+
+    const visGateAllowed = ADMIN_EMAILS.has((user && user.email) || '') || planInfo.plan === 'Bisnis';
+    if (!visGateAllowed && vis && vis.mode === 'password') {
+      // Enforcement paket: gerbang password = fitur Paket Bisnis — deploy tetap jalan tanpa gerbang
+      vis = null;
+      try { await setPhase(db, T.projectSettings, projectId, ''); } catch (e) {}
+    }
+    if (vis && vis.mode === 'password' && /^[a-f0-9]{64}$/.test(String(vis.pass_hash || ''))) {
+      const workerJs = [
+        'const GATE_TOKEN = "' + vis.pass_hash + '";',
+        'const COOKIE_NAME = "clincoo_gate";',
+        'async function sha256hexGate(str) {',
+        '  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));',
+        '  return [...new Uint8Array(buf)].map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");',
+        '}',
+        'export default {',
+        '  async fetch(request, env) {',
+        '    const url = new URL(request.url);',
+        '    if (url.pathname === "/__gate.html" || url.pathname === "/__gate-auth") {',
+        '      if (url.pathname === "/__gate-auth") {',
+        '        if (request.method !== "POST") return new Response(null, { status: 405 });',
+        '        const body = await request.json().catch(function () { return {}; });',
+        '        const digest = await sha256hexGate("clincoo-gate:" + String(body.password || ""));',
+        '        if (digest === GATE_TOKEN) {',
+        '          return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json", "Set-Cookie": COOKIE_NAME + "=" + GATE_TOKEN + "; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax" } });',
+        '        }',
+        '        return new Response(JSON.stringify({ ok: false, error: "Password salah" }), { status: 401, headers: { "Content-Type": "application/json" } });',
+        '      }',
+        '      return env.ASSETS.fetch(request);',
+        '    }',
+        '    const cookie = request.headers.get("Cookie") || "";',
+        '    const ok = cookie.split(/;\\s*/).some(function (c) { return c === COOKIE_NAME + "=" + GATE_TOKEN; });',
+        '    if (ok) return env.ASSETS.fetch(request);',
+        '    return new Response(null, { status: 302, headers: { Location: "/__gate.html" } });',
+        '  }',
+        '};'
+      ].join('\n');
+      files.push({ path: '_worker.js', content: workerJs });
+      files.push({ path: '__gate.html', content: GATE_PAGE_HTML });
+      await setPhase(db, T.projectSettings, projectId, 'Gerbang password dipasang ke situs...');
+    }
+
+    if (vis && String(vis.indexSearch) === '0') {
+      const NOINDEX = 'X-Robots-Tag: noindex, nofollow';
+      const ex = files.findIndex(function (f) { return f.path === '_headers'; });
+      if (ex > -1) {
+        const hc = await fileContent(files[ex]);
+        if (hc.indexOf('X-Robots-Tag') === -1) {
+          setContent(files[ex], hc.replace(/\n*$/, '') + '\n/*\n  ' + NOINDEX + '\n');
+        }
+      } else {
+        files.push({ path: '_headers', content: '/*\n  ' + NOINDEX + '\n' });
+      }
+    }
+}
+
 export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: CORS });
 }
@@ -748,6 +897,116 @@ export async function onRequestPost({ request, env }) {
       }
     }
 
+    // ==== Deploy orkestrasi browser (proyek berisi banyak file besar) ====
+    // Worker paket gratis dibatasi ~10ms CPU per request — hash & upload file
+    // besar tidak muat dalam satu request (error 1102). Alur barunya:
+    // 'prepare' -> token + daftar file + patch konten (ringan), browser
+    // meng-hash & meng-upload lewat proxy streaming /api/deploy-upload
+    // (body diteruskan tanpa di-parse — CPU ~0), lalu 'finalize' membuat
+    // deployment dari manifest kunci saja. Jalur legacy (tanpa action) tetap
+    // berfungsi untuk proyek kecil dan deploy dari tool AI.
+    if (body.action === 'phase') {
+      await setPhase(db, T.projectSettings, projectId, String(body.text || '').slice(0, 200));
+      return json({ success: true });
+    }
+
+    if (body.action === 'prepare') {
+      const user = await currentUser(env, request);
+      const planInfo = await getEffectivePlan(db, user);
+      if (planInfo.limits.deployLimit !== null && planInfo.limits.deployLimit !== undefined) {
+        const used = await getMonthlyDeployCount(db, user && user.id);
+        if (used >= planInfo.limits.deployLimit) {
+          return json({ error: 'Kuota deploy paket ' + planInfo.plan + ' habis: maksimal ' + planInfo.limits.deployLimit + ' deploy per bulan (sudah terpakai ' + used + '). Upgrade paket di halaman Langganan untuk deploy lagi.', upgrade_needed: true, plan: planInfo.plan, limit: planInfo.limits.deployLimit, used: used }, 402);
+        }
+      }
+      await setPhase(db, T.projectSettings, projectId, 'Menyiapkan proyek Pages...');
+      // metadata saja — file besar TANPA konten (prepare tetap ringan di semua ukuran proyek)
+      const files = await readFiles(db, T.files, projectId);
+      if (!files.length) {
+        await setPhase(db, T.projectSettings, projectId, '');
+        return json({ error: 'Workspace proyek masih kosong — tidak ada file untuk dideploy. Buat file dulu di halaman Workspace.' }, 400);
+      }
+      if (files.length > 20000) {
+        await setPhase(db, T.projectSettings, projectId, '');
+        return json({ error: 'Terlalu banyak file (' + files.length + ') — Cloudflare Pages membatasi 20.000 file per deployment. Kurangi jumlah file lalu deploy lagi.' }, 413);
+      }
+      // konten hanya untuk file KODE yang bisa dimutasi saat deploy (transpile/
+      // favicon/noindex/gerbang) — selalu baris kecil, CPU & memori terjaga
+      const codeRows = await db.prepare(
+        `SELECT path, content FROM ${T.files} WHERE project_id = ? AND is_big = 0 AND (path LIKE '%.ts' OR path LIKE '%.tsx' OR path LIKE '%.jsx' OR path LIKE '%.html' OR path LIKE '%.htm' OR path = '_headers' OR path = '_worker.js')`
+      ).bind(projectId).all();
+      const contentByPath = new Map((codeRows.results || []).map(r => [r.path, r.content || '']));
+      for (const f of files) { const c = contentByPath.get(f.path); if (c !== undefined) f.content = c; f.origContent = f.content; }
+      // mutasi deploy identik dengan jalur legacy (file besar dilewati — kontennya
+      // di-hash apa adanya dari chunk; favicon/tulis-ulang .ts tidak berlaku utk file raksasa)
+      await applyDeployMutations(db, T, projectId, files, async f => String(f.content || ''), (f, c) => { f.content = c; }, user, planInfo);
+      // patch = konten yang berubah + file virtual hasil mutasi (kompilasi .ts, _worker.js, __gate.html, _headers)
+      const patch = {};
+      for (const f of files) {
+        if (typeof f.content === 'string' && f.content && f.content !== f.origContent) patch[f.path] = f.content;
+      }
+      // guard ukuran — sama dengan jalur legacy: maks 250 MB per deploy
+      let totalBytes = 0;
+      for (const f of files) totalBytes += f.is_big ? (Number(f.size) || 0) : (f.content ? String(f.content).length : (Number(f.size) || 0));
+      if (totalBytes > 250 * 1024 * 1024) {
+        await setPhase(db, T.projectSettings, projectId, '');
+        return json({ error: 'Proyek terlalu besar untuk sekali deploy (' + Math.round(totalBytes / (1024 * 1024)) + ' MB, maksimal 250 MB per deploy). Kurangi ukuran proyek — pecah jadi beberapa situs atau hapus file/aset terbesar — lalu deploy lagi.' }, 413);
+      }
+      await ensurePagesProject(creds, name);
+      await setSetting(db, T.projectSettings, projectId, 'pages_project', name);
+      const tokenRes = await cfFetch('/accounts/' + creds.accountId + '/pages/projects/' + name + '/upload-token', creds.apiKey);
+      const list = files.map(f => {
+        const ext = (String(f.path).split('.').pop() || '').toLowerCase();
+        return { path: f.path, ext: ext, is_big: f.is_big ? 1 : 0, size: Number(f.size) || 0, contentType: MIME[ext] || 'application/octet-stream' };
+      });
+      await setPhase(db, T.projectSettings, projectId, 'Menghitung ' + list.length + ' file...');
+      return json({ success: true, action: 'prepare', jwt: tokenRes.jwt, pages_project: name, pages_url: pagesUrl, files: list, patch: patch });
+    }
+
+    if (body.action === 'finalize') {
+      const manifest = (body.manifest && typeof body.manifest === 'object' && !Array.isArray(body.manifest)) ? body.manifest : null;
+      if (!manifest || !Object.keys(manifest).length) return json({ error: 'manifest wajib diisi (peta path -> kunci aset hasil upload).' }, 400);
+      for (const k of Object.keys(manifest)) {
+        if (typeof manifest[k] !== 'string' || !/^[a-f0-9]{32}$/.test(manifest[k])) return json({ error: 'manifest tidak valid: kunci aset untuk ' + k + ' bukan hash 32-karakter.' }, 400);
+      }
+      await setPhase(db, T.projectSettings, projectId, 'Memproses deployment di Cloudflare...');
+      const form = new FormData();
+      const m = {};
+      for (const k of Object.keys(manifest)) m['/' + String(k).replace(/^\/+/, '')] = manifest[k];
+      form.append('manifest', JSON.stringify(m));
+      form.append('branch', 'main');
+      const depRes = await fetch(API_BASE + '/accounts/' + creds.accountId + '/pages/projects/' + name + '/deployments', {
+        method: 'POST', headers: { Authorization: 'Bearer ' + creds.apiKey }, body: form
+      });
+      const depData = await depRes.json().catch(() => null);
+      if (!depData || !depData.success) {
+        const msg = depData && depData.errors && depData.errors[0] ? depData.errors[0].message : ('HTTP ' + depRes.status);
+        try { await db.prepare(`INSERT INTO ${T.deployLogs} (project_id, status, url, message, created_at) VALUES (?, 'failed', '', ?, datetime('now'))`).bind(projectId, 'deploy gagal: ' + msg).run(); } catch (e) {}
+        await fireWebhooks(db, T.projectSettings, projectId, 'fail', { event: 'deploy.failed', project_id: projectId, pages_project: name, error: msg, at: new Date().toISOString() });
+        await setPhase(db, T.projectSettings, projectId, '');
+        return json({ error: 'Cloudflare menolak deployment: ' + msg }, 500);
+      }
+      const dep = depData.result || {};
+      const pubDomain = await ensurePublicDomain(creds, name);
+      const pubUrl = pubDomain ? ('https://' + pubDomain) : pagesUrl;
+      const n = Object.keys(manifest).length;
+      try {
+        await db.prepare(`INSERT INTO ${T.deployLogs} (project_id, status, url, message, created_at) VALUES (?, 'success', ?, ?, datetime('now'))`)
+          .bind(projectId, pubUrl, 'deploy ' + n + ' file ke ' + name).run();
+      } catch (e) {}
+      await setPhase(db, T.projectSettings, projectId, '');
+      const user = await currentUser(env, request);
+      await bumpMonthlyDeployCount(db, user && user.id);
+      try { await setSetting(db, T.projectSettings, projectId, 'last_deploy_by', (user && (user.name || user.email)) || 'pengguna'); } catch (e) {}
+      await fireWebhooks(db, T.projectSettings, projectId, 'success', {
+        event: 'deploy.success', project_id: projectId, pages_project: name, pages_url: pubUrl, file_count: n, at: new Date().toISOString()
+      });
+      return json({
+        success: true, pages_project: name, pages_url: pubUrl, public_url: pubDomain ? ('https://' + pubDomain) : pagesUrl,
+        public_domain: pubDomain || '', deployment: { id: dep.id, url: (dep.aliases && dep.aliases[0]) || dep.url || pagesUrl, aliases: dep.aliases || [], status: (dep.latest_stage && dep.latest_stage.status) || 'idle', created: dep.created_on }, fileCount: n
+      });
+    }
+
     // Kuota deploy per paket langganan (Starter 5x/bln, Pro 25x/bln, Bisnis tanpa batas)
     const user = await currentUser(env, request);
     const planInfo = await getEffectivePlan(db, user);
@@ -775,149 +1034,7 @@ export async function onRequestPost({ request, env }) {
       else f.content = c;
     };
 
-    // === Transpile otomatis TypeScript/JSX saat deploy (fitur "AI masak, Clincoo deploy") ===
-    // File .ts/.tsx/.jsx di workspace dikompilasi server-side menjadi .js murni (sucrase:
-    // hapus tipe/interface, JSX klasik -> React.createElement). Referensi ekstensi di HTML
-    // (mis. src="app.ts") dan import relatif antar file ditulis ulang ke ".js".
-    // Hasil deploy tetap 100% statis — tidak butuh Node/npm di server.
-    {
-      const jsPathOf = p => String(p).replace(/\.(tsx?|jsx)$/i, '.js');
-      const existing = new Set(files.map(f => String(f.path)));
-      const isTSSrc = p => /\.(ts|tsx|jsx)$/i.test(String(p)) && !/\.d\.ts$/i.test(String(p));
-      const tsSources = files.filter(f => isTSSrc(f.path));
-      if (tsSources.length) {
-        await setPhase(db, T.projectSettings, projectId, 'Mengompilasi TypeScript (' + tsSources.length + ' file)...');
-        const compiled = new Map(); // path .js hasil kompilasi -> content
-        const drop = new Set();     // file sumber .ts/.tsx/.jsx yang TIDAK dideploy
-        for (const f of tsSources) {
-          const jsPath = jsPathOf(f.path);
-          if (existing.has(jsPath)) { drop.add(f.path); continue; } // .js eksplisit di workspace menang
-          const transforms = /\.(tsx|jsx)$/i.test(String(f.path)) ? ['typescript', 'jsx'] : ['typescript'];
-          let code;
-          try {
-            code = tsTransform(String(await fileContent(f) || ''), { transforms, jsxRuntime: 'classic', production: true }).code;
-          } catch (e) {
-            return json({ error: 'Gagal mengompilasi ' + f.path + ': ' + (e && e.message ? e.message : String(e)) }, 400);
-          }
-          // import relatif antar file TS: perbaiki ekstensi & tambahkan .js bila tanpa ekstensi.
-          const norm = (dir, spec) => (dir + spec).replace(/^\.\//, '');
-          const dir = String(f.path).replace(/[^/]+$/, '');
-          code = code.replace(/(from\s*["'])(\.[^"']+)(["'])/g, (m, a, spec, z) => {
-            if (/\.(tsx?|jsx)$/i.test(spec)) return a + spec.replace(/\.(tsx?|jsx)$/i, '.js') + z;
-            if (/\.[a-z0-9]+$/i.test(spec)) return m; // sudah ada ekstensi lain (mis. .json)
-            const base = norm(dir, spec);
-            for (const cand of [base + '.js', base + '.ts', base + '.tsx']) {
-              if (existing.has(cand)) { return a + spec + '.js' + z; }
-            }
-            return m;
-          });
-          // import CSS side-effect tidak berlaku di browser — hapus.
-          code = code.replace(/^import\s+["'][^"']+\.css["'];?\s*$/gm, '');
-          compiled.set(jsPath, code);
-          drop.add(f.path);
-        }
-        // tulis ulang referensi ekstensi TS di HTML -> .js
-        for (const f of files) {
-          if (!/\.html?$/i.test(String(f.path))) continue;
-          const c = await fileContent(f);
-          setContent(f, c.replace(/\.(tsx?|jsx)(["'?#\s])/g, '.js$2'));
-        }
-        const keep = files.filter(f => !drop.has(String(f.path)) && !/\.d\.ts$/i.test(String(f.path)));
-        for (const [p, c] of compiled) keep.push({ path: p, content: c });
-        keep.sort((a, b) => String(a.path).localeCompare(String(b.path)));
-        files.length = 0;
-        files.push(...keep);
-      }
-    }
-
-    // === Logo Aplikasi -> favicon otomatis (Pengaturan > Umum) ===
-    // Logo yang diunggah di Pengaturan > Umum dipasang sebagai favicon situs:
-    // tag <link rel="icon"> lama diganti dengan logo, jadi ikon tab browser
-    // otomatis mengikuti logo aplikasi sejak deploy berikutnya.
-    let logoPath = null;
-    try { logoPath = await getSetting(db, T.projectSettings, projectId, 'app_logo'); } catch (e) {}
-    logoPath = String(logoPath || '').replace(/^[\/\\]+/, '');
-    if (logoPath && files.some(function (f) { return f.path === logoPath; })) {
-      const iconTag = '<link rel="icon" href="/' + logoPath + '">' +
-                      '<link rel="apple-touch-icon" href="/' + logoPath + '">';
-      for (const f of files) {
-        if (!/\.html?$/i.test(String(f.path))) continue;
-        try {
-          let html = await fileContent(f);
-          html = html.replace(/<link[^>]+rel=["']?(apple-touch-icon|shortcut icon|icon)["']?[^>]*>/gi, '');
-          if (/<\/head>/i.test(html)) html = html.replace(/<\/head>/i, iconTag + '</head>');
-          else html = iconTag + html;
-          setContent(f, html);
-        } catch (e) {}
-      }
-      await setPhase(db, T.projectSettings, projectId, 'Memasang logo sebagai favicon...');
-    }
-    if (!files.length) {
-      return json({ error: 'Workspace proyek masih kosong — tidak ada file untuk dideploy. Buat file dulu di halaman Workspace.' }, 400);
-    }
-
-    // === Visibilitas & Akses (dari halaman Pengaturan > Visibilitas & Akses) ===
-    // - mode 'password'  -> gerbang auth sebelum situs bisa dibuka (_worker.js + __gate.html)
-    // - indexSearch = 0   -> _headers X-Robots-Tag: noindex (mesin pencari tidak mengindeks)
-    let vis = null;
-    try {
-      const visRaw = await getSetting(db, T.projectSettings, projectId, 'visibility_settings');
-      vis = visRaw ? JSON.parse(visRaw) : null;
-    } catch (e) { vis = null; }
-
-    const visGateAllowed = ADMIN_EMAILS.has((user && user.email) || '') || planInfo.plan === 'Bisnis';
-    if (!visGateAllowed && vis && vis.mode === 'password') {
-      // Enforcement paket: gerbang password = fitur Paket Bisnis — deploy tetap jalan tanpa gerbang
-      vis = null;
-      try { await setPhase(db, T.projectSettings, projectId, ''); } catch (e) {}
-    }
-    if (vis && vis.mode === 'password' && /^[a-f0-9]{64}$/.test(String(vis.pass_hash || ''))) {
-      const workerJs = [
-        'const GATE_TOKEN = "' + vis.pass_hash + '";',
-        'const COOKIE_NAME = "clincoo_gate";',
-        'async function sha256hexGate(str) {',
-        '  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));',
-        '  return [...new Uint8Array(buf)].map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");',
-        '}',
-        'export default {',
-        '  async fetch(request, env) {',
-        '    const url = new URL(request.url);',
-        '    if (url.pathname === "/__gate.html" || url.pathname === "/__gate-auth") {',
-        '      if (url.pathname === "/__gate-auth") {',
-        '        if (request.method !== "POST") return new Response(null, { status: 405 });',
-        '        const body = await request.json().catch(function () { return {}; });',
-        '        const digest = await sha256hexGate("clincoo-gate:" + String(body.password || ""));',
-        '        if (digest === GATE_TOKEN) {',
-        '          return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json", "Set-Cookie": COOKIE_NAME + "=" + GATE_TOKEN + "; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax" } });',
-        '        }',
-        '        return new Response(JSON.stringify({ ok: false, error: "Password salah" }), { status: 401, headers: { "Content-Type": "application/json" } });',
-        '      }',
-        '      return env.ASSETS.fetch(request);',
-        '    }',
-        '    const cookie = request.headers.get("Cookie") || "";',
-        '    const ok = cookie.split(/;\\s*/).some(function (c) { return c === COOKIE_NAME + "=" + GATE_TOKEN; });',
-        '    if (ok) return env.ASSETS.fetch(request);',
-        '    return new Response(null, { status: 302, headers: { Location: "/__gate.html" } });',
-        '  }',
-        '};'
-      ].join('\n');
-      files.push({ path: '_worker.js', content: workerJs });
-      files.push({ path: '__gate.html', content: GATE_PAGE_HTML });
-      await setPhase(db, T.projectSettings, projectId, 'Gerbang password dipasang ke situs...');
-    }
-
-    if (vis && String(vis.indexSearch) === '0') {
-      const NOINDEX = 'X-Robots-Tag: noindex, nofollow';
-      const ex = files.findIndex(function (f) { return f.path === '_headers'; });
-      if (ex > -1) {
-        const hc = await fileContent(files[ex]);
-        if (hc.indexOf('X-Robots-Tag') === -1) {
-          setContent(files[ex], hc.replace(/\n*$/, '') + '\n/*\n  ' + NOINDEX + '\n');
-        }
-      } else {
-        files.push({ path: '_headers', content: '/*\n  ' + NOINDEX + '\n' });
-      }
-    }
+    await applyDeployMutations(db, T, projectId, files, fileContent, setContent, user, planInfo);
 
     await setPhase(db, T.projectSettings, projectId, 'Menyiapkan proyek Pages...');
     // Guard ukuran: deploy kini STREAMING — file besar diproses satu-per-satu

@@ -160,6 +160,49 @@ export async function onRequestGet({ request, env }) {
       return json({ path: row.path, content: row.content || '', size: row.size || 0, is_big: 0, updated_at: row.updated_at });
     }
 
+    // Mode: potongan CHUNK file besar (deploy orkestrasi browser — Worker paket
+    // gratis hanya punya ~10ms CPU per request, jadi konten file besar dikirim ke
+    // browser per-potongan kecil untuk di-hash & di-upload dari klien).
+    if (onePath && url.searchParams.get('chunks') === '1') {
+      const chunksTable = await ensureChunksTable(db, projectId);
+      const from = Math.max(0, parseInt(url.searchParams.get('from') || '0', 10) || 0);
+      let count = parseInt(url.searchParams.get('count') || '8', 10) || 8;
+      count = Math.max(1, Math.min(10, count));
+      const rows = await db.prepare(`SELECT chunk FROM ${chunksTable} WHERE path = ? AND idx >= ? AND idx < ? ORDER BY idx ASC`).bind(onePath, from, from + count).all();
+      let total = 0;
+      try {
+        const c = await db.prepare(`SELECT COUNT(*) c FROM ${chunksTable} WHERE path = ?`).bind(onePath).first();
+        total = (c && Number(c.c)) || 0;
+      } catch (e) {}
+      const chunks = (rows.results || []).map(r => r.chunk || '');
+      return json({ path: onePath, from, count: chunks.length, total_chunks: total, chunks });
+    }
+
+    // Mode: halaman konten file KECIL untuk deploy orkestrasi browser —
+    // dihalaman ~2.5MB supaya JSON respons tetap di bawah limit CPU Worker.
+    if (url.searchParams.get('deploy_content') === '1') {
+      const offset = Math.max(0, parseInt(url.searchParams.get('offset') || '0', 10) || 0);
+      let totalSmall = 0;
+      try {
+        const c = await db.prepare(`SELECT COUNT(*) c FROM ${T.files} WHERE project_id = ? AND is_big = 0`).bind(projectId).first();
+        totalSmall = (c && Number(c.c)) || 0;
+      } catch (e) {}
+      const rows = await db.prepare(`SELECT path, content, size FROM ${T.files} WHERE project_id = ? AND is_big = 0 ORDER BY path ASC LIMIT 400 OFFSET ?`).bind(projectId, offset).all();
+      const all = rows.results || [];
+      const files = [];
+      let bytes = 0;
+      let used = 0;
+      for (const r of all) {
+        const c = String(r.content || '');
+        used++;
+        if (files.length && bytes + c.length > 2_500_000) break;
+        files.push({ path: r.path, content: c, size: r.size || 0 });
+        bytes += c.length;
+      }
+      const next = offset + used;
+      return json({ files, total_small: totalSmall, next_offset: next, has_more: next < totalSmall });
+    }
+
     // Mode: metadata saja (ringan — dipakai verifikasi jumlah & daftar ukuran)
     if (url.searchParams.get('meta') === '1') {
       const rows = await db.prepare(`SELECT path, is_big, size, updated_at FROM ${T.files} WHERE project_id = ? ORDER BY path ASC`).bind(projectId).all();
