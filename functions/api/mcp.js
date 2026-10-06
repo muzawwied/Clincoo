@@ -265,8 +265,14 @@ const TOOLS = [
   },
   {
     name: 'deploy_project',
-    description: 'Publikasikan workspace proyek ke situs live (Cloudflare Pages). Mengembalikan status deployment.',
-    inputSchema: { type: 'object', properties: {}, required: [] }
+    description: 'Publikasikan workspace proyek ke situs live (Cloudflare Pages). Mengembalikan status deployment. Opsional: subdomain untuk mengganti subdomain publik situs (huruf kecil, angka, tanda hubung, 3-40 karakter) — situs akan dideploy ke subdomain baru, domain publiknya <subdomain-baru>.clincoo.biz.id; project lama dibiarkan apa adanya (bisa ditarik manual lewat Batalkan Publikasi).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        subdomain: { type: 'string', description: 'Subdomain publik baru (opsional). Kosongkan agar subdomain tetap seperti sekarang. Contoh: burgerbara' }
+      },
+      required: []
+    }
   },
   {
     name: 'deploy_status',
@@ -471,13 +477,19 @@ async function callTool(name, args, ctx) {
       return { content: [{ type: 'text', text: String(text) }] };
     }
     case 'deploy_project': {
+      const sub = String(args.subdomain || '').trim();
       const r = await selfJson('/deploy', ctx.be2Token, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ project_id: projectId })
+        body: JSON.stringify(sub ? { project_id: projectId, subdomain: sub } : { project_id: projectId })
       });
       if (!r.ok) throw new Error('Deploy gagal (' + r.status + '): ' + ((r.data && (r.data.error || r.data.message)) || ''));
-      return { content: [{ type: 'text', text: 'Deploy dipicu. Status:\n' + JSON.stringify(r.data, null, 2) }] };
+      const d = r.data || {};
+      const liveUrl = d.public_url || d.pages_url || '';
+      let text = 'Deploy sukses. Situs live di: ' + liveUrl + '\n';
+      if (sub) text += 'Subdomain publik diganti ke: ' + (d.public_domain || sub + '.clincoo.biz.id') + '\n';
+      text += JSON.stringify(d, null, 2);
+      return { content: [{ type: 'text', text: text }] };
     }
     case 'deploy_status': {
       const r = await selfJson('/deploy?project_id=' + encodeURIComponent(projectId), ctx.be2Token);
