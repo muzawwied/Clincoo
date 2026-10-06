@@ -663,10 +663,16 @@ export async function onRequestGet({ request, env }) {
     // Dipakai halaman domain kustom supaya nilai record DNS terisi < 200 ms,
     // bukan menunggu status deployment (yang bisa masing-masing ratusan ms).
     if (url.searchParams.get('fast') === '1') {
+      // deployed=true hanya bila log sukses terakhir lebih BARU daripada log
+      // unpublish terakhir (log urut DESC). Tanpa ini, setelah "Batalkan Publikasi"
+      // mode fast tetap bilang deployed (log sukses lama masih ada).
       let deployed = false;
       try {
-        const r = await db.prepare(`SELECT 1 FROM ${T.deployLogs} WHERE project_id = ? AND status = 'success' LIMIT 1`).bind(projectId).first();
-        deployed = !!r;
+        const { results } = await db.prepare(`SELECT status FROM ${T.deployLogs} WHERE project_id = ? ORDER BY id DESC LIMIT 10`).bind(projectId).all();
+        const ls = results || [];
+        const iUn = ls.findIndex(l => l && l.status === 'unpublished');
+        const iOk = ls.findIndex(l => l && l.status === 'success');
+        deployed = iOk !== -1 && (iUn === -1 || iOk < iUn);
       } catch (e) {}
       return json({ pages_project: name, pages_url: pagesUrl, deployed, fast: true, api_rev: 'uniq4' });
     }
@@ -713,16 +719,30 @@ export async function onRequestGet({ request, env }) {
 
     const lastDeployBy = await getSetting(db, T.projectSettings, projectId, 'last_deploy_by');
     const deployPhase = await getSetting(db, T.projectSettings, projectId, 'deploy_phase');
+    // Log 'unpublished' (situs ditarik via Batalkan Publikasi) yang lebih BARU
+    // dari log sukses/preview terakhir berarti situs kini TIDAK aktif. Tanpa gate
+    // ini, status masih memakai log sukses lama sehingga dashboard tetap
+    // menampilkan "Situs aktif" padahal publikasinya sudah dibatalkan.
+    let pulledNow = false, previewPulled = false;
+    if (Array.isArray(logs) && logs.length) {
+      const iUn = logs.findIndex(l => l && l.status === 'unpublished');
+      if (iUn !== -1) {
+        const iOk = logs.findIndex(l => l && l.status === 'success');
+        const iPrv = logs.findIndex(l => l && l.status === 'preview');
+        pulledNow = iOk === -1 || iUn < iOk;
+        previewPulled = iPrv === -1 || iUn < iPrv;
+      }
+    }
     // last_deployment juga disintesis dari log D1 bila daftar deployment Cloudflare
     // tidak terbaca/kosong, supaya halaman tidak salah bilang "belum pernah deploy".
-    if (!last && Array.isArray(logs)) {
+    if (!last && !pulledNow && Array.isArray(logs)) {
       const okLog = logs.find(l => l && l.status === 'success');
       if (okLog) last = { id: 'd1-' + (okLog.created_at || ''), status: 'success', url: okLog.url || pagesUrl, created: okLog.created_at || '' };
     }
-    const deployed = (Array.isArray(logs) && logs.some(l => l && l.status === 'success'))
+    const deployed = !pulledNow && ((Array.isArray(logs) && logs.some(l => l && l.status === 'success'))
       || (last && ['success', 'active'].includes(last.status))
-      || (Array.isArray(deps) && deps.length > 0);
-    const previewDeployed = Array.isArray(logs) && logs.some(l => l && l.status === 'preview');
+      || (Array.isArray(deps) && deps.length > 0));
+    const previewDeployed = !previewPulled && (Array.isArray(logs) && logs.some(l => l && l.status === 'preview'));
     const previewLog = (Array.isArray(logs) ? logs.find(l => l && l.status === 'preview') : null);
     const previewUrl = previewLog ? previewLog.url : ('https://' + prvNameFor(name) + PUB_SUFFIX);
     // Deteksi perubahan kode: MAX(updated_at) berkas vs waktu deploy sukses terakhir.

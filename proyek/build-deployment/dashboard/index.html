@@ -976,7 +976,15 @@
                 localStorage.removeItem('clincoo_is_deployed');
                 localStorage.removeItem('clincoo_deploy_time');
                 clearDeploySession();
-                window.ClincooBack('../');
+                // Cache domain kustom proyek ini ikut dibersihkan: unpublish
+                // melepas semua domain & menghapus project Pages-nya — data lama
+                // (pagesUrl) sudah tidak berlaku untuk halaman Domain Kustom.
+                try { localStorage.removeItem('clincoo_' + pid() + '_domain_cache'); } catch (e) {}
+                // Menuju halaman Build & Deployment secara DETERMINISTIK (bukan
+                // history.back). Dulu user dikembalikan ke halaman sebelumnya
+                // (mis. Pengaturan Umum) tanpa kabar, seolah tombol tidak bekerja.
+                // Halaman tujuan kini menampilkan state "belum ada deployment".
+                window.location.replace('../');
             } catch (err) {
                 clearTimeout(to);
                 if (btn) { btn.disabled = false; btn.classList.remove('opacity-60','cursor-not-allowed'); btn.innerHTML = htmlAsli; lucide.createIcons(); }
