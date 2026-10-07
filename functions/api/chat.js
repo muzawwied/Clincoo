@@ -449,10 +449,12 @@ async function getModelRouterKeys(env) {
   return keys;
 }
 const MODELROUTER_MODELS = ['glm-5.3-flash'];
-// [7 Okt] ModelRouter memotong koneksi jika max_tokens > 1024 (diverifikasi
-// 7 Okt: 2048 -> HTTP 000/connection cut, 1024 -> lancar). Jawaban panjang
-// tetap utuh via AUTO-CONTINUE (finish_reason=length di-sambung otomatis).
-const MR_MAX_TOKENS = 1024;
+// [7 Okt] Gateway ModelRouter memotong koneksi pada ~10 detik wall-time per
+// request (diverifikasi: 384 tok = 9.4s OK, 512+ tok / non-stream generasi
+// panjang = HTTP 000). Solusi: potong generasi jadi chunk kecil (256 tok,
+// ~8s) lalu sambung otomatis via AUTO-CONTINUE (finish_reason=length,
+// stream: maks 5 sambungan, non-stream: maks 3) sehingga jawaban tetap utuh.
+const MR_MAX_TOKENS = 256;
 const MR_ENDPOINT = 'https://modelrouter.id/v1/chat/completions';
 // Label model hasil ModelRouter: kunci harga 'glm-5.3-flash-build' di MODEL_PRICES
 // (2 kredit — build berbayar bagi pemilik, arahan "harganya disesuaikan").
