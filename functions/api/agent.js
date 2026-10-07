@@ -56,11 +56,15 @@ const GEMINI_MODELS = ['gemini-3.6-flash', 'gemini-3-flash-preview'];
 
 // ===== Provider 0: ModelRouter (modelrouter.id) — orkestrator utama =====
 // nemotron-3-ultra (diuji OK 2026-10-07) + deepseek-v4.1-flash:free sebagai cadangan gratis.
+// Urutan default: nemotron (reasoning, untuk planning) -> deepseek free.
+// Urutan FAST: deepseek free duluan (tanpa reasoning ~2x lebih cepat) -> nemotron cadangan.
 const MODELROUTER_MODELS = ['nemotron-3-ultra', 'deepseek-v4.1-flash:free'];
-async function tryModelRouter(key, messages) {
+const MODELROUTER_FAST = ['deepseek-v4.1-flash:free', 'nemotron-3-ultra'];
+async function tryModelRouter(key, messages, models) {
   if (!key) return { error: 'Kunci ModelRouter tidak tersedia' };
+  const list = Array.isArray(models) && models.length ? models : MODELROUTER_MODELS;
   let lastErr = null;
-  for (const model of MODELROUTER_MODELS) {
+  for (const model of list) {
     try {
       const res = await fetch('https://modelrouter.id/v1/chat/completions', {
         method: 'POST',
@@ -173,11 +177,11 @@ async function getGeminiKeys(env) {
 }
 
 // ===== AI call: rantai provider + auto-retry per provider =====
-async function aiCall(env, messages, gemKey) {
-  // 0) ModelRouter — nemotron-3-ultra (orkestrator) -> deepseek free (cadangan)
+async function aiCall(env, messages, gemKey, opts) {
+  // 0) ModelRouter — default nemotron (reasoning) / fast: deepseek free duluan
   const mrKey = await getEnvKey(env, 'MODELROUTER_API_KEY');
   if (mrKey) {
-    const mr = await tryModelRouter(mrKey, messages);
+    const mr = await tryModelRouter(mrKey, messages, opts && opts.fast ? MODELROUTER_FAST : MODELROUTER_MODELS);
     if (mr.text) return mr;
   }
   // 1) Workers AI — retry 2x per model (transient rate-limit edge)
@@ -259,7 +263,7 @@ async function agentTick(env, t, budgetMs, gemKey) {
       { role: 'system', content: AGENT_SYSTEM },
       { role: 'user', content: 'TUJUAN: ' + t.goal + '\n\nRENCANA:\n' + plan.map((p, i) => (i + 1) + '. ' + p.title + (p.done ? ' (selesai)' : '')).join('\n') + '\n\nLANGKAH SEKARANG (' + (t.current_step + 1) + '/' + plan.length + '): ' + step.title + (step.detail ? '\n' + step.detail : '') + (transcript.length ? '\n\nKERJA SEBELUMNYA (ringkas):\n' + transcript.slice(-6).map(m => (m.role === 'user' ? '[user] ' : '[agent] ') + String(m.content).slice(0, 400)).join('\n') : '') }
     ];
-    const r = await aiCall(env, msgs, gemKey);
+    const r = await aiCall(env, msgs, gemKey, { fast: true });
     if (r.error) {
       // provider mati total -> pause (resume nanti), JANGAN gagalkan progres
       t.status = 'paused'; t.error = 'Provider AI tidak tersedia: ' + r.error;
@@ -282,7 +286,7 @@ async function agentTick(env, t, budgetMs, gemKey) {
     { role: 'system', content: AGENT_SYSTEM },
     { role: 'user', content: 'TUJUAN: ' + t.goal + '\n\nHASIL KERJA PER LANGKAH:\n' + transcript.map(m => (m.role === 'assistant' ? '[agent] ' : '[user] ') + String(m.content).slice(0, 600)).join('\n') + '\n\nRangkum hasil akhir untuk user: apa yang sudah selesai, hasil penting per langkah, dan saran tindak lanjut. Detail, lengkap, dan konkret — multi-paragraf jika perlu, bahasa Indonesia.' }
   ];
-  const rf = await aiCall(env, doneMsgs, gemKey);
+  const rf = await aiCall(env, doneMsgs, gemKey, { fast: true });
   t.result = rf.text || rf.error || '(rangkuman dilewati)';
   t.status = 'done'; t.error = null;
   await saveTask(env.DB, t);
