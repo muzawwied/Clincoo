@@ -1,5 +1,7 @@
 /* Clincoo service worker — PWA + cache aset CDN (lucide, fonts, tailwind) v31 */
-var CACHE = 'clincoo-v102';
+// [7 Okt 2026] bump: logo tercache rusak/lama di browser user (SWR tampilkan-cache-dulu)
+// -> versi baru memaksa purge cache lama saat SW aktif, logo dimuat segar
+var CACHE = 'clincoo-v103';
 var PRECACHE = [
   './manifest.json',
   './assets/icons/icon-192.png',
