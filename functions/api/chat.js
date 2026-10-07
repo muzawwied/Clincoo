@@ -1419,6 +1419,31 @@ function serverProgressText(tc) {
   return 'Processing: ' + tc.name + '…';
 }
 
+// ===== [7 Okt 2026, arahan owner: "ubah app clincoo buat hubungin model AI"] =====
+// KANDIDAT ORKESTRA-1 MINI: proxy ke worker clincoo-labs-pro — satu kandidat yang
+// membawa balapan 7 model + standar kualitas + verifikasi perintah install ke
+// registry resmi. Protokol chat polos: TANPA tools dan TANPA vision; bila gagal,
+// kandidat lain mengambil alih — jalur tools/tugas web tidak tersentuh.
+const ORKESTRA_MINI_URL = 'https://clincoo-labs-pro.clincoo-agent.workers.dev/api/v1/chat';
+function orkestraSanitize(messages) {
+  return (Array.isArray(messages) ? messages : [])
+    .filter(m => m && typeof m.content === 'string' && m.content.trim() && (m.role === 'user' || m.role === 'assistant' || m.role === 'system'))
+    .slice(-24)
+    .map(m => ({ role: m.role, content: String(m.content).slice(0, 16000) }));
+}
+async function tryOrkestraMini(messages) {
+  const res = await fetch(ORKESTRA_MINI_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages: orkestraSanitize(messages) })
+  });
+  if (!res.ok) return { error: 'orkestra HTTP ' + res.status };
+  const d = await res.json().catch(() => null);
+  const text = d && typeof d.text === 'string' ? d.text.trim() : '';
+  if (!text) return { error: 'orkestra kosong' };
+  return { text, model: d.model || 'orkestra-1-mini' };
+}
+
 export async function onRequestPost({ request, env, waitUntil }) {
   try {
     if (!rateLimitOk(clientIp(request))) {
@@ -1658,6 +1683,11 @@ export async function onRequestPost({ request, env, waitUntil }) {
         // (429/402) bila kuota hariannya habis; tidak menahan kandidat lain.
         if (orKeys.length && !hasImages) {
           cands.push(cand('F', withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, FREE_OR_MODELS, makeOnDelta('F')), 45000, 'OpenRouterFree')));
+        }
+        // KANDIDAT OK: Orkestra-1 Mini (worker labs-pro — balapan 7 model + standar
+        // kualitas + verifikasi install). Hanya chat murni tanpa tools/vision.
+        if (!toolDecls && !hasImages) {
+          cands.push(cand('OK', withTimeout(tryOrkestraMini(workMessages), 22000, 'OrkestraMini-race')));
         }
         const o = await new Promise((resolve) => {
           let settled = false;
