@@ -1891,7 +1891,13 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // MODE BUILD: (a) user pilih kapsul Build, ATAU (b) mode Chat tapi pesannya
     // minta bikin/ubah situs/kode -> AI build (ModelRouter) bantu di belakang
     // layar. Hanya user LOGIN — tamu TIDAK boleh membakar biaya provider.
-    const buildMode = (body.mode === 'build' || detectBuildIntent(body.messages)) && !isGuest && !!mrKeys.length && !hasImages;
+    // [7 Okt 14:25, arahan pemilik: "dah matiin aja trus di stop dan hapus crown nya"]
+    // Rute Build ModelRouter DIMATIKAN: MR tidak stabil (SSE kadang kosong, gateway
+    // memotong ~10 detik, fase thinking lama tanpa hasil) sehingga membakar kredit
+    // user tanpa manfaat. Semua request (mode build & deteksi otomatis niat build)
+    // kini memakai cascade gratis. Nyalakan lagi: ganti ENABLE_BUILD_ROUTE jadi true.
+    const ENABLE_BUILD_ROUTE = false;
+    const buildMode = ENABLE_BUILD_ROUTE && (body.mode === 'build' || detectBuildIntent(body.messages)) && !isGuest && !!mrKeys.length && !hasImages;
     const aiMain = !!(env.AI && !hasImages);
     const toolDecls = (gTools && gTools[0] && gTools[0].functionDeclarations) || null;
     // Cascade lengkap (OpenRouter -> Clouvia -> Workers AI -> Gemini) dijalankan
