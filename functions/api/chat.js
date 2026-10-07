@@ -1629,7 +1629,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // jadi pengulangan hanya meminta ulang jawaban, bukan mengulang pekerjaan.
     const attemptCascade = async () => {
     let r = null;
-    let planGapNudged = false; // [7 Okt 2026] guard "janji kosong" di bawah — nudge maks 1x/request
+    let planGapNudgeCount = 0; // [7 Okt 2026] guard "janji kosong" di bawah — maks 2x nudge/request
     for (let sHop = 0; sHop <= 4; sHop++) {
       r = null;
       // [5 Okt 2026, permintaan owner] JALUR CLOUVIA-SOLPRO DIMATIKAN sebagai UTAMA:
@@ -1743,11 +1743,11 @@ export async function onRequestPost({ request, env, waitUntil }) {
       const noToolsAtAll = !(r.tool_calls && r.tool_calls.length);
       const isPlanGap = toolDecls && !hasImages && noToolsAtAll && String(r.text || '').trim()
         && !/\[\[POLL\]\]|\[\[FORM\]\]|\[\[PLUGIN:/i.test(r.text);
-      if (isPlanGap && !planGapNudged) {
-        planGapNudged = true;
+      if (isPlanGap && planGapNudgeCount < 2) {
+        planGapNudgeCount++;
         workMessages.push({ role: 'assistant', content: r.text });
-        workMessages.push({ role: 'user', content: 'Kamu baru menulis rencana TANPA memanggil tool apa pun — itu janji kosong, bukan progres (lihat aturan (7): dilarang keras). JANGAN menulis teks rencana lagi. LANGSUNG panggil tool yang sesuai SEKARANG (write_file untuk tiap file, generate_image, atau set_project_info) untuk benar-benar mengerjakannya.' });
-        continue; // ulang satu hop dengan nudge — tetap dalam batas sHop<=4
+        workMessages.push({ role: 'user', content: 'Kamu baru menulis rencana/klaim TANPA memanggil tool apa pun — itu janji kosong, bukan progres (lihat aturan (7): dilarang keras). DILARANG mengarang fitur/URL yang tidak pernah disebut sistem (mis. "workspace.clincoo.buzz" atau link publik otomatis) — itu melanggar aturan (3) dilarang mengarang fakta. JANGAN menulis teks apa pun lagi. LANGSUNG panggil tool yang sesuai SEKARANG (write_file untuk tiap file tersisa, generate_image, atau set_project_info) untuk benar-benar melanjutkan pekerjaan.' });
+        continue; // ulang hop dengan nudge — tetap dalam batas sHop<=4
       }
       const stCalls = (r.tool_calls || []).filter(tc => SERVER_TOOLS.has(tc.name));
       if (!stCalls.length) break; // jawaban final ATAU tools klien -> keluar, kirim ke klien
