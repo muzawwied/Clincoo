@@ -1470,25 +1470,34 @@ async function tryModels(apiKeys, systemInstruction, contents, tools, onDelta) {
   const keys = _geminiKeyOrder(Array.isArray(apiKeys) ? apiKeys.filter(Boolean) : [apiKeys].filter(Boolean));
   let lastError = null;
   const statuses = [];
-  for (const apiKey of keys) {
-  for (const model of PREFERRED_MODELS) {
+  if (!keys.length) return { error: 'Tidak ada kunci tersedia', statuses };
+  // [7 Okt 2026 v3, laporan pemilik "dah cepet belum?"] FAN-OUT PARALEL: sebelumnya
+  // kunci dicoba BERURUTAN — satu kunci nge-hang menahan 15 detik, dua kunci hang
+  // beruntun = 34 detik padahal kunci sehat menjawab dalam 3 detik. Sekarang semua
+  // pasangan kunci x model ditembak bersamaan (urutan tetap sehat-dulu dari
+  // _geminiKeyOrder, cap 8 request) dan jawaban valid PERTAMA langsung dipakai;
+  // kunci hang hang sendiri di sisinya tanpa menahan siapa pun.
+  const pairs = [];
+  for (const k of keys) for (const m of PREFERRED_MODELS) pairs.push({ key: k, model: m });
+  if (pairs.length > 8) pairs.length = 8;
+  let winnerIdx = null; // attempt yang delta-nya boleh diteruskan ke klien
+  const attempt = async (idx) => {
+    const { key: apiKey, model } = pairs[idx];
+    const od = onDelta ? (tx) => {
+      if (winnerIdx !== null && winnerIdx !== idx) return; // attempt lain sudah megang delta
+      winnerIdx = idx;
+      onDelta(tx);
+    } : null;
     try {
-      const r = onDelta ? await fetchGeminiStream(apiKey, model, systemInstruction, contents, tools, onDelta) : await fetchGemini(apiKey, model, systemInstruction, contents, tools);
-      if (r.error) {
-        lastError = r.error; statuses.push(r.status || 0);
-        if (r.status === 400 || r.status === 403) break; // kunci invalid/denied -> coba kunci berikutnya
-        continue;
-      }
+      const r = od ? await fetchGeminiStream(apiKey, model, systemInstruction, contents, tools, od) : await fetchGemini(apiKey, model, systemInstruction, contents, tools);
+      if (r.error) return { fail: true, status: r.status || 0, error: r.error };
       const parts = r.data?.candidates?.[0]?.content?.parts || [];
       let text = parts.map(p => p.text || '').join('');
-      const toolCalls = parts
+      let toolCalls = parts
         .filter(p => p.functionCall)
         .map(p => ({ name: p.functionCall.name, args: p.functionCall.args || {}, thought_signature: p.thoughtSignature || undefined }));
-      // ===== AUTO-CONTINUE (finishReason MAX_TOKENS / LENGTH) =====
-      // Konsep sama dengan jalur GLM: output terpotong batas token -> sistem
-      // otomatis kirim "lanjutkan" + state terakhir (teks parsial menempel
-      // sebagai pesan model), tanpa sesi baru, model menyambung dari titik henti.
-      // Maksimal 3 sambungan per jawaban. Delta sambungan ikut ter-stream.
+      // AUTO-CONTINUE (finishReason MAX_TOKENS/LENGTH): sambung otomatis dari titik
+      // henti tanpa sesi baru — logika sama dengan versi berurut yang lama.
       if (!toolCalls.length && text) {
         let finish = r.data?.candidates?.[0]?.finishReason || '';
         let seg = text;
@@ -1496,7 +1505,7 @@ async function tryModels(apiKeys, systemInstruction, contents, tools, onDelta) {
         for (let ac = 0; ac < 3 && (finish === 'MAX_TOKENS' || finish === 'LENGTH'); ac++) {
           contContents.push({ role: 'model', parts: [{ text: seg }] });
           contContents.push({ role: 'user', parts: [{ text: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' }] });
-          const rc = onDelta ? await fetchGeminiStream(apiKey, model, systemInstruction, contContents, tools, onDelta) : await fetchGemini(apiKey, model, systemInstruction, contContents, tools);
+          const rc = od ? await fetchGeminiStream(apiKey, model, systemInstruction, contContents, tools, od) : await fetchGemini(apiKey, model, systemInstruction, contContents, tools);
           if (rc.error) break;
           const pc = rc.data?.candidates?.[0]?.content?.parts || [];
           const tc2 = pc.filter(p => p.functionCall).map(p => ({ name: p.functionCall.name, args: p.functionCall.args || {}, thought_signature: p.thoughtSignature || undefined }));
@@ -1507,31 +1516,40 @@ async function tryModels(apiKeys, systemInstruction, contents, tools, onDelta) {
           finish = rc.data?.candidates?.[0]?.finishReason || '';
         }
       }
-      _gmKeyHealth.set('last-good', apiKey); // kunci ini sehat -> promosi ke depan utk request berikutnya
-      if (toolCalls.length > 0) return { tool_calls: toolCalls, text, model };
-      if (text) return { text, model };
-      lastError = 'Jawaban AI kosong — coba kirim ulang';
-      statuses.push(0);
+      if (toolCalls.length > 0 || text) return { ok: true, text, toolCalls, model, apiKey };
+      return { fail: true, status: 0, error: 'Jawaban AI kosong — coba kirim ulang' };
     } catch (err) {
       if (err && (err.name === 'AbortError' || /aborted|timed? ?out/i.test(String(err.message || '')))) {
         _gmKeyHealth.set(apiKey, { badUntil: Date.now() + 10 * 60_000 }); // nge-hang -> cooldown 10 menit
       }
-      lastError = err.message;
-      statuses.push(0);
+      return { fail: true, status: 0, error: err.message || 'gagal' };
     }
-  }
-  }
-  const quotaExhausted = statuses.length > 0 && statuses.every(st => st === 429);
-  // providerBusy: SEMUA model/kunci provider menolak 429 -> sibuknya SERVER AI,
-  // BUKAN kuota user. Dikirim sebagai provider_busy agar klien TIDAK menampilkan
-  // pesan "kuota habis/upgrade paket" yang menyesatkan (kasus: kirim gambar ->
-  // kunci Gemini kena 429 -> user dikira kehabisan kuota).
-  // Konteks percakapan ke-limiter (chat panjang + kode file besar): model menolak
-  // karena token melebihi jendela context. Ditandai supaya klien bisa menampilkan
-  // checkpoint "lanjut?" + memangkas riwayat besar secara otomatis sebelum kirim ulang.
-  const RE_CTX = /(exceeds?.{0,40}(context|token)|context.{0,40}(length|window|size)|too many (input )?tokens|maximum.{0,30}tokens|token count|input too large|payload too large|request entity too large)/i;
-  const contextOverflow = !!lastError && RE_CTX.test(String(lastError));
-  return { error: lastError || 'All models failed', quotaExhausted, providerBusy: quotaExhausted, contextOverflow, statuses };
+  };
+  return await new Promise((resolve) => {
+    let failures = 0; let settled = false;
+    const fin = (v) => { if (!settled) { settled = true; resolve(v); } };
+    pairs.forEach((_, i) => {
+      attempt(i).then(res => {
+        if (settled) return;
+        if (res.ok) {
+          _gmKeyHealth.set('last-good', res.apiKey); // kunci sehat -> promosi ke depan
+          fin(res.toolCalls.length > 0 ? { tool_calls: res.toolCalls, text: res.text, model: res.model } : { text: res.text, model: res.model });
+        } else {
+          lastError = res.error; statuses.push(res.status);
+          if (++failures === pairs.length) {
+            // providerBusy: SEMUA kunci/model menolak 429 -> sibuknya SERVER AI, BUKAN
+            // kuota user; dikirim sebagai provider_busy agar klien tidak menampilkan
+            // pesan "kuota habis/upgrade paket" yang menyesatkan.
+            const quotaExhausted = statuses.length > 0 && statuses.every(st => st === 429);
+            // Konteks percakapan ke-limiter (chat panjang + kode file besar).
+            const RE_CTX = /(exceeds?.{0,40}(context|token)|context.{0,40}(length|window|size)|too many (input )?tokens|maximum.{0,30}tokens|token count|input too large|payload too large|request entity too large)/i;
+            const contextOverflow = !!lastError && RE_CTX.test(String(lastError));
+            fin({ error: lastError || 'All models failed', quotaExhausted, providerBusy: quotaExhausted, contextOverflow, statuses });
+          }
+        }
+      });
+    });
+  });
 }
 
 // --- Kuota guest (tanpa login): per-IP per-hari, tabel sama dengan kuota user ---
