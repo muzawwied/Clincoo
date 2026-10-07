@@ -1750,8 +1750,14 @@ export async function onRequestPost({ request, env, waitUntil }) {
       const identityDone = flatHist.indexOf('"generate_image"') !== -1 || flatHist.indexOf('"set_project_info"') !== -1;
       const lastUser = [...workMessages].reverse().find(m => m && m.role === 'user' && typeof m.content === 'string');
       const buildIntent = /\b(buat|buatkan|bikin|bikinkan|bangun|dibuatkan|dibangun|tolong buat|minta buat|landing ?page|situs|website|web ?page|aplikasi|webnya|situnya|lanjut)\b/i.test(String((lastUser && lastUser.content) || ''));
+      // [7 Okt 2026 v3] Sinyal paling andal: KALIMAT MODEL SENDIRI yang menjanjikan aksi
+      // tapi tanpa tool_calls ("tunggu sebentar", "akan saya buat", "sedang menyiapkan",
+      // dst, future/progresif tense) — tidak bergantung histori/last-user-text yang bisa
+      // terpotong di sesi panjang (window pesan terbatas), jadi deteksi tetap kena meski
+      // buildIntent/identityDone gagal baca histori penuh.
+      const promiseLanguage = /tunggu (sebentar|sejenak)|mohon tunggu|harap tunggu|akan (saya )?(buat|membuat|bikin|lanjutkan|menyelesaikan|mulai)|sedang (membuat|menyiapkan|mengerjakan|memproses)|segera (saya )?(buat|lanjutkan)|silakan tunggu/i.test(String(r.text || ''));
       const isPlanGap = toolDecls && !hasImages && noToolsAtAll && String(r.text || '').trim()
-        && !hasWriteCall && (buildIntent || identityDone)
+        && !hasWriteCall && (buildIntent || identityDone || promiseLanguage)
         && !/\[\[POLL\]\]|\[\[FORM\]\]|\[\[PLUGIN:/i.test(r.text);
       if (isPlanGap && planGapNudgeCount < 2) {
         planGapNudgeCount++;
