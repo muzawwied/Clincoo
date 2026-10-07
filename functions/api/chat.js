@@ -461,10 +461,11 @@ const MODELROUTER_MODELS = ['nemotron-3.5-lightning', 'glm-5.3-flash', 'nemotron
 // ~8s) lalu sambung otomatis via AUTO-CONTINUE (finish_reason=length,
 // stream: maks 5 sambungan, non-stream: maks 3) sehingga jawaban tetap utuh.
 // Budget token per model (chunk kecil, disambung AUTO-CONTINUE):
-// lightning ~22 tok/s tanpa reasoning -> 128 tok ~6s (aman); glm ~48 tok/s tapi
-// reasoning ikut dihitung -> 384 tok ~8s; ultra ~21 tok/s -> 128 tok ~6s.
-// Semua di bawah potongan gateway MR ~10s wall-time.
-const MR_MAX_TOKENS = { 'nemotron-3.5-lightning': 128, 'glm-5.3-flash': 384, 'nemotron-3-ultra': 128 };
+// verifikasi 7 Okt: lightning 96 tok = 5.2s dgn konten langsung (aman); 128 tok
+// sempat 10.2s di node lambat = kepotong. glm ~48 tok/s tapi reasoning ikut
+// dihitung -> 384 tok; ultra ~21 tok/s -> 96 tok. Semua di bawah potongan
+// gateway MR ~10s wall-time.
+const MR_MAX_TOKENS = { 'nemotron-3.5-lightning': 96, 'glm-5.3-flash': 384, 'nemotron-3-ultra': 96 };
 const MR_ENDPOINT = 'https://modelrouter.id/v1/chat/completions';
 // [7 Okt, arahan pemilik: "jadikan model Orkestra di mode build"] Semua respons
 // ModelRouter (glm-5.3-flash -> nemotron-3.5-lightning -> nemotron-3-ultra)
