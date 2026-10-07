@@ -1766,6 +1766,18 @@ export async function onRequestPost({ request, env, waitUntil }) {
           sendDelta(tx);
         } : null;
         const cand = (id, p) => p.then((res) => ({ id, res })).catch((e) => ({ id, res: { error: e.message } }));
+        // [7 Okt 2026, laporan owner: jawaban AI berbahasa Inggris + istilah ngarang
+        // ("systemctl rebased", "ldpreload") + minta user jalanin perintah manual]
+        // AKARNYA: race menang oleh kandidat TERCEPAT bukan TERBAIK — model
+        // cadangan gratis (Workers AI / :free) sering nge-stream duluan dan
+        // mengabaikan aturan persona (bahasa Indonesia, dilarang jadi chatbot
+        // pasif). FIX: kandidat lemah baru ikut balapan setelah 8 detik bila
+        // model utama belum mengirim delta — kualitas dijaga jalur utama,
+        // cadangan tetap tersedia saat jalur utama mati/lambat.
+        const WEAK_DELAY_MS = 8000;
+        const weakLate = (id, fn) => cand(id, new Promise((resolve, reject) => {
+          setTimeout(() => { if (winner) return resolve({ error: 'telat — pemenang sudah ada' }); fn().then(resolve, reject); }, WEAK_DELAY_MS);
+        }));
         // KANDIDAT P: OpenRouter (utama, napas 90s utk reasoning + auto-continue)
         const cands = [cand('P', withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, chainModels, makeOnDelta('P')), 150000, 'OpenRouter'))];
         // KANDIDAT G: Gemini 3.6 Flash (napas 25s — sama dengan jalur cadangan lamanya)
@@ -1774,17 +1786,17 @@ export async function onRequestPost({ request, env, waitUntil }) {
           cands.push(cand('G', withTimeout(tryModels(apiKey, systemInstruction, contents, gTools, makeOnDelta('G')), 25000, 'Gemini-race')));
         }
         // KANDIDAT W: Workers AI (hanya bila binding ada; gagal cepat bila kuota habis)
-        if (aiMain) cands.push(cand('W', withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 20000, 'WorkersAI-race')));
+        if (aiMain) cands.push(weakLate('W', () => withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 20000, 'WorkersAI-race')));
         // KANDIDAT W2: Workers AI via REST — akun C (pool kuota gratis kedua; TTFB ~1-2s,
         // tools OK). 429 saat kuota habis -> gagal cepat, tak menahan kandidat lain.
         if (cfAiCreds) {
-          cands.push(cand('W2', withTimeout(tryCfAiRest(cfAiCreds, workMessages, toolDecls, makeOnDelta('W2')), 45000, 'WorkersAI-REST-race')));
+          cands.push(weakLate('W2', () => withTimeout(tryCfAiRest(cfAiCreds, workMessages, toolDecls, makeOnDelta('W2')), 45000, 'WorkersAI-REST-race')));
         }
         // KANDIDAT F: model :free OpenRouter (cohere north-mini-code, spesialis koding,
         // model reasoning). Gratis — jalan untuk guest maupun user login. Gagal cepat
         // (429/402) bila kuota hariannya habis; tidak menahan kandidat lain.
         if (orKeys.length && !hasImages) {
-          cands.push(cand('F', withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, FREE_OR_MODELS, makeOnDelta('F')), 45000, 'OpenRouterFree')));
+          cands.push(weakLate('F', () => withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, FREE_OR_MODELS, makeOnDelta('F')), 45000, 'OpenRouterFree')));
         }
         // KANDIDAT OK: Orkestra-1 Mini (worker labs-pro — balapan 7 model + standar
         // kualitas + verifikasi install). Hanya chat murni tanpa tools/vision.
