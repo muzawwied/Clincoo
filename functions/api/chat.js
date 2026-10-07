@@ -1629,6 +1629,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // jadi pengulangan hanya meminta ulang jawaban, bukan mengulang pekerjaan.
     const attemptCascade = async () => {
     let r = null;
+    let planGapNudged = false; // [7 Okt 2026] guard "janji kosong" di bawah — nudge maks 1x/request
     for (let sHop = 0; sHop <= 4; sHop++) {
       r = null;
       // [5 Okt 2026, permintaan owner] JALUR CLOUVIA-SOLPRO DIMATIKAN sebagai UTAMA:
@@ -1733,6 +1734,21 @@ export async function onRequestPost({ request, env, waitUntil }) {
         if (w) r = w;
       }
       if (!r || r.error) break; // error/kutipan ditangani di bawah seperti biasa
+      // [7 Okt 2026, laporan owner: "disuruh buat landing page masih mentok di sini"]
+      // GUARD JANJI KOSONG: mode tools aktif + model balas TEKS RENCANA tanpa tool_calls
+      // apa pun (client maupun server) dan bukan blok [[POLL]]/[[FORM]]/[[PLUGIN]] ->
+      // persis pelanggaran aturan (7) sendiri ("menulis kalimat rencana lalu menutup
+      // giliran"). Nudge SEKALI (bukan loop tak berujung) agar model benar-benar
+      // memanggil tool, bukan cuma mengulang teks janji ke user.
+      const noToolsAtAll = !(r.tool_calls && r.tool_calls.length);
+      const isPlanGap = toolDecls && !hasImages && noToolsAtAll && String(r.text || '').trim()
+        && !/\[\[POLL\]\]|\[\[FORM\]\]|\[\[PLUGIN:/i.test(r.text);
+      if (isPlanGap && !planGapNudged) {
+        planGapNudged = true;
+        workMessages.push({ role: 'assistant', content: r.text });
+        workMessages.push({ role: 'user', content: 'Kamu baru menulis rencana TANPA memanggil tool apa pun — itu janji kosong, bukan progres (lihat aturan (7): dilarang keras). JANGAN menulis teks rencana lagi. LANGSUNG panggil tool yang sesuai SEKARANG (write_file untuk tiap file, generate_image, atau set_project_info) untuk benar-benar mengerjakannya.' });
+        continue; // ulang satu hop dengan nudge — tetap dalam batas sHop<=4
+      }
       const stCalls = (r.tool_calls || []).filter(tc => SERVER_TOOLS.has(tc.name));
       if (!stCalls.length) break; // jawaban final ATAU tools klien -> keluar, kirim ke klien
       const clientCalls = (r.tool_calls || []).filter(tc => !SERVER_TOOLS.has(tc.name));
