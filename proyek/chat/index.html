@@ -7434,33 +7434,55 @@ function crownAction(e){
 })();
 </script>
 <script>
-  // Crown di opsi Build (menu mode AI): tampil untuk paket Starter — gaya konsisten dgn crown di profil/upgrade.
-  // + PEMBATASAN: klik Build oleh user Starter memunculkan halaman pembatasan full-screen (sama seperti gate fitur editor) dengan CTA Lihat Paket. Tanpa menyebut jumlah kredit.
+  // PEMBATASAN mode Build untuk paket Starter: crown pada opsi Build + halaman pembatasan
+  // full-screen (sama seperti gate fitur editor, CTA "Lihat Paket"). Tidak menyebut jumlah kredit.
+  // Plan dideteksi PAKAI token login; bila plan tak diketahui (fetch gagal) tidak memblokir.
   (function(){
-    var SUB_API = (location.hostname.indexOf('github.io') !== -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/subscription';
-    fetch(SUB_API).then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
-      try {
-        var plan = (d && (d.plan || (d.subscription && d.subscription.plan))) || 'Starter';
-        window.clincooUserPlan = plan;
-        if (plan === 'Starter') document.querySelectorAll('.build-mode-crown').forEach(function(el){ el.classList.remove('hidden'); });
-      } catch(e){}
-    }).catch(function(){});
-  })();
-  (function(){
-    var origApply = window.applyAiMode;
-    if (!origApply) return;
-    function showBuildGate(){
-      // Halaman pembatasan full-screen ala gate editor (CTA: Lihat Paket) — tanpa menyebut kredit.
-      if (typeof window.clincooFeatureGate === 'function') { window.clincooFeatureGate('Pro'); return; }
-      origApply('build'); // fallback bila gate belum termuat: biarkan backend yang menegakkan batasan.
+    function myToken(){ try{ return localStorage.getItem('clincoo_auth_token')||localStorage.getItem('clincoo_token')||''; }catch(e){ return ''; } }
+    window.clincooUserPlan = null;
+
+    function detectPlan(){
+      var base = (location.hostname.indexOf('github.io') !== -1 ? 'https://clincoo-be2.pages.dev/api' : '/api');
+      var t = myToken(), headers = t ? { Authorization: 'Bearer ' + t } : {};
+      return fetch(base + '/subscription?fields=plan', { headers: headers, cache: 'no-store' })
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(d){
+          var plan = (d && (d.plan || (d.subscription && d.subscription.plan))) || null;
+          window.clincooUserPlan = plan; // null = tak diketahui -> jangan blokir
+          if (plan === 'Starter') document.querySelectorAll('.build-mode-crown').forEach(function(el){ el.classList.remove('hidden'); });
+          return plan;
+        }).catch(function(){ return null; });
     }
-    window.applyAiMode = function(id){
-      try {
-        var plan = window.clincooUserPlan || 'Starter';
-        if (id === 'build' && plan === 'Starter') { showBuildGate(); return; }
-      } catch(e){}
-      origApply(id);
-    };
+    detectPlan();
+
+    function gateStarter(){
+      if (window.clincooUserPlan !== 'Starter') return false;
+      if (typeof window.clincooFeatureGate === 'function') { window.clincooFeatureGate('Pro'); return true; }
+      return false; // gate belum termuat: biarkan backend menegakkan batasan
+    }
+
+    // Blokir klik tombol Build (onclick inline) untuk Starter — capture phase, sebelum onclick jalan.
+    document.addEventListener('click', function(e){
+      var el = e.target;
+      while (el && el !== document.body) {
+        if (el.getAttribute && (el.getAttribute('onclick')||'').indexOf("applyAiMode('build')") !== -1) {
+          if (gateStarter()) { e.preventDefault(); e.stopImmediatePropagation(); }
+          return;
+        }
+        el = el.parentElement;
+      }
+    }, true);
+
+    // Wrapper applyAiMode untuk pemanggilan programatik (retry hingga fungsi tersedia).
+    var tries = 0;
+    (function wrap(){
+      if (!window.applyAiMode) { if (++tries < 60) setTimeout(wrap, 300); return; }
+      var orig = window.applyAiMode;
+      window.applyAiMode = function(id){
+        if (id === 'build' && window.clincooUserPlan === 'Starter') { gateStarter(); return; } // diblokir, gate tampil
+        return orig.apply(this, arguments);
+      };
+    })();
   })();
 </script>
 </body>
