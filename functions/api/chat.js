@@ -248,8 +248,11 @@ async function completeTruncatedToolArgs(keys, models, baseMsgs, oaiTools, tc) {
 function normStreamToolCalls(tcs) {
   const norm = [];
   for (const c of tcs) {
-    let a = {}; try { a = c.args ? JSON.parse(c.args) : {}; } catch (e) { a = {}; }
-    norm.push({ name: c.name, args: a });
+    // [7 Okt] args yang gagal di-parse = tool call RUSAK — dulu dipalsukan jadi {}
+    // kosong lalu dieksekusi (write_file tanpa path/isi -> gagal -> model pusing
+    // -> loop narasi). Sekarang: buang; jika semua rusak, kandidat dinyatakan gagal.
+    let a = null; try { a = c.args ? JSON.parse(c.args) : null; } catch (e) { a = null; }
+    if (a) norm.push({ name: c.name, args: a });
   }
   return norm;
 }
@@ -284,7 +287,12 @@ async function tryOpenRouterText(keys, messages, gDecls, models, onDelta) {
         if (sr.ok && sr.body) {
           const st = await readOAICompatStream(sr, onDelta);
           if (st.text || st.tcs.length) {
-            if (st.tcs.length && st.fin !== 'length') return { tool_calls: normStreamToolCalls(st.tcs), text: st.text, model: model.split('/').pop() + ' (OpenRouter)' };
+            if (st.tcs.length && st.fin !== 'length') {
+              const nt = normStreamToolCalls(st.tcs);
+              if (nt.length) return { tool_calls: nt, text: st.text, model: model.split('/').pop() + ' (OpenRouter)' };
+              // semua args rusak -> jatuh ke jalur teks/model berikutnya, JANGAN
+              // kembalikan write_file dengan args kosong.
+            }
             // [7 Okt] tool call TERPOTONG (fin==='length'): sambung argumennya dulu.
             if (st.tcs.length && st.fin === 'length') {
               const fixed = [];
