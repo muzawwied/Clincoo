@@ -5569,6 +5569,47 @@ window.chatLivePreview = function () {
             try { return walk(value); } catch (e) { return value; }
         }
 
+        // ROOT CAUSE #2 (7 Okt 2026, screenshot user: 2x "Lanjut" berturut-turut, keduanya
+        // "Lagi ada gangguan koneksi sebentar"): slimForModelHistory membatasi PER-ENTRY
+        // (1500/3000 char), tapi tidak ada batas CUMULATIF lintas hop -- dengan
+        // MAX_TOOL_HOPS tinggi (proyek multi-file + banyak "lanjut"), apiMessagesWithTools
+        // tetap bisa menumpuk puluhan entry sampai ratusan KB SEBELUM satu generasi selesai,
+        // dan payload itu dikirim ULANG (makin besar) di SETIAP hop berikutnya -> semua
+        // provider (termasuk seluruh bank fallback yang menerima payload sama besar) gagal
+        // bersamaan. FIX: circuit-breaker aktif tiap akhir hop -- kalau total payload sudah
+        // besar, hop-hop LAMA (bukan 3 terakhir) dipangkas lebih agresif lagi (args/result
+        // jadi preview singkat) sebelum hop berikutnya dikirim, supaya ukuran tidak pernah
+        // membengkak tak terbatas walau hop banyak.
+        function compactToolHopHistory(msgs, hardLimitChars) {
+            hardLimitChars = hardLimitChars || 150000;
+            try {
+                let total = 0;
+                try { total = JSON.stringify(msgs).length; } catch (e) { return; }
+                if (total < hardLimitChars) return;
+                const KEEP_LAST = 6; // ~3 pasang function_call/function_response terakhir tetap detail
+                for (let i = 1; i < msgs.length - KEEP_LAST; i++) {
+                    const m = msgs[i];
+                    if (!m || !Array.isArray(m.content)) continue;
+                    m.content = m.content.map(function (b) {
+                        if (!b || typeof b !== 'object') return b;
+                        if (b.type === 'function_call' && b.args && typeof b.args === 'object') {
+                            const a = {};
+                            for (const k of Object.keys(b.args)) {
+                                const v = b.args[k];
+                                a[k] = (typeof v === 'string' && v.length > 300) ? (v.slice(0, 300) + ' …(dipangkas, hop lama)') : v;
+                            }
+                            return Object.assign({}, b, { args: a });
+                        }
+                        if (b.type === 'function_response' && b.result !== undefined) {
+                            let rs; try { rs = (typeof b.result === 'string') ? b.result : JSON.stringify(b.result); } catch (e) { rs = ''; }
+                            if (rs && rs.length > 500) return Object.assign({}, b, { result: rs.slice(0, 500) + ' …(dipangkas, hop lama)' });
+                        }
+                        return b;
+                    });
+                }
+            } catch (e) {}
+        }
+
         const SILENT_NUDGES = [
             'Lanjutkan tugas dari titik terhenti sampai benar-benar selesai. Jangan ulangi bagian yang sudah selesai dan jangan bertanya apa pun — langsung kerjakan sisa tugasnya sekarang.',
             'Teruskan pengerjaan sampai seluruh tugas tuntas dan hasil akhir lengkap. Langsung kerjakan tanpa konfirmasi; bagian yang sudah beres tidak perlu diulang.',
@@ -5954,7 +5995,7 @@ window.chatLivePreview = function () {
                     let hopError = null;
                     let accumulatedFinal = ''; // teks final digabung antar-ronde auto-lanjut
                     const apiMessagesWithTools = apiMessages.slice();
-                    const MAX_TOOL_HOPS = 32; // dinaikkan 20->32: proyek kompleks (desain+struktur+file banyak) butuh lebih banyak ronde tool agar selesai dalam satu jalan, tidak terputus di tengah (desain+struktur+file banyak) butuh lebih banyak ronde tool agar selesai dalam satu jalan, tidak terputus di tengah
+                    const MAX_TOOL_HOPS = 32; // dinaikkan 20->32: proyek kompleks (desain+struktur+file banyak) butuh lebih banyak ronde tool agar selesai dalam satu jalan, tidak terputus di tengah. AMAN karena circuit-breaker compactToolHopHistory() di bawah mencegah payload membengkak tak terbatas lintas hop.
                     // AUTO-LANJUT SILENT (provider sibuk): limit 429 sesaat dari model ->
                     // tunggu & ulangi diam-diam, jangan langsung putus tugas panjang.
                     const readStreamWithBusyRetry = async function (response0) {
@@ -6281,6 +6322,7 @@ window.chatLivePreview = function () {
                             return { type: 'function_response', name: tc.name, result: slimForModelHistory(result, 3000) };
                         }));
                         apiMessagesWithTools.push({ role: 'user', content: functionResponses });
+                        compactToolHopHistory(apiMessagesWithTools); // circuit-breaker: cegah payload lintas-hop membengkak tak terbatas
                         // Tampilkan progres eksekusi tugas secara langsung ke chat (mirip kartu "Ran command")
                         renderMessages();
                     }
