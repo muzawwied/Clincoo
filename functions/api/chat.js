@@ -430,6 +430,120 @@ async function getClouviaKeys(env) {
   return keys;
 }
 
+// ===== ModelRouter (modelrouter.id — gateway AI lokal IDR, bayar QRIS; kompatibel OpenAI) =====
+// [7 Okt 2026, arahan pemilik: pisahkan model CHAT (gratis) vs BUILD (berbayar)]
+// Provider BERBAYAR khusus mode Build: GLM 5.3 Flash via ModelRouter — disiplin
+// biaya Rupiah (passthrough, cache otomatis), tanpa kartu kredit. Kunci di
+// D1 env_vars (MODELROUTER_API_KEY) atau Pages env. Gagal (saldo habis/down)
+// -> cascade gratis berjalan seperti biasa, user tetap dilayani.
+async function getModelRouterKeys(env) {
+  const keys = [];
+  const seen = new Set();
+  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
+  add(env.MODELROUTER_API_KEY);
+  if (!env.DB) return keys;
+  try {
+    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key = 'MODELROUTER_API_KEY'").all();
+    for (const r of rows.results || []) add(r.value);
+  } catch {}
+  return keys;
+}
+const MODELROUTER_MODELS = ['glm-5.3-flash'];
+const MR_MAX_TOKENS = 2048;
+const MR_ENDPOINT = 'https://modelrouter.id/v1/chat/completions';
+// Label model hasil ModelRouter: kunci harga 'glm-5.3-flash-build' di MODEL_PRICES
+// (2 kredit — build berbayar bagi pemilik, arahan "harganya disesuaikan").
+const mrLabel = (m) => m.split('/').pop() + '-build (ModelRouter)';
+async function tryModelRouterText(keys, messages, gDecls, models, onDelta) {
+  const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
+  if (!keyList.length) return null;
+  const modelList = (Array.isArray(models) && models.length) ? models : MODELROUTER_MODELS;
+  const { system, chatMsgs } = toOAIChat(messages);
+  const oaiTools = oaiToolsOf(gDecls);
+  const callMr = (key, model, msgs, stream) => {
+    const p = { model, messages: msgs, max_tokens: MR_MAX_TOKENS };
+    if (stream) p.stream = true;
+    if (oaiTools) p.tools = oaiTools;
+    return fetch(MR_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.buzz', 'X-Title': 'Clincoo' },
+      body: JSON.stringify(p)
+    });
+  };
+  let lastErr = null;
+  for (const key of keyList) {
+  for (const model of modelList) {
+    const baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
+    let data = null;
+    if (onDelta) {
+      try {
+        const sr = await callMr(key, model, baseMsgs, true);
+        if (sr.ok && sr.body) {
+          const st = await readOAICompatStream(sr, onDelta);
+          if (st.text || st.tcs.length) {
+            if (st.tcs.length) return { tool_calls: normStreamToolCalls(st.tcs), text: st.text, model: mrLabel(model) };
+            // AUTO-CONTINUE STREAM: sambung jawaban terpotong (finish_reason=length).
+            let full = st.text, seg = st.text, fin2 = st.fin;
+            const contMsgs = baseMsgs.slice();
+            for (let sc = 0; sc < 5 && fin2 === 'length'; sc++) {
+              contMsgs.push({ role: 'assistant', content: seg });
+              contMsgs.push({ role: 'user', content: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' });
+              try {
+                const cr = await callMr(key, model, contMsgs, true);
+                if (!cr.ok || !cr.body) break;
+                const st2 = await readOAICompatStream(cr, onDelta);
+                if (!st2.text) break;
+                full += st2.text; seg = st2.text; fin2 = st2.fin;
+              } catch (e2) { break; }
+            }
+            return { text: full, model: mrLabel(model) };
+          }
+          lastErr = 'ModelRouter ' + model + ': stream kosong';
+          continue;
+        }
+        if (!sr.ok) lastErr = 'ModelRouter ' + model + ': HTTP ' + sr.status;
+      } catch (e) { lastErr = 'ModelRouter ' + model + ': ' + (e && e.message); }
+    }
+    try {
+      const res = await callMr(key, model, baseMsgs, false);
+      data = await res.json().catch(() => ({}));
+      if (!res.ok) { lastErr = 'ModelRouter ' + model + ': HTTP ' + res.status; continue; }
+    } catch (e) { lastErr = 'ModelRouter ' + model + ': ' + (e && e.message); continue; }
+    const msg = data && data.choices && data.choices[0] && data.choices[0].message;
+    const text = (msg && msg.content) || '';
+    const finish = data && data.choices && data.choices[0] && data.choices[0].finish_reason;
+    const tcs = msg && Array.isArray(msg.tool_calls) ? msg.tool_calls : null;
+    if (tcs && tcs.length) {
+      const norm = [];
+      for (const c of tcs) {
+        let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
+        if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
+      }
+      if (norm.length) return { tool_calls: norm, text, model: mrLabel(model) };
+    }
+    if (text) {
+      // AUTO-CONTINUE non-stream: sambung jawaban terpotong.
+      let full = text, seg = text, fin = finish;
+      const contMsgs = baseMsgs.slice();
+      for (let ac = 0; ac < 3 && fin === 'length'; ac++) {
+        contMsgs.push({ role: 'assistant', content: seg });
+        contMsgs.push({ role: 'user', content: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' });
+        let dc = null;
+        try { const rc = await callMr(key, model, contMsgs, false); dc = await rc.json().catch(() => ({})); } catch (e2) { dc = null; }
+        const dm = dc && dc.choices && dc.choices[0] && dc.choices[0].message;
+        const dseg = (dm && dm.content) || '';
+        fin = dc && dc.choices && dc.choices[0] && dc.choices[0].finish_reason;
+        if (!dseg) break;
+        full += dseg; seg = dseg;
+      }
+      return { text: full, model: mrLabel(model) };
+    }
+    lastErr = 'ModelRouter ' + model + ': respons kosong';
+  }
+  }
+  return lastErr ? { error: lastErr } : null;
+}
+
 // ===== Workers AI via REST — akun C (token cfut_, kuota gratis 10k neuron/hari segar) =====
 // [6 Okt 2026, arahan owner: "manfaatin ai gratisnya"] Pool AI gratis KEDUA yang
 // terpisah dari kuota Workers AI akun utama. Respon format OpenAI penuh:
@@ -836,6 +950,7 @@ async function quotaCheck(env, user, cost = 1) {
 const MODEL_PRICES = {
   'gpt-6-luna-pro': 2,       // cadangan reasoning OpenRouter (biaya provider lebih tinggi)
   'gpt-6.1-sol-pro': 3,      // Sol Pro ASLI (OpenRouter) — pasif, nunggu saldo di-top-up
+  'glm-5.3-flash-build': 2,  // MODE BUILD via ModelRouter (berbayar QRIS) — 2x kredit agar biaya provider tertutup
   'deepseek-v4-pro': 1,      // jalur utama Clouvia (4 Okt 2026 malam): cepat & stabil di tes nyata, gratis
   'gpt-6.1-sol': 1           // model lama: backend sebenarnya GLM direlabel — 1 kredit jujur
   // semua model lain (glm-5.3-flash, gemini, clouvia, workers-ai, nemotron) = 1
@@ -1677,6 +1792,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     const apiKey = await getGeminiKeys(env); // array kunci Gemini (cadangan + jalur vision)
     const orKeysEarly = await getOpenRouterKeys(env); // kunci OpenRouter (GLM 5.3 — utama)
     const cvKeysEarly = await getClouviaKeys(env); // kunci Clouvia Router — cadangan #1
+    const mrKeysEarly = await getModelRouterKeys(env); // kunci ModelRouter — mode Build (berbayar)
     const cfAiCreds = await getCfAiCreds(env); // Workers AI REST akun C — pool gratis kedua
 
     if (!orKeysEarly.length && !cvKeysEarly.length && !apiKey.length && !env.AI && !cfAiCreds) {
@@ -1722,6 +1838,10 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // jalur klien (frontend) tidak berubah sama sekali.
     const workMessages = messages; // array sama — kita append blok function_call/response
     const orKeys = orKeysEarly; // GLM 5.3 Flash (OpenRouter) — UTAMA
+    const mrKeys = mrKeysEarly; // ModelRouter (mode Build — berbayar)
+    // MODE BUILD: user pilih kapsul Build -> model berbayar ModelRouter jadi utama.
+    // Hanya user LOGIN — tamu TIDAK boleh membakar biaya provider berbayar.
+    const buildMode = body.mode === 'build' && !isGuest && !!mrKeys.length && !hasImages;
     const aiMain = !!(env.AI && !hasImages);
     const toolDecls = (gTools && gTools[0] && gTools[0].functionDeclarations) || null;
     // Cascade lengkap (OpenRouter -> Clouvia -> Workers AI -> Gemini) dijalankan
@@ -1739,6 +1859,13 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // utama user login kini Sol Pro ASLI (OpenRouter) -> Luna Pro berikutnya.
       // Clouvia tetap ada di bawah sebagai cadangan (blok generic setelah OpenRouter).
       // Nyalakan lagi jalur ini dengan mengganti USE_CLOUVIA_FIRST di bawah jadi true.
+      // [7 Okt 2026, arahan pemilik] MODE BUILD -> ModelRouter (GLM 5.3 Flash berbayar)
+      // UTAMA di tiap hop tool (kode besar butuh model konsisten). Gagal -> cascade
+      // gratis di bawah tetap menyelamatkan jawaban.
+      if (buildMode && (!r || r.error)) {
+        const mr = await withTimeout(tryModelRouterText(mrKeys, workMessages, toolDecls, MODELROUTER_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 90000, 'ModelRouter').catch(e => ({ error: e.message }));
+        if (mr && !mr.error) r = mr;
+      }
       const USE_CLOUVIA_FIRST = false;
       if (USE_CLOUVIA_FIRST && !isGuest && !hasImages && cvKeysEarly.length) {
         const sp = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, CLOUVIA_SOL_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 40000, 'ClouviaSolPro').catch(e => ({ error: e.message }));

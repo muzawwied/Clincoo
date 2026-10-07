@@ -876,6 +876,22 @@
                 </div>
                 
                 <div class="flex items-center gap-1.5 shrink-0">
+                <div class="relative">
+                    <button id="ai-mode-btn" type="button" class="h-9 px-3 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center gap-1.5 cursor-pointer" title="Pilih mode AI" aria-expanded="false">
+                        <span id="ai-mode-label" class="text-xs font-semibold text-gray-700 whitespace-nowrap">Chat</span>
+                        <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="ai-mode-menu" class="absolute bottom-full right-0 mb-2 w-64 bg-white text-gray-800 border border-gray-100 rounded-xl shadow-xl p-1.5 flex flex-col gap-1 opacity-0 invisible translate-y-2 pointer-events-none transition-all duration-300 z-50 origin-bottom-right">
+                        <button type="button" onclick="applyAiMode('chat')" class="w-full flex items-center justify-between gap-2 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-left cursor-pointer">
+                            <span>Chat</span>
+                            <span class="text-[11px] text-gray-400 font-normal whitespace-nowrap">1 kredit · ngobrol &amp; tanya</span>
+                        </button>
+                        <button type="button" onclick="applyAiMode('build')" class="w-full flex items-center justify-between gap-2 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-left cursor-pointer">
+                            <span>Build</span>
+                            <span class="text-[11px] text-gray-400 font-normal whitespace-nowrap">2 kredit · bikin/ubah situs</span>
+                        </button>
+                    </div>
+                </div>
                 <button id="submit-prompt-btn" class="w-10 h-10 bg-black text-white rounded-full hover:bg-gray-800 transition-all duration-200 active:scale-90 flex items-center justify-center cursor-pointer shadow-sm hover:shadow-md shrink-0">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
@@ -3648,6 +3664,41 @@ window.chatLivePreview = function () {
 
         const TOOL_API_BASE = (['clincoo-be2.pages.dev','app.clincoo.buzz','clincoo.biz.id','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : '';
         const GEMINI_PROXY_URL = TOOL_API_BASE + '/api/chat';
+
+        // ===== [7 Okt 2026] KAPSUL MODE AI (Chat / Build) — pola sama dengan labs =====
+        // Build = model berbayar via ModelRouter (backend routes body.mode='build');
+        // default 'chat' = perilaku lama (gratis). Pilihan tersimpan di localStorage.
+        window.AI_MODE_CHOICE = (function () {
+          const KEY = 'clincoo_ai_mode';
+          let choice;
+          try { choice = localStorage.getItem(KEY); } catch (e0) { choice = null; }
+          if (choice !== 'build') choice = 'chat';
+          const mBtn = document.getElementById('ai-mode-btn');
+          const mMenu = document.getElementById('ai-mode-menu');
+          const mLabel = document.getElementById('ai-mode-label');
+          const isOpen = function () { return mMenu.classList.contains('visible'); };
+          const setOpen = function (open) {
+            if (open) { mMenu.classList.remove('opacity-0', 'invisible', 'translate-y-2', 'pointer-events-none'); mMenu.classList.add('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto'); }
+            else { mMenu.classList.add('opacity-0', 'invisible', 'translate-y-2', 'pointer-events-none'); mMenu.classList.remove('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto'); }
+          };
+          const apply = function () {
+            mLabel.textContent = choice === 'build' ? 'Build' : 'Chat';
+            mBtn.setAttribute('aria-expanded', isOpen() ? 'true' : 'false');
+          };
+          apply();
+          mBtn.addEventListener('click', function (e) { e.stopPropagation(); setOpen(!isOpen()); apply(); });
+          document.addEventListener('click', function (e) {
+            if (!e.target.closest('#ai-mode-btn') && !e.target.closest('#ai-mode-menu')) setOpen(false);
+          });
+          window.applyAiMode = function (id) {
+            choice = (id === 'build') ? 'build' : 'chat';
+            try { localStorage.setItem(KEY, choice); } catch (e0) {}
+            apply();
+            setOpen(false);
+          };
+          return { get mode() { return choice; } };
+        })();
+        window.selectedAiMode = function () { return window.AI_MODE_CHOICE.mode; };
         // Model premium Sol Pro (gpt-6.1-sol-pro) tanpa tombol UI: frontend selalu
         // kirim premium:true ke /api/chat (server hanya pakai utk user login & tanpa
         // gambar; tamu/bergambar otomatis jatuh ke model biasa). Set false utk balik normal.
@@ -5938,7 +5989,7 @@ window.chatLivePreview = function () {
                                     session_id: currentSessionId || undefined,
                                     project_id: currentProjectId || undefined,
                                     workspace_tools: true,
-                                    premium: AI_PREMIUM_MODEL,
+                                    premium: AI_PREMIUM_MODEL, mode: (typeof window.selectedAiMode === 'function' && window.selectedAiMode()) || 'chat',
                                     save_user_message: false,
 
                                     stream: true
@@ -6013,7 +6064,7 @@ window.chatLivePreview = function () {
                                             session_id: currentSessionId || undefined,
                                             project_id: currentProjectId || undefined,
                                             workspace_tools: true,
-                                            premium: AI_PREMIUM_MODEL,
+                                            premium: AI_PREMIUM_MODEL, mode: (typeof window.selectedAiMode === 'function' && window.selectedAiMode()) || 'chat',
                                             save_user_message: false,
 
                                             stream: true
@@ -6055,7 +6106,7 @@ window.chatLivePreview = function () {
                                         session_id: currentSessionId || undefined,
                                         project_id: currentProjectId || undefined,
                                         workspace_tools: true,
-                                        premium: AI_PREMIUM_MODEL,
+                                        premium: AI_PREMIUM_MODEL, mode: (typeof window.selectedAiMode === 'function' && window.selectedAiMode()) || 'chat',
                                         save_user_message: hop === 0,
                                        
                                         stream: true
@@ -6355,7 +6406,7 @@ window.chatLivePreview = function () {
                                 const rc = await fetch(GEMINI_PROXY_URL, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ messages: apiMessagesWithTools, session_id: currentSessionId || undefined, project_id: currentProjectId || undefined, workspace_tools: true, premium: AI_PREMIUM_MODEL, save_user_message: false, }),
+                                    body: JSON.stringify({ messages: apiMessagesWithTools, session_id: currentSessionId || undefined, project_id: currentProjectId || undefined, workspace_tools: true, premium: AI_PREMIUM_MODEL, mode: (typeof window.selectedAiMode === 'function' && window.selectedAiMode()) || 'chat', save_user_message: false, }),
                                     signal: abortController.signal
                                 });
                                 if (rc.ok) {
