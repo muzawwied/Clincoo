@@ -1741,7 +1741,17 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // giliran"). Nudge SEKALI (bukan loop tak berujung) agar model benar-benar
       // memanggil tool, bukan cuma mengulang teks janji ke user.
       const noToolsAtAll = !(r.tool_calls && r.tool_calls.length);
+      // [7 Okt 2026 v2] PREISI TEMBAK: nudge HANYA saat membangun (request build baru,
+      // atau identitas logo/set_project_info barusan dipanggil) DAN belum ada write_file
+      // sama sekali -> kemungkinan besar janji kosong. Pertanyaan biasa (tanpa intent
+      // build) & ringkasan final setelah file ditulis TIDAK dinue -> hemat 3x biaya.
+      const flatHist = (() => { try { return JSON.stringify(workMessages); } catch (e) { return ''; } })();
+      const hasWriteCall = flatHist.indexOf('"write_file"') !== -1;
+      const identityDone = flatHist.indexOf('"generate_image"') !== -1 || flatHist.indexOf('"set_project_info"') !== -1;
+      const lastUser = [...workMessages].reverse().find(m => m && m.role === 'user' && typeof m.content === 'string');
+      const buildIntent = /\b(buat|buatkan|bikin|bikinkan|bangun|dibuatkan|dibangun|tolong buat|minta buat|landing ?page|situs|website|web ?page|aplikasi|webnya|situnya|lanjut)\b/i.test(String((lastUser && lastUser.content) || ''));
       const isPlanGap = toolDecls && !hasImages && noToolsAtAll && String(r.text || '').trim()
+        && !hasWriteCall && (buildIntent || identityDone)
         && !/\[\[POLL\]\]|\[\[FORM\]\]|\[\[PLUGIN:/i.test(r.text);
       if (isPlanGap && planGapNudgeCount < 2) {
         planGapNudgeCount++;
