@@ -4344,6 +4344,13 @@ window.chatLivePreview = function () {
                                 return Object.assign({}, b, { result: { info: '(hasil tool lama dipangkas otomatis)', preview: rs.slice(0, 800) } });
                             }
                         }
+                        // jaring pengaman tambahan: gambar lama (base64) yang lolos dari gating
+                        // keepImageIdx (mis. lewat jalur fallback/continueSilently) tetap dipangkas
+                        // di sini agar payload tidak pernah membengkak tak terbatas.
+                        if (b.type === 'image_url' && b.image_url && typeof b.image_url.url === 'string' && b.image_url.url.length > 2000) {
+                            changed = true;
+                            return { type: 'text', text: '[Lampiran foto lama -- dipangkas otomatis agar riwayat tidak membengkak]' };
+                        }
                         return b;
                     });
                     return changed ? { role: m.role, content: content } : m;
@@ -5941,7 +5948,23 @@ window.chatLivePreview = function () {
                     ];
 
                     const historyMsgs = messages.filter(m => !m.isHidden && !m.isError && m.id !== aiMsgObj.id); // bubble error/gangguan (isError) JANGAN masuk history API — pesan error bukan balasan asisten sungguhan, // dan kalau ikut terkirim AI berikutnya mengarang konteks baru dari teks error itu
-                    historyMsgs.forEach(m => {
+                    // ROOT CAUSE #3 (7 Okt 2026, screenshot user: "Buat app"/"Buatkan web" gagal
+                    // "gangguan koneksi" bahkan di pesan BARU & singkat, bukan hanya proyek besar):
+                    // foto yang pernah dikirim user (base64 PENUH via att.data, bisa ratusan KB-2MB
+                    // per foto) tersimpan permanen di riwayat chat (localStorage) dan dikirim ULANG
+                    // utuh pada SETIAP request berikutnya selamanya -- tidak pernah dipangkas oleh
+                    // compactHistoryForContext (fungsi itu hanya menyasar function_call/
+                    // function_response, bukan image_url). Chat yang sudah lumayan panjang +
+                    // beberapa foto terlampir = payload membengkak jauh di atas batas provider,
+                    // GAGAL KONSISTEN di semua provider termasuk fallback -> "Lanjutkan" pun tetap
+                    // gagal (bukan gangguan sesaat, tapi payload yang sama besarnya dikirim ulang).
+                    // FIX: hanya 2 PESAN TERAKHIR yang punya lampiran foto yang dikirim utuh;
+                    // foto yang lebih lama diganti placeholder teks singkat (AI tidak perlu
+                    // melihat ulang foto lama, cukup tahu pernah ada lampiran).
+                    const imgMsgIdxs = [];
+                    historyMsgs.forEach((m, idx) => { if (m.attachments && m.attachments.some(a => a.type === 'image')) imgMsgIdxs.push(idx); });
+                    const keepImageIdx = new Set(imgMsgIdxs.slice(-2));
+                    historyMsgs.forEach((m, idx) => {
                         let content = [];
                         if (m.text) {
                             content.push({ type: "text", text: m.text });
@@ -5951,7 +5974,11 @@ window.chatLivePreview = function () {
                                 if (att.type === 'document' && att.text) {
                                     content.push({ type: "text", text: `\n\n[Isi Dokumen Lampiran (${att.name})]:\n${att.text.substring(0, 10000)}` });
                                 } else if (att.type === 'image') {
-                                    content.push({ type: "image_url", image_url: { url: att.data } });
+                                    if (keepImageIdx.has(idx)) {
+                                        content.push({ type: "image_url", image_url: { url: att.data } });
+                                    } else {
+                                        content.push({ type: "text", text: '\n\n[Lampiran foto sebelumnya -- tidak disertakan ulang agar riwayat tidak membengkak; sudah dibahas di pesan terkait saat itu]' });
+                                    }
                                 }
                             });
                         }
