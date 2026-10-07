@@ -4928,8 +4928,18 @@ window.chatLivePreview = function () {
         }
         // ===== TOOL write_files: bulk write — satu load + satu save untuk semua file =====
         async function wsWriteFilesBatch(args) {
-            const files = args && Array.isArray(args.files) ? args.files : [];
-            if (!files.length) return { success: false, error: 'Parameter files wajib array [{path, content}].' };
+            let files = args && Array.isArray(args.files) ? args.files : [];
+            // Perbaikan otomatis bentuk argumen keliru yang umum: model kirim satu file
+            // langsung sebagai {path, content} tanpa dibungkus array "files".
+            if (!files.length && args && typeof args.path === 'string' && typeof args.content === 'string') {
+                files = [{ path: args.path, content: args.content }];
+            }
+            if (!files.length) {
+                return {
+                    success: false,
+                    error: 'Parameter files kosong/tidak valid. SEBAB PALING SERING: argumen tool call kamu KEPOTONG karena isi file terlalu panjang untuk sekali panggilan (limit token provider). SOLUSI: panggil write_files lagi dengan JUMLAH FILE LEBIH SEDIKIT dan/atau isi per file LEBIH SINGKAT (atau pakai write_file satu per satu khusus untuk file yang isinya besar). JANGAN ulangi panggilan yang sama persis — pecah jadi beberapa panggilan lebih kecil sekarang.'
+                };
+            }
             const data = wsLoad();
             const results = [];
             const capped = files.slice(0, 60); // batas deklarasi tool: maks 60 file/panggilan
@@ -5542,7 +5552,11 @@ window.chatLivePreview = function () {
                 /lanjut(kan)?\s*(di|ke|bagian|tahap|langkah|pesan)\b/i,
                 /(akan|bisa|mau|biar)\s+(saya\s+)?(melanjutkan|lanjutkan|teruskan)/i,
                 /bersambung/i,
-                /to\s*be\s*continued/i
+                /to\s*be\s*continued/i,
+                // [7 Okt 2026, laporan screenshot owner] janji niat MASA DEPAN yang
+                // menutup giliran tanpa tool_calls nyata untuk niat itu, mis. "Mari
+                // saya mulai dengan logo..." setelah tool sebelumnya gagal/menyerah.
+                /(mari|sekarang|baik,?\s*saya)\s+(saya\s+)?(akan\s+)?(mulai|memulai|kerjakan|bangun|buat)/i
             ];
             if (markers.some(function (rx) { return rx.test(tail); })) return true;
             if (/(^|\n)\s*(berikutnya|selanjutnya|tahap|langkah|step)\s*[:：]/i.test(tail) && aiMsgObj && aiMsgObj.toolCalls && aiMsgObj.toolCalls.length) return true;
