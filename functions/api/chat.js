@@ -1448,8 +1448,26 @@ async function fetchGeminiStream(apiKey, model, systemInstruction, contents, too
   return { data: { candidates: [{ content: { parts }, finishReason }] } };
 }
 
+// [7 Okt 2026 v2] Kunci Gemini yang nge-hang (flaky intermiten) dikenai cooldown
+// 10 menit — tanpa ini request berikutnya mencoba kunci mati itu LAGI dan membakar
+// 15 detik per kunci per request (tes: 2 kunci hang beruntun = jawaban 34s padahal
+// kunci sehat menjawab dalam 3s). Kunci terakhir yang sukses dipromosi ke urutan
+// depan. State per-isolate, aman dan gratis.
+const _gmKeyHealth = new Map();
+function _geminiKeyOrder(keys) {
+  const now = Date.now();
+  const good = [], cooled = [];
+  for (const k of keys) {
+    const h = _gmKeyHealth.get(k);
+    if (h && h.badUntil > now) cooled.push(k); else good.push(k);
+  }
+  const last = _gmKeyHealth.get('last-good');
+  if (last && good.indexOf(last) !== -1) { good.splice(good.indexOf(last), 1); good.unshift(last); }
+  return good.concat(cooled);
+}
+
 async function tryModels(apiKeys, systemInstruction, contents, tools, onDelta) {
-  const keys = Array.isArray(apiKeys) ? apiKeys.filter(Boolean) : [apiKeys].filter(Boolean);
+  const keys = _geminiKeyOrder(Array.isArray(apiKeys) ? apiKeys.filter(Boolean) : [apiKeys].filter(Boolean));
   let lastError = null;
   const statuses = [];
   for (const apiKey of keys) {
@@ -1489,11 +1507,15 @@ async function tryModels(apiKeys, systemInstruction, contents, tools, onDelta) {
           finish = rc.data?.candidates?.[0]?.finishReason || '';
         }
       }
+      _gmKeyHealth.set('last-good', apiKey); // kunci ini sehat -> promosi ke depan utk request berikutnya
       if (toolCalls.length > 0) return { tool_calls: toolCalls, text, model };
       if (text) return { text, model };
       lastError = 'Jawaban AI kosong — coba kirim ulang';
       statuses.push(0);
     } catch (err) {
+      if (err && (err.name === 'AbortError' || /aborted|timed? ?out/i.test(String(err.message || '')))) {
+        _gmKeyHealth.set(apiKey, { badUntil: Date.now() + 10 * 60_000 }); // nge-hang -> cooldown 10 menit
+      }
       lastError = err.message;
       statuses.push(0);
     }
