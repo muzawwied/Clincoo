@@ -448,13 +448,19 @@ async function getModelRouterKeys(env) {
   } catch {}
   return keys;
 }
-const MODELROUTER_MODELS = ['glm-5.3-flash'];
+// [7 Okt] nemotron-3-ultra ditambah sebagai model kedua (cadangan) untuk task
+// Build: dicoba setelah glm-5.3-flash gagal/bermasalah. Loop di tryModelRouterText
+// otomatis lanjut ke model berikutnya.
+const MODELROUTER_MODELS = ['glm-5.3-flash', 'nemotron-3-ultra'];
 // [7 Okt] Gateway ModelRouter memotong koneksi pada ~10 detik wall-time per
 // request (diverifikasi: 384 tok = 9.4s OK, 512+ tok / non-stream generasi
 // panjang = HTTP 000). Solusi: potong generasi jadi chunk kecil (256 tok,
 // ~8s) lalu sambung otomatis via AUTO-CONTINUE (finish_reason=length,
 // stream: maks 5 sambungan, non-stream: maks 3) sehingga jawaban tetap utuh.
-const MR_MAX_TOKENS = 256;
+// Budget token per model (chunk kecil, disambung AUTO-CONTINUE):
+// glm-5.3-flash ~48 tok/s -> 256 tok ~8s; nemotron-3-ultra ~19 tok/s -> 128 tok ~7s.
+// Keduanya di bawah potongan gateway MR ~10s wall-time.
+const MR_MAX_TOKENS = { 'glm-5.3-flash': 256, 'nemotron-3-ultra': 128 };
 const MR_ENDPOINT = 'https://modelrouter.id/v1/chat/completions';
 // Label model hasil ModelRouter: kunci harga 'glm-5.3-flash-build' di MODEL_PRICES
 // (2 kredit — build berbayar bagi pemilik, arahan "harganya disesuaikan").
@@ -491,7 +497,7 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta) {
   const { system, chatMsgs } = toOAIChat(messages);
   const oaiTools = oaiToolsOf(gDecls);
   const callMr = (key, model, msgs, stream) => {
-    const p = { model, messages: msgs, max_tokens: MR_MAX_TOKENS };
+    const p = { model, messages: msgs, max_tokens: (MR_MAX_TOKENS && MR_MAX_TOKENS[model]) || 128 };
     if (stream) p.stream = true;
     if (oaiTools) p.tools = oaiTools;
     return fetch(MR_ENDPOINT, {
