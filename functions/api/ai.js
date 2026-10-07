@@ -302,6 +302,13 @@ export async function onRequestGet({ request, env }) {
 
 // ===== POST /api/ai — chat persona Clincoo AI =====
 export async function onRequestPost({ request, env }) {
+  // [8 Okt 2026, arahan pemilik] AI backend = placeholder (dibangun ulang dari nol).
+  // Sama dengan /api/chat: balas instan tanpa auth/kuota/provider, UI dibiarkan.
+  return json({
+    text: 'Maaf, fitur AI Clincoo sedang dibangun ulang dari nol supaya lebih cepat dan stabil. Sementara ini aku belum bisa menjawab pertanyaanmu, tapi fitur AI akan segera aktif kembali. Terima kasih atas kesabarannya ya \u{1F64F}',
+    model: 'placeholder'
+  }, 200);
+  // eslint-disable-next-line no-unreachable
   if (!rateLimitOk(clientIp(request))) return json({ error: 'Terlalu banyak permintaan. Coba lagi sebentar.' }, 429);
 
   const user = await resolveUser(env, request);

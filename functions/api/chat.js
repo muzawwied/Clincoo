@@ -1856,6 +1856,27 @@ export async function onRequestPost({ request, env, waitUntil }) {
       });
     }
 
+    // ===== [8 Okt 2026, arahan pemilik: "AI di backend aja jadiin placeholder, UI biarin"] =====
+    // Placeholder dievaluasi PALING AWAL: tanpa auth, kuota, kunci provider, atau
+    // pipeline apa pun (sebelumnya cek 'Kunci AI belum dikonfigurasi' / kuota bisa
+    // memotong lebih dulu -> UI menampilkan 'gangguan koneksi'). Relay & UI labs
+    // lewat (Orkestra-1 Mini di labs tetap pipeline penuh).
+    const AI_PLACEHOLDER = true;
+    const fromLabsRelay = (request.headers.get('x-labs-relay') || '') === 's0las-labs-relay-4451';
+    const labOrigin = String(request.headers.get('origin') || request.headers.get('referer') || '');
+    const fromLabsUi = labOrigin.indexOf('labs.clincoo.biz.id') !== -1;
+    if (AI_PLACEHOLDER && !fromLabsRelay && !fromLabsUi && action !== 'delete_session' && action !== 'new_session') {
+      const phText = 'Maaf, fitur AI Clincoo sedang dibangun ulang dari nol supaya lebih cepat dan stabil. Sementara ini aku belum bisa menjawab pertanyaanmu, tapi fitur AI akan segera aktif kembali. Terima kasih atas kesabarannya ya \u{1F64F}';
+      const phSid = body.session_id || ('ls_' + Date.now());
+      if (body.stream === true) {
+        const enc = new TextEncoder();
+        const lines = [{ t: 'thinking' }, { t: 'delta', text: phText }, { t: 'final', text: phText, model: 'placeholder', session_id: phSid }]
+          .map(o => JSON.stringify(o) + '\n').join('');
+        return new Response(enc.encode(lines), { headers: { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-store', ...CORS } });
+      }
+      return new Response(JSON.stringify({ text: phText, model: 'placeholder', session_id: phSid }), { headers: { 'Content-Type': 'application/json; charset=utf-8', ...CORS } });
+    }
+
     // --- Auth per-user ---
     // MODE TANPA LOGIN (guest): chat tetap jalan tanpa akun (auth frontend memang
     // sudah dilepas). Identitas guest = IP; kuota harian per-IP (tabel ai_quota,
@@ -1965,30 +1986,6 @@ export async function onRequestPost({ request, env, waitUntil }) {
 
     const processChat = async () => {
     if (streamSend) streamSend({ t: 'thinking' });
-    // ===== [8 Okt 2026, arahan pemilik: "AI-nya dijadiin placeholder dulu, mulai dari 0"] =====
-    // Akar lambat+eror: kunci Emergent produksi MATI ("Gateway key tidak valid") ->
-    // jalur utama menunggu timeout 15s baru jatuh ke balapan. AI dinonaktifkan
-    // sementara: placeholder instan TANPA panggilan provider. Pipeline AI baru
-    // yang bersih (mulai dari 0) dipasang setelah ini.
-    const AI_PLACEHOLDER = true;
-    // [8 Okt, arahan pemilik: "labs biarin nyala"] relay labs (labs.clincoo.biz.id)
-    // LEWATI placeholder — Orkestra-1 Mini di labs tetap pakai pipeline penuh.
-    const fromLabsRelay = (request.headers.get('x-labs-relay') || '') === 's0las-labs-relay-4451';
-    // UI labs (labs.clincoo.biz.id) memanggil /api/chat ini langsung dari browser
-    // (Origin/Referer labs) — Orkestra-1 Mini di produk labs tetap aliran penuh.
-    const labOrigin = String(request.headers.get('origin') || request.headers.get('referer') || '');
-    const fromLabsUi = labOrigin.indexOf('labs.clincoo.biz.id') !== -1;
-    if (AI_PLACEHOLDER && !fromLabsRelay && !fromLabsUi) {
-      const phText = 'Maaf, fitur AI Clincoo sedang dibangun ulang dari nol supaya lebih cepat dan stabil. Sementara ini aku belum bisa menjawab pertanyaanmu, tapi pesanmu tersimpan dan fitur AI akan segera aktif kembali. Terima kasih atas kesabarannya ya 🙏';
-      const phSid = body.session_id || ('ls_' + Date.now());
-      if (streamSend) {
-        streamSend({ t: 'delta', text: phText });
-        streamSend({ t: 'final', text: phText, model: 'placeholder', session_id: phSid });
-        streamWriter.close().catch(() => {});
-        return { text: phText, model: 'placeholder' };
-      }
-      return new Response(JSON.stringify({ text: phText, model: 'placeholder', session_id: phSid }), { headers: { 'Content-Type': 'application/json; charset=utf-8', ...CORS } });
-    }
     // Mode workspace tools.
     // Jalur Gemini: HANYA functionDeclarations (tanpa google_search — kombinasi
     // keduanya ditolak Gemini API dan memicu bug JSON palsu).
