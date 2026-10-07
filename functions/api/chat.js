@@ -950,7 +950,7 @@ async function quotaCheck(env, user, cost = 1) {
 const MODEL_PRICES = {
   'gpt-6-luna-pro': 2,       // cadangan reasoning OpenRouter (biaya provider lebih tinggi)
   'gpt-6.1-sol-pro': 3,      // Sol Pro ASLI (OpenRouter) — pasif, nunggu saldo di-top-up
-  'glm-5.3-flash-build': 2,  // MODE BUILD via ModelRouter (berbayar QRIS) — 2x kredit agar biaya provider tertutup
+  'glm-5.3-flash-build': 4,  // MODE BUILD via ModelRouter (berbayar QRIS) — 4x kredit ≈ 10x biaya provider (0.002 -> 0.02)
   'deepseek-v4-pro': 1,      // jalur utama Clouvia (4 Okt 2026 malam): cepat & stabil di tes nyata, gratis
   'gpt-6.1-sol': 1           // model lama: backend sebenarnya GLM direlabel — 1 kredit jujur
   // semua model lain (glm-5.3-flash, gemini, clouvia, workers-ai, nemotron) = 1
