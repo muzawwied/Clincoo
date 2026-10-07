@@ -448,6 +448,49 @@ async function getModelRouterKeys(env) {
   } catch {}
   return keys;
 }
+// ===== [8 Okt 2026, arahan pemilik: "tambah secret ini sebagai utama"] =====
+// EMERGENT (ai-credit-monitor.preview.emergentagent.com) — gateway OpenAI-compat,
+// model 'auto' (routing otomatis). Terverifikasi 8 Okt: non-stream (stream:true
+// diabaikan), respons 0.4-1.2s, TANPA dukungan tool_calls asli (gateway menulis
+// XML <function_calls> palsu di content) -> kandidat UTAMA untuk hop TEKS MURNI
+// (tanpa tools & tanpa gambar); saat hop berk-tools hanya fallback lemah 8s
+// supaya jalur tool-capable (Gemini/OpenRouter) tetap diprioritaskan.
+const EMERGENT_ENDPOINT = 'https://ai-credit-monitor.preview.emergentagent.com/api/v1/chat/completions';
+async function getEmergentKeys(env) {
+  const keys = [];
+  const seen = new Set();
+  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
+  add(env.EMERGENT_API_KEY);
+  if (!env.DB) return keys;
+  try {
+    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key = 'EMERGENT_API_KEY'").all();
+    for (const r of rows.results || []) add(r.value);
+  } catch {}
+  return keys;
+}
+async function tryEmergentText(keys, messages, onDelta) {
+  for (const k of keys) {
+    try {
+      const res = await fetch(EMERGENT_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + k, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'auto', messages })
+      });
+      if (res.status === 401 || res.status === 403) continue; // kunci mati -> coba kunci berikutnya
+      if (!res.ok) continue;
+      const d = await res.json();
+      const m = (d.choices && d.choices[0] && d.choices[0].message) || {};
+      const raw = typeof m.content === 'string' ? m.content : '';
+      // Buang XML function_calls palsu (gateway tidak mendukung tool asli)
+      const text = raw.replace(/<function_calls>[\s\S]*?<\/function_calls>/g, '').trim();
+      if (text) {
+        if (onDelta) onDelta(text);
+        return { text, model: 'orkestra-1-flash' };
+      }
+    } catch (e) {}
+  }
+  return { error: 'emergent gagal' };
+}
 // [7 Okt] Rantai model berbayar utk task Build (dicoba berurutan oleh
 // tryModelRouterText; model berikutnya dipakai jika sebelumnya gagal).
 // nemotron-3.5-lightning UTAMA (non-reasoning: konten langsung keluar, lolos
@@ -998,6 +1041,7 @@ const MODEL_PRICES = {
   'gpt-6.1-sol-pro': 3,      // Sol Pro ASLI (OpenRouter) — pasif, nunggu saldo di-top-up
   'glm-5.3-flash-build': 4,  // [legacy] entri pemakaian lama sebelum relabel Orkestra
   'orkestra-1-pro': 4,       // MODE BUILD (ModelRouter berbayar QRIS, brand Orkestra) — 4x kredit ≈ 10x biaya provider
+  'orkestra-1-flash': 1,  // Emergent 'auto' (8 Okt) — gateway berbayar rendah, 1 kredit jujur
   'deepseek-v4-pro': 1,      // jalur utama Clouvia (4 Okt 2026 malam): cepat & stabil di tes nyata, gratis
   'gpt-6.1-sol': 1           // model lama: backend sebenarnya GLM direlabel — 1 kredit jujur
   // semua model lain (glm-5.3-flash, gemini, clouvia, workers-ai, nemotron) = 1
@@ -1894,6 +1938,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     const orKeysEarly = await getOpenRouterKeys(env); // kunci OpenRouter (GLM 5.3 — utama)
     const cvKeysEarly = await getClouviaKeys(env); // kunci Clouvia Router — cadangan #1
     const mrKeysEarly = await getModelRouterKeys(env); // kunci ModelRouter — mode Build (berbayar)
+    const emKeysEarly = await getEmergentKeys(env); // [8 Okt] kunci Emergent 'auto' — UTAMA hop teks murni
     const cfAiCreds = await getCfAiCreds(env); // Workers AI REST akun C — pool gratis kedua
 
     if (!orKeysEarly.length && !cvKeysEarly.length && !apiKey.length && !env.AI && !cfAiCreds) {
@@ -1940,6 +1985,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     const workMessages = messages; // array sama — kita append blok function_call/response
     const orKeys = orKeysEarly; // GLM 5.3 Flash (OpenRouter) — UTAMA
     const mrKeys = mrKeysEarly; // ModelRouter (mode Build — berbayar)
+    const emKeys = emKeysEarly; // Emergent 'auto' — UTAMA teks murni (8 Okt)
     // MODE BUILD: user pilih kapsul Build -> model berbayar ModelRouter jadi utama.
     // Hanya user LOGIN — tamu TIDAK boleh membakar biaya provider berbayar.
     // MODE BUILD: (a) user pilih kapsul Build, ATAU (b) mode Chat tapi pesannya
@@ -2026,6 +2072,11 @@ export async function onRequestPost({ request, env, waitUntil }) {
         if (apiKey.length) {
           const { systemInstruction, contents } = toGeminiPayload(workMessages);
           cands.push(cand('P', withTimeout(tryModels(apiKey, systemInstruction, contents, gTools, makeOnDelta('P')), 45000, 'Gemini-utama')));
+        }
+        // KANDIDAT E (UTAMA, 8 Okt): Emergent model 'auto' — teks murni non-stream.
+        if (emKeys.length && !hasImages) {
+          const emCall = () => withTimeout(tryEmergentText(emKeys, workMessages, makeOnDelta('E')), 45000, 'Emergent-race');
+          cands.push(toolDecls ? weakLate('E', emCall) : cand('E', emCall()));
         }
         // KANDIDAT OR: OpenRouter (utk reasoning panjang, napas 90s) — weakLate
         if (orKeys.length) {
@@ -2169,6 +2220,10 @@ export async function onRequestPost({ request, env, waitUntil }) {
         ? 'Semua tool sudah selesai dieksekusi dan seluruh hasilnya tercatat di percakapan. Sekarang tulis RINGKASAN FINAL untuk user dalam Bahasa Indonesia: apa yang sudah dikerjakan, status/hasilnya, URL endpoint bila ada, dan contoh pemakaian singkat. Jangan memanggil tool apa pun — langsung tulis jawabannya sekarang.'
         : 'Kamu dipanggil sebagai AI teks murni dan TIDAK punya tool apa pun — dilarang memanggil atau menjanjikan tool/eksekusi apa pun. Jawab permintaan user secara LENGKAP dan BERISI dalam Bahasa Indonesia sebagai teks biasa: kalau diminta dibuatkan situs/kode, tulis kode lengkapnya sebagai blok kode di jawabanmu; kalau diminta penjelasan, jelaskan tuntas. Langsung tulis jawabannya sekarang.';
       const sumMsgs = workMessages.concat([{ role: 'user', content: sumPrompt }]);
+      if (emKeys.length && !hasImages) {
+        const se = await tryEmergentText(emKeys, sumMsgs, null);
+        if (se && !se.error && String(se.text || '').trim()) r = se;
+      }
       if (orKeys.length && !hasImages) {
         const sm = await tryOpenRouterText(orKeys, sumMsgs, null);
         if (sm && !sm.error && String(sm.text || '').trim()) r = { text: sm.text, model: sm.model };
