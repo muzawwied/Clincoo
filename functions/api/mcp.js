@@ -793,7 +793,14 @@ async function callTool(name, args, ctx) {
       if (!prompt) throw new Error('Parameter prompt wajib diisi');
       if (prompt.length > 8000) throw new Error('Prompt terlalu panjang (maks 8000 karakter)');
       const payload = JSON.stringify({
-        messages: [{ role: 'user', content: prompt }],
+        // [7 Okt 2026] system message sendiri -> SINGLE_SYSTEM_PROMPT builder TIDAK
+        // disuntik (aturannya memaksa model memanggil write_file dsb. padahal hop ini
+        // teks murni tanpa tools -> model memancarkan tool_calls halusinasi ->
+        // 'Chat AI tidak mengembalikan jawaban' di semua prompt kompleks).
+        messages: [
+          { role: 'system', content: 'Kamu AI teks murni yang dipanggil sebagai sub-asisten oleh AI lain melalui tool chat_ai. Kamu TIDAK punya tool apa pun dan TIDAK bisa menulis file/mengeksekusi aksi — DILARANG memanggil atau menjanjikan tool. Jawab permintaan di bawah secara lengkap sebagai TEKS BIASA (Bahasa Indonesia): jika diminta dibuatkan situs/kode, tulis kode lengkapnya sebagai blok kode di jawabanmu.' },
+          { role: 'user', content: prompt }
+        ],
         project_id: projectId,
         save_user_message: false, // hop tool: gak makan kuota chat harian pengguna
         stream: false

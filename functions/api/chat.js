@@ -1896,8 +1896,21 @@ export async function onRequestPost({ request, env, waitUntil }) {
       if (clientCalls.length) break; // tool klien tetap dieksekusi klien seperti biasa
       // semua tool server -> minta giliran model berikutnya (lanjut loop)
     }
+    // [7 Okt 2026, bukti reproduksi owner] Saat TIDAK ada tools yang dideklarasikan
+    // (hop teks murni: chat_ai MCP, /api/ai, klien lama), model kadang MEMANCARKAN
+    // tool_calls halusinasi (gemini-3.6-flash memancarkan 'clincoo:list_items'
+    // padahal tak ada functionDeclarations — system prompt builder menyuruh pakai
+    // tool, model menuruti saja). Respons 200 text:'' + tool_calls ->
+    // chat_ai melempar 'Chat AI tidak mengembalikan jawaban', klien teks macet.
+    // FIX: tool_calls tanpa deklarasi = palsu, BUANG, lalu paksa jawaban teks.
+    if (!toolDecls && r && !r.error && r.tool_calls && r.tool_calls.length) {
+      r = { text: String(r.text || ''), model: r.model };
+    }
     if (r && !r.error && !String(r.text || '').trim() && !(r.tool_calls && r.tool_calls.length)) {
-      const sumMsgs = workMessages.concat([{ role: 'user', content: 'Semua tool sudah selesai dieksekusi dan seluruh hasilnya tercatat di percakapan. Sekarang tulis RINGKASAN FINAL untuk user dalam Bahasa Indonesia: apa yang sudah dikerjakan, status/hasilnya, URL endpoint bila ada, dan contoh pemakaian singkat. Jangan memanggil tool apa pun — langsung tulis jawabannya sekarang.' }]);
+      const sumPrompt = toolDecls
+        ? 'Semua tool sudah selesai dieksekusi dan seluruh hasilnya tercatat di percakapan. Sekarang tulis RINGKASAN FINAL untuk user dalam Bahasa Indonesia: apa yang sudah dikerjakan, status/hasilnya, URL endpoint bila ada, dan contoh pemakaian singkat. Jangan memanggil tool apa pun — langsung tulis jawabannya sekarang.'
+        : 'Kamu dipanggil sebagai AI teks murni dan TIDAK punya tool apa pun — dilarang memanggil atau menjanjikan tool/eksekusi apa pun. Jawab permintaan user secara LENGKAP dan BERISI dalam Bahasa Indonesia sebagai teks biasa: kalau diminta dibuatkan situs/kode, tulis kode lengkapnya sebagai blok kode di jawabanmu; kalau diminta penjelasan, jelaskan tuntas. Langsung tulis jawabannya sekarang.';
+      const sumMsgs = workMessages.concat([{ role: 'user', content: sumPrompt }]);
       if (orKeys.length && !hasImages) {
         const sm = await tryOpenRouterText(orKeys, sumMsgs, null);
         if (sm && !sm.error && String(sm.text || '').trim()) r = { text: sm.text, model: sm.model };
