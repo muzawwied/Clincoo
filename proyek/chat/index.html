@@ -2002,6 +2002,37 @@ window.chatLivePreview = function () {
             lastScrollTop = currentScrollTop <= 0 ? 0 : currentScrollTop;
         });
 
+        // [7 Okt 2026, laporan pemilik: "pesan Lagi ada gangguan koneksi, ga pernah
+        // selesai"] ROOT CAUSE #4 (PALING FUNDAMENTAL): foto dilampirkan TANPA kompresi
+        // (readAsDataURL mentah) -> foto HP 3-6MB jadi base64 4-8MB, sementara server
+        // menolak body > ~2MB (413). Satu foto besar saja membuat SEMUA pesan berikutnya
+        // di sesi itu gagal (payload sama besar dikirim ulang tiap kali) -> error
+        // "gangguan koneksi" yang tidak pernah sembuh. FIX: foto dikecilkan dulu —
+        // sisi terpanjang maks 1024px, JPEG 0.72, dan tetap diturunkan sampai < 900KB.
+        async function compressImageFile(file) {
+            try {
+                const img = await new Promise(function (res, rej) {
+                    const i = new Image();
+                    i.onload = function () { res(i); };
+                    i.onerror = function () { rej(new Error('gambar tidak terbaca')); };
+                    i.src = URL.createObjectURL(file);
+                });
+                const MAX = 1024;
+                let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+                const scale = Math.min(1, MAX / Math.max(w, h));
+                w = Math.max(1, Math.round(w * scale)); h = Math.max(1, Math.round(h * scale));
+                const c = document.createElement('canvas'); c.width = w; c.height = h;
+                const ctx = c.getContext('2d');
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h); // PNG transparan -> latar putih
+                ctx.drawImage(img, 0, 0, w, h);
+                try { URL.revokeObjectURL(img.src); } catch (er) {}
+                let q = 0.72;
+                let out = c.toDataURL('image/jpeg', q);
+                while (out.length > 900000 && q > 0.3) { q -= 0.12; out = c.toDataURL('image/jpeg', q); }
+                return out;
+            } catch (e) { return await readAsDataURL(file); } // gagal kompres -> fallback mentah
+        }
+
         function readAsDataURL(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -2083,7 +2114,7 @@ window.chatLivePreview = function () {
                 let extension = file.name.split('.').pop().toLowerCase();
 
                 if (type === 'image') {
-                    data = await readAsDataURL(file);
+                    data = await compressImageFile(file); // WAJIB kompres — base64 mentah >2MB bikin semua request sesi ini 413 selamanya
                 } else {
                     if (file.type === 'application/pdf' || extension === 'pdf') {
                         text = await loadPDF(file);
@@ -5974,7 +6005,10 @@ window.chatLivePreview = function () {
                                 if (att.type === 'document' && att.text) {
                                     content.push({ type: "text", text: `\n\n[Isi Dokumen Lampiran (${att.name})]:\n${att.text.substring(0, 10000)}` });
                                 } else if (att.type === 'image') {
-                                    if (keepImageIdx.has(idx)) {
+                                    // foto lama atau foto raksasa (base64 > 1.2 juta karakter ~ 900KB):
+                                    // jangan pernah dikirim utuh — itulah pemicu 413 "gangguan koneksi"
+                                    // permanen pada sesi-sesi lama sebelum kompresi aktif.
+                                    if (keepImageIdx.has(idx) && att.data && att.data.length <= 1200000) {
                                         content.push({ type: "image_url", image_url: { url: att.data } });
                                     } else {
                                         content.push({ type: "text", text: '\n\n[Lampiran foto sebelumnya -- tidak disertakan ulang agar riwayat tidak membengkak; sudah dibahas di pesan terkait saat itu]' });
