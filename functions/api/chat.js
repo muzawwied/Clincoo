@@ -298,13 +298,13 @@ async function tryOpenRouterText(keys, messages, gDecls, models, onDelta) {
             // jawaban; sambung otomatis per segmen sambil tetap streaming ke user.
             let full = st.text, seg = st.text, fin2 = st.fin;
             const contMsgs = baseMsgs.slice();
-            for (let sc = 0; sc < 5 && fin2 === 'length'; sc++) {
+            for (let sc = 0; sc < 3 && fin2 === 'length'; sc++) {
               contMsgs.push({ role: 'assistant', content: seg });
               contMsgs.push({ role: 'user', content: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' });
               // LANJUTAN ANTI-KEPOTONG: segmen lanjutan pernah gagal sekali (429/timeout
               // provider) -> dulu langsung break, jawaban terpotong di tengah kalimat.
               // Sekarang coba ulang dengan model berikutnya di rantai sebelum menyerah.
-              const cModels = [model, modelList[(modelList.indexOf(model) + 1) % modelList.length]];
+              const cModels = [model]; // [7 Okt] 1 model per segmen — jangan gandakan subrequest (limit 50/invocation Worker)
               let st2 = null;
               for (const cm of cModels) {
                 try {
@@ -374,7 +374,7 @@ async function tryOpenRouterText(keys, messages, gDecls, models, onDelta) {
       // AUTO-CONTINUE: sambung jawaban terpotong (finish_reason "length")
       let full = text, seg = text, fin = finish;
       const contMsgs = baseMsgs.slice();
-      for (let ac = 0; ac < 3 && fin === 'length'; ac++) {
+      for (let ac = 0; ac < 2 && fin === 'length'; ac++) {
         contMsgs.push({ role: 'assistant', content: seg });
         contMsgs.push({ role: 'user', content: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' });
         let dc = null;
