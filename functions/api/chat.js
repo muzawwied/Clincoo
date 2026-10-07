@@ -449,19 +449,22 @@ async function getModelRouterKeys(env) {
   return keys;
 }
 // [7 Okt] Rantai model berbayar utk task Build (dicoba berurutan oleh
-// tryModelRouterText; model berikutnya dipakai jika sebelumnya gagal):
-// glm-5.3-flash (utama) -> nemotron-3.5-lightning (permintaan user, 7 Okt)
-// -> nemotron-3-ultra (cadangan terakhir).
-const MODELROUTER_MODELS = ['glm-5.3-flash', 'nemotron-3.5-lightning', 'nemotron-3-ultra'];
+// tryModelRouterText; model berikutnya dipakai jika sebelumnya gagal).
+// nemotron-3.5-lightning UTAMA (non-reasoning: konten langsung keluar, lolos
+// jendela potongan gateway MR ~10s; hasil verifikasi 7 Okt: glm-5.3-flash
+// reasoning-nya sendiri melebihi jendela pada prompt build). glm-5.3-flash
+// tetap cadangan (jalan kalau reasoning-nya pendek), ultra terakhir.
+const MODELROUTER_MODELS = ['nemotron-3.5-lightning', 'glm-5.3-flash', 'nemotron-3-ultra'];
 // [7 Okt] Gateway ModelRouter memotong koneksi pada ~10 detik wall-time per
 // request (diverifikasi: 384 tok = 9.4s OK, 512+ tok / non-stream generasi
 // panjang = HTTP 000). Solusi: potong generasi jadi chunk kecil (256 tok,
 // ~8s) lalu sambung otomatis via AUTO-CONTINUE (finish_reason=length,
 // stream: maks 5 sambungan, non-stream: maks 3) sehingga jawaban tetap utuh.
 // Budget token per model (chunk kecil, disambung AUTO-CONTINUE):
-// glm-5.3-flash ~48 tok/s -> 256 tok ~8s; nemotron-3.5-lightning & nemotron-3-ultra
-// ~19-25 tok/s -> 128 tok ~6-8s. Semua di bawah potongan gateway MR ~10s wall-time.
-const MR_MAX_TOKENS = { 'glm-5.3-flash': 256, 'nemotron-3.5-lightning': 128, 'nemotron-3-ultra': 128 };
+// lightning ~22 tok/s tanpa reasoning -> 128 tok ~6s (aman); glm ~48 tok/s tapi
+// reasoning ikut dihitung -> 384 tok ~8s; ultra ~21 tok/s -> 128 tok ~6s.
+// Semua di bawah potongan gateway MR ~10s wall-time.
+const MR_MAX_TOKENS = { 'nemotron-3.5-lightning': 128, 'glm-5.3-flash': 384, 'nemotron-3-ultra': 128 };
 const MR_ENDPOINT = 'https://modelrouter.id/v1/chat/completions';
 // [7 Okt, arahan pemilik: "jadikan model Orkestra di mode build"] Semua respons
 // ModelRouter (glm-5.3-flash -> nemotron-3.5-lightning -> nemotron-3-ultra)
