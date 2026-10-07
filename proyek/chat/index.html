@@ -2008,7 +2008,7 @@ window.chatLivePreview = function () {
         // menolak body > ~2MB (413). Satu foto besar saja membuat SEMUA pesan berikutnya
         // di sesi itu gagal (payload sama besar dikirim ulang tiap kali) -> error
         // "gangguan koneksi" yang tidak pernah sembuh. FIX: foto dikecilkan dulu —
-        // sisi terpanjang maks 1024px, JPEG 0.72, dan tetap diturunkan sampai < 900KB.
+        // sisi terpanjang maks 1024px, JPEG 0.72, diturunkan sampai < 500KB.
         async function compressImageFile(file) {
             try {
                 const img = await new Promise(function (res, rej) {
@@ -2028,7 +2028,7 @@ window.chatLivePreview = function () {
                 try { URL.revokeObjectURL(img.src); } catch (er) {}
                 let q = 0.72;
                 let out = c.toDataURL('image/jpeg', q);
-                while (out.length > 900000 && q > 0.3) { q -= 0.12; out = c.toDataURL('image/jpeg', q); }
+                while (out.length > 500000 && q > 0.3) { q -= 0.12; out = c.toDataURL('image/jpeg', q); } // target < 500KB: 2 foto terakhir + teks riwayat tetap di bawah limit body 1.5MB
                 return out;
             } catch (e) { return await readAsDataURL(file); } // gagal kompres -> fallback mentah
         }
@@ -6005,10 +6005,10 @@ window.chatLivePreview = function () {
                                 if (att.type === 'document' && att.text) {
                                     content.push({ type: "text", text: `\n\n[Isi Dokumen Lampiran (${att.name})]:\n${att.text.substring(0, 10000)}` });
                                 } else if (att.type === 'image') {
-                                    // foto lama atau foto raksasa (base64 > 1.2 juta karakter ~ 900KB):
+                                    // foto lama atau foto raksasa (base64 > 700 ribu karakter ~ 500KB):
                                     // jangan pernah dikirim utuh — itulah pemicu 413 "gangguan koneksi"
                                     // permanen pada sesi-sesi lama sebelum kompresi aktif.
-                                    if (keepImageIdx.has(idx) && att.data && att.data.length <= 1200000) {
+                                    if (keepImageIdx.has(idx) && att.data && att.data.length <= 700000) {
                                         content.push({ type: "image_url", image_url: { url: att.data } });
                                     } else {
                                         content.push({ type: "text", text: '\n\n[Lampiran foto sebelumnya -- tidak disertakan ulang agar riwayat tidak membengkak; sudah dibahas di pesan terkait saat itu]' });
