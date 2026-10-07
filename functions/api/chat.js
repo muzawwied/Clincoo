@@ -212,8 +212,12 @@ function joinSeg(a, b) {
 // dieksekusi setengah rusak), jatuh ke jalur teks/cascade biasa.
 async function completeTruncatedToolArgs(keys, models, baseMsgs, oaiTools, tc) {
   const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
-  for (const key of keyList.slice(0, 2)) {
+  // [7 Okt] MAKS 2 PERCOBAAN TOTAL (1 kunci x 2 model) — 4 subrequest tambahan di
+  // dalam race 6 kandidat memicu "Too many subrequests" (limit 50/invocation Worker).
+  let triesLeft = 2;
+  for (const key of keyList.slice(0, 1)) {
     for (const model of models.slice(0, 2)) {
+      if (triesLeft-- <= 0) return null;
       const partial = tc.args || '';
       const contMsgs = baseMsgs.slice();
       contMsgs.push({ role: 'assistant', content: null, tool_calls: [{ id: 'cut', type: 'function', function: { name: tc.name, arguments: partial } }] });
