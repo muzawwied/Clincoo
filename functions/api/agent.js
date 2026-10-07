@@ -3,7 +3,7 @@
 // SECARA OTOMATIS tanpa konfirmasi per langkah — seperti agen di platform builder:
 //   1. AI menyusun rencana terstruktur (JSON langkah-langkah)
 //   2. Loop server-side menjalankan langkah satu per satu dengan auto-retry
-//      dan failover provider (GLM-5.2 -> DeepSeek V4 -> GLM-4.7 Flash -> Gemini)
+//      dan failover provider (ModelRouter nemotron-3-ultra -> DeepSeek free -> GLM-5.2 -> DeepSeek V4 -> GLM-4.7 Flash -> Gemini)
 //   3. State tersimpan di D1 SETIAP langkah — kena limit/error pun, task di-RESUME
 //      otomatis dari posisi terakhir, bukan mulai dari nol
 // Endpoint (murni backend — frontend belum perlu berubah):
@@ -53,6 +53,30 @@ const MAX_BUDGET_MS = 90_000;
 // ===== Provider chain (sama filosofi /api/ai, model 2026 non-Llama) =====
 const WORKERS_AI_MODELS = ['@cf/zai-org/glm-5.2', '@cf/deepseek-ai/deepseek-v4-flash-0731', '@cf/zai-org/glm-4.7-flash'];
 const GEMINI_MODELS = ['gemini-3.6-flash', 'gemini-3-flash-preview'];
+
+// ===== Provider 0: ModelRouter (modelrouter.id) — orkestrator utama =====
+// nemotron-3-ultra (diuji OK 2026-10-07) + deepseek-v4.1-flash:free sebagai cadangan gratis.
+const MODELROUTER_MODELS = ['nemotron-3-ultra', 'deepseek-v4.1-flash:free'];
+async function tryModelRouter(key, messages) {
+  if (!key) return { error: 'Kunci ModelRouter tidak tersedia' };
+  let lastErr = null;
+  for (const model of MODELROUTER_MODELS) {
+    try {
+      const res = await fetch('https://modelrouter.id/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify({ model, messages, max_tokens: 16384 }),
+        signal: AbortSignal.timeout(25000)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { lastErr = 'ModelRouter ' + model + ': HTTP ' + res.status; continue; }
+      const text = data?.choices?.[0]?.message?.content || '';
+      if (text) return { text, model };
+      lastErr = 'ModelRouter ' + model + ': respons kosong';
+    } catch (e) { lastErr = 'ModelRouter ' + model + ': ' + (e && e.message); }
+  }
+  return { error: lastErr || 'ModelRouter gagal' };
+}
 
 const PLANNER_SYSTEM = `Kamu adalah perencana tugas agent untuk platform Clincoo (pembuatan website dengan AI, template, editor kode, deploy Cloudflare Pages, domain kustom, paket Starter/Pro/Bisnis).
 Tugasmu: pecah TUJUAN user menjadi langkah-langkah eksekusi yang terurut dan konkret.
@@ -150,6 +174,12 @@ async function getGeminiKeys(env) {
 
 // ===== AI call: rantai provider + auto-retry per provider =====
 async function aiCall(env, messages, gemKey) {
+  // 0) ModelRouter — nemotron-3-ultra (orkestrator) -> deepseek free (cadangan)
+  const mrKey = await getEnvKey(env, 'MODELROUTER_API_KEY');
+  if (mrKey) {
+    const mr = await tryModelRouter(mrKey, messages);
+    if (mr.text) return mr;
+  }
   // 1) Workers AI — retry 2x per model (transient rate-limit edge)
   if (env.AI) {
     for (const model of WORKERS_AI_MODELS) {
