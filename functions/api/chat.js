@@ -1371,11 +1371,25 @@ const WORKSPACE_FUNCTION_DECLARATIONS = [
     }, required: ['url'] } }
 ];
 
+// [7 Okt 2026, laporan pemilik: "AI di labs baik2 aja, ga kaya di clincoo app"] AKAR
+// BEDANYA: fetch Gemini TIDAK punya timeout per-permintaan. Satu kunci yang nge-hang
+// (flaky, terjadi intermiten hari ini) menghabisasi SELURUH jendela 30s kandidat
+// Gemini di race -> kunci-kunci sehat lainnya tak pernah dicoba -> jawaban jatuh ke
+// kandidat lemah gratis (kualitas lebih rendah, 30s+) padahal labs (jalur Gemini
+// langsung) menjawab 4 detik. FIX: tiap request Gemini diberi napas 15 detik —
+// kunci nge-hang langsung dilewati, tryModels lanjut ke kunci/model berikutnya.
+const GEMINI_REQ_TIMEOUT_MS = 15000;
+function geminiFetchWithTimeout(url, options) {
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => { try { ctrl.abort(); } catch (e) {} }, GEMINI_REQ_TIMEOUT_MS);
+  return fetch(url, Object.assign({}, options || {}, { signal: ctrl.signal })).finally(() => clearTimeout(tid));
+}
+
 async function fetchGemini(apiKey, model, systemInstruction, contents, tools) {
   const payload = { contents };
   if (tools) payload.tools = tools;
   if (systemInstruction) payload.systemInstruction = { parts: [{ text: systemInstruction }] };
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+  const res = await geminiFetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify(payload)
@@ -1397,7 +1411,7 @@ async function fetchGeminiStream(apiKey, model, systemInstruction, contents, too
   const payload = { contents };
   if (tools) payload.tools = tools;
   if (systemInstruction) payload.systemInstruction = { parts: [{ text: systemInstruction }] };
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`, {
+  const res = await geminiFetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify(payload)
@@ -1971,7 +1985,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
         const cands = [];
         if (apiKey.length) {
           const { systemInstruction, contents } = toGeminiPayload(workMessages);
-          cands.push(cand('P', withTimeout(tryModels(apiKey, systemInstruction, contents, gTools, makeOnDelta('P')), 30000, 'Gemini-utama')));
+          cands.push(cand('P', withTimeout(tryModels(apiKey, systemInstruction, contents, gTools, makeOnDelta('P')), 45000, 'Gemini-utama')));
         }
         // KANDIDAT OR: OpenRouter (utk reasoning panjang, napas 90s) — weakLate
         if (orKeys.length) {
