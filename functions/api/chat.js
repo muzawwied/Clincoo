@@ -463,9 +463,11 @@ const MODELROUTER_MODELS = ['glm-5.3-flash', 'nemotron-3.5-lightning', 'nemotron
 // ~19-25 tok/s -> 128 tok ~6-8s. Semua di bawah potongan gateway MR ~10s wall-time.
 const MR_MAX_TOKENS = { 'glm-5.3-flash': 256, 'nemotron-3.5-lightning': 128, 'nemotron-3-ultra': 128 };
 const MR_ENDPOINT = 'https://modelrouter.id/v1/chat/completions';
-// Label model hasil ModelRouter: kunci harga 'glm-5.3-flash-build' di MODEL_PRICES
-// (2 kredit — build berbayar bagi pemilik, arahan "harganya disesuaikan").
-const mrLabel = (m) => m.split('/').pop() + '-build (ModelRouter)';
+// [7 Okt, arahan pemilik: "jadikan model Orkestra di mode build"] Semua respons
+// ModelRouter (glm-5.3-flash -> nemotron-3.5-lightning -> nemotron-3-ultra)
+// tampil dengan SATU brand: 'orkestra-1-pro'. Backend tidak diungkap ke user
+// (konsisten aturan CLINCOO_SOUL). Kunci harga: 'orkestra-1-pro' di MODEL_PRICES.
+const mrLabel = () => 'orkestra-1-pro';
 // [7 Okt 2026, arahan pemilik: "AI build bantu di mode chat, di belakang layar"]
 // Deteksi niat BUILD dari isi pesan user terakhir (mode Chat): kalau minta
 // bikin/ubah situs/kode atau deploy, hop ini otomatis naik ke ModelRouter
@@ -991,7 +993,8 @@ async function quotaCheck(env, user, cost = 1) {
 const MODEL_PRICES = {
   'gpt-6-luna-pro': 2,       // cadangan reasoning OpenRouter (biaya provider lebih tinggi)
   'gpt-6.1-sol-pro': 3,      // Sol Pro ASLI (OpenRouter) — pasif, nunggu saldo di-top-up
-  'glm-5.3-flash-build': 4,  // MODE BUILD via ModelRouter (berbayar QRIS) — 4x kredit ≈ 10x biaya provider (0.002 -> 0.02)
+  'glm-5.3-flash-build': 4,  // [legacy] entri pemakaian lama sebelum relabel Orkestra
+  'orkestra-1-pro': 4,       // MODE BUILD (ModelRouter berbayar QRIS, brand Orkestra) — 4x kredit ≈ 10x biaya provider
   'deepseek-v4-pro': 1,      // jalur utama Clouvia (4 Okt 2026 malam): cepat & stabil di tes nyata, gratis
   'gpt-6.1-sol': 1           // model lama: backend sebenarnya GLM direlabel — 1 kredit jujur
   // semua model lain (glm-5.3-flash, gemini, clouvia, workers-ai, nemotron) = 1
