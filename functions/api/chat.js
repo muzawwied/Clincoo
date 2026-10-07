@@ -503,11 +503,15 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta) {
   for (const model of modelList) {
     const baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
     let data = null;
-    if (onDelta) {
+    // [7 Okt] SELALU streaming ke ModelRouter: request non-stream dengan generasi
+    // panjang kepotong gateway MR ~10 detik (HTTP 000). Klien yang tidak minta
+    // stream (onDelta null) tetap lewat jalur streaming; delta-nya dibuang dan
+    // hasil utuh dikembalikan sebagai jawaban biasa.
+    {
       try {
         const sr = await callMr(key, model, baseMsgs, true);
         if (sr.ok && sr.body) {
-          const st = await readOAICompatStream(sr, onDelta);
+          const st = await readOAICompatStream(sr, onDelta || (() => {}));
           if (st.text || st.tcs.length) {
             if (st.tcs.length) return { tool_calls: normStreamToolCalls(st.tcs), text: st.text, model: mrLabel(model) };
             // AUTO-CONTINUE STREAM: sambung jawaban terpotong (finish_reason=length).
@@ -519,7 +523,7 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta) {
               try {
                 const cr = await callMr(key, model, contMsgs, true);
                 if (!cr.ok || !cr.body) break;
-                const st2 = await readOAICompatStream(cr, onDelta);
+                const st2 = await readOAICompatStream(cr, onDelta || (() => {}));
                 if (!st2.text) break;
                 full += st2.text; seg = st2.text; fin2 = st2.fin;
               } catch (e2) { break; }
