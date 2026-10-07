@@ -487,7 +487,7 @@ async function tryCfAiRest(creds, messages, gDecls, onDelta) {
         }
       } catch (e) { seg = ''; break; }
       if (!seg && !tcsOut) break;
-      full += seg;
+      full = joinSeg(full, seg);
       if (tcsOut && tcsOut.length) {
         const norm = [];
         for (const c of tcsOut) {
@@ -1856,6 +1856,14 @@ export async function onRequestPost({ request, env, waitUntil }) {
         planGapNudgeCount++;
         workMessages.push({ role: 'assistant', content: r.text });
         workMessages.push({ role: 'user', content: 'Kamu baru menulis rencana/klaim TANPA memanggil tool apa pun — itu janji kosong, bukan progres (lihat aturan (7): dilarang keras). DILARANG mengarang fitur/URL yang tidak pernah disebut sistem (mis. "workspace.clincoo.buzz" atau link publik otomatis) — itu melanggar aturan (3) dilarang mengarang fakta. JANGAN menulis teks apa pun lagi. LANGSUNG panggil tool yang sesuai SEKARANG (write_file untuk tiap file tersisa, generate_image, atau set_project_info) untuk benar-benar melanjutkan pekerjaan.' });
+        // [7 Okt 2026, laporan owner: teks "janji kosong" sudah ter-stream ke layar user
+        // SEBELUM terdeteksi plan-gap (deteksi baru bisa setelah r.text lengkap) -> race
+        // ulang di sHop berikutnya bisa menang kandidat BEDA yang JUGA menulis janji
+        // ("Baik, saya akan memulai...") dan deltanya nempel pas di belakang teks lama
+        // tanpa jeda sama sekali ("...responsif.Baik, saya akan..."). Kirim pemisah
+        // baris kosong SEKARANG supaya segmen janji lama & segmen baru dari race
+        // berikutnya tidak pernah menyatu jadi satu kalimat yang rusak.
+        if (streamSend) { try { streamSend({ t: 'delta', text: '\n\n' }); } catch (e) {} }
         continue; // ulang hop dengan nudge — tetap dalam batas sHop<=4
       }
       const stCalls = (r.tool_calls || []).filter(tc => SERVER_TOOLS.has(tc.name));
