@@ -2030,6 +2030,14 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // [7 Okt 2026, arahan pemilik] GEMINI UTAMA (kunci aktif terverifikasi 200);
       // OpenRouter diturunkan jadi kandidat lemah (masih guna, 4/6 kunci hidup —
       // TIDAK dihapus). Workers AI (glm-4.7-flash, gratis) tetap fallback gratis.
+      // [8 Okt, arahan pemilik: "secret ini sebagai utama"] Hop TEKS MURNI (tanpa
+      // tools & tanpa gambar): Emergent 'auto' dicoba DULU secara berurutan
+      // (terverifikasi 0.4-1.2s). Gagal/lambat (timeout 15s) -> balapan kandidat
+      // biasa di bawah (Gemini/OpenRouter/WorkersAI) tetap menyelamatkan jawaban.
+      if ((!r || r.error) && !toolDecls && emKeys.length && !hasImages) {
+        const e = await withTimeout(tryEmergentText(emKeys, workMessages, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 15000, 'Emergent-utama');
+        if (e && !e.error && String(e.text || '').trim()) r = e;
+      }
       if ((!r || r.error) && (apiKey.length || orKeys.length) && !hasImages) {
         // [6 Okt 2026, arahan owner: "percepat jawaban ai"] MODE RACE 3 KANDIDAT:
         // (P) GLM 5.3 Flash OpenRouter — jalur utama (tools + streaming penuh);
@@ -2073,10 +2081,10 @@ export async function onRequestPost({ request, env, waitUntil }) {
           const { systemInstruction, contents } = toGeminiPayload(workMessages);
           cands.push(cand('P', withTimeout(tryModels(apiKey, systemInstruction, contents, gTools, makeOnDelta('P')), 45000, 'Gemini-utama')));
         }
-        // KANDIDAT E (UTAMA, 8 Okt): Emergent model 'auto' — teks murni non-stream.
-        if (emKeys.length && !hasImages) {
-          const emCall = () => withTimeout(tryEmergentText(emKeys, workMessages, makeOnDelta('E')), 45000, 'Emergent-race');
-          cands.push(toolDecls ? weakLate('E', emCall) : cand('E', emCall()));
+        // KANDIDAT E (8 Okt): hop berk-tools — Emergent TANPA dukungan tool_calls
+        // -> hanya fallback lemah 8s (hop teks murni sudah sekuensial di atas).
+        if (emKeys.length && toolDecls && !hasImages) {
+          cands.push(weakLate('E', () => withTimeout(tryEmergentText(emKeys, workMessages, makeOnDelta('E')), 45000, 'Emergent-race')));
         }
         // KANDIDAT OR: OpenRouter (utk reasoning panjang, napas 90s) — weakLate
         if (orKeys.length) {
