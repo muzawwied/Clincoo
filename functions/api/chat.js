@@ -1974,7 +1974,11 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // [8 Okt, arahan pemilik: "labs biarin nyala"] relay labs (labs.clincoo.biz.id)
     // LEWATI placeholder — Orkestra-1 Mini di labs tetap pakai pipeline penuh.
     const fromLabsRelay = (request.headers.get('x-labs-relay') || '') === 's0las-labs-relay-4451';
-    if (AI_PLACEHOLDER && !fromLabsRelay) {
+    // UI labs (labs.clincoo.biz.id) memanggil /api/chat ini langsung dari browser
+    // (Origin/Referer labs) — Orkestra-1 Mini di produk labs tetap aliran penuh.
+    const labOrigin = String(request.headers.get('origin') || request.headers.get('referer') || '');
+    const fromLabsUi = labOrigin.indexOf('labs.clincoo.biz.id') !== -1;
+    if (AI_PLACEHOLDER && !fromLabsRelay && !fromLabsUi) {
       const phText = 'Maaf, fitur AI Clincoo sedang dibangun ulang dari nol supaya lebih cepat dan stabil. Sementara ini aku belum bisa menjawab pertanyaanmu, tapi pesanmu tersimpan dan fitur AI akan segera aktif kembali. Terima kasih atas kesabarannya ya 🙏';
       const phSid = body.session_id || ('ls_' + Date.now());
       if (streamSend) {
