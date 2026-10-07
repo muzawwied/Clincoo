@@ -57,7 +57,9 @@ export async function ensureProjectTables(db, projectId) {
     const max = await db.prepare('SELECT COALESCE(MAX(base), 900000000) AS m FROM _project_id_bases').first();
     const base = (max?.m || 900000000) + 1000000;
     await db.prepare('INSERT OR IGNORE INTO _project_id_bases (suffix, base) VALUES (?, ?)').bind(s, base).run();
-    baseRow = { base };
+    // [7 Okt 2026] FIX race: baca ulang base yang benar-benar tersimpan — dua proyek
+    // baru bersamaan bisa menghitung base sama; pemenang INSERT yang dipakai.
+    baseRow = await db.prepare('SELECT base FROM _project_id_bases WHERE suffix = ?').bind(s).first() || { base };
   }
   const idBase = baseRow.base;
   await db.prepare(`CREATE TABLE IF NOT EXISTS ${t('chat_sessions')} (
@@ -79,7 +81,11 @@ export async function ensureProjectTables(db, projectId) {
     is_secret INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now'))
   )`).run();
   // Seed AUTOINCREMENT pada base milik proyek ini — id jadi unik global.
-  await db.prepare(`INSERT INTO ${t('env_vars')} (id, project_id, key, value) VALUES (?, '', '__seed__', '__seed__')`).bind(idBase).run();
+  // [7 Okt 2026] FIX "UNIQUE constraint failed: p_..._env_vars.id" — seed dipakai untuk
+  // mengangkat AUTOINCREMENT ke base proyek. Dua request bersamaan (AI menjalankan
+  // command + UI memuat data) membuat INSERT id=base yang sama -> bentrok PRIMARY KEY.
+  // INSERT OR IGNORE: idempotent & race-safe; sqlite_sequence sudah >= base, tujuan tercapai.
+  await db.prepare(`INSERT OR IGNORE INTO ${t('env_vars')} (id, project_id, key, value) VALUES (?, '', '__seed__', '__seed__')`).bind(idBase).run();
   await db.prepare(`DELETE FROM ${t('env_vars')} WHERE key = '__seed__'`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS ${t('project_settings')} (
     project_id TEXT, key TEXT NOT NULL, value TEXT, PRIMARY KEY (project_id, key)
