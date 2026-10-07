@@ -51,7 +51,7 @@ const PREFERRED_MODELS = ['gemini-3.6-flash', 'gemini-3-flash-preview'];
 // ===== AI UTAMA: GLM 5.3 Flash (Workers AI, binding internal) =====
 // Model lama tetap di daftar sebagai cadangan bila GLM 5.3 Flash gagal.
 // GLM 5.x & deepseek-v4 di Workers AI hanya tersedia di plan berbayar (diuji 2026-10-01) —
-// kini GLM 5.3 Flash utama lewat OpenRouter, Workers AI hanya fallback gratis.
+// [7 Okt] Gemini utama (terverifikasi aktif); OpenRouter & Workers AI fallback.
 const WORKERS_AI_MODELS = ['@cf/zai-org/glm-4.7-flash'];
 function textOf(m) {
   if (typeof m.content === 'string') return m.content;
@@ -1927,10 +1927,10 @@ export async function onRequestPost({ request, env, waitUntil }) {
         const sp = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, CLOUVIA_SOL_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 40000, 'ClouviaSolPro').catch(e => ({ error: e.message }));
         if (sp) r = sp;
       }
-      // [5 Okt 2026, arahan owner: "jadikan utama model 5.3 flash tadi"] OPENROUTER
-      // UTAMA kembali: glm-5.3-flash + key baru sehat (tanpa batas reservasi 402).
-      // Workers AI (glm-4.7-flash, gratis) tetap sebagai fallback sebelum Gemini.
-      if ((!r || r.error) && orKeys.length && !hasImages) {
+      // [7 Okt 2026, arahan pemilik] GEMINI UTAMA (kunci aktif terverifikasi 200);
+      // OpenRouter diturunkan jadi kandidat lemah (masih guna, 4/6 kunci hidup —
+      // TIDAK dihapus). Workers AI (glm-4.7-flash, gratis) tetap fallback gratis.
+      if ((!r || r.error) && (apiKey.length || orKeys.length) && !hasImages) {
         // [6 Okt 2026, arahan owner: "percepat jawaban ai"] MODE RACE 3 KANDIDAT:
         // (P) GLM 5.3 Flash OpenRouter — jalur utama (tools + streaming penuh);
         // (G) Gemini 3.6 Flash — biasanya TTFB tercepat (di labs menang 20/22 balapan);
@@ -1941,7 +1941,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
         // Semua kandidat punya dukungan tool_calls — jalur tool tak berubah.
         // Bila P gagal total, hasil kandidat lain dipakai sebelum cascade turun ke Clouvia dst.
         const chainModels = isGuest ? GUEST_OR_MODELS : OPENROUTER_MODELS;
-        let winner = null; // id kandidat pemenang ('P' | 'G' | 'W')
+        let winner = null; // id kandidat pemenang ('P'=Gemini-utama | 'OR' | 'W' | 'W2' | 'F' | 'OK')
         const sendDelta = streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null;
         const makeOnDelta = (id) => sendDelta ? (tx) => {
           if (winner && winner !== id) return;      // sudah ada pemenang lain -> buang delta
@@ -1961,12 +1961,21 @@ export async function onRequestPost({ request, env, waitUntil }) {
         const weakLate = (id, fn) => cand(id, new Promise((resolve, reject) => {
           setTimeout(() => { if (winner) return resolve({ error: 'telat — pemenang sudah ada' }); fn().then(resolve, reject); }, WEAK_DELAY_MS);
         }));
-        // KANDIDAT P: OpenRouter (utama, napas 90s utk reasoning + auto-continue)
-        const cands = [cand('P', withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, chainModels, makeOnDelta('P')), 150000, 'OpenRouter'))];
-        // KANDIDAT G: Gemini 3.6 Flash (napas 25s — sama dengan jalur cadangan lamanya)
+        // [7 Okt 2026, arahan pemilik: "Gemini kalo masih ada model aktif, pasang jadi
+        // utama; OpenRouter kalo udah ga guna hapus"] VERIFIKASI LANGSUNG 7 Okt: kunci
+        // Gemini masih hidup (gemini-3.6-flash + gemini-3-flash-preview balas 200 di
+        // hampir semua kunci) -> GEMINI JADI KANDIDAT UTAMA. OpenRouter juga masih
+        // guna (4/6 kunci masih 200 utk glm-5.3-flash) -> TIDAK dihapus, tapi diturunkan
+        // jadi kandidat lemah (ikut balapan setelah 8s bila Gemini belum mengirim delta).
+        // KANDIDAT P (UTAMA): Gemini 3.6 Flash (napas 30s, dukungan tools penuh)
+        const cands = [];
         if (apiKey.length) {
           const { systemInstruction, contents } = toGeminiPayload(workMessages);
-          cands.push(cand('G', withTimeout(tryModels(apiKey, systemInstruction, contents, gTools, makeOnDelta('G')), 25000, 'Gemini-race')));
+          cands.push(cand('P', withTimeout(tryModels(apiKey, systemInstruction, contents, gTools, makeOnDelta('P')), 30000, 'Gemini-utama')));
+        }
+        // KANDIDAT OR: OpenRouter (utk reasoning panjang, napas 90s) — weakLate
+        if (orKeys.length) {
+          cands.push(weakLate('OR', () => withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, chainModels, makeOnDelta('OR')), 150000, 'OpenRouter')));
         }
         // KANDIDAT W: Workers AI (hanya bila binding ada; gagal cepat bila kuota habis)
         if (aiMain) cands.push(weakLate('W', () => withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 20000, 'WorkersAI-race')));
@@ -1978,7 +1987,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
         // KANDIDAT F: model :free OpenRouter (cohere north-mini-code, spesialis koding,
         // model reasoning). Gratis — jalan untuk guest maupun user login. Gagal cepat
         // (429/402) bila kuota hariannya habis; tidak menahan kandidat lain.
-        if (orKeys.length && !hasImages) {
+        if (orKeys.length) {
           cands.push(weakLate('F', () => withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, FREE_OR_MODELS, makeOnDelta('F')), 45000, 'OpenRouterFree')));
         }
         // KANDIDAT OK: Orkestra-1 Mini (worker labs-pro — balapan 7 model + standar
