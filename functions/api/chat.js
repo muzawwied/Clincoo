@@ -261,7 +261,12 @@ async function tryOpenRouterText(keys, messages, gDecls, models, onDelta) {
   const { system, chatMsgs } = toOAIChat(messages);
   const oaiTools = oaiToolsOf(gDecls);
   let lastErr = null;
+  // [7 Okt] PRUNING KUNCI 402: kunci OpenRouter yang kreditnya habis (402) langsung
+  // di-skip utk model berikutnya — dulu 1 kunci mati membakar 2 subrequest x semua
+  // model, race 6 kandidat lalu menabrak limit 50 subrequest Worker.
+  const deadKeys = new Set();
   for (const key of keyList) {
+    if (deadKeys.has(key)) continue;
   for (const model of modelList) {
     const baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
     let data = null;
@@ -331,6 +336,7 @@ async function tryOpenRouterText(keys, messages, gDecls, models, onDelta) {
         }
         if (!sr.ok) {
           lastErr = `OpenRouter ${model}: HTTP ${sr.status}`;
+          if (sr.status === 402) { deadKeys.add(key); break; } // kredit kunci habis -> jangan coba model lain dgn kunci ini
           // MINIMALKAN ERROR: status transient (rate-limit/limbur server) kasih jeda
           // singkat lalu non-stream di bawah otomatis mencoba ulang model yang sama.
           if (sr.status === 429 || sr.status === 502 || sr.status === 503 || sr.status === 529) await new Promise(r2 => setTimeout(r2, 900));
@@ -346,7 +352,7 @@ async function tryOpenRouterText(keys, messages, gDecls, models, onDelta) {
         body: JSON.stringify(payload)
       });
       data = await res.json().catch(() => ({}));
-      if (!res.ok) { lastErr = `OpenRouter ${model}: HTTP ${res.status}`; continue; }
+      if (!res.ok) { lastErr = `OpenRouter ${model}: HTTP ${res.status}`; if (res.status === 402) { deadKeys.add(key); break; } continue; }
     } catch (e) { lastErr = `OpenRouter ${model}: ${e && e.message}`; continue; }
     const msg = data && data.choices && data.choices[0] && data.choices[0].message;
     const text = (msg && msg.content) || '';
