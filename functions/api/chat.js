@@ -1965,6 +1965,23 @@ export async function onRequestPost({ request, env, waitUntil }) {
 
     const processChat = async () => {
     if (streamSend) streamSend({ t: 'thinking' });
+    // ===== [8 Okt 2026, arahan pemilik: "AI-nya dijadiin placeholder dulu, mulai dari 0"] =====
+    // Akar lambat+eror: kunci Emergent produksi MATI ("Gateway key tidak valid") ->
+    // jalur utama menunggu timeout 15s baru jatuh ke balapan. AI dinonaktifkan
+    // sementara: placeholder instan TANPA panggilan provider. Pipeline AI baru
+    // yang bersih (mulai dari 0) dipasang setelah ini.
+    const AI_PLACEHOLDER = true;
+    if (AI_PLACEHOLDER) {
+      const phText = 'Maaf, fitur AI Clincoo sedang dibangun ulang dari nol supaya lebih cepat dan stabil. Sementara ini aku belum bisa menjawab pertanyaanmu, tapi pesanmu tersimpan dan fitur AI akan segera aktif kembali. Terima kasih atas kesabarannya ya 🙏';
+      const phSid = body.session_id || ('ls_' + Date.now());
+      if (streamSend) {
+        streamSend({ t: 'delta', text: phText });
+        streamSend({ t: 'final', text: phText, model: 'placeholder', session_id: phSid });
+        streamWriter.close().catch(() => {});
+        return { text: phText, model: 'placeholder' };
+      }
+      return new Response(JSON.stringify({ text: phText, model: 'placeholder', session_id: phSid }), { headers: { 'Content-Type': 'application/json; charset=utf-8', ...CORS } });
+    }
     // Mode workspace tools.
     // Jalur Gemini: HANYA functionDeclarations (tanpa google_search — kombinasi
     // keduanya ditolak Gemini API dan memicu bug JSON palsu).
