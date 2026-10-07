@@ -887,7 +887,7 @@
                         </button>
                         <button type="button" onclick="applyAiMode('build')" class="w-full flex items-center px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-left cursor-pointer">
                             <span class="inline-flex items-center gap-1.5">Build
-                            <span class="build-mode-crown hidden inline-flex items-center" title="Fitur premium (4 kredit per build)">
+                            <span class="build-mode-crown hidden inline-flex items-center" title="Fitur premium">
                                 <svg class="w-3.5 h-3.5" style="color: var(--accent-color, #b45309)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"></path>
                                 </svg>
@@ -7435,7 +7435,7 @@ function crownAction(e){
 </script>
 <script>
   // Crown di opsi Build (menu mode AI): tampil untuk paket Starter — gaya konsisten dgn crown di profil/upgrade.
-  // + PEMBATASAN: klik Build oleh user Starter memunculkan konfirmasi kredit (4 kredit/jawaban) sebelum mode aktif.
+  // + PEMBATASAN: klik Build oleh user Starter memunculkan halaman pembatasan full-screen (sama seperti gate fitur editor) dengan CTA Lihat Paket. Tanpa menyebut jumlah kredit.
   (function(){
     var SUB_API = (location.hostname.indexOf('github.io') !== -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/subscription';
     fetch(SUB_API).then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
@@ -7450,24 +7450,9 @@ function crownAction(e){
     var origApply = window.applyAiMode;
     if (!origApply) return;
     function showBuildGate(){
-      var dark = document.body.classList.contains('dark-mode');
-      var acc = 'var(--accent-color, #b45309)';
-      var ov = document.createElement('div');
-      ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
-      var card = 'background:' + (dark ? '#0a0a0a' : '#fff') + ';border:1px solid ' + (dark ? '#262626' : '#e5e7eb') + ';border-radius:16px;max-width:320px;width:100%;padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.25);';
-      var title = 'font-size:15px;font-weight:700;color:' + (dark ? '#fff' : '#111') + ';';
-      var desc = 'font-size:13px;color:' + (dark ? '#9ca3af' : '#6b7280') + ';margin:8px 0 16px;line-height:1.5;';
-      var btnC = 'flex:1;padding:10px;border-radius:12px;border:1px solid ' + (dark ? '#333' : '#e5e7eb') + ';background:' + (dark ? '#111' : '#f9fafb') + ';color:' + (dark ? '#e5e7eb' : '#374151') + ';font-size:13px;font-weight:600;cursor:pointer;';
-      var btnO = 'flex:1;padding:10px;border-radius:12px;border:none;background:' + (dark ? '#fff' : '#111') + ';color:' + (dark ? '#111' : '#fff') + ';font-size:13px;font-weight:600;cursor:pointer;';
-      ov.innerHTML = '<div style="' + card + '">'
-        + '<div style="display:flex;align-items:center;gap:8px">'
-        + '<svg class="w-4 h-4" style="color:' + acc + '" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>'
-        + '<span style="' + title + '">Mode Build (premium)</span></div>'
-        + '<p style="' + desc + '">Mode ini memakai 4 kredit per jawaban (model premium untuk membangun web lebih cepat). Kredit diambil dari kuota langganan atau Paket Kredit AI.</p>'
-        + '<div style="display:flex;gap:8px"><button id="build-gate-cancel" style="' + btnC + '">Batal</button><button id="build-gate-ok" style="' + btnO + '">Lanjut</button></div></div>';
-      document.body.appendChild(ov);
-      document.getElementById('build-gate-cancel').onclick = function(){ ov.remove(); };
-      document.getElementById('build-gate-ok').onclick = function(){ ov.remove(); origApply('build'); };
+      // Halaman pembatasan full-screen ala gate editor (CTA: Lihat Paket) — tanpa menyebut kredit.
+      if (typeof window.clincooFeatureGate === 'function') { window.clincooFeatureGate('Pro'); return; }
+      origApply('build'); // fallback bila gate belum termuat: biarkan backend yang menegakkan batasan.
     }
     window.applyAiMode = function(id){
       try {
