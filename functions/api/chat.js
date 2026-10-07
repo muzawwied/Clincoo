@@ -449,7 +449,10 @@ async function getModelRouterKeys(env) {
   return keys;
 }
 const MODELROUTER_MODELS = ['glm-5.3-flash'];
-const MR_MAX_TOKENS = 2048;
+// [7 Okt] ModelRouter memotong koneksi jika max_tokens > 1024 (diverifikasi
+// 7 Okt: 2048 -> HTTP 000/connection cut, 1024 -> lancar). Jawaban panjang
+// tetap utuh via AUTO-CONTINUE (finish_reason=length di-sambung otomatis).
+const MR_MAX_TOKENS = 1024;
 const MR_ENDPOINT = 'https://modelrouter.id/v1/chat/completions';
 // Label model hasil ModelRouter: kunci harga 'glm-5.3-flash-build' di MODEL_PRICES
 // (2 kredit — build berbayar bagi pemilik, arahan "harganya disesuaikan").
