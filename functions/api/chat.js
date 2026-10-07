@@ -454,6 +454,31 @@ const MR_ENDPOINT = 'https://modelrouter.id/v1/chat/completions';
 // Label model hasil ModelRouter: kunci harga 'glm-5.3-flash-build' di MODEL_PRICES
 // (2 kredit — build berbayar bagi pemilik, arahan "harganya disesuaikan").
 const mrLabel = (m) => m.split('/').pop() + '-build (ModelRouter)';
+// [7 Okt 2026, arahan pemilik: "AI build bantu di mode chat, di belakang layar"]
+// Deteksi niat BUILD dari isi pesan user terakhir (mode Chat): kalau minta
+// bikin/ubah situs/kode atau deploy, hop ini otomatis naik ke ModelRouter
+// tanpa user pindah mode — jawaban jadi cepat & presisi di belakang layar.
+// Pertanyaan biasa TIDAK kena (tetap jalur gratis).
+const BUILD_INTENT_VERBS = /\b(?:buat(?:kan)?|bikin(?:kan)?|bangun(?:kan)?|edit|ubah|tambah(?:kan)?|perbaiki|benarkan|benerin|fix|hapus|deploy|publish|publikasikan|terbitkan|remake|redesign|desain\ ulang|custom)\b/i;
+const BUILD_INTENT_OBJECTS = /\b(?:situs|site|website|web|halaman|page|landing|homepage|kode|code|html|css|javascript|komponen|navbar|footer|form|formulir|tabel|blog|toko|profil|portofolio|proyek|project|fitur|banner|hero|section|web\ app)\b/i;
+function detectBuildIntent(messages) {
+  try {
+    if (!Array.isArray(messages) || !messages.length) return false;
+    let lastUser = null;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i] && messages[i].role === 'user') { lastUser = messages[i]; break; }
+    }
+    if (!lastUser) return false;
+    const c = lastUser.content;
+    let txt = typeof c === 'string' ? c : (Array.isArray(c) ? c.map(p => (p && typeof p === 'object') ? (p.text || '') : String(p || '')).join(' ') : '');
+    txt = String(txt || '').toLowerCase();
+    if (!txt) return false;
+    // Perintah eksplisit ala builder
+    if (/\b(?:build|deploy|publish)\b/.test(txt)) return true;
+    // Pasangan kata kerja aksi + objek situs/kode
+    return BUILD_INTENT_VERBS.test(txt) && BUILD_INTENT_OBJECTS.test(txt);
+  } catch (e) { return false; }
+}
 async function tryModelRouterText(keys, messages, gDecls, models, onDelta) {
   const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
   if (!keyList.length) return null;
@@ -1841,7 +1866,10 @@ export async function onRequestPost({ request, env, waitUntil }) {
     const mrKeys = mrKeysEarly; // ModelRouter (mode Build — berbayar)
     // MODE BUILD: user pilih kapsul Build -> model berbayar ModelRouter jadi utama.
     // Hanya user LOGIN — tamu TIDAK boleh membakar biaya provider berbayar.
-    const buildMode = body.mode === 'build' && !isGuest && !!mrKeys.length && !hasImages;
+    // MODE BUILD: (a) user pilih kapsul Build, ATAU (b) mode Chat tapi pesannya
+    // minta bikin/ubah situs/kode -> AI build (ModelRouter) bantu di belakang
+    // layar. Hanya user LOGIN — tamu TIDAK boleh membakar biaya provider.
+    const buildMode = (body.mode === 'build' || detectBuildIntent(body.messages)) && !isGuest && !!mrKeys.length && !hasImages;
     const aiMain = !!(env.AI && !hasImages);
     const toolDecls = (gTools && gTools[0] && gTools[0].functionDeclarations) || null;
     // Cascade lengkap (OpenRouter -> Clouvia -> Workers AI -> Gemini) dijalankan
