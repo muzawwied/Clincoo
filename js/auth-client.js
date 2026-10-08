@@ -192,7 +192,11 @@ try {
     var p = origFetch.call(this, input, init);
     return p.then(function (res) {
       try {
-        if (res.status === 401 && !isAuthPage && isApi && !isAuthApi) {
+        // [8 Okt 2026] Hanya redirect ke login kalau request MEMBAWA token (sesi basi).
+        // 401 utk pengunjung anonim di halaman publik (galeri/homepage) jangan usir pengunjung.
+        var carriedToken = false;
+        try { carriedToken = !!headers.get('Authorization'); } catch (e) { carriedToken = !!getToken(); }
+        if (res.status === 401 && carriedToken && !isAuthPage && isApi && !isAuthApi) {
           location.replace(AUTH_URL + '?next=' + encodeURIComponent(location.href));
         }
       } catch (e) {}

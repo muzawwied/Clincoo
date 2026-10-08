@@ -256,7 +256,10 @@ var ClincooTemplates = (function () {
   function refreshPlan() {
     try {
       var tok = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || '';
-      fetch(API_BASE + '/subscription?fields=plan', { cache: 'no-store', headers: tok ? { 'Authorization': 'Bearer ' + tok } : {} })
+      // [8 Okt 2026] Tanpa token jangan panggil API: /api/subscription membalas 401 utk anonim
+      // dan auth-client melempar semua 401 ke halaman login — galeri & homepage harus tetap publik.
+      if (!tok) return;
+      fetch(API_BASE + '/subscription?fields=plan', { cache: 'no-store', headers: { 'Authorization': 'Bearer ' + tok } })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (d) {
           if (d && d.plan) {
@@ -278,7 +281,7 @@ var ClincooTemplates = (function () {
   // gratis -> "Gratis"; PRO -> crown + "PRO"; bayar kredit -> teks harga (coret harga dasar bila ada diskon paket).
   var CROWN_MINI = '<svg class="w-3 h-3 text-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/></svg>';
   function tplLabelHtml(key) {
-    if (PRO_TEMPLATES.indexOf(key) !== -1) return CROWN_MINI + '<span class="ml-1 font-semibold text-gray-400">PRO</span>';
+    if (PRO_TEMPLATES.indexOf(key) !== -1) return isProPlan() ? '' : CROWN_MINI + '<span class="ml-1 font-semibold text-gray-400">PRO</span>';
     if (CREDIT_TEMPLATES.indexOf(key) !== -1) {
       var priceRp = priceRpForPlan(planFromCache());
       if (priceRp < AI_BASE_RP) {
@@ -293,7 +296,10 @@ var ClincooTemplates = (function () {
       var scope = root || document;
       scope.querySelectorAll('[data-tpl-label]').forEach(function (el) {
         var k = el.getAttribute('data-tpl-label');
-        if (k) el.innerHTML = tplLabelHtml(k);
+        if (!k) return;
+        var html = tplLabelHtml(k);
+        el.innerHTML = html;
+        el.style.display = html ? '' : 'none';
       });
     } catch (e) {}
   }
@@ -532,15 +538,27 @@ var ClincooTemplates = (function () {
       localStorage.setItem('clincoo_workspace_files_' + pid, JSON.stringify(unflatten(flat)));
     } catch (e) {}
 
-    // 3) Sinkron file ke D1 (per-akun) — fire & forget, workspace akan menarik saat dibuka
-    try {
-      fetch(API_BASE + '/project-files', {
+    // 3+5) Sinkron file ke D1 (per-akun) BERTAHAP lalu masuk Workspace.
+    // [8 Okt 2026, laporan pemilik: "file template AI Router kadang sebagian hilang"]
+    // Sebelumnya: satu POST 245 file (fire & forget) -> Worker free plan tewas di
+    // tengah CPU limit -> cloud hanya punya SEBAGIAN file -> saat editor dibuka,
+    // cloud-first sync menimpa data lokal yang lengkap -> file hilang sebagian.
+    // Sekarang: kirim 40 file/POST pakai keep_paths lengkap (anti saling hapus),
+    // semuanya di-aw sampai selesai BARU redirect. Gagal pun, workspace membaca
+    // localStorage yang sudah lengkap + editor akan mendorong ulang ke cloud.
+    var allPaths = flat.map(function (f) { return f.path; });
+    function pushBatch(from) {
+      var batch = flat.slice(from, from + 40);
+      if (!batch.length) return Promise.resolve(true);
+      return fetch(API_BASE + '/project-files', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ project_id: pid, files: flat })
-      }).catch(function () {});
-    } catch (e) {}
-
+        body: JSON.stringify({ project_id: pid, files: batch, replace: from === 0, keep_paths: allPaths })
+      }).then(function (r) { return r.ok; }).catch(function () { return false; }).then(function (ok) {
+        if (!ok) return false; // berhenti di batch gagal; editor akan mendorong ulang nanti
+        return pushBatch(from + 40);
+      });
+    }
     // 4) Nama aplikasi proyek = nama template (dipakai sebagai subdomain saat deploy pertama)
     try {
       fetch(API_BASE + '/project-settings', {
@@ -550,9 +568,11 @@ var ClincooTemplates = (function () {
       }).catch(function () {});
     } catch (e) {}
 
-    // 5) Buka workspace — websitenya sudah jadi
+    // 5) Buka workspace — tunggu cloud siap supaya tidak ada file yang tertinggal
     try { localStorage.setItem('clincoo_current_project_id', pid); } catch (e) {}
-    window.location.href = WS_URL + '?id=' + pid;
+    pushBatch(0).catch(function () {}).then(function () {
+      window.location.href = WS_URL + '?id=' + pid;
+    });
   }
 
   // ---------- LIHAT PREVIEW: screenshot web asli ----------

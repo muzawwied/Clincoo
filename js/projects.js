@@ -354,6 +354,7 @@ function _ensureDeleteModal() {
                     okBtn.classList.remove('cc-spin');
                     _closeDeleteModal();
                     _removeProjectLocally(id);
+                    _unqueuePendingDelete(id);
                     _showToast('Proyek dihapus', 'success');
                     return;
                 }
@@ -448,6 +449,8 @@ function _ensureDeleteModal() {
         // (fire-and-forget + retry diam-diam), jadi hapus TERASA instan tanpa menunggu jaringan.
         _closeDeleteModal();
         _removeProjectLocally(id);
+        _queuePendingDelete(id); // [8 Okt 2026] tombstone SEJAK AWAL: tab ditutup di tengah retry / sync balik,
+                                 // proyek terhapus tidak boleh dihidupkan ulang dari server sebelum server benar2 hapus.
         _showToast('Proyek dihapus', 'success');
         _deleteProjectInBackground(id);
     });

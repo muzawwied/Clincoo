@@ -279,8 +279,15 @@ export async function onRequestPost({ request, env }) {
       }
     }
 
+    // ==== SIMPAN MASSAL ATOMIK via db.batch() (2026-10-08) ====
+    // Dulu: satu-satu await per file (245 file template AI Router = 245 round-trip D1)
+    // -> Worker free plan (~10ms CPU/request) tewas di tengah loop -> HANYA SEBAGIAN
+    // file tersimpan di cloud -> saat dibuka di Workspace, cloud "menang" dan menimpa
+    // data lokal lengkap -> file template hilang sebagian. Sekarang semua INSERT dikumpulkan
+    // lalu dieksekusi dalam SATU db.batch() (transaksi, atomik: semua-atau-tidak-sama-sekali).
     const keepPaths = [];
     const errors = [];
+    const stmts = [];
     for (const f of filesToSave) {
       const path = String((f && f.path) || '').trim();
       if (!path) continue;
@@ -293,49 +300,88 @@ export async function onRequestPost({ request, env }) {
         // me-reset baris file + chunk lama, sisanya menambah. JANGAN dipakai
         // bersama replace:true (keepPaths hanya berisi path file ini).
         const idx = Math.max(0, parseInt(f.chunk_idx || '0', 10) || 0);
-        const total = Math.max(1, parseInt(f.chunk_total || '1', 10) || 1);
         if (String(path).slice(-1) === '/') continue;
         if (idx === 0) {
-          await db.prepare(
-            `INSERT INTO ${T.files} (project_id, path, content, is_big, size, updated_at) VALUES (?, ?, '', 1, ?, datetime('now'))
-             ON CONFLICT(project_id, path) DO UPDATE SET content = '', is_big = 1, size = excluded.size, updated_at = datetime('now')`
-          ).bind(projectId, path, Number(f.total_bytes) || 0).run();
-          await db.prepare(`DELETE FROM ${chunksTable} WHERE path = ?`).bind(path).run();
+          stmts.push(
+            db.prepare(
+              `INSERT INTO ${T.files} (project_id, path, content, is_big, size, updated_at) VALUES (?, ?, '', 1, ?, datetime('now'))
+               ON CONFLICT(project_id, path) DO UPDATE SET content = '', is_big = 1, size = excluded.size, updated_at = datetime('now')`
+            ).bind(projectId, path, Number(f.total_bytes) || 0),
+            db.prepare(`DELETE FROM ${chunksTable} WHERE path = ?`).bind(path)
+          );
         }
-        await db.prepare(`INSERT OR REPLACE INTO ${chunksTable} (path, idx, chunk) VALUES (?, ?, ?)`).bind(path, idx, f.chunk_b64).run();
+        stmts.push(db.prepare(`INSERT OR REPLACE INTO ${chunksTable} (path, idx, chunk) VALUES (?, ?, ?)`).bind(path, idx, f.chunk_b64));
         continue;
       }
       if (f && f.cloud) {
-        // Penanda file besar: konten sudah ada di server — cukup pastikan barisnya ada
-        const row = await db.prepare(`SELECT path FROM ${T.files} WHERE project_id = ? AND path = ?`).bind(projectId, path).first();
-        if (!row) {
-          await db.prepare(
-            `INSERT INTO ${T.files} (project_id, path, content, is_big, size, updated_at) VALUES (?, ?, '', 1, ?, datetime('now'))`
-          ).bind(projectId, path, Number(f.size) || 0).run();
-        }
+        // Penanda file besar: konten sudah ada di server — cukup pastikan barisnya ada.
+        // INSERT OR IGNORE: jangan sentuh baris yang sudah ada (isi nyata di server menang).
+        stmts.push(
+          db.prepare(`INSERT OR IGNORE INTO ${T.files} (project_id, path, content, is_big, size, updated_at) VALUES (?, ?, '', 1, ?, datetime('now'))`)
+            .bind(projectId, path, Number(f.size) || 0)
+        );
         continue;
       }
       const content = f && typeof f.content === 'string' ? f.content : '';
       const contentB64 = f && typeof f.content_b64 === 'string' && f.content_b64.length ? f.content_b64 : null;
+      // ==== kumpulkan statement utk path ini (menggantikan saveFile yang await satu-satu) ====
+      let isBig = false, sizeBytes = 0, b64Str = '';
+      if (typeof contentB64 === 'string' && contentB64.length) {
+        isBig = true; b64Str = contentB64; sizeBytes = decB64Bytes(b64Str);
+        try {
+          const decoded = atob(b64Str);
+          if (decoded.startsWith('data:')) {
+            const comma = decoded.indexOf(',');
+            if (comma > 0) sizeBytes = decB64Bytes(decoded.slice(comma + 1));
+          }
+        } catch (e) {}
+      } else if (String(content || '').length > SMALL_MAX_CHARS) {
+        isBig = true; b64Str = b64(String(content)); sizeBytes = decB64Bytes(b64Str);
+      } else {
+        sizeBytes = new TextEncoder().encode(String(content || '')).length;
+      }
+      if (isBig && sizeBytes > BIG_MAX_BYTES) { errors.push('File terlalu besar (maksimal 25MB): ' + path); continue; }
       if (!contentB64 && !content && String(path).slice(-1) !== '/') {
         // konten kosong tanpa base64 pada file biasa: JANGAN menimpa isi bila baris sudah ada
-        // (mis. pohon marker dari perangkat lain) — pertahankan isi lama
-        const row = await db.prepare(`SELECT path FROM ${T.files} WHERE project_id = ? AND path = ?`).bind(projectId, path).first();
-        if (row) continue;
+        // (INSERT OR IGNORE mempertahankan isi lama; kalau belum ada, buat baris penanda)
+        stmts.push(
+          db.prepare(`INSERT OR IGNORE INTO ${T.files} (project_id, path, content, is_big, size, updated_at) VALUES (?, ?, '', 0, ?, datetime('now'))`)
+            .bind(projectId, path, sizeBytes)
+        );
+        continue;
       }
-      const r = await saveFile(db, T.files, chunksTable, projectId, path, content, contentB64);
-      if (r && r.error) errors.push(r.error);
+      if (!isBig) {
+        stmts.push(
+          db.prepare(
+            `INSERT INTO ${T.files} (project_id, path, content, is_big, size, updated_at) VALUES (?, ?, ?, 0, ?, datetime('now'))
+             ON CONFLICT(project_id, path) DO UPDATE SET content = excluded.content, is_big = 0, size = excluded.size, updated_at = datetime('now')`
+          ).bind(projectId, path, String(content || ''), sizeBytes)
+        );
+      } else {
+        stmts.push(
+          db.prepare(
+            `INSERT INTO ${T.files} (project_id, path, content, is_big, size, updated_at) VALUES (?, ?, '', 1, ?, datetime('now'))
+             ON CONFLICT(project_id, path) DO UPDATE SET content = '', is_big = 1, size = excluded.size, updated_at = datetime('now')`
+          ).bind(projectId, path, sizeBytes),
+          db.prepare(`DELETE FROM ${chunksTable} WHERE path = ?`).bind(path)
+        );
+        for (let i = 0; i < b64Str.length; i += CHUNK_CHARS) {
+          stmts.push(db.prepare(`INSERT INTO ${chunksTable} (path, idx, chunk) VALUES (?, ?, ?)`).bind(path, Math.floor(i / CHUNK_CHARS), b64Str.slice(i, i + CHUNK_CHARS)));
+        }
+      }
     }
+    if (stmts.length) await db.batch(stmts);
 
-    // replace: hapus path yang tidak ikut (sinkron hapus/rename dari klien)
+    // replace: hapus path yang tidak ikut (sinkron hapus/rename dari klien).
+    // body.keep_paths: daftar path LENGKAP lintas batch (klien bertahap) — jadi
+    // replace:true pada batch 1..N tidak menghapus file milik batch lain.
     if (body.replace === true) {
       const all = await db.prepare(`SELECT path FROM ${T.files} WHERE project_id = ?`).bind(projectId).all();
-      const keep = new Set(keepPaths);
+      const keep = new Set(Array.isArray(body.keep_paths) && body.keep_paths.length ? body.keep_paths.map(String) : keepPaths);
       const orphans = (all.results || []).map(r => r.path).filter(p => !keep.has(p));
-      for (const p of orphans) {
-        await db.prepare(`DELETE FROM ${T.files} WHERE project_id = ? AND path = ?`).bind(projectId, p).run();
-      }
-      await deleteChunks(db, chunksTable, orphans);
+      const delStmts = orphans.map(p => db.prepare(`DELETE FROM ${T.files} WHERE project_id = ? AND path = ?`).bind(projectId, p));
+      delStmts.push(...orphans.map(p => db.prepare(`DELETE FROM ${chunksTable} WHERE path = ?`).bind(p)));
+      if (delStmts.length) await db.batch(delStmts);
     }
 
     // Update project's updated_at in projects table if exists

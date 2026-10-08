@@ -1245,18 +1245,38 @@ function linkedCloudPushNow(attempt,keepalive){
   });
   linkedEmptyFolders.forEach(f=>files.push({path:f+'/',content:''}));
   const H=Object.assign({'Content-Type':'application/json'},ccAuthHeaders());
-  const opt={method:'POST',headers:H,body:JSON.stringify({project_id:LINK_PID,files,replace:true})};
-  if(keepalive)opt.keepalive=true;
-  fetch(WS_API,opt)
-    .then(r=>r.json().then(d=>({ok:r.ok,status:r.status,d:d})).catch(()=>({ok:false,status:r.status,d:null})))
+  if(keepalive){ // flush saat tab ditutup: POST kecil saja yang mungkin; batch besar tidak muat keepalive (64KB)
+    const opt={method:'POST',headers:H,body:JSON.stringify({project_id:LINK_PID,files,replace:true}),keepalive:true};
+    fetch(WS_API,opt).catch(()=>{});
+    return;
+  }
+  // [8 Okt 2026, laporan pemilik: file template AI Router sebagian hilang]
+  // Push raksasa satu-POST (245 file) membunuh Worker free plan (~10ms CPU) di tengah
+  // loop -> cloud hanya menyimpan SEBAGIAN file. Sekarang: kirim bertahap 40 file/POST
+  // dengan keep_paths lengkap (server memakainya untuk replace agar batch tidak saling
+  // menghapus), lalu verifikasi jumlah baris seperti biasa.
+  const allPaths=files.map(f=>f.path);
+  const BATCH=40;
+  const batches=[];
+  for(let i=0;i<files.length;i+=BATCH)batches.push(files.slice(i,i+BATCH));
+  const sendBatch=(bi)=>bi>=batches.length?Promise.resolve({ok:true,status:200,d:{success:true}})
+    :fetch(WS_API,{method:'POST',headers:H,body:JSON.stringify({project_id:LINK_PID,files:batches[bi],replace:true,keep_paths:allPaths})})
+      .then(r=>r.json().then(d=>({ok:r.ok,status:r.status,d:d})).catch(()=>({ok:false,status:r.status,d:null})))
+      .then(res=>{
+        if(!res.ok||!res.d||res.d.error){
+          const quotaMsg=(res.status===402&&res.d&&res.d.error)?res.d.error:null;
+          if(attempt<2&&!quotaMsg){
+            setTimeout(()=>linkedCloudPushNow(attempt+1,keepalive),1500*(attempt+1));
+            return {retry:true};
+          }
+          return {fail:quotaMsg};
+        }
+        return sendBatch(bi+1);
+      });
+  sendBatch(0)
     .then(res=>{
-      if(!res.ok||!res.d||res.d.error){
-        // 402 = kuota workspace penuh: pesan spesifik, tanpa retry cepat berulang-ulang
-        const quotaMsg=(res.status===402&&res.d&&res.d.error)?res.d.error:null;
-        if(attempt<2&&!quotaMsg){setTimeout(()=>linkedCloudPushNow(attempt+1,keepalive),1500*(attempt+1));return;}
-        wsSyncFail(quotaMsg);
-        return;
-      }
+      if(!res||res.retry)return; // sudah dijadwalkan retry
+      if(res.fail){wsSyncFail(res.fail);return;}
       return fetch(WS_API+'?project_id='+encodeURIComponent(LINK_PID)+'&meta=1',{headers:ccAuthHeaders()})
         .then(r=>r.ok?r.json():Promise.reject())
         .then(d=>{

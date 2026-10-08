@@ -277,7 +277,7 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
             imgWrap.appendChild(img);
 
             var body = document.createElement('div');
-            body.className = 'p-4';
+            body.className = 'p-4 relative';
             var catEl = document.createElement('span');
             catEl.className = 'inline-block text-[10px] font-semibold tracking-wide uppercase text-gray-400 dark:text-gray-500 mb-1.5';
             catEl.textContent = t.cat;
@@ -292,7 +292,8 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
             var labelEl = document.createElement('p');
             labelEl.setAttribute('data-tpl-label', t.key);
             labelEl.className = 'text-xs text-gray-400 dark:text-gray-500 flex items-center flex-shrink-0';
-            try { labelEl.innerHTML = ClincooTemplates.tplLabelHtml(t.key); } catch (e) { labelEl.textContent = ''; }
+            labelEl.className = 'absolute top-4 right-4 text-xs text-gray-400 dark:text-gray-500 flex items-center';
+            try { labelEl.innerHTML = ClincooTemplates.tplLabelHtml(t.key); labelEl.style.display = labelEl.innerHTML ? '' : 'none'; } catch (e) { labelEl.style.display = 'none'; }
 
             // Meta komunitas: icon user = pencipta, icon gunakan = jumlah dipakai, icon mata = kunjungan
             if (t.community) {
@@ -326,12 +327,9 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
             var txtCol = document.createElement('div');
             txtCol.className = 'flex flex-col flex-1 overflow-hidden';
             // [8 Okt 2026, arahan pemilik] label harga/PRO di pojok kanan, sejajar dengan judul
-            var titleRow = document.createElement('div');
-            titleRow.className = 'flex items-center justify-between gap-2 w-full';
-            title.className = 'text-sm font-bold mb-1 truncate flex-1';
-            titleRow.appendChild(title);
-            titleRow.appendChild(labelEl);
-            txtCol.appendChild(titleRow);
+            // [8 Okt 2026, arahan pemilik] label nempel tembok kanan kartu: absolut pojok kanan-atas body
+            title.className = 'text-sm font-bold mb-1 truncate pr-28';
+            txtCol.appendChild(title);
             txtCol.appendChild(desc);
             row.appendChild(txtCol);
 
@@ -389,6 +387,7 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
             row.appendChild(dotsWrap);
 
             body.appendChild(catEl);
+            body.appendChild(labelEl);
             body.appendChild(row);
             card.appendChild(imgWrap);
             card.appendChild(body);
