@@ -1113,11 +1113,11 @@
             const authUrl = "https://github.com/login/oauth/authorize?client_id=" + GITHUB_CLIENT_ID + "&scope=" + encodeURIComponent(scope) + "&redirect_uri=" + encodeURIComponent(targetRedirect);
             window.location.href = authUrl;
         }
-        async function exchangeCodeForToken(code) {
+        async function exchangeCodeForToken(code, redirectUriOverride) {
             const res = await fetch('/api/github-oauth', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clincooAuthToken() },
-                body: JSON.stringify({ code: code, redirect_uri: getRedirectUri() })
+                body: JSON.stringify({ code: code, redirect_uri: redirectUriOverride || getRedirectUri() })
             });
             const data = await res.json().catch(function () { return {}; });
             if (data && data.upgrade_needed) throw new Error(data.error || 'Fitur ini tersedia di paket Pro & Bisnis.');
@@ -1193,7 +1193,11 @@
                 window.history.replaceState({}, document.title, getRedirectUri());
                 document.getElementById('github-loading').classList.remove('hidden');
                 try {
-                    const token = await exchangeCodeForToken(codeParam);
+                    // redirect_uri tukar token HARUS persis sama dengan yang dipakai saat
+                    // authorize — termasuk param ?back= bila connect dimulai dari editor.
+                    const backParam = urlParams.get('back') || '';
+                    const exchangeUri = window.location.origin + window.location.pathname + (backParam ? '?back=' + encodeURIComponent(backParam) : '');
+                    const token = await exchangeCodeForToken(codeParam, exchangeUri);
                     localStorage.setItem('clincoo_gh_token', token);
                     let userData = null;
                     try {
@@ -1203,6 +1207,9 @@
                     if (userData) localStorage.setItem('clincoo_gh_user', JSON.stringify(userData));
                     document.getElementById('github-loading').classList.add('hidden');
                     updateConnectedUI(userData || { login: 'Terhubung', avatar_url: '', name: 'GitHub', public_repos: 0 });
+                    // Connect dimulai dari editor (proyek/code) -> balik ke editor; token
+                    // tersimpan di localStorage origin yang sama.
+                    if (backParam) { window.location.replace(backParam); return; }
                     window.location.href = location.hostname === 'muzawwied.github.io' ? 'github.html' : '/integrasi/github/';
                     return;
                 } catch (ex) {

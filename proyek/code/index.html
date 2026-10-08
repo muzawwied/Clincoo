@@ -1458,7 +1458,11 @@
       // Remember that the import modal was open so we can reopen it after the OAuth redirect
       localStorage.setItem('clincoo_github_modal_open', '1');
 
-      const redirectUri = window.location.origin + window.location.pathname;
+      // Callback OAuth harus ke URL yang TERDAFTAR di GitHub App (halaman Integrasi) —
+      // URL editor (punya ?id=proyek, berubah-ubah) ditolak GitHub sebagai redirect_uri.
+      // Integrasi menyimpan token lalu memantulkan balik ke editor via ?back=...
+      const editorUrl = window.location.origin + window.location.pathname + window.location.search;
+      const redirectUri = window.location.origin + '/integrasi/?back=' + encodeURIComponent(editorUrl);
       const authUrl = 'https://github.com/login/oauth/authorize?client_id=' + GITHUB_CLIENT_ID +
         '&scope=repo%20user:email&redirect_uri=' + encodeURIComponent(redirectUri);
 
@@ -2531,6 +2535,11 @@ function clincooLaunchEditor(pid) {
       const oauthCode = urlParams.get('code');
       if (oauthCode) {
         handleGitHubOAuthCallback(oauthCode);
+      } else if (localStorage.getItem('clincoo_github_modal_open') && getGitHubToken()) {
+        // Balik dari Integrasi setelah connect GitHub (redirect-dance ?back=) —
+        // token sudah tersimpan di localStorage; buka lagi modal import.
+        localStorage.removeItem('clincoo_github_modal_open');
+        try { triggerImport('github'); } catch (e) {}
       }
     })();
 
