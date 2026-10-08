@@ -6446,6 +6446,7 @@ window.chatLivePreview = function () {
                     }
                     isFetchComplete = true;
                 } catch (e) {
+                    try { window.__lastChatErr = { name: e && e.name, msg: e && e.message, stack: String((e && e.stack) || '').slice(0, 400), t: Date.now() }; console.error('[Clincoo chat] error:', e); } catch (_e) {}
                     if (e.name !== 'AbortError') {
                         if (e.message === '__QUOTA__') {
                             const qMsg = e.quotaMsg || 'Kuota/limit AI sedang penuh.';
@@ -6560,7 +6561,7 @@ window.chatLivePreview = function () {
                         // FIX: kalau AI SUDAH menelurkan jawaban (terstream) sebelum error,
                         // jawaban itu JANGAN dihilangkan — tetap tersimpan dan tampil; pesan
                         // gangguan hanya menjadi catatan kecil di bawahnya.
-                        const errText = "Lagi ada gangguan koneksi sebentar.";
+                        const errText = "Lagi ada gangguan koneksi sebentar." + (window.__lastChatErr ? "\n\n[diag] " + (window.__lastChatErr.name || '') + ": " + String(window.__lastChatErr.msg || '').slice(0, 160) : "");
                         const answeredSoFar = (deltaStreamed || '').trim() || (streamingBuffer || '').trim();
                         const msgIndex = messages.findIndex(m => m.id === aiMsgObj.id);
                         if (answeredSoFar) {
