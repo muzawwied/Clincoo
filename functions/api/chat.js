@@ -1807,6 +1807,42 @@ async function tryOrkestraMini(messages) {
 
 export async function onRequestPost({ request, env, waitUntil }) {
   try {
+    // ===== [8 Okt 2026] AI PLACEHOLDER — dievaluasi PALING PERTAMA =====
+    // Laporan pemilik: "masih thinking lalu muncul 'Lagi ada gangguan koneksi
+    // sebentar.'". Akar masalah: gate rate-limit/ukuran body (middleware cap
+    // 1.5MB guest, handler 2MB) menolak request SEBELUM placeholder berjalan
+    // (sesi chat lama berisi riwayat+foto+hasil tool membesar > cap) -> client
+    // jatuh ke fallback /api/ai -> middleware menolak guest (401) -> semua jalur
+    // gagal -> user lihat "gangguan koneksi". Fix: placeholder jadi respons
+    // pertama TANPA membaca body besar (hanya parse <= 2MB utk stream/session/
+    // action); body raksasa langsung dijawab stream (client menangani ndjson
+    // maupun JSON, dua-duanya).
+    const AI_PLACEHOLDER = true;
+    const fromLabsRelay = (request.headers.get('x-labs-relay') || '') === 's0las-labs-relay-4451';
+    const labOrigin = String(request.headers.get('origin') || request.headers.get('referer') || '');
+    const fromLabsUi = labOrigin.indexOf('labs.clincoo.biz.id') !== -1;
+    if (AI_PLACEHOLDER && !fromLabsRelay && !fromLabsUi) {
+      let phBody = {};
+      const phCl = parseInt(request.headers.get('content-length') || '0', 10);
+      if (phCl <= 2_000_000) { try { phBody = await request.json() || {}; } catch (e) { phBody = {}; } }
+      const phAction = phBody.action || 'send';
+      if (phAction === 'delete_session') {
+        return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json', ...CORS } });
+      }
+      if (phAction === 'new_session') {
+        return new Response(JSON.stringify({ session_id: phBody.session_id || ('ls_' + Date.now()), title: phBody.title || 'Percakapan Baru' }), { headers: { 'Content-Type': 'application/json', ...CORS } });
+      }
+      const phText = 'Maaf, fitur AI Clincoo sedang dibangun ulang dari nol supaya lebih cepat dan stabil. Sementara ini aku belum bisa menjawab pertanyaanmu, tapi fitur AI akan segera aktif kembali. Terima kasih atas kesabarannya ya \u{1F64F}';
+      const phSid = phBody.session_id || ('ls_' + Date.now());
+      if (phBody.stream === true || phCl > 2_000_000) {
+        const enc = new TextEncoder();
+        const lines = [{ t: 'thinking' }, { t: 'delta', text: phText }, { t: 'final', text: phText, model: 'placeholder', session_id: phSid }]
+          .map(o => JSON.stringify(o) + '\n').join('');
+        return new Response(enc.encode(lines), { headers: { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-store', ...CORS } });
+      }
+      return new Response(JSON.stringify({ text: phText, model: 'placeholder', session_id: phSid }), { headers: { 'Content-Type': 'application/json; charset=utf-8', ...CORS } });
+    }
+
     if (!rateLimitOk(clientIp(request))) {
       return new Response(JSON.stringify({ error: 'Terlalu banyak permintaan. Coba lagi dalam 1 menit.' }), {
         status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': '60', ...CORS }
@@ -1856,26 +1892,6 @@ export async function onRequestPost({ request, env, waitUntil }) {
       });
     }
 
-    // ===== [8 Okt 2026, arahan pemilik: "AI di backend aja jadiin placeholder, UI biarin"] =====
-    // Placeholder dievaluasi PALING AWAL: tanpa auth, kuota, kunci provider, atau
-    // pipeline apa pun (sebelumnya cek 'Kunci AI belum dikonfigurasi' / kuota bisa
-    // memotong lebih dulu -> UI menampilkan 'gangguan koneksi'). Relay & UI labs
-    // lewat (Orkestra-1 Mini di labs tetap pipeline penuh).
-    const AI_PLACEHOLDER = true;
-    const fromLabsRelay = (request.headers.get('x-labs-relay') || '') === 's0las-labs-relay-4451';
-    const labOrigin = String(request.headers.get('origin') || request.headers.get('referer') || '');
-    const fromLabsUi = labOrigin.indexOf('labs.clincoo.biz.id') !== -1;
-    if (AI_PLACEHOLDER && !fromLabsRelay && !fromLabsUi && action !== 'delete_session' && action !== 'new_session') {
-      const phText = 'Maaf, fitur AI Clincoo sedang dibangun ulang dari nol supaya lebih cepat dan stabil. Sementara ini aku belum bisa menjawab pertanyaanmu, tapi fitur AI akan segera aktif kembali. Terima kasih atas kesabarannya ya \u{1F64F}';
-      const phSid = body.session_id || ('ls_' + Date.now());
-      if (body.stream === true) {
-        const enc = new TextEncoder();
-        const lines = [{ t: 'thinking' }, { t: 'delta', text: phText }, { t: 'final', text: phText, model: 'placeholder', session_id: phSid }]
-          .map(o => JSON.stringify(o) + '\n').join('');
-        return new Response(enc.encode(lines), { headers: { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-store', ...CORS } });
-      }
-      return new Response(JSON.stringify({ text: phText, model: 'placeholder', session_id: phSid }), { headers: { 'Content-Type': 'application/json; charset=utf-8', ...CORS } });
-    }
 
     // --- Auth per-user ---
     // MODE TANPA LOGIN (guest): chat tetap jalan tanpa akun (auth frontend memang

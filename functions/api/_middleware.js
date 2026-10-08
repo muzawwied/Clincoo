@@ -30,7 +30,7 @@ import { initTables as initAuthTables, getUserByToken, getToken } from './auth/s
 //             (clc_pay_...) demi situs deploy; action lain tetap cek sesi (requireOwned).
 // /api/mcp  -> publik: klien AI luar tidak punya sesi Clincoo; handler mcp.js
 //             memverifikasi token MCP per proyek + izin read/write/delete sendiri.
-const PUBLIC = [/^\/api\/admin\/auth(\/|$)/, /^\/api\/pay(\/|$)/, /^\/api\/mcp(\/|$)/, /^\/api\/fn-db(\/|$)/, /^\/api\/beta-claim(\/|$)/, /^\/api\/promo(\/|$)/, /^\/api\/template-submissions(\/|$)/, /^\/api\/auth(\/|$)/, /^\/api\/github-oauth(\/|$)/, /^\/api\/topup(-qris)?(\/|$)/, /^\/api\/wallet(\/|$)/, /^\/api\/scheduled-tasks(\/|$)/, /^\/api\/user-report-sync(\/|$)/, /^\/api\/wallet-sync(\/|$)/, /^\/api\/collab(\/|$)/, /^\/api\/chat(\/|$)/, /^\/api\/prompt-templates(\/|$)/, /^\/api\/wa(\/|$)/, /^\/api\/email(\/|$)/, /^\/api\/promo-email(\/|$)/];
+const PUBLIC = [/^\/api\/admin\/auth(\/|$)/, /^\/api\/pay(\/|$)/, /^\/api\/ai$/, /^\/api\/mcp(\/|$)/, /^\/api\/fn-db(\/|$)/, /^\/api\/beta-claim(\/|$)/, /^\/api\/promo(\/|$)/, /^\/api\/template-submissions(\/|$)/, /^\/api\/auth(\/|$)/, /^\/api\/github-oauth(\/|$)/, /^\/api\/topup(-qris)?(\/|$)/, /^\/api\/wallet(\/|$)/, /^\/api\/scheduled-tasks(\/|$)/, /^\/api\/user-report-sync(\/|$)/, /^\/api\/wallet-sync(\/|$)/, /^\/api\/collab(\/|$)/, /^\/api\/chat(\/|$)/, /^\/api\/prompt-templates(\/|$)/, /^\/api\/wa(\/|$)/, /^\/api\/email(\/|$)/, /^\/api\/promo-email(\/|$)/];
 
 // ---- 1. RATE LIMIT (anti-DDoS L7 / anti-brute-force) ----
 const _buckets = new Map(); // key -> array timestamp
@@ -192,8 +192,14 @@ export async function onRequest({ request, env, next }) {
   }
 
   // 3. Cap ukuran body (anti flood payload besar)
+  // [8 Okt 2026] Pengecualian: POST /api/chat & /api/ai (mode placeholder AI) —
+  // sesi chat lama bisa >1.5MB (riwayat+foto+hasil tool); gate ini dulunya membuat
+  // request gagal SEBELUM placeholder dijawab -> client jatuh ke fallback -> guest
+  // ditolak 401 -> user lihat "Lagi ada gangguan koneksi". Handler placeholder
+  // TIDAK membaca body besar, jadi tidak ada risiko flood ekstra di jalur ini.
   const cl = parseInt(request.headers.get('content-length') || '0', 10);
-  if (cl > 1500000) {
+  const aiPhBypass = mutates && ((/^\/api\/chat(\/|$)/.test(path)) || path === '/api/ai');
+  if (cl > 1500000 && !aiPhBypass) {
     // Pengecualian: simpan file workspace (/api/project-files) — file media besar
     // (mp3 dll) dikirim klien sebagai SATU body JSON berisi content_b64, jadi butuh
     // cap lebih besar. HANYA untuk request yang LOGIN: token divalidasi dulu;
