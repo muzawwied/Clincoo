@@ -77,11 +77,11 @@ export async function onRequestGet({ request, env }) {
       };
     });
 
-    // ---- Pemakaian: total, per hari (tab Chat) ----
+    // ---- Pemakaian: total + rincian per pesan (tab Chat) ----
     let usage = [];
     try {
       const r = await db.prepare(
-        'SELECT ts, cost FROM ai_usage WHERE user_key = ? ORDER BY ts DESC LIMIT 500'
+        'SELECT ts, in_chars, out_chars, cost FROM ai_usage WHERE user_key = ? ORDER BY ts DESC LIMIT 100'
       ).bind(userKey).all();
       usage = r.results || [];
     } catch (e) {}
@@ -91,19 +91,19 @@ export async function onRequestGet({ request, env }) {
       terpakai = (r && r.t) || 0;
     } catch (e) {}
 
-    const perHari = new Map(); // key: yyyy-mm-dd (Asia/Jakarta)
-    usage.forEach(u => {
+    // Rincian per pesan — TANPA nama provider: selalu "Clincoo Ai".
+    // Input/output = jumlah karakter teks masuk/keluar yang dicatat /api/chat.
+    const chatLog = usage.map(u => {
       const d = new Date(u.ts);
-      const key = d.toLocaleDateString('en-CA', { timeZone: TZ }); // yyyy-mm-dd
-      let e = perHari.get(key);
-      if (!e) { e = { _d: d, tanggal: fmtTanggal(d), pesan: 0, kredit: 0 }; perHari.set(key, e); }
-      e.pesan++;
-      e.kredit += u.cost || 0;
+      return {
+        tanggal: fmtTanggal(d) + ' · ' + fmtJam(d),
+        nama: 'Clincoo Ai',
+        input: u.in_chars || 0,
+        output: u.out_chars || 0,
+        status: 'Berhasil',
+        kredit: u.cost || 0
+      };
     });
-    const chatHarian = Array.from(perHari.values())
-      .sort((a, b) => b._d - a._d)
-      .slice(0, 30)
-      .map(e => ({ tanggal: e.tanggal, pesan: e.pesan, kredit: e.kredit }));
 
     // ---- Integrasi AI (tab): per fitur Clincoo — TANPA nama provider ----
     let totalPesan = 0;
@@ -126,7 +126,7 @@ export async function onRequestGet({ request, env }) {
       saldo,
       terpakai,
       riwayat,
-      chatHarian,
+      chatLog,
       integrasi
     });
   } catch (e) {
