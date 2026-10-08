@@ -113,7 +113,7 @@
         </div>
 
         <!-- Tab: Riwayat Transaksi -->
-        <div id="panel-transaksi" class="tab-panel mt-4 divide-y divide-gray-100 border-t border-gray-100"></div>
+        <div id="panel-transaksi" class="tab-panel mt-4 overflow-x-auto"></div>
 
         <!-- Tab: Chat (table) -->
         <div id="panel-chat" class="tab-panel hidden mt-4 overflow-x-auto"></div>
@@ -142,7 +142,7 @@ function goBack() { if (history.length > 1) history.back(); else location.href =
 // dipotong /api/chat — jadi saldo selalu sinkron dengan pemakaian nyata.
 // Sinkron antar tab: BroadcastChannel 'clincoo_kredit_sync' (chat menyiarkan
 // tiap AI selesai menjawab) + poll ringan sebagai fallback.
-var state = { saldo: 0, terpakai: 0, riwayat: [], chatLog: [], integrasi: [], email: '' };
+var state = { saldo: 0, terpakai: 0, riwayat: [], chatHarian: [], integrasi: [], email: '' };
 
 function fmt(n) { return Number(n || 0).toLocaleString('id-ID'); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -163,44 +163,49 @@ function render(saldoChanged) {
         ? fmt(state.terpakai) + ' kredit terpakai sejauh ini'
         : 'Belum ada kredit terpakai';
 
-    // Tab Transaksi
+    // Tab Transaksi — tabel lengkap: sumber, kredit, harga, status, masa aktif, waktu
     var el = document.getElementById('panel-transaksi');
     if (!state.riwayat.length) {
         el.innerHTML = emptyBlock('Belum ada riwayat kredit.', 'history');
     } else {
-        el.innerHTML = state.riwayat.map(function (r) {
-            return '<div class="flex items-center justify-between py-3">' +
-                '<div class="flex items-center gap-3">' +
-                '<div class="w-9 h-9 rounded-full bg-white border border-gray-100 flex items-center justify-center"><i data-lucide="plus" class="w-4 h-4 text-emerald-500"></i></div>' +
-                '<div><p class="text-[13px] font-bold text-gray-900">+' + fmt(r.kredit) + ' kredit</p>' +
-                '<p class="text-[11px] text-gray-400 font-medium">' + esc(r.metode) + ' · ' + esc(r.waktu) + '</p></div></div>' +
-                '<p class="text-[13px] font-bold text-gray-900 mono">' + esc(r.harga) + '</p></div>';
-        }).join('');
+        el.innerHTML = '<div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead><tr class="text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100"><th class="py-2.5 pr-2">Sumber</th><th class="py-2.5 text-right">Kredit</th><th class="py-2.5 px-3 text-right">Sisa</th><th class="py-2.5 px-3 text-right">Harga</th><th class="py-2.5 px-3 text-center">Status</th><th class="py-2.5 pl-4 text-right">Waktu</th></tr></thead><tbody class="divide-y divide-gray-100">' +
+            state.riwayat.map(function (r) {
+                var on = r.status === 'Aktif';
+                return '<tr>' +
+                    '<td class="py-3 pr-2"><p class="text-[13px] font-semibold text-gray-900">' + esc(r.sumber) + '</p>' +
+                    (r.hingga ? '<p class="text-[11px] text-gray-400 font-medium mt-0.5">Aktif hingga ' + esc(r.hingga) + '</p>' : '') + '</td>' +
+                    '<td class="py-3 text-right text-[13px] font-bold text-emerald-600 mono">+' + fmt(r.kredit) + '</td>' +
+                    '<td class="py-3 px-3 text-right text-[13px] font-medium text-gray-700 mono">' + fmt(r.sisa) + '</td>' +
+                    '<td class="py-3 px-3 text-right text-[13px] font-bold text-gray-900 mono">' + esc(r.harga) + '</td>' +
+                    '<td class="py-3 px-3 text-center"><span class="text-[10px] font-bold ' + (on ? 'text-emerald-600' : 'text-gray-400') + ' bg-gray-100 rounded-full px-2.5 py-1">' + esc(r.status) + '</span></td>' +
+                    '<td class="py-3 pl-4 text-right text-[12px] text-gray-400 font-medium whitespace-nowrap">' + esc(r.waktu) + '</td></tr>';
+            }).join('') + '</tbody></table></div>';
     }
 
-    // Tab Chat (tabel)
+    // Tab Chat — pemakaian per hari (tanpa nama provider): tanggal, jumlah pesan, kredit
     var pc = document.getElementById('panel-chat');
-    var chat = state.chatLog || [];
+    var chat = state.chatHarian || [];
     if (chat.length) {
-        pc.innerHTML = '<table class="w-full text-left border-collapse"><thead><tr class="text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100"><th class="py-2.5 pr-2">Percakapan</th><th class="py-2.5 text-right">Kredit</th><th class="py-2.5 pl-4 text-right">Waktu</th></tr></thead><tbody class="divide-y divide-gray-100">' +
+        pc.innerHTML = '<table class="w-full text-left border-collapse"><thead><tr class="text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100"><th class="py-2.5 pr-2">Tanggal</th><th class="py-2.5 text-center">Pesan</th><th class="py-2.5 pl-4 text-right">Kredit</th></tr></thead><tbody class="divide-y divide-gray-100">' +
             chat.map(function (c) {
-                return '<tr><td class="py-2.5 pr-2 text-[13px] font-semibold text-gray-900">' + esc(c.judul) + '</td>' +
-                    '<td class="py-2.5 text-right text-[13px] font-bold text-gray-900 mono">' + fmt(c.kredit) + '</td>' +
-                    '<td class="py-2.5 pl-4 text-right text-[12px] text-gray-400 font-medium">' + esc(c.waktu) + '</td></tr>';
+                return '<tr><td class="py-2.5 pr-2 text-[13px] font-semibold text-gray-900">' + esc(c.tanggal) + '</td>' +
+                    '<td class="py-2.5 text-center text-[13px] font-medium text-gray-700 mono">' + fmt(c.pesan) + '</td>' +
+                    '<td class="py-2.5 pl-4 text-right text-[13px] font-bold text-gray-900 mono">' + fmt(c.kredit) + '</td></tr>';
             }).join('') + '</tbody></table>';
     } else {
         pc.innerHTML = emptyBlock('Belum ada penggunaan kredit.', 'history');
     }
 
-    // Tab Integrasi AI (tabel)
+    // Tab Integrasi AI — per fitur Clincoo (tanpa nama provider)
     var pi = document.getElementById('panel-integrasi');
     var intg = state.integrasi || [];
     if (intg.length) {
-        pi.innerHTML = '<table class="w-full text-left border-collapse"><thead><tr class="text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100"><th class="py-2.5 pr-2">Integrasi</th><th class="py-2.5 text-center">Status</th><th class="py-2.5 pl-4 text-right">Kredit Terpakai</th></tr></thead><tbody class="divide-y divide-gray-100">' +
+        pi.innerHTML = '<table class="w-full text-left border-collapse"><thead><tr class="text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100"><th class="py-2.5 pr-2">Integrasi</th><th class="py-2.5 text-center">Status</th><th class="py-2.5 px-3 text-center">Pesan</th><th class="py-2.5 pl-4 text-right">Kredit Terpakai</th></tr></thead><tbody class="divide-y divide-gray-100">' +
             intg.map(function (i) {
                 var on = i.status === 'Aktif';
                 return '<tr><td class="py-2.5 pr-2 text-[13px] font-semibold text-gray-900">' + esc(i.nama) + '</td>' +
                     '<td class="py-2.5 text-center"><span class="text-[10px] font-bold ' + (on ? 'text-emerald-600' : 'text-gray-400') + ' bg-gray-100 rounded-full px-2.5 py-1">' + esc(i.status) + '</span></td>' +
+                    '<td class="py-2.5 px-3 text-center text-[13px] font-medium text-gray-700 mono">' + fmt(i.pesan) + '</td>' +
                     '<td class="py-2.5 pl-4 text-right text-[13px] font-bold text-gray-900 mono">' + fmt(i.kredit) + '</td></tr>';
             }).join('') + '</tbody></table>';
     } else {
@@ -245,7 +250,7 @@ async function load(isRefresh) {
         state.saldo = data.saldo || 0;
         state.terpakai = data.terpakai || 0;
         state.riwayat = data.riwayat || [];
-        state.chatLog = data.chatLog || [];
+        state.chatHarian = data.chatHarian || [];
         state.integrasi = data.integrasi || [];
         state.email = data.email || '';
         // Top Up ke kredit-ai dengan email terpasang otomatis -> grant langsung ke akun ini
