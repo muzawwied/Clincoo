@@ -1462,6 +1462,12 @@
       const authUrl = 'https://github.com/login/oauth/authorize?client_id=' + GITHUB_CLIENT_ID +
         '&scope=repo%20user:email&redirect_uri=' + encodeURIComponent(redirectUri);
 
+      // Editor sering dibuka di dalam iframe (panel Workspace di chat). Halaman login
+      // GitHub menolak dimuat di iframe (X-Frame-Options) -> halaman putih/ikon rusak.
+      // Maka keluar ke window paling atas untuk alur OAuth.
+      try {
+        if (window.top && window.top !== window.self) { window.top.location.href = authUrl; return; }
+      } catch (e) {}
       window.location.href = authUrl;
     }
 
