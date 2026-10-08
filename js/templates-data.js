@@ -237,7 +237,8 @@ var ClincooTemplates = (function () {
   }
 
   // ---------- Template premium (hanya Paket Pro & Bisnis) ----------
-  var PRO_TEMPLATES = ['properti', 'saas', 'ai-router'];
+  var PRO_TEMPLATES = ['properti', 'saas'];          // khusus paket Pro & Bisnis
+  var CREDIT_TEMPLATES = ['ai-router'];             // wajib bayar 15.000 kredit, semua paket
 
   function planFromCache() {
     try { return (JSON.parse(localStorage.getItem('clincoo_subscription_cache') || 'null') || {}).plan || 'Starter'; }
@@ -246,9 +247,73 @@ var ClincooTemplates = (function () {
   function isProPlan() { var p = planFromCache(); return p === 'Pro' || p === 'Bisnis'; }
 
 
-  // ---------- TEMPLATE PRO: beli per-buah pakai saldo kredit AI ----------
-  // [8 Okt 2026, arahan pemilik] Template PRO berharga 15.000 kredit.
-  // Paket langganan Pro & Bisnis tetap dapat semua template PRO tanpa potong kredit.
+  // ---------- TEMPLATE PRO: hanya untuk paket Pro & Bisnis ----------
+  // [8 Okt 2026, arahan pemilik] Template PRO = khusus paket Pro/Bisnis. User Starter tidak bisa
+  // memakainya dan ditahan tembok penghalang yang sama gayanya dengan CTA editor
+  // ("Fitur ini hanya untuk paket Pro"). Tidak ada lagi pembelian per-template pakai kredit.
+
+  // Sinkron paket dari server supaya gerbang tidak bergantung cache lokal yang basi.
+  function refreshPlan() {
+    try {
+      var tok = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || '';
+      fetch(API_BASE + '/subscription?fields=plan', { cache: 'no-store', headers: tok ? { 'Authorization': 'Bearer ' + tok } : {} })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          if (d && d.plan) {
+            try { localStorage.setItem('clincoo_subscription_cache', JSON.stringify({ plan: d.plan, billingCycle: d.billingCycle || null })); } catch (e) {}
+            syncCrowns();
+          }
+        })
+        .catch(function () {});
+    } catch (e) {}
+  }
+
+
+  // Crown di CTA "Gunakan Template" hanya untuk user Starter pada template khusus paket Pro (saas, properti).
+  // User Pro/Bisnis tidak melihat crown. Template bayar-kredit (ai-router) tidak pakai crown.
+  var CROWN_SVG = '<svg data-cc-crown="1" class="w-4 h-4 mr-1.5 -mt-0.5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/></svg>';
+  function syncCrowns(root) {
+    try {
+      var scope = root || document;
+      var btns = scope.querySelectorAll('button[data-tpl-use], button[onclick*="useTemplate("]');
+      btns.forEach(function (b) {
+        var key = b.getAttribute('data-tpl-use');
+        if (!key) {
+          var m = (b.getAttribute('onclick') || '').match(/useTemplate\('([a-z-]+)'/);
+          key = m ? m[1] : null;
+        }
+        if (!key) return;
+        var want = PRO_TEMPLATES.indexOf(key) !== -1 && !isProPlan();
+        var has = b.querySelector('svg[data-cc-crown]');
+        if (want && !has) b.insertAdjacentHTML('afterbegin', CROWN_SVG);
+        else if (!want && has) has.parentNode.removeChild(has);
+      });
+    } catch (e) {}
+  }
+
+  function showProGate(key) {
+    var t = list[key];
+    var plan = planFromCache();
+    var dark = false;
+    try { dark = document.documentElement.classList.contains('dark') || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches && !document.documentElement.classList.contains('light')); } catch (e) {}
+    var ov = document.createElement('div');
+    ov.id = 'cc-template-pro-gate';
+    ov.className = 'fixed inset-0 z-[9999] flex items-center justify-center p-6';
+    ov.style.background = dark ? '#141416' : '#f4f4f6';
+    ov.innerHTML =
+      '<div role="dialog" aria-modal="true" aria-label="Fitur ini hanya untuk paket Pro" style="max-width:420px;width:100%;text-align:center;font-family:system-ui,sans-serif;color:' + (dark ? '#f5f6f7' : '#111') + '">' +
+      '<div style="font-size:44px;line-height:1">&#128081;</div>' +
+      '<h2 style="font-size:20px;margin:14px 0 8px;font-weight:700">Fitur ini hanya untuk paket Pro</h2>' +
+      '<p style="font-size:14px;margin:0 0 20px;color:' + (dark ? '#9aa0a6' : '#555') + '">Paket kamu saat ini ' + plan + '. Template &ldquo;' + (t ? t.name : 'ini') + '&rdquo; tersedia setelah upgrade ke paket Pro atau Bisnis.</p>' +
+      '<a href="' + _tdBase + '/akun/langganan/upgrade/" style="display:block;padding:13px;border-radius:12px;text-decoration:none;font-weight:600;font-size:14px;background:' + (dark ? '#fff' : '#111') + ';color:' + (dark ? '#111' : '#fff') + '">Lihat Paket</a>' +
+      '<button id="tpg-close" style="display:block;width:100%;margin-top:10px;padding:13px;border:1.5px solid ' + (dark ? 'rgba(255,255,255,.22)' : '#e5e7eb') + ';border-radius:12px;background:transparent;font-weight:600;font-size:14px;cursor:pointer;color:' + (dark ? '#f5f6f7' : '#111') + '">Kembali</button>' +
+      '</div>';
+    document.body.appendChild(ov);
+    function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
+    ov.querySelector('#tpg-close').addEventListener('click', close);
+  }
+
+  // ---------- TEMPLATE BAYAR KREDIT: AI Router Console (semua paket, termasuk Pro & Bisnis) ----------
   var PRO_PRICE = 15000;
   var PURCHASE_KEY = 'clincoo_template_purchases';
 
@@ -286,9 +351,9 @@ var ClincooTemplates = (function () {
     ov.className = 'fixed inset-0 z-[9999] flex items-center justify-center p-4';
     ov.style.background = 'rgba(0,0,0,.45)';
     ov.innerHTML =
-      '<div role="dialog" aria-modal="true" aria-label="Beli template PRO" class="w-full max-w-sm rounded-2xl border border-gray-100 dark:border-[#222] bg-white dark:bg-[#0d0d0d] p-6 shadow-2xl">' +
+      '<div role="dialog" aria-modal="true" aria-label="Beli template" class="w-full max-w-sm rounded-2xl border border-gray-100 dark:border-[#222] bg-white dark:bg-[#0d0d0d] p-6 shadow-2xl">' +
       '<div class="flex items-start justify-between gap-3 mb-4">' +
-      '<div><p class="text-[11px] font-semibold tracking-wide uppercase text-amber-600">Template PRO</p>' +
+      '<div><p class="text-[11px] font-semibold tracking-wide uppercase text-amber-600">Template Premium</p>' +
       '<h3 class="text-lg font-bold text-gray-900 dark:text-white mt-0.5">' + t.name + '</h3></div>' +
       '<button id="tp-close" aria-label="Tutup" class="p-1.5 -m-1 rounded-lg text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#1a1a1a] transition-colors">' +
       '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>' +
@@ -297,7 +362,7 @@ var ClincooTemplates = (function () {
       '<div class="flex items-center justify-between px-4 py-3"><span class="text-sm text-gray-500 dark:text-gray-400">Harga</span><span class="text-sm font-bold text-gray-900 dark:text-white">' + fmtKredit(PRO_PRICE) + ' kredit</span></div>' +
       '<div class="flex items-center justify-between px-4 py-3"><span class="text-sm text-gray-500 dark:text-gray-400">Saldo kredit kamu</span><span id="tp-saldo" class="text-sm font-semibold font-mono text-gray-900 dark:text-white">…</span></div>' +
       '</div>' +
-      '<p class="text-xs text-gray-400 dark:text-gray-500 leading-relaxed mb-4">Sekali beli, template terbuka selamanya untuk akunmu. Paket langganan Pro &amp; Bisnis tidak perlu membeli.</p>' +
+      '<p class="text-xs text-gray-400 dark:text-gray-500 leading-relaxed mb-4">Sekali beli, template terbuka selamanya untuk akunmu. Berlaku untuk semua paket, termasuk Pro &amp; Bisnis.</p>' +
       '<div id="tp-note" class="hidden text-sm font-medium text-red-600 mb-3"></div>' +
       '<div class="flex gap-2">' +
       '<a id="tp-topup" href="' + _tdBase + '/akun/kredit/topup/" class="flex-1 text-center px-4 py-2.5 rounded-xl border border-gray-200 dark:border-[#2a2a2a] text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#161616] transition-colors">Top Up</a>' +
@@ -366,6 +431,7 @@ var ClincooTemplates = (function () {
     });
   }
 
+
   function showProLockTemplate() {
     // Popup kartu lama dihapus -> pakai carousel daftar paket (konsisten dengan popup Kolaborasi AI & Sync GitHub).
     var cached = null;
@@ -382,7 +448,11 @@ var ClincooTemplates = (function () {
     var t = list[key];
     var site = files[key];
     if (!t || !site) return;
-    if (PRO_TEMPLATES.indexOf(key) !== -1 && !isProPlan() && !isPurchased(key)) {
+    if (PRO_TEMPLATES.indexOf(key) !== -1 && !isProPlan()) {
+      showProGate(key);
+      return;
+    }
+    if (CREDIT_TEMPLATES.indexOf(key) !== -1 && !isPurchased(key)) {
       showPurchaseModal(key);
       return;
     }
@@ -503,12 +573,17 @@ var ClincooTemplates = (function () {
     report: report,
     use: use,
     isProTemplate: function (key) { return PRO_TEMPLATES.indexOf(key) !== -1; },
+    isCreditTemplate: function (key) { return CREDIT_TEMPLATES.indexOf(key) !== -1; },
+    needsCrown: function (key) { return PRO_TEMPLATES.indexOf(key) !== -1 && !isProPlan(); },
     isProPlan: isProPlan,
-    proPrice: PRO_PRICE,
     isPurchased: isPurchased,
     getPurchases: getPurchases,
+    proPrice: PRO_PRICE,
     showPurchaseModal: showPurchaseModal,
     refreshPurchases: refreshPurchases,
+    refreshPlan: refreshPlan,
+    syncCrowns: syncCrowns,
+    showProGate: showProGate,
     preview: preview,
     showToast: showToast
   };
@@ -527,7 +602,7 @@ function unfavoriteTemplate(key, event) { ClincooTemplates.unfavorite(key, event
 function purchaseTemplate(key) { ClincooTemplates.showPurchaseModal(key); }
 // Sinkron status pembelian template PRO dari server
 (function () {
-  function initPurchases() { try { ClincooTemplates.refreshPurchases(); } catch (e) {} }
+  function initPurchases() { try { ClincooTemplates.refreshPlan(); ClincooTemplates.refreshPurchases(); } catch (e) {} }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initPurchases);
   else initPurchases();
 })();

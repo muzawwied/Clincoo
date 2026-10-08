@@ -1,7 +1,7 @@
 // Cloudflare Pages Function — /api/template-purchase
-// Beli template PRO per-buah pakai saldo kredit AI (arahan pemilik, 8 Okt 2026).
+// Beli template premium (AI Router Console) pakai saldo kredit AI (arahan pemilik, 8 Okt 2026).
 // Harga 15.000 kredit per template; sekali beli terbuka selamanya untuk akun.
-// Paket langganan Pro & Bisnis tetap dapat semua template PRO tanpa beli.
+// Berlaku untuk SEMUA paket (Pro & Bisnis juga wajib bayar). saas/properti = khusus paket Pro, tanpa beli.
 //
 // GET  /api/template-purchase  → { price, pro_templates: [...], purchased: [...] }
 // POST /api/template-purchase { key }
@@ -13,7 +13,7 @@ import { currentUser } from './user-scope.js';
 import { getActivePacks, consumePackCredit } from './ai-packs.js';
 
 const PRICE = 15000;
-const PRO_KEYS = ['properti', 'saas', 'ai-router'];
+const PRO_KEYS = ['ai-router']; // template bayar-kredit (semua paket); saas/properti khusus paket Pro
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
