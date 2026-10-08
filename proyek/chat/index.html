@@ -6445,6 +6445,8 @@ window.chatLivePreview = function () {
                     } else {
                         streamingBuffer += parsedFinalApk.clean;
                     }
+                    // Notifikasi saldo kredit real-time antar tab (halaman Kredit /akun/kredit/)
+                    try { (window.__kreditBC || (window.__kreditBC = new BroadcastChannel('clincoo_kredit_sync'))).postMessage({ t: 'chat-done' }); } catch (e2) {}
                     isFetchComplete = true;
                 } catch (e) {
                     try { window.__lastChatErr = { name: e && e.name, msg: e && e.message, stack: String((e && e.stack) || '').slice(0, 400), t: Date.now() }; console.error('[Clincoo chat] error:', e); } catch (_e) {}

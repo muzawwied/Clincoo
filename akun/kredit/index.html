@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../../js/auth-client.js?v=2"></script>
+  <script src="../../../js/accent-init.js"></script>
+  <script src="../../../js/loading-state.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="../../../manifest.json">
+  <link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
+  <title>Clincoo - Kredit</title>
+  <meta name="description" content="Kredit AI Clincoo — pantau saldo dan riwayat kredit AI-mu secara real-time.">
+  <meta property="og:title" content="Clincoo - Kredit">
+  <meta property="og:description" content="Kredit AI Clincoo — pantau saldo dan riwayat kredit AI-mu secara real-time.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Clincoo">
+  <meta property="og:url" content="https://app.clincoo.buzz/akun/kredit/">
+  <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Clincoo - Kredit">
+  <meta name="twitter:description" content="Kredit AI Clincoo — pantau saldo dan riwayat kredit AI-mu secara real-time.">
+  <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Clincoo">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <script src="https://unpkg.com/lucide@1.41.0"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    html, body { scrollbar-width: none; -ms-overflow-style: none; }
+    html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+    body { font-family: 'Inter', sans-serif; background-color: #ffffff; transition: background-color 0.3s ease, color 0.3s ease; }
+    :root { --accent-color: #000000; --accent-hover: #1f2937; }
+    .bg-accent { background-color: var(--accent-color) !important; }
+    .text-accent { color: var(--accent-color) !important; }
+    .border-accent { border-color: var(--accent-color) !important; }
+    .hover\:bg-accent-hover:hover { background-color: var(--accent-hover) !important; }
+    body.dark-mode { background-color: #000000; color: #ffffff; }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode .bg-gray-50 { background-color: #141414 !important; }
+    body.dark-mode .bg-gray-100 { background-color: #1a1a1a !important; }
+    body.dark-mode .border-gray-100, body.dark-mode .border-gray-200, body.dark-mode .border-gray-300 { border-color: #222222 !important; }
+    body.dark-mode .divide-gray-100 > :not([hidden]) ~ :not([hidden]) { border-color: #1a1a1a !important; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #f0f0f0 !important; }
+    body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 { color: #888888 !important; }
+    body.dark-mode .text-gray-400, body.dark-mode .text-gray-300 { color: #666666 !important; }
+    body.dark-mode .bg-accent { background-color: #ffffff !important; color: #000000 !important; }
+    body.dark-mode .bg-accent.text-white { color: #000000 !important; }
+    body.dark-mode .bg-accent.text-white svg { color: #000000 !important; stroke: #000000 !important; }
+    body.dark-mode button[onclick="goBack()"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
+    body.dark-mode button[onclick="goBack()"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
+    body.dark-mode button[onclick="goBack()"] svg { color: #ffffff !important; stroke: #ffffff !important; }
+    * { -webkit-tap-highlight-color: transparent; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    @keyframes popIn { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: none; } }
+    .pop { animation: popIn .22s ease-out; }
+    @keyframes saldoPop { 0% { transform: scale(1); } 40% { transform: scale(1.08); } 100% { transform: scale(1); } }
+    .saldo-pop { animation: saldoPop .5s ease-out; display: inline-block; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col text-gray-900 pt-20">
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.body.classList.add('dark-mode');var a=localStorage.getItem('clincoo_accent')||'Hitam (Default)';var am={'Hitam (Default)':{m:'#000000',h:'#1f2937'},'Biru':{m:'#2563eb',h:'#1d4ed8'},'Hijau':{m:'#059669',h:'#047857'},'Ungu':{m:'#9333ea',h:'#7e22ce'},'Merah':{m:'#dc2626',h:'#b91c1c'}};var c=am[a]||am['Hitam (Default)'];document.documentElement.style.setProperty('--accent-color',c.m);document.documentElement.style.setProperty('--accent-hover',c.h);}catch(e){}})();</script>
+
+<button onclick="goBack()" class="fixed top-3 left-3 w-10 h-10 flex items-center justify-center rounded-full bg-white backdrop-blur border border-gray-100 shadow-sm hover:bg-gray-50 transition-all cursor-pointer text-gray-700 hover:text-black z-50" aria-label="Kembali">
+    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+</button>
+
+<main class="flex-1 w-full max-w-xl mx-auto pb-16 flex-col justify-start relative">
+
+    <div class="flex flex-col px-5 pb-2 relative">
+        <h2 class="text-[24px] font-extrabold text-gray-900 tracking-tight">Kredit</h2>
+        <p class="text-[14px] text-gray-500 font-medium mt-0.5">Pantau dan kelola saldo kredit AI-mu dalam satu tempat.</p>
+    </div>
+
+    <!-- Saldo kredit (tanpa card) — tombol Top Up sejajar di kanan -->
+    <div class="px-5 mt-7">
+        <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Saldo Kredit</span>
+        <div class="flex items-end justify-between gap-3 mt-2">
+            <div class="flex items-end gap-2">
+                <span id="v-saldo" class="text-[44px] leading-none font-extrabold text-gray-900 tracking-tight mono">0</span>
+                <span class="text-[13px] font-semibold text-gray-400 mb-1">kredit</span>
+            </div>
+            <a id="btn-topup" href="#" class="inline-flex items-center justify-center gap-1.5 bg-accent text-white text-[12px] font-bold rounded-full px-4 py-2 mb-1.5 cursor-pointer active:scale-[0.98] transition-all">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>Top Up
+            </a>
+        </div>
+        <p id="v-terpakai" class="text-[12px] text-gray-400 font-medium mt-1.5">Memuat data…</p>
+    </div>
+
+    <!-- Nav riwayat: tab di tengah, tanpa border bawah -->
+    <div class="px-5 mt-8">
+        <div class="relative">
+            <div style="display:flex;width:100%;justify-content:center;align-items:flex-end;gap:24px;">
+                <button type="button" onclick="switchTab('transaksi')" id="tab-transaksi" class="tab-btn relative pb-1 pt-1 text-[13px] font-bold cursor-pointer transition-all">
+                    Transaksi
+                    <span class="tab-line absolute left-0 right-0 -bottom-px h-[2px] bg-accent rounded-full opacity-0 transition-opacity"></span>
+                </button>
+                <button type="button" onclick="switchTab('chat')" id="tab-chat" class="tab-btn relative pb-1 pt-1 text-[13px] font-bold cursor-pointer transition-all">
+                    Chat
+                    <span class="tab-line absolute left-0 right-0 -bottom-px h-[2px] bg-accent rounded-full opacity-0 transition-opacity"></span>
+                </button>
+                <button type="button" onclick="switchTab('integrasi')" id="tab-integrasi" class="tab-btn relative pb-1 pt-1 text-[13px] font-bold cursor-pointer transition-all">
+                    Integrasi AI
+                    <span class="tab-line absolute left-0 right-0 -bottom-px h-[2px] bg-accent rounded-full opacity-0 transition-opacity"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab: Riwayat Transaksi -->
+        <div id="panel-transaksi" class="tab-panel mt-4 divide-y divide-gray-100 border-t border-gray-100"></div>
+
+        <!-- Tab: Chat (table) -->
+        <div id="panel-chat" class="tab-panel hidden mt-4 overflow-x-auto"></div>
+
+        <!-- Tab: Integrasi AI (table) -->
+        <div id="panel-integrasi" class="tab-panel hidden mt-4 overflow-x-auto"></div>
+    </div>
+</main>
+
+<!-- Footer Clincoo -->
+<footer class="w-full max-w-xl mx-auto px-5 pb-6 pt-4 mt-4 border-t border-gray-100 text-center">
+    <p class="text-xs text-gray-400">&copy; 2026 Clincoo. Seluruh hak cipta dilindungi.</p>
+    <p class="text-[11px] text-gray-400 mt-1">Penggunaan Clincoo tunduk pada <a href="https://blog.clincoo.buzz/legal/syarat-ketentuan/" target="_blank" rel="noopener" class="underline hover:text-gray-600">Syarat &amp; Ketentuan</a> serta <a href="https://blog.clincoo.buzz/legal/kebijakan-privasi/" target="_blank" rel="noopener" class="underline hover:text-gray-600">Kebijakan Privasi</a> yang berlaku.</p>
+</footer>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[70] hidden">
+    <div class="bg-accent text-white text-[13px] font-semibold rounded-full px-4 py-2.5 shadow-lg pop" id="toast-msg"></div>
+</div>
+
+<script>
+function goBack() { if (history.length > 1) history.back(); else location.href = '/'; }
+
+// ==== Data real-time dari server (BUKAN localStorage) ====
+// /api/kredit membaca ai_packs + ai_usage — tabel yang sama dengan yang
+// dipotong /api/chat — jadi saldo selalu sinkron dengan pemakaian nyata.
+// Sinkron antar tab: BroadcastChannel 'clincoo_kredit_sync' (chat menyiarkan
+// tiap AI selesai menjawab) + poll ringan sebagai fallback.
+var state = { saldo: 0, terpakai: 0, riwayat: [], chatLog: [], integrasi: [], email: '' };
+
+function fmt(n) { return Number(n || 0).toLocaleString('id-ID'); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+var toastTimer = null;
+function toast(msg) {
+    var t = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    t.classList.remove('hidden');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.add('hidden'); }, 2200);
+}
+
+function render(saldoChanged) {
+    var vs = document.getElementById('v-saldo');
+    vs.textContent = fmt(state.saldo);
+    if (saldoChanged) { vs.classList.remove('saldo-pop'); void vs.offsetWidth; vs.classList.add('saldo-pop'); }
+    document.getElementById('v-terpakai').textContent = state.terpakai > 0
+        ? fmt(state.terpakai) + ' kredit terpakai sejauh ini'
+        : 'Belum ada kredit terpakai';
+
+    // Tab Transaksi
+    var el = document.getElementById('panel-transaksi');
+    if (!state.riwayat.length) {
+        el.innerHTML = emptyBlock('Belum ada riwayat kredit.', 'history');
+    } else {
+        el.innerHTML = state.riwayat.map(function (r) {
+            return '<div class="flex items-center justify-between py-3">' +
+                '<div class="flex items-center gap-3">' +
+                '<div class="w-9 h-9 rounded-full bg-white border border-gray-100 flex items-center justify-center"><i data-lucide="plus" class="w-4 h-4 text-emerald-500"></i></div>' +
+                '<div><p class="text-[13px] font-bold text-gray-900">+' + fmt(r.kredit) + ' kredit</p>' +
+                '<p class="text-[11px] text-gray-400 font-medium">' + esc(r.metode) + ' · ' + esc(r.waktu) + '</p></div></div>' +
+                '<p class="text-[13px] font-bold text-gray-900 mono">' + esc(r.harga) + '</p></div>';
+        }).join('');
+    }
+
+    // Tab Chat (tabel)
+    var pc = document.getElementById('panel-chat');
+    var chat = state.chatLog || [];
+    if (chat.length) {
+        pc.innerHTML = '<table class="w-full text-left border-collapse"><thead><tr class="text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100"><th class="py-2.5 pr-2">Percakapan</th><th class="py-2.5 text-right">Kredit</th><th class="py-2.5 pl-4 text-right">Waktu</th></tr></thead><tbody class="divide-y divide-gray-100">' +
+            chat.map(function (c) {
+                return '<tr><td class="py-2.5 pr-2 text-[13px] font-semibold text-gray-900">' + esc(c.judul) + '</td>' +
+                    '<td class="py-2.5 text-right text-[13px] font-bold text-gray-900 mono">' + fmt(c.kredit) + '</td>' +
+                    '<td class="py-2.5 pl-4 text-right text-[12px] text-gray-400 font-medium">' + esc(c.waktu) + '</td></tr>';
+            }).join('') + '</tbody></table>';
+    } else {
+        pc.innerHTML = emptyBlock('Belum ada penggunaan kredit.', 'history');
+    }
+
+    // Tab Integrasi AI (tabel)
+    var pi = document.getElementById('panel-integrasi');
+    var intg = state.integrasi || [];
+    if (intg.length) {
+        pi.innerHTML = '<table class="w-full text-left border-collapse"><thead><tr class="text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100"><th class="py-2.5 pr-2">Integrasi</th><th class="py-2.5 text-center">Status</th><th class="py-2.5 pl-4 text-right">Kredit Terpakai</th></tr></thead><tbody class="divide-y divide-gray-100">' +
+            intg.map(function (i) {
+                var on = i.status === 'Aktif';
+                return '<tr><td class="py-2.5 pr-2 text-[13px] font-semibold text-gray-900">' + esc(i.nama) + '</td>' +
+                    '<td class="py-2.5 text-center"><span class="text-[10px] font-bold ' + (on ? 'text-emerald-600' : 'text-gray-400') + ' bg-gray-100 rounded-full px-2.5 py-1">' + esc(i.status) + '</span></td>' +
+                    '<td class="py-2.5 pl-4 text-right text-[13px] font-bold text-gray-900 mono">' + fmt(i.kredit) + '</td></tr>';
+            }).join('') + '</tbody></table>';
+    } else {
+        pi.innerHTML = emptyBlock('Belum ada penggunaan kredit.', 'history');
+    }
+    lucide.createIcons();
+}
+
+function emptyBlock(msg, icon) {
+    return '<div class="flex flex-col items-center py-8">' +
+        '<i data-lucide="' + icon + '" class="w-6 h-6 text-gray-400"></i>' +
+        '<p class="text-[12px] text-gray-400 font-medium mt-3">' + msg + '</p></div>';
+}
+
+// ==== Tab riwayat ====
+var curTab = 'transaksi';
+function switchTab(t) {
+    curTab = t;
+    document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.add('hidden'); });
+    document.getElementById('panel-' + t).classList.remove('hidden');
+    document.querySelectorAll('.tab-btn').forEach(function (b) {
+        b.classList.remove('text-gray-900');
+        b.classList.add('text-gray-400');
+        b.querySelector('.tab-line').classList.add('opacity-0');
+    });
+    var btn = document.getElementById('tab-' + t);
+    btn.classList.remove('text-gray-400');
+    btn.classList.add('text-gray-900');
+    btn.querySelector('.tab-line').classList.remove('opacity-0');
+}
+
+// ==== Muat data real-time ====
+var loading = false;
+async function load(isRefresh) {
+    if (loading) return;
+    loading = true;
+    try {
+        var res = await fetch('/api/kredit', { headers: { 'Content-Type': 'application/json' } });
+        if (res.status === 401) { location.href = '/auth/?next=' + encodeURIComponent(location.pathname); return; }
+        var data = await res.json();
+        var oldSaldo = state.saldo;
+        state.saldo = data.saldo || 0;
+        state.terpakai = data.terpakai || 0;
+        state.riwayat = data.riwayat || [];
+        state.chatLog = data.chatLog || [];
+        state.integrasi = data.integrasi || [];
+        state.email = data.email || '';
+        // Top Up ke kredit-ai dengan email terpasang otomatis -> grant langsung ke akun ini
+        document.getElementById('btn-topup').href = 'https://kredit-ai.pages.dev/topup.html' + (state.email ? '?email=' + encodeURIComponent(state.email) : '');
+        render(isRefresh && oldSaldo !== state.saldo);
+        if (isRefresh && oldSaldo !== state.saldo) toast('Saldo kredit diperbarui');
+    } catch (e) {
+        document.getElementById('v-terpakai').textContent = 'Gagal memuat data — coba lagi sebentar.';
+    } finally {
+        loading = false;
+    }
+}
+
+// Sinkron antar tab: chat/saldo berubah di tab lain -> langsung segarkan di sini
+try {
+    var bc = new BroadcastChannel('clincoo_kredit_sync');
+    bc.onmessage = function (ev) { load(true); };
+} catch (e) {}
+// Fallback + sinkron perangkat lain: poll ringan tiap 5 detik
+setInterval(function () { if (document.visibilityState === 'visible') load(true); }, 5000);
+document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') load(true); });
+
+switchTab('transaksi');
+load(false);
+lucide.createIcons();
+</script>
+</body>
+</html>

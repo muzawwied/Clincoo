@@ -112,10 +112,12 @@ export async function getUserByToken(db, token) {
 }
 
 // [8 Okt 2026, arahan pemilik] User baru dapat KREDIT CHAT PERCOBAAN:
-// 20 kredit, masa aktif 30 hari, masuk sebagai paket di ai_packs (sumber data
+// 5 kredit (hemat — saldo provider terbatas), masa aktif 30 hari, masuk sebagai paket di ai_packs (sumber data
 // yang sama dengan Paket Kredit AI — otomatis terpakai /api/chat saat kuota
 // langganan habis, dan dipotong per penggunaan token, bukan flat per pesan).
-const STARTER_CREDITS = 20;
+// [8 Okt 2026] Diturunkan 20 -> 5: saldo provider terbatas, tanpa investor —
+// kredit gratis harus hemat supaya saldo provider tidak terkuras pendaftar baru.
+const STARTER_CREDITS = 5;
 const STARTER_DAYS = 30;
 async function grantStarterCredits(db, userId) {
   try {
