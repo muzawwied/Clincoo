@@ -14,7 +14,7 @@
       }
     })();
   </script>
-  <script src="js/templates-data.js?v=20261008"></script>
+  <script src="js/templates-data.js?v=20261009"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon.png">
@@ -2427,6 +2427,22 @@
       origApply(id);
     };
   })();
+</script>
+
+<!-- Konsumsi prompt tertunda dari galeri template: isi input prompt utama lalu fokus ke sana -->
+<script>
+(function () {
+  try {
+    var pp = localStorage.getItem('clincoo_pending_prompt');
+    if (!pp) return;
+    localStorage.removeItem('clincoo_pending_prompt');
+    var ta = document.getElementById('main-prompt-input');
+    if (ta) ta.value = pp;
+    if (typeof usePrompt === 'function') { usePrompt(pp); return; }
+    if (typeof navigateTo === 'function') navigateTo('page-home');
+    window.scrollTo(0, 0);
+  } catch (e) {}
+})();
 </script>
 </body>
 </html>

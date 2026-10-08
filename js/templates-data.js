@@ -183,10 +183,32 @@ var ClincooTemplates = (function () {
         localStorage.setItem('clincoo_template_favorites', JSON.stringify(favs));
         showToast('Template "' + list[key].name + '" disimpan ke favorit.');
       } else {
-        showToast('Template ini sudah ada di favorit.');
+        favs = favs.filter(function (k) { return k !== key; });
+        localStorage.setItem('clincoo_template_favorites', JSON.stringify(favs));
+        showToast('Template dihapus dari favorit.');
       }
     } catch (e) {}
     if (typeof refreshFavoriteList === 'function') { try { refreshFavoriteList(); } catch (e) {} }
+    refreshFavoriteMenuLabels();
+  }
+
+  // Sinkronkan label tombol favorit di semua popup template:
+  // "Simpan ke Favorit" <-> "Hapus dari Favorit" sesuai status tersimpan.
+  function refreshFavoriteMenuLabels() {
+    try {
+      var btns = document.querySelectorAll('button[onclick]');
+      for (var i = 0; i < btns.length; i++) {
+        var oc = btns[i].getAttribute('onclick') || '';
+        var m = oc.match(/favoriteTemplate\('([^']+)'|^.*ClincooTemplates\.favorite\('([^']+)'/);
+        var key = m ? (m[1] || m[2]) : null;
+        if (!key) continue;
+        btns[i].textContent = isFavorite(key) ? 'Hapus dari Favorit' : 'Simpan ke Favorit';
+      }
+      var custom = document.querySelectorAll('[data-fav-key]');
+      for (var j = 0; j < custom.length; j++) {
+        custom[j].textContent = isFavorite(custom[j].getAttribute('data-fav-key')) ? 'Hapus dari Favorit' : 'Simpan ke Favorit';
+      }
+    } catch (e) {}
   }
   function unfavorite(key, event) {
     if (event) { event.preventDefault(); event.stopPropagation(); }
@@ -197,14 +219,14 @@ var ClincooTemplates = (function () {
       showToast('Template dihapus dari favorit.');
     } catch (e) {}
     if (typeof refreshFavoriteList === 'function') { try { refreshFavoriteList(); } catch (e) {} }
+    refreshFavoriteMenuLabels();
   }
   function report(key, event) {
     if (event) { event.preventDefault(); event.stopPropagation(); }
     closeAllOptionPopups();
-    if (!list[key]) return;
     try {
       var reports = JSON.parse(localStorage.getItem('clincoo_template_reports') || '[]');
-      if (reports.indexOf(key) === -1) {
+      if (key && reports.indexOf(key) === -1) {
         reports.push(key);
         localStorage.setItem('clincoo_template_reports', JSON.stringify(reports));
       }
@@ -355,6 +377,7 @@ var ClincooTemplates = (function () {
     isFavorite: isFavorite,
     favorite: favorite,
     unfavorite: unfavorite,
+    refreshFavoriteMenuLabels: refreshFavoriteMenuLabels,
     report: report,
     use: use,
     isProTemplate: function (key) { return PRO_TEMPLATES.indexOf(key) !== -1; },
@@ -368,4 +391,10 @@ var ClincooTemplates = (function () {
 function useTemplate(key, event) { ClincooTemplates.use(key, event); }
 function previewTemplate(key, event) { ClincooTemplates.preview(key, event); }
 function favoriteTemplate(key, event) { ClincooTemplates.favorite(key, event); }
+function unfavoriteTemplate(key, event) { ClincooTemplates.unfavorite(key, event); }
+(function () {
+  function initFavLabels() { try { ClincooTemplates.refreshFavoriteMenuLabels(); } catch (e) {} }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initFavLabels);
+  else initFavLabels();
+})();
 function reportTemplate(key, event) { ClincooTemplates.report(key, event); }

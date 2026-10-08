@@ -141,7 +141,7 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
         </div>
     </footer>
 
-    <script src="../js/templates-data.js?v=20261008"></script>
+    <script src="../js/templates-data.js?v=20261009"></script>
     <script>var _tSeg=location.pathname.split('/')[1]||'';var _tKnown=['akun','proyek','auth','templates','integrasi','assets','js','demo','sw.js','manifest.json','robots.txt','_redirects','index.html','404.html'];window.CLINCOO_BASE=window.CLINCOO_BASE||(location.hostname.indexOf('github.io')!==-1&&_tSeg&&_tKnown.indexOf(_tSeg)===-1?'/'+_tSeg:'');
     // ===== Data template (public) — diambil langsung dari js/templates-data.js (sumber sama dengan halaman utama) =====
     // Galeri selalu menampilkan SEMUA template; halaman utama maksimal 5.
@@ -343,11 +343,21 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
                 b.textContent = label;
                 b.addEventListener('click', function (e) { e.stopPropagation(); closeGaleriPopups(); handler(e); });
                 popup.appendChild(b);
+                return b;
             }
             menuBtn('Gunakan Template', null, function () {
-                if (t.community) trackCommunity(t.id, 'use');
-                useTemplate(t.key);
+                if (t.community) {
+                    trackCommunity(t.id, 'use');
+                    pakaiPromptGallery('Gunakan template komunitas \"' + t.name + '\" sebagai dasar website saya. ' + (t.desc || ''));
+                    return;
+                }
+                useTemplate(t.key); // alur yang sama dengan halaman utama: buat proyek + masuk workspace
             });
+            if (!t.community) {
+                menuBtn('Pakai Prompt Ini', null, function () {
+                    pakaiPromptGallery('Tolong buatkan website ' + t.name + ' berbasis template. ' + t.desc);
+                });
+            }
             menuBtn('Lihat Preview', null, function (e) {
                 if (t.community) {
                     trackCommunity(t.id, 'view');
@@ -355,9 +365,12 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
                 } else { previewTemplate(t.key, e); }
             });
             if (!t.community) {
-                menuBtn('Simpan ke Favorit', null, function (e) { favoriteTemplate(t.key, e); });
-                menuBtn('Laporkan', 'w-full text-left px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500/30', function (e) { reportTemplate(t.key, e); });
+                var favBtn = menuBtn(isFavGallery(t.key) ? 'Hapus dari Favorit' : 'Simpan ke Favorit', null, function (e) {
+                    favoriteTemplate(t.key, e);
+                    favBtn.textContent = isFavGallery(t.key) ? 'Hapus dari Favorit' : 'Simpan ke Favorit';
+                });
             }
+            menuBtn('Laporkan', 'w-full text-left px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500/30', function (e) { reportTemplate(t.key, e); });
             dotsWrap.appendChild(popup);
             row.appendChild(dotsWrap);
 
@@ -488,9 +501,20 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
         if (!e.target.closest('.option-popup') && !e.target.closest('[data-dots]')) closeGaleriPopups();
     });
 
-    function useTemplate(key) {
-        // Simpan pilihan template; URL utama akan mendeteksi status login pengguna.
-        try { localStorage.setItem('clincoo_pending_template', key); } catch (e) {}
+    // Template Pro terkunci: di halaman utama memakai modal langganan; di galeri cukup toast + arahkan
+    if (typeof tmShowCollabPlansModal !== 'function') {
+        window.tmShowCollabPlansModal = function () {
+            try { ClincooTemplates.showToast('Template ini untuk paket Pro & Bisnis — buka menu Langganan untuk upgrade.'); } catch (e) {}
+        };
+    }
+
+    // ===== Helper popup galeri =====
+    function isFavGallery(key) {
+        try { return (ClincooTemplates.getFavorites() || []).indexOf(key) !== -1; } catch (e) { return false; }
+    }
+    function pakaiPromptGallery(promptText) {
+        // Sama seperti "Pakai Prompt Ini" di halaman utama: prompt diisi di input utama.
+        try { localStorage.setItem('clincoo_pending_prompt', promptText); } catch (e) {}
         window.location.href = '../';
     }
 
