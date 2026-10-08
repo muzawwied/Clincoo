@@ -31,8 +31,8 @@ function j(obj, status = 200) {
 function fmtWaktu(iso, tsMs) {
   const d = iso ? new Date(iso) : (tsMs ? new Date(tsMs) : new Date());
   if (isNaN(d)) return '';
-  const tgl = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-  const jam = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  const tgl = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', timeZone: 'Asia/Jakarta' });
+  const jam = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
   return tgl + ' · ' + jam;
 }
 function fmtIDR(n) { return 'Rp' + Number(n || 0).toLocaleString('id-ID'); }
