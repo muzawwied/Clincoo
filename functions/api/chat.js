@@ -1832,7 +1832,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
       if (phAction === 'new_session') {
         return new Response(JSON.stringify({ session_id: phBody.session_id || ('ls_' + Date.now()), title: phBody.title || 'Percakapan Baru' }), { headers: { 'Content-Type': 'application/json', ...CORS } });
       }
-      const phText = 'Maaf, fitur AI Clincoo sedang dibangun ulang dari nol supaya lebih cepat dan stabil. Sementara ini aku belum bisa menjawab pertanyaanmu, tapi fitur AI akan segera aktif kembali. Terima kasih atas kesabarannya ya \u{1F64F}';
+      const phText = 'Maaf, fitur AI Clincoo lagi sedang dikembangkan biar makin cepat dan stabil. Jadi aku belum bisa jawab pertanyaanmu dulu ya, tapi sebentar lagi fitur AI Clincoo bakal aktif kembali. Makasih banyak atas kesabarannya \u{1F64F}';
       const phSid = phBody.session_id || ('ls_' + Date.now());
       if (phBody.stream === true || phCl > 2_000_000) {
         const enc = new TextEncoder();
