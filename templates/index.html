@@ -291,7 +291,7 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
             // [8 Okt 2026] Label abu-abu: Gratis / crown+PRO / harga kredit (diskon paket tampil coret harga dasar)
             var labelEl = document.createElement('p');
             labelEl.setAttribute('data-tpl-label', t.key);
-            labelEl.className = 'text-xs text-gray-400 dark:text-gray-500 mt-1.5 flex items-center';
+            labelEl.className = 'text-xs text-gray-400 dark:text-gray-500 flex items-center flex-shrink-0';
             try { labelEl.innerHTML = ClincooTemplates.tplLabelHtml(t.key); } catch (e) { labelEl.textContent = ''; }
 
             // Meta komunitas: icon user = pencipta, icon gunakan = jumlah dipakai, icon mata = kunjungan
@@ -325,7 +325,13 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
             row.className = 'flex justify-between items-end gap-3 mt-4';
             var txtCol = document.createElement('div');
             txtCol.className = 'flex flex-col flex-1 overflow-hidden';
-            txtCol.appendChild(title);
+            // [8 Okt 2026, arahan pemilik] label harga/PRO di pojok kanan, sejajar dengan judul
+            var titleRow = document.createElement('div');
+            titleRow.className = 'flex items-center justify-between gap-2 w-full';
+            title.className = 'text-sm font-bold mb-1 truncate flex-1';
+            titleRow.appendChild(title);
+            titleRow.appendChild(labelEl);
+            txtCol.appendChild(titleRow);
             txtCol.appendChild(desc);
             row.appendChild(txtCol);
 
@@ -384,7 +390,6 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
 
             body.appendChild(catEl);
             body.appendChild(row);
-            body.appendChild(labelEl);
             card.appendChild(imgWrap);
             card.appendChild(body);
             grid.appendChild(card);
