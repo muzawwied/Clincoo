@@ -14,7 +14,7 @@
       }
     })();
   </script>
-  <script src="js/templates-data.js?v=20261009"></script>
+  <script src="js/templates-data.js?v=20261010"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon.png">
@@ -840,6 +840,7 @@
                     <div class="w-full aspect-video sm:h-80 overflow-hidden bg-[#F9FAFB]">
                         
                         <img src="assets/templates/saas.webp?v=2" alt="Pratinjau Landing Page SaaS" class="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300">
+                        <span data-pro-badge="saas" class="absolute top-2 right-2 text-[10px] font-bold tracking-wide px-2 py-1 rounded-md shadow-sm bg-amber-500 text-white">PRO · 15.000 KR</span>
                     </div>
                     <div class="flex justify-between items-end gap-3 w-full p-4">
                         <div class="flex flex-col flex-1 overflow-hidden">
@@ -912,6 +913,7 @@
                     <div class="w-full aspect-video sm:h-80 overflow-hidden bg-[#F9FAFB]">
                        
                         <img src="assets/templates/properti.webp" alt="Pratinjau Web Properti" class="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300">
+                        <span data-pro-badge="properti" class="absolute top-2 right-2 text-[10px] font-bold tracking-wide px-2 py-1 rounded-md shadow-sm bg-amber-500 text-white">PRO · 15.000 KR</span>
                     </div>
                     <div class="flex justify-between items-end gap-3 w-full p-4">
                         <div class="flex flex-col flex-1 overflow-hidden">
@@ -2428,6 +2430,23 @@
     };
   })();
 </script>
+
+
+// Badge template PRO: tampilkan status harga/terbuka sesuai pembelian & paket
+(function () {
+  try {
+    var el = document.querySelectorAll('[data-pro-badge]');
+    if (!el.length || typeof ClincooTemplates === 'undefined' || !ClincooTemplates.isPurchased) return;
+    el.forEach(function (b) {
+      var k = b.getAttribute('data-pro-badge');
+      var bought = ClincooTemplates.isPurchased(k) || (ClincooTemplates.isProPlan && ClincooTemplates.isProPlan());
+      if (bought) {
+        b.textContent = 'PRO · TERBUKA';
+        b.className = b.className.replace('bg-amber-500', 'bg-emerald-600');
+      }
+    });
+  } catch (e) {}
+})();
 
 <!-- Konsumsi prompt tertunda dari galeri template: isi input prompt utama lalu fokus ke sana -->
 <script>

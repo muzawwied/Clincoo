@@ -141,7 +141,7 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
         </div>
     </footer>
 
-    <script src="../js/templates-data.js?v=20261009"></script>
+    <script src="../js/templates-data.js?v=20261010"></script>
     <script>var _tSeg=location.pathname.split('/')[1]||'';var _tKnown=['akun','proyek','auth','templates','integrasi','assets','js','demo','sw.js','manifest.json','robots.txt','_redirects','index.html','404.html'];window.CLINCOO_BASE=window.CLINCOO_BASE||(location.hostname.indexOf('github.io')!==-1&&_tSeg&&_tKnown.indexOf(_tSeg)===-1?'/'+_tSeg:'');
     // ===== Data template (public) — diambil langsung dari js/templates-data.js (sumber sama dengan halaman utama) =====
     // Galeri selalu menampilkan SEMUA template; halaman utama maksimal 5.
@@ -153,7 +153,7 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
             Object.keys(src).forEach(function (k) {
                 var t = src[k];
                 if (!t) return;
-                TEMPLATES.push({ key: k, name: t.name, cat: _TPL_CATS[k] || "Lainnya", desc: t.desc, url: t.url });
+                TEMPLATES.push({ key: k, name: t.name, cat: _TPL_CATS[k] || "Lainnya", desc: t.desc, url: t.url, pro: !!(ClincooTemplates.isProTemplate && ClincooTemplates.isProTemplate(k)) });
             });
         } else {
             // Fallback bila modul data gagal dimuat
@@ -275,6 +275,17 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
             img.className = 'img-skeleton w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300';
             img.addEventListener('load', function () { img.classList.remove('img-skeleton'); });
             imgWrap.appendChild(img);
+
+            // Badge PRO + harga (15.000 kredit) — berubah jadi tanda terbuka setelah dibeli
+            if (t.pro) {
+                var bought = false, proPlan = false;
+                try { bought = ClincooTemplates.isPurchased(t.key); proPlan = ClincooTemplates.isProPlan(); } catch (e) {}
+                var badge = document.createElement('span');
+                badge.className = 'absolute top-2 right-2 z-10 text-[10px] font-bold tracking-wide px-2 py-1 rounded-md shadow-sm ' +
+                    ((bought || proPlan) ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white');
+                badge.textContent = (bought || proPlan) ? 'PRO · TERBUKA' : 'PRO · 15.000 KR';
+                imgWrap.appendChild(badge);
+            }
 
             var body = document.createElement('div');
             body.className = 'p-4';
