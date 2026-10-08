@@ -114,7 +114,7 @@
 
   var ROUTING = { strategy: 'priority', markupPercent: 10, fallbackEnabled: true };
 
-  var ME = { id: 'user_demo', email: 'akhmad@clincoo.buzz', displayName: 'Akhmad Rifai', role: 'admin', creditBalance: 257.2 };
+  var ME = { id: 'user_demo', email: 'vylonium@clincoo.buzz', displayName: 'Vylonium', role: 'admin', creditBalance: 257.2 };
 
   var USAGE_TOTAL = 1284;
   function usagePage(page, pageSize, search) {

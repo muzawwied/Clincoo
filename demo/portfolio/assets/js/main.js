@@ -1,5 +1,5 @@
 /* ==========================================================================
-   AKHMAD RIFAI — PORTFOLIO / interactions & animations
+   VYLONIUM — PORTFOLIO / interactions & animations
    ========================================================================== */
 (function () {
   'use strict';
