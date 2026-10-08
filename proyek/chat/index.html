@@ -3704,7 +3704,7 @@ window.chatLivePreview = function () {
           if (choice !== 'build') choice = 'chat';
           const mBtn = document.getElementById('ai-mode-btn');
           const mMenu = document.getElementById('ai-mode-menu');
-          if (!mBtn || !mMenu) return; // popover mode dihapus dari input chat (7 Okt 2026)
+          if (!mBtn || !mMenu) return { get mode() { return choice; } }; // popover mode dihapus dari input chat (7 Okt 2026) — TETAP kembalikan objek, kalau tidak selectedAiMode() melempar TypeError (reading 'mode') & semua kirim chat gagal
           const mLabel = document.getElementById('ai-mode-label');
           const isOpen = function () { return mMenu.classList.contains('visible'); };
           const setOpen = function (open) {
@@ -3728,7 +3728,7 @@ window.chatLivePreview = function () {
           };
           return { get mode() { return choice; } };
         })();
-        window.selectedAiMode = function () { return window.AI_MODE_CHOICE.mode; };
+        window.selectedAiMode = function () { try { return (window.AI_MODE_CHOICE && window.AI_MODE_CHOICE.mode) || 'chat'; } catch (e) { return 'chat'; } };
         // Model premium Sol Pro (gpt-6.1-sol-pro) tanpa tombol UI: frontend selalu
         // kirim premium:true ke /api/chat (server hanya pakai utk user login & tanpa
         // gambar; tamu/bergambar otomatis jatuh ke model biasa). Set false utk balik normal.
