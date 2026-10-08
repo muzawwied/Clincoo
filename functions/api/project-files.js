@@ -235,6 +235,7 @@ function fmtBytes(n) {
 function estBytes(f) {
   if (!f) return 0;
   if (f.cloud) return 0; // penanda: isi sudah di server, tidak menambah
+  if (f.chunk_b64 !== undefined) return Number(f.chunk_idx) === 0 ? (Number(f.total_bytes) || 0) : 0; // unggah per-chunk: kuota dihitung penuh di chunk pertama saja
   if (typeof f.content_b64 === 'string' && f.content_b64.length) return decB64Bytes(f.content_b64);
   return new TextEncoder().encode(String(f.content || '')).length;
 }
@@ -284,6 +285,26 @@ export async function onRequestPost({ request, env }) {
       const path = String((f && f.path) || '').trim();
       if (!path) continue;
       keepPaths.push(path);
+      if (f && typeof f.chunk_b64 === 'string') {
+        // ==== UNGGAH FILE BESAR PER-CHUNK (2026-10-08) ====
+        // Satu POST besar (base64 puluhan MB) kena batas CPU Worker free plan
+        // -> unggahan gagal, file "hilang"/hantu. Sekarang klien memotong base64
+        // jadi potongan ~700KB dan mengirim satu per satu; chunk pertama
+        // me-reset baris file + chunk lama, sisanya menambah. JANGAN dipakai
+        // bersama replace:true (keepPaths hanya berisi path file ini).
+        const idx = Math.max(0, parseInt(f.chunk_idx || '0', 10) || 0);
+        const total = Math.max(1, parseInt(f.chunk_total || '1', 10) || 1);
+        if (String(path).slice(-1) === '/') continue;
+        if (idx === 0) {
+          await db.prepare(
+            `INSERT INTO ${T.files} (project_id, path, content, is_big, size, updated_at) VALUES (?, ?, '', 1, ?, datetime('now'))
+             ON CONFLICT(project_id, path) DO UPDATE SET content = '', is_big = 1, size = excluded.size, updated_at = datetime('now')`
+          ).bind(projectId, path, Number(f.total_bytes) || 0).run();
+          await db.prepare(`DELETE FROM ${chunksTable} WHERE path = ?`).bind(path).run();
+        }
+        await db.prepare(`INSERT OR REPLACE INTO ${chunksTable} (path, idx, chunk) VALUES (?, ?, ?)`).bind(path, idx, f.chunk_b64).run();
+        continue;
+      }
       if (f && f.cloud) {
         // Penanda file besar: konten sudah ada di server — cukup pastikan barisnya ada
         const row = await db.prepare(`SELECT path FROM ${T.files} WHERE project_id = ? AND path = ?`).bind(projectId, path).first();

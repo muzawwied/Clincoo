@@ -32,6 +32,40 @@ async function ensureTable(db) {
   )`).run();
 }
 
+// ===== Tombstone proyek terhapus (2026-10-08) =====
+// "replace_all/upsert" dari perangkat/tab dengan daftar basi bisa menghidupkan
+// ulang proyek yang sudah dihapus (muncul lagi terus). Id yang dihapus dicatat
+// di sini selama 30 hari dan SELALU disaring dari replace_all/upsert.
+async function ensureTombstones(db) {
+  await db.prepare(`CREATE TABLE IF NOT EXISTS project_tombstones (
+    user_id INTEGER NOT NULL,
+    project_id TEXT NOT NULL,
+    deleted_at TEXT DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, project_id)
+  )`).run();
+  try { await db.prepare(`DELETE FROM project_tombstones WHERE deleted_at < datetime('now', '-30 days')`).run(); } catch (e) {}
+}
+async function markTombstones(db, userId, ids) {
+  try {
+    await ensureTombstones(db);
+    for (const id of ids) {
+      await db.prepare(`INSERT OR REPLACE INTO project_tombstones (user_id, project_id, deleted_at) VALUES (?, ?, datetime('now'))`).bind(userId, String(id)).run();
+    }
+  } catch (e) {}
+}
+async function tombstonedIds(db, userId) {
+  try {
+    await ensureTombstones(db);
+    const r = await db.prepare('SELECT project_id FROM project_tombstones WHERE user_id = ?').bind(userId).all();
+    return new Set((r.results || []).map(x => String(x.project_id)));
+  } catch (e) { return new Set(); }
+}
+async function filterTombstoned(db, userId, list) {
+  const gone = await tombstonedIds(db, userId);
+  if (!gone.size) return list;
+  return list.filter(p => p && p.id && !gone.has(String(p.id)));
+}
+
 function rowToProject(r) {
   return {
     id: r.id,
@@ -254,6 +288,7 @@ export async function onRequestPost({ request, env }) {
         }
       }
       await db.prepare('DELETE FROM user_projects WHERE id = ? AND user_id = ?').bind(String(body.id), user.id).run();
+      await markTombstones(db, user.id, [String(body.id)]);
       // Kaskade: hapus SEMUA data proyek (chat, file workspace, settings, env vars, log deploy).
       // Dijalankan paralel (bukan satu-satu berurutan) supaya tidak lama/timeout di koneksi lambat.
       try {
@@ -275,10 +310,11 @@ export async function onRequestPost({ request, env }) {
         }
       }
       await db.prepare('DELETE FROM user_projects WHERE user_id = ?').bind(user.id).run();
+      await markTombstones(db, user.id, (rows.results || []).map(r => String(r.id)));
       return j({ success: true });
     }
     if (action === 'replace_all') {
-      const list = Array.isArray(body.projects) ? body.projects.slice(0, 500) : [];
+      const list = await filterTombstoned(db, user.id, Array.isArray(body.projects) ? body.projects.slice(0, 500) : []);
       const planInfo = await getEffectivePlan(db, user);
       if (list.length > planInfo.limits.projectLimit) {
         return j({ success: false, error: 'Batas paket ' + planInfo.plan + ' tercapai: maksimal ' + planInfo.limits.projectLimit + ' proyek. Upgrade paket di halaman Langganan untuk menambah.', plan: planInfo.plan, limit: planInfo.limits.projectLimit, upgrade_needed: true }, 402);
@@ -288,7 +324,7 @@ export async function onRequestPost({ request, env }) {
       return j({ success: true, count: list.length, plan: planInfo.plan });
     }
     // default: upsert satu proyek atau daftar
-    const list = Array.isArray(body.projects) ? body.projects.slice(0, 500) : (body.project ? [body.project] : []);
+    const list = await filterTombstoned(db, user.id, Array.isArray(body.projects) ? body.projects.slice(0, 500) : (body.project ? [body.project] : []));
     if (!list.length) return j({ success: true, count: 0 });
     // Penegakan batas paket: hanya proyek BARU yang dihitung (update proyek lama selalu boleh)
     const planInfo = await getEffectivePlan(db, user);
@@ -319,6 +355,7 @@ export async function onRequestDelete({ request, env }) {
       if (!g.ok) return j({ success: false, guarded: true, error: g.reason, available: g.available, pending_withdrawals: g.pending_withdrawals }, 400);
       if (await sessionFresh(db, request)) return j({ success: false, need_otp: true, error: 'Sesi login masih baru: hapus proyek lewat halaman proyek dengan konfirmasi OTP.' }, 400);
       await db.prepare('DELETE FROM user_projects WHERE id = ? AND user_id = ?').bind(id, user.id).run();
+      await markTombstones(db, user.id, [String(id)]);
     } else {
       const rows = await db.prepare('SELECT id FROM user_projects WHERE user_id = ?').bind(user.id).all();
       let blocked = 0;
@@ -326,6 +363,7 @@ export async function onRequestDelete({ request, env }) {
       if (blocked > 0) return j({ success: false, guarded: true, error: blocked + ' proyek masih punya saldo ClincooPay / penarikan berjalan. Tarik/cairkan dulu sebelum menghapus.' }, 400);
       if (await sessionFresh(db, request)) return j({ success: false, need_otp: true, error: 'Sesi login masih baru: hapus proyek lewat halaman proyek dengan konfirmasi OTP.' }, 400);
       await db.prepare('DELETE FROM user_projects WHERE user_id = ?').bind(user.id).run();
+      await markTombstones(db, user.id, (rows.results || []).map(r => String(r.id)));
     }
     return j({ success: true });
   } catch (err) {

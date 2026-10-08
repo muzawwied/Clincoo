@@ -1082,14 +1082,25 @@ function wsB64DecodeEditor(b64Str){
   return new TextDecoder('utf-8').decode(bytes);
 }
 async function editorCloudSaveBig(path,content){
+  // [8 Okt 2026] Unggah per-chunk: satu POST berisi base64 puluhan MB kena batas
+  // CPU Worker (free plan ~10ms) -> gagal & file besar jadi hilang/hantu.
+  // Sekarang base64 dipotong ~700KB per request, dikirim berurutan; chunk
+  // pertama me-reset data lama, jadi retry aman (idempoten dari chunk 0).
   if(!LINK_PID)return {ok:false,error:'Proyek tidak aktif.'};
-  try{
-    const res=await fetch(WS_API,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},ccAuthHeaders()),
-      body:JSON.stringify({project_id:LINK_PID,files:[{path,content_b64:wsB64EncodeEditor(content)}]})});
+  const b64=wsB64EncodeEditor(content);
+  const CH=700000;
+  const total=Math.max(1,Math.ceil(b64.length/CH));
+  const totalBytes=String(content||'').length;
+  for(let i=0;i<total;i++){
+    let res;
+    try{
+      res=await fetch(WS_API,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},ccAuthHeaders()),
+        body:JSON.stringify({project_id:LINK_PID,files:[{path,chunk_b64:b64.slice(i*CH,(i+1)*CH),chunk_idx:i,chunk_total:total,total_bytes:totalBytes}]})});
+    }catch(e){return {ok:false,error:'Gagal terhubung ke cloud.'};}
     const d=await res.json().catch(()=>({}));
     if(!res.ok||d.error)return {ok:false,error:d.error||'Gagal menyimpan file besar ke cloud.'};
-    return {ok:true};
-  }catch(e){return {ok:false,error:'Gagal terhubung ke cloud.'};}
+  }
+  return {ok:true};
 }
 async function editorCloudFetchBig(path){
   if(!LINK_PID)return null;
@@ -1292,6 +1303,11 @@ function askOpenerForProject(){if(window.opener){try{window.opener.postMessage({
    user sudah mulai mengetik (userIsEditing) — perubahan user tetap di atas. */
 function cloudFirstSync(){
   if(!LINK_PID)return;
+  // [8 Okt 2026] Ada perubahan lokal yang belum berhasil terkirim (dirty) —
+  // terutama hapus file pada proyek besar yang push-nya gagal karena body gede.
+  // Kalau cloud basi boleh menang di sini, file yang sudah dihapus HIDUP LAGI.
+  // Cache lokal menang; dorong ulang ke cloud begitu editor terbuka.
+  if(wsDirtyIs()){setCloudDot(false);linkedCloudPushSchedule();return;}
   fetch(WS_API+'?project_id='+encodeURIComponent(LINK_PID),{headers:ccAuthHeaders()})
     .then(r=>r.ok?r.json():Promise.reject())
     .then(d=>{
