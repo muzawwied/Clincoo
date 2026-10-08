@@ -409,6 +409,28 @@ function _mcpPid() {
   try { return localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) { return ''; }
 }
 
+var _mcpPidFixed = false;
+async function _mcpEnsurePid() {
+  // [8 Okt 2026, laporan pemilik] Halaman dibuka tanpa ?id= & proyek aktif
+  // localStorage kosong -> URL endpoint tampil TANPA project_id (kosong).
+  // Ambil daftar proyek dari server, pakai yang terakhir diperbarui.
+  if (_mcpPid() || _mcpPidFixed) return;
+  try {
+    var r = await fetch(MCP_TOKEN_API.replace(/mcp-token\/?$/, 'projects'), { headers: { Authorization: 'Bearer ' + (_mcpUserToken || '') } });
+    var d = await r.json();
+    var list = (d && d.projects) || [];
+    var latest = null;
+    list.forEach(function (p) {
+      if (!p || !p.id) return;
+      if (!latest || String(p.updatedAt || '') > String(latest.updatedAt || '')) latest = p;
+    });
+    if (latest) {
+      try { localStorage.setItem('clincoo_current_project_id', latest.id); } catch (e) {}
+      _mcpPidFixed = true;
+    }
+  } catch (e) {}
+}
+
 var mcpState = { active: false, token: '', scopes: { 'file.list': true, 'file.read': true }, created_at: null, url: '', urlToken: '', activity: [] };
 // IZIN GRANULAR (2026-10-06): peta 100 izin (10 grup) — server selalu balikin
 // peta lengkap; cache lama era 10-izin lewat apa adanya (revalidate <10 menit).
@@ -536,6 +558,8 @@ async function loadMcpProjectChip() {
 }
 
 async function loadMcp() {
+  // 0) Pastikan project id ada (URL endpoint & token API butuh ?project_id=)
+  await _mcpEnsurePid();
   // 1) Ada cache? Tampilin LANGSUNG tanpa skeleton.
   var cached = _mcpCacheRead();
   if (cached && cached.token && _mcpPid()) {
