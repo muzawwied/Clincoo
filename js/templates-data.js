@@ -262,6 +262,7 @@ var ClincooTemplates = (function () {
           if (d && d.plan) {
             try { localStorage.setItem('clincoo_subscription_cache', JSON.stringify({ plan: d.plan, billingCycle: d.billingCycle || null })); } catch (e) {}
             syncCrowns();
+            syncTplLabels();
           }
         })
         .catch(function () {});
@@ -272,8 +273,34 @@ var ClincooTemplates = (function () {
   // Crown di CTA "Gunakan Template" hanya untuk user Starter pada template khusus paket Pro (saas, properti).
   // User Pro/Bisnis tidak melihat crown. Template bayar-kredit (ai-router) tidak pakai crown.
   var CROWN_SVG = '<svg data-cc-crown="1" class="w-4 h-4 mr-1.5 -mt-0.5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/></svg>';
+
+  // [8 Okt 2026, arahan pemilik] Label abu-abu di daftar template:
+  // gratis -> "Gratis"; PRO -> crown + "PRO"; bayar kredit -> teks harga (coret harga dasar bila ada diskon paket).
+  var CROWN_MINI = '<svg class="w-3 h-3 text-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/></svg>';
+  function tplLabelHtml(key) {
+    if (PRO_TEMPLATES.indexOf(key) !== -1) return CROWN_MINI + '<span class="ml-1 font-semibold text-gray-400">PRO</span>';
+    if (CREDIT_TEMPLATES.indexOf(key) !== -1) {
+      var priceRp = priceRpForPlan(planFromCache());
+      if (priceRp < AI_BASE_RP) {
+        return '<s class="text-gray-400">' + fmtKredit(rpToKredit(AI_BASE_RP)) + ' kredit</s><span class="ml-1 font-semibold text-gray-400">' + fmtKredit(rpToKredit(priceRp)) + ' kredit</span>';
+      }
+      return '<span class="font-semibold text-gray-400">' + fmtKredit(rpToKredit(priceRp)) + ' kredit</span>';
+    }
+    return '<span class="font-semibold text-gray-400">Gratis</span>';
+  }
+  function syncTplLabels(root) {
+    try {
+      var scope = root || document;
+      scope.querySelectorAll('[data-tpl-label]').forEach(function (el) {
+        var k = el.getAttribute('data-tpl-label');
+        if (k) el.innerHTML = tplLabelHtml(k);
+      });
+    } catch (e) {}
+  }
+
   function syncCrowns(root) {
     try {
+      syncTplLabels(root);
       var scope = root || document;
       var btns = scope.querySelectorAll('button[data-tpl-use], button[onclick*="useTemplate("]');
       btns.forEach(function (b) {
@@ -314,8 +341,15 @@ var ClincooTemplates = (function () {
   }
 
   // ---------- TEMPLATE BAYAR KREDIT: AI Router Console (semua paket, termasuk Pro & Bisnis) ----------
-  var PRO_PRICE = 15000;
   var PURCHASE_KEY = 'clincoo_template_purchases';
+  // [8 Okt 2026, arahan pemilik] Harga AI Router Console: Rp25.000 dasar.
+  // Diskon paket: Pro −Rp5.000 (bayar Rp20.000), Bisnis jadi Rp15.000.
+  // Konversi: Rp1.000 = 100 kredit → kredit = rupiah / 10 (Rp25.000 = 2.500 kredit).
+  var AI_BASE_RP = 25000;
+  var AI_PLAN_RP = { Starter: 25000, Pro: 20000, Bisnis: 15000 };
+  function priceRpForPlan(plan) { return AI_PLAN_RP[plan] || AI_BASE_RP; }
+  function rpToKredit(rp) { return Math.round(rp / 10); }
+  function myPriceKredit() { return rpToKredit(priceRpForPlan(planFromCache())); }
 
   function getPurchases() {
     try { return JSON.parse(localStorage.getItem(PURCHASE_KEY) || '[]'); } catch (e) { return []; }
@@ -347,6 +381,16 @@ var ClincooTemplates = (function () {
   function showPurchaseModal(key) {
     var t = list[key];
     if (!t) return;
+    var plan = planFromCache();
+    var priceRp = priceRpForPlan(plan);
+    var priceKredit = rpToKredit(priceRp);
+    var hargaHtml = fmtKredit(priceKredit) + ' kredit';
+    if (priceRp < AI_BASE_RP) {
+      hargaHtml = '<s class="text-gray-400 dark:text-gray-600 font-normal mr-1.5">' + fmtKredit(rpToKredit(AI_BASE_RP)) + ' kredit</s>' + fmtKredit(priceKredit) + ' kredit';
+    }
+    var diskonNote = (plan === 'Pro' || plan === 'Bisnis')
+      ? '<p class="text-xs text-emerald-600 dark:text-emerald-500 -mt-2 mb-3">Diskon paket ' + plan + ' sudah termasuk.</p>'
+      : '';
     var ov = document.createElement('div');
     ov.className = 'fixed inset-0 z-[9999] flex items-center justify-center p-4';
     ov.style.background = 'rgba(0,0,0,.45)';
@@ -359,14 +403,15 @@ var ClincooTemplates = (function () {
       '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>' +
       '<p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-4">' + t.desc + '</p>' +
       '<div class="rounded-xl border border-gray-100 dark:border-[#222] divide-y divide-gray-100 dark:divide-[#222] mb-4">' +
-      '<div class="flex items-center justify-between px-4 py-3"><span class="text-sm text-gray-500 dark:text-gray-400">Harga</span><span class="text-sm font-bold text-gray-900 dark:text-white">' + fmtKredit(PRO_PRICE) + ' kredit</span></div>' +
+      '<div class="flex items-center justify-between px-4 py-3"><span class="text-sm text-gray-500 dark:text-gray-400">Harga</span><span class="text-sm font-bold text-gray-900 dark:text-white">' + hargaHtml + '</span></div>' +
       '<div class="flex items-center justify-between px-4 py-3"><span class="text-sm text-gray-500 dark:text-gray-400">Saldo kredit kamu</span><span id="tp-saldo" class="text-sm font-semibold font-mono text-gray-900 dark:text-white">…</span></div>' +
       '</div>' +
-      '<p class="text-xs text-gray-400 dark:text-gray-500 leading-relaxed mb-4">Sekali beli, template terbuka selamanya untuk akunmu. Berlaku untuk semua paket, termasuk Pro &amp; Bisnis.</p>' +
+      '<p class="text-xs text-gray-400 dark:text-gray-500 leading-relaxed mb-4">Sekali beli, template terbuka selamanya untuk akunmu.</p>' +
+      diskonNote +
       '<div id="tp-note" class="hidden text-sm font-medium text-red-600 mb-3"></div>' +
       '<div class="flex gap-2">' +
       '<a id="tp-topup" href="' + _tdBase + '/akun/kredit/topup/" class="flex-1 text-center px-4 py-2.5 rounded-xl border border-gray-200 dark:border-[#2a2a2a] text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#161616] transition-colors">Top Up</a>' +
-      '<button id="tp-pay" class="flex-1 px-4 py-2.5 rounded-xl bg-black dark:bg-white text-white dark:text-black text-sm font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Bayar ' + fmtKredit(PRO_PRICE) + ' Kredit</button>' +
+      '<button id="tp-pay" class="flex-1 px-4 py-2.5 rounded-xl bg-black dark:bg-white text-white dark:text-black text-sm font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Bayar ' + fmtKredit(priceKredit) + ' Kredit</button>' +
       '</div></div>';
     document.body.appendChild(ov);
     function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
@@ -391,8 +436,8 @@ var ClincooTemplates = (function () {
         }
         saldo = Number(d.saldo || 0);
         saldoEl.textContent = fmtKredit(saldo) + ' kredit';
-        if (saldo < PRO_PRICE) {
-          noteEl.textContent = 'Saldo tidak cukup — butuh ' + fmtKredit(PRO_PRICE) + ' kredit. Top up dulu ya.';
+        if (saldo < priceKredit) {
+          noteEl.textContent = 'Saldo tidak cukup — butuh ' + fmtKredit(priceKredit) + ' kredit. Top up dulu ya.';
           noteEl.classList.remove('hidden');
           payBtn.disabled = true;
         }
@@ -417,14 +462,14 @@ var ClincooTemplates = (function () {
             use(key);
           } else {
             payBtn.disabled = false;
-            payBtn.textContent = 'Bayar ' + fmtKredit(PRO_PRICE) + ' Kredit';
+            payBtn.textContent = 'Bayar ' + fmtKredit(priceKredit) + ' Kredit';
             noteEl.textContent = (res.d && res.d.error) ? res.d.error : 'Pembayaran gagal — coba lagi sebentar.';
             noteEl.classList.remove('hidden');
           }
         })
         .catch(function () {
           payBtn.disabled = false;
-          payBtn.textContent = 'Bayar ' + fmtKredit(PRO_PRICE) + ' Kredit';
+          payBtn.textContent = 'Bayar ' + fmtKredit(priceKredit) + ' Kredit';
           noteEl.textContent = 'Koneksi bermasalah — coba lagi.';
           noteEl.classList.remove('hidden');
         });
@@ -578,11 +623,14 @@ var ClincooTemplates = (function () {
     isProPlan: isProPlan,
     isPurchased: isPurchased,
     getPurchases: getPurchases,
-    proPrice: PRO_PRICE,
+    aiPriceRp: priceRpForPlan,
+    aiPriceKredit: myPriceKredit,
     showPurchaseModal: showPurchaseModal,
     refreshPurchases: refreshPurchases,
     refreshPlan: refreshPlan,
     syncCrowns: syncCrowns,
+    syncTplLabels: syncTplLabels,
+    tplLabelHtml: tplLabelHtml,
     showProGate: showProGate,
     preview: preview,
     showToast: showToast

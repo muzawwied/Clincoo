@@ -12,7 +12,19 @@
 import { currentUser } from './user-scope.js';
 import { getActivePacks, consumePackCredit } from './ai-packs.js';
 
-const PRICE = 15000;
+// [8 Okt 2026, arahan pemilik] Harga AI Router Console: Rp25.000 dasar (Pro −Rp5.000, Bisnis Rp15.000).
+// Konversi: Rp1.000 = 100 kredit → kredit = rupiah / 10. Server pegang harga resmi per paket user.
+const BASE_CREDITS = 2500;
+const PLAN_CREDITS = { Starter: 2500, Pro: 2000, Bisnis: 1500 };
+const PLAN_RP = { Starter: 25000, Pro: 20000, Bisnis: 15000 };
+
+async function userPlan(db, userId) {
+  try {
+    const row = await db.prepare('SELECT value FROM subscription WHERE key = ?').bind('u' + userId + ':plan').first();
+    const plan = row && row.value ? row.value : 'Starter';
+    return PLAN_CREDITS[plan] ? plan : 'Starter';
+  } catch (e) { return 'Starter'; }
+}
 const PRO_KEYS = ['ai-router']; // template bayar-kredit (semua paket); saas/properti khusus paket Pro
 
 const CORS = {
@@ -58,7 +70,8 @@ export async function onRequestGet({ request, env }) {
     const user = await currentUser(env, request);
     if (!user) return j({ error: 'Silakan login terlebih dahulu', need_login: true }, 401);
     const purchased = await listPurchased(db, 'u' + user.id);
-    return j({ price: PRICE, pro_templates: PRO_KEYS, purchased });
+    const plan = await userPlan(db, user.id);
+    return j({ price: PLAN_CREDITS[plan], base: BASE_CREDITS, plan, price_rp: PLAN_RP[plan], pro_templates: PRO_KEYS, purchased });
   } catch (e) {
     return j({ error: 'Gagal memuat data pembelian template' }, 500);
   }
@@ -81,9 +94,12 @@ export async function onRequestPost({ request, env }) {
     const purchased = await listPurchased(db, userKey);
     if (purchased.indexOf(key) !== -1) return j({ ok: true, already: true, purchased });
 
+    const plan = await userPlan(db, user.id);
+    const PRICE = PLAN_CREDITS[plan];
+
     const saldo = await saldoKredit(db, userKey);
     if (saldo < PRICE) {
-      return j({ error: 'Saldo kredit tidak cukup', saldo, price: PRICE }, 402);
+      return j({ error: 'Saldo kredit tidak cukup', saldo, price: PRICE, base: BASE_CREDITS }, 402);
     }
 
     const res = await consumePackCredit(db, userKey, PRICE);

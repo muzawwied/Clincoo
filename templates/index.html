@@ -141,7 +141,7 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
         </div>
     </footer>
 
-    <script src="../js/templates-data.js?v=20261013"></script>
+    <script src="../js/templates-data.js?v=20261014"></script>
     <script>var _tSeg=location.pathname.split('/')[1]||'';var _tKnown=['akun','proyek','auth','templates','integrasi','assets','js','demo','sw.js','manifest.json','robots.txt','_redirects','index.html','404.html'];window.CLINCOO_BASE=window.CLINCOO_BASE||(location.hostname.indexOf('github.io')!==-1&&_tSeg&&_tKnown.indexOf(_tSeg)===-1?'/'+_tSeg:'');
     // ===== Data template (public) — diambil langsung dari js/templates-data.js (sumber sama dengan halaman utama) =====
     // Galeri selalu menampilkan SEMUA template; halaman utama maksimal 5.
@@ -288,6 +288,12 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
             desc.className = 'text-xs text-gray-500 dark:text-gray-400 leading-relaxed';
             desc.textContent = t.desc;
 
+            // [8 Okt 2026] Label abu-abu: Gratis / crown+PRO / harga kredit (diskon paket tampil coret harga dasar)
+            var labelEl = document.createElement('p');
+            labelEl.setAttribute('data-tpl-label', t.key);
+            labelEl.className = 'text-xs text-gray-400 dark:text-gray-500 mt-1.5 flex items-center';
+            try { labelEl.innerHTML = ClincooTemplates.tplLabelHtml(t.key); } catch (e) { labelEl.textContent = ''; }
+
             // Meta komunitas: icon user = pencipta, icon gunakan = jumlah dipakai, icon mata = kunjungan
             if (t.community) {
                 var meta = document.createElement('div');
@@ -378,6 +384,7 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
 
             body.appendChild(catEl);
             body.appendChild(row);
+            body.appendChild(labelEl);
             card.appendChild(imgWrap);
             card.appendChild(body);
             grid.appendChild(card);
@@ -524,6 +531,7 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
     // perubahan dari tab/halaman lain (storage) atau saat balik via tombol back (bfcache) langsung dirender ulang.
     window.addEventListener('storage', function (ev) { if (ev.key === 'clincoo_template_favorites') render(); });
     window.addEventListener('pageshow', function () { try { render(); } catch (e) {} });
+    window.addEventListener('storage', function (ev) { if (ev.key === 'clincoo_subscription_cache') { try { render(); } catch (e) {} } });
     window.addEventListener('storage', function (ev) { if (ev.key === 'clincoo_subscription_cache') render(); });
     try { ClincooTemplates.refreshPlan(); } catch (e) {}
 

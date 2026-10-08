@@ -36,39 +36,25 @@ function json(obj, status) {
 export async function onRequestGet({ request, env }) {
   const db = env.DB;
   if (!db) return json({ error: 'D1 not bound' }, 500);
-  try {
-    await ensurePromoTable(db);
-    const cnt = await db.prepare('SELECT COUNT(*) AS c FROM promo_early_pro').first();
-    const claimed = (cnt && cnt.c) || 0;
-    const remaining = Math.max(0, PROMO_EARLY.maxUsers - claimed);
-    const user = await currentUser(env, request);
-    const userKey = user ? ('u' + user.id) : null;
-    let hasClaimed = false;
-    let newUser = false;
-    if (userKey) {
-      const row = await db.prepare('SELECT 1 FROM promo_early_pro WHERE user_key = ?').bind(userKey).first();
-      hasClaimed = !!row;
-      newUser = await isPromoNewUser(db, user);
-    }
-    return json({
-      success: true,
-      active: true,
-      name: 'Promo 100 User Pertama',
-      plan: PROMO_EARLY.plan,
-      billing: PROMO_EARLY.billing,
-      price: PROMO_EARLY.price,
-      original: PROMO_EARLY.original,
-      total: PROMO_EARLY.maxUsers,
-      claimed,
-      remaining,
-      loggedIn: !!userKey,
-      hasClaimed,
-      newUser,
-      eligible: !!(userKey && newUser && !hasClaimed && remaining > 0)
-    });
-  } catch (e) {
-    return json({ error: e.message }, 500);
-  }
+  // [8 Okt 2026, arahan pemilik] Promo 100 User Pertama (Pro Rp5.000) DIHENTIKAN.
+  // Harga paket Pro kembali harga asli (Rp49.000) di semua halaman. Endpoint tetap
+  // ada supaya halaman lama tidak error, tapi selalu melaporkan promo tidak aktif.
+  return json({
+    success: true,
+    active: false,
+    name: 'Promo 100 User Pertama',
+    plan: PROMO_EARLY.plan,
+    billing: PROMO_EARLY.billing,
+    price: PROMO_EARLY.price,
+    original: PROMO_EARLY.original,
+    total: PROMO_EARLY.maxUsers,
+    claimed: PROMO_EARLY.maxUsers,
+    remaining: 0,
+    loggedIn: false,
+    hasClaimed: false,
+    newUser: false,
+    eligible: false
+  });
 }
 
 export async function onRequestOptions() {
