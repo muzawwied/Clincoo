@@ -142,11 +142,11 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
         </div>
     </footer>
 
-    <script src="../js/templates-data.js?v=20261016"></script>
+    <script src="../js/templates-data.js?v=20261017"></script>
     <script>var _tSeg=location.pathname.split('/')[1]||'';var _tKnown=['akun','proyek','auth','templates','integrasi','assets','js','demo','sw.js','manifest.json','robots.txt','_redirects','index.html','404.html'];window.CLINCOO_BASE=window.CLINCOO_BASE||(location.hostname.indexOf('github.io')!==-1&&_tSeg&&_tKnown.indexOf(_tSeg)===-1?'/'+_tSeg:'');
     // ===== Data template (public) — diambil langsung dari js/templates-data.js (sumber sama dengan halaman utama) =====
     // Galeri selalu menampilkan SEMUA template; halaman utama maksimal 5.
-    var _TPL_CATS = { portfolio: "Portfolio", saas: "Landing Page", topup: "Toko Online", tasks: "Produktivitas", properti: "Properti", "ai-router": "Developer" };
+    var _TPL_CATS = { "kedai-kopi": "Kuliner", "modelabs": "Developer", portfolio: "Portfolio", saas: "Landing Page", topup: "Toko Online", tasks: "Produktivitas", properti: "Properti", "ai-router": "Developer" };
     var TEMPLATES = [];
     (function () {
         var src = (typeof ClincooTemplates !== "undefined" && ClincooTemplates.list) ? ClincooTemplates.list : null;
@@ -159,6 +159,8 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
         } else {
             // Fallback bila modul data gagal dimuat
     TEMPLATES = [
+        { key: "kedai-kopi", name: "Vylonium Kedai Kopi", cat: "Kuliner", desc: "Landing page kedai kopi satu halaman — beranda, menu, cerita, suasana, dan reservasi meja. React 19 + TanStack Start, shadcn/ui, Tailwind CSS v4, Supabase.", url: "/demo/kedai-kopi/" },
+        { key: "modelabs", name: "AI Orchestrator Hub", cat: "Developer", desc: "Console orkestrasi & pengujian model AI — bandingkan model gratis/murah, kelola API key multi-outlet, log, kredit, playground. React 19 + TanStack Start, Drizzle ORM, Supabase.", url: "/demo/modelabs/" },
         { key: "portfolio", name: "Portfolio Profesional", cat: "Portfolio", desc: "Portfolio pribadi full-stack developer — desain gelap elegan dengan bagian karya, layanan, blog, dan kontak.", url: "/demo/portfolio/" },
         { key: "saas", name: "Landing Page SaaS", cat: "Landing Page", desc: "Landing page produk SaaS modern — hero, fitur, showcase, testimoni, pricing, dan FAQ dalam satu halaman ringan yang siap konversi.", url: "/demo/saas/" },
         { key: "topup", name: "Top Up Game", cat: "Toko Online", desc: "Situs top up game instan dengan tema terang/gelap — katalog game populer, pilihan nominal lengkap, metode pembayaran beragam, dan pelacakan status pesanan.", url: "/demo/topup/" },
