@@ -6215,6 +6215,7 @@ window.chatLivePreview = function () {
                                     signal: abortController.signal
                                 });
                             } catch (err) {
+                                try { window.__lastFetchErr = (err && err.name) + ': ' + (err && err.message) + ' | base=' + GEMINI_PROXY_URL + ' | loc=' + location.href.slice(0, 60) + ' | online=' + navigator.onLine; } catch (_x) {}
                                 if (err.name === 'AbortError') throw err;
                                 response = null;
                             }
@@ -6561,7 +6562,7 @@ window.chatLivePreview = function () {
                         // FIX: kalau AI SUDAH menelurkan jawaban (terstream) sebelum error,
                         // jawaban itu JANGAN dihilangkan — tetap tersimpan dan tampil; pesan
                         // gangguan hanya menjadi catatan kecil di bawahnya.
-                        const errText = "Lagi ada gangguan koneksi sebentar." + (window.__lastChatErr ? "\n\n[diag] " + (window.__lastChatErr.name || '') + ": " + String(window.__lastChatErr.msg || '').slice(0, 160) : "");
+                        const errText = "Lagi ada gangguan koneksi sebentar." + (window.__lastChatErr ? "\n\n[diag] " + (window.__lastChatErr.name || '') + ": " + String(window.__lastChatErr.msg || '').slice(0, 160) + (window.__lastFetchErr ? "\n[fetch] " + window.__lastFetchErr : "") : "");
                         const answeredSoFar = (deltaStreamed || '').trim() || (streamingBuffer || '').trim();
                         const msgIndex = messages.findIndex(m => m.id === aiMsgObj.id);
                         if (answeredSoFar) {
