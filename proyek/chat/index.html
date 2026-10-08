@@ -1178,7 +1178,21 @@ window.chatLivePreview = function () {
 
         let currentAttachments = [];
         
-        let isGenerating = false;
+        // [8 Okt 2026] Saat pesan dikirim & AI bekerja, placeholder input berganti
+        // jadi "Sedang dikembangkan..." — kembali ke "Tanya apa saja..." saat selesai.
+        // isGenerating dijadikan accessor global supaya SEMUA titik toggle
+        // (streaming chat, agent-task, stop) otomatis mengubah placeholder.
+        let __isGenerating = false;
+        function applyGenPlaceholder(on) {
+            try {
+                const el = document.getElementById('main-prompt-input');
+                if (el) el.placeholder = on ? 'Sedang dikembangkan...' : 'Tanya apa saja...';
+            } catch (e) {}
+        }
+        Object.defineProperty(globalThis, 'isGenerating', {
+            get() { return __isGenerating; },
+            set(v) { __isGenerating = !!v; applyGenPlaceholder(__isGenerating); }
+        });
         let typingInterval = null;
         let currentAiMessageId = null;
         let currentStatusInterval = null;
