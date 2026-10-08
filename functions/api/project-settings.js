@@ -102,18 +102,27 @@ export async function onRequestPost({ request, env }) {
       }
     }
 
+    // [8 Okt 2026] FIX LAMBAT: dulu getProjectTables() dipanggil PER KEY (tiap key
+    // menjalankan puluhan statement DDL migrasi) dan activity_log menyimpan NILAI
+    // PENUH (logo base64, chat_sync utuh) berulang-ulang. Sekarang 1x resolve tabel,
+    // dan log hanya catat ringkasan (nilai besar cukup panjangnya).
+    const T = await getProjectTables(db, projectId);
     const updates = {};
     for (const [key, value] of Object.entries(body)) {
       if (key === 'project_id') continue;
       updates[key] = String(value);
-      const T = await getProjectTables(db, projectId);
       await db.prepare(`INSERT OR REPLACE INTO ${T.projectSettings} (project_id, key, value) VALUES (?, ?, ?)`).bind(projectId, key, String(value)).run();
     }
 
     const changedKeys = Object.keys(updates);
     if (changedKeys.length > 0) {
       try {
-        await db.prepare("INSERT INTO activity_log (action, details) VALUES (?, ?)").bind('project_settings_update', 'Project ' + projectId + ': ' + JSON.stringify(updates)).run();
+        const summary = {};
+        for (const [k, v] of Object.entries(updates)) {
+          const str = String(v);
+          summary[k] = str.length > 120 ? `[${str.length} chars]` : str;
+        }
+        await db.prepare("INSERT INTO activity_log (action, details) VALUES (?, ?)").bind('project_settings_update', 'Project ' + projectId + ': ' + JSON.stringify(summary)).run();
       } catch(e) {}
     }
 

@@ -403,7 +403,17 @@ function _ensureDeleteModal() {
             _syncDeleteOkBtn();
             return;
         }
-        if (check && check.otp_required) {
+        // [8 Okt 2026] Pre-check gagal (server lambat/koneksi putus) -> JANGAN lanjut
+        // ke hapus optimis. Sebelumnya: cek gagal = dianggap aman -> hapus lokal +
+        // background delete; kalau server ternyata butuh OTP, penghapusan di server
+        // ditinggal diam-diam dan proyek MUNCUL LAGI setelah refresh -> user harus
+        // hapus 2x. Sekarang: minta user coba lagi saat cek sudah berhasil.
+        if (!check) {
+            if (errEl) { errEl.textContent = 'Server belum merespons. Periksa koneksi lalu coba lagi.'; errEl.classList.remove('hidden'); }
+            _syncDeleteOkBtn();
+            return;
+        }
+        if (check.otp_required) {
             // masuk step OTP: kirim kode ke email akun
             okBtn.dataset.step = 'otp';
             okBtn.disabled = true;
@@ -525,7 +535,8 @@ async function _deleteProjectInBackground(id, attempt) {
         if (res.ok) { const d = await res.json().catch(() => null); ok = !d || d.success !== false; }
         else {
             const d = await res.json().catch(() => null);
-            if (d && (d.guarded || d.need_otp)) { _unqueuePendingDelete(id); return; } // diblokir guard saldo / butuh OTP: jangan retry diam-diam
+            if (d && d.need_otp) { _unqueuePendingDelete(id); try { _showToast('Proyek belum terhapus di server — perlu kode OTP. Buka hapus proyek lagi untuk memasukkan kodenya.', 'error'); } catch (e) {} return; }
+            if (d && d.guarded) { _unqueuePendingDelete(id); try { _showToast('Proyek tidak bisa dihapus: ' + (d.error || 'diblokir saldo ClincooPay.'), 'error'); } catch (e) {} return; } // diblokir guard saldo: jangan retry diam-diam
         }
     } catch (e) { ok = false; }
     if (ok) {

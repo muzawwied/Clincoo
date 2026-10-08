@@ -105,8 +105,18 @@ export async function ensureProjectTables(db, projectId) {
 
 // Migrasi sekali per proyek: pindahkan data lama dari tabel bersama ke
 // tabel proyek, catat mapping sesi, lalu bersihkan tabel bersama.
+// [8 Okt 2026] MEMO PER-ISOLATE: migrasi & DDL per proyek hanya jalan SEKALI per
+// isolate. Sebelumnya setiap GET/POST project-settings/chat/dsb menjalankan
+// ~18 statement DDL (CREATE TABLE/INDEX berulang) + beberapa SELECT tiap kali ->
+// semua API proyek terasa lambat ("server lemot", simpan nama/desc/logo lama,
+// hapus proyek sampai 2x karena pre-check kehabisan waktu). Migrasi tercatat di
+// _project_migrations (D1), jadi memo per-isolate aman: isolate baru memeriksa ulang.
+const _migratedSuffixes = new Set();
+
 export async function migrateProjectData(db, projectId) {
   if (!projectId) return;
+  const s0 = tableSuffix(projectId);
+  if (_migratedSuffixes.has(s0)) return;
   await ensureProjectTables(db, projectId);
   await ensureMapTable(db);
   await db.prepare(`CREATE TABLE IF NOT EXISTS _project_migrations (
@@ -114,7 +124,7 @@ export async function migrateProjectData(db, projectId) {
   )`).run();
   const done = await db.prepare('SELECT project_id FROM _project_migrations WHERE project_id = ?')
     .bind(String(projectId)).first();
-  if (done) return;
+  if (done) { _migratedSuffixes.add(s0); return; }
   const s = tableSuffix(projectId);
   const t = (b) => `p_${s}_${b}`;
   const p = String(projectId);
@@ -160,6 +170,7 @@ export async function migrateProjectData(db, projectId) {
   }
   // 4) Tandai migrasi selesai
   await step('INSERT OR IGNORE INTO _project_migrations (project_id) VALUES (?)', p);
+  _migratedSuffixes.add(tableSuffix(p));
 }
 
 // Siapkan + resolve nama tabel untuk sebuah proyek.
