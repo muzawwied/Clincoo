@@ -291,6 +291,22 @@ var ClincooTemplates = (function () {
     }
     return '<span class="font-semibold text-gray-400">Gratis</span>';
   }
+  // [8 Okt 2026] Pad kanan judul kartu = lebar label sebenarnya (bukan angka tetap),
+  // supaya judul panjang seperti "Portfolio Profesional" tidak kepotong di layar kecil
+  // sementara label harga/PRO tetap sejajar di tembok kanan kartu.
+  function fitCardLabels(scope) {
+    try {
+      var root = scope && scope.querySelectorAll ? scope : document;
+      root.querySelectorAll('[data-tpl-label]').forEach(function (el) {
+        var title = el.parentElement ? el.parentElement.querySelector('h3') : null;
+        if (!title) return;
+        var html = el.innerHTML || '';
+        if (el.style.display === 'none' || !html) { title.style.paddingRight = ''; return; }
+        title.style.paddingRight = Math.ceil(el.getBoundingClientRect().width) + 12 + 'px';
+      });
+    } catch (e) {}
+  }
+
   function syncTplLabels(root) {
     try {
       var scope = root || document;
@@ -301,6 +317,7 @@ var ClincooTemplates = (function () {
         el.innerHTML = html;
         el.style.display = html ? '' : 'none';
       });
+      fitCardLabels(root);
     } catch (e) {}
   }
 
@@ -642,6 +659,7 @@ var ClincooTemplates = (function () {
     needsCrown: function (key) { return PRO_TEMPLATES.indexOf(key) !== -1 && !isProPlan(); },
     isProPlan: isProPlan,
     isPurchased: isPurchased,
+    fitCardLabels: fitCardLabels,
     getPurchases: getPurchases,
     aiPriceRp: priceRpForPlan,
     aiPriceKredit: myPriceKredit,

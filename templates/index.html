@@ -46,6 +46,7 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
         /* Capsule CTA "+ daftarkan template" (header, hanya untuk yang sudah masuk) */
+        #reg-capsule.hidden { display: none; }
         #reg-capsule { display: inline-flex; align-items: center; gap: 7px; background: transparent;
             border: 1px solid #e5e7eb; border-radius: 9999px; padding: 8px 16px;
             font-size: 13px; font-weight: 600; color: inherit;
@@ -249,7 +250,15 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
             var okQ = !state.q || t.name.toLowerCase().indexOf(state.q) !== -1 || t.desc.toLowerCase().indexOf(state.q) !== -1 || t.cat.toLowerCase().indexOf(state.q) !== -1;
             return okCat && okQ;
         });
-        if (state.sort === 'az') items.sort(function (a, b) { return a.name.localeCompare(b.name); });
+        // [8 Okt 2026, arahan pemilik] "Terbaru" kini benar-benar terbaru-di-atas:
+        // kiriman komunitas diurut turun berdasarkan tanggal masuk, template resmi menyusul.
+        if (state.sort === 'new') {
+          var waktu = function (t) {
+            return t.community ? (Date.parse(String(t.created_at || '').replace(' ', 'T') + 'Z') || 0) : 1;
+          };
+          items.sort(function (a, b) { return waktu(b) - waktu(a); });
+        }
+        else if (state.sort === 'az') items.sort(function (a, b) { return a.name.localeCompare(b.name); });
         else if (state.sort === 'za') items.sort(function (a, b) { return b.name.localeCompare(a.name); });
 
         var grid = document.getElementById('tpl-grid');
@@ -278,9 +287,7 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
 
             var body = document.createElement('div');
             body.className = 'p-4 relative';
-            var catEl = document.createElement('span');
-            catEl.className = 'inline-block text-[10px] font-semibold tracking-wide uppercase text-gray-400 dark:text-gray-500 mb-1.5';
-            catEl.textContent = t.cat;
+            // [8 Okt 2026, arahan pemilik] nama kategori TIDAK ditampilkan di card galeri.
             var title = document.createElement('h3');
             title.className = 'text-sm font-bold mb-1';
             title.textContent = t.name;
@@ -323,12 +330,12 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
 
             // Titik 3 + popup opsi — mengikuti kartu template di halaman utama
             var row = document.createElement('div');
-            row.className = 'flex justify-between items-end gap-3 mt-4';
+            row.className = 'flex justify-between items-end gap-3';
             var txtCol = document.createElement('div');
             txtCol.className = 'flex flex-col flex-1 overflow-hidden';
             // [8 Okt 2026, arahan pemilik] label harga/PRO di pojok kanan, sejajar dengan judul
             // [8 Okt 2026, arahan pemilik] label nempel tembok kanan kartu: absolut pojok kanan-atas body
-            title.className = 'text-sm font-bold mb-1 truncate pr-28';
+            title.className = 'text-sm font-bold mb-1 truncate';
             txtCol.appendChild(title);
             txtCol.appendChild(desc);
             row.appendChild(txtCol);
@@ -386,12 +393,12 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
             dotsWrap.appendChild(popup);
             row.appendChild(dotsWrap);
 
-            body.appendChild(catEl);
             body.appendChild(labelEl);
             body.appendChild(row);
             card.appendChild(imgWrap);
             card.appendChild(body);
             grid.appendChild(card);
+            try { ClincooTemplates.fitCardLabels(card); } catch (e) {}
         });
     }
 

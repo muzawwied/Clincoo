@@ -63,13 +63,22 @@ async function saldoKredit(db, userKey) {
 
 export async function onRequestOptions() { return new Response(null, { status: 204, headers: CORS }); }
 
+// [8 Okt 2026, arahan pemilik] Akun berikut boleh pakai template kredit (AI Router) GRATIS:
+// dianggap sudah "memiliki" semua template kredit tanpa memotong saldo.
+const FREE_ACCESS_EMAILS = new Set(['devconium@gmail.com']);
+
 export async function onRequestGet({ request, env }) {
   const db = env.DB;
   if (!db) return j({ error: 'D1 not bound' }, 500);
   try {
     const user = await currentUser(env, request);
     if (!user) return j({ error: 'Silakan login terlebih dahulu', need_login: true }, 401);
-    const purchased = await listPurchased(db, 'u' + user.id);
+    let purchased = await listPurchased(db, 'u' + user.id);
+    if (FREE_ACCESS_EMAILS.has(String(user.email || '').toLowerCase())) {
+      const merged = purchased.slice();
+      for (const k of PRO_KEYS) if (merged.indexOf(k) === -1) merged.push(k);
+      purchased = merged;
+    }
     const plan = await userPlan(db, user.id);
     return j({ price: PLAN_CREDITS[plan], base: BASE_CREDITS, plan, price_rp: PLAN_RP[plan], pro_templates: PRO_KEYS, purchased });
   } catch (e) {
@@ -93,6 +102,14 @@ export async function onRequestPost({ request, env }) {
 
     const purchased = await listPurchased(db, userKey);
     if (purchased.indexOf(key) !== -1) return j({ ok: true, already: true, purchased });
+    // allowlist gratis: tandai punya tanpa memotong saldo
+    if (FREE_ACCESS_EMAILS.has(String(user.email || '').toLowerCase())) {
+      try {
+        await db.prepare('INSERT INTO template_purchases (user_key, template_key, price_credits, purchased_at) VALUES (?, ?, 0, datetime(\'now\'))')
+          .bind(userKey, key).run();
+      } catch (e) {}
+      return j({ ok: true, key, free_access: true, purchased: await listPurchased(db, userKey) });
+    }
 
     const plan = await userPlan(db, user.id);
     const PRICE = PLAN_CREDITS[plan];
