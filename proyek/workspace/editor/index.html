@@ -1216,6 +1216,24 @@ function linkedCloudPushSchedule(){
 }
 // Push ATOMIK (POST mode replace) + retry 3x + verifikasi jumlah file.
 function linkedCloudPush(){linkedCloudPushNow(0,false);}
+// [8 Okt 2026] Notifikasi gagal sinkron: maksimal 1x per hari per proyek (dot cloud
+// tetap jadi indikator utama) + backoff naik bertahap (5s->15s->30s->60s->120s) supaya
+// tidak membombardir server saat proyek besar / koneksi lambat.
+let wsBackoffMs=0;
+function wsSyncFail(msg){
+  setCloudDot(false);
+  try{
+    const k='clincoo_ws_syncnote_'+(LINK_PID||'global');
+    const today=new Date().toISOString().slice(0,10);
+    if(localStorage.getItem(k)!==today){
+      localStorage.setItem(k,today);
+      toast(msg||'Belum tersinkron ke cloud — dicoba otomatis. Jangan bersihkan data situs.');
+    }
+  }catch(e){}
+  wsBackoffMs=wsBackoffMs?Math.min(120000,wsBackoffMs*3):5000;
+  clearTimeout(cloudTimer);
+  cloudTimer=setTimeout(linkedCloudPush,wsBackoffMs);
+}
 function linkedCloudPushNow(attempt,keepalive){
   cloudTimer=null;
   if(!LINK_PID)return;
@@ -1230,23 +1248,27 @@ function linkedCloudPushNow(attempt,keepalive){
   const opt={method:'POST',headers:H,body:JSON.stringify({project_id:LINK_PID,files,replace:true})};
   if(keepalive)opt.keepalive=true;
   fetch(WS_API,opt)
-    .then(r=>r.ok?r.json():Promise.reject())
-    .then(()=>fetch(WS_API+'?project_id='+encodeURIComponent(LINK_PID)+'&meta=1',{headers:ccAuthHeaders()}))
-    .then(r=>r.ok?r.json():Promise.reject())
-    .then(d=>{
-      const there=((d&&d.files)||[]).length;
-      if(there!==files.length)throw new Error('verifikasi gagal');
-      wsDirtySet(false);
-      setCloudDot(true);
-      wsCloudFailNotified=false;
+    .then(r=>r.json().then(d=>({ok:r.ok,status:r.status,d:d})).catch(()=>({ok:false,status:r.status,d:null})))
+    .then(res=>{
+      if(!res.ok||!res.d||res.d.error){
+        // 402 = kuota workspace penuh: pesan spesifik, tanpa retry cepat berulang-ulang
+        const quotaMsg=(res.status===402&&res.d&&res.d.error)?res.d.error:null;
+        if(attempt<2&&!quotaMsg){setTimeout(()=>linkedCloudPushNow(attempt+1,keepalive),1500*(attempt+1));return;}
+        wsSyncFail(quotaMsg);
+        return;
+      }
+      return fetch(WS_API+'?project_id='+encodeURIComponent(LINK_PID)+'&meta=1',{headers:ccAuthHeaders()})
+        .then(r=>r.ok?r.json():Promise.reject())
+        .then(d=>{
+          const there=((d&&d.files)||[]).length;
+          if(there!==files.length)throw new Error('verifikasi gagal');
+          wsDirtySet(false);
+          setCloudDot(true);
+          wsBackoffMs=0;
+        })
+        .catch(()=>{wsSyncFail();});
     })
-    .catch(()=>{
-      if(attempt<2){setTimeout(()=>linkedCloudPushNow(attempt+1,keepalive),1500*(attempt+1));return;}
-      setCloudDot(false);
-      if(typeof wsCloudFailNotified==='undefined')var wsCloudFailNotified;
-      if(!wsCloudFailNotified){wsCloudFailNotified=true;try{toast('Belum tersinkron ke cloud — dicoba otomatis. Jangan bersihkan data situs.');}catch(e){}}
-      linkedCloudPushSchedule();
-    });
+    .catch(()=>{wsSyncFail();});
 }
 // Flush saat tab ditutup/disembunyikan supaya detik-detik terakhir tidak hilang
 window.addEventListener('pagehide',()=>{if(wsDirtyIs())linkedCloudPushNow(0,true);});

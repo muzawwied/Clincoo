@@ -141,7 +141,7 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
         </div>
     </footer>
 
-    <script src="../js/templates-data.js?v=20261010"></script>
+    <script src="../js/templates-data.js?v=20261011"></script>
     <script>var _tSeg=location.pathname.split('/')[1]||'';var _tKnown=['akun','proyek','auth','templates','integrasi','assets','js','demo','sw.js','manifest.json','robots.txt','_redirects','index.html','404.html'];window.CLINCOO_BASE=window.CLINCOO_BASE||(location.hostname.indexOf('github.io')!==-1&&_tSeg&&_tKnown.indexOf(_tSeg)===-1?'/'+_tSeg:'');
     // ===== Data template (public) — diambil langsung dari js/templates-data.js (sumber sama dengan halaman utama) =====
     // Galeri selalu menampilkan SEMUA template; halaman utama maksimal 5.
@@ -153,7 +153,7 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
             Object.keys(src).forEach(function (k) {
                 var t = src[k];
                 if (!t) return;
-                TEMPLATES.push({ key: k, name: t.name, cat: _TPL_CATS[k] || "Lainnya", desc: t.desc, url: t.url, pro: !!(ClincooTemplates.isProTemplate && ClincooTemplates.isProTemplate(k)) });
+                TEMPLATES.push({ key: k, name: t.name, cat: _TPL_CATS[k] || "Lainnya", desc: t.desc, url: t.url });
             });
         } else {
             // Fallback bila modul data gagal dimuat
@@ -276,17 +276,6 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
             img.addEventListener('load', function () { img.classList.remove('img-skeleton'); });
             imgWrap.appendChild(img);
 
-            // Badge PRO + harga (15.000 kredit) — berubah jadi tanda terbuka setelah dibeli
-            if (t.pro) {
-                var bought = false, proPlan = false;
-                try { bought = ClincooTemplates.isPurchased(t.key); proPlan = ClincooTemplates.isProPlan(); } catch (e) {}
-                var badge = document.createElement('span');
-                badge.className = 'absolute top-2 right-2 z-10 text-[10px] font-bold tracking-wide px-2 py-1 rounded-md shadow-sm ' +
-                    ((bought || proPlan) ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white');
-                badge.textContent = (bought || proPlan) ? 'PRO · TERBUKA' : 'PRO · 15.000 KR';
-                imgWrap.appendChild(badge);
-            }
-
             var body = document.createElement('div');
             body.className = 'p-4';
             var catEl = document.createElement('span');
@@ -356,7 +345,7 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
                 popup.appendChild(b);
                 return b;
             }
-            menuBtn('Gunakan Template', null, function () {
+            var _useCta = menuBtn('Gunakan Template', null, function () {
                 if (t.community) {
                     trackCommunity(t.id, 'use');
                     pakaiPromptGallery('Gunakan template komunitas \"' + t.name + '\" sebagai dasar website saya. ' + (t.desc || ''));
@@ -364,6 +353,8 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
                 }
                 useTemplate(t.key); // alur yang sama dengan halaman utama: buat proyek + masuk workspace
             });
+            // Crown (gaya sama dengan crown di profil/Build) menandai CTA template PRO — tanpa badge di kartu.
+            try { if (ClincooTemplates.isProTemplate(t.key)) _useCta.insertAdjacentHTML('afterbegin', '<svg class="w-4 h-4 mr-1.5 -mt-0.5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/></svg>'); } catch (e) {}
             if (!t.community) {
                 menuBtn('Pakai Prompt Ini', null, function () {
                     pakaiPromptGallery('Tolong buatkan website ' + t.name + ' berbasis template. ' + t.desc);
@@ -520,6 +511,7 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
     }
 
     // ===== Helper popup galeri =====
+    var CROWN_GALLERY = '<svg class="w-4 h-4 mr-1.5 -mt-0.5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/></svg>';
     function isFavGallery(key) {
         try { return (ClincooTemplates.getFavorites() || []).indexOf(key) !== -1; } catch (e) { return false; }
     }
@@ -528,6 +520,11 @@ body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1
         try { localStorage.setItem('clincoo_pending_prompt', promptText); } catch (e) {}
         window.location.href = '../';
     }
+
+    // Favorit & data template tersambung lintas halaman (utama <-> galeri <-> favorit):
+    // perubahan dari tab/halaman lain (storage) atau saat balik via tombol back (bfcache) langsung dirender ulang.
+    window.addEventListener('storage', function (ev) { if (ev.key === 'clincoo_template_favorites') render(); });
+    window.addEventListener('pageshow', function () { try { render(); } catch (e) {} });
 
     render();
     </script>

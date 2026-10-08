@@ -147,6 +147,8 @@ var ClincooTemplates = (function () {
 
   var toastTimer = null;
   function showToast(message) {
+    // [8 Okt 2026, arahan pemilik] Gallery (/templates/) bebas toast — notifikasi tidak tampil di sana.
+    try { if (location.pathname.indexOf('/templates/') !== -1) return; } catch (e) {}
     var toast = document.getElementById('clincoo-toast');
     if (!toast) {
       toast = document.createElement('div');
@@ -235,7 +237,7 @@ var ClincooTemplates = (function () {
   }
 
   // ---------- Template premium (hanya Paket Pro & Bisnis) ----------
-  var PRO_TEMPLATES = ['properti', 'saas'];
+  var PRO_TEMPLATES = ['properti', 'saas', 'ai-router'];
 
   function planFromCache() {
     try { return (JSON.parse(localStorage.getItem('clincoo_subscription_cache') || 'null') || {}).plan || 'Starter'; }

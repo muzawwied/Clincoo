@@ -13,7 +13,7 @@ import { currentUser } from './user-scope.js';
 import { getActivePacks, consumePackCredit } from './ai-packs.js';
 
 const PRICE = 15000;
-const PRO_KEYS = ['properti', 'saas'];
+const PRO_KEYS = ['properti', 'saas', 'ai-router'];
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
