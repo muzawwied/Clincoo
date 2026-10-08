@@ -15,6 +15,7 @@
 
 import { currentUser } from './user-scope.js';
 import { creditTopup } from './topup.js';
+import { claimKreditTopup } from './kredit-topup.js';
 import { sendEmail, flatTemplate, formatIDR } from './notify-helpers.js';
 import { forwardPayWebhook } from './pay/index.js';
 
@@ -257,6 +258,19 @@ export async function onRequestPost({ request, env }) {
           try { await db.prepare("UPDATE pay_transactions SET status = ?, updated_at = datetime('now') WHERE id = ?").bind(st, tx.id).run(); } catch (e) {}
           // hanya saat transisi — retry webhook nggak kirim 'paid' dobel ke situs deploy
           if (st === 'paid') { try { await forwardPayWebhook(db, tx, st); } catch (e) {} }
+        }
+        return json({ received: true, matched: true });
+      }
+    }
+
+    // ---- Top-up Kredit AI: order "kredit-ai-xxx" (dibuat oleh /api/kredit-topup) ----
+    const mk = raw.match(/kredit-ai-[A-Za-z0-9-]+/);
+    if (mk) {
+      let kt = null;
+      try { kt = await db.prepare('SELECT * FROM kredit_topups WHERE id = ?').bind(mk[0]).first(); } catch (e) {}
+      if (kt) {
+        if (isPos && !isNeg && kt.status === 'pending') {
+          try { await claimKreditTopup(db, kt.id); } catch (e) {}
         }
         return json({ received: true, matched: true });
       }

@@ -253,8 +253,9 @@ async function load(isRefresh) {
         state.chatHarian = data.chatHarian || [];
         state.integrasi = data.integrasi || [];
         state.email = data.email || '';
-        // Top Up ke kredit-ai dengan email terpasang otomatis -> grant langsung ke akun ini
-        document.getElementById('btn-topup').href = 'https://kredit-ai.pages.dev/topup.html' + (state.email ? '?email=' + encodeURIComponent(state.email) : '');
+        // [8 Okt 2026, arahan pemilik] Top Up sepenuhnya di dalam Clincoo —
+        // tidak lagi membuka situs kredit-ai.pages.dev. Grant otomatis ke akun login.
+        document.getElementById('btn-topup').href = '/akun/kredit/topup/';
         render(isRefresh && oldSaldo !== state.saldo);
         if (isRefresh && oldSaldo !== state.saldo) toast('Saldo kredit diperbarui');
     } catch (e) {

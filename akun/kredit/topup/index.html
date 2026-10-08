@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Top Up Kredit — Clincoo</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" type="image/png" href="../../../assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+<script src="https://unpkg.com/lucide@1.41.0"></script>
+<script src="../../../js/auth-client.js?v=2"></script>
+<style>
+    html, body { scrollbar-width: none; -ms-overflow-style: none; }
+    html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+    body { font-family: 'Inter', sans-serif; background-color: #ffffff; transition: background-color 0.3s ease, color 0.3s ease; }
+    :root { --accent-color: #000000; --accent-hover: #1f2937; }
+    .bg-accent { background-color: var(--accent-color) !important; }
+    .text-accent { color: var(--accent-color) !important; }
+    body.dark-mode { background-color: #000000; color: #ffffff; }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode .bg-gray-50 { background-color: #141414 !important; }
+    body.dark-mode .bg-gray-100 { background-color: #1a1a1a !important; }
+    body.dark-mode .border-gray-100, body.dark-mode .border-gray-200, body.dark-mode .border-gray-300 { border-color: #222222 !important; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #f0f0f0 !important; }
+    body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 { color: #888888 !important; }
+    body.dark-mode .text-gray-400, body.dark-mode .text-gray-300 { color: #666666 !important; }
+    body.dark-mode .bg-accent { background-color: #ffffff !important; color: #000000 !important; }
+    body.dark-mode .bg-accent.text-white { color: #000000 !important; }
+    body.dark-mode .bg-accent.text-white svg { color: #000000 !important; stroke: #000000 !important; }
+    body.dark-mode button.rc-key { color: #f0f0f0 !important; }
+    body.dark-mode .bg-black { background-color: #ffffff !important; color: #000000 !important; }
+    * { -webkit-tap-highlight-color: transparent; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    @keyframes popIn { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: none; } }
+    .pop { animation: popIn .22s ease-out; }
+    .rc-key { -webkit-user-select: none; user-select: none; transition: transform .1s ease, background-color .15s ease; }
+    .rc-key:active { transform: scale(.92); }
+    .medal-wrap { perspective: 600px; }
+    .medal { background: radial-gradient(circle at 30% 25%, #6ee7b7, #10b981 55%, #047857); box-shadow: 0 16px 34px -10px rgba(16,185,129,.55), inset 0 -8px 14px rgba(0,0,0,.25), inset 0 8px 14px rgba(255,255,255,.4); transform-style: preserve-3d; animation: medalIn .85s cubic-bezier(.34,1.56,.64,1) both, medalFloat 2.6s ease-in-out 1s infinite alternate; }
+    .medal-check { stroke-dasharray: 32; stroke-dashoffset: 32; animation: medalDraw .5s ease-out .5s forwards; }
+    .medal-halo { position: absolute; inset: -8px; border-radius: 9999px; border: 2px solid rgba(16,185,129,.5); animation: medalHalo 1.5s ease-out .35s both; }
+    @keyframes medalIn { 0% { transform: scale(.15) rotateY(190deg); opacity: 0; } 60% { transform: scale(1.12) rotateY(-16deg); opacity: 1; } 100% { transform: scale(1) rotateY(0deg); } }
+    @keyframes medalFloat { from { transform: rotateX(5deg) translateY(0); } to { transform: rotateX(-5deg) translateY(-7px); } }
+    @keyframes medalDraw { to { stroke-dashoffset: 0; } }
+    @keyframes medalHalo { from { transform: scale(.55); opacity: .9; } to { transform: scale(1.45); opacity: 0; } }
+</style>
+</head>
+<body class="min-h-screen flex flex-col text-gray-900 pt-20">
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.body.classList.add('dark-mode');var a=localStorage.getItem('clincoo_accent')||'Hitam (Default)';var am={'Hitam (Default)':{m:'#000000',h:'#1f2937'},'Biru':{m:'#2563eb',h:'#1d4ed8'},'Hijau':{m:'#059669',h:'#047857'},'Ungu':{m:'#9333ea',h:'#7e22ce'},'Merah':{m:'#dc2626',h:'#b91c1c'}};var c=am[a]||am['Hitam (Default)'];document.documentElement.style.setProperty('--accent-color',c.m);document.documentElement.style.setProperty('--accent-hover',c.h);}catch(e){}})();</script>
+
+<!-- Tombol kembali bulat fixed kiri atas -->
+<a href="/akun/kredit/" class="fixed top-3 left-3 w-10 h-10 flex items-center justify-center rounded-full bg-white backdrop-blur border border-gray-100 shadow-sm hover:bg-gray-50 transition-all cursor-pointer text-gray-700 hover:text-black z-50" aria-label="Kembali">
+    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+</a>
+
+<main class="flex-1 w-full max-w-xl mx-auto pb-16 flex-col justify-start relative">
+
+    <!-- Input nominal: keyboard Clincoo -->
+    <div id="input-wrap">
+        <div class="flex flex-col items-center text-center px-5 pb-2 relative">
+            <h2 class="text-[24px] font-extrabold text-gray-900 tracking-tight">Top Up Kredit</h2>
+            <p class="text-[14px] text-gray-500 font-medium mt-0.5">Masukkan nominal</p>
+        </div>
+
+        <div class="max-w-md mx-auto px-5 pt-6">
+            <p id="rc-amount-preview" class="text-center text-3xl font-bold font-mono text-gray-900 mb-2">Rp 0</p>
+            <p id="rc-kredit-preview" class="text-center text-xs text-gray-400 font-medium mb-4 hidden"></p>
+            <div class="text-center mb-8">
+                <p id="rc-error" class="hidden text-xs text-red-500 mt-1"></p>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3 max-w-[300px] mx-auto mb-9">
+                <button type="button" onclick="rcKey('1')" class="rc-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 text-xl font-semibold text-gray-900">1</button>
+                <button type="button" onclick="rcKey('2')" class="rc-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 text-xl font-semibold text-gray-900">2</button>
+                <button type="button" onclick="rcKey('3')" class="rc-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 text-xl font-semibold text-gray-900">3</button>
+                <button type="button" onclick="rcKey('4')" class="rc-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 text-xl font-semibold text-gray-900">4</button>
+                <button type="button" onclick="rcKey('5')" class="rc-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 text-xl font-semibold text-gray-900">5</button>
+                <button type="button" onclick="rcKey('6')" class="rc-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 text-xl font-semibold text-gray-900">6</button>
+                <button type="button" onclick="rcKey('7')" class="rc-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 text-xl font-semibold text-gray-900">7</button>
+                <button type="button" onclick="rcKey('8')" class="rc-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 text-xl font-semibold text-gray-900">8</button>
+                <button type="button" onclick="rcKey('9')" class="rc-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 text-xl font-semibold text-gray-900">9</button>
+                <button type="button" onclick="rcKey('C')" class="rc-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 text-base font-semibold text-gray-400">C</button>
+                <button type="button" onclick="rcKey('0')" class="rc-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 text-xl font-semibold text-gray-900">0</button>
+                <button type="button" onclick="rcKey('del')" class="rc-key w-16 h-16 rounded-full justify-self-center flex items-center justify-center bg-gray-100 text-gray-400" aria-label="Hapus">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><path stroke-linecap="round" stroke-linejoin="round" d="m18 9-6 6m0-6 6 6"></path></svg>
+                </button>
+            </div>
+
+            <button type="button" id="rc-next" onclick="rcNext()" disabled class="w-full h-12 text-sm font-bold text-white bg-accent rounded-full transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer active:scale-[0.98]">
+                Lanjutkan
+            </button>
+            <p class="text-center text-[11px] text-gray-400 font-medium mt-3">Rp1.000 = 100 kredit &middot; bonus 10% mulai Rp25.000, 20% mulai Rp50.000, 25% mulai Rp100.000</p>
+        </div>
+    </div>
+
+    <!-- Panel QRIS -->
+    <div id="qris-wrap" class="hidden">
+        <div class="max-w-md mx-auto px-5 pt-6">
+
+            <div id="qr-loading" class="flex flex-col items-center py-14">
+                <svg class="w-7 h-7 text-gray-300 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+            </div>
+
+            <div id="qr-body" class="hidden">
+                <p class="text-center text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Total dibayar</p>
+                <p id="qr-total-big" class="text-center text-3xl font-bold font-mono text-gray-900 mb-1">Rp 0</p>
+                <p id="qr-status" class="text-center text-xs text-amber-500 font-medium mb-5">Menunggu pembayaran…</p>
+
+                <div class="mx-auto w-fit bg-white p-4 rounded-2xl border border-gray-200 shadow-sm mb-5">
+                    <img id="qr-img" src="" alt="Kode QRIS" class="w-56 h-56 object-contain block" referrerpolicy="no-referrer">
+                </div>
+
+                <div class="space-y-2.5 text-xs mb-6">
+                    <div class="flex items-center justify-between"><p class="text-gray-500">Nominal</p><p id="qr-amount" class="font-semibold font-mono text-gray-900">Rp 0</p></div>
+                    <div class="flex items-center justify-between"><p class="text-gray-500">Kredit diterima</p><p id="qr-kredit" class="font-semibold font-mono text-gray-900">0</p></div>
+                    <div class="flex items-center justify-between"><p class="text-gray-500">Biaya layanan</p><p id="qr-fee" class="font-semibold font-mono text-gray-900">Rp 0</p></div>
+                    <div class="flex items-center justify-between"><p class="text-gray-500">Berlaku hingga</p><p id="qr-exp" class="font-mono text-gray-900">&mdash;</p></div>
+                    <div class="flex items-center justify-between"><p class="text-gray-500">ID transaksi</p><p id="qr-order" class="font-mono text-gray-900">&mdash;</p></div>
+                </div>
+
+                <div id="qr-cta-wait" class="space-y-3">
+                    <button type="button" id="qr-download" onclick="qrDownload()" class="w-full h-12 text-sm font-semibold text-white bg-black rounded-full transition-colors cursor-pointer flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-5-5m5 5l5-5M4 20h16"></path></svg>
+                        Unduh Kode QRIS
+                    </button>
+                    <button type="button" onclick="backToInput()" class="flex items-center justify-center w-full h-12 text-sm font-semibold text-gray-700 bg-gray-100 rounded-full transition-colors cursor-pointer">Tutup</button>
+                </div>
+
+                <div id="qr-cta-paid" class="hidden text-center">
+                    <div class="medal-wrap relative w-16 h-16 mx-auto mb-5">
+                        <div class="medal absolute inset-0 rounded-full flex items-center justify-center">
+                            <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path class="medal-check" d="m5 13 4 4L19 7"></path></svg>
+                        </div>
+                        <div class="medal-halo"></div>
+                    </div>
+                    <p class="text-base font-bold text-gray-900">Pembayaran diterima</p>
+                    <p id="paid-detail" class="text-xs text-gray-400 mt-1 mb-6"></p>
+                    <button type="button" onclick="location.href='/akun/kredit/'" class="inline-flex items-center justify-center px-6 h-12 text-sm font-semibold text-white bg-black rounded-full transition-colors cursor-pointer">Kembali ke Saldo</button>
+                </div>
+
+                <div id="qr-cta-expired" class="hidden text-center">
+                    <p class="text-sm font-semibold text-gray-900">Kode QRIS kedaluwarsa</p>
+                    <p class="text-xs text-gray-400 mt-1 mb-6">Masa berlaku 15 menit sudah habis dan pembayaran tidak terdeteksi.</p>
+                    <button type="button" onclick="backToInput()" class="inline-flex items-center justify-center px-6 h-12 text-sm font-semibold text-white bg-black rounded-full transition-colors cursor-pointer">Buat QRIS Baru</button>
+                </div>
+            </div>
+
+            <div id="qr-missing" class="hidden text-center py-14">
+                <p class="text-sm font-semibold text-gray-900">Gagal membuat QRIS</p>
+                <p id="qr-missing-msg" class="text-xs text-gray-400 mt-1 mb-6">Coba lagi beberapa saat lagi.</p>
+                <button type="button" onclick="backToInput()" class="inline-flex items-center justify-center px-6 h-12 text-sm font-semibold text-white bg-black rounded-full transition-colors cursor-pointer">Kembali</button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="w-full max-w-xl mx-auto px-5 pb-6 pt-4 mt-4 border-t border-gray-100 text-center">
+    <p class="text-xs text-gray-400">&copy; 2026 Clincoo. Seluruh hak cipta dilindungi.</p>
+    <p class="text-[11px] text-gray-400 mt-1">Penggunaan Clincoo tunduk pada <a href="https://blog.clincoo.buzz/legal/syarat-ketentuan/" target="_blank" rel="noopener" class="underline hover:text-gray-600">Syarat &amp; Ketentuan</a> serta <a href="https://blog.clincoo.buzz/legal/kebijakan-privasi/" target="_blank" rel="noopener" class="underline hover:text-gray-600">Kebijakan Privasi</a> yang berlaku.</p>
+</footer>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[70] hidden">
+    <div class="bg-accent text-white text-[13px] font-semibold rounded-full px-4 py-2.5 shadow-lg pop" id="toast-msg"></div>
+</div>
+
+<script>
+var API = '/api/kredit-topup';
+var RC_MIN = 1000, RC_MAX = 100000000;
+var _rp = function (n) { return Number(n || 0).toLocaleString('id-ID'); };
+var _amount = '';
+var cur = { orderId: '', amount: 0, kredit: 0, total: 0, fee: 0, qrSrc: '' };
+var pollInt = null, expTimer = null;
+
+function bonusPct(a) {
+    if (a >= 100000) return 25;
+    if (a >= 50000) return 20;
+    if (a >= 25000) return 10;
+    return 0;
+}
+function kreditOf(a) { return Math.floor(a / 10 * (1 + bonusPct(a) / 100)); }
+
+function rcRenderDigits() {
+    document.getElementById('rc-amount-preview').textContent = 'Rp ' + _rp(Number(_amount || 0));
+    var amount = Number(_amount || 0);
+    var kp = document.getElementById('rc-kredit-preview');
+    if (amount >= RC_MIN) {
+        var b = bonusPct(amount);
+        kp.textContent = 'Dapat ' + _rp(kreditOf(amount)) + ' kredit' + (b ? ' (termasuk bonus ' + b + '%)' : '');
+        kp.classList.remove('hidden');
+    } else { kp.classList.add('hidden'); }
+}
+
+function rcKey(k) {
+    if (k === 'C') _amount = '';
+    else if (k === 'del') _amount = _amount.slice(0, -1);
+    else if (_amount.length < 8) _amount += k;
+    rcRenderDigits();
+    rcUpdate();
+}
+
+function rcUpdate() {
+    var amount = Number(_amount || 0);
+    var err = document.getElementById('rc-error');
+    var msg = '';
+    if (amount && amount < RC_MIN) msg = 'Nominal minimal Rp 1.000.';
+    else if (amount > RC_MAX) msg = 'Nominal maksimal Rp 100.000.000.';
+    if (msg) { err.textContent = msg; err.classList.remove('hidden'); } else { err.classList.add('hidden'); }
+    document.getElementById('rc-next').disabled = !(amount >= RC_MIN && amount <= RC_MAX);
+}
+
+var QR_SNAP_KEY = 'clincoo_qris_snap';
+var BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+
+function fmtExp(expiresAt) {
+    var expTxt = '—', expMs = null;
+    try {
+        var m = String(expiresAt || '').match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+        if (m) {
+            // buatqris mengirim WIB (UTC+7)
+            var dt = new Date(Date.UTC(+m[1], +m[2]-1, +m[3], +m[4]-7, +m[5]));
+            expMs = dt.getTime();
+            var hh = ('0'+dt.getHours()).slice(-2), mm = ('0'+dt.getMinutes()).slice(-2);
+            expTxt = ('0'+dt.getDate()).slice(-2) + ' ' + BULAN[dt.getMonth()] + ' ' + dt.getFullYear() + ' ' + hh + ':' + mm;
+        }
+    } catch (e) {}
+    return { txt: expTxt, ms: expMs };
+}
+
+function showQrisSection() {
+    document.getElementById('input-wrap').classList.add('hidden');
+    document.getElementById('qr-missing').classList.add('hidden');
+    document.getElementById('qr-body').classList.add('hidden');
+    document.getElementById('qr-loading').classList.remove('hidden');
+    document.getElementById('qris-wrap').classList.remove('hidden');
+    window.scrollTo({ top: 0 });
+}
+
+function renderQris(d) {
+    cur.orderId = d.order_id;
+    cur.amount = d.amount;
+    cur.kredit = d.credits || kreditOf(d.amount);
+    cur.total = d.total || d.amount;
+    cur.fee = d.fee || 0;
+    cur.qrSrc = API + '?action=qrimg&u=' + encodeURIComponent(d.qr_image || '');
+
+    document.getElementById('qr-total-big').textContent = 'Rp ' + _rp(cur.total);
+    document.getElementById('qr-amount').textContent = 'Rp ' + _rp(d.amount);
+    document.getElementById('qr-kredit').textContent = _rp(cur.kredit) + ' kredit';
+    document.getElementById('qr-fee').textContent = 'Rp ' + _rp(cur.fee);
+    document.getElementById('qr-order').textContent = d.order_id;
+
+    var e = fmtExp(d.expires_at);
+    document.getElementById('qr-exp').textContent = e.txt;
+
+    document.getElementById('qr-img').src = d.qr_image;
+    document.getElementById('qr-status').textContent = 'Menunggu pembayaran…';
+    document.getElementById('qr-cta-wait').classList.remove('hidden');
+    document.getElementById('qr-cta-paid').classList.add('hidden');
+    document.getElementById('qr-cta-expired').classList.add('hidden');
+    document.getElementById('qr-loading').classList.add('hidden');
+    document.getElementById('qr-body').classList.remove('hidden');
+
+    try { sessionStorage.setItem(QR_SNAP_KEY, JSON.stringify(d)); } catch (e2) {}
+
+    startPolling();
+    clearTimeout(expTimer);
+    if (e.ms) {
+        expTimer = setTimeout(function () { if (cur.orderId) { showExpired(); } }, Math.max(0, e.ms - Date.now()) + 2000);
+    }
+}
+
+function startPolling() {
+    stopPolling();
+    pollInt = setInterval(async function () {
+        if (!cur.orderId) return;
+        try {
+            var res = await fetch(API + '?action=status&order_id=' + encodeURIComponent(cur.orderId));
+            var d = await res.json();
+            if (d && d.status === 'paid') showPaid(d);
+            else if (d && d.status === 'expired') showExpired();
+        } catch (e) {}
+    }, 5000);
+}
+function stopPolling() { if (pollInt) { clearInterval(pollInt); pollInt = null; } }
+
+async function rcNext() {
+    if (document.getElementById('rc-next').disabled) return;
+    var amount = Number(_amount);
+    showQrisSection();
+    try {
+        var res = await fetch(API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'create', amount: amount })
+        });
+        var d = await res.json();
+        if (!d.success) throw new Error(d.message || d.error || 'Gagal membuat QRIS.');
+        renderQris(d);
+    } catch (e) {
+        document.getElementById('qr-loading').classList.add('hidden');
+        document.getElementById('qr-missing-msg').textContent = e.message || 'Coba lagi beberapa saat lagi.';
+        document.getElementById('qr-missing').classList.remove('hidden');
+    }
+}
+
+function showPaid(d) {
+    stopPolling();
+    clearTimeout(expTimer);
+    // Saldo & riwayat di tab lain langsung menyegarkan (BroadcastChannel, sesuai aturan Clincoo)
+    try { new BroadcastChannel('clincoo_kredit_sync').postMessage({ t: 'topup-done' }); } catch (e) {}
+    document.getElementById('paid-detail').textContent = '+' + _rp((d && d.credits) || cur.kredit) + ' kredit masuk ke saldo kamu.';
+    document.getElementById('qr-status').textContent = 'Pembayaran diterima';
+    document.getElementById('qr-cta-wait').classList.add('hidden');
+    document.getElementById('qr-cta-expired').classList.add('hidden');
+    document.getElementById('qr-cta-paid').classList.remove('hidden');
+    toast('Top up berhasil: +' + _rp((d && d.credits) || cur.kredit) + ' kredit');
+}
+
+function showExpired() {
+    stopPolling();
+    clearTimeout(expTimer);
+    document.getElementById('qr-status').textContent = 'Kedaluwarsa';
+    document.getElementById('qr-cta-wait').classList.add('hidden');
+    document.getElementById('qr-cta-paid').classList.add('hidden');
+    document.getElementById('qr-cta-expired').classList.remove('hidden');
+}
+
+function backToInput() {
+    stopPolling();
+    clearTimeout(expTimer);
+    cur = { orderId: '', amount: 0, kredit: 0, total: 0, fee: 0, qrSrc: '' };
+    try { sessionStorage.removeItem(QR_SNAP_KEY); } catch (e) {}
+    document.getElementById('qris-wrap').classList.add('hidden');
+    document.getElementById('input-wrap').classList.remove('hidden');
+    window.scrollTo({ top: 0 });
+}
+
+function qrDownload() {
+    if (!cur.qrSrc) return;
+    var a = document.createElement('a');
+    a.href = cur.qrSrc;
+    a.download = 'qris-kredit-ai-clincoo.png';
+    document.body.appendChild(a); a.click(); a.remove();
+}
+
+var toastTimer;
+function toast(msg) {
+    var t = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    t.classList.remove('hidden');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.add('hidden'); }, 2600);
+}
+
+rcRenderDigits(); rcUpdate();
+lucide.createIcons();
+</script>
+</body>
+</html>
