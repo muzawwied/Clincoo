@@ -1,7 +1,10 @@
-/* Clincoo service worker — PWA + cache aset CDN (lucide, fonts, tailwind) v31 */
+/* Clincoo service worker — PWA + cache aset CDN (lucide, fonts, tailwind) v32 */
+// [8 Okt 2026] Halaman HTML kini NETWORK-FIRST: SWR membuat pengguna melihat
+// halaman versi LAMA (bahkan campuran kode baru/lama) sampai kunjungan
+// berikutnya — sumber bug "klik tidak berfungsi" setelah deploy.
 // [7 Okt 2026] bump: logo tercache rusak/lama di browser user (SWR tampilkan-cache-dulu)
 // -> versi baru memaksa purge cache lama saat SW aktif, logo dimuat segar
-var CACHE = 'clincoo-v105';
+var CACHE = 'clincoo-v106';
 var PRECACHE = [
   './manifest.json',
   './assets/icons/icon-192.png',
@@ -63,26 +66,20 @@ self.addEventListener('fetch', function (e) {
   if (url.pathname.indexOf('/api/') !== -1) return; // backend/functions: selalu network
 
   if (req.mode === 'navigate') {
-    // Halaman sensitif (login/pembayaran) + halaman CHAT: network-first, fallback cache saat offline.
-    // Chat WAJIB network-first: server AI bisa mengeluarkan blok kartu baru ([[APK_SETUP]] dll)
-    // — jika halaman lama ter-cache (SWR), blok tampil mentah sebagai teks aneh bagi user.
-    var sensitive = url.pathname.indexOf('/auth') === 0 || url.pathname.indexOf('/pay') === 0
-      || url.pathname.indexOf('/akun/langganan/checkout') === 0 || url.pathname.indexOf('/proyek/chat') === 0;
-    if (sensitive) {
-      e.respondWith(
-        fetch(req).then(function (res) {
+    // [8 Okt 2026] SEMUA halaman network-first: selalu versi terbaru tiap deploy;
+    // cache hanya fallback saat offline. (SWR halaman pernah membuat user
+    // menjalankan campuran kode lama+baru -> klik/fitur rusak misterius.)
+    e.respondWith(
+      fetch(req).then(function (res) {
+        if (res && res.status === 200) {
           var copy = res.clone();
           caches.open(CACHE).then(function (c) { c.put(req, copy); });
-          return res;
-        }).catch(function () {
-          return caches.match(req).then(function (m) { return m || caches.match('./'); });
-        })
-      );
-      return;
-    }
-    // Halaman lain: stale-while-revalidate — pernah dibuka = tampil INSTAN dari cache,
-    // versi terbaru diunduh diam-diam di latar untuk kunjungan berikutnya.
-    e.respondWith(swr(req));
+        }
+        return res;
+      }).catch(function () {
+        return caches.match(req).then(function (m) { return m || caches.match('./'); });
+      })
+    );
     return;
   }
 
