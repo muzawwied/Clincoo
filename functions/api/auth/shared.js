@@ -111,6 +111,33 @@ export async function getUserByToken(db, token) {
   return user;
 }
 
+// [8 Okt 2026, arahan pemilik] User baru dapat KREDIT CHAT PERCOBAAN:
+// 20 kredit, masa aktif 30 hari, masuk sebagai paket di ai_packs (sumber data
+// yang sama dengan Paket Kredit AI — otomatis terpakai /api/chat saat kuota
+// langganan habis, dan dipotong per penggunaan token, bukan flat per pesan).
+const STARTER_CREDITS = 20;
+const STARTER_DAYS = 30;
+async function grantStarterCredits(db, userId) {
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS ai_packs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_key TEXT NOT NULL,
+      pack_id TEXT NOT NULL,
+      name TEXT,
+      price INTEGER,
+      credits_total INTEGER,
+      credits_left INTEGER,
+      purchased_at TEXT,
+      expires_at TEXT
+    )`).run();
+    const now = new Date();
+    const expires = new Date(now.getTime() + STARTER_DAYS * 86400_000);
+    await db.prepare(
+      'INSERT INTO ai_packs (user_key, pack_id, name, price, credits_total, credits_left, purchased_at, expires_at) VALUES (?, ?, ?, 0, ?, ?, ?, ?)'
+    ).bind('u' + Number(userId), 'starter', 'Kredit Chat Percobaan', STARTER_CREDITS, STARTER_CREDITS, now.toISOString(), expires.toISOString()).run();
+  } catch (e) { /* gagal grant ≠ gagal daftar */ }
+}
+
 // Login/daftar via OAuth: pakai auth_oauth_accounts, email sebagai fallback identitas
 export async function upsertOauthUser(db, provider, providerAccountId, email, name, avatarUrl, accessToken, scope) {
   let link = await db.prepare('SELECT user_id FROM auth_oauth_accounts WHERE provider = ? AND provider_account_id = ?')
@@ -125,6 +152,7 @@ export async function upsertOauthUser(db, provider, providerAccountId, email, na
       await db.prepare('INSERT INTO auth_users (name, email, password_hash, avatar_url) VALUES (?, ?, \'\', ?)')
         .bind(name || '', email ? email.toLowerCase() : null, avatarUrl || '').run();
       user = await db.prepare('SELECT * FROM auth_users WHERE email = ?').bind(email.toLowerCase()).first();
+      if (user) await grantStarterCredits(db, user.id); // kredit chat percobaan user baru
     }
     await db.prepare('INSERT OR IGNORE INTO auth_oauth_accounts (user_id, provider, provider_account_id) VALUES (?, ?, ?)')
       .bind(user.id, provider, String(providerAccountId)).run();

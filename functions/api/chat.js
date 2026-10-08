@@ -939,6 +939,10 @@ async function tryWorkersAIText(env, messages, gDecls) {
 
 const QUOTA_MSG_DAILY = 'Kuota AI Clincoo hari ini sudah habis. Batas harian paket Anda tercapai — silakan coba lagi besok.';
 const QUOTA_MSG_MONTHLY = 'Kuota AI Clincoo bulan ini sudah habis. Reset otomatis awal bulan depan — atau upgrade paket / beli Paket Kredit AI di menu Profil > Kredit AI.';
+// [8 Okt 2026, arahan pemilik] Pesan saat kredit user HABIS TOTAL (kuota langganan
+// + paket kredit kosong). HARDCODE — jangan diubah tanpa arahan pemilik.
+const TOPUP_URL = 'https://kredit-ai.pages.dev/topup.html';
+const QUOTA_MSG_EMPTY = '⚡ Kuota pesanmu sudah habis.\n\nIngin tetap menggunakan Clincoo? Isi ulang saldo kredit-mu di sini\n\n' + TOPUP_URL;
 
 // System prompt server untuk mode biasa (single) — jaring pengaman bila klien tidak
 // mengirim system prompt sendiri; klien punya versi lebih lengkap (tools super).
@@ -1032,39 +1036,30 @@ async function quotaCheck(env, user, cost = 1) {
   }
 }
 
-// ===== Harga kredit AI per model (4 Okt 2026, arahan pemilik) =====
-// Kredit dipotong SESUAI model yang benar-benar menjawab + panjang output-nya,
-// bukan flat 1 per pesan. Pre-flight quotaCheck memotong 1 sebagai reservasi;
-// setelah jawaban jadi, SELISIH harga sebenarnya dipotong di sini.
-const MODEL_PRICES = {
-  'gpt-6-luna-pro': 2,       // cadangan reasoning OpenRouter (biaya provider lebih tinggi)
-  'gpt-6.1-sol-pro': 3,      // Sol Pro ASLI (OpenRouter) — pasif, nunggu saldo di-top-up
-  'glm-5.3-flash-build': 4,  // [legacy] entri pemakaian lama sebelum relabel Orkestra
-  'orkestra-1-pro': 4,       // MODE BUILD (ModelRouter berbayar QRIS, brand Orkestra) — 4x kredit ≈ 10x biaya provider
-  'orkestra-1-flash': 1,  // Emergent 'auto' (8 Okt) — gateway berbayar rendah, 1 kredit jujur
-  'deepseek-v4-pro': 1,      // jalur utama Clouvia (4 Okt 2026 malam): cepat & stabil di tes nyata, gratis
-  'gpt-6.1-sol': 1           // model lama: backend sebenarnya GLM direlabel — 1 kredit jujur
-  // semua model lain (glm-5.3-flash, gemini, clouvia, workers-ai, nemotron) = 1
-};
-const OUTPUT_FREE_CHARS = 4000; // karakter output pertama tanpa biaya tambahan
-const OUTPUT_STEP_CHARS = 8000;  // +1 kredit tiap kelipatan 8rb karakter output
-// Output steps: standar untuk semua model (4000 karakter pertama gratis,
-// +1 kredit tiap 8rb karakter output) — Sol Pro kini model utama, bukan premium opt-in.
-const MODEL_OUTPUT_STEPS = {};
-function aiCostOf(model, outputChars) {
-  const key = String(model || '').split(' ')[0].replace(':batch', '');
-  const base = MODEL_PRICES[key] || 1;
-  const cfg = MODEL_OUTPUT_STEPS[key] || {};
-  const free = cfg.free || OUTPUT_FREE_CHARS;
-  const step = cfg.step || OUTPUT_STEP_CHARS;
-  const extra = Math.floor(Math.max(0, (outputChars || 0) - free) / step);
-  return base + extra;
+// ===== Potongan kredit sesuai PENGGUNAAN user (8 Okt 2026, arahan pemilik) =====
+// Bukan harga per model lagi: kredit dipotong dari TOTAL PENGGUNAAN token user —
+//   1 kredit dasar per pesan
+//   +1 kredit tiap kelipatan 8.000 token INPUT di atas jatah gratis 8.000
+//   +1 kredit tiap kelipatan 2.000 token OUTPUT di atas jatah gratis 2.000
+// Rasio ~3x biaya provider (modelrouter: input $0.15/1M, output $0.5/1M).
+// Token dihitung dari karakter riil (estimasi umum: 4 karakter ≈ 1 token).
+// Pre-flight quotaCheck memotong 1 sebagai reservasi; setelah jawaban jadi,
+// SELISIH biaya sebenarnya dipotong di chargeAiUsage.
+const INPUT_FREE_TOKENS = 8000, INPUT_STEP_TOKENS = 8000;
+const OUTPUT_FREE_TOKENS = 2000, OUTPUT_STEP_TOKENS = 2000;
+function tokensOfChars(chars) { return Math.ceil((chars || 0) / 4); }
+function aiCostOf(model, outputChars, inputChars) {
+  const inTok = tokensOfChars(inputChars);
+  const outTok = tokensOfChars(outputChars);
+  const extraIn = Math.ceil(Math.max(0, inTok - INPUT_FREE_TOKENS) / INPUT_STEP_TOKENS);
+  const extraOut = Math.ceil(Math.max(0, outTok - OUTPUT_FREE_TOKENS) / OUTPUT_STEP_TOKENS);
+  return Math.max(1, 1 + extraIn + extraOut);
 }
-// Potong selisih kredit + catat pemakaian (model, output, biaya) ke tabel ai_usage.
-async function chargeAiUsage(env, user, model, outputChars) {
+// Potong selisih kredit + catat pemakaian (model, input, output, biaya) ke ai_usage.
+async function chargeAiUsage(env, user, model, outputChars, inputChars) {
   if (!user || !user.key) return;
   try {
-    const cost = aiCostOf(model, outputChars);
+    const cost = aiCostOf(model, outputChars, inputChars);
     const diff = cost - 1; // 1 sudah dipotong pre-flight oleh quotaCheck
     const now = new Date();
     const day = now.toISOString().slice(0, 10);
@@ -1072,6 +1067,7 @@ async function chargeAiUsage(env, user, model, outputChars) {
     await env.DB.prepare(
       'CREATE TABLE IF NOT EXISTS ai_usage (user_key TEXT, ts INTEGER, model TEXT, out_chars INTEGER, cost INTEGER)'
     ).run();
+    try { await env.DB.prepare('ALTER TABLE ai_usage ADD COLUMN in_chars INTEGER').run(); } catch (e) {}
     if (diff > 0) {
       const limits = await aiLimits(env, user);
       const rows = await env.DB.prepare(
@@ -1097,8 +1093,8 @@ async function chargeAiUsage(env, user, model, outputChars) {
       }
     }
     await env.DB.prepare(
-      'INSERT INTO ai_usage (user_key, ts, model, out_chars, cost) VALUES (?, ?, ?, ?, ?)'
-    ).bind(user.key, Date.now(), String(model || '').slice(0, 64), Math.max(0, outputChars | 0), cost).run();
+      'INSERT INTO ai_usage (user_key, ts, model, out_chars, in_chars, cost) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(user.key, Date.now(), String(model || '').slice(0, 64), Math.max(0, outputChars | 0), Math.max(0, inputChars | 0), cost).run();
   } catch (e) { /* gangguan pencatatan ≠ gangguin jawaban user */ }
 }
 
@@ -1743,7 +1739,7 @@ export async function onRequestGet({ request, env }) {
       credits_left_total: creditsLeftTotal,
       exhausted,
       scope: exhausted ? (monthUsed >= limits.monthly ? 'monthly' : 'daily') : null,
-      message: exhausted ? (monthUsed >= limits.monthly ? QUOTA_MSG_MONTHLY : QUOTA_MSG_DAILY) : null
+      message: exhausted ? QUOTA_MSG_EMPTY : null
     }), {
       headers: { 'Content-Type': 'application/json', ...CORS }
     });
@@ -1941,11 +1937,21 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // --- Kuota: hanya pesan asli (hop 0). Hop tool lanjutan tidak dihitung ---
     // Hop tool lanjutan tidak dihitung.
     const isFirstHop = body.save_user_message !== false;
+    // Panjang INPUT riil (system + riwayat + pesan baru) — dasar potongan kredit
+    // per penggunaan (input panjang = kredit lebih banyak).
+    const inputChars = (Array.isArray(messages) ? messages : []).reduce((acc, m) => {
+      if (!m) return acc;
+      if (typeof m.content === 'string') return acc + m.content.length;
+      if (Array.isArray(m.content)) return acc + m.content.reduce((a, b) => a + ((b && b.type === 'text' && b.text) ? b.text.length : 0), 0);
+      return acc;
+    }, 0);
     let quotaInfo = null;
     if (isFirstHop) {
       const q = isGuest ? await guestQuotaCheck(env, guestKey) : await quotaCheck(env, user, 1);
       if (q.exceeded) {
-        return new Response(JSON.stringify({ quota_exhausted: true, error: q.message || QUOTA_MSG_MONTHLY, scope: q.scope, limit: q.limit, used: q.count, guest: isGuest ? true : undefined }), {
+        // User login: kredit habis total -> pesan hardcoded pemilik (top-up di kredit-ai).
+        const msg = isGuest ? (q.message || QUOTA_MSG_MONTHLY) : QUOTA_MSG_EMPTY;
+        return new Response(JSON.stringify({ quota_exhausted: true, error: msg, scope: q.scope, limit: q.limit, used: q.count, guest: isGuest ? true : undefined }), {
           status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': '3600', ...CORS }
         });
       }
@@ -2311,7 +2317,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
         if (r.tool_calls) outS.tool_calls = r.tool_calls;
         // Kredit sesungguhnya: model yang menjawab + panjang output (teks + tool/code)
         const outCharsS = (r.text || '').length + (r.tool_calls ? JSON.stringify(r.tool_calls).length : 0);
-        if (isFirstHop && !isGuest) await chargeAiUsage(env, user, r.model, outCharsS);
+        if (isFirstHop && !isGuest) await chargeAiUsage(env, user, r.model, outCharsS, inputChars);
         streamSend({ t: 'final', ...outS });
       }
       streamWriter.close().catch(() => {}); // TANPA await: antrean writer sudah berurutan
@@ -2343,7 +2349,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
 
     // Kredit sesungguhnya: model yang menjawab + panjang output (teks + tool/code)
     const outChars = (r.text || '').length + (r.tool_calls ? JSON.stringify(r.tool_calls).length : 0);
-    if (isFirstHop && !isGuest) await chargeAiUsage(env, user, r.model, outChars);
+    if (isFirstHop && !isGuest) await chargeAiUsage(env, user, r.model, outChars, inputChars);
     const out = {
       text: r.text || '',
       model: r.model,
