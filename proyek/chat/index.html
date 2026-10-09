@@ -5715,7 +5715,7 @@ window.chatLivePreview = function () {
         // sendiri (auto-lanjut diam-diam). Sekarang AI hanya boleh melanjutkan otomatis
         // SATU kali per tugas; kalau masih belum tuntas, AI berhenti & tunggu user bilang
         // "lanjut" sendiri — daripada terus-terusan membuat giliran jawaban baru sendiri.
-        const SILENT_MAX_ROUNDS = 1;
+        const SILENT_MAX_ROUNDS = 12; // AUTO_CONTINUE_LENGTH_FIX
         // [6 Okt 2026, arahan owner: "pastikan AI bisa mengerjakan tugas dalam 1 sesi"]
         // Tugas terpotong di TENGAH pengerjaan karena kuota/limit provider WAJIB
         // diteruskan otomatis — plafon ini terpisah dari SILENT_MAX_ROUNDS (nudge
@@ -5811,7 +5811,8 @@ window.chatLivePreview = function () {
         ];
         let FINAL_NUDGE_EXTRA = ''; // ekstra instruksi dari cek klaim-vs-kenyataan (finalLooksUnfinished)
         function pushSilentNudge(extra) {
-            const base = SILENT_NUDGES[Math.floor(Math.random() * SILENT_NUDGES.length)];
+            // AUTO_CONTINUE_LENGTH_FIX: jangan sesi baru — lanjut titik yang sama
+            const base = 'Lanjutkan pekerjaan dari titik terakhir dalam sesi ini. Jangan mengulang dari awal. Jangan membuat sesi baru. Langsung kerjakan sisa tugas dengan tool (write_file/append_file/dll).';
             messages.push({
                 id: generateId(), role: 'user',
                 text: base + (extra ? ' ' + extra : ''),
@@ -5849,10 +5850,18 @@ window.chatLivePreview = function () {
                 const _userAskedWork = messages.some(function (m) {
                     return m.role === 'user' && !m.silent && /buat(kan)?\b|bikin|bangun|rancang|kembangkan|lanjut|perbaiki|deploy|tambah(kan)?|ubah|ulang|revisi|update|fix/i.test(m.text || '');
                 });
-                if (_userAskedWork && !_didAct && t.length <= 600) {
-                    const INTENT_RE = /(saya|aku|kami)\s+(akan\s+)?(cek|periksa|lihat|baca|lanjut(kan)?|perbaiki|deploy|kerjakan|buat|tulis|ubah|tambah(kan)?|susun)\b[^\n]{0,80}(dulu|sekarang|segera|berikutnya|selanjutnya)?|sedang\s+saya\s+(perbaiki|kerjakan|deploy|reboot|buat|tulis)|(deploy|publish)\s+(sebelumnya\s+)?gagal[^\n]{0,120}(perbaiki|ulang|reboot)|belum\s+selesai\)?\.?\s*$|(dalam\s+satu\s+giliran)/i;
-                    if (INTENT_RE.test(tail)) {
-                        FINAL_NUDGE_EXTRA = 'JANGAN berhenti di kalimat niat. Kamu baru melihat/membaca proyek (atau cuma berencana) dan BELUM mengerjakan apa pun. Berdasarkan isi proyek yang barusan kamu lihat, LANGSUNG lakukan pekerjaan nyata SEKARANG: tulis/perbaiki file lewat write_file, lalu deploy_project jika perlu. Tanpa kalimat niat baru, tanpa minta izin.';
+                if (_userAskedWork && !_didAct && t.length <= 4000) { // AUTO_CONTINUE_LENGTH_FIX
+                    const INTENT_RE = /(saya|aku|kami)\s+(akan\s+)?(cek|periksa|lihat|baca|lanjut(kan)?|perbaiki|deploy|kerjakan|buat|bikin|tulis|menulis|ubah|tambah(kan)?|susun|membangun|bangun|menyusun)\b|sedang\s+saya\s+(perbaiki|kerjakan|deploy|reboot|buat|tulis|menulis)|sekarang\s+saya\s+(tulis|menulis|buat|bikin|kerjakan|mulai)|fokus\s+(penuh\s+)?pada\s+membangun|(deploy|publish)\s+(sebelumnya\s+)?gagal[^\n]{0,120}(perbaiki|ulang|reboot)|belum\s+selesai\)?\.?\s*$|(dalam\s+satu\s+giliran)/i; // AUTO_CONTINUE_LENGTH_FIX
+                    if (INTENT_RE.test(t) || INTENT_RE.test(tail)) {
+                        const stateTail = t.slice(-180).replace(/\s+/g, ' ').trim();
+                        FINAL_NUDGE_EXTRA = 'JANGAN berhenti di kalimat niat dan JANGAN ulangi narasi. State terakhir: "' + stateTail + '". LANGSUNG panggil tool nyata SEKARANG (write_file / append_file / deploy_project) dari titik itu — tanpa sesi baru, tanpa minta izin, tanpa ringkasan.';
+                        return 'promise';
+                    }
+                    // AUTO_CONTINUE_LENGTH_FIX: akhiran terasa kepotong
+                    const endsAbrupt = /[,:;\-—]\s*$/.test(t) || /\b(dan|atau|yang|untuk|dengan|serta|lalu|kemudian|sekarang|berikutnya)\s*$/i.test(t);
+                    if (endsAbrupt || /\b(index\.html|styles?\.css|script|\.js)\.?\s*$/i.test(t)) {
+                        const stateTail2 = t.slice(-180).replace(/\s+/g, ' ').trim();
+                        FINAL_NUDGE_EXTRA = 'Output terpotong batas token. Lanjutkan PERSIS dari titik terakhir tanpa mengulang. State: "' + stateTail2 + '". Langsung tool call (write_file/append_file).';
                         return 'promise';
                     }
                 }
@@ -6565,7 +6574,7 @@ window.chatLivePreview = function () {
                             // Janji-tulis/klaim-palsu boleh 2 ronde nudge — nudge-nya
                             // membawa FAKTA (belum ada file tersimpan) supaya AI gak
                             // bisa muter-muter minta maaf lalu janji lagi.
-                            const unfinishedMax = (unfinishedTag === 'promise' || unfinishedTag === 'ack') ? 2 : SILENT_MAX_ROUNDS;
+                            const unfinishedMax = SILENT_MAX_ROUNDS; // AUTO_CONTINUE_LENGTH_FIX
                             // ACK PEMBUKA (arahan pemilik 9 Okt): bekukan bubble sapaan ini,
                             // kerja lanjut otomatis di bubble baru di bawahnya (belum ada tool
                             // call di giliran ini, jadi riwayat aman dibawa utuh).
