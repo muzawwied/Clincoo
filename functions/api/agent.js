@@ -90,7 +90,7 @@ Aturan: maksimal 12 langkah, tiap langkah bisa diselesaikan lewat penalaran/penu
 
 const AGENT_SYSTEM = `Kamu adalah "Clincoo AI Agent" — agen pelaksana mandiri di platform Clincoo (pembuatan website dengan AI: template, editor kode, deploy Cloudflare Pages, domain kustom CNAME @, SSL otomatis, paket Starter gratis/Pro Rp49.000/Bisnis Rp129.000).
 Kamu sedang menjalankan SATU langkah dari rencana yang sudah disusun. Kerjakan langkah itu sampai tuntas, konkret, dan langsung pakai — kode diberikan dalam blok kode siap salin, konten diberikan final, keputusan diambil tanpa bertanya balik.
-Jangan menawarkan "sebaiknya hubungi" — kamu sendiri yang mengeksekusi. Bahasa Indonesia yang hangat, profesional, dan SANGAT DETAIL. Jawaban harus PANJANG, LENGKAP, dan MENDALAM — jangan pernah menjawab terlalu singkat atau sederhana. Beri penjelasan menyeluruh dengan konteks, langkah, contoh, dan tips.
+Jangan menawarkan "sebaiknya hubungi" — kamu sendiri yang mengeksekusi. Bahasa Indonesia yang hangat, profesional, dan jelas. Sesuaikan panjang dengan kebutuhan langkah: singkat jika cukup, terstruktur dan konkret jika perlu. Hindari pengulangan dan teks bertele-tele. Beri kode/file final siap pakai, konteks ringkas, dan tips praktis.
 ATURAN ANTI-MENTOK: jika langkah melibatkan update/ubah file web, langsung hasilkan kode/file final; jangan berputar di analisis/reading saja. Setelah gangguan koneksi, lanjut dari state terakhir tanpa mengulang reading yang sudah ada.`;
 
 // ===== D1 =====
@@ -285,7 +285,7 @@ async function agentTick(env, t, budgetMs, gemKey) {
   // Tahap 3: rangkum hasil akhir
   const doneMsgs = [
     { role: 'system', content: AGENT_SYSTEM },
-    { role: 'user', content: 'TUJUAN: ' + t.goal + '\n\nHASIL KERJA PER LANGKAH:\n' + transcript.map(m => (m.role === 'assistant' ? '[agent] ' : '[user] ') + String(m.content).slice(0, 600)).join('\n') + '\n\nRangkum hasil akhir untuk user: apa yang sudah selesai, hasil penting per langkah, dan saran tindak lanjut. Detail, lengkap, dan konkret — multi-paragraf jika perlu, bahasa Indonesia.' }
+    { role: 'user', content: 'TUJUAN: ' + t.goal + '\n\nHASIL KERJA PER LANGKAH:\n' + transcript.map(m => (m.role === 'assistant' ? '[agent] ' : '[user] ') + String(m.content).slice(0, 600)).join('\n') + '\n\nRangkum hasil akhir untuk user: apa yang sudah selesai, hasil penting per langkah, dan saran tindak lanjut. Jelas, terstruktur, dan konkret — bahasa Indonesia. Hindari pengulangan.' }
   ];
   const rf = await aiCall(env, doneMsgs, gemKey, { fast: true });
   t.result = rf.text || rf.error || '(rangkuman dilewati)';
@@ -346,51 +346,18 @@ export async function onRequestPost({ request, env }) {
       return json({ ok: true, task: taskJson(done) });
     }
 
-    // action === 'start_bg' — tugas masuk antrean, dijalankan Clincoo Agent Worker
-    // (Cloudflare Workflows) di latar belakang. Request balik LANGSUNG; progres
-    // dipantau lewat GET /api/agent?task_id=... (events) atau dikirim ke WhatsApp
-    // bila wa_number diisi.
-    if (action === 'start_bg') {
-      const goal = String(body?.goal || '').trim();
-      if (goal.length < 3) return json({ error: 'Tulis tujuan tugas (minimal 3 karakter).' }, 400);
-      const q = await quotaSpend(env, user, 1);
-      if (q.exceeded) return json({ quota_exhausted: true, error: QUOTA_MSG }, 429);
-      const now = new Date().toISOString();
-      const t = {
-        id: 'agt_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
-        user_key: user.key,
-        project_id: String(body?.project_id || '') || null,
-        goal, status: 'queued',
-        plan: '[]', transcript: '[]',
-        current_step: 0, result: null, error: null,
-        wa_number: String(body?.wa_number || '').replace(/[^0-9+]/g, '') || null,
-        created_at: now, updated_at: now
-      };
-      await env.DB.prepare('INSERT INTO agent_tasks (id, user_key, project_id, goal, status, plan, transcript, current_step, result, error, wa_number, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
-        .bind(t.id, t.user_key, t.project_id, t.goal, t.status, t.plan, t.transcript, t.current_step, t.result, t.error, t.wa_number, t.created_at, t.updated_at).run();
-      addEvent(env.DB, t.id, t.user_key, 'queued', 'Tugas masuk antrean — Clincoo Agent Worker menjalankannya di latar belakang.');
-      return json({ ok: true, task: taskJson(t), background: true, message: 'Tugas masuk antrean. Pantau progres via GET /api/agent?task_id=' + t.id });
-    }
-
-    // action === 'start'
+    // action === 'start' (default)
     const goal = String(body?.goal || '').trim();
-    if (goal.length < 3) return json({ error: 'Tulis tujuan tugas (minimal 3 karakter).' }, 400);
+    if (!goal) return json({ error: 'goal wajib diisi' }, 400);
     const q = await quotaSpend(env, user, 1);
     if (q.exceeded) return json({ quota_exhausted: true, error: QUOTA_MSG }, 429);
 
+    const id = 'agt_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
     const now = new Date().toISOString();
-    const t = {
-      id: 'agt_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
-      user_key: user.key,
-      project_id: String(body?.project_id || '') || null,
-      goal, status: 'running',
-      plan: '[]', transcript: '[]',
-      current_step: 0, result: null, error: null,
-      created_at: now, updated_at: now
-    };
     await env.DB.prepare('INSERT INTO agent_tasks (id, user_key, project_id, goal, status, plan, transcript, current_step, result, error, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
-      .bind(t.id, t.user_key, t.project_id, t.goal, t.status, t.plan, t.transcript, t.current_step, t.result, t.error, t.created_at, t.updated_at).run();
-    addEvent(env.DB, t.id, t.user_key, 'start', 'Tugas dimulai.');
+      .bind(id, user.key, body?.project_id || null, goal, 'pending', '[]', '[]', 0, null, null, now, now).run();
+
+    const t = await loadTask(env.DB, id);
     const gemKey = await getGeminiKeys(env);
     const budget = Math.min(parseInt(body.budget_seconds || '', 10) * 1000 || DEFAULT_BUDGET_MS, MAX_BUDGET_MS);
     const done = await agentTick(env, t, budget, gemKey);
