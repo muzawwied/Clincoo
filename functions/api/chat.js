@@ -1054,16 +1054,15 @@ async function quotaCheck(env, user, cost = 1, freeChat = false) {
 // Token dihitung dari karakter riil (estimasi umum: 4 karakter ≈ 1 token).
 // Pre-flight quotaCheck memotong 1 sebagai reservasi; setelah jawaban jadi,
 // SELISIH biaya sebenarnya dipotong di chargeAiUsage.
-// [9 Okt 2026, arahan pemilik: "jangan gitu — SESUAI TOKEN YANG DIPAKE.
-// Di provider 2000 token itu: GLM $0.003, Haiku $0.002"] Pemotongan pecahan
-// presisi 6 desimal, dipatok LANGSUNG ke harga provider per 2.000 token
-// (input + output dihitung sebagai total token; 4 karakter ≈ 1 token):
-//   GLM   : 2.000 token = 0,003 kredit
-//   Haiku : 2.000 token = 0,002 kredit
+// [9 Okt 2026, arahan pemilik: "SESUAI TOKEN YANG DIPAKE" lalu "naikin:
+// GLM $0.03, Haiku $0.02"] Pemotongan pecahan presisi 6 desimal per 2.000
+// token (input + output dihitung sebagai total token; 4 karakter ≈ 1 token):
+//   GLM   : 2.000 token = 0,03 kredit
+//   Haiku : 2.000 token = 0,02 kredit
 //   Model lain (llama/nemotron/deepseek/gemini/cadangan): pakai tarif GLM.
 // Pesan pendek kena 0,00xxx — proporsional token nyata, bukan lompatan bulat.
-const KRED_PER_2K_TOKENS_GLM = 0.003;
-const KRED_PER_2K_TOKENS_HAIKU = 0.002;
+const KRED_PER_2K_TOKENS_GLM = 0.03;
+const KRED_PER_2K_TOKENS_HAIKU = 0.02;
 function tokensOfChars(chars) { return Math.ceil((chars || 0) / 4); }
 function aiCostOf(model, outputChars, inputChars) {
   const m = String(model || '').toLowerCase();
