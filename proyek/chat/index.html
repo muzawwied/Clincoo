@@ -5779,7 +5779,35 @@ window.chatLivePreview = function () {
                 // (b) klaim "sudah tersimpan/ditulis/dibuat" padahal workspace kosong
                 const claimsSaved = /(sudah|telah)\s+(tersimpan|ditulis|dibuat)/i.test(t) && /(file|situs|web|halaman)/i.test(t);
                 if (claimsSaved && !wsHasAnyFiles()) return 'promise';
+                // (c) NARASI TOOL PALSU (laporan owner: Bara Burger Kedai): teks penuh
+                // "Menulis file index.html" / "Menjalankan tools generate_image" berulang
+                // TANPA satu pun tool call nyata di giliran ini — narasi menggantikan
+                // kerja nyata, kredit kebakar, workspace tetap kosong.
+                const narrCount = ((t.match(/(menulis|menjalankan|memulai|menyelesaikan)\s+(file|tools?|generate_image|set_project_info|write_file|deploy)/gi)) || []).length;
+                if (narrCount >= 3) {
+                    FINAL_NUDGE_EXTRA = 'Kamu menulis NARASI tool sebagai teks ("Menulis file...", "Menjalankan tools...") tapi TIDAK memanggil satu pun tool nyata — itu dilarang dan dianggap bohong. Panggil tool ASLI lewat function call: mulai sekarang dengan write_file untuk index.html (isi lengkap, maks ~3500 karakter), lalu css, lalu js. Jangan narasikan lagi.';
+                    return 'promise';
+                }
             }
+            // LAPORAN NYATA (9 Okt 2026, laporan ke-3 kedai burger): AI JUJUR mengaku
+            // "workspace kosong / file tidak tersampaikan" tapi BERHENTI di situ dan
+            // MINTA IZIN memulai ulang ("Saya mengharapkan Anda membiarkan saya memulai
+            // ulang proses BUILDER ini..."). Kredit kebakar, file tetap gak pernah
+            // ditulis. Deteksi: pengakuan-kosong ATAU minta-izin + user masih minta
+            // dibuatkan/dilanjutkan + pohon workspace nyata 0 file -> ronde koreksi
+            // tanpa-izin: AI langsung menulis file, dilarang minta izin/minta maaf.
+            try {
+                const ADMIT_RE = /(workspace|pohon)[^\n]{0,80}(kosong|belum ada|tidak ada file)|belum ada (satu pun )?file|tidak tersampa|mengharapkan Anda|menunggu (persetujuan|izin)|mohon izin|meminta izin|biarkan saya (memulai|melanjutkan|mengulang)|mulai ulang proses/i;
+                if (ADMIT_RE.test(t) && !wsHasAnyFiles()) {
+                    const wantsBuild2 = messages.some(function (m) {
+                        return m.role === 'user' && !m.silent && /buat(kan)?|bikin|rancang|bangun|kembangkan|lanjut|ulang|deploy/i.test(m.text || '');
+                    });
+                    if (wantsBuild2) {
+                        FINAL_NUDGE_EXTRA = 'Jangan minta izin, jangan minta maaf, jangan menulis ringkasan kegagalan: LANGSUNG tulis file ke workspace SEKARANG satu per satu lewat write_file (index.html dulu, lalu css, lalu js, maks ~3500 karakter per file) sampai list_items membuktikan file-nya ada. Tanpa konfirmasi apa pun.';
+                        return 'promise';
+                    }
+                }
+            } catch (e) {}
             return false;
         }
         // Tutup bubble AI "sebagian selesai" lalu mulai ronde lanjutan secara diam-diam
