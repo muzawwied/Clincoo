@@ -193,7 +193,7 @@ function renderProjects() {
             '<div class="flex-1 min-w-0"><h3 class="font-semibold text-gray-900 text-base group-hover:text-black truncate">' + title + '</h3>' +
             '<p class="text-[13px] text-gray-500 mt-0.5 truncate">' + desc.substring(0, 60) + '</p>' +
             '<p class="text-sm text-gray-400 mt-1">' + timeAgo(proj.updatedAt) + '</p></div>' +
-            '<div class="relative flex-shrink-0"><button class="p-2 text-gray-400 hover:text-black rounded-lg transition-colors" onclick="toggleOption(this, event)"><i data-lucide="more-vertical" class="w-5 h-5"></i></button>' +
+            '<div class="relative flex-shrink-0"><button class="cc-dots p-2 text-gray-400 hover:text-black transition-colors focus:outline-none focus-visible:outline-none" onclick="toggleOption(this, event)"><i data-lucide="more-vertical" class="w-5 h-5"></i></button>' +
             '<div class="option-popup absolute top-full right-0 mt-2 w-40 bg-white border border-gray-100 rounded-xl shadow-[0_4px_20px_rgb(0,0,0,0.08)] py-2 opacity-0 invisible translate-y-2 transition-all duration-200 z-20 origin-top-right" onclick="event.stopPropagation()">' +
             '<button class="w-full text-left px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors" onclick="openProject(\'' + esc(proj.id) + '\')">Lanjutkan</button>' +
             '<button class="w-full text-left px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors" onclick="duplicateProject(\'' + proj.id + '\')">Duplikat</button>' +
