@@ -1020,7 +1020,7 @@ async function quotaCheck(env, user, cost = 1, freeChat = false) {
     if (!freeChat && !ADMIN_EMAILS.has(user.email)) {
       const packs = await getActivePacks(env.DB, user.key);
       const balance = packs.reduce((a, p) => a + (p.credits_left || 0), 0);
-      if (balance < 0.0001) { // pecahan: sisa saldo kecil pun masih bisa dipakai
+      if (balance < 0.00001) { // pecahan: sisa saldo kecil pun masih bisa dipakai
         return { exceeded: true, scope: 'empty', balance: 0, count: monthCount, message: QUOTA_MSG_EMPTY };
       }
     }
@@ -1054,20 +1054,23 @@ async function quotaCheck(env, user, cost = 1, freeChat = false) {
 // Token dihitung dari karakter riil (estimasi umum: 4 karakter ≈ 1 token).
 // Pre-flight quotaCheck memotong 1 sebagai reservasi; setelah jawaban jadi,
 // SELISIH biaya sebenarnya dipotong di chargeAiUsage.
-// [9 Okt 2026, arahan pemilik: "kreditnya makenya misal 0.000 — jangan selalu
-// bulat kayak 2"] Pemotongan PECAHAN presisi 4 desimal, proporsional token nyata:
-//   1 kredit = 16.000 token INPUT  (Rp39/kredit ÷ ~$0.15/1M * 3x, Rp16.000/$)
-//   1 kredit =  4.000 token OUTPUT (Rp39/kredit ÷ ~$0.5/1M * 3x)
-// Skala sama dengan skema lama (1 kredit per 8k input / 2k output di atas
-// jatah gratis), tapi kontinu: pesan pendek kena 0,0xxx — bukan lompatan bulat.
-const KRED_PER_INPUT_TOKEN = 1 / 16000;
-const KRED_PER_OUTPUT_TOKEN = 1 / 4000;
+// [9 Okt 2026, arahan pemilik: "jangan gitu — SESUAI TOKEN YANG DIPAKE.
+// Di provider 2000 token itu: GLM $0.003, Haiku $0.002"] Pemotongan pecahan
+// presisi 6 desimal, dipatok LANGSUNG ke harga provider per 2.000 token
+// (input + output dihitung sebagai total token; 4 karakter ≈ 1 token):
+//   GLM   : 2.000 token = 0,003 kredit
+//   Haiku : 2.000 token = 0,002 kredit
+//   Model lain (llama/nemotron/deepseek/gemini/cadangan): pakai tarif GLM.
+// Pesan pendek kena 0,00xxx — proporsional token nyata, bukan lompatan bulat.
+const KRED_PER_2K_TOKENS_GLM = 0.003;
+const KRED_PER_2K_TOKENS_HAIKU = 0.002;
 function tokensOfChars(chars) { return Math.ceil((chars || 0) / 4); }
 function aiCostOf(model, outputChars, inputChars) {
-  const inTok = tokensOfChars(inputChars);
-  const outTok = tokensOfChars(outputChars);
-  const cost = inTok * KRED_PER_INPUT_TOKEN + outTok * KRED_PER_OUTPUT_TOKEN;
-  return Math.max(0.0001, Math.round(cost * 10000) / 10000);
+  const m = String(model || '').toLowerCase();
+  const per2k = m.indexOf('haiku') !== -1 ? KRED_PER_2K_TOKENS_HAIKU : KRED_PER_2K_TOKENS_GLM;
+  const tokens = tokensOfChars(inputChars) + tokensOfChars(outputChars);
+  const cost = (tokens / 2000) * per2k;
+  return Math.max(0.00001, Math.round(cost * 1000000) / 1000000);
 }
 // [9 Okt 2026, arahan pemilik] Kredit dipotong dari SALDO (Paket Kredit AI /
 // starter) SESUAI PEMAKAIAN user — usage-based (1 + selisih token), semua mode
