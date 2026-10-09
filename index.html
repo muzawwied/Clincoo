@@ -744,10 +744,6 @@
             <p id="motivation-text" class="text-gray-500 mt-2 text-sm sm:text-base max-w-lg mx-auto leading-relaxed"></p>
         </div>
         <div class="w-full bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] p-5 transition-all text-left border border-gray-100">
-            <div id="quota-banner" class="hidden items-center justify-between gap-3 mb-3 rounded-xl bg-gray-50 px-3 py-2">
-                <p id="quota-banner-text" class="text-[11px] sm:text-xs text-gray-500 leading-snug flex-1">Kredit habis — upgrade untuk lanjut.</p>
-                <a href="#" id="quota-retry-btn" class="text-[11px] sm:text-xs font-semibold text-gray-900 shrink-0 cursor-pointer whitespace-nowrap inline-flex items-center gap-0.5 hover:opacity-60 transition-opacity">Pilih Paket<svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg></a>
-            </div>
             <div id="file-preview-container" class="hidden flex-nowrap overflow-x-auto hide-scrollbar gap-2 mb-3 pb-1 w-full"></div>
             <textarea
                 id="main-prompt-input"
@@ -1539,59 +1535,6 @@
         }
         const submitPromptBtn = document.getElementById('submit-prompt-btn');
         const mainPromptInput = document.getElementById('main-prompt-input');
-        const quotaBanner = document.getElementById('quota-banner');
-        const quotaBannerText = document.getElementById('quota-banner-text');
-        const quotaRetryBtn = document.getElementById('quota-retry-btn');
-        let quotaLocked = false;
-        const SUBMIT_BTN_ICON = submitPromptBtn ? submitPromptBtn.innerHTML : '';
-        const LOCK_ICON = '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path stroke-linecap="round" d="M8 10V7a4 4 0 018 0v3"></path></svg>';
-        function upgradeUrl() {
-            var base = (location.pathname.indexOf('/Clincoo') !== -1) ? '/Clincoo.' : '';
-            return base + '/akun/langganan/';
-        }
-        // Kredit/kuota AI habis: tampilkan banner + kunci tombol kirim di halaman utama juga,
-        // supaya konsisten dengan halaman chat — lepas otomatis begitu kredit pulih.
-        function setQuotaLock(locked, bannerMsg) {
-            quotaLocked = locked;
-            if (locked) {
-                if (quotaBannerText) quotaBannerText.textContent = bannerMsg || 'Kredit habis — upgrade untuk lanjut.';
-                if (quotaRetryBtn) quotaRetryBtn.href = upgradeUrl();
-                if (quotaBanner) { quotaBanner.classList.remove('hidden'); quotaBanner.classList.add('flex'); }
-                if (submitPromptBtn) { submitPromptBtn.innerHTML = LOCK_ICON; submitPromptBtn.classList.add('opacity-60'); submitPromptBtn.title = 'Kuota/limit AI penuh — upgrade paket untuk lanjut'; }
-            } else {
-                if (quotaBanner) { quotaBanner.classList.add('hidden'); quotaBanner.classList.remove('flex'); }
-                if (submitPromptBtn) { submitPromptBtn.innerHTML = SUBMIT_BTN_ICON; submitPromptBtn.classList.remove('opacity-60'); submitPromptBtn.title = ''; }
-            }
-        }
-        async function clincooCheckQuotaBanner() {
-            try {
-                var tok = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || '';
-                if (!tok) return;
-                var base = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : '';
-                var res = await fetch(base + '/api/chat', { cache: 'no-store', headers: { Authorization: 'Bearer ' + tok } });
-                if (!res.ok) return;
-                var d = await res.json();
-                if (d && d.exhausted) setQuotaLock(true, d.message || 'Kredit habis — upgrade untuk lanjut.');
-                else if (quotaLocked) setQuotaLock(false);
-            } catch (e) {}
-        }
-        clincooCheckQuotaBanner();
-        setInterval(clincooCheckQuotaBanner, 3 * 60 * 1000);
-
-        // PROMO: kartu harga homepage sinkron /api/promo (revert 49K + 'Paling Populer' kalau selesai)
-        (function () {
-            try {
-                var apiB = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : '';
-                fetch(apiB + '/api/promo', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (p) {
-                    var ribbon = document.getElementById('home-pro-ribbon');
-                    var wrap = document.getElementById('home-pro-price-wrap');
-                    var note = document.getElementById('home-pro-promo-note');
-                    if (!p || p.active !== true || p.remaining <= 0) {
-                        if (ribbon) ribbon.textContent = 'Paling Populer';
-                        if (note) note.remove();
-                        if (wrap) wrap.innerHTML = '<span class="text-2xl font-extrabold tracking-tight text-gray-900">49K</span><span class="text-xs font-medium text-gray-500 ml-1">/bln</span>';
-                        return;
-                    }
                     var rem = document.getElementById('home-promo-rem');
                     if (rem) rem.textContent = String(p.remaining);
                 }).catch(function () {});
@@ -1636,7 +1579,6 @@
         })();
         function processPromptSubmission(customTitle) {
             if(!mainPromptInput) return;
-            if(quotaLocked) { try { window.location.href = upgradeUrl(); } catch(e) {} return; }
             const prompt = mainPromptInput.value.trim();
             if(!prompt) return;
             
