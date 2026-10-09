@@ -21,13 +21,14 @@ jobs:
       - name: Checkout kode
         uses: actions/checkout@v4
 
-      - name: Fix shimmer progress (ikuti AI nyata, bukan hardcode)
+      - name: Fix UI (shimmer + answer animation)
         run: |
           python3 scripts/fix-shimmer-progress.py || true
+          python3 scripts/fix-answer-animation.py || true
           git config user.name Clincoo
           git config user.email halo@clincoo.buzz
           git add proyek/chat/index.html functions/api/chat.js 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "fix: shimmer progress follows real AI activity (not timer hardcode)"
+          git diff --cached --quiet || git commit -m "fix: smooth AI answer appear + shimmer follows real activity"
           git push origin main || true
 
       - name: Bersihkan artefak repo (tidak ikut di-publish)
