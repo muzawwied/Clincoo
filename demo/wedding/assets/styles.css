@@ -1,0 +1,80 @@
+body {
+            background-color: #FDFCF8;
+            color: #242321;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #FDFCF8;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #BFA78C;
+        }
+
+        .bg-parallax {
+            background-attachment: fixed;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .delay-100 { transition-delay: 100ms; }
+        .delay-200 { transition-delay: 200ms; }
+        .delay-300 { transition-delay: 300ms; }
+
+        input, textarea, select {
+            border: none;
+            border-bottom: 1px solid #BFA78C;
+            background: transparent;
+            border-radius: 0;
+            padding: 12px 0;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.9rem;
+            color: #242321;
+            transition: border-color 0.3s ease;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-bottom: 1px solid #242321;
+            box-shadow: none;
+        }
+        input::placeholder, textarea::placeholder {
+            color: #A3A19C;
+            font-weight: 300;
+        }
+
+        .gallery-img-container {
+            overflow: hidden;
+        }
+        .gallery-img-container img {
+            transition: transform 0.8s ease;
+        }
+        .gallery-img-container:hover img {
+            transform: scale(1.05);
+        }
+
+        .hero-overlay {
+            background: linear-gradient(to bottom, rgba(36, 35, 33, 0.3) 0%, rgba(36, 35, 33, 0.6) 100%);
+        }
+
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+            animation: spin-slow 10s linear infinite;
+        }
