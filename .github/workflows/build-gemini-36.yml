@@ -1,0 +1,98 @@
+name: Build mode → Gemini 3.6 Flash (sementara)
+on:
+  workflow_dispatch:
+    inputs:
+      gemini_key:
+        description: "Kunci AI Studio (AQ....) — disimpan ke D1 + Pages, tidak ke git"
+        required: true
+        type: string
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch chat.js — mode Build pakai Gemini 3.6 Flash
+        run: |
+          set -e
+          python3 << 'PY'
+          with open("functions/api/chat.js") as f:
+              c = f.read()
+
+          old_build = """      if (buildMode && (!r || r.error)) {
+        const mr = await withTimeout(tryModelRouterText(mrKeys, workMessages, toolDecls, MODELROUTER_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null, mrUsageAcc), 90000, 'ModelRouter').catch(e => ({ error: e.message }));
+        if (mr && !mr.error) r = mr;
+      }"""
+
+          new_build = """      // [9 Okt sementara] MODE BUILD → Gemini AI Studio 3.6 Flash UTAMA (arahan pemilik)
+      if (buildMode && (!r || r.error)) {
+        try {
+          const gKeys = await getGeminiKeys(env);
+          if (gKeys && gKeys.length) {
+            const { systemInstruction, contents } = toGeminiPayload(workMessages);
+            const gem = await withTimeout(tryModels(gKeys, systemInstruction, contents, gTools, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 90000, 'Gemini-build-3.6').catch(e => ({ error: e.message }));
+            if (gem && !gem.error && (gem.text || gem.tool_calls)) r = gem;
+          }
+        } catch (e) {}
+        // fallback ModelRouter bila Gemini gagal
+        if ((!r || r.error) && mrKeys.length) {
+          const mr = await withTimeout(tryModelRouterText(mrKeys, workMessages, toolDecls, MODELROUTER_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null, mrUsageAcc), 90000, 'ModelRouter').catch(e => ({ error: e.message }));
+          if (mr && !mr.error) r = mr;
+        }
+      }"""
+
+          old_gate = "const buildMode = ENABLE_BUILD_ROUTE && (body.mode === 'build' || (!explicitChat && detectBuildIntent(body.messages))) && !isGuest && !!mrKeys.length && !hasImages;"
+          new_gate = "const buildMode = ENABLE_BUILD_ROUTE && (body.mode === 'build' || (!explicitChat && detectBuildIntent(body.messages))) && !isGuest && !hasImages; // [sementara] tidak wajib mrKeys — Gemini 3.6 Flash"
+
+          if "Gemini-build-3.6" in c:
+              print("Already patched, skip code change")
+          else:
+              assert old_build in c, "build block missing"
+              c = c.replace(old_build, new_build)
+              if old_gate in c:
+                  c = c.replace(old_gate, new_gate)
+              with open("functions/api/chat.js", "w") as f:
+                  f.write(c)
+              print("chat.js patched OK")
+          PY
+
+      - name: Commit code change
+        run: |
+          git config user.name "Clincoo"
+          git config user.email "halo@clincoo.buzz"
+          git add functions/api/chat.js
+          git diff --cached --stat
+          git commit -m "temp: mode Build → Gemini AI Studio 3.6 Flash (fallback ModelRouter)" || echo "no code change"
+
+      - name: Upsert kunci Gemini ke D1 + Pages env
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          KEY: ${{ inputs.gemini_key }}
+        run: |
+          set -euo pipefail
+          if [ -z "$KEY" ]; then echo "KEY kosong"; exit 1; fi
+          npm i -g wrangler@latest >/dev/null 2>&1
+          export CLOUDFLARE_API_TOKEN=$CF_API_TOKEN CLOUDFLARE_ACCOUNT_ID=$CF_ACCOUNT_ID
+          echo "Upsert GEMINI_API_KEY ke D1 (len ${#KEY})..."
+          cat > /tmp/key.sql <<SQL
+          DELETE FROM env_vars WHERE key = 'GEMINI_API_KEY';
+          INSERT INTO env_vars (key, value, is_secret, updated_at) VALUES ('GEMINI_API_KEY', '$KEY', 1, datetime('now'));
+          SQL
+          wrangler d1 execute clincoo-db --remote --file /tmp/key.sql
+          rm -f /tmp/key.sql
+          echo "Patch Pages project-level GEMINI_API_KEY..."
+          BODY=$(printf '{"deployment_configs":{"production":{"env_vars":{"GEMINI_API_KEY":{"type":"secret_text","value":"%s"}}}}}' "$KEY")
+          RES=$(curl -s -X PATCH "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects/clincoo" \
+            -H "Authorization: Bearer $CF_API_TOKEN" -H 'Content-Type: application/json' -d "$BODY")
+          echo "$RES" | python3 -c "import sys,json; d=json.load(sys.stdin); print('success:', d.get('success'), d.get('errors'))"
+          echo "Verifikasi D1:"
+          wrangler d1 execute clincoo-db --remote --json --command "SELECT key, length(value) AS len FROM env_vars WHERE key='GEMINI_API_KEY'" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d[0]['results'])"
+
+      - name: Push
+        run: |
+          git push origin main || true
