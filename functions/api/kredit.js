@@ -58,6 +58,30 @@ export async function onRequestGet({ request, env }) {
       .reduce((s, p) => s + (p.credits_left || 0), 0);
 
     // ---- Riwayat transaksi (tab Transaksi) — tanpa nama provider ----
+    // [9 Okt 2026, arahan pemilik] Transaksi PENDING (QRIS dibuat, BELUM dibayar)
+    // wajib tampil di riwayat — jejaknya jangan hilang sebelum dibayar/dibatalkan.
+    const rows = [];
+    try {
+      const r = await db.prepare(
+        "SELECT * FROM kredit_topups WHERE user_key = ? AND status = 'pending' ORDER BY created_at DESC, rowid DESC LIMIT 50"
+      ).bind(userKey).all();
+      for (const t of r.results || []) {
+        // created_at = sqlite datetime('now') "YYYY-MM-DD HH:MM:SS" (UTC)
+        const cRaw = t.created_at ? String(t.created_at).replace(' ', 'T') + 'Z' : '';
+        const cd = cRaw ? new Date(cRaw) : null;
+        if (!cd || isNaN(cd)) continue;
+        rows.push({
+          ts: cd.getTime(),
+          sumber: 'Top Up QRIS',
+          kredit: t.credits || 0,
+          sisa: 0,
+          harga: fmtIDR(t.bill_total || t.amount),
+          status: 'Pending',
+          waktu: fmtTanggal(cd) + ' · ' + fmtJam(cd),
+          hingga: ''
+        });
+      }
+    } catch (e) {}
     const riwayat = allPacks.map(p => {
       let sumber = 'Paket Kredit';
       if (p.pack_id === 'starter') sumber = 'Bonus Percobaan';
@@ -67,6 +91,7 @@ export async function onRequestGet({ request, env }) {
       const status = aktif ? 'Aktif' : ((p.credits_left || 0) <= 0 ? 'Habis' : 'Kedaluwarsa');
       const d = p.purchased_at ? new Date(p.purchased_at) : null;
       return {
+        ts: d ? d.getTime() : 0,
         sumber,
         kredit: p.credits_total || 0,
         sisa: p.credits_left || 0,
@@ -76,6 +101,10 @@ export async function onRequestGet({ request, env }) {
         hingga: aktif ? fmtTanggalPanjang(new Date(p.expires_at)) : ''
       };
     });
+    // gabung paket + pending, urut terbaru dulu (ts dibuang setelah urut)
+    rows.push(...riwayat);
+    rows.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    const riwayatFinal = rows.map(r => { const { ts, purchasedTs, ...rest } = r; return rest; });
 
     // ---- Pemakaian: total + rincian per pesan (tab Chat) ----
     let usage = [];
@@ -125,7 +154,7 @@ export async function onRequestGet({ request, env }) {
       email: String(user.email || '').toLowerCase(),
       saldo,
       terpakai,
-      riwayat,
+      riwayat: riwayatFinal,
       chatLog,
       integrasi
     });

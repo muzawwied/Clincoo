@@ -196,6 +196,48 @@ export async function onRequestGet({ request, env }) {
     } catch (e) { return new Response('Gagal mengambil gambar QR.', { status: 502, headers: CORS }); }
   }
 
+  // [9 Okt 2026, arahan pemilik] Order PENDING terakhir milik user — halaman bayar
+  // memakai ini untuk pulih ke layar QRIS setelah refresh / buka tab baru, biar
+  // order yang belum dibayar tidak hilang dan tidak balik ke halaman nominal.
+  if (action === 'pending') {
+    const user = await currentUser(env, request);
+    if (!user) return json({ success: false, need_login: true }, 401);
+    let t = null;
+    try { t = await db.prepare("SELECT * FROM kredit_topups WHERE user_key = ? AND status = 'pending' ORDER BY created_at DESC, rowid DESC LIMIT 1").bind('u' + user.id).first(); } catch (e) {}
+    if (!t) return json({ success: false, none: true });
+    return json({
+      success: true,
+      order_id: t.id,
+      qr_image: t.qr_url,
+      amount: t.amount,
+      credits: t.credits,
+      total: t.bill_total || t.amount,
+      fee: Math.max(0, (t.bill_total || t.amount) - t.amount),
+      expires_at: t.expires_at || ''
+    });
+  }
+
+  // [9 Okt 2026, arahan pemilik] Order PENDING terakhir milik user — halaman bayar
+  // memakai ini untuk pulih ke layar QRIS setelah refresh / buka tab baru, biar
+  // order yang belum dibayar tidak hilang dan tidak balik ke halaman nominal.
+  if (action === 'pending') {
+    const user = await currentUser(env, request);
+    if (!user) return json({ success: false, need_login: true }, 401);
+    let t = null;
+    try { t = await db.prepare("SELECT * FROM kredit_topups WHERE user_key = ? AND status = 'pending' ORDER BY created_at DESC, rowid DESC LIMIT 1").bind('u' + user.id).first(); } catch (e) {}
+    if (!t) return json({ success: false, none: true });
+    return json({
+      success: true,
+      order_id: t.id,
+      qr_image: t.qr_url,
+      amount: t.amount,
+      credits: t.credits,
+      total: t.bill_total || t.amount,
+      fee: Math.max(0, (t.bill_total || t.amount) - t.amount),
+      expires_at: t.expires_at || ''
+    });
+  }
+
   if (action === 'status') {
     const user = await currentUser(env, request);
     if (!user) return json({ success: false, need_login: true }, 401);

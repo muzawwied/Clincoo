@@ -275,17 +275,18 @@ function renderQris(d) {
     }
 }
 
+async function pollOnce() {
+    if (!cur.orderId) return;
+    try {
+        var res = await fetch(API + '?action=status&order_id=' + encodeURIComponent(cur.orderId));
+        var d = await res.json();
+        if (d && d.status === 'paid') showPaid(d);
+        else if (d && d.status === 'expired') showExpired();
+    } catch (e) {}
+}
 function startPolling() {
     stopPolling();
-    pollInt = setInterval(async function () {
-        if (!cur.orderId) return;
-        try {
-            var res = await fetch(API + '?action=status&order_id=' + encodeURIComponent(cur.orderId));
-            var d = await res.json();
-            if (d && d.status === 'paid') showPaid(d);
-            else if (d && d.status === 'expired') showExpired();
-        } catch (e) {}
-    }, 5000);
+    pollInt = setInterval(pollOnce, 5000);
 }
 function stopPolling() { if (pollInt) { clearInterval(pollInt); pollInt = null; } }
 
@@ -314,6 +315,7 @@ function showPaid(d) {
     clearTimeout(expTimer);
     // Saldo & riwayat di tab lain langsung menyegarkan (BroadcastChannel, sesuai aturan Clincoo)
     try { new BroadcastChannel('clincoo_kredit_sync').postMessage({ t: 'topup-done' }); } catch (e) {}
+    try { sessionStorage.removeItem(QR_SNAP_KEY); } catch (e) {}
     document.getElementById('paid-detail').textContent = '+' + _rp((d && d.credits) || cur.kredit) + ' kredit masuk ke saldo kamu.';
     document.getElementById('qr-status').textContent = 'Pembayaran diterima';
     document.getElementById('qr-cta-wait').classList.add('hidden');
@@ -325,6 +327,8 @@ function showPaid(d) {
 function showExpired() {
     stopPolling();
     clearTimeout(expTimer);
+    try { sessionStorage.removeItem(QR_SNAP_KEY); } catch (e) {}
+    try { if (cur.orderId) sessionStorage.setItem('clincoo_qris_dismiss', cur.orderId); } catch (e) {}
     document.getElementById('qr-status').textContent = 'Kedaluwarsa';
     document.getElementById('qr-cta-wait').classList.add('hidden');
     document.getElementById('qr-cta-paid').classList.add('hidden');
@@ -334,6 +338,8 @@ function showExpired() {
 function backToInput() {
     stopPolling();
     clearTimeout(expTimer);
+    var dismissedId = cur.orderId;
+    try { if (dismissedId) sessionStorage.setItem('clincoo_qris_dismiss', dismissedId); } catch (e) {}
     cur = { orderId: '', amount: 0, kredit: 0, total: 0, fee: 0, qrSrc: '' };
     try { sessionStorage.removeItem(QR_SNAP_KEY); } catch (e) {}
     document.getElementById('qris-wrap').classList.add('hidden');
@@ -360,6 +366,29 @@ function toast(msg) {
 
 rcRenderDigits(); rcUpdate();
 lucide.createIcons();
+
+// [9 Okt 2026, arahan pemilik] Refresh / buka ulang halaman bayar HARUS tetap di
+// layar QRIS selama order belum dibayar — jangan balik ke halaman nominal.
+// Sumber pemulihan: snapshot sesi (refresh) -> order pending terakhir di server
+// (tab baru). Order yang sengaja ditutup user / kedaluwarsa gak dipulihkan.
+(async function () {
+    var d = null;
+    try { d = JSON.parse(sessionStorage.getItem(QR_SNAP_KEY) || 'null'); } catch (e) {}
+    if (!d || !d.order_id) {
+        try {
+            var res = await fetch(API + '?action=pending');
+            var p = await res.json();
+            if (p && p.success && p.order_id && p.qr_image) d = p;
+        } catch (e) {}
+    }
+    var dismissed = '';
+    try { dismissed = sessionStorage.getItem('clincoo_qris_dismiss') || ''; } catch (e) {}
+    if (d && d.order_id && d.qr_image && dismissed !== d.order_id) {
+        showQrisSection();
+        renderQris(d);
+        pollOnce(); // cek status segera: mungkin sudah dibayar / kedaluwarsa
+    }
+})();
 </script>
 </body>
 </html>
