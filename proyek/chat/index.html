@@ -6386,6 +6386,7 @@ window.chatLivePreview = function () {
                         // user tahu sistem masih mencoba provider lain, bukan hang.
                         const slowStart = Date.now();
                         let slowNotified = false, slowNotified2 = false, slowShimmer = false;
+                        let __composingNotified = false; // status "Composing" hanya saat delta BENAR-BENAR datang
                         const slowTimer = setInterval(() => {
                             if (!isGenerating) { clearInterval(slowTimer); return; }
                             if (hasReceivedData || deltaStreamed) { clearInterval(slowTimer); return; }
@@ -6409,6 +6410,7 @@ window.chatLivePreview = function () {
                                     lastEventAt = Date.now(); // event hidup -> stream masih sehat
                                     if (evt.t === 'delta') {
                                         hasReceivedData = true;
+                                        if (!__composingNotified) { __composingNotified = true; setAiStatus('Composing the answer…'); }
                                         deltaStreamed += evt.text || '';
                                         streamingBuffer = deltaStreamed;
                                         return;
@@ -6625,8 +6627,11 @@ window.chatLivePreview = function () {
                             }
                         }
 
-                        // Progress real-time: teks diambil dari aksi AI sendiri (nama tool + argumennya)
-                        resultJson.tool_calls.forEach(tc => setAiStatus(clientToolProgressLabel(tc)));
+                        // [9 Okt, arahan pemilik] progres shimmer TIDAK lagi hardcode:
+                        // status di-set per tool PERSIS saat tool itu mulai dieksekusi
+                        // (dengan urutan nyata i/total), bukan label ditembak semua
+                        // sekaligus sebelum eksekusi (yang membuat shimmer "mengeras"
+                        // di teks terakhir yang tidak sedang dikerjakan).
 
                         // Eksekusi tool workspace secara lokal (localStorage browser).
                         // PENTING: args PENUH (tc.args, bukan versi slim) tetap dipakai untuk
@@ -6650,13 +6655,20 @@ window.chatLivePreview = function () {
                             toolSigCounts[sig] = (toolSigCounts[sig] || 0) + 1;
                             if (toolSigCounts[sig] >= 3) dupTCs.push(tc);
                         });
-                        const functionResponses = await Promise.all(resultJson.tool_calls.map(async function(tc) {
+                        const __totalTools = resultJson.tool_calls.length;
+                        let __doneTools = 0;
+                        const functionResponses = await Promise.all(resultJson.tool_calls.map(async function(tc, ti) {
                             if (dupTCs.indexOf(tc) !== -1) {
                                 return { type: 'function_response', name: tc.name, result: 'STOP — tool ini sudah dipanggil dengan argumen IDENTIK dua kali dan berhasil. Item tersebut SUDAH ADA. JANGAN ulangi. Baca function_response sebelumnya lalu LANJUT ke langkah berikutnya (tulis isi file / bagian lain), atau panggil list_items untuk melihat isi workspace sekarang.' };
+                            }
+                            // status nyata: tool INI sedang jalan (i/total), sinkron dgn eksekusi
+                            if (tc.result === undefined || tc.result === null) {
+                                setAiStatus(clientToolProgressLabel(tc) + ' (' + (ti + 1) + '/' + __totalTools + ')…');
                             }
                             const result = (tc.result !== undefined && tc.result !== null)
                                 ? tc.result
                                 : await executeWorkspaceTool(tc.name, tc.args || {});
+                            __doneTools++;
                             const ok = !(result && typeof result === 'object' && result.error);
                             let resultText = '';
                             try { resultText = (typeof result === 'string') ? result : JSON.stringify(result, null, 2); } catch(e) { resultText = String(result); }
@@ -6670,6 +6682,8 @@ window.chatLivePreview = function () {
                             return { type: 'function_response', name: tc.name, result: slimForModelHistory(result, 3000) };
                         }));
                         apiMessagesWithTools.push({ role: 'user', content: functionResponses });
+                        // fase nyata berikutnya: semua tool selesai, AI kini membaca hasilnya
+                        setAiStatus('Analyzing the results…');
                         compactToolHopHistory(apiMessagesWithTools); // circuit-breaker: cegah payload lintas-hop membengkak tak terbatas
                         // Tampilkan progres eksekusi tugas secara langsung ke chat (mirip kartu "Ran command")
                         renderMessages();
