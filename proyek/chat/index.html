@@ -1324,7 +1324,7 @@ window.chatLivePreview = function () {
                 // FIX: toolCalls ikut disimpan (dulu HILANG saat pindah halaman — makanya
                 // AI "mengulang progres dari awal" saat user kembali: progres menulis file
                 // dll tidak terbaca, pesan dianggap kosong lalu digenerate ulang).
-                const log = messages.filter(m => m && !m.isHidden && (m.text || (m.pollQuestions && m.pollQuestions.length) || (m.toolCalls && m.toolCalls.length) || (m.attachments && m.attachments.length) || m.apkLogo || m.apkBuild)).map(m => ({
+                const log = messages.filter(m => m && !m.isHidden && (m.text || m.isProcessing || m.isTyping || (m.pollQuestions && m.pollQuestions.length) || (m.toolCalls && m.toolCalls.length) || (m.attachments && m.attachments.length) || m.apkLogo || m.apkBuild)).map(m => ({
                     id: m.id, role: m.role, text: m.text, time: m.time || null, silent: !!m.silent,
                     isProcessing: !!m.isProcessing,
                     midPhase: !!m.midPhase,
@@ -1342,6 +1342,8 @@ window.chatLivePreview = function () {
                     }))
                 }));
                 localStorage.setItem(lsChatKey(), JSON.stringify(log));
+                // SESSION_RESUME_FIX: timestamp lokal selalu naik — cegah cloud menimpa lokal lebih baru
+                try { localStorage.setItem(chatSyncTsKey(), String(Date.now())); } catch(e) {}
                 // FIX: session_id ikut dipersist per proyek — setelah reload/error,
                 // auto-lanjut memakai SESI YANG SAMA, bukan sesi baru dari server.
                 if (currentSessionId) { try { localStorage.setItem(lsChatKey() + '_session', currentSessionId); } catch(e) {} }
@@ -1358,7 +1360,7 @@ window.chatLivePreview = function () {
                     messages = log;
                     // FIX: pulihkan session_id proyek ini (kalau ada) supaya lanjutan
                     // percakapan tetap di SESI LAMA, bukan sesi baru tiap reload.
-                    if (!currentSessionId) { try { currentSessionId = localStorage.getItem(lsChatKey() + '_session') || null; } catch(e) {} }
+                    try { const sid = localStorage.getItem(lsChatKey() + '_session'); if (sid) currentSessionId = sid; } catch(e) {} // SESSION_RESUME_FIX
                     schedulePromptChips(); return true;
                 }
             } catch(e) {}
@@ -6044,6 +6046,7 @@ window.chatLivePreview = function () {
             };
             messages.push(aiMsgObj);
             renderMessages();
+            try { saveChatLog(); } catch (e) {} // SESSION_RESUME_FIX
             // Tidak lagi force-scroll ke bawah di sini: kalau pesan user baru saja
             // di-pin ke atas (pinMessageToTop), indikator "mengetik" ini muncul tepat
             // di bawahnya secara alami — memaksa scroll ke bawah akan membatalkan pin itu.
@@ -6751,7 +6754,7 @@ window.chatLivePreview = function () {
                         messages[msgIndex].isTyping = true;
                     }
 
-                    if (resultJson && resultJson.session_id) currentSessionId = resultJson.session_id;
+                    if (resultJson && resultJson.session_id) { currentSessionId = resultJson.session_id; try { localStorage.setItem(lsChatKey() + '_session', currentSessionId); } catch(e) {} }
                     // POLLING: blok [[POLL]]...[[/POLL]] dari jawaban final diubah jadi
                     // kartu pertanyaan interaktif; teks yang tampil bersih tanpa marker.
                     const finalText = (resultJson && resultJson.text ? resultJson.text : "");
@@ -7150,6 +7153,7 @@ window.chatLivePreview = function () {
             adjustInputHeight();
             
             renderMessages();
+            try { saveChatLog(); } catch (e) {} // SESSION_RESUME_FIX
             pinMessageToTop(userMsg.id);
             
             if (agentModeOn && val) { runAgentTask(val); return; }
@@ -7271,6 +7275,16 @@ window.chatLivePreview = function () {
         let localTs = 0;
         try { localTs = parseInt(localStorage.getItem(chatSyncTsKey()) || '0', 10) || 0; } catch(e) {}
         if (remote.ts <= localTs) return; // versi lokal masih yang terbaru
+        // SESSION_RESUME_FIX: jangan timpa lokal yang pending / lebih panjang
+        try {
+            const localRaw = localStorage.getItem(lsChatKey());
+            const localLog = localRaw ? JSON.parse(localRaw) : [];
+            if (Array.isArray(localLog) && localLog.length > 0) {
+                if (localLog.some(function (m) { return m && m.role === 'ai' && (m.isProcessing || m.isTyping); })) return;
+                if (localLog.length > remote.log.length && localTs >= remote.ts - 5000) return;
+            }
+        } catch (e) {}
+        if (typeof isGenerating !== 'undefined' && isGenerating) return;
         messages = remote.log;
         try { localStorage.setItem(lsChatKey(), JSON.stringify(remote.log)); } catch(e) {}
         try { localStorage.setItem(chatSyncTsKey(), String(remote.ts)); } catch(e) {}
