@@ -1535,6 +1535,23 @@
         }
         const submitPromptBtn = document.getElementById('submit-prompt-btn');
         const mainPromptInput = document.getElementById('main-prompt-input');
+
+        // PROMO: kartu harga homepage sinkron /api/promo (revert 49K + 'Paling Populer' kalau selesai)
+        // [9 Okt 2026] pembuka blok ini sempat terhapus bersama pembersihan banner kuota ->
+        // seluruh script beranda error & sambutan/motivasi gak muncul; dipulihkan apa adanya.
+        (function () {
+            try {
+                var apiB = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : '';
+                fetch(apiB + '/api/promo', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (p) {
+                    var ribbon = document.getElementById('home-pro-ribbon');
+                    var wrap = document.getElementById('home-pro-price-wrap');
+                    var note = document.getElementById('home-pro-promo-note');
+                    if (!p || p.active !== true || p.remaining <= 0) {
+                        if (ribbon) ribbon.textContent = 'Paling Populer';
+                        if (note) note.remove();
+                        if (wrap) wrap.innerHTML = '<span class="text-2xl font-extrabold tracking-tight text-gray-900">49K</span><span class="text-xs font-medium text-gray-500 ml-1">/bln</span>';
+                        return;
+                    }
                     var rem = document.getElementById('home-promo-rem');
                     if (rem) rem.textContent = String(p.remaining);
                 }).catch(function () {});
