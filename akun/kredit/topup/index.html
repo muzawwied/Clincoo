@@ -167,9 +167,7 @@
 </footer>
 
 <!-- Toast -->
-<div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[70] hidden">
-    <div class="bg-accent text-white text-[13px] font-semibold rounded-full px-4 py-2.5 shadow-lg pop" id="toast-msg"></div>
-</div>
+
 
 <script>
 var API = '/api/kredit-topup';
@@ -326,7 +324,6 @@ function showPaid(d) {
     document.getElementById('qr-cta-wait').classList.add('hidden');
     document.getElementById('qr-cta-expired').classList.add('hidden');
     document.getElementById('qr-cta-paid').classList.remove('hidden');
-    toast('Top up berhasil: +' + _rp((d && d.credits) || cur.kredit) + ' kredit');
 }
 
 function showExpired() {
@@ -360,15 +357,6 @@ function qrDownload() {
     a.href = cur.qrSrc;
     a.download = 'qris-kredit-ai-clincoo.png';
     document.body.appendChild(a); a.click(); a.remove();
-}
-
-var toastTimer;
-function toast(msg) {
-    var t = document.getElementById('toast');
-    document.getElementById('toast-msg').textContent = msg;
-    t.classList.remove('hidden');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { t.classList.add('hidden'); }, 2600);
 }
 
 rcRenderDigits(); rcUpdate();
