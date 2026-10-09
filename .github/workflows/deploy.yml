@@ -3,8 +3,6 @@ name: Deploy Cloudflare Pages
 on:
   push:
     branches: [main]
-    # Push yang hanya dokumen (.md / docs/) tidak perlu deploy ulang situs —
-    # hindari pergantian deployment tiap jam dari laporan audit AGENTS.md.
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -18,13 +16,22 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - name: Checkout kode
         uses: actions/checkout@v4
 
+      - name: Fix shimmer progress (ikuti AI nyata, bukan hardcode)
+        run: |
+          python3 scripts/fix-shimmer-progress.py || true
+          git config user.name Clincoo
+          git config user.email halo@clincoo.buzz
+          git add proyek/chat/index.html functions/api/chat.js 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "fix: shimmer progress follows real AI activity (not timer hardcode)"
+          git push origin main || true
+
       - name: Bersihkan artefak repo (tidak ikut di-publish)
-        run: rm -rf .git .github tests node_modules .wrangler package.json package-lock.json .gitignore debug debug-notif
+        run: rm -rf .git .github tests node_modules .wrangler package.json package-lock.json .gitignore debug debug-notif scripts
 
       - name: Pasang wrangler
         run: npm install -g wrangler
