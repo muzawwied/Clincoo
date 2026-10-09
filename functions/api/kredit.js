@@ -53,9 +53,9 @@ export async function onRequestGet({ request, env }) {
       ).bind(userKey).all();
       allPacks = r.results || [];
     } catch (e) {}
-    const saldo = allPacks
+    const saldo = Math.round(allPacks
       .filter(p => (p.credits_left || 0) > 0 && p.expires_at && new Date(p.expires_at) > now)
-      .reduce((s, p) => s + (p.credits_left || 0), 0);
+      .reduce((s, p) => s + (p.credits_left || 0), 0) * 100) / 100; // maks 2 desimal
 
     // ---- Riwayat transaksi (tab Transaksi) — tanpa nama provider ----
     // [9 Okt 2026, arahan pemilik] Transaksi PENDING (QRIS dibuat, BELUM dibayar)
@@ -117,7 +117,7 @@ export async function onRequestGet({ request, env }) {
     let terpakai = 0;
     try {
       const r = await db.prepare('SELECT SUM(cost) AS t FROM ai_usage WHERE user_key = ?').bind(userKey).first();
-      terpakai = (r && r.t) || 0;
+      terpakai = Math.round(((r && r.t) || 0) * 100) / 100; // maks 2 desimal
     } catch (e) {}
 
     // Rincian per pesan — TANPA nama provider: selalu "Clincoo Ai".
@@ -130,7 +130,7 @@ export async function onRequestGet({ request, env }) {
         input: u.in_chars || 0,
         output: u.out_chars || 0,
         status: 'Berhasil',
-        kredit: u.cost || 0
+        kredit: Math.round((u.cost || 0) * 100) / 100
       };
     });
 

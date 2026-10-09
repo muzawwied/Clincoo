@@ -147,11 +147,11 @@ var state = { saldo: 0, terpakai: 0, riwayat: [], chatLog: [], integrasi: [], em
 function fmt(n) {
     var v = Number(n || 0);
     if (!isFinite(v)) v = 0;
-    // [9 Okt, arahan pemilik] kredit dipatok harga provider per 2000 token
-    // (GLM 0,003 / Haiku 0,002): tampil sampai 6 desimal, nol buntut dibuang.
-    if (Math.abs(v - Math.round(v)) < 0.0000005) return Math.round(v).toLocaleString('id-ID');
-    var s = v.toFixed(6).replace(/0+$/, '').replace(/[.,]$/, '');
-    return s.replace('.', ',');
+    // [9 Okt, arahan pemilik] MAKS 2 DESIMAL — angka 0,koma panjang gak
+    // boleh bikin layout tabel rusak; nol buntut dibuang biar bersih.
+    var r = Math.round(v * 100) / 100;
+    if (Math.abs(r - Math.round(r)) < 0.005) return Math.round(r).toLocaleString('id-ID');
+    return r.toFixed(2).replace(/0+$/, '').replace(/[.,]$/, '').replace('.', ',');
 }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 var toastTimer = null;

@@ -1126,25 +1126,25 @@ async function quotaCheck(env, user, cost = 1, freeChat = false) {
 // Token dihitung dari karakter riil (estimasi umum: 4 karakter ≈ 1 token).
 // Pre-flight quotaCheck memotong 1 sebagai reservasi; setelah jawaban jadi,
 // SELISIH biaya sebenarnya dipotong di chargeAiUsage.
-// [9 Okt 2026, arahan pemilik — dikalibrasi dari LOG PROVIDER ASLI:
-// "30.725 tokens (30.213 in • 512 out) = $0.000558"]
-// Harga provider riil: $0.000558 / 30.725 tok = ~$0.0182 per 1jt token
-// (jauh di bawah angka $0.003/2000 tok yang lalu dipakai patokan).
-// Tarif = 10x biaya provider riil (markup arahan pemilik), dikonversi ke
-// kredit (1 kredit = Rp10, kurs Rp17.800/$):
-//   Haiku : $0.0000363/2000tok x10 = $0.000363 = Rp6,46 -> 0,65 KREDIT/2000tok
-//   GLM   : 1,5x haiku (rasio harga pemilik)      = Rp9,9  -> 1     KREDIT/2000tok
+// [9 Okt 2026, arahan pemilik: "harga kredit di rupiah diperbaiki lagi biar
+// lebih sesuai"] Tarif dinyatakan LANGSUNG dalam RUPIAH per 2.000 token,
+// dekat biaya provider riil (log pemilik: $0.000558/30.725 tok = Rp0,65
+// per 2000 tok haiku; GLM ≈ 1,5x haiku) dengan margin ~2-3x:
+//   Haiku : Rp1,5 / 2.000 token = 0,15 kredit (1 kredit = Rp10)
+//   GLM   : Rp2,5 / 2.000 token = 0,25 kredit
 // Model lain (llama/nemotron/deepseek/gemini/cadangan): pakai tarif GLM.
 // Token dihitung dari karakter riil (4 karakter ≈ 1 token).
-const KRED_PER_2K_TOKENS_HAIKU = 0.65;
-const KRED_PER_2K_TOKENS_GLM = 1;
+// Biaya selalu dibulatkan ke 2 desimal supaya angka tampil pendek.
+const RP_PER_2K_HAIKU = 1.5;
+const RP_PER_2K_GLM = 2.5;
+const KREDIT_RP = 10; // nilai resmi 1 kredit (top-up QRIS: Rp1.000 = 100 kredit)
 function tokensOfChars(chars) { return Math.ceil((chars || 0) / 4); }
 function aiCostOf(model, outputChars, inputChars) {
   const m = String(model || '').toLowerCase();
-  const per2k = m.indexOf('haiku') !== -1 ? KRED_PER_2K_TOKENS_HAIKU : KRED_PER_2K_TOKENS_GLM;
+  const rp = m.indexOf('haiku') !== -1 ? RP_PER_2K_HAIKU : RP_PER_2K_GLM;
   const tokens = tokensOfChars(inputChars) + tokensOfChars(outputChars);
-  const cost = (tokens / 2000) * per2k;
-  return Math.max(0.01, Math.round(cost * 100) / 100);
+  const cost = (tokens / 2000) * rp / KREDIT_RP; // rupiah pemakaian -> kredit
+  return Math.max(0.01, Math.round(cost * 100) / 100); // maks 2 desimal
 }
 // [9 Okt 2026, arahan pemilik] Kredit dipotong dari SALDO (Paket Kredit AI /
 // starter) SESUAI PEMAKAIAN user — usage-based (1 + selisih token), semua mode
