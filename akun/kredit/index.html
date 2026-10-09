@@ -172,12 +172,13 @@ function render(saldoChanged) {
             state.riwayat.map(function (r) {
                 var on = r.status === 'Aktif';
                 return '<tr>' +
-                    '<td class="py-3 pr-2"><p class="text-[13px] font-semibold text-gray-900">' + esc(r.sumber) + '</p>' +
-                    (r.hingga ? '<p class="text-[11px] text-gray-400 font-medium mt-0.5">Aktif hingga ' + esc(r.hingga) + '</p>' : '') + '</td>' +
-                    '<td class="py-3 text-right text-[13px] font-bold text-emerald-600 mono">+' + fmt(r.kredit) + '</td>' +
-                    '<td class="py-3 px-3 text-right text-[13px] font-medium text-gray-700 mono">' + fmt(r.sisa) + '</td>' +
-                    '<td class="py-3 px-3 text-right text-[13px] font-bold text-gray-900 mono">' + esc(r.harga) + '</td>' +
-                    '<td class="py-3 px-3 text-center"><span class="text-[10px] font-bold ' + (on ? 'text-emerald-600' : 'text-gray-400') + ' bg-gray-100 rounded-full px-2.5 py-1">' + esc(r.status) + '</span></td>' +
+                    '<td class="py-3 pr-2 whitespace-nowrap text-[13px] font-semibold text-gray-900">' + esc(r.sumber) + '</td>' +
+                    '<td class="py-3 text-right whitespace-nowrap text-[13px] font-bold text-emerald-600 mono">+' + fmt(r.kredit) + '</td>' +
+                    '<td class="py-3 px-3 text-right whitespace-nowrap text-[13px] font-medium text-gray-700 mono">' + fmt(r.sisa) + '</td>' +
+                    '<td class="py-3 px-3 text-right whitespace-nowrap text-[13px] font-bold text-gray-900 mono">' + esc(r.harga) + '</td>' +
+                    // [9 Okt 2026, arahan pemilik] label status TANPA card: teks polos;
+                    // "hingga" nempel satu baris di sebelahnya, semua baris tabel cuma satu baris.
+                    '<td class="py-3 px-3 text-center whitespace-nowrap"><span class="text-[10px] font-bold ' + (on ? 'text-emerald-600' : 'text-gray-400') + '">' + esc(r.status) + '</span>' + (on && r.hingga ? '<span class="text-[10px] text-gray-400 font-medium ml-1.5">hingga ' + esc(r.hingga) + '</span>' : '') + '</td>' +
                     '<td class="py-3 pl-4 text-right text-[12px] text-gray-400 font-medium whitespace-nowrap">' + esc(r.waktu) + '</td></tr>';
             }).join('') + '</tbody></table></div>';
     }
@@ -190,11 +191,12 @@ function render(saldoChanged) {
             chat.map(function (c) {
                 return '<tr>' +
                     '<td class="py-2.5 pr-2 text-[13px] font-semibold text-gray-900 whitespace-nowrap">' + esc(c.tanggal) + '</td>' +
-                    '<td class="py-2.5 px-3 text-[13px] font-medium text-gray-700">' + esc(c.nama) + '</td>' +
-                    '<td class="py-2.5 px-3 text-right text-[13px] font-medium text-gray-700 mono">' + fmt(c.input) + '</td>' +
-                    '<td class="py-2.5 px-3 text-right text-[13px] font-medium text-gray-700 mono">' + fmt(c.output) + '</td>' +
-                    '<td class="py-2.5 px-3 text-center"><span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 rounded-full px-2.5 py-1">' + esc(c.status) + '</span></td>' +
-                    '<td class="py-2.5 pl-4 text-right text-[13px] font-bold text-gray-900 mono">' + fmt(c.kredit) + '</td></tr>';
+                    '<td class="py-2.5 px-3 text-[13px] font-medium text-gray-700 whitespace-nowrap">' + esc(c.nama) + '</td>' +
+                    '<td class="py-2.5 px-3 text-right text-[13px] font-medium text-gray-700 mono whitespace-nowrap">' + fmt(c.input) + '</td>' +
+                    '<td class="py-2.5 px-3 text-right text-[13px] font-medium text-gray-700 mono whitespace-nowrap">' + fmt(c.output) + '</td>' +
+                    // [9 Okt 2026, arahan pemilik] label "Berhasil" TANPA card: teks polos
+                    '<td class="py-2.5 px-3 text-center whitespace-nowrap"><span class="text-[10px] font-bold text-emerald-600">' + esc(c.status) + '</span></td>' +
+                    '<td class="py-2.5 pl-4 text-right text-[13px] font-bold text-gray-900 mono whitespace-nowrap">' + fmt(c.kredit) + '</td></tr>';
             }).join('') + '</tbody></table></div>';
     } else {
         pc.innerHTML = emptyBlock('Belum ada penggunaan kredit.', 'history');
@@ -207,10 +209,10 @@ function render(saldoChanged) {
         pi.innerHTML = '<table class="w-full text-left border-collapse"><thead><tr class="text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100"><th class="py-2.5 pr-2">Integrasi</th><th class="py-2.5 text-center">Status</th><th class="py-2.5 px-3 text-center">Pesan</th><th class="py-2.5 pl-4 text-right">Kredit Terpakai</th></tr></thead><tbody class="divide-y divide-gray-100">' +
             intg.map(function (i) {
                 var on = i.status === 'Aktif';
-                return '<tr><td class="py-2.5 pr-2 text-[13px] font-semibold text-gray-900">' + esc(i.nama) + '</td>' +
-                    '<td class="py-2.5 text-center"><span class="text-[10px] font-bold ' + (on ? 'text-emerald-600' : 'text-gray-400') + ' bg-gray-100 rounded-full px-2.5 py-1">' + esc(i.status) + '</span></td>' +
-                    '<td class="py-2.5 px-3 text-center text-[13px] font-medium text-gray-700 mono">' + fmt(i.pesan) + '</td>' +
-                    '<td class="py-2.5 pl-4 text-right text-[13px] font-bold text-gray-900 mono">' + fmt(i.kredit) + '</td></tr>';
+                return '<tr><td class="py-2.5 pr-2 text-[13px] font-semibold text-gray-900 whitespace-nowrap">' + esc(i.nama) + '</td>' +
+                    '<td class="py-2.5 text-center whitespace-nowrap"><span class="text-[10px] font-bold ' + (on ? 'text-emerald-600' : 'text-gray-400') + '">' + esc(i.status) + '</span></td>' +
+                    '<td class="py-2.5 px-3 text-center text-[13px] font-medium text-gray-700 mono whitespace-nowrap">' + fmt(i.pesan) + '</td>' +
+                    '<td class="py-2.5 pl-4 text-right text-[13px] font-bold text-gray-900 mono whitespace-nowrap">' + fmt(i.kredit) + '</td></tr>';
             }).join('') + '</tbody></table>';
     } else {
         pi.innerHTML = emptyBlock('Belum ada penggunaan kredit.', 'history');
