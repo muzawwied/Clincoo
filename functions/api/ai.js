@@ -302,9 +302,11 @@ export async function onRequestGet({ request, env }) {
 
 // ===== POST /api/ai — chat persona Clincoo AI =====
 export async function onRequestPost({ request, env }) {
-  // [8 Okt 2026, arahan pemilik] AI backend = placeholder (dibangun ulang dari nol).
-  // Sama dengan /api/chat: balas instan tanpa auth/kuota/provider, UI dibiarkan.
-  return json({
+  // [9 Okt 2026, arahan pemilik: "pasang ai lagi"] Persona Clincoo AI DINYALAKAN
+  // LAGI — cascade gratis OpenRouter -> Workers AI -> Gemini (tanpa biaya provider).
+  // Matikan lagi: AI_PLACEHOLDER = true.
+  const AI_PLACEHOLDER = false;
+  if (AI_PLACEHOLDER) return json({
     text: 'Maaf, fitur AI Clincoo lagi sedang dikembangkan biar makin cepat dan stabil. Jadi aku belum bisa jawab pertanyaanmu dulu ya, tapi sebentar lagi fitur AI Clincoo bakal aktif kembali. Makasih banyak atas kesabarannya \u{1F64F}',
     model: 'placeholder'
   }, 200);

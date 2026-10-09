@@ -1816,7 +1816,12 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // pertama TANPA membaca body besar (hanya parse <= 2MB utk stream/session/
     // action); body raksasa langsung dijawab stream (client menangani ndjson
     // maupun JSON, dua-duanya).
-    const AI_PLACEHOLDER = true;
+    // [9 Okt 2026, arahan pemilik: "siapkan key buat pasang ai lagi, model glm
+    // 5.3 flash atau haiku 5.5"] AI DINYALAKAN LAGI. Kunci ModelRouter diverifikasi
+    // hidup (saldo jalan); rantai build: claude-haiku-5.5 utama (non-reasoning,
+    // tool_calls native, ~99 tok/s) -> glm-5.3-flash -> lightning, cascade gratis
+    // tetap jadi penyelamat. Matikan lagi: AI_PLACEHOLDER = true.
+    const AI_PLACEHOLDER = false;
     const fromLabsRelay = (request.headers.get('x-labs-relay') || '') === 's0las-labs-relay-4451';
     const labOrigin = String(request.headers.get('origin') || request.headers.get('referer') || '');
     const fromLabsUi = labOrigin.indexOf('labs.clincoo.biz.id') !== -1;
