@@ -995,7 +995,7 @@ async function resolveUser(env, request) {
   return null;
 }
 
-async function quotaCheck(env, user, cost = 1) {
+async function quotaCheck(env, user, cost = 1, freeChat = false) {
   const limits = await aiLimits(env, user);
   const now = new Date();
   const day = now.toISOString().slice(0, 10);
@@ -1012,11 +1012,12 @@ async function quotaCheck(env, user, cost = 1) {
       if (r.day === day) dayCount = r.count;
       if (r.day === month) monthCount = r.count;
     }
-    // [9 Okt 2026, arahan pemilik] SALDO KREDIT = GERBANG UTAMA chat/build:
-    // user baru daftar dapat Kredit Chat Percobaan (starter pack), top-up menambah
-    // paket — semua pesan dipotong dari saldo per pemakaian. Saldo 0 → BLOKIR
-    // total dengan pesan hardcoded pemilik (link top-up). Admin dikecualikan.
-    if (!ADMIN_EMAILS.has(user.email)) {
+    // [9 Okt 2026, arahan pemilik] SALDO KREDIT = GERBANG UTAMA mode BUILD:
+    // pesan mode build dipotong dari saldo per pemakaian; saldo 0 → BLOKIR dengan
+    // pesan hardcoded pemilik (link top-up). Admin dikecualikan.
+    // [9 Okt 2026, arahan pemilik: "mode chat biarkan gratis"] MODE CHAT GRATIS:
+    // TIDAK dicek saldonya — hanya dibatasi cap harian & bulanan di bawah.
+    if (!freeChat && !ADMIN_EMAILS.has(user.email)) {
       const packs = await getActivePacks(env.DB, user.key);
       const balance = packs.reduce((a, p) => a + (p.credits_left || 0), 0);
       if (balance < 1) {
@@ -1067,10 +1068,23 @@ function aiCostOf(model, outputChars, inputChars) {
 // starter) SESUAI PEMAKAIAN user — usage-based (1 + selisih token), semua mode
 // (chat & build). Pre-flight quotaCheck sudah memotong 1 dari counter cap;
 // di sini seluruh biaya sebenarnya dipotong dari saldo paket.
-async function chargeAiUsage(env, user, model, outputChars, inputChars) {
+async function chargeAiUsage(env, user, model, outputChars, inputChars, charge = true) {
   if (!user || !user.key) return;
   try {
     const cost = aiCostOf(model, outputChars, inputChars);
+    // [9 Okt 2026, arahan pemilik] MODE CHAT = GRATIS: pemakaian tetap dicatat
+    // (history/statistik), tapi saldo & counter cap TIDAK dipotong — cap
+    // harian/bulanan sudah dihitung pre-flight (1 pesan = 1 hit).
+    if (!charge) {
+      await env.DB.prepare(
+        'CREATE TABLE IF NOT EXISTS ai_usage (user_key TEXT, ts INTEGER, model TEXT, out_chars INTEGER, cost INTEGER)'
+      ).run();
+      try { await env.DB.prepare('ALTER TABLE ai_usage ADD COLUMN in_chars INTEGER').run(); } catch (e) {}
+      await env.DB.prepare(
+        'INSERT INTO ai_usage (user_key, ts, model, out_chars, in_chars, cost) VALUES (?, ?, ?, ?, ?, ?)'
+      ).bind(user.key, Date.now(), String(model || '').slice(0, 64), Math.max(0, outputChars | 0), Math.max(0, inputChars | 0), 0).run();
+      return;
+    }
     const diff = cost - 1; // 1 sudah tercatat pre-flight di counter cap
     const now = new Date();
     const day = now.toISOString().slice(0, 10);
@@ -1950,8 +1964,12 @@ export async function onRequestPost({ request, env, waitUntil }) {
       return acc;
     }, 0);
     let quotaInfo = null;
+    // [9 Okt 2026, arahan pemilik] Mode dari kapsul popover dibaca SEBELUM kuota:
+    // 'chat' = GRATIS (tanpa cek saldo; cap harian/bulanan jadi batasnya),
+    // 'build' = ModelRouter berbayar, saldo kredit dipotong sesuai pemakaian.
+    const explicitChat = !isGuest && String(body.mode || '').trim() === 'chat';
     if (isFirstHop) {
-      const q = isGuest ? await guestQuotaCheck(env, guestKey) : await quotaCheck(env, user, 1);
+      const q = isGuest ? await guestQuotaCheck(env, guestKey) : await quotaCheck(env, user, 1, explicitChat);
       if (q.exceeded) {
         // User login: kredit habis total -> pesan hardcoded pemilik (top-up di kredit-ai).
         const msg = isGuest ? (q.message || QUOTA_MSG_MONTHLY) : QUOTA_MSG_EMPTY;
@@ -2049,7 +2067,6 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // 'chat'  = obrolan via Gemini AI Studio (kandidat utama race) + batas harian/bulanan,
     //           TANPA auto-eskalasi ke model berbayar walau prompt terdengar "bangun situs";
     // 'build' = ModelRouter berbayar, kredit dipotong sesuai pemakaian (usage-based).
-    const explicitChat = body.mode === 'chat';
     const buildMode = ENABLE_BUILD_ROUTE && (body.mode === 'build' || (!explicitChat && detectBuildIntent(body.messages))) && !isGuest && !!mrKeys.length && !hasImages;
     const aiMain = !!(env.AI && !hasImages);
     const toolDecls = (gTools && gTools[0] && gTools[0].functionDeclarations) || null;
@@ -2126,32 +2143,35 @@ export async function onRequestPost({ request, env, waitUntil }) {
           const { systemInstruction, contents } = toGeminiPayload(workMessages);
           cands.push(cand('P', withTimeout(tryModels(apiKey, systemInstruction, contents, gTools, makeOnDelta('P')), 45000, 'Gemini-utama')));
         }
-        // KANDIDAT E (8 Okt): Emergent kembali jadi kandidat balapan biasa —
-        // kunci produksi saat ini MATI, gagal cepat ~1s, tidak menunda jawaban.
-        if (emKeys.length && !hasImages) {
+        // [9 Okt 2026, arahan pemilik: "kalo chat make gemini yang dari AI Studio"]
+        // MODE CHAT: kandidat balapan CUMA Gemini AI Studio (kunci aktif ada).
+        // Kandidat lain (Emergent/OpenRouter/WorkersAI/Orkestra) hanya ikut race
+        // di mode build / tanpa mode — chat mode jatuh ke mereka HANYA lewat
+        // cascade penyelamat bila semua kunci Gemini gagal (jawaban tetap hidup).
+        if (!explicitChat && emKeys.length && !hasImages) {
           const emCall = () => withTimeout(tryEmergentText(emKeys, workMessages, makeOnDelta('E')), 45000, 'Emergent-race');
           cands.push(toolDecls ? weakLate('E', emCall) : cand('E', emCall()));
         }
         // KANDIDAT OR: OpenRouter (utk reasoning panjang, napas 90s) — weakLate
-        if (orKeys.length) {
+        if (!explicitChat && orKeys.length) {
           cands.push(weakLate('OR', () => withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, chainModels, makeOnDelta('OR')), 150000, 'OpenRouter')));
         }
         // KANDIDAT W: Workers AI (hanya bila binding ada; gagal cepat bila kuota habis)
-        if (aiMain) cands.push(weakLate('W', () => withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 20000, 'WorkersAI-race')));
+        if (!explicitChat && aiMain) cands.push(weakLate('W', () => withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 20000, 'WorkersAI-race')));
         // KANDIDAT W2: Workers AI via REST — akun C (pool kuota gratis kedua; TTFB ~1-2s,
         // tools OK). 429 saat kuota habis -> gagal cepat, tak menahan kandidat lain.
-        if (cfAiCreds) {
+        if (!explicitChat && cfAiCreds) {
           cands.push(weakLate('W2', () => withTimeout(tryCfAiRest(cfAiCreds, workMessages, toolDecls, makeOnDelta('W2')), 45000, 'WorkersAI-REST-race')));
         }
         // KANDIDAT F: model :free OpenRouter (cohere north-mini-code, spesialis koding,
         // model reasoning). Gratis — jalan untuk guest maupun user login. Gagal cepat
         // (429/402) bila kuota hariannya habis; tidak menahan kandidat lain.
-        if (orKeys.length) {
+        if (!explicitChat && orKeys.length) {
           cands.push(weakLate('F', () => withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, FREE_OR_MODELS, makeOnDelta('F')), 45000, 'OpenRouterFree')));
         }
         // KANDIDAT OK: Orkestra-1 Mini (worker labs-pro — balapan 7 model + standar
         // kualitas + verifikasi install). Hanya chat murni tanpa tools/vision.
-        if (!toolDecls && !hasImages) {
+        if (!explicitChat && !toolDecls && !hasImages) {
           cands.push(cand('OK', withTimeout(tryOrkestraMini(workMessages), 22000, 'OrkestraMini-race')));
         }
         const o = await new Promise((resolve) => {
@@ -2327,7 +2347,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
         if (r.tool_calls) outS.tool_calls = r.tool_calls;
         // Kredit sesungguhnya: model yang menjawab + panjang output (teks + tool/code)
         const outCharsS = (r.text || '').length + (r.tool_calls ? JSON.stringify(r.tool_calls).length : 0);
-        if (isFirstHop && !isGuest) await chargeAiUsage(env, user, r.model, outCharsS, inputChars);
+        if (isFirstHop && !isGuest) await chargeAiUsage(env, user, r.model, outCharsS, inputChars, !explicitChat);
         streamSend({ t: 'final', ...outS });
       }
       streamWriter.close().catch(() => {}); // TANPA await: antrean writer sudah berurutan
@@ -2359,7 +2379,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
 
     // Kredit sesungguhnya: model yang menjawab + panjang output (teks + tool/code)
     const outChars = (r.text || '').length + (r.tool_calls ? JSON.stringify(r.tool_calls).length : 0);
-    if (isFirstHop && !isGuest) await chargeAiUsage(env, user, r.model, outChars, inputChars);
+    if (isFirstHop && !isGuest) await chargeAiUsage(env, user, r.model, outChars, inputChars, !explicitChat);
     const out = {
       text: r.text || '',
       model: r.model,
