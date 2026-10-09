@@ -5035,7 +5035,7 @@ window.chatLivePreview = function () {
         // ===== TOOL write_files: bulk write — satu load + satu save untuk semua file =====
         async function wsWriteFilesBatch(args) {
             const files = args && Array.isArray(args.files) ? args.files : [];
-            if (!files.length) return { success: false, error: 'Parameter files wajib array [{path, content}].' };
+            if (!files.length) return { success: false, error: 'Parameter files kosong/terpotong: isi yang kamu kirim terlalu panjang untuk satu panggilan (batas output kecil). SOLUSI: jangan pakai write_files untuk file besar. Panggil write_file SATU file per panggilan (index.html dulu, lalu css, lalu js), tiap file maksimal ~3500 karakter; pecah jadi beberapa file bila perlu. Jangan menulis ringkasan/narasi ulang.' };
             const data = wsLoad();
             const results = [];
             const capped = files.slice(0, 60); // batas deklarasi tool: maks 60 file/panggilan
