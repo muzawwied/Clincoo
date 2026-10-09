@@ -116,7 +116,8 @@ async function getOpenRouterKeys(env) {
 // langsung dan dari open router lalu minimalkan error"). Model flash jauh lebih cepat
 // dan jarang timeout dibanding reasoning model -> jumlah error "gangguan koneksi"
 // turun. Cadangan berurutan: Luna Pro, Sol Pro (login saja). Nemotron DIHAPUS 9 Okt (arahan pemilik).
-// [9 Okt, arahan pemilik] Nemotron DILARANG (kualitas buruk) — hanya GLM + cadangan GPT.const OPENROUTER_MODELS = ['z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro', 'openai/gpt-6.1-sol-pro'];
+// [9 Okt, arahan pemilik] Nemotron DILARANG (kualitas buruk) — hanya GLM + cadangan GPT.
+const OPENROUTER_MODELS = ['z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro', 'openai/gpt-6.1-sol-pro'];
 // Rantai khusus TAMU (anonim, gratis): TANPA Sol Pro — model premium hanya
 // untuk user login; tamu tidak boleh membakar biaya provider premium.
 const GUEST_OR_MODELS = ['z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro'];
