@@ -6490,9 +6490,18 @@ window.chatLivePreview = function () {
                                 // dikunci — user harus bisa membalas "lanjut" untuk meneruskan.
                             } else {
                                 // KUOTA HABIS (bukan di tengah tugas): pesan user tetap terkirim
-                                // & tersimpan di chat; balasan AI = pesan HARDCODE pemilik
-                                // (⚡ kuota habis + link top-up) sebagai gelembung chat biasa.
-                                streamingBuffer = quotaReplyText(qMsg);
+                                // & tersimpan di chat; balasan AI = pesan HARDCODE pemilik —
+                                // TANPA efek ketik: tampil utuh langsung, langsung selesai
+                                // (tombol aksi salin/jempol muncul, tidak lanjut mengetik).
+                                const quotaFinal = quotaReplyText(qMsg);
+                                streamingBuffer = quotaFinal;
+                                charIndex = quotaFinal.length;
+                                hasReceivedData = true;
+                                isFetchComplete = true;
+                                const qIdx = messages.findIndex(m => m.id === aiMsgObj.id);
+                                if (qIdx !== -1) messages[qIdx].text = quotaFinal;
+                                const qEl = document.getElementById('msg-text-' + aiMsgObj.id);
+                                if (qEl) qEl.innerHTML = formatMarkdown(balanceMarkdown(quotaFinal));
                             }
                             if (e.ctxOverflow && doneTools.length === 0) setQuotaLock(false);
                         } else {
