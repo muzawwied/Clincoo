@@ -1,0 +1,74 @@
+name: Fix AI prompt (anti-mentok + Haiku 5.5)
+on:
+  workflow_dispatch:
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore chat.js from good commit and patch
+        run: |
+          set -e
+          git show cdc3bfdbe0c91417ddaabb672641ed226d84e05d:functions/api/chat.js > functions/api/chat.js
+          python3 << 'PY'
+          with open("functions/api/chat.js") as f:
+              content = f.read()
+          old_g3 = """(G3) Setelah error, timeout, atau gangguan koneksi: JANGAN lanjut dengan asumsi baru — langkah pertama setelah pemulihan WAJIB membaca ulang state project saat ini (list_items/read_file) sebelum merespons apa pun ke user; ini pengecualian sah dari aturan HEMAT TOOL."""
+          new_g3 = """(G3) Setelah error, timeout, atau gangguan koneksi sebentar: jika riwayat percakapan SUDAH berisi isi file/struktur yang relevan (dari read_file/list_items sebelumnya), LANGSUNG lanjut menulis/mengubah tanpa list_items/read_file ulang. Hanya bila riwayat benar-benar kosong atau file belum pernah dibaca di sesi ini, baru baca ulang SEKALI lalu langsung write. Jangan mentok di reading berulang setelah gangguan koneksi."""
+          old_anti = """(G5) ANTI-LOOP: hasil function_response dari tool sebelumnya adalah FAKTA yang WAJIB kamu pegang — folder/file yang sudah kamu buat, atau yang dilaporkan action \"exists\", SUDAH ADA; DILARANG membuat ulang folder/file yang sudah ada itu. WAJIB cek dulu isi workspace (list_items) HANYA sekali di AWAL proyek baru yang strukturnya belum kamu ketahui, atau setelah gangguan sesuai (G3) — jika item ternyata sudah ada, LEWATI langkah itu dan langsung lanjut ke langkah berikutnya. Saat MELANJUTKAN atau MEREVISI dalam sesi yang sama, riwayat percakapan SUDAH jadi fakta: DILARANG list_items/read_file ulang file yang sudah kamu buat/baca di sesi ini hanya untuk memastikan — itu pemborosan kredit; LANGSUNG kerjakan lanjutannya."""
+          new_anti = """(G5) ANTI-LOOP & ANTI-MENTOK-READING: hasil function_response dari tool sebelumnya adalah FAKTA yang WAJIB kamu pegang — folder/file yang sudah kamu buat, atau yang dilaporkan action \"exists\", SUDAH ADA; DILARANG membuat ulang folder/file yang sudah ada itu. WAJIB cek dulu isi workspace (list_items) HANYA sekali di AWAL proyek baru yang strukturnya belum kamu ketahui — jika item ternyata sudah ada, LEWATI langkah itu dan langsung lanjut ke langkah berikutnya. Saat MELANJUTKAN, MEREVISI, atau UPDATE web dalam sesi yang sama: riwayat percakapan SUDAH jadi fakta; DILARANG list_items/read_file ulang file yang sudah kamu buat/baca di sesi ini — LANGSUNG write_file perubahan. ATURAN KERAS UPDATE/UBAH WEB: user minta update/ubah/revisi/edit web → maksimal 1x list_items + 1x read_file file yang relevan (jika belum ada di riwayat), lalu LANGSUNG write_file di respons yang SAMA atau berikutnya. DILARANG mentok di reading berulang tanpa menulis. Setelah gangguan koneksi sebentar, prioritaskan menulis daripada membaca ulang."""
+          old_hemat = """(5) HEMAT TOOL: tools BUKAN untuk semua pertanyaan. Saat melanjutkan tugas (user bilang \"lanjut\"), LANGSUNG kerjakan sisa tugas — jangan list_items root, jangan periksa ulang workspace, dan jangan read_file ulang file yang isinya sudah ada di percakapan; progres sudah ada di percakapan dan itu fakta yang cukup."""
+          new_hemat = """(5) HEMAT TOOL: tools BUKAN untuk semua pertanyaan. Saat melanjutkan tugas (user bilang \"lanjut\") atau UPDATE/UBAH web, LANGSUNG kerjakan sisa tugas / tulis perubahan — jangan list_items root, jangan periksa ulang workspace, dan jangan read_file ulang file yang isinya sudah ada di percakapan; progres sudah ada di percakapan dan itu fakta yang cukup. Mentok di reading tanpa menulis = pelanggaran fatal."""
+          old_mr = "const MODELROUTER_MODELS = ['claude-haiku-5.5', 'glm-5.3-flash']; // [9 Okt] nemotron dihapus (arahan pemilik): fokus haiku + glm"
+          new_mr = "const MODELROUTER_MODELS = ['claude-haiku-5.5']; // [9 Okt] fokus HANYA haiku 5.5 (arahan pemilik)"
+          old_or = "const OPENROUTER_MODELS = ['z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro', 'openai/gpt-6.1-sol-pro'];"
+          new_or = "const OPENROUTER_MODELS = ['anthropic/claude-haiku-5.5', 'z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro']; // haiku 5.5 prioritas"
+          assert old_g3 in content, "G3 missing"
+          assert old_anti in content, "ANTI missing"
+          assert old_hemat in content, "HEMAT missing"
+          content = content.replace(old_g3, new_g3).replace(old_anti, new_anti).replace(old_hemat, new_hemat)
+          content = content.replace(old_mr, new_mr)
+          if old_or in content:
+              content = content.replace(old_or, new_or)
+          with open("functions/api/chat.js", "w") as f:
+              f.write(content)
+          print("chat.js patched OK, size", len(content))
+          PY
+          python3 << 'PY'
+          import subprocess
+          good = subprocess.check_output(["git", "show", "cdc3bfdbe0c91417ddaabb672641ed226d84e05d:functions/api/agent.js"], text=True)
+          with open("functions/api/agent.js", "w") as f: f.write(good)
+          with open("functions/api/agent.js") as f: c = f.read()
+          c = c.replace("const MODELROUTER_MODELS = ['nemotron-3-ultra', 'deepseek-v4.1-flash:free'];", "const MODELROUTER_MODELS = ['claude-haiku-5.5']; // fokus HANYA haiku 5.5")
+          c = c.replace("const MODELROUTER_FAST = ['deepseek-v4.1-flash:free', 'nemotron-3-ultra'];", "const MODELROUTER_FAST = ['claude-haiku-5.5']; // fokus HANYA haiku 5.5")
+          old_as = """Kamu sedang menjalankan SATU langkah dari rencana yang sudah disusun. Kerjakan langkah itu sampai tuntas, konkret, dan langsung pakai — kode diberikan dalam blok kode siap salin, konten diberikan final, keputusan diambil tanpa bertanya balik.\nJangan menawarkan \"sebaiknya hubungi\" — kamu sendiri yang mengeksekusi. Bahasa Indonesia yang hangat, profesional, dan SANGAT DETAIL. Jawaban harus PANJANG, LENGKAP, dan MENDALAM — jangan pernah menjawab terlalu singkat atau sederhana. Beri penjelasan menyeluruh dengan konteks, langkah, contoh, dan tips."""
+          new_as = old_as + "\nATURAN ANTI-MENTOK: jika langkah melibatkan update/ubah file web, langsung hasilkan kode/file final; jangan berputar di analisis/reading saja. Setelah gangguan koneksi, lanjut dari state terakhir tanpa mengulang reading yang sudah ada."
+          if old_as in c:
+              c = c.replace(old_as, new_as)
+          with open("functions/api/agent.js", "w") as f: f.write(c)
+          print("agent.js patched OK")
+          PY
+          python3 << 'PY'
+          import subprocess
+          good = subprocess.check_output(["git", "show", "cdc3bfdbe0c91417ddaabb672641ed226d84e05d:agent-worker/src/index.js"], text=True)
+          with open("agent-worker/src/index.js", "w") as f: f.write(good)
+          with open("agent-worker/src/index.js") as f: c = f.read()
+          old_as = """Kamu sedang menjalankan SATU langkah dari rencana yang sudah disusun. Kerjakan langkah itu sampai tuntas, konkret, dan langsung pakai — kode diberikan dalam blok kode siap salin, konten diberikan final, keputusan diambil tanpa bertanya balik.\nJangan menawarkan \"sebaiknya hubungi\" — kamu sendiri yang mengeksekusi. Bahasa Indonesia yang hangat, profesional, dan SANGAT DETAIL. Jawaban harus PANJANG, LENGKAP, dan MENDALAM — jangan pernah menjawab terlalu singkat atau sederhana. Beri penjelasan menyeluruh dengan konteks, langkah, contoh, dan tips."""
+          new_as = old_as + "\nATURAN ANTI-MENTOK: jika langkah melibatkan update/ubah file web, langsung hasilkan kode/file final; jangan berputar di analisis/reading saja. Setelah gangguan koneksi, lanjut dari state terakhir tanpa mengulang reading yang sudah ada."
+          if old_as in c:
+              c = c.replace(old_as, new_as)
+          with open("agent-worker/src/index.js", "w") as f: f.write(c)
+          print("agent-worker patched OK")
+          PY
+      - name: Commit and push
+        run: |
+          git config user.name "Clincoo"
+          git config user.email "halo@clincoo.buzz"
+          git add functions/api/chat.js functions/api/agent.js agent-worker/src/index.js
+          git status
+          git commit -m "fix(ai): anti-mentok reading + fokus HANYA claude-haiku-5.5\n\n- Soften G3: gangguan koneksi sebentar → langsung write jika riwayat ada\n- G5 ANTI-MENTOK-READING: max 1x read lalu LANGSUNG write_file untuk update web\n- HEMAT TOOL: update web = tulis, mentok reading = fatal\n- MODELROUTER_MODELS = ['claude-haiku-5.5'] only\n- OPENROUTER prioritaskan anthropic/claude-haiku-5.5\n- AGENT_SYSTEM anti-mentok" || echo "nothing to commit"
+          git push origin main
