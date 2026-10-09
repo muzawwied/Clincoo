@@ -6381,19 +6381,21 @@ window.chatLivePreview = function () {
                         const STALL_MS = 300000;
                         let lastEventAt = Date.now();
                         let stallHits = 0;
-                        // [9 Okt 2026] "Halo" cuma muter Thinking: kalau 20 dtk belum ada SATU PUN
-                        // teks/tool dari AI, status berubah jujur (bukan bisu sampai 5 menit) —
-                        // user tahu sistem masih mencoba provider lain, bukan hang.
+                        // [9 Okt] Shimmer HANYA dari aktivitas AI nyata (progress/delta/tool),
+                        // BUKAN timer hardcode "Working on it / Still composing".
+                        // Timer di bawah hanya pesan koneksi setelah lama tanpa event sama sekali.
+                        let __composingNotified = false; // "Composing" hanya saat delta BENAR-BENAR datang
                         const slowStart = Date.now();
-                        let slowNotified = false, slowNotified2 = false, slowShimmer = false;
-                        let __composingNotified = false; // status "Composing" hanya saat delta BENAR-BENAR datang
+                        let slowNotified = false;
                         const slowTimer = setInterval(() => {
                             if (!isGenerating) { clearInterval(slowTimer); return; }
                             if (hasReceivedData || deltaStreamed) { clearInterval(slowTimer); return; }
                             const waited = Date.now() - slowStart;
-                            if (waited > 4000 && !slowShimmer) { slowShimmer = true; setAiStatus('Working on it…'); }
-                            if (!slowNotified && waited > 20000) { slowNotified = true; setAiStatus('Still composing the answer…'); }
-                            if (!slowNotified2 && waited > 60000) { slowNotified2 = true; setAiStatus('Still processing, please wait…'); }
+                            // Hanya satu pesan jujur setelah 45 dtk tanpa event — bukan progress palsu
+                            if (!slowNotified && waited > 45000) {
+                                slowNotified = true;
+                                setAiStatus('Still waiting for the AI…');
+                            }
                         }, 5000);
                         const stallTimer = setInterval(() => {
                             if (!isGenerating) { clearInterval(stallTimer); return; }
@@ -6415,8 +6417,14 @@ window.chatLivePreview = function () {
                                         streamingBuffer = deltaStreamed;
                                         return;
                                     }
-                                    if (evt.t === 'progress') hasReceivedData = true;
-                                    setAiStatus(evt.text || 'Thinking...');
+                                    if (evt.t === 'progress') {
+                                        hasReceivedData = true;
+                                        if (evt.text) setAiStatus(evt.text);
+                                        return;
+                                    }
+                                    // thinking: jangan hardcode ulang — biarkan status tool/progress terakhir
+                                    if (evt.t === 'thinking') return;
+                                    if (evt.text) setAiStatus(evt.text);
                                 });
                             } catch (streamErr) {
                                 if (streamErr && streamErr.providerBusy && busyTry < 2 && isGenerating) {

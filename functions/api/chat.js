@@ -2152,7 +2152,10 @@ export async function onRequestPost({ request, env, waitUntil }) {
     }
 
     const processChat = async () => {
-    if (streamSend) streamSend({ t: 'thinking' });
+    if (streamSend) {
+      streamSend({ t: 'thinking' });
+      try { streamSend({ t: 'progress', text: 'Thinking…' }); } catch (e) {}
+    }
     // Mode workspace tools.
     // Jalur Gemini: HANYA functionDeclarations (tanpa google_search — kombinasi
     // keduanya ditolak Gemini API dan memicu bug JSON palsu).
