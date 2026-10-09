@@ -945,7 +945,7 @@ const QUOTA_MSG_MONTHLY = 'Kuota AI Clincoo bulan ini sudah habis. Reset otomati
 // [8 Okt 2026, arahan pemilik] Pesan saat kredit user HABIS TOTAL (kuota langganan
 // + paket kredit kosong). HARDCODE — jangan diubah tanpa arahan pemilik.
 const TOPUP_URL = 'https://app.clincoo.buzz/akun/kredit/topup/'; // [9 Okt] halaman top-up in-app (QRIS + nominal)
-const QUOTA_MSG_EMPTY = '⚡ Kuota pesanmu sudah habis.\n\nIngin tetap menggunakan Clincoo? Isi ulang saldo kredit-mu di sini\n\n' + TOPUP_URL;
+const QUOTA_MSG_EMPTY = '⚡ Kuota pesanmu sudah habis.\nIngin tetap menggunakan Clincoo? Isi ulang saldo kredit-mu di sini\n\n' + TOPUP_URL;
 
 // System prompt server untuk mode biasa (single) — jaring pengaman bila klien tidak
 // mengirim system prompt sendiri; klien punya versi lebih lengkap (tools super).
@@ -1012,17 +1012,22 @@ async function quotaCheck(env, user, cost = 1) {
       if (r.day === day) dayCount = r.count;
       if (r.day === month) monthCount = r.count;
     }
-    // Cek bulanan dulu (periode tagihan), lalu cap harian (anti-burst).
-    // Kuota langganan habis → otomatis lanjut ke Paket Kredit AI yang dibeli user
-    // (bebas cap harian; paket paling cepat kadaluarsa dipakai duluan).
+    // [9 Okt 2026, arahan pemilik] SALDO KREDIT = GERBANG UTAMA chat/build:
+    // user baru daftar dapat Kredit Chat Percobaan (starter pack), top-up menambah
+    // paket — semua pesan dipotong dari saldo per pemakaian. Saldo 0 → BLOKIR
+    // total dengan pesan hardcoded pemilik (link top-up). Admin dikecualikan.
+    if (!ADMIN_EMAILS.has(user.email)) {
+      const packs = await getActivePacks(env.DB, user.key);
+      const balance = packs.reduce((a, p) => a + (p.credits_left || 0), 0);
+      if (balance < 1) {
+        return { exceeded: true, scope: 'empty', balance: 0, count: monthCount, message: QUOTA_MSG_EMPTY };
+      }
+    }
+    // Cap anti-burst tetap berlaku: bulanan (periode tagihan) lalu harian.
     if (monthCount + cost > limits.monthly) {
-      const pack = await consumePackCredit(env.DB, user.key, cost);
-      if (pack.ok) return { exceeded: false, limit: limits, source: 'pack', limits, usedDay: dayCount, usedMonth: monthCount };
       return { exceeded: true, scope: 'monthly', limit: limits.monthly, count: monthCount, message: QUOTA_MSG_MONTHLY };
     }
     if (dayCount + cost > limits.daily) {
-      const pack = await consumePackCredit(env.DB, user.key, cost);
-      if (pack.ok) return { exceeded: false, limit: limits, source: 'pack', limits, usedDay: dayCount, usedMonth: monthCount };
       return { exceeded: true, scope: 'daily', limit: limits.daily, count: dayCount, message: QUOTA_MSG_DAILY };
     }
     await env.DB.batch([
@@ -1058,14 +1063,15 @@ function aiCostOf(model, outputChars, inputChars) {
   const extraOut = Math.ceil(Math.max(0, outTok - OUTPUT_FREE_TOKENS) / OUTPUT_STEP_TOKENS);
   return Math.max(1, 1 + extraIn + extraOut);
 }
-// Potong selisih kredit + catat pemakaian (model, input, output, biaya) ke ai_usage.
-async function chargeAiUsage(env, user, model, outputChars, inputChars, flatChat = false) {
+// [9 Okt 2026, arahan pemilik] Kredit dipotong dari SALDO (Paket Kredit AI /
+// starter) SESUAI PEMAKAIAN user — usage-based (1 + selisih token), semua mode
+// (chat & build). Pre-flight quotaCheck sudah memotong 1 dari counter cap;
+// di sini seluruh biaya sebenarnya dipotong dari saldo paket.
+async function chargeAiUsage(env, user, model, outputChars, inputChars) {
   if (!user || !user.key) return;
   try {
-    // flatChat (mode 'chat' eksplisit): hanya 1 kredit pre-flight — cukup untuk
-    // batas harian & bulanan, tanpa potongan tambahan berbasis token.
-    const cost = flatChat ? 1 : aiCostOf(model, outputChars, inputChars);
-    const diff = cost - 1; // 1 sudah dipotong pre-flight oleh quotaCheck
+    const cost = aiCostOf(model, outputChars, inputChars);
+    const diff = cost - 1; // 1 sudah tercatat pre-flight di counter cap
     const now = new Date();
     const day = now.toISOString().slice(0, 10);
     const month = now.toISOString().slice(0, 7);
@@ -1073,29 +1079,15 @@ async function chargeAiUsage(env, user, model, outputChars, inputChars, flatChat
       'CREATE TABLE IF NOT EXISTS ai_usage (user_key TEXT, ts INTEGER, model TEXT, out_chars INTEGER, cost INTEGER)'
     ).run();
     try { await env.DB.prepare('ALTER TABLE ai_usage ADD COLUMN in_chars INTEGER').run(); } catch (e) {}
+    // Saldo paket dipotong penuh sesuai biaya pemakaian (boleh parsial bila
+    // saldo tinggal sedikit — sisanya habis, pesan berikutnya diblokir).
+    try { await consumePackCredit(env.DB, user.key, cost); } catch (e) {}
     if (diff > 0) {
-      const limits = await aiLimits(env, user);
-      const rows = await env.DB.prepare(
-        'SELECT day, count FROM ai_quota WHERE user_key = ? AND day IN (?, ?)'
-      ).bind(user.key, day, month).all();
-      let monthCount = 0;
-      for (const rr of rows.results || []) if (rr.day === month) monthCount = rr.count;
-      if (monthCount + diff > limits.monthly) {
-        // kuota bulanan lewat -> selisihnya ditagih ke Paket Kredit AI;
-        // kalau paket juga kosong, tetap dicatat jujur di counter (tanpa blokir).
-        const pack = await consumePackCredit(env.DB, user.key, diff);
-        if (!pack.ok) {
-          await env.DB.batch([
-            env.DB.prepare('INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET count = count + ?').bind(user.key, day, diff, diff),
-            env.DB.prepare('INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET count = count + ?').bind(user.key, month, diff, diff)
-          ]);
-        }
-      } else {
-        await env.DB.batch([
-          env.DB.prepare('INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET count = count + ?').bind(user.key, day, diff, diff),
-          env.DB.prepare('INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET count = count + ?').bind(user.key, month, diff, diff)
-        ]);
-      }
+      // counter cap harian/bulanan mencatat selisih biaya (total = cost)
+      await env.DB.batch([
+        env.DB.prepare('INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET count = count + ?').bind(user.key, day, diff, diff),
+        env.DB.prepare('INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET count = count + ?').bind(user.key, month, diff, diff)
+      ]);
     }
     await env.DB.prepare(
       'INSERT INTO ai_usage (user_key, ts, model, out_chars, in_chars, cost) VALUES (?, ?, ?, ?, ?, ?)'
@@ -1736,7 +1728,9 @@ export async function onRequestGet({ request, env }) {
       creditsLeftTotal = active.reduce((s, p) => s + (p.credits_left || 0), 0);
     } catch (e) {}
     const subscriptionExhausted = monthUsed >= limits.monthly || dayUsed >= limits.daily;
-    const exhausted = subscriptionExhausted && creditsLeftTotal <= 0;
+    const isAdmin = ADMIN_EMAILS.has(user.email);
+    // [9 Okt] saldo = gerbang utama (kecuali admin) — habis → pesan hardcoded top-up
+    const exhausted = isAdmin ? subscriptionExhausted : (creditsLeftTotal <= 0 || subscriptionExhausted);
     return new Response(JSON.stringify({
       success: true,
       limit: limits.daily, used: dayUsed, remaining: Math.max(0, limits.daily - dayUsed), day,
@@ -2333,7 +2327,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
         if (r.tool_calls) outS.tool_calls = r.tool_calls;
         // Kredit sesungguhnya: model yang menjawab + panjang output (teks + tool/code)
         const outCharsS = (r.text || '').length + (r.tool_calls ? JSON.stringify(r.tool_calls).length : 0);
-        if (isFirstHop && !isGuest) await chargeAiUsage(env, user, r.model, outCharsS, inputChars, explicitChat);
+        if (isFirstHop && !isGuest) await chargeAiUsage(env, user, r.model, outCharsS, inputChars);
         streamSend({ t: 'final', ...outS });
       }
       streamWriter.close().catch(() => {}); // TANPA await: antrean writer sudah berurutan
@@ -2365,7 +2359,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
 
     // Kredit sesungguhnya: model yang menjawab + panjang output (teks + tool/code)
     const outChars = (r.text || '').length + (r.tool_calls ? JSON.stringify(r.tool_calls).length : 0);
-    if (isFirstHop && !isGuest) await chargeAiUsage(env, user, r.model, outChars, inputChars, explicitChat);
+    if (isFirstHop && !isGuest) await chargeAiUsage(env, user, r.model, outChars, inputChars);
     const out = {
       text: r.text || '',
       model: r.model,
