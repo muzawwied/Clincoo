@@ -1201,6 +1201,7 @@ window.chatLivePreview = function () {
         });
         let typingInterval = null;
         let currentAiMessageId = null;
+        let aiReqStartMs = 0; // [9 Okt 2026, arahan pemilik] durasi jawaban AI (ms) utk baris aksi
         let currentStatusInterval = null;
         let abortController = null;
         let autoScrollActive = true;
@@ -3149,7 +3150,8 @@ window.chatLivePreview = function () {
                                             <i class="ph ph-thumbs-down text-lg"></i>
                                         </button>
                                     ` : ''}
-                                </div>
+                                    <span class="ml-auto text-[11px] text-gray-400 font-medium select-none whitespace-nowrap">${(msg.respMs ? msg.respMs + ' ms' : '')}</span>
+</div>
                             </div>
                         </div>
                     `;
@@ -3670,6 +3672,7 @@ window.chatLivePreview = function () {
                 if (msg) {
                     if (msg.isProcessing) msg.isProcessing = false;
                     if (msg.isTyping) msg.isTyping = false;
+                    if (aiReqStartMs) { msg.respMs = Date.now() - aiReqStartMs; aiReqStartMs = 0; }
                 }
                 currentAiMessageId = null;
             }
@@ -5783,6 +5786,7 @@ window.chatLivePreview = function () {
             scrollToBottom(false);
             
             currentAiMessageId = aiMsgObj.id;
+            aiReqStartMs = Date.now();
             abortController = new AbortController();
 
             // Status progres REAL-TIME: mulai dari "Thinking...", lalu diperbarui
