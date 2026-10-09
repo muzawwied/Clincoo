@@ -570,6 +570,33 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta) {
     });
   };
   let lastErr = null;
+  // [9 Okt 2026] PENYAMBUNG TOOL CALL TERPOTONG khusus gateway MR. Budget token per
+  // model kecil (haiku-5.5: 512 tok, gateway motong di ~10s wall-time) sedangkan isi
+  // file write_file yang utuh butuh 1000-3000+ token -> args JSON SELALU terpotong di
+  // tengah. Dulu: pecahan args gagal JSON.parse -> normStreamToolCalls membuangnya ->
+  // respons {tool_calls: []} atau write_file args kosong -> file TIDAK PERNAH tersimpan
+  // walau model bagus (laporan owner 9 Okt: "model udah bagus haiku 5.5, system salah").
+  // Sekarang: sambung args chunk demi chunk dari titik terpotong sampai JSON valid.
+  const mrContinueToolArgs = async (key, model, baseMsgs, tc) => {
+    let acc = tc.args || '';
+    for (let hop = 0; hop < 8; hop++) {
+      const tryMsgs = baseMsgs.slice();
+      tryMsgs.push({ role: 'assistant', content: null, tool_calls: [{ id: 'cut' + hop, type: 'function', function: { name: tc.name, arguments: acc } }] });
+      tryMsgs.push({ role: 'user', content: 'Tool call terakhirmu TERPOTONG karena batas token. Lanjutkan PERSIS dari karakter terakhir argumen JSON itu — keluarkan HANYA sambungan string JSON-nya tanpa penjelasan, tanpa blok kode, lalu berhenti segera setelah JSON-nya lengkap dan valid.' });
+      try {
+        const cr = await callMr(key, model, tryMsgs, true);
+        if (!cr.ok || !cr.body) return null;
+        const st2 = await readOAICompatStream(cr, null);
+        let cont = (st2 && st2.text ? st2.text : '').trim();
+        if (!cont) return null;
+        cont = cont.replace(/^```[a-z]*\s*/i, '').replace(/```\s*$/, '').trim();
+        acc += cont;
+        try { return JSON.parse(acc); } catch (e) {}
+        if (st2.fin !== 'length') return null; // generasi selesai tapi JSON tetap rusak -> nyerah
+      } catch (e) { return null; }
+    }
+    return null;
+  };
   for (const key of keyList) {
   for (const model of modelList) {
     const baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
@@ -584,7 +611,25 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta) {
         if (sr.ok && sr.body) {
           const st = await readOAICompatStream(sr, onDelta);
           if (st.text || st.tcs.length) {
-            if (st.tcs.length) return { tool_calls: normStreamToolCalls(st.tcs), text: st.text, model: mrLabel(model) };
+            if (st.tcs.length) {
+              // [9 Okt] args utuh -> langsung; TERPOTONG (fin=length) -> sambung;
+              // rusak total tanpa tanda terpotong -> tolak kandidat ini.
+              const nt = normStreamToolCalls(st.tcs);
+              if (nt.length && st.fin !== 'length') return { tool_calls: nt, text: st.text, model: mrLabel(model) };
+              if (st.fin === 'length') {
+                const fixed = [];
+                for (const c of st.tcs) {
+                  let a = null; try { a = c.args ? JSON.parse(c.args) : null; } catch (e) { a = null; }
+                  if (!a) a = await mrContinueToolArgs(key, model, baseMsgs, c);
+                  if (a) fixed.push({ name: c.name, args: a });
+                }
+                if (fixed.length) return { tool_calls: fixed, text: st.text, model: mrLabel(model) };
+                lastErr = 'ModelRouter ' + model + ': tool call terpotong, penyambungan gagal';
+                continue;
+              }
+              lastErr = 'ModelRouter ' + model + ': tool call rusak (args gak valid)';
+              continue;
+            }
             // AUTO-CONTINUE STREAM: sambung jawaban terpotong (finish_reason=length).
             let full = st.text, seg = st.text, fin2 = st.fin;
             const contMsgs = baseMsgs.slice();
@@ -618,10 +663,19 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta) {
     if (tcs && tcs.length) {
       const norm = [];
       for (const c of tcs) {
-        let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
-        if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
+        let a = null;
+        const rawArgs = (c && c.function && typeof c.function.arguments === 'string') ? c.function.arguments : null;
+        if (rawArgs) { try { a = JSON.parse(rawArgs); } catch (e) { a = null; } }
+        // [9 Okt] args terpotong/pecahan -> sambung dulu; JANGAN eksekusi args kosong
+        if (!a && c && c.function && c.function.name) {
+          a = await mrContinueToolArgs(key, model, baseMsgs, { name: c.function.name, args: rawArgs || '' });
+        }
+        if (c && c.function && c.function.name && a) norm.push({ name: c.function.name, args: a });
       }
       if (norm.length) return { tool_calls: norm, text, model: mrLabel(model) };
+      // semua tool call pecahan dan penyambungan gagal -> jangan kirim jawaban kosong
+      lastErr = 'ModelRouter ' + model + ': tool call terpotong, penyambungan gagal';
+      continue;
     }
     if (text) {
       // AUTO-CONTINUE non-stream: sambung jawaban terpotong.
