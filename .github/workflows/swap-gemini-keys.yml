@@ -4,17 +4,49 @@ on:
 jobs:
   swap:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - name: Tukar GEMINI_API_KEY <-> GEMINI_API_KEY_3
-        env:
-          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - uses: actions/checkout@v4
+      - name: Patch Build mode Gemini 3.6
         run: |
-          set -euo pipefail
-          npm i -g wrangler@latest >/dev/null 2>&1
-          export CLOUDFLARE_API_TOKEN=$CF_API_TOKEN CLOUDFLARE_ACCOUNT_ID=$CF_ACCOUNT_ID
-          cat > /tmp/swap.sql <<'SQL'
-          UPDATE env_vars SET value = (SELECT value FROM env_vars WHERE key = 'GEMINI_API_KEY_3' LIMIT 1) WHERE key = 'GEMINI_API_KEY';
-          SELECT key, length(value) AS len FROM env_vars WHERE key LIKE 'GEMINI_API_KEY%';
-          SQL
-          wrangler d1 execute clincoo-db --remote --file /tmp/swap.sql 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tail -15
+          set -e
+          python3 << 'PY'
+          with open("functions/api/chat.js") as f:
+              c = f.read()
+          if "Gemini-build-3.6" in c:
+              print("Already patched")
+              raise SystemExit(0)
+          old = """      if (buildMode && (!r || r.error)) {
+        const mr = await withTimeout(tryModelRouterText(mrKeys, workMessages, toolDecls, MODELROUTER_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null, mrUsageAcc), 90000, 'ModelRouter').catch(e => ({ error: e.message }));
+        if (mr && !mr.error) r = mr;
+      }"""
+          new = """      // [9 Okt sementara] MODE BUILD -> Gemini AI Studio 3.6 Flash UTAMA
+      if (buildMode && (!r || r.error)) {
+        try {
+          const gKeys = await getGeminiKeys(env);
+          if (gKeys && gKeys.length) {
+            const { systemInstruction, contents } = toGeminiPayload(workMessages);
+            const gem = await withTimeout(tryModels(gKeys, systemInstruction, contents, gTools, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 90000, 'Gemini-build-3.6').catch(e => ({ error: e.message }));
+            if (gem && !gem.error && (gem.text || gem.tool_calls)) r = gem;
+          }
+        } catch (e) {}
+        if ((!r || r.error) && mrKeys.length) {
+          const mr = await withTimeout(tryModelRouterText(mrKeys, workMessages, toolDecls, MODELROUTER_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null, mrUsageAcc), 90000, 'ModelRouter').catch(e => ({ error: e.message }));
+          if (mr && !mr.error) r = mr;
+        }
+      }"""
+          old_gate = "const buildMode = ENABLE_BUILD_ROUTE && (body.mode === 'build' || (!explicitChat && detectBuildIntent(body.messages))) && !isGuest && !!mrKeys.length && !hasImages;"
+          new_gate = "const buildMode = ENABLE_BUILD_ROUTE && (body.mode === 'build' || (!explicitChat && detectBuildIntent(body.messages))) && !isGuest && !hasImages; // sementara Gemini 3.6"
+          assert old in c, "build block missing"
+          c = c.replace(old, new)
+          if old_gate in c:
+              c = c.replace(old_gate, new_gate)
+          open("functions/api/chat.js", "w").write(c)
+          print("patched OK", len(c))
+          PY
+          git config user.name Clincoo
+          git config user.email halo@clincoo.buzz
+          git add functions/api/chat.js
+          git commit -m "temp: Build mode -> Gemini 3.6 Flash AI Studio" || echo nothing
+          git push origin main
