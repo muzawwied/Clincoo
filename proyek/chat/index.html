@@ -5651,6 +5651,7 @@ window.chatLivePreview = function () {
             'Mohon lanjutkan dan tamatkan seluruh sisa tugasnya. Kerjakan berurutan sampai hasil akhir benar-benar lengkap tanpa menunggu instruksi lain.',
             'Lanjutkan bekerja dari progres terakhir sampai selesai total. Tanpa merangkum ulang, tanpa bertanya, langsung selesaikan bagian yang belum selesai.'
         ];
+        let FINAL_NUDGE_EXTRA = ''; // ekstra instruksi dari cek klaim-vs-kenyataan (finalLooksUnfinished)
         function pushSilentNudge(extra) {
             const base = SILENT_NUDGES[Math.floor(Math.random() * SILENT_NUDGES.length)];
             messages.push({
@@ -5716,6 +5717,33 @@ window.chatLivePreview = function () {
                 });
                 if (wantsFullSite) return true;
             }
+            // LAPORAN NYATA (9 Okt 2026, proyek kedai burger): AI menutup dengan ringkasan
+            // PERCAYA DIRI ("Semua file kodingan telah disimpan sepenuhnya", "siap untuk
+            // deployment") padahal TIDAK ADA satu pun write_file sukses dan pohon workspace
+            // masih KOSONG. Kalimatnya rapi tanpa marker "bersambung" -> lolos semua deteksi
+            // di atas. Deteksi baru ini gak nebak-nebak dari gaya bahasa, tapi membandingkan
+            // KLAIM penyelesaian dengan FAKTA isi workspace: klaim "file tersimpan/ siap
+            // deploy" + user jelas minta dibuatkan web/aplikasi + workspace masih 0 file ->
+            // jawaban final ini PALSU, wajib ronde koreksi.
+            try {
+                const CLAIM_RE = /((file|kodingan|kode|frontend|backend|proyek|website|situs)[^\n]{0,60}(telah|sudah|berhasil)[^\n]{0,25}(disimpan|tersimpan|dibuat|dibangun))|(semua\s+(file|kodingan|kode)[^\n]{0,60}(tersimpan|disimpan))|(siap\s+(untuk\s+)?deploy)/i;
+                if (CLAIM_RE.test(t)) {
+                    const wantsBuild = messages.some(function (m) {
+                        return m.role === 'user' && !m.silent && /website|situs|web|aplikasi|landing|halaman|toko|game|dashboard|portofolio/i.test(m.text || '');
+                    });
+                    if (wantsBuild) {
+                        const wsd = wsLoad();
+                        let fileCount = 0;
+                        Object.keys(wsd).forEach(function (k) {
+                            if (Array.isArray(wsd[k])) fileCount += wsd[k].filter(function (it) { return it && it.type === 'file'; }).length;
+                        });
+                        if (fileCount === 0) {
+                            FINAL_NUDGE_EXTRA = 'VERIFIKASI GAGAL: klaim "file sudah tersimpan" TIDAK SESUAI KENYATAAN — pohon workspace proyek masih 100% KOSONG. Panggil write_file / write_files SEKARANG untuk benar-benar membuat semua file yang kamu klaim (index.html, styles, script, dll) memakai tool yang tersedia, jangan bertanya dan jangan menulis ringkasan.';
+                            return true;
+                        }
+                    }
+                }
+            } catch (e) {}
             return false;
         }
         // Tutup bubble AI "sebagian selesai" lalu mulai ronde lanjutan secara diam-diam
@@ -6271,8 +6299,9 @@ window.chatLivePreview = function () {
                             // yang TIDAK tampil di bubble user; AI terus bekerja sampai selesai.
                             if (silentRounds < SILENT_MAX_ROUNDS && finalLooksUnfinished(cleanNow, aiMsgObj) && isGenerating) {
                                 silentRounds++;
-                                setAiStatus('Melanjutkan sisa tugas…');
-                                pushSilentNudge();
+                                setAiStatus(FINAL_NUDGE_EXTRA ? 'Verifikasi workspace… file belum ada, AI diminta menulis ulang.' : 'Melanjutkan sisa tugas…');
+                                pushSilentNudge(FINAL_NUDGE_EXTRA);
+                                FINAL_NUDGE_EXTRA = '';
                                 apiMessagesWithTools.push({ role: 'user', content: [{ type: 'text', text: messages[messages.length - 1].text }] });
                                 continue; // ronde lanjutan dalam bubble yang sama
                             }
@@ -6783,6 +6812,7 @@ window.chatLivePreview = function () {
             if (isBareContinue) userMsg.silent = true;
             messages.push(userMsg);
             silentRounds = 0; // budget AUTO-LANJUT SILENT segar untuk tugas baru
+            FINAL_NUDGE_EXTRA = ''; // ekstra koreksi klaim-palsu gak boek dibawa ke tugas baru
             
             chatInput.value = '';
             adjustInputHeight();
