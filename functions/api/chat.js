@@ -493,11 +493,13 @@ async function tryEmergentText(keys, messages, onDelta) {
 }
 // [7 Okt] Rantai model berbayar utk task Build (dicoba berurutan oleh
 // tryModelRouterText; model berikutnya dipakai jika sebelumnya gagal).
-// nemotron-3.5-lightning UTAMA (non-reasoning: konten langsung keluar, lolos
-// jendela potongan gateway MR ~10s; hasil verifikasi 7 Okt: glm-5.3-flash
-// reasoning-nya sendiri melebihi jendela pada prompt build). glm-5.3-flash
-// tetap cadangan (jalan kalau reasoning-nya pendek), ultra terakhir.
-const MODELROUTER_MODELS = ['nemotron-3.5-lightning', 'glm-5.3-flash', 'nemotron-3-ultra'];
+// [9 Okt 2026, arahan pemilik: "pasang ai lagi, model glm 5.3 flash atau
+// haiku 5.5 — sesuai kebutuhan aja, kaya ngoding buat app dan outputnya"]
+// claude-haiku-5.5 UTAMA utk task build/ngoding: terverifikasi 9 Okt —
+// non-reasoning, ~99 tok/s (256 tok = 2.6s), tool_calls NATIVE jalan,
+// jauh di bawah potongan gateway MR ~10s. glm-5.3-flash cadangan
+// (reasoning ikut dihitung: 384 tok = 8.0s, mepet jendela), lightning terakhir.
+const MODELROUTER_MODELS = ['claude-haiku-5.5', 'glm-5.3-flash', 'nemotron-3.5-lightning'];
 // [7 Okt] Gateway ModelRouter memotong koneksi pada ~10 detik wall-time per
 // request (diverifikasi: 384 tok = 9.4s OK, 512+ tok / non-stream generasi
 // panjang = HTTP 000). Solusi: potong generasi jadi chunk kecil (256 tok,
@@ -508,7 +510,8 @@ const MODELROUTER_MODELS = ['nemotron-3.5-lightning', 'glm-5.3-flash', 'nemotron
 // sempat 10.2s di node lambat = kepotong. glm ~48 tok/s tapi reasoning ikut
 // dihitung -> 384 tok; ultra ~21 tok/s -> 96 tok. Semua di bawah potongan
 // gateway MR ~10s wall-time.
-const MR_MAX_TOKENS = { 'nemotron-3.5-lightning': 96, 'glm-5.3-flash': 384, 'nemotron-3-ultra': 96 };
+// [9 Okt] haiku-5.5: 512 tok = ~5.2s pada ~99 tok/s (aman di bawah potongan ~10s).
+const MR_MAX_TOKENS = { 'claude-haiku-5.5': 512, 'nemotron-3.5-lightning': 96, 'glm-5.3-flash': 384, 'nemotron-3-ultra': 96 };
 const MR_ENDPOINT = 'https://modelrouter.id/v1/chat/completions';
 // [7 Okt, arahan pemilik: "jadikan model Orkestra di mode build"] Semua respons
 // ModelRouter (glm-5.3-flash -> nemotron-3.5-lightning -> nemotron-3-ultra)
@@ -2034,12 +2037,13 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // MODE BUILD: (a) user pilih kapsul Build, ATAU (b) mode Chat tapi pesannya
     // minta bikin/ubah situs/kode -> AI build (ModelRouter) bantu di belakang
     // layar. Hanya user LOGIN — tamu TIDAK boleh membakar biaya provider.
-    // [7 Okt 14:25, arahan pemilik: "dah matiin aja trus di stop dan hapus crown nya"]
-    // Rute Build ModelRouter DIMATIKAN: MR tidak stabil (SSE kadang kosong, gateway
-    // memotong ~10 detik, fase thinking lama tanpa hasil) sehingga membakar kredit
-    // user tanpa manfaat. Semua request (mode build & deteksi otomatis niat build)
-    // kini memakai cascade gratis. Nyalakan lagi: ganti ENABLE_BUILD_ROUTE jadi true.
-    const ENABLE_BUILD_ROUTE = false;
+    // [9 Okt, arahan pemilik: "siapkan key buat pasang ai lagi, model glm 5.3
+    // flash atau haiku 5.5"] Rute Build ModelRouter DINYALAKAN LAGI. Kunci MR
+    // diverifikasi hidup 9 Okt (saldo jalan, glm-5.3-flash & claude-haiku-5.5
+    // dua-duanya merespons; haiku-5.5 non-reasoning + tool_calls native ->
+    // masalah lama SSE kosong / thinking lama terselesaikan). Cascade gratis
+    // tetap menyelamatkan kalau MR gagal. Matikan lagi: ENABLE_BUILD_ROUTE = false.
+    const ENABLE_BUILD_ROUTE = true;
     const buildMode = ENABLE_BUILD_ROUTE && (body.mode === 'build' || detectBuildIntent(body.messages)) && !isGuest && !!mrKeys.length && !hasImages;
     const aiMain = !!(env.AI && !hasImages);
     const toolDecls = (gTools && gTools[0] && gTools[0].functionDeclarations) || null;
