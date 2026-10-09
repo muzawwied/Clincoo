@@ -634,6 +634,14 @@ async function loadMcpProjectChip() {
 async function loadMcp() {
   // 0) Pastikan project id ada (URL endpoint & token API butuh ?project_id=)
   await _mcpEnsurePid();
+  // [9 Okt 2026, laporan pemilik] Masih gak ada id proyek setelah fallback server
+  // (belum login / semua proyek gak bisa diambil) -> halaman ini gak bisa dipakai.
+  // Jangan tampilkan state kosong membingungkan: arahkan ke daftar proyek.
+  if (!_mcpPid()) {
+    try { mcpToast('Pilih proyek dulu \u2014 membuka daftar proyek'); } catch (e) {}
+    setTimeout(function () { location.replace('/proyek/'); }, 1200);
+    return;
+  }
   // 1) Ada cache? Tampilin LANGSUNG tanpa skeleton.
   var cached = _mcpCacheRead();
   if (cached && cached.token && _mcpPid()) {

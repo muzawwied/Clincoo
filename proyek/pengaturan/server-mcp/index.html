@@ -817,6 +817,13 @@ function mcpCopyFallback(text, done) {
 }
 
 document.addEventListener('DOMContentLoaded', loadMcp);
+// [9 Okt 2026] Link "Pengaturan & Izin" harus bawa id proyek aktif supaya
+// halaman tujuan gak perlu nebak dari localStorage (laporan: gapunya id proyek).
+try {
+  var __msl = document.getElementById('mcp-settings-link');
+  var __pid2 = _mcpPid();
+  if (__msl && __pid2) __msl.href = '/proyek/pengaturan/server-mcp/pengaturan/?id=' + encodeURIComponent(__pid2);
+} catch (e) {}
 </script>
 
 
