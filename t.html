@@ -1,0 +1,7 @@
+<!DOCTYPE html><html><body><pre id="out">AWAL</pre><iframe id="f" style="width:1280px;height:900px"></iframe><script>
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+(async function(){try{var f=document.getElementById('f');f.src='/seed.html';await sleep(900);f.src='/proyek/chat/?id=p1';await sleep(8000);
+var d=f.contentWindow.document,t=(d.body.innerText||'');
+document.getElementById('out').textContent='HASIL: ui='+(t.indexOf('Workspace')>-1)+' | input='+(!!d.querySelector('textarea'));
+}catch(e){document.getElementById('out').textContent='HASIL ERR '+e.message;}})();
+</script></body></html>
