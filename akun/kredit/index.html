@@ -144,7 +144,14 @@ function goBack() { if (history.length > 1) history.back(); else location.href =
 // tiap AI selesai menjawab) + poll ringan sebagai fallback.
 var state = { saldo: 0, terpakai: 0, riwayat: [], chatLog: [], integrasi: [], email: '' };
 
-function fmt(n) { return Number(n || 0).toLocaleString('id-ID'); }
+function fmt(n) {
+    var v = Number(n || 0);
+    if (!isFinite(v)) v = 0;
+    // [9 Okt, arahan pemilik] kredit kini pecahan (0,0xxx): tampil sampai 4 desimal
+    if (Math.abs(v - Math.round(v)) < 0.00005) return Math.round(v).toLocaleString('id-ID');
+    var s = v.toFixed(4).replace(/0+$/, '').replace(/[.,]$/, '');
+    return s.replace('.', ',');
+}
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 var toastTimer = null;
 function toast(msg) {

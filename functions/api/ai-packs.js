@@ -50,7 +50,7 @@ export async function getActivePacks(db, userKey) {
     await ensurePackTable(db);
     const now = new Date().toISOString();
     const rows = await db.prepare(
-      'SELECT id, pack_id, name, price, credits_total, credits_left, purchased_at, expires_at FROM ai_packs WHERE user_key = ? AND credits_left > 0 AND expires_at > ? ORDER BY expires_at ASC'
+      'SELECT id, pack_id, name, price, credits_total, credits_left, purchased_at, expires_at FROM ai_packs WHERE user_key = ? AND credits_left > 0.0005 AND expires_at > ? ORDER BY expires_at ASC'
     ).bind(userKey, now).all();
     return rows.results || [];
   } catch (e) { return []; }
@@ -68,7 +68,12 @@ export async function consumePackCredit(db, userKey, cost = 1) {
       remaining -= take;
       await db.prepare('UPDATE ai_packs SET credits_left = credits_left - ? WHERE id = ?').bind(take, p.id).run();
     }
-    return { ok: remaining <= 0 };
+    // [9 Okt] Pemakaian pecahan: debu < 0,0005 kredit dianggap habis supaya
+    // paket tidak "hidup" selamanya dengan sisa tak terpakai.
+    try {
+      await db.prepare('UPDATE ai_packs SET credits_left = 0 WHERE user_key = ? AND credits_left > 0 AND credits_left < 0.0005').bind(userKey).run();
+    } catch (e) {}
+    return { ok: remaining <= 0.0005 };
   } catch (e) { return { ok: false }; }
 }
 

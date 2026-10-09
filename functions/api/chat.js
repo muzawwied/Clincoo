@@ -1020,7 +1020,7 @@ async function quotaCheck(env, user, cost = 1, freeChat = false) {
     if (!freeChat && !ADMIN_EMAILS.has(user.email)) {
       const packs = await getActivePacks(env.DB, user.key);
       const balance = packs.reduce((a, p) => a + (p.credits_left || 0), 0);
-      if (balance < 1) {
+      if (balance < 0.0001) { // pecahan: sisa saldo kecil pun masih bisa dipakai
         return { exceeded: true, scope: 'empty', balance: 0, count: monthCount, message: QUOTA_MSG_EMPTY };
       }
     }
@@ -1054,15 +1054,20 @@ async function quotaCheck(env, user, cost = 1, freeChat = false) {
 // Token dihitung dari karakter riil (estimasi umum: 4 karakter ≈ 1 token).
 // Pre-flight quotaCheck memotong 1 sebagai reservasi; setelah jawaban jadi,
 // SELISIH biaya sebenarnya dipotong di chargeAiUsage.
-const INPUT_FREE_TOKENS = 8000, INPUT_STEP_TOKENS = 8000;
-const OUTPUT_FREE_TOKENS = 2000, OUTPUT_STEP_TOKENS = 2000;
+// [9 Okt 2026, arahan pemilik: "kreditnya makenya misal 0.000 — jangan selalu
+// bulat kayak 2"] Pemotongan PECAHAN presisi 4 desimal, proporsional token nyata:
+//   1 kredit = 16.000 token INPUT  (Rp39/kredit ÷ ~$0.15/1M * 3x, Rp16.000/$)
+//   1 kredit =  4.000 token OUTPUT (Rp39/kredit ÷ ~$0.5/1M * 3x)
+// Skala sama dengan skema lama (1 kredit per 8k input / 2k output di atas
+// jatah gratis), tapi kontinu: pesan pendek kena 0,0xxx — bukan lompatan bulat.
+const KRED_PER_INPUT_TOKEN = 1 / 16000;
+const KRED_PER_OUTPUT_TOKEN = 1 / 4000;
 function tokensOfChars(chars) { return Math.ceil((chars || 0) / 4); }
 function aiCostOf(model, outputChars, inputChars) {
   const inTok = tokensOfChars(inputChars);
   const outTok = tokensOfChars(outputChars);
-  const extraIn = Math.ceil(Math.max(0, inTok - INPUT_FREE_TOKENS) / INPUT_STEP_TOKENS);
-  const extraOut = Math.ceil(Math.max(0, outTok - OUTPUT_FREE_TOKENS) / OUTPUT_STEP_TOKENS);
-  return Math.max(1, 1 + extraIn + extraOut);
+  const cost = inTok * KRED_PER_INPUT_TOKEN + outTok * KRED_PER_OUTPUT_TOKEN;
+  return Math.max(0.0001, Math.round(cost * 10000) / 10000);
 }
 // [9 Okt 2026, arahan pemilik] Kredit dipotong dari SALDO (Paket Kredit AI /
 // starter) SESUAI PEMAKAIAN user — usage-based (1 + selisih token), semua mode
@@ -1085,10 +1090,8 @@ async function chargeAiUsage(env, user, model, outputChars, inputChars, charge =
       ).bind(user.key, Date.now(), String(model || '').slice(0, 64), Math.max(0, outputChars | 0), Math.max(0, inputChars | 0), 0).run();
       return;
     }
-    const diff = cost - 1; // 1 sudah tercatat pre-flight di counter cap
-    const now = new Date();
-    const day = now.toISOString().slice(0, 10);
-    const month = now.toISOString().slice(0, 7);
+    // [9 Okt] Cap harian/bulanan = JUMLAH PESAN (sudah +1 pre-flight, tidak
+    // ditambah lagi). SALDO dipotong pecahan sesuai biaya nyata pemakaian.
     await env.DB.prepare(
       'CREATE TABLE IF NOT EXISTS ai_usage (user_key TEXT, ts INTEGER, model TEXT, out_chars INTEGER, cost INTEGER)'
     ).run();
@@ -1096,13 +1099,6 @@ async function chargeAiUsage(env, user, model, outputChars, inputChars, charge =
     // Saldo paket dipotong penuh sesuai biaya pemakaian (boleh parsial bila
     // saldo tinggal sedikit — sisanya habis, pesan berikutnya diblokir).
     try { await consumePackCredit(env.DB, user.key, cost); } catch (e) {}
-    if (diff > 0) {
-      // counter cap harian/bulanan mencatat selisih biaya (total = cost)
-      await env.DB.batch([
-        env.DB.prepare('INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET count = count + ?').bind(user.key, day, diff, diff),
-        env.DB.prepare('INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET count = count + ?').bind(user.key, month, diff, diff)
-      ]);
-    }
     await env.DB.prepare(
       'INSERT INTO ai_usage (user_key, ts, model, out_chars, in_chars, cost) VALUES (?, ?, ?, ?, ?, ?)'
     ).bind(user.key, Date.now(), String(model || '').slice(0, 64), Math.max(0, outputChars | 0), Math.max(0, inputChars | 0), cost).run();
