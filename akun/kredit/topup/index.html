@@ -131,7 +131,10 @@
                     <button type="button" onclick="backToInput()" class="flex items-center justify-center w-full h-12 text-sm font-semibold text-gray-700 bg-gray-100 rounded-full transition-colors cursor-pointer">Tutup</button>
                 </div>
 
-                <div id="qr-cta-paid" class="hidden text-center">
+
+            </div>
+
+                <div id="qr-cta-paid" class="hidden text-center py-10">
                     <div class="medal-wrap relative w-16 h-16 mx-auto mb-5">
                         <div class="medal absolute inset-0 rounded-full flex items-center justify-center">
                             <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path class="medal-check" d="m5 13 4 4L19 7"></path></svg>
@@ -143,12 +146,11 @@
                     <button type="button" onclick="location.href='/akun/kredit/'" class="inline-flex items-center justify-center px-6 h-12 text-sm font-semibold text-white bg-black rounded-full transition-colors cursor-pointer">Kembali ke Saldo</button>
                 </div>
 
-                <div id="qr-cta-expired" class="hidden text-center">
+                <div id="qr-cta-expired" class="hidden text-center py-10">
                     <p class="text-sm font-semibold text-gray-900">Kode QRIS kedaluwarsa</p>
                     <p class="text-xs text-gray-400 mt-1 mb-6">Masa berlaku 15 menit sudah habis dan pembayaran tidak terdeteksi.</p>
                     <button type="button" onclick="backToInput()" class="inline-flex items-center justify-center px-6 h-12 text-sm font-semibold text-white bg-black rounded-full transition-colors cursor-pointer">Buat QRIS Baru</button>
                 </div>
-            </div>
 
             <div id="qr-missing" class="hidden text-center py-14">
                 <p class="text-sm font-semibold text-gray-900">Gagal membuat QRIS</p>
@@ -317,7 +319,10 @@ function showPaid(d) {
     try { new BroadcastChannel('clincoo_kredit_sync').postMessage({ t: 'topup-done' }); } catch (e) {}
     try { sessionStorage.removeItem(QR_SNAP_KEY); } catch (e) {}
     document.getElementById('paid-detail').textContent = '+' + _rp((d && d.credits) || cur.kredit) + ' kredit masuk ke saldo kamu.';
-    document.getElementById('qr-status').textContent = 'Pembayaran diterima';
+    // [9 Okt 2026, arahan pemilik] LUNAS = layar sukses BERSIH: seluruh panel
+    // QRIS (kode QR, total, detail "menunggu pembayaran") disembunyikan —
+    // yang tampil cuma medali sukses + detail kredit + tombol kembali.
+    document.getElementById('qr-body').classList.add('hidden');
     document.getElementById('qr-cta-wait').classList.add('hidden');
     document.getElementById('qr-cta-expired').classList.add('hidden');
     document.getElementById('qr-cta-paid').classList.remove('hidden');
@@ -330,6 +335,8 @@ function showExpired() {
     try { sessionStorage.removeItem(QR_SNAP_KEY); } catch (e) {}
     try { if (cur.orderId) sessionStorage.setItem('clincoo_qris_dismiss', cur.orderId); } catch (e) {}
     document.getElementById('qr-status').textContent = 'Kedaluwarsa';
+    // layar kedaluwarsa juga bersih: panel QRIS disembunyikan
+    document.getElementById('qr-body').classList.add('hidden');
     document.getElementById('qr-cta-wait').classList.add('hidden');
     document.getElementById('qr-cta-paid').classList.add('hidden');
     document.getElementById('qr-cta-expired').classList.remove('hidden');
