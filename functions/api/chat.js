@@ -344,8 +344,16 @@ async function tryOpenRouterText(keys, messages, gDecls, models, onDelta) {
             // kredit kebakar. Kalau tools tersedia tapi jawabannya dominan narasi-aksi
             // (>=3 frasa) dan 0 tool_call, kandidat GAGAL -> model berikutnya.
             if (oaiTools && !st.tcs.length) {
-              const narr = (full.match(/(menulis|menjalankan|memulai|menyelesaikan)\s+(file|tools?|generate_image|set_project_info|write_file|deploy)/gi) || []).length;
-              if (narr >= 3) { lastErr = 'OpenRouter ' + model + ': narasi tool tanpa tool_call nyata (fake progress)'; continue; }
+              // [9 Okt fix regression] HANYA ronde PERTAMA (belum ada hasil tool di
+              // riwayat) yang boleh ditolak sebagai narasi palsu. Ronde LANJUTAN setelah
+              // tool call sukses wajar berisi ringkasan "saya telah menulis file..." —
+              // menolaknya bikin kandidat bagus dibuang, race jalan ke model lain, jawaban
+              // jadi lama + "mengetik tanpa alasan" (laporan owner 9 Okt).
+              const hasToolHist = baseMsgs.some(m => m && m.role === 'tool');
+              if (!hasToolHist) {
+                const narr = (full.match(/(menulis|menjalankan|memulai|menyelesaikan)\s+(file|tools?|generate_image|set_project_info|write_file|deploy)/gi) || []).length;
+                if (narr >= 3) { lastErr = 'OpenRouter ' + model + ': narasi tool tanpa tool_call nyata (fake progress)'; continue; }
+              }
             }
             return { text: full, model: model.split('/').pop() + ' (OpenRouter)' };
           }

@@ -3150,7 +3150,7 @@ window.chatLivePreview = function () {
                                             <i class="ph ph-thumbs-down text-lg"></i>
                                         </button>
                                     ` : ''}
-                                    <span class="ml-auto text-[11px] text-gray-400 font-medium select-none whitespace-nowrap">${(msg.respMs ? msg.respMs + ' ms' : '')}</span>
+                                    <span class="ml-auto text-[11px] text-gray-400 font-medium select-none whitespace-nowrap">${(msg.respMs ? (msg.respMs >= 10000 ? Math.round(msg.respMs/1000) + ' dtk' : (msg.respMs >= 1000 ? (msg.respMs/1000).toFixed(1).replace('.', ',') + ' dtk' : msg.respMs + ' ms')) : '')}</span>
 </div>
                             </div>
                         </div>
