@@ -313,7 +313,7 @@ async function tryOpenRouterText(keys, messages, gDecls, models, onDelta) {
             const contMsgs = baseMsgs.slice();
             for (let sc = 0; sc < 3 && fin2 === 'length'; sc++) {
               contMsgs.push({ role: 'assistant', content: seg });
-              contMsgs.push({ role: 'user', content: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' });
+              contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
               // LANJUTAN ANTI-KEPOTONG: segmen lanjutan pernah gagal sekali (429/timeout
               // provider) -> dulu langsung break, jawaban terpotong di tengah kalimat.
               // Sekarang coba ulang dengan model berikutnya di rantai sebelum menyerah.
@@ -408,7 +408,7 @@ async function tryOpenRouterText(keys, messages, gDecls, models, onDelta) {
       const contMsgs = baseMsgs.slice();
       for (let ac = 0; ac < 2 && fin === 'length'; ac++) {
         contMsgs.push({ role: 'assistant', content: seg });
-        contMsgs.push({ role: 'user', content: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' });
+        contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
         let dc = null;
         try {
           const p3 = { model, messages: contMsgs, max_tokens: OR_MAX_TOKENS };
@@ -561,6 +561,38 @@ function detectBuildIntent(messages) {
     return BUILD_INTENT_VERBS.test(txt) && BUILD_INTENT_OBJECTS.test(txt);
   } catch (e) { return false; }
 }
+// [9 Okt, laporan owner screenshot: "mulai dari halaman utama dulLanjut dari halaman utama"]
+// Teks terpotong batas token MR bisa putus DI TENGAH KATA ("dul"); sambungan lama cuma
+// bilang "lanjutkan persis" sehingga model mulai kalimat baru. Sekarang: tunjukkan
+// ekor teks sebagai jangkar + larang kalimat baru/ulang; hasil sambungan dirapikan
+// (potong overlap duplikat) lewat mrJoinContinuation.
+function mrContinueMsg(seg) {
+  const tailTxt = String(seg || '').slice(-80).replace(/\s+/g, ' ');
+  return 'Jawabanmu terpotong batas panjang. Ekor teks terakhirmu: "' + tailTxt + '". Sambung LANGSUNG dari karakter berikutnya setelah ekor itu (kalau terpotong di tengah kata, lengkapi kata itu dulu). DILARANG mengulang kalimat/kata yang sudah tertulis, DILARANG membuka kalimat baru seperti "Lanjut..." atau minta maaf, DILARANG bertanya. Keluarkan HANYA sambungannya.';
+}
+function mrJoinContinuation(prev, cont) {
+  let c = String(cont || '');
+  if (!c) return String(prev || '');
+  c = c.replace(/^\s*(lanjut(an)?(\s+dari[^.\n]{0,40})?[:,.\-–—]*\s*)/i, '');
+  const p = String(prev || '');
+  const maxOv = Math.min(120, p.length, c.length);
+  for (let n = maxOv; n >= 6; n--) {
+    if (p.slice(-n) === c.slice(0, n)) { c = c.slice(n); break; }
+  }
+  // Cadangan: teks lama putus di tengah kata (huruf/angka di ekor) tapi sambungan malah
+  // mulai kalimat baru berhuruf kapital -> buang kata menggantung ("dul") lalu pisah
+  // dengan spasi, supaya tidak jadi "dulSaya tulis...".
+  // HANYA bila kata terakhir <=3 huruf DAN bukan kata utuh umum (mis. "dul", "per", "ter").
+  const lastWord = (p.match(/([A-Za-zÀ-ÿ]+)$/) || [])[1] || '';
+  const WHOLE = /^(dan|yang|di|ke|dari|untuk|ini|itu|ada|atau|juga|saya|aku|kamu|kita|anda|akan|bisa|mau|oke|ok|ya|tidak|bukan|the|and|for|with|web|app|css|js|api|seo)$/i;
+  if (lastWord && lastWord.length <= 3 && !WHOLE.test(lastWord) && /^[A-Z][a-z]/.test(c)) {
+    const cut = p.slice(0, p.length - lastWord.length).replace(/\s+$/, '');
+    return cut + (cut && !/[.!?:\n]$/.test(cut) ? '. ' : ' ') + c;
+  }
+  // Kata utuh + kalimat baru berhuruf kapital -> beri jarak, jangan menempel.
+  if (/[A-Za-zÀ-ÿ0-9]$/.test(p) && /^[A-Z][a-z]/.test(c)) return p + ' ' + c;
+  return p + c;
+}
 async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usageAcc) {
   const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
   if (!keyList.length) return null;
@@ -649,13 +681,13 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usage
             const contMsgs = baseMsgs.slice();
             for (let sc = 0; sc < 5 && fin2 === 'length'; sc++) {
               contMsgs.push({ role: 'assistant', content: seg });
-              contMsgs.push({ role: 'user', content: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' });
+              contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
               try {
                 const cr = await callMr(key, model, contMsgs, true);
                 if (!cr.ok || !cr.body) break;
                 const st2 = await readOAICompatStream(cr, onDelta);
                 if (!st2.text) break;
-                full += st2.text; seg = st2.text; fin2 = st2.fin;
+                full = mrJoinContinuation(full, st2.text); seg = st2.text; fin2 = st2.fin;
               } catch (e2) { break; }
             }
             { if (usageAcc) usageAcc[model] = (usageAcc[model] || 0) + tokensOfChars(full); return { text: full, model: mrLabel(model) }; }
@@ -697,14 +729,14 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usage
       const contMsgs = baseMsgs.slice();
       for (let ac = 0; ac < 3 && fin === 'length'; ac++) {
         contMsgs.push({ role: 'assistant', content: seg });
-        contMsgs.push({ role: 'user', content: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' });
+        contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
         let dc = null;
         try { const rc = await callMr(key, model, contMsgs, false); dc = await rc.json().catch(() => ({})); } catch (e2) { dc = null; }
         const dm = dc && dc.choices && dc.choices[0] && dc.choices[0].message;
         const dseg = (dm && dm.content) || '';
         fin = dc && dc.choices && dc.choices[0] && dc.choices[0].finish_reason;
         if (!dseg) break;
-        full += dseg; seg = dseg;
+        full = mrJoinContinuation(full, dseg); seg = dseg;
       }
       { if (usageAcc) usageAcc[model] = (usageAcc[model] || 0) + tokensOfChars(full); return { text: full, model: mrLabel(model) }; }
     }
@@ -791,7 +823,7 @@ async function tryCfAiRest(creds, messages, gDecls, onDelta) {
       if (finish !== 'length') break;
       // terpotong batas token -> sambung otomatis dari titik terakhir
       contMsgs.push({ role: 'assistant', content: seg });
-      contMsgs.push({ role: 'user', content: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' });
+      contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
     }
     if (full) return { text: full, model: modelLabel };
   }
@@ -903,7 +935,7 @@ async function tryClouviaText(keys, messages, gDecls, models, onDelta) {
         const contMsgs = baseMsgs.slice();
         for (let ac = 0; ac < 3 && fin === 'length'; ac++) {
           contMsgs.push({ role: 'assistant', content: seg });
-          contMsgs.push({ role: 'user', content: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' });
+          contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
           let dc = null;
           try {
             const p3 = { model, messages: contMsgs, max_tokens: 12288 };
@@ -987,7 +1019,7 @@ async function tryWorkersAIText(env, messages, gDecls) {
       const contMsgs = sysMsgs.slice();
       for (let ac = 0; ac < 3 && finish === 'length'; ac++) {
         contMsgs.push({ role: 'assistant', content: seg });
-        contMsgs.push({ role: 'user', content: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' });
+        contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
         let rc = null;
         try {
           const p3 = { messages: contMsgs };
