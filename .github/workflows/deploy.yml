@@ -20,6 +20,27 @@ jobs:
     steps:
       - name: Checkout kode
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: RESTORE full chat.js from 24ff913 (before broken stub)
+        run: |
+          set -e
+          GOOD=24ff913313d218c9359cad542b583ab917f5cece
+          SIZE=$(wc -c < functions/api/chat.js || echo 0)
+          echo "current chat.js size=$SIZE"
+          if [ "$SIZE" -lt 50000 ]; then
+            echo "Restoring functions/api/chat.js from $GOOD"
+            git show "$GOOD:functions/api/chat.js" > functions/api/chat.js
+            wc -c functions/api/chat.js
+            git config user.name Clincoo
+            git config user.email halo@clincoo.buzz
+            git add functions/api/chat.js
+            git commit -m "RESTORE: functions/api/chat.js full from 24ff913 (before stub/corrupt)"
+            git push origin main
+          else
+            echo "chat.js already full, skip restore"
+          fi
 
       - name: Fix UI (shimmer + animation + session resume)
         run: |
@@ -29,7 +50,7 @@ jobs:
           git config user.name Clincoo
           git config user.email halo@clincoo.buzz
           git add proyek/chat/index.html functions/api/chat.js 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "fix: resume same session on refresh mid-answer"
+          git diff --cached --quiet || git commit -m "fix: UI patches after chat.js restore"
           git push origin main || true
 
       - name: Bersihkan artefak repo (tidak ikut di-publish)
