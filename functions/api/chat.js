@@ -1054,22 +1054,27 @@ async function quotaCheck(env, user, cost = 1, freeChat = false) {
 // Token dihitung dari karakter riil (estimasi umum: 4 karakter ≈ 1 token).
 // Pre-flight quotaCheck memotong 1 sebagai reservasi; setelah jawaban jadi,
 // SELISIH biaya sebenarnya dipotong di chargeAiUsage.
-// [9 Okt 2026, arahan pemilik: "SESUAI TOKEN YANG DIPAKE" lalu "naikin:
-// GLM $0.03, Haiku $0.02"] Pemotongan pecahan presisi 6 desimal per 2.000
-// token (input + output dihitung sebagai total token; 4 karakter ≈ 1 token):
-//   GLM   : 2.000 token = 0,03 kredit
-//   Haiku : 2.000 token = 0,02 kredit
-//   Model lain (llama/nemotron/deepseek/gemini/cadangan): pakai tarif GLM.
-// Pesan pendek kena 0,00xxx — proporsional token nyata, bukan lompatan bulat.
-const KRED_PER_2K_TOKENS_GLM = 0.03;
-const KRED_PER_2K_TOKENS_HAIKU = 0.02;
+// [9 Okt 2026, arahan pemilik: "SAMAIN SAMA RUPIAHNYA jangan sama angkanya,
+// rugi saya kalo ga sesuai"] Harga per 2.000 token (input+output dihitung
+// sebagai total token; 4 karakter ≈ 1 token):
+//   GLM   : $0.03  -> Rp534  -> 53,4 KREDIT
+//   Haiku : $0.02  -> Rp356  -> 35,6 KREDIT
+// Angka dolar TIDAK langsung jadi jumlah kredit: dikonversi dulu ke Rupiah
+// (kurs Rp17.800/$, 9 Okt 2026), lalu dibagi nilai resmi kredit 1 kredit =
+// Rp10 (konversi top-up QRIS: Rp1.000 = 100 kredit) — supaya rupiah yang
+// terpotong dari saldo pengguna SETARA nilai rupiah harga sesungguhnya.
+// Model lain (llama/nemotron/deepseek/gemini/cadangan): pakai tarif GLM.
+const USD_IDR = 17800;      // kurs asumsi — ubah di sini saat kurs bergeser
+const KREDIT_RP = 10;       // 1 kredit = Rp10 (sama dengan konversi top-up)
+const CHARGE_USD_PER_2K = { glm: 0.03, haiku: 0.02 };
 function tokensOfChars(chars) { return Math.ceil((chars || 0) / 4); }
 function aiCostOf(model, outputChars, inputChars) {
   const m = String(model || '').toLowerCase();
-  const per2k = m.indexOf('haiku') !== -1 ? KRED_PER_2K_TOKENS_HAIKU : KRED_PER_2K_TOKENS_GLM;
+  const usd = m.indexOf('haiku') !== -1 ? CHARGE_USD_PER_2K.haiku : CHARGE_USD_PER_2K.glm;
   const tokens = tokensOfChars(inputChars) + tokensOfChars(outputChars);
-  const cost = (tokens / 2000) * per2k;
-  return Math.max(0.00001, Math.round(cost * 1000000) / 1000000);
+  const costRp = (tokens / 2000) * usd * USD_IDR; // nilai rupiah pemakaian
+  const credits = costRp / KREDIT_RP;             // dikonversi ke kredit
+  return Math.max(0.01, Math.round(credits * 100) / 100);
 }
 // [9 Okt 2026, arahan pemilik] Kredit dipotong dari SALDO (Paket Kredit AI /
 // starter) SESUAI PEMAKAIAN user — usage-based (1 + selisih token), semua mode
