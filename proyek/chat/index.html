@@ -6291,6 +6291,18 @@ window.chatLivePreview = function () {
                         const STALL_MS = 300000;
                         let lastEventAt = Date.now();
                         let stallHits = 0;
+                        // [9 Okt 2026] "Halo" cuma muter Thinking: kalau 20 dtk belum ada SATU PUN
+                        // teks/tool dari AI, status berubah jujur (bukan bisu sampai 5 menit) —
+                        // user tahu sistem masih mencoba provider lain, bukan hang.
+                        const slowStart = Date.now();
+                        let slowNotified = false, slowNotified2 = false;
+                        const slowTimer = setInterval(() => {
+                            if (!isGenerating) { clearInterval(slowTimer); return; }
+                            if (hasReceivedData || deltaStreamed) { clearInterval(slowTimer); return; }
+                            const waited = Date.now() - slowStart;
+                            if (!slowNotified && waited > 20000) { slowNotified = true; setAiStatus('Server AI sedang ramai, mencoba jalur lain…'); }
+                            if (!slowNotified2 && waited > 60000) { slowNotified2 = true; setAiStatus('Masih mencoba, bisa tekan stop lalu kirim ulang kalau lama…'); }
+                        }, 5000);
                         const stallTimer = setInterval(() => {
                             if (!isGenerating) { clearInterval(stallTimer); return; }
                             if (Date.now() - lastEventAt < STALL_MS) return;
@@ -6346,7 +6358,7 @@ window.chatLivePreview = function () {
                                 throw streamErr;
                             }
                         }
-                        } finally { clearInterval(stallTimer); }
+                        } finally { clearInterval(stallTimer); try { clearInterval(slowTimer); } catch (e) {} }
                     };
 
                     let __pendingCheckpoint = false; // true = catatan progres ditulis di hop ini -> tutup bubble setelah tool jalan
