@@ -69,7 +69,16 @@ export async function onRequestPost({ request, env }) {
   if (err) return err;
   body.plan = await planOf(env, request);
   const res = await gw(env, 'POST', '/tables', body);
-  if (res.ok) return res;
+  if (res.ok) {
+    // [9 Okt 2026, arahan pemilik] tabel/baris berhasil dibuat (AI maupun aplikasi)
+    // -> halaman Database OTOMATIS status aktif; user tidak perlu klik
+    // "Aktifkan Database" lagi saat membuka halaman pengaturan.
+    try {
+      await env.DB.prepare('CREATE TABLE IF NOT EXISTS db_project_settings (project_id TEXT PRIMARY KEY, active INTEGER DEFAULT 0, created_at TEXT)').run();
+      await env.DB.prepare('INSERT INTO db_project_settings (project_id, active, created_at) VALUES (?, 1, ?) ON CONFLICT (project_id) DO UPDATE SET active = 1').bind(projectId, new Date().toISOString()).run();
+    } catch (e) {}
+    return res;
+  }
   const d = await res.json().catch(() => ({}));
   return json({ error: d.error || 'Gagal membuat tabel' }, res.status);
 }
