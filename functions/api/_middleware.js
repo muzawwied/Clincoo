@@ -3,6 +3,10 @@
 //   - /api/github-oauth* (redirect callback GitHub, tanpa header Bearer)
 //   - /api/topup*        (callback Xendit divalidasi sendiri via x-callback-token)
 //   - /api/topup-qris*   (webhook BuatQris diverifikasi sendiri via HMAC X-BuatQris-Signature; create/status wajib Bearer di dalam handler)
+//   - /api/kredit-topup*  (top-up Kredit AI: create/status wajib Bearer divalidasi di
+//                          handler sendiri; GET action=qrimg = proxy gambar QR host-
+//                          whitelist utk tombol unduh <a download> yang gak bisa bawa
+//                          header Authorization)
 //   - /api/scheduled-tasks (endpoint memvalidasi sendiri: aksi user wajib Bearer, run_due wajib x-cron-secret)
 //   - /api/wallet-sync*  (endpoint memvalidasi sendiri: config wajib Bearer; jalur eksternal wajib api_key)
 //   - /api/collab*        (GET info undangan publik via token rahasia; POST divalidasi sendiri di collab.js)
@@ -30,7 +34,7 @@ import { initTables as initAuthTables, getUserByToken, getToken } from './auth/s
 //             (clc_pay_...) demi situs deploy; action lain tetap cek sesi (requireOwned).
 // /api/mcp  -> publik: klien AI luar tidak punya sesi Clincoo; handler mcp.js
 //             memverifikasi token MCP per proyek + izin read/write/delete sendiri.
-const PUBLIC = [/^\/api\/ai-bridge(\/|$)/, /^\/api\/admin\/auth(\/|$)/, /^\/api\/pay(\/|$)/, /^\/api\/ai$/, /^\/api\/mcp(\/|$)/, /^\/api\/fn-db(\/|$)/, /^\/api\/beta-claim(\/|$)/, /^\/api\/promo(\/|$)/, /^\/api\/template-submissions(\/|$)/, /^\/api\/auth(\/|$)/, /^\/api\/github-oauth(\/|$)/, /^\/api\/topup(-qris)?(\/|$)/, /^\/api\/wallet(\/|$)/, /^\/api\/scheduled-tasks(\/|$)/, /^\/api\/user-report-sync(\/|$)/, /^\/api\/wallet-sync(\/|$)/, /^\/api\/collab(\/|$)/, /^\/api\/chat(\/|$)/, /^\/api\/prompt-templates(\/|$)/, /^\/api\/wa(\/|$)/, /^\/api\/email(\/|$)/, /^\/api\/promo-email(\/|$)/];
+const PUBLIC = [/^\/api\/kredit-topup(\/|$)/, /^\/api\/ai-bridge(\/|$)/, /^\/api\/admin\/auth(\/|$)/, /^\/api\/pay(\/|$)/, /^\/api\/ai$/, /^\/api\/mcp(\/|$)/, /^\/api\/fn-db(\/|$)/, /^\/api\/beta-claim(\/|$)/, /^\/api\/promo(\/|$)/, /^\/api\/template-submissions(\/|$)/, /^\/api\/auth(\/|$)/, /^\/api\/github-oauth(\/|$)/, /^\/api\/topup(-qris)?(\/|$)/, /^\/api\/wallet(\/|$)/, /^\/api\/scheduled-tasks(\/|$)/, /^\/api\/user-report-sync(\/|$)/, /^\/api\/wallet-sync(\/|$)/, /^\/api\/collab(\/|$)/, /^\/api\/chat(\/|$)/, /^\/api\/prompt-templates(\/|$)/, /^\/api\/wa(\/|$)/, /^\/api\/email(\/|$)/, /^\/api\/promo-email(\/|$)/];
 
 // ---- 1. RATE LIMIT (anti-DDoS L7 / anti-brute-force) ----
 const _buckets = new Map(); // key -> array timestamp
