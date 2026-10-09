@@ -1064,27 +1064,25 @@ async function quotaCheck(env, user, cost = 1, freeChat = false) {
 // Token dihitung dari karakter riil (estimasi umum: 4 karakter ≈ 1 token).
 // Pre-flight quotaCheck memotong 1 sebagai reservasi; setelah jawaban jadi,
 // SELISIH biaya sebenarnya dipotong di chargeAiUsage.
-// [9 Okt 2026, arahan pemilik: "SAMAIN SAMA RUPIAHNYA jangan sama angkanya,
-// rugi saya kalo ga sesuai"] Harga per 2.000 token (input+output dihitung
-// sebagai total token; 4 karakter ≈ 1 token):
-//   GLM   : $0.03  -> Rp534  -> 53,4 KREDIT
-//   Haiku : $0.02  -> Rp356  -> 35,6 KREDIT
-// Angka dolar TIDAK langsung jadi jumlah kredit: dikonversi dulu ke Rupiah
-// (kurs Rp17.800/$, 9 Okt 2026), lalu dibagi nilai resmi kredit 1 kredit =
-// Rp10 (konversi top-up QRIS: Rp1.000 = 100 kredit) — supaya rupiah yang
-// terpotong dari saldo pengguna SETARA nilai rupiah harga sesungguhnya.
+// [9 Okt 2026, arahan pemilik — dikalibrasi dari LOG PROVIDER ASLI:
+// "30.725 tokens (30.213 in • 512 out) = $0.000558"]
+// Harga provider riil: $0.000558 / 30.725 tok = ~$0.0182 per 1jt token
+// (jauh di bawah angka $0.003/2000 tok yang lalu dipakai patokan).
+// Tarif = 10x biaya provider riil (markup arahan pemilik), dikonversi ke
+// kredit (1 kredit = Rp10, kurs Rp17.800/$):
+//   Haiku : $0.0000363/2000tok x10 = $0.000363 = Rp6,46 -> 0,65 KREDIT/2000tok
+//   GLM   : 1,5x haiku (rasio harga pemilik)      = Rp9,9  -> 1     KREDIT/2000tok
 // Model lain (llama/nemotron/deepseek/gemini/cadangan): pakai tarif GLM.
-const USD_IDR = 17800;      // kurs asumsi — ubah di sini saat kurs bergeser
-const KREDIT_RP = 10;       // 1 kredit = Rp10 (sama dengan konversi top-up)
-const CHARGE_USD_PER_2K = { glm: 0.03, haiku: 0.02 };
+// Token dihitung dari karakter riil (4 karakter ≈ 1 token).
+const KRED_PER_2K_TOKENS_HAIKU = 0.65;
+const KRED_PER_2K_TOKENS_GLM = 1;
 function tokensOfChars(chars) { return Math.ceil((chars || 0) / 4); }
 function aiCostOf(model, outputChars, inputChars) {
   const m = String(model || '').toLowerCase();
-  const usd = m.indexOf('haiku') !== -1 ? CHARGE_USD_PER_2K.haiku : CHARGE_USD_PER_2K.glm;
+  const per2k = m.indexOf('haiku') !== -1 ? KRED_PER_2K_TOKENS_HAIKU : KRED_PER_2K_TOKENS_GLM;
   const tokens = tokensOfChars(inputChars) + tokensOfChars(outputChars);
-  const costRp = (tokens / 2000) * usd * USD_IDR; // nilai rupiah pemakaian
-  const credits = costRp / KREDIT_RP;             // dikonversi ke kredit
-  return Math.max(0.01, Math.round(credits * 100) / 100);
+  const cost = (tokens / 2000) * per2k;
+  return Math.max(0.01, Math.round(cost * 100) / 100);
 }
 // [9 Okt 2026, arahan pemilik] Kredit dipotong dari SALDO (Paket Kredit AI /
 // starter) SESUAI PEMAKAIAN user — usage-based (1 + selisih token), semua mode
