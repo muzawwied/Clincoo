@@ -4070,6 +4070,65 @@ window.chatLivePreview = function () {
             };
         }
 
+
+        // [9 Okt 2026] MESIN VERIFIKASI SINTAKS (bukti, bukan klaim): dipanggil
+        // SETIAP write_file/write_files sukses. Hasilnya ditambahkan ke tool result
+        // -> AI melihat error nyata di respons tool dan memperbaiki sendiri di
+        // giliran yang sama, sebelum sempat klaim "selesai". Tanpa LLM, gratis, cepat.
+        function wsVerifySyntax(path, content) {
+            try {
+                const ext = (String(path).split('.').pop() || '').toLowerCase();
+                if (ext === 'js' || ext === 'mjs' || ext === 'jsx' || ext === 'ts' || ext === 'tsx') {
+                    if (ext === 'ts' || ext === 'tsx') return null; // TS: dikompilasi server saat deploy, gak bisa dicek di sini
+                    // ES module (import/export) gak bisa dipaksa ke Function — strip dulu
+                    const stripped = content
+                        .replace(/^\s*import\s[^;]*;?\s*$/gm, '')
+                        .replace(/^\s*import\s[\s\S]*?from\s*['"][^'"]*['"];?\s*$/gm, '')
+                        .replace(/^(\s*)export\s+default\s+/gm, '$1var __clincoo_export_default = ')
+                        .replace(/^\s*export\s*\{[\s\S]*?\}\s*;?\s*$/gm, '')
+                        .replace(/^\s*export\s+/gm, '');
+                    try { new Function(stripped); } catch (e) {
+                        return { ok: false, msg: 'JS SINTAKS RUSAK: ' + (e && e.message) };
+                    }
+                    return { ok: true, msg: 'sintaks JS valid' };
+                }
+                if (ext === 'css') {
+                    const open = (content.match(/{/g) || []).length;
+                    const close = (content.match(/}/g) || []).length;
+                    if (open !== close) return { ok: false, msg: 'CSS RUSAK: kurung {} gak seimbang (' + open + ' buka vs ' + close + ' tutup)' };
+                    return { ok: true, msg: 'kurung CSS seimbang' };
+                }
+                if (ext === 'html' || ext === 'htm') {
+                    const clean = content
+                        .replace(/<!--[\s\S]*?-->/g, '')
+                        .replace(/<script\b[\s\S]*?<\/script>/gi, '')
+                        .replace(/<style\b[\s\S]*?<\/style>/gi, '');
+                    const voids = { area:1,base:1,br:1,col:1,embed:1,hr:1,img:1,input:1,link:1,meta:1,param:1,source:1,track:1,wbr:1 };
+                    const stack = [];
+                    const re = /<\/?([a-zA-Z][a-zA-Z0-9-]*)(?:\s[^>]*)?>/g;
+                    let m, tagErr = null;
+                    while ((m = re.exec(clean)) && !tagErr) {
+                        const tag = m[1].toLowerCase();
+                        if (voids[tag]) continue;
+                        if (m[0].charAt(1) === '/') {
+                            const last = stack.pop();
+                            if (last !== tag) tagErr = '</' + tag + '> gak cocok (terakhir dibuka: <' + (last || 'TIDAK ADA') + '>)';
+                        } else { stack.push(tag); }
+                    }
+                    if (!tagErr && stack.length) tagErr = '<' + stack[stack.length - 1] + '> belum ditutup';
+                    if (tagErr) return { ok: false, msg: 'HTML RUSAK: ' + tagErr };
+                    if (!/<title[^>]*>/i.test(content)) return { ok: true, msg: 'struktur HTML seimbang (tanpa <title>)' };
+                    return { ok: true, msg: 'struktur HTML seimbang' };
+                }
+                return null; // json/md/txt/dll: gak diverifikasi
+            } catch (e) { return null; }
+        }
+        const wsVerifyLabel = function (path, v) {
+            if (!v) return null;
+            if (v.ok) return 'OK — ' + v.msg;
+            return 'GAGAL — ' + v.msg + '. WAJIB tulis ulang file ini (write_file ke path sama) SEBELUM lanjut atau sebelum bilang selesai.';
+        };
+
         async function wsWriteFile(args) {
             const path = args && args.path;
             const content = args && typeof args.content === 'string' ? args.content : '';
@@ -4099,7 +4158,7 @@ window.chatLivePreview = function () {
                 }
                 const err = wsSave(data);
                 if (err) return err;
-                return { success: true, action: existingIdx !== -1 ? 'overwritten' : 'created', path: info.itemPath, size: sizeStr, cloud: true };
+                const _vb = wsVerifySyntax(info.itemPath, content); const _vbl = wsVerifyLabel(info.itemPath, _vb); return { success: true, action: existingIdx !== -1 ? 'overwritten' : 'created', path: info.itemPath, size: sizeStr, cloud: true, verify: _vbl };
             }
 
             const data = wsLoad();
@@ -4121,7 +4180,7 @@ window.chatLivePreview = function () {
             }
             const err = wsSave(data);
             if (err) return err;
-            return { success: true, action: created ? 'created' : 'overwritten', path: info.itemPath, size: sizeStr };
+            const _vn = wsVerifySyntax(info.itemPath, content); const _vnl = wsVerifyLabel(info.itemPath, _vn); return { success: true, action: created ? 'created' : 'overwritten', path: info.itemPath, size: sizeStr, verify: _vnl };
         }
 
         function wsCreateFolder(args) {
@@ -4667,7 +4726,8 @@ window.chatLivePreview = function () {
             try { var _dk = 'clincoo_' + pid + "_domain_cache", _dc = {}; try { _dc = JSON.parse(localStorage.getItem(_dk) || '{}') || {}; } catch (e) {} localStorage.setItem(_dk, JSON.stringify(Object.assign(_dc, { pagesUrl: d.pages_url || '', deployed: true, ts: Date.now() }))); } catch (e) {}
             // URL utama: subdomain clincoo.biz.id (public_url) — pages.dev hanya cadangan.
             const url = d.public_url || (d.public_domain ? ('https://' + d.public_domain) : '') || (d.deployment && d.deployment.url) || d.pages_url || '';
-            return { success: true, url: url, pages_url: d.pages_url || '', public_domain: d.public_domain || '', pages_project: d.pages_project || '', file_count: d.fileCount || 0, message: 'Situs berhasil di-deploy' + (url ? ' ke ' + url : '') + (d.public_domain ? ' (subdomain clincoo.biz.id aktif)' : '') + '.' };
+            const _dv = d.verify ? ('http_status' in d.verify ? (d.verify.ok ? 'OK — ' + (d.verify.message || 'halaman live & valid') : 'GAGAL — ' + (d.verify.error || 'halaman live bermasalah') + (d.verify.warnings ? ' | peringatan: ' + d.verify.warnings.join('; ') : '') + '. WAJIB perbaiki dan deploy ulang sebelum bilang selesai.') : JSON.stringify(d.verify)) : null;
+            return { success: true, url: url, verify: _dv, pages_url: d.pages_url || '', public_domain: d.public_domain || '', pages_project: d.pages_project || '', file_count: d.fileCount || 0, message: 'Situs berhasil di-deploy' + (url ? ' ke ' + url : '') + (d.public_domain ? ' (subdomain clincoo.biz.id aktif)' : '') + '.' };
         }
 
         // manage_domain: AI kelola domain kustom + setel record DNS langsung (via /api/deploy)
@@ -5064,7 +5124,7 @@ window.chatLivePreview = function () {
                     } else {
                         data[info.folderKey].push({ type: 'file', name: info.name, size: sizeStr, path: info.itemPath, content: isBig ? '' : content, cloud: isBig ? true : undefined });
                     }
-                    results.push({ path: info.itemPath, ok: true, cloud: isBig ? true : undefined });
+                    results.push({ path: info.itemPath, ok: true, cloud: isBig ? true : undefined, verify: wsVerifyLabel(info.itemPath, wsVerifySyntax(info.itemPath, content)) });
                 } else {
                     results.push({ path: info.itemPath, ok: false, error: 'gagal unggah file besar ke cloud' });
                 }
@@ -5072,7 +5132,8 @@ window.chatLivePreview = function () {
             const err = wsSave(data);
             if (err) return err;
             const ok = results.filter(function(r) { return r.ok; }).length;
-            return { success: true, written: ok, failed: results.length - ok, files: results };
+            const _fails = results.filter(function (r) { return r && r.verify && r.verify.indexOf('GAGAL') === 0; });
+            return { success: true, written: ok, failed: results.length - ok, files: results, verify: _fails.length ? (_fails.length + ' file GAGAL verifikasi sintaks — WAJIB tulis ulang file-file itu sebelum lanjut: ' + _fails.map(function (r) { return r.path + ' (' + r.verify + ')'; }).join(' | ')) : 'semua file lolos verifikasi sintaks' };
         }
 
         // ===== TOOL clone_repo: salin repo GitHub ke workspace / AI Storage =====

@@ -28,6 +28,56 @@ const MIME = {
   wasm: 'application/wasm', xml: 'application/xml', pdf: 'application/pdf'
 };
 
+// [9 Okt 2026] VERIFIKASI PASCA-DEPLOY (mesin bukti, TANPA LLM, gratis): ambil HTML
+// index dari URL publik sekali, cek status HTTP, judul halaman, dan keseimbangan tag.
+// Hasilnya masuk respons deploy -> tool result AI -> AI melihat FAKTA (bukan klaim)
+// dan bisa memperbaiki sendiri sebelum bilang "selesai". Gagal ambil = verify tercatat
+// "belum bisa diverifikasi", deploy tetap SUKSES (verifikasi gak boleh memblokir).
+async function verifyDeployedPage(url) {
+  const out = { checked_url: url, ok: false };
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ClincooVerify/1.0)' }, signal: ctrl.signal, redirect: 'follow' });
+    clearTimeout(t);
+    out.http_status = res.status;
+    if (res.status !== 200) { out.error = 'HTTP ' + res.status + ' (bukan 200)'; return out; }
+    const body = await res.text().catch(() => '');
+    if (!body) { out.error = 'halaman kosong / body tidak terbaca'; return out; }
+    const isHtml = /<html|<!doctype/i.test(body);
+    if (!isHtml) { out.error = 'bukan halaman HTML (mungkin file/JSON)'; return out; }
+    const titleM = body.match(/<title[^>]*>([^<]*)<\/title>/i);
+    out.title = titleM ? titleM[1].trim() : '';
+    if (!out.title) out.warnings = ['<title> kosong — SEO & tab browser rusak'];
+    if (/\b404\b|page not found|nothing here yet|\berror\b\s*\bpage\b/i.test(body.slice(0, 2000)))
+      out.warnings = (out.warnings || []).concat(['tampilan error/404 terdeteksi di awal halaman']);
+    // keseimbangan tag HTML (strip komentar, script, style dulu biar isi JS gak salah baca)
+    const clean = body.replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/<script\b[\s\S]*?<\/script>/gi, '')
+      .replace(/<style\b[\s\S]*?<\/style>/gi, '');
+    const voids = new Set(['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr']);
+    const stack = [];
+    const re = /<\/?([a-zA-Z][a-zA-Z0-9-]*)(?:\s[^>]*)?>/g;
+    let m, tagErr = null;
+    while ((m = re.exec(clean)) && !tagErr) {
+      const tag = m[1].toLowerCase();
+      if (voids.has(tag)) continue;
+      if (m[0].startsWith('</')) {
+        const last = stack.pop();
+        if (last !== tag) { tagErr = '</' + tag + '> tidak cocok (terbuka terakhir: <' + (last || 'TIDAK ADA') + '>)'; }
+      } else { stack.push(tag); }
+    }
+    if (!tagErr && stack.length) tagErr = '<' + stack[stack.length - 1] + '> belum ditutup';
+    if (tagErr) { out.error = 'HTML rusak: ' + tagErr; return out; }
+    out.ok = true;
+    out.message = 'Halaman live: HTTP 200, HTML seimbang, judul: ' + (out.title ? JSON.stringify(out.title) : '(kosong)');
+    return out;
+  } catch (e) {
+    out.error = 'belum bisa diverifikasi (' + ((e && e.message) || 'timeout/koneksi') + ') — coba lagi dengan take_screenshot bila perlu';
+    return out;
+  }
+}
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', ...CORS } });
 }
@@ -1021,9 +1071,10 @@ export async function onRequestPost({ request, env }) {
       await fireWebhooks(db, T.projectSettings, projectId, 'success', {
         event: 'deploy.success', project_id: projectId, pages_project: name, pages_url: pubUrl, file_count: n, at: new Date().toISOString()
       });
+      const vfy1 = await verifyDeployedPage(pubDomain ? ('https://' + pubDomain) : pubUrl);
       return json({
         success: true, pages_project: name, pages_url: pubUrl, public_url: pubDomain ? ('https://' + pubDomain) : pagesUrl,
-        public_domain: pubDomain || '', deployment: { id: dep.id, url: (dep.aliases && dep.aliases[0]) || dep.url || pagesUrl, aliases: dep.aliases || [], status: (dep.latest_stage && dep.latest_stage.status) || 'idle', created: dep.created_on }, fileCount: n
+        public_domain: pubDomain || '', verify: vfy1, deployment: { id: dep.id, url: (dep.aliases && dep.aliases[0]) || dep.url || pagesUrl, aliases: dep.aliases || [], status: (dep.latest_stage && dep.latest_stage.status) || 'idle', created: dep.created_on }, fileCount: n
       });
     }
 
@@ -1202,12 +1253,14 @@ export async function onRequestPost({ request, env }) {
       });
     }
 
+    const vfy2 = await verifyDeployedPage(pubDomain ? ('https://' + pubDomain) : pubUrl);
     return json({
       success: true,
       pages_project: name,
       pages_url: pubUrl,
       public_url: pubDomain ? ('https://' + pubDomain) : pagesUrl,
       public_domain: pubDomain || '',
+      verify: vfy2,
       preview: isPreview,
       preview_url: pubDomain ? ('https://' + pubDomain) : ('https://' + targetName + '.pages.dev'),
       deployment: {
