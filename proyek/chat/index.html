@@ -3774,6 +3774,19 @@ window.chatLivePreview = function () {
             return null;
         }
 
+        // [9 Okt 2026, laporan owner WhatsApp: "AI-nya bohong"] Deteksi anti-bohong
+        // butuh FAKTA workspace: apakah proyek ini punya file sama sekali? Dipakai untuk
+        // bongkar klaim palsu "file sudah tersimpan" padahal workspace kosong.
+        function wsHasAnyFiles() {
+            try {
+                const data = wsLoad();
+                for (const k of Object.keys(data || {})) {
+                    if (Array.isArray(data[k]) && data[k].some(function (i) { return i && i.type === 'file'; })) return true;
+                }
+            } catch (e) {}
+            return false;
+        }
+
 
         // ===== Sinkronisasi workspace ke Cloudflare D1 (data per-proyek) =====
         const WS_CLOUD_API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-files';
@@ -5739,11 +5752,34 @@ window.chatLivePreview = function () {
                         });
                         if (fileCount === 0) {
                             FINAL_NUDGE_EXTRA = 'VERIFIKASI GAGAL: klaim "file sudah tersimpan" TIDAK SESUAI KENYATAAN — pohon workspace proyek masih 100% KOSONG. Panggil write_file / write_files SEKARANG untuk benar-benar membuat semua file yang kamu klaim (index.html, styles, script, dll) memakai tool yang tersedia, jangan bertanya dan jangan menulis ringkasan.';
-                            return true;
+                            return 'promise';
                         }
                     }
                 }
             } catch (e) {}
+            // KASUS BARU (laporan owner 9 Okt 2026: "AI-nya bohong, di clincoo"):
+            // AI menutup giliran dengan JANJI menulis file ("Sekarang saya tulis
+            // semua file situsnya", "Saya lanjutkan dengan menulis semua file
+            // sekarang") TANPA satu pun write_file sukses di giliran ini — lalu
+            // giliran berikutnya minta maaf "workspace memang kosong", janji
+            // LAGI, dan muter terus tanpa pernah menulis. Deteksi juga kebalikannya:
+            // klaim "file sudah tersimpan" padahal workspace benar-benar kosong.
+            // Tag 'promise' (bukan true) supaya caller tahu ini kasus janji/bohong
+            // dan boleh nudge ekstra dengan FAKTA workspace.
+            const wroteAny = (aiMsgObj && aiMsgObj.toolCalls || []).some(function (tc) {
+                return tc && (tc.name === 'write_file' || tc.name === 'write_files') && tc.ok !== false;
+            });
+            if (!wroteAny) {
+                // (a) janji menulis file tepat di ekor jawaban
+                if (/(se)?karang\s+saya\s+(buat|tulis|bangun|kerjakan|lanjutkan)\b/i.test(tail)
+                    || /menulis\s+semua\s+file/i.test(tail)
+                    || /saya\s+(tulis|buat|bangun)\s+(semua|seluruh)\s+(file|situs|web|kode|halaman)/i.test(tail)) {
+                    return 'promise';
+                }
+                // (b) klaim "sudah tersimpan/ditulis/dibuat" padahal workspace kosong
+                const claimsSaved = /(sudah|telah)\s+(tersimpan|ditulis|dibuat)/i.test(t) && /(file|situs|web|halaman)/i.test(t);
+                if (claimsSaved && !wsHasAnyFiles()) return 'promise';
+            }
             return false;
         }
         // Tutup bubble AI "sebagian selesai" lalu mulai ronde lanjutan secara diam-diam
@@ -6297,10 +6333,17 @@ window.chatLivePreview = function () {
                             // AUTO-LANJUT SILENT: jawaban final terindikasi BELUM TUNTAS
                             // ("akan saya lanjutkan", "bersambung", dsb.) — kirim prompt lanjutan
                             // yang TIDAK tampil di bubble user; AI terus bekerja sampai selesai.
-                            if (silentRounds < SILENT_MAX_ROUNDS && finalLooksUnfinished(cleanNow, aiMsgObj) && isGenerating) {
+                            const unfinishedTag = finalLooksUnfinished(cleanNow, aiMsgObj);
+                            // Janji-tulis/klaim-palsu boleh 2 ronde nudge — nudge-nya
+                            // membawa FAKTA (belum ada file tersimpan) supaya AI gak
+                            // bisa muter-muter minta maaf lalu janji lagi.
+                            const unfinishedMax = unfinishedTag === 'promise' ? 2 : SILENT_MAX_ROUNDS;
+                            if (unfinishedTag && silentRounds < unfinishedMax && isGenerating) {
                                 silentRounds++;
                                 setAiStatus(FINAL_NUDGE_EXTRA ? 'Verifikasi workspace… file belum ada, AI diminta menulis ulang.' : 'Melanjutkan sisa tugas…');
-                                pushSilentNudge(FINAL_NUDGE_EXTRA);
+                                pushSilentNudge(FINAL_NUDGE_EXTRA || (unfinishedTag === 'promise'
+                                    ? 'VERIFIKASI FAKTA (WAJIB dipegang, ini hasil cek nyata, bukan asumsi): sampai giliran ini TIDAK ada satu pun file yang benar-benar tertulis lewat write_file dan workspace proyek masih kosong. Jangan menutup giliran dengan janji menulis atau klaim "sudah tersimpan" — LANGSUNG panggil write_file satu per satu untuk seluruh file situs SEKARANG di giliran ini; jika tool gagal, laporkan kegagalan secara jujur kepada user.'
+                                    : ''));
                                 FINAL_NUDGE_EXTRA = '';
                                 apiMessagesWithTools.push({ role: 'user', content: [{ type: 'text', text: messages[messages.length - 1].text }] });
                                 continue; // ronde lanjutan dalam bubble yang sama
@@ -7633,3 +7676,4 @@ function crownAction(e){
 </script>
 </body>
 </html>
+
