@@ -23,7 +23,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: RESTORE full chat.js from 24ff913 (before broken stub)
+      - name: RESTORE full chat.js if stub/corrupt
         run: |
           set -e
           GOOD=24ff913313d218c9359cad542b583ab917f5cece
@@ -36,21 +36,22 @@ jobs:
             git config user.name Clincoo
             git config user.email halo@clincoo.buzz
             git add functions/api/chat.js
-            git commit -m "RESTORE: functions/api/chat.js full from 24ff913 (before stub/corrupt)"
-            git push origin main
+            git commit -m "RESTORE: functions/api/chat.js full from 24ff913"
+            git push origin main || true
           else
             echo "chat.js already full, skip restore"
           fi
 
-      - name: Fix UI (shimmer + animation + session resume)
+      - name: Fix large files 200KB+ + UI patches
         run: |
+          python3 scripts/fix-large-files.py || true
           python3 scripts/fix-shimmer-progress.py || true
           python3 scripts/fix-answer-animation.py || true
           python3 scripts/fix-session-resume.py || true
           git config user.name Clincoo
           git config user.email halo@clincoo.buzz
           git add proyek/chat/index.html functions/api/chat.js 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "fix: UI patches after chat.js restore"
+          git diff --cached --quiet || git commit -m "feat: AI can write 200KB+ files per project in one chat session"
           git push origin main || true
 
       - name: Bersihkan artefak repo (tidak ikut di-publish)
