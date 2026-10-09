@@ -944,7 +944,7 @@ const QUOTA_MSG_DAILY = 'Kuota AI Clincoo hari ini sudah habis. Batas harian pak
 const QUOTA_MSG_MONTHLY = 'Kuota AI Clincoo bulan ini sudah habis. Reset otomatis awal bulan depan — atau upgrade paket / beli Paket Kredit AI di menu Profil > Kredit AI.';
 // [8 Okt 2026, arahan pemilik] Pesan saat kredit user HABIS TOTAL (kuota langganan
 // + paket kredit kosong). HARDCODE — jangan diubah tanpa arahan pemilik.
-const TOPUP_URL = 'https://kredit-ai.pages.dev/topup.html';
+const TOPUP_URL = 'https://app.clincoo.buzz/akun/kredit/topup/'; // [9 Okt] halaman top-up in-app (QRIS + nominal)
 const QUOTA_MSG_EMPTY = '⚡ Kuota pesanmu sudah habis.\n\nIngin tetap menggunakan Clincoo? Isi ulang saldo kredit-mu di sini\n\n' + TOPUP_URL;
 
 // System prompt server untuk mode biasa (single) — jaring pengaman bila klien tidak
@@ -1059,10 +1059,12 @@ function aiCostOf(model, outputChars, inputChars) {
   return Math.max(1, 1 + extraIn + extraOut);
 }
 // Potong selisih kredit + catat pemakaian (model, input, output, biaya) ke ai_usage.
-async function chargeAiUsage(env, user, model, outputChars, inputChars) {
+async function chargeAiUsage(env, user, model, outputChars, inputChars, flatChat = false) {
   if (!user || !user.key) return;
   try {
-    const cost = aiCostOf(model, outputChars, inputChars);
+    // flatChat (mode 'chat' eksplisit): hanya 1 kredit pre-flight — cukup untuk
+    // batas harian & bulanan, tanpa potongan tambahan berbasis token.
+    const cost = flatChat ? 1 : aiCostOf(model, outputChars, inputChars);
     const diff = cost - 1; // 1 sudah dipotong pre-flight oleh quotaCheck
     const now = new Date();
     const day = now.toISOString().slice(0, 10);
@@ -2049,7 +2051,12 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // masalah lama SSE kosong / thinking lama terselesaikan). Cascade gratis
     // tetap menyelamatkan kalau MR gagal. Matikan lagi: ENABLE_BUILD_ROUTE = false.
     const ENABLE_BUILD_ROUTE = true;
-    const buildMode = ENABLE_BUILD_ROUTE && (body.mode === 'build' || detectBuildIntent(body.messages)) && !isGuest && !!mrKeys.length && !hasImages;
+    // [9 Okt 2026, arahan pemilik] Mode dari kapsul popover (Chat/Build) kini eksplisit:
+    // 'chat'  = obrolan via Gemini AI Studio (kandidat utama race) + batas harian/bulanan,
+    //           TANPA auto-eskalasi ke model berbayar walau prompt terdengar "bangun situs";
+    // 'build' = ModelRouter berbayar, kredit dipotong sesuai pemakaian (usage-based).
+    const explicitChat = body.mode === 'chat';
+    const buildMode = ENABLE_BUILD_ROUTE && (body.mode === 'build' || (!explicitChat && detectBuildIntent(body.messages))) && !isGuest && !!mrKeys.length && !hasImages;
     const aiMain = !!(env.AI && !hasImages);
     const toolDecls = (gTools && gTools[0] && gTools[0].functionDeclarations) || null;
     // Cascade lengkap (OpenRouter -> Clouvia -> Workers AI -> Gemini) dijalankan
@@ -2326,7 +2333,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
         if (r.tool_calls) outS.tool_calls = r.tool_calls;
         // Kredit sesungguhnya: model yang menjawab + panjang output (teks + tool/code)
         const outCharsS = (r.text || '').length + (r.tool_calls ? JSON.stringify(r.tool_calls).length : 0);
-        if (isFirstHop && !isGuest) await chargeAiUsage(env, user, r.model, outCharsS, inputChars);
+        if (isFirstHop && !isGuest) await chargeAiUsage(env, user, r.model, outCharsS, inputChars, explicitChat);
         streamSend({ t: 'final', ...outS });
       }
       streamWriter.close().catch(() => {}); // TANPA await: antrean writer sudah berurutan
@@ -2358,7 +2365,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
 
     // Kredit sesungguhnya: model yang menjawab + panjang output (teks + tool/code)
     const outChars = (r.text || '').length + (r.tool_calls ? JSON.stringify(r.tool_calls).length : 0);
-    if (isFirstHop && !isGuest) await chargeAiUsage(env, user, r.model, outChars, inputChars);
+    if (isFirstHop && !isGuest) await chargeAiUsage(env, user, r.model, outChars, inputChars, explicitChat);
     const out = {
       text: r.text || '',
       model: r.model,
