@@ -5,9 +5,9 @@
   <script src="../../js/auth-client.js?v=5"></script>
   <script src="../../js/ws-github-sync.js"></script>
   <script src="../../js/accent-init.js"></script>
-<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clincoo_current_project_id',__p);}else{var __go=function(__pid){try{localStorage.setItem('clincoo_current_project_id',__pid);}catch(e){}var __sp=new URLSearchParams(location.search);__sp.set('id',__pid);var __q=__sp.toString();location.replace(location.pathname+(__q?'?'+__q:'')+location.hash);};var __c='';try{__c=localStorage.getItem('clincoo_current_project_id')||'';}catch(e){}if(__c){var __l=null;try{__l=JSON.parse(localStorage.getItem('clincoo_projects')||'[]');}catch(e){}if(!Array.isArray(__l)||!__l.length||__l.some(function(p){return p&&p.id===__c;})){__go(__c);return;}try{localStorage.removeItem('clincoo_current_project_id');}catch(e){}}var __t='';try{__t=localStorage.getItem('clincoo_auth_token')||localStorage.getItem('clincoo_token')||'';}catch(e){}var __o=(['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname)===-1)?'https://clincoo-be2.pages.dev':'';fetch(__o+'/api/projects',{headers:__t?{'Authorization':'Bearer '+__t}:{}}).then(function(r){return r.ok?r.json():null;}).then(function(d){var __l2=(d&&d.projects)||[];if(!__l2.length){location.replace('/');return;}__l2.sort(function(a,b){return String(b.updatedAt||'').localeCompare(String(a.updatedAt||''));});__go(String(__l2[0].id));}).catch(function(){location.replace('/');});}}catch(e){}})();</script>
+<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){try{sessionStorage.setItem('clincoo_tab_project_id',__p);}catch(e0){}localStorage.setItem('clincoo_current_project_id',__p);}else{var __go=function(__pid){try{sessionStorage.setItem('clincoo_tab_project_id',__pid);}catch(e0){}try{localStorage.setItem('clincoo_current_project_id',__pid);}catch(e){}var __sp=new URLSearchParams(location.search);__sp.set('id',__pid);var __q=__sp.toString();location.replace(location.pathname+(__q?'?'+__q:'')+location.hash);};var __c='';try{__c=sessionStorage.getItem('clincoo_tab_project_id')||(sessionStorage.getItem('clincoo_tab_project_id')||localStorage.getItem('clincoo_current_project_id'))||'';}catch(e){}if(__c){var __l=null;try{__l=JSON.parse(localStorage.getItem('clincoo_projects')||'[]');}catch(e){}if(!Array.isArray(__l)||!__l.length||__l.some(function(p){return p&&p.id===__c;})){__go(__c);return;}try{localStorage.removeItem('clincoo_current_project_id');}catch(e){}}var __t='';try{__t=localStorage.getItem('clincoo_auth_token')||localStorage.getItem('clincoo_token')||'';}catch(e){}var __o=(['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname)===-1)?'https://clincoo-be2.pages.dev':'';fetch(__o+'/api/projects',{headers:__t?{'Authorization':'Bearer '+__t}:{}}).then(function(r){return r.ok?r.json():null;}).then(function(d){var __l2=(d&&d.projects)||[];if(!__l2.length){location.replace('/');return;}__l2.sort(function(a,b){return String(b.updatedAt||'').localeCompare(String(a.updatedAt||''));});__go(String(__l2[0].id));}).catch(function(){location.replace('/');});}}catch(e){}})();</script>
 <script>/* embed=1: tanpa header (dipakai dalam split view halaman chat) */(function(){try{if(/(^|[?&])embed=1(&|$)/.test(location.search)){document.documentElement.classList.add('embed-mode');}}catch(e){}})();</script>
-<script>/* Desktop (>=900px, termasuk HP mode Situs desktop ~980px): halaman workspace selalu tampil dalam split view chat */(function(){function go(){try{if(/(^|[?&])embed=1(&|$)/.test(location.search))return;if(!window.matchMedia('(min-width: 900px)').matches)return;var pid='';try{pid=new URLSearchParams(location.search).get('id')||localStorage.getItem('clincoo_current_project_id')||''}catch(e){}var q='panel=code';if(pid)q+='&id='+encodeURIComponent(pid);location.replace('/proyek/chat/?'+q);}catch(e){}}var mq=window.matchMedia('(min-width: 900px)');go();if(mq.addEventListener)mq.addEventListener('change',go);})();</script>
+<script>/* Desktop (>=900px, termasuk HP mode Situs desktop ~980px): halaman workspace selalu tampil dalam split view chat */(function(){function go(){try{if(/(^|[?&])embed=1(&|$)/.test(location.search))return;if(!window.matchMedia('(min-width: 900px)').matches)return;var pid='';try{pid=new URLSearchParams(location.search).get('id')||(sessionStorage.getItem('clincoo_tab_project_id')||localStorage.getItem('clincoo_current_project_id'))||''}catch(e){}var q='panel=code';if(pid)q+='&id='+encodeURIComponent(pid);location.replace('/proyek/chat/?'+q);}catch(e){}}var mq=window.matchMedia('(min-width: 900px)');go();if(mq.addEventListener)mq.addEventListener('change',go);})();</script>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com https://unpkg.com; img-src 'self' https: data: blob:; connect-src 'self' https: blob:;">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -314,7 +314,7 @@
                     Live preview
                     <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg>
                 </button>
-                    <a id="header-editor" href="/proyek/workspace/editor/" onclick="var __pid='';try{__pid=localStorage.getItem('clincoo_current_project_id')||''}catch(e){}if(__pid){this.href='/proyek/workspace/editor/?id='+encodeURIComponent(__pid)}" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <a id="header-editor" href="/proyek/workspace/editor/" onclick="var __pid='';try{__pid=(sessionStorage.getItem('clincoo_tab_project_id')||localStorage.getItem('clincoo_current_project_id'))||''}catch(e){}if(__pid){this.href='/proyek/workspace/editor/?id='+encodeURIComponent(__pid)}" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
                         <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 18l6-6-6-6M8 6l-6 6 6 6"></path></svg>
 <span class="flex items-center gap-1.5">Editor <svg class="clincoo-premium-crown w-3.5 h-3.5 text-amber-500 shrink-0" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#f59e0b" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"></path></svg></span>                        <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg>
                     </a>
@@ -678,7 +678,7 @@
               WSGitHubSync.prepare(owner, repo, 'main');
             } else {
               // fallback: engine lama masih ter-cache (tanpa prepare) — tulis langsung
-              var _pk = 'clincoo_syncgh_cfg_' + (localStorage.getItem('clincoo_current_project_id') || 'global');
+              var _pk = 'clincoo_syncgh_cfg_' + ((sessionStorage.getItem('clincoo_tab_project_id')||localStorage.getItem('clincoo_current_project_id')) || 'global');
               localStorage.setItem(_pk, JSON.stringify({ on: false, owner: owner, repo: repo, branch: 'main' }));
             }
           }
@@ -735,7 +735,7 @@
     // Murni localStorage, tanpa D1.
     function wsFilesKey() {
       let pid = null;
-      try { pid = localStorage.getItem('clincoo_current_project_id'); } catch (e) {}
+      try { pid = (sessionStorage.getItem('clincoo_tab_project_id')||localStorage.getItem('clincoo_current_project_id')); } catch (e) {}
       return 'clincoo_workspace_files_' + (pid ? String(pid) : 'global');
     }
 
@@ -743,7 +743,7 @@
     // Kunci sama dipakai halaman editor (workspace/editor) supaya guard lintas halaman konsisten.
     function wsDirtyKey() {
       let pid = null;
-      try { pid = localStorage.getItem('clincoo_current_project_id'); } catch (e) {}
+      try { pid = (sessionStorage.getItem('clincoo_tab_project_id')||localStorage.getItem('clincoo_current_project_id')); } catch (e) {}
       return 'clincoo_ws_dirty_' + (pid ? String(pid) : 'global');
     }
     function wsDirtySet(on) {
@@ -794,7 +794,7 @@
     }
 
     function wsProjectId() {
-      try { return localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) { return ''; }
+      try { return (sessionStorage.getItem('clincoo_tab_project_id')||localStorage.getItem('clincoo_current_project_id')) || ''; } catch (e) { return ''; }
     }
 
     // ===== FILE BESAR: isi di cloud (D1), localStorage hanya penanda {content:'', cloud:true} =====
@@ -2412,7 +2412,7 @@
     // via localStorage 'clincoo_workspace_files_<id>' + cloud D1 (push/pull).
     function openFullEditor(e) {
       if (e) e.preventDefault();
-      var pid = ''; try { pid = localStorage.getItem('clincoo_current_project_id') || ''; } catch (err) {}
+      var pid = ''; try { pid = (sessionStorage.getItem('clincoo_tab_project_id')||localStorage.getItem('clincoo_current_project_id')) || ''; } catch (err) {}
       if (!pid) { try { addNotification('Editor', 'Buka proyek dulu untuk mengakses editor.'); } catch (err) {} return; }
       // Editor = fitur paket Pro. Keputusan instan dari state/cache (tanpa menunggu server) —
       // revalidasi dilakukan di belakang supaya keputusan klik berikutnya tetap segar.
@@ -2809,7 +2809,7 @@ function clincooLaunchEditor(pid) {
         });
         window.chatExportZip = function () {
     closeHeaderMenu();
-    var pid = ''; try { pid = localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) {}
+    var pid = ''; try { pid = (sessionStorage.getItem('clincoo_tab_project_id')||localStorage.getItem('clincoo_current_project_id')) || ''; } catch (e) {}
     var key = 'clincoo_workspace_files_' + (pid || 'global');
     var byPath = {};
     var raw = null;
@@ -2884,7 +2884,7 @@ function clincooLaunchEditor(pid) {
 window.chatLivePreview = function () {
     closeHeaderMenu();
     // Live preview pindah ke halaman khusus (/proyek/preview/) — konsisten desktop & mobile.
-    var pid = ''; try { pid = localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) {}
+    var pid = ''; try { pid = (sessionStorage.getItem('clincoo_tab_project_id')||localStorage.getItem('clincoo_current_project_id')) || ''; } catch (e) {}
     location.href = '/proyek/preview/' + (pid ? '?id=' + encodeURIComponent(pid) : '');
 };
     </script>

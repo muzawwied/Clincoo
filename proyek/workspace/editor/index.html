@@ -1185,7 +1185,15 @@ function loadProject(){
     linkedEmptyFolders=[];
     return {};
   }
+
+  // [10 Okt, laporan owner: Workspace di 2 tab beda proyek tampil sama] cache editor
+  // lama ('clincoo_editor_project') SATU kunci untuk SEMUA proyek -> tab lain baca
+  // file proyek yang salah. Kini kunci cache per proyek; kunci lama hanya fallback.
   try{
+    const raw=localStorage.getItem('clincoo_editor_project_'+(LINK_PID||'global'));
+    if(raw){const p=JSON.parse(raw); if(p&&p['index.html']!==undefined) return p;}
+  }catch(e){}
+    try{
     const raw=localStorage.getItem('clincoo_editor_project');
     if(raw){const p=JSON.parse(raw); if(p&&p['index.html']!==undefined) return p;}
   }catch(e){}
@@ -1221,7 +1229,7 @@ function srvRenamePath(from,to){
   }catch(e){}
 }
 function persist(){
-  try{localStorage.setItem('clincoo_editor_project',JSON.stringify(project));}catch(e){} // cache lokal best-effort; cloud = sumber utama
+  try{localStorage.setItem('clincoo_editor_project_'+(LINK_PID||'global'),JSON.stringify(project));}catch(e){} // cache lokal best-effort; cloud = sumber utama
   if(LINK_PID){
     try{localStorage.setItem(wsFilesKey(),JSON.stringify(flatToWs()));}catch(e){} // kuota penuh tidak apa-apa: data aman di cloud
     wsDirtySet(true);
@@ -2768,7 +2776,7 @@ function resetProject(){
   </div>`);
 }
 function doReset(){
-  localStorage.removeItem('clincoo_editor_project');
+  localStorage.removeItem('clincoo_editor_project');localStorage.removeItem('clincoo_editor_project_'+(LINK_PID||'global'));
   closeSplit();
   project=JSON.parse(JSON.stringify(FILES));
   Object.values(models).forEach(m=>m.dispose());models={};
