@@ -392,8 +392,11 @@ async function removePublicDomainDns(creds, domain) {
   } catch (e) {}
 }
 
-async function ensurePublicDomain(creds, pagesName) {
-  const domain = pagesName + PUB_SUFFIX;
+async function ensurePublicDomain(creds, pagesName, pubLabel) {
+  // [10 Okt, arahan pemilik] pubLabel = subdomain pilihan user (TANPA suffix acak);
+  // kosong -> pakai nama project (perilaku lama). Domain tetap menunjuk ke project
+  // pagesName yang stabil — rename tidak pernah memindahkan isi situs.
+  const domain = (pubLabel || pagesName) + PUB_SUFFIX;
   try {
     await cfFetch('/accounts/' + creds.accountId + '/pages/projects/' + pagesName + '/domains', creds.apiKey, {
       method: 'POST', body: JSON.stringify({ name: domain })
@@ -706,6 +709,23 @@ export async function onRequestGet({ request, env }) {
     const name = await resolvePagesName(db, T.projectSettings, projectId);
     const pagesUrl = 'https://' + name + '.pages.dev';
 
+    // [10 Okt, arahan pemilik] Cek ketersediaan subdomain publik untuk ikon centang
+    // di halaman deploy: tersedia = tidak ada DNS live utk <sub>.clincoo.biz.id
+    // (atau memang milik proyek ini sendiri).
+    if (url.searchParams.get('action') === 'check_sub') {
+      const sub = slugify(String(url.searchParams.get('sub') || '').trim().toLowerCase());
+      if (!sub || sub.length < 3 || sub.length > 40) return json({ available: false, reason: 'invalid' });
+      const ownPub = (await getSetting(db, T.projectSettings, projectId, 'public_subdomain')) || '';
+      if (sub === ownPub || sub === name) return json({ available: true, own: true });
+      let taken = false;
+      try {
+        const doh = await fetch('https://cloudflare-dns.com/dns-query?name=' + encodeURIComponent(sub + PUB_SUFFIX) + '&type=A', { headers: { accept: 'application/dns-json' } });
+        const dj = await doh.json().catch(() => null);
+        taken = !!(dj && Array.isArray(dj.Answer) && dj.Answer.length);
+      } catch (e) {}
+      return json({ available: !taken, reason: taken ? 'taken' : '' });
+    }
+
     const _cached = statusCacheGet(projectId);
     if (_cached) return json(_cached);
 
@@ -724,7 +744,7 @@ export async function onRequestGet({ request, env }) {
         const iOk = ls.findIndex(l => l && l.status === 'success');
         deployed = iOk !== -1 && (iUn === -1 || iOk < iUn);
       } catch (e) {}
-      return json({ pages_project: name, pages_url: pagesUrl, deployed, fast: true, api_rev: 'uniq4' });
+      return json({ pages_project: name, pages_url: pagesUrl, public_subdomain: (await getSetting(db, T.projectSettings, projectId, 'public_subdomain')) || name, deployed, fast: true, api_rev: 'uniq4' });
     }
 
     // Ambil project, deployment terakhir, dan domains PARALEL.
@@ -753,10 +773,12 @@ export async function onRequestGet({ request, env }) {
       // "domain kustom" — itu domain gratis bawaan, bukan domain kustom milik user.
       domains = doms.filter(x => x && x.name !== name + PUB_SUFFIX && !x.name.endsWith(LEGACY_PUB_SUFFIX)).map(x => ({ name: x.name, status: x.status || 'pending' }));
     }
+    const pubLabel = (await getSetting(db, T.projectSettings, projectId, 'public_subdomain')) || '';
     let publicUrl = pagesUrl;
     if (Array.isArray(doms)) {
       const isUp = function (x) { return x && (x.status === 'active' || x.status === 'initializing'); };
-      const pd = doms.find(x => x && x.name === name + PUB_SUFFIX && isUp(x))
+      const pd = (pubLabel ? doms.find(x => x && x.name === pubLabel + PUB_SUFFIX && isUp(x)) : null)
+        || doms.find(x => x && x.name === name + PUB_SUFFIX && isUp(x))
         || doms.find(x => x && x.name === name + LEGACY_PUB_SUFFIX && isUp(x));
       if (pd) publicUrl = 'https://' + pd.name;
     }
@@ -806,7 +828,7 @@ export async function onRequestGet({ request, env }) {
       const ld = lastOk && lastOk.created_at ? Date.parse(String(lastOk.created_at).replace(' ', 'T') + 'Z') : 0;
       if (fu && fu > ld) filesChanged = true;
     } catch (e) {}
-    const _statusBody = { pages_project: name, pages_url: pagesUrl, public_url: publicUrl, deployed, preview_url: previewUrl, preview_deployed: previewDeployed, last_deployment: last, last_deploy_by: lastDeployBy || '', domains, logs, deploy_phase: deployPhase || '', files_changed: filesChanged, files_updated_at: filesUpdatedAt, api_rev: 'uniq6' };
+    const _statusBody = { pages_project: name, pages_url: pagesUrl, public_url: publicUrl, public_subdomain: pubLabel || name, deployed, preview_url: previewUrl, preview_deployed: previewDeployed, last_deployment: last, last_deploy_by: lastDeployBy || '', domains, logs, deploy_phase: deployPhase || '', files_changed: filesChanged, files_updated_at: filesUpdatedAt, api_rev: 'uniq6' };
     statusCacheSet(projectId, _statusBody);
     return json(_statusBody);
   } catch (err) {
@@ -836,17 +858,19 @@ export async function onRequestPost({ request, env }) {
     if (!creds.apiKey) return json({ error: 'Cloudflare API key belum dikonfigurasi' }, 500);
     const T = await getProjectTables(db, projectId);
     let name = await resolvePagesName(db, T.projectSettings, projectId);
-    // Rename subdomain (input "Subdomain Publik" di halaman Pengaturan Deploy):
-    // nama baru dipakai untuk situs yang dideploy berikutnya. Project Pages lama
-    // dibiarkan apa adanya — bisa ditarik manual lewat Batalkan Publikasi.
+    // [10 Okt, arahan pemilik] SUBDOMAIN PUBLIK = PERSIS pilihan user, TANPA suffix
+    // karakter acak. Project Pages TETAP pakai nama stabil resolvePagesName — rename
+    // tidak lagi membuat project baru (itu penyebab subdomain baru 404: situsnya
+    // tertinggal di project lama). <sub>.clincoo.biz.id hanya CNAME ke project yang sama.
     const subRaw = String(body.subdomain || '').trim().toLowerCase();
+    const prevPubLabel = (await getSetting(db, T.projectSettings, projectId, 'public_subdomain')) || '';
     if (subRaw) {
       const sub = slugify(subRaw);
-      if (sub && sub.length >= 3 && sub.length <= 40 && sub !== name) {
-        name = (sub + '-' + projHash(projectId)).slice(0, 60);
-        await setSetting(db, T.projectSettings, projectId, 'pages_project', name);
+      if (sub && sub.length >= 3 && sub.length <= 40 && sub !== prevPubLabel) {
+        await setSetting(db, T.projectSettings, projectId, 'public_subdomain', sub);
       }
     }
+    const pubLabel = (await getSetting(db, T.projectSettings, projectId, 'public_subdomain')) || '';
     const pagesUrl = 'https://' + name + '.pages.dev';
 
     if (body.action === 'unpublish') {
@@ -1057,7 +1081,15 @@ export async function onRequestPost({ request, env }) {
         return json({ error: 'Cloudflare menolak deployment: ' + msg }, 500);
       }
       const dep = depData.result || {};
-      const pubDomain = await ensurePublicDomain(creds, name);
+      const pubDomain = await ensurePublicDomain(creds, name, pubLabel);
+      // [10 Okt] lepas domain publik LAMA (otomatis/label sebelumnya) best-effort
+      if (pubDomain) {
+        for (const od of [name + PUB_SUFFIX, prevPubLabel ? (prevPubLabel + PUB_SUFFIX) : '']) {
+          if (!od || od === pubDomain) continue;
+          try { await cfFetch('/accounts/' + creds.accountId + '/pages/projects/' + name + '/domains/' + od, creds.apiKey, { method: 'DELETE' }); } catch (e) {}
+          try { await removePublicDomainDns(creds, od); } catch (e) {}
+        }
+      }
       const pubUrl = pubDomain ? ('https://' + pubDomain) : pagesUrl;
       const n = Object.keys(manifest).length;
       try {
@@ -1234,7 +1266,7 @@ export async function onRequestPost({ request, env }) {
       return json({ error: 'Cloudflare menolak deployment: ' + msg }, 500);
     }
     const dep = depData.result || {};
-    const pubDomain = await ensurePublicDomain(creds, targetName);
+    const pubDomain = await ensurePublicDomain(creds, targetName, isPreview ? '' : pubLabel);
 
     // Log sukses dibungkus try/catch: gagal mencatat log TIDAK boleh membuat
     // deploy sukses dilaporkan gagal (pernah bikin user nyangkut di halaman

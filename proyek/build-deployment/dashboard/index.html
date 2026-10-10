@@ -195,26 +195,27 @@
                 </div>
             </div>
 
-            <!-- CTA Deploy Pembaruan: muncul saat berkas berubah setelah deploy terakhir -->
-            <div id="changes-banner" class="hidden w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-gray-200 bg-gray-50 rounded-xl px-4 py-3">
+            <!-- CTA Deploy Pembaruan [10 Okt, arahan pemilik]: tanpa card content & tanpa
+                 CTA "Ganti subdomain" — input subdomain TAMPIL LANGSUNG full panjang,
+                 terisi subdomain yang online; ikon centang di pojok kanan input = cek
+                 ketersediaan (load -> hilang bila tersedia / X melekat bila diambil);
+                 tombol deploy di bawah input, pojok kanan. -->
+            <div id="changes-banner" class="hidden w-full flex flex-col gap-2.5">
                 <div class="flex items-center gap-2.5 text-sm text-gray-700">
                     <span class="w-2 h-2 rounded-full bg-gray-900 animate-pulse shrink-0"></span>
                     <span>Perubahan kode terdeteksi — situs live masih versi lama</span>
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
-                    <button id="btn-sub-toggle" type="button" class="px-3.5 py-2.5 rounded-2xl border border-gray-200 bg-white text-gray-700 text-sm font-semibold hover:bg-gray-100 transition-colors flex items-center gap-1.5">
-                        <i data-lucide="pencil" class="w-4 h-4"></i> <span class="hidden sm:inline">Ganti</span> subdomain
+                <div class="relative w-full">
+                    <input id="input-sub-rename" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="subdomain publik" oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/^-+/g, ''); window.__subDirty = true; window.__subCheckReset && window.__subCheckReset()" class="w-full min-w-0 px-4 py-2.5 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-gray-900 pr-[150px]">
+                    <span class="absolute right-12 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-medium whitespace-nowrap select-none pointer-events-none">.clincoo.biz.id</span>
+                    <button id="btn-check-sub" type="button" title="Cek ketersediaan subdomain" class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-all">
+                        <i data-lucide="check" class="w-4 h-4"></i>
                     </button>
+                </div>
+                <div class="flex justify-end">
                     <button id="btn-deploy-changes" type="button" class="px-5 py-2.5 rounded-2xl bg-gray-900 text-white text-sm font-semibold transition-all hover:opacity-90 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60">
                         <i data-lucide="refresh-cw" class="w-4 h-4"></i> Deploy Sekarang
                     </button>
-                </div>
-                <div id="sub-rename-row" class="hidden w-full flex-col gap-2">
-                    <div class="flex items-center gap-2">
-                        <input id="input-sub-rename" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="biarkan kosong: subdomain tetap" oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/^-+/g, '')" class="flex-1 min-w-0 px-4 py-2.5 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-gray-900">
-                        <span class="text-sm text-gray-400 font-medium whitespace-nowrap select-none">.clincoo.biz.id</span>
-                    </div>
-                    <p class="text-xs text-gray-400 leading-relaxed">Isi untuk mengganti subdomain publik saat deploy pembaruan ini (huruf kecil, angka, tanda hubung). Kosongkan agar subdomain tetap seperti sekarang.</p>
                 </div>
             </div>
 
@@ -383,6 +384,7 @@
             deployState.pages_url = ses.pages_url;
             deployState.public_url = ses.public_url || '';
             const sUrl = deployState.public_url || ses.pages_url;
+            try { var __lab = (ses.public_url || '').replace(/^https:\/\//, '').replace(/\.clincoo\.biz\.id$/, ''); if (__lab) window.__subFill && window.__subFill(__lab); } catch (e) {}
             indicator.className = 'w-2.5 h-2.5 rounded-full bg-green-500';
             shimmer.style.display = 'none';
             link.style.display = 'inline-block';
@@ -411,6 +413,7 @@
                     if (dep.created) timeLabel.innerText = timeAgoIso(dep.created);
                 }
                 renderRealDomains(st.domains || []);
+                if (st.public_subdomain) window.__subFill && window.__subFill(st.public_subdomain);
                 try {
                     writeDeploySession({
                         status: 'done',
@@ -575,6 +578,7 @@
                     try {
                         const st = await fetchStatus();
                         renderRealDomains(st.domains || []);
+                        if (st.public_subdomain) window.__subFill && window.__subFill(st.public_subdomain);
                         if ((st.domains || []).every(x => x.status === 'active')) clearInterval(deployState.domainTimer);
                     } catch (e) {}
                 }, 8000);
@@ -611,15 +615,56 @@
                 if (tl && st.last_deployment && st.last_deployment.created) tl.innerText = timeAgoIso(st.last_deployment.created);
             } catch (e) {}
         }
-        var subToggle = document.getElementById('btn-sub-toggle');
-        if (subToggle) subToggle.addEventListener('click', function () {
-            var row = document.getElementById('sub-rename-row');
-            if (!row) return;
-            var hiddenNow = row.classList.toggle('hidden');
-            row.classList.toggle('flex', !hiddenNow);
-            // saat baris input terbuka, banner ditumpuk ke bawah (juga di layar lebar)
-            var banner = document.getElementById('changes-banner');
-            if (banner) banner.classList.toggle('sm:flex-row', hiddenNow);
+        // ==== [10 Okt, arahan pemilik] subdomain di card deploy pembaruan ====
+        var __subCheckState = 'idle'; // idle | checking | ok | bad
+        window.__subDirty = false;
+        function __subToast(msg) {
+            var t = document.getElementById('__sub_toast');
+            if (!t) { t = document.createElement('div'); t.id = '__sub_toast'; t.className = 'fixed left-1/2 -translate-x-1/2 bottom-6 z-[999] px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-medium shadow-lg transition-all duration-200 opacity-0 pointer-events-none'; document.body.appendChild(t); }
+            t.textContent = msg;
+            t.style.opacity = '1';
+            clearTimeout(window.__subToastT);
+            window.__subToastT = setTimeout(function () { t.style.opacity = '0'; }, 2600);
+        }
+        window.__subCheckReset = function () {
+            __subCheckState = 'idle';
+            var cb = document.getElementById('btn-check-sub');
+            if (!cb) return;
+            cb.classList.remove('opacity-0', 'pointer-events-none');
+            cb.style.color = '';
+            cb.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i>';
+            try { lucide.createIcons(); } catch (e) {}
+        };
+        window.__subFill = function (v) {
+            var si = document.getElementById('input-sub-rename');
+            if (!si || !v) return;
+            if (!window.__subDirty) { si.value = v; window.__subCheckReset(); }
+        };
+        var __subCheckBtn = document.getElementById('btn-check-sub');
+        if (__subCheckBtn) __subCheckBtn.addEventListener('click', async function () {
+            var si = document.getElementById('input-sub-rename');
+            var sub = (si && si.value.trim()) || '';
+            if (sub.length < 3) { __subToast('Subdomain minimal 3 karakter.'); return; }
+            __subCheckState = 'checking';
+            __subCheckBtn.style.color = '';
+            __subCheckBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
+            try { lucide.createIcons(); } catch (e) {}
+            try {
+                var st = await apiFetch('/deploy?action=check_sub&project_id=' + encodeURIComponent(pid()) + '&sub=' + encodeURIComponent(sub));
+                if (__subCheckState !== 'checking') return;
+                if (st && st.available) {
+                    __subCheckState = 'ok';
+                    __subCheckBtn.classList.add('opacity-0', 'pointer-events-none'); // tersedia -> ikon hilang
+                    __subCheckBtn.innerHTML = '';
+                } else {
+                    __subCheckState = 'bad';
+                    __subCheckBtn.classList.remove('opacity-0', 'pointer-events-none');
+                    __subCheckBtn.style.color = '#dc2626';
+                    __subCheckBtn.innerHTML = '<i data-lucide="x" class="w-4 h-4"></i>';
+                    __subToast(st && st.reason === 'invalid' ? 'Subdomain tidak valid (3-40 huruf kecil/angka/tanda hubung).' : 'Subdomain sudah dipakai — ganti yang lain.');
+                }
+            } catch (e) { __subCheckState = 'idle'; __subToast('Gagal mengecek ketersediaan, coba lagi.'); }
+            try { lucide.createIcons(); } catch (e) {}
         });
         document.getElementById('btn-deploy-changes').addEventListener('click', async function () {
             if (deployState.deploying) return;
@@ -630,12 +675,15 @@
             const lbl = btn.innerHTML;
             btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Mendeploy pembaruan…';
             try { lucide.createIcons(); } catch (e) {}
+            if (__subCheckState === 'bad') { __subToast('Subdomain sudah dipakai — ubah dulu, lalu cek lagi.'); return; }
             try {
                 await processDeploy({ subdomain: subdomain });
                 await refreshLive();
-                if (subIn) subIn.value = '';
-                var row = document.getElementById('sub-rename-row');
-                if (row) { row.classList.add('hidden'); row.classList.remove('flex'); }
+                window.__subDirty = false;
+                try {
+                    var st2 = await fetchStatus();
+                    if (st2 && st2.public_subdomain && subIn) { subIn.value = st2.public_subdomain; window.__subCheckReset(); }
+                } catch (e2) {}
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = lbl;

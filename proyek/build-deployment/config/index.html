@@ -532,7 +532,9 @@
         try {
             const st = await apiFetch('/deploy?project_id=' + encodeURIComponent(pid()) + '&fast=1');
             const inp = document.getElementById('input-subdomain');
-            if (st && st.pages_project && inp) inp.value = st.pages_project;
+            // [10 Okt] tampilkan subdomain publik ASLI (label pilihan user), bukan nama
+            // project pages yang ber-suffix acak.
+            if (st && inp) inp.value = st.public_subdomain || st.pages_project || '';
         } catch (e) {} // belum pernah deploy -> biarkan kosong (otomatis dari nama proyek)
     })();
 </script>
