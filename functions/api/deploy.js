@@ -118,14 +118,14 @@ async function cfFetch(path, apiKey, opts = {}) {
     try {
       res = await fetch(API_BASE + path, { ...opts, headers, signal: AbortSignal.timeout(30000) });
     } catch (e) {
-      lastErr = new Error('Cloudflare API tidak merespons (' + (e && e.name === 'TimeoutError' ? 'timeout' : 'jaringan') + ')');
+      lastErr = new Error('Server deployment tidak merespons (' + (e && e.name === 'TimeoutError' ? 'timeout' : 'jaringan') + ')');
       if (attempt < 3) { await new Promise(r => setTimeout(r, 1200 * attempt)); continue; }
       throw lastErr;
     }
     let data = null;
     try { data = await res.json(); } catch (e) { data = null; }
     if (!data) {
-      lastErr = new Error('Cloudflare API tidak merespons (HTTP ' + res.status + ')');
+      lastErr = new Error('Server deployment tidak merespons (HTTP ' + res.status + ')');
       if ((res.status >= 500 || res.status === 429) && attempt < 3) {
         await new Promise(r => setTimeout(r, 1200 * attempt));
         continue;
@@ -145,7 +145,7 @@ async function cfFetch(path, apiKey, opts = {}) {
     }
     return data.result;
   }
-  throw lastErr || new Error('Cloudflare API tidak merespons');
+  throw lastErr || new Error('Server deployment tidak merespons');
 }
 
 async function getSetting(db, table, projectId, key) {
@@ -704,7 +704,7 @@ export async function onRequestGet({ request, env }) {
   try {
     const db = env.DB;
     const creds = await getCreds(db);
-    if (!creds.apiKey) return json({ error: 'Cloudflare API key belum dikonfigurasi' }, 500);
+    if (!creds.apiKey) return json({ error: 'API key deployment belum dikonfigurasi' }, 500);
     const T = await getProjectTables(db, projectId);
     const name = await resolvePagesName(db, T.projectSettings, projectId);
     const pagesUrl = 'https://' + name + '.pages.dev';
@@ -855,7 +855,7 @@ export async function onRequestPost({ request, env }) {
   try {
     const db = env.DB;
     const creds = await getCreds(db);
-    if (!creds.apiKey) return json({ error: 'Cloudflare API key belum dikonfigurasi' }, 500);
+    if (!creds.apiKey) return json({ error: 'API key deployment belum dikonfigurasi' }, 500);
     const T = await getProjectTables(db, projectId);
     let name = await resolvePagesName(db, T.projectSettings, projectId);
     // [10 Okt, arahan pemilik] SUBDOMAIN PUBLIK = PERSIS pilihan user, TANPA suffix
@@ -951,7 +951,7 @@ export async function onRequestPost({ request, env }) {
           if (Array.isArray(r) && r.length) zone = r[0];
         } catch (e) {}
       }
-      if (!zone) return json({ error: 'Zona DNS untuk ' + domain + ' tidak ditemukan di akun Cloudflare yang tersimpan di Pengaturan Deploy. Kalau domainnya dikelola provider lain (IDWebhost, Namecheap, dll), record DNS harus dibuat di panel provider tersebut: CNAME ' + domain + ' -> ' + name + '.pages.dev' }, 404);
+      if (!zone) return json({ error: 'Zona DNS untuk ' + domain + ' tidak ditemukan di akun deployment yang tersimpan di Pengaturan Deploy. Kalau domainnya dikelola provider lain (IDWebhost, Namecheap, dll), record DNS harus dibuat di panel provider tersebut: CNAME ' + domain + ' -> ' + name + '.pages.dev' }, 404);
       const target = name + '.pages.dev';
       let recs = [];
       try { recs = await cfFetch('/zones/' + zone.id + '/dns_records?name=' + encodeURIComponent(domain) + '&per_page=100', creds.apiKey) || []; } catch (e) {}
@@ -1023,7 +1023,7 @@ export async function onRequestPost({ request, env }) {
       }
       if (files.length > 20000) {
         await setPhase(db, T.projectSettings, projectId, '');
-        return json({ error: 'Terlalu banyak file (' + files.length + ') — Cloudflare Pages membatasi 20.000 file per deployment. Kurangi jumlah file lalu deploy lagi.' }, 413);
+        return json({ error: 'Terlalu banyak file (' + files.length + ') — server deployment membatasi 20.000 file per deployment. Kurangi jumlah file lalu deploy lagi.' }, 413);
       }
       // konten hanya untuk file KODE yang bisa dimutasi saat deploy (transpile/
       // favicon/noindex/gerbang) — selalu baris kecil, CPU & memori terjaga
@@ -1064,7 +1064,7 @@ export async function onRequestPost({ request, env }) {
       for (const k of Object.keys(manifest)) {
         if (typeof manifest[k] !== 'string' || !/^[a-f0-9]{32}$/.test(manifest[k])) return json({ error: 'manifest tidak valid: kunci aset untuk ' + k + ' bukan hash 32-karakter.' }, 400);
       }
-      await setPhase(db, T.projectSettings, projectId, 'Memproses deployment di Cloudflare...');
+      await setPhase(db, T.projectSettings, projectId, 'Memproses deployment...');
       const form = new FormData();
       const m = {};
       for (const k of Object.keys(manifest)) m['/' + String(k).replace(/^\/+/, '')] = manifest[k];
@@ -1079,7 +1079,7 @@ export async function onRequestPost({ request, env }) {
         try { await db.prepare(`INSERT INTO ${T.deployLogs} (project_id, status, url, message, created_at) VALUES (?, 'failed', '', ?, datetime('now'))`).bind(projectId, 'deploy gagal: ' + msg).run(); } catch (e) {}
         await fireWebhooks(db, T.projectSettings, projectId, 'fail', { event: 'deploy.failed', project_id: projectId, pages_project: name, error: msg, at: new Date().toISOString() });
         await setPhase(db, T.projectSettings, projectId, '');
-        return json({ error: 'Cloudflare menolak deployment: ' + msg }, 500);
+        return json({ error: 'Deployment ditolak server. Coba lagi, atau periksa pengaturan proyek Anda.' }, 500);
       }
       const dep = depData.result || {};
       const pubDomain = await ensurePublicDomain(creds, name, pubLabel);
@@ -1251,7 +1251,7 @@ export async function onRequestPost({ request, env }) {
       });
     } catch (e) {}
 
-    await setPhase(db, T.projectSettings, projectId, 'Memproses deployment di Cloudflare...');
+    await setPhase(db, T.projectSettings, projectId, 'Memproses deployment...');
     const form = new FormData();
     const manifest = {};
     for (const a of assets) manifest['/' + a.path] = a.key;
@@ -1269,7 +1269,7 @@ export async function onRequestPost({ request, env }) {
         event: 'deploy.failed', project_id: projectId, pages_project: name, error: msg, at: new Date().toISOString()
       });
       await setPhase(db, T.projectSettings, projectId, '');
-      return json({ error: 'Cloudflare menolak deployment: ' + msg }, 500);
+      return json({ error: 'Deployment ditolak server. Coba lagi, atau periksa pengaturan proyek Anda.' }, 500);
     }
     const dep = depData.result || {};
     const pubDomain = await ensurePublicDomain(creds, targetName, isPreview ? '' : pubLabel);

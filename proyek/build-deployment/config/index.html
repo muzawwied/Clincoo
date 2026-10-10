@@ -316,7 +316,8 @@
                 lucide.createIcons();
             };
             btn.disabled = true;
-            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> <span class="inline-block">Menyiapkan deploy...</span>`;
+            // [10 Okt, arahan pemilik] loading TANPA teks — ikon spin saja
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>`;
             btn.className = DEPLOY_BTN_BUSY;
             lucide.createIcons();
             // Subdomain: kosong -> backend buat otomatis dari nama proyek (AI);
@@ -325,19 +326,8 @@
             const subdomain = subInput ? subInput.value.trim().toLowerCase() : '';
             deployState.deploying = true;
             writeDeploySession({ status: 'deploying', started_at: Date.now() });
-            const phaseTimer = setInterval(async () => {
-                try {
-                    const st = await apiFetch('/deploy?project_id=' + encodeURIComponent(pid()));
-                    const ph = st && st.deploy_phase;
-                    if (ph) {
-                        btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> <span class="inline-block">${ph}</span>`;
-                        lucide.createIcons();
-                    }
-                } catch (e) {}
-            }, 2000);
             try {
                 const res = await apiFetch('/deploy', { method: 'POST', body: JSON.stringify({ project_id: pid(), ...(subdomain ? { subdomain } : {}) }) });
-                clearInterval(phaseTimer);
                 deployState.deploying = false;
                 // DNS cache: hasil deploy langsung siap di halaman Domain Kustom (tanpa buka halaman itu dulu)
                 try { var _dk = 'clincoo_' + pid() + "_domain_cache", _dc = {}; try { _dc = JSON.parse(localStorage.getItem(_dk) || '{}') || {}; } catch (e) {} localStorage.setItem(_dk, JSON.stringify(Object.assign(_dc, { pagesUrl: (res && res.pages_url) || '', deployed: true, ts: Date.now() }))); } catch (e) {}
@@ -354,7 +344,6 @@
                     btn.disabled = false;
                 }, 1000);
             } catch (err) {
-                clearInterval(phaseTimer);
                 deployState.deploying = false;
                 writeDeploySession({ status: 'failed' });
                 console.warn('Deploy gagal: ' + err.message);

@@ -439,7 +439,7 @@
               </tbody>
             </table>
           </div>
-          <p class="text-xs text-gray-400 dark:text-gray-500 mt-2 leading-relaxed">Record UTAMA menunjuk ke domain utama Anda (root, tanpa www): CNAME/ALIAS <span class="font-mono">@</span> dengan nilai di atas. Catatan penting: Cloudflare Pages tidak menyediakan alamat IP tetap, jadi metode A record (IP) tidak tersedia untuk root — satu-satunya cara adalah CNAME/ALIAS ke <span class="font-mono">&lt;subdomain&gt;.pages.dev</span>. Nilai ini memang selalu lebih dari 15 karakter (format .pages.dev). Jika registrar Anda menolak nilai CNAME yang panjang atau tidak mendukung CNAME di root: 1) gunakan tipe ALIAS/ANAME untuk @ bila tersedia, atau 2) arahkan nameserver domain Anda ke Cloudflare (gratis) lalu tambahkan domain dari sini — Cloudflare melakukan flattening otomatis sehingga domain utama langsung bisa dibuka tanpa www. Record CNAME www hanya diperlukan kalau alamat www.domain.com juga ingin diaktifkan. SSL aktif otomatis beberapa menit setelah DNS terverifikasi.</p>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-2 leading-relaxed">Record UTAMA menunjuk ke domain utama Anda (root, tanpa www): CNAME/ALIAS <span class="font-mono">@</span> dengan nilai di atas. Catatan penting: server deployment kami tidak menyediakan alamat IP tetap, jadi metode A record (IP) tidak tersedia untuk root — satu-satunya cara adalah CNAME/ALIAS ke alamat target yang tertera pada tabel di atas. Nilai ini memang selalu lebih dari 15 karakter. Jika registrar Anda menolak nilai CNAME yang panjang atau tidak mendukung CNAME di root: 1) gunakan tipe ALIAS/ANAME untuk @ bila tersedia, atau 2) arahkan nameserver domain Anda ke penyedia DNS Anda (umumnya gratis) lalu tambahkan domain dari sini. Record CNAME www hanya diperlukan kalau alamat www.domain.com juga ingin diaktifkan. SSL aktif otomatis beberapa menit setelah DNS terverifikasi.</p>
 
                   <!-- Tombol AI: setel record DNS otomatis lewat chat Clincoo (manage_domain set_dns) -->
                   <button type="button" onclick="aiSetupDns(event)" class="mt-4 w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#222222] dark:bg-white text-white dark:text-[#222222] text-sm font-semibold hover:opacity-85 transition-opacity">
@@ -742,7 +742,7 @@
             });
             const data = await res.json();
             loadRealDomainStatus();
-            if (data.error) console.warn('Domain belum terpasang di Cloudflare: ' + data.error);
+            if (data.error) console.warn('Domain belum terpasang di server deployment: ' + data.error);
         } catch (e) {}
     }
 

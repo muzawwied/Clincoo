@@ -2429,7 +2429,7 @@ window.chatLivePreview = function () {
                 case 'generate_image': return 'Generating image: ' + (a.prompt || '').slice(0, 40);
                 case 'deploy_project': return 'Publishing project…';
                 case 'test_secret': return 'Testing secret status…';
-                case 'cloudflare_request': return 'Calling Cloudflare API…';
+                case 'cloudflare_request': return 'Calling deployment API…';
                 case 'github_request': return 'Accessing GitHub: ' + ((a && (a.path || '')) + '').slice(0, 60);
                 case 'notion_request': return 'Accessing Notion: ' + ((a && (a.action || '')) + '');
                 case 'drive_request': return 'Accessing Google Drive: ' + ((a && (a.path || '')) + '').slice(0, 60);
@@ -4426,7 +4426,7 @@ window.chatLivePreview = function () {
                 case 'search_clincoo_kb': return 'Searching Clincoo knowledge base' + (q ? ': ' + q : '…');
                 case 'deploy_project': return 'Publishing project to the internet…';
                 case 'test_secret': return 'Testing secret/API status…';
-                case 'cloudflare_request': return 'Accessing Cloudflare API…';
+                case 'cloudflare_request': return 'Accessing deployment API…';
                 case 'github_request': return 'Accessing GitHub connector…';
                 case 'notion_request': return 'Accessing Notion connector…';
                 case 'write_files': return 'Writing ' + (Array.isArray(a.files) ? a.files.length : '?') + ' files…';
@@ -5130,10 +5130,10 @@ window.chatLivePreview = function () {
             try {
                 const res = await fetch(TOOL_API_BASE + '/api/ai-tools', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clincooAuthToken() }, body: JSON.stringify({ action: 'cloudflare_request', secret: secret, method: args.method || 'GET', path: path, body: args.body || null }) });
                 const d = await res.json().catch(function () { return {}; });
-                if (!res.ok || d.error) return { success: false, error: d.error || 'Gagal memanggil Cloudflare API (HTTP ' + res.status + ').' };
+                if (!res.ok || d.error) return { success: false, error: d.error || 'Gagal memanggil API deployment (HTTP ' + res.status + ').' };
                 return { success: !!d.success, http_status: d.http_status || null, result: d.result, errors: d.errors || [] };
             } catch (e) {
-                return { success: false, error: 'Gagal memanggil Cloudflare API: ' + (e && e.message ? e.message : String(e)) };
+                return { success: false, error: 'Gagal memanggil API deployment: ' + (e && e.message ? e.message : String(e)) };
             }
         }
         // Tool konektor GitHub: token OAuth diambil OTOMATIS dari halaman Integrasi

@@ -669,7 +669,7 @@
             const btn = document.getElementById('btn-deploy-changes');
             btn.disabled = true;
             const lbl = btn.innerHTML;
-            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Mendeploy pembaruan…';
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>'; // loading ikon saja, tanpa teks
             try { lucide.createIcons(); } catch (e) {}
             if (__subCheckState === 'bad') { __subToast('Subdomain sudah dipakai — ubah dulu, lalu cek lagi.'); return; }
             try {
@@ -824,7 +824,7 @@
             await apiFetchT('/deploy-upload?project_id=' + encodeURIComponent(pid()) + '&sub=upsert-hashes', { method: 'POST', headers: { 'x-upload-jwt': jwt }, body: JSON.stringify({ hashes: hashes }) }, 60000).catch(function () {});
             const manifest = {};
             for (const e of entries) manifest[e.path] = e.key;
-            await setPhaseSrv('Memproses deployment di Cloudflare...');
+            await setPhaseSrv('Memproses deployment...');
             return await apiFetchT('/deploy', { method: 'POST', body: JSON.stringify({ project_id: pid(), action: 'finalize', manifest: manifest }) }, 180000);
         }
 
