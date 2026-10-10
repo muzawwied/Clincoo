@@ -2549,7 +2549,9 @@ export async function onRequestPost({ request, env, waitUntil }) {
     let frontMeta = null;
     if (String(body.mode || '').trim() === 'build' && isFirstHop && String(body.agent || 'auto') !== 'off') {
       const sid = body.session_id || ('fa_' + String(Date.now()));
-      try { if (waitUntil) waitUntil(scanMessagesForEvents(env, sid, (body.messages || []).slice(-3))); } catch (e) {}
+      // SINKRON (bukan waitUntil): digest harus dibaca SETELAH event tertulis,
+      // kalau tidak progres hop sebelumnya kadang belum masuk konteks Front Agent.
+      try { await scanMessagesForEvents(env, sid, (body.messages || []).slice(-3)); } catch (e) {}
       const digest = await taskStateDigest(env, sid);
       try { streamSend && streamSend({ t: 'progress', text: 'Memahami permintaan…' }); } catch (e) {}
       const fr = await frontAgentRun(env, body.messages, digest);
