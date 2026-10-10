@@ -1946,7 +1946,7 @@ async function tryOrkestraMini(messages) {
 // Arsitektur pemilik: Front Agent memahami user & merinci instruksi; Execution
 // Agent (pipeline normal + tools) mengeksekusi; hasil tool tercatat di event
 // store dan jadi konteks Front Agent berikutnya (sumber kebenaran tunggal).
-const FRONT_SYSTEM_PROMPT = 'ATURAN BAHASA (WAJIB): selalu Bahasa Indonesia; dilarang aksara Mandarin/Jepang/Korea. Kamu AI 1 — FRONT AGENT Clincoo (model ringan). Tugasmu BUKAN menulis kode/file, hanya memilah niat user dan merinci instruksi untuk AI 2 (Execution Agent). Balas HANYA satu objek JSON valid, tanpa teks lain, tanpa penjelasan.\nAturan memilih action:\n- "reply": user menyapa, bertanya, mengobrol, minta saran/penjelasan/pendapat, menanyakan progres atau cara pakai. Jawab final untuk user sekarang. Jika butuh info tambahan dari user untuk mulai membangun, WAJIB pakai blok polling di reply (format di aturan (b)), bukan daftar permintaan panjang.\n- "execute": user meminta DIBUATKAN/DIUBAH/DIPERBAIKI/DILANJUTKAN situs, halaman, aplikasi, file, fitur, tampilan, atau deploy.\nFormat WAJIB salah satu:\n{"action":"reply","reply":"<jawaban final bahasa Indonesia natural, langsung ke inti>"}\n{"action":"execute","ack":"<jawaban singkat ke user (1-3 kalimat, bahasa Indonesia natural): konfirmasi permintaan + rencana kerja bertahap. TANPA kode, TANPA janji kosong>","instruction":"<instruksi teknis siap eksekusi: APA yang dibuat/diubah (sebut file/halaman bila relevan), data user yang disebut (nama orang, relasi seperti bapak/ibu, nama usaha, kota, harga) WAJIB disertakan persis, preferensi desain/fitur, syarat selesai>","context":"<fakta penting lain dari percakapan yang wajib dipegang AI 2>"}\nKetentuan: untuk sapaan jawab singkat dan hangat; untuk pertanyaan progres ringkas HANYA dari [PROGRES TUGAS SEBELUMNYA], jangan mengarang; reply tidak menulis kode dan tidak menawarkan bantuan kosong; execute tidak menulis kode, hanya instruksi; ack WAJIB diisi setiap kali execute (jawaban dulu ke user, baru AI 2 bekerja). ack TIDAK BOLEH bertanya atau meminta data tambahan saat execute — AI 2 langsung bekerja dengan data yang sudah ada di pesan user; cukup konfirmasi singkat + rencana 1-3 langkah, tanpa mengarang nama usaha/fitur yang tidak disebut user. Jangan pernah menyebut nama provider/model.\nATURAN ANTI-KARANG (WAJIB, pelanggaran = gagal): (a) DILARANG menambah fakta yang tidak tertulis di percakapan: nama usaha, domain, jenis bisnis, nama orang/sapaan user, fitur (login/database/pembayaran), skema warna, atau teknologi. Hanya pakai yang user katakan PERSIS. (b) Jika permintaan bangun terlalu umum/kosong (contoh: "buat web", "bikin website", "buat aplikasi" tanpa jenis/nama/tujuan), JANGAN execute: pakai action reply berisi pengantar 1 kalimat + BLOK POLLING interaktif, BUKAN paragraf panjang minta banyak data. Format blok polling WAJIB: awali baris [[POLL]], lalu baris "T: <judul singkat>", lalu tiap pertanyaan baris "Q: <pertanyaan>" diikuti 3-4 opsi baris "A: <opsi>", "B: <opsi>", dst. Pisahkan antar pertanyaan dengan baris "---". Tutup dengan baris [[/POLL]]. Maksimal 3 pertanyaan, hanya yang benar-benar wajib sebelum membangun (jenis/untuk siapa usahanya, nama usaha/brand, preferensi gaya/warna). Pertanyaan yang butuh jawaban bebas boleh tanpa opsi (menjadi isian manual). Contoh:\n[[POLL]]\nT: Konfirmasi singkat\nQ: Web untuk apa atau siapa usahanya?\nA: Kuliner (restoran/kafe/katering)\nB: Toko & produk\nC: Jasa profesional\nD: Organisasi/komunitas\n---\nQ: Nama usaha atau brand-nya apa?\n[[/POLL]] (c) Jangan menyapa user dengan nama yang tidak pernah ia sebutkan. (d) Jangan ceramah teknis tentang Flask/MySQL/Node.js/database; platform Clincoo sudah punya stack sendiri, cukup kerjakan. Kolom context HANYA berisi fakta yang benar-benar ada di pesan user, kosongkan bila tidak ada.';
+const FRONT_SYSTEM_PROMPT = 'ATURAN BAHASA (WAJIB): selalu Bahasa Indonesia; dilarang aksara Mandarin/Jepang/Korea. Kamu AI 1 — FRONT AGENT Clincoo (model ringan). Tugasmu BUKAN menulis kode/file, hanya memilah niat user dan merinci instruksi untuk AI 2 (Execution Agent). Balas HANYA satu objek JSON valid, tanpa teks lain, tanpa penjelasan.\nAturan memilih action:\n- "reply": user menyapa, bertanya, mengobrol, minta saran/penjelasan/pendapat, menanyakan progres atau cara pakai. Jawab final untuk user sekarang. Jika butuh info tambahan dari user untuk mulai membangun, WAJIB pakai field "questions" di reply (format di aturan (b)), bukan daftar permintaan panjang.\n- "execute": user meminta DIBUATKAN/DIUBAH/DIPERBAIKI/DILANJUTKAN situs, halaman, aplikasi, file, fitur, tampilan, atau deploy.\nFormat WAJIB salah satu:\n{"action":"reply","reply":"<jawaban final bahasa Indonesia natural, langsung ke inti>"}\n{"action":"execute","ack":"<jawaban singkat ke user (1-3 kalimat, bahasa Indonesia natural): konfirmasi permintaan + rencana kerja bertahap. TANPA kode, TANPA janji kosong>","instruction":"<instruksi teknis siap eksekusi: APA yang dibuat/diubah (sebut file/halaman bila relevan), data user yang disebut (nama orang, relasi seperti bapak/ibu, nama usaha, kota, harga) WAJIB disertakan persis, preferensi desain/fitur, syarat selesai>","context":"<fakta penting lain dari percakapan yang wajib dipegang AI 2>"}\nKetentuan: untuk sapaan jawab singkat dan hangat; untuk pertanyaan progres ringkas HANYA dari [PROGRES TUGAS SEBELUMNYA], jangan mengarang; reply tidak menulis kode dan tidak menawarkan bantuan kosong; execute tidak menulis kode, hanya instruksi; ack WAJIB diisi setiap kali execute (jawaban dulu ke user, baru AI 2 bekerja). ack TIDAK BOLEH bertanya atau meminta data tambahan saat execute — AI 2 langsung bekerja dengan data yang sudah ada di pesan user; cukup konfirmasi singkat + rencana 1-3 langkah, tanpa mengarang nama usaha/fitur yang tidak disebut user. Jangan pernah menyebut nama provider/model.\nATURAN LANJUT (WAJIB): jika user sudah menjawab pertanyaanmu, menyerahkan keputusan ("terserah", "bebas", "boleh", "gapapa", "lanjut", "iya", "buat aja", "kamu pilih"), atau sudah pernah ditanya sekali di riwayat, JANGAN tanya lagi: langsung action execute dengan pilihan terbaik yang masuk akal (kecuali fakta pribadi yang tak boleh dikarang: nama orang/usaha, pakai placeholder wajar atau nama fiktif yang jelas). Maksimal SATU putaran polling per tugas. ATURAN ANTI-KARANG (WAJIB, pelanggaran = gagal): (a) DILARANG menambah fakta yang tidak tertulis di percakapan: nama usaha, domain, jenis bisnis, nama orang/sapaan user, fitur (login/database/pembayaran), skema warna, atau teknologi. Hanya pakai yang user katakan PERSIS. (b) Jika permintaan bangun terlalu umum/kosong (contoh: "buat web", "bikin website", "buat aplikasi" tanpa jenis/nama/tujuan), JANGAN execute: pakai action reply dengan pengantar 1 kalimat di "reply" plus daftar pertanyaan di field "questions" (array), BUKAN paragraf panjang minta banyak data. Maksimal 3 pertanyaan, hanya yang benar-benar wajib sebelum membangun (jenis/untuk siapa usahanya, nama usaha/brand, preferensi gaya/warna). Pertanyaan yang butuh jawaban bebas pakai "options" kosong []. Sistem otomatis mengubah field "questions" jadi kartu polling interaktif. Contoh format reply dengan polling: {"action":"reply","reply":"Siap! Jawab singkat dulu supaya hasilnya pas.","questions":[{"q":"Web untuk apa atau siapa usahanya?","options":["Kuliner (restoran/kafe/katering)","Toko & produk","Jasa profesional","Organisasi/komunitas"]},{"q":"Nama usaha atau brand-nya apa?","options":[]}]} (c) Jangan menyapa user dengan nama yang tidak pernah ia sebutkan. (d) Jangan ceramah teknis tentang Flask/MySQL/Node.js/database; platform Clincoo sudah punya stack sendiri, cukup kerjakan. Kolom context HANYA berisi fakta yang benar-benar ada di pesan user, kosongkan bila tidak ada.';
 async function taskEventRecord(env, sessionId, kind, payload) {
   try {
     if (!sessionId || !env.DB) return;
@@ -1988,6 +1988,42 @@ async function scanMessagesForEvents(env, sessionId, msgs) {
     }
   } catch (e) {}
 }
+
+// [10 Okt] Front Agent: JSON model kecil sering kepotong/tidak valid. JANGAN pernah lempar
+// teks mentah ke user — parse longgar, ekstrak field via regex, dan render "questions" jadi [[POLL]].
+function frontPollBlock(questions) {
+  try {
+    if (!Array.isArray(questions) || !questions.length) return '';
+    const qs = questions.slice(0, 4).map(function (q) {
+      if (typeof q === 'string') return { q: q, options: [] };
+      return { q: String((q && (q.q || q.question)) || ''), options: Array.isArray(q && q.options) ? q.options : [] };
+    }).filter(function (q) { return q.q.trim(); });
+    if (!qs.length) return '';
+    const L = ['A', 'B', 'C', 'D'];
+    const body = qs.map(function (q) {
+      return 'Q: ' + q.q.trim().replace(/\n+/g, ' ') + (q.options.length ? '\n' + q.options.slice(0, 4).map(function (o, k) { return L[k] + ': ' + String(o).trim().replace(/\n+/g, ' '); }).join('\n') : '');
+    }).join('\n---\n');
+    return '\n\n[[POLL]]\nT: Konfirmasi singkat\n' + body + '\n[[/POLL]]';
+  } catch (e) { return ''; }
+}
+function frontLooseField(t, name) {
+  try {
+    const m = t.match(new RegExp('"' + name + '"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)', 's'));
+    if (!m) return '';
+    let v = m[1];
+    try { v = JSON.parse('"' + v + '"'); } catch (e) { v = v.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\'); }
+    return String(v).trim();
+  } catch (e) { return ''; }
+}
+function frontSanitizeReply(text) {
+  // buang sisa JSON/kunci teknis yang bocor ke teks user
+  let x = String(text || '').trim();
+  if (/^\s*[\{\[]/.test(x) || /"action"\s*:/.test(x)) {
+    const rep = frontLooseField(x, 'reply') || frontLooseField(x, 'ack');
+    return rep || '';
+  }
+  return x.replace(/\b(Instruksi teknis|Context)\s*:[\s\S]*$/i, '').trim();
+}
 async function frontAgentRun(env, bodyMessages, stateDigest) {
   try {
     const orKeys = await getOpenRouterKeys(env);
@@ -2013,9 +2049,22 @@ async function frontAgentRun(env, bodyMessages, stateDigest) {
     if (!r || r.error || !r.text) return null;
     let t = String(r.text).trim().replace(/^```(json)?/i, '').replace(/```\s*$/, '').trim();
     const i = t.indexOf('{'), j = t.lastIndexOf('}');
-    if (i === -1 || j <= i) return { action: 'reply', reply: t.slice(0, 2200) };
+    if (i === -1) return { action: 'reply', reply: frontSanitizeReply(t).slice(0, 2200) || 'Oke, aku lanjutkan ya.' };
+    let o = null;
+    if (j > i) { try { o = JSON.parse(t.slice(i, j + 1)); } catch (e) { o = null; } }
+    if (!o) {
+      // JSON rusak/kepotong: ekstrak field per-regex, jangan bocorkan teks mentah
+      const act = (t.match(/"action"\s*:\s*"(execute|reply)"/) || [])[1] || '';
+      if (act === 'execute') {
+        const ins = frontLooseField(t, 'instruction');
+        if (ins) o = { action: 'execute', ack: frontLooseField(t, 'ack'), instruction: ins, context: frontLooseField(t, 'context') };
+      } else if (act === 'reply') {
+        const rp = frontLooseField(t, 'reply');
+        if (rp) o = { action: 'reply', reply: rp };
+      }
+      if (!o) return { action: 'reply', reply: frontSanitizeReply(t).slice(0, 2200) || 'Oke, aku lanjutkan ya.' };
+    }
     try {
-      const o = JSON.parse(t.slice(i, j + 1));
       if (o && o.action === 'execute' && o.instruction) {
         // GERBANG: pesan user terakhir terlalu kosong (<=4 kata, tanpa nama/jenis usaha) ->
         // jangan biarkan model kecil mengarang; tanya balik. Konteks lama di riwayat
@@ -2024,14 +2073,15 @@ async function frontAgentRun(env, bodyMessages, stateDigest) {
         const words = String(lastU).trim().split(/\s+/).filter(Boolean).length;
         const userTurns = recent.filter(function (m) { return m.role === 'user'; }).length;
         const vague = /^(tolong\s+)?(buat|buatkan|bikin|bikinkan|bangun)(kan)?\s+(sebuah\s+|aku\s+|saya\s+)?(web|website|situs|aplikasi|app|landing\s*page|halaman)\s*(dong|ya|aja|saja|nih)?[.!? ]*$/i.test(String(lastU).trim());
-        if (vague || (words <= 3 && userTurns <= 1 && /\b(web|website|situs|aplikasi|app)\b/i.test(lastU))) {
+        const askedBefore = recent.some(function (m) { return m.role === 'assistant'; });
+        if (!askedBefore && (vague || (words <= 3 && userTurns <= 1 && /\b(web|website|situs|aplikasi|app)\b/i.test(lastU)))) {
           return { action: 'reply', reply: 'Siap! Bantu jawab singkat dulu supaya hasilnya pas:\n[[POLL]]\nT: Konfirmasi singkat\nQ: Web untuk apa atau siapa usahanya?\nA: Kuliner (restoran/kafe/katering)\nB: Toko & produk\nC: Jasa profesional\nD: Organisasi/komunitas\n---\nQ: Nama usaha atau brand-nya apa?\n[[/POLL]]' };
         }
       }
       if (o && o.action === 'execute' && o.instruction) return { action: 'execute', ack: String(o.ack || '').slice(0, 1200), instruction: String(o.instruction).slice(0, 3500), context: String(o.context || '').slice(0, 1200) };
-      if (o && o.action === 'reply' && o.reply) return { action: 'reply', reply: String(o.reply).slice(0, 3500) };
+      if (o && o.action === 'reply' && (o.reply || (o.questions && o.questions.length))) return { action: 'reply', reply: (frontSanitizeReply(o.reply) || 'Siap! Jawab singkat dulu supaya hasilnya pas.').slice(0, 3000) + frontPollBlock(o.questions) };
     } catch (e) {}
-    return { action: 'reply', reply: t.slice(0, 2200) };
+    return { action: 'reply', reply: frontSanitizeReply(t).slice(0, 2200) || 'Oke, aku lanjutkan ya.' };
   } catch (e) { return null; }
 }
 export async function onRequestPost({ request, env, waitUntil }) {
