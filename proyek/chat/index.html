@@ -6815,6 +6815,16 @@ window.chatLivePreview = function () {
                         const __totalTools = resultJson.tool_calls.length;
                         let __doneTools = 0;
                         const functionResponses = await Promise.all(resultJson.tool_calls.map(async function(tc, ti) {
+                            // [10 Okt, laporan owner screenshot: setelah "Publishing project…" AI masih
+                            // "Viewing folder: root/css"] Sudah deploy SUKSES dan tidak ada write baru sejak
+                            // deploy -> tool BACA/LIHAT ditolak dengan fakta tegas. Tugas tuntas, tutup ringkas.
+                            try {
+                                const __S = window.AI_WORK_STATE || {};
+                                const __readOnly = ['list_items', 'read_file', 'read_files', 'search_items'].indexOf(tc.name) !== -1;
+                                if (__readOnly && __S.deployOk && (__S.writes || 0) <= (__S.writesAtDeploy || 0)) {
+                                    return { type: 'function_response', name: tc.name, result: 'STOP — proyek SUDAH berhasil dipublish' + (__S.deployUrl ? ' di ' + __S.deployUrl : '') + ' dan tidak ada perubahan file sejak itu. JANGAN lihat/baca folder lagi. Tutup SEKARANG dengan ringkasan 2-3 kalimat untuk user: apa yang sudah jadi + link situsnya. Jangan panggil tool apa pun lagi.' };
+                                }
+                            } catch (e) {}
                             if (dupTCs.indexOf(tc) !== -1) {
                                 return { type: 'function_response', name: tc.name, result: 'STOP — tool ini sudah dipanggil dengan argumen IDENTIK dua kali dan berhasil. Item tersebut SUDAH ADA. JANGAN ulangi. Baca function_response sebelumnya lalu LANJUT ke langkah berikutnya (tulis isi file / bagian lain), atau panggil list_items untuk melihat isi workspace sekarang.' };
                             }
@@ -7305,6 +7315,9 @@ window.chatLivePreview = function () {
             silentRounds = 0; // budget AUTO-LANJUT SILENT segar untuk tugas baru
             checkpointRounds = 0; // rantai checkpoint progres segar untuk tugas baru
             FINAL_NUDGE_EXTRA = ''; // ekstra koreksi klaim-palsu gak boek dibawa ke tugas baru
+            // Permintaan BARU dari user (bukan sekadar "Lanjut") membuka lagi izin baca/lihat folder
+            // setelah deploy; guard pasca-publish hanya menahan loop otomatis.
+            if (!isBareContinue) { try { window.AI_WORK_STATE.deployOk = false; } catch (e) {} }
             
             chatInput.value = '';
             adjustInputHeight();
