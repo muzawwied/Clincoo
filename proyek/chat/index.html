@@ -6182,6 +6182,9 @@ window.chatLivePreview = function () {
 
             let streamingBuffer = "";
             let deltaStreamed = "";
+            // [10 Okt, arahan pemilik] ack Front Agent (event stream "front"): jawaban
+            // ditampilkan SEBELUM AI 2 mulai bekerja, bukan ditimpa hasil eksekusi.
+            let frontAckText = "";
             let isFetchComplete = false;
             let charIndex = 0;
             let hasReceivedData = false;
@@ -6537,12 +6540,31 @@ window.chatLivePreview = function () {
                                         hasReceivedData = true;
                                         if (!__composingNotified) { __composingNotified = true; }
                                         deltaStreamed += evt.text || '';
-                                        streamingBuffer = deltaStreamed;
+                                        streamingBuffer = (frontAckText && deltaStreamed.indexOf(frontAckText) === -1) ? (frontAckText + '\n\n' + deltaStreamed) : deltaStreamed;
                                         return;
                                     }
                                     if (evt.t === 'progress') {
                                         hasReceivedData = true;
                                         return; // [10 Okt] label progress hardcode dimatikan
+                                    }
+                                    // [10 Okt, arahan pemilik] FRONT JAWAB DULU: ack Front Agent
+                                    // tampil sebagai teks bubble SEKARANG, AI 2 lanjut bekerja
+                                    // di bawahnya (bubble tetap sama utk fase tool pertama).
+                                    if (evt.t === 'front') {
+                                        hasReceivedData = true;
+                                        const fTxt = String(evt.text || '').trim();
+                                        if (fTxt) {
+                                            frontAckText = frontAckText ? (frontAckText + '\n\n' + fTxt) : fTxt;
+                                            const fIdx2 = messages.findIndex(m => m.id === aiMsgObj.id);
+                                            if (fIdx2 !== -1) {
+                                                messages[fIdx2].text = messages[fIdx2].text ? (messages[fIdx2].text + '\n\n' + fTxt) : fTxt;
+                                                try { renderMessages(); } catch (e) {}
+                                                try { scrollToBottom(false); } catch (e) {}
+                                            }
+                                            streamingBuffer = frontAckText + '\n\n';
+                                            charIndex = streamingBuffer.length;
+                                        }
+                                        return;
                                     }
                                     // thinking: jangan hardcode ulang — biarkan status tool/progress terakhir
                                     if (evt.t === 'thinking') return;
@@ -6585,6 +6607,7 @@ window.chatLivePreview = function () {
                     };
 
                     let __pendingCheckpoint = false; // true = catatan progres ditulis di hop ini -> tutup bubble setelah tool jalan
+                    let __genToolBase = 0; // [10 Okt] hitungan tool KUMULATIF lintas-hop, bukan (1/1) tiap hop
                     for (let hop = 0; hop < MAX_TOOL_HOPS; hop++) {
                         if (!isGenerating) throw new DOMException('Aborted', 'AbortError');
 
@@ -6803,7 +6826,10 @@ window.chatLivePreview = function () {
                             }
                             // status nyata: tool INI sedang jalan (i/total), sinkron dgn eksekusi
                             if (tc.result === undefined || tc.result === null) {
-                                setAiStatus(clientToolProgressLabel(tc) + ' (' + (ti + 1) + '/' + __totalTools + ')…');
+                                // [10 Okt, arahan pemilik] dulu tiap hop tampil "(1/1)â¦" karena
+                                // total dihitung PER-HOP (AI 2 sering kirim 1 tool per hop). Sekarang
+                                // nomor kumulatif: "langkah 3â¦" atau "(3/5)" utk hop multi-tool.
+                                setAiStatus(clientToolProgressLabel(tc) + (__totalTools > 1 ? ' (' + (__genToolBase + ti + 1) + '/' + (__genToolBase + __totalTools) + ')â¦' : ' (langkah ' + (__genToolBase + ti + 1) + ')â¦'));
                             }
                             const result = (tc.result !== undefined && tc.result !== null)
                                 ? tc.result
@@ -6824,6 +6850,7 @@ window.chatLivePreview = function () {
                         apiMessagesWithTools.push({ role: 'user', content: functionResponses });
                         // fase nyata berikutnya: semua tool selesai, AI kini membaca hasilnya
                         compactToolHopHistory(apiMessagesWithTools); // circuit-breaker: cegah payload lintas-hop membengkak tak terbatas
+                        __genToolBase += __totalTools; // akumulasi lintas-hop utk label shimmer kumulatif
                         // Tampilkan progres eksekusi tugas secara langsung ke chat (mirip kartu "Ran command")
                         renderMessages();
                     }
@@ -6899,17 +6926,18 @@ window.chatLivePreview = function () {
                     if (deltaStreamed) {
                         if (parsedFinalApk.clean !== deltaStreamed) {
                             // final beda dari teks terstream (mis. ada catatan tool di tengah) -> render otentik
-                            streamingBuffer = parsedFinalApk.clean;
-                            charIndex = parsedFinalApk.clean.length;
+                            const dfFull = (frontAckText ? frontAckText + '\n\n' : '') + parsedFinalApk.clean;
+                            streamingBuffer = dfFull;
+                            charIndex = dfFull.length;
                             const dfIdx = messages.findIndex(m => m.id === aiMsgObj.id);
-                            if (dfIdx !== -1) messages[dfIdx].text = parsedFinalApk.clean;
+                            if (dfIdx !== -1) messages[dfIdx].text = dfFull;
                             // AI_ANSWER_SMOOTH: jawaban penuh tetap fade-in sekali
                             requestAnimationFrame(() => {
                                 const el = document.getElementById('msg-text-' + aiMsgObj.id);
                                 if (el && !el.classList.contains('ai-answer-reveal')) el.classList.add('ai-answer-reveal');
                             });
                             const dfEl = document.getElementById('msg-text-' + aiMsgObj.id);
-                            if (dfEl) dfEl.innerHTML = formatMarkdown(parsedFinalApk.clean);
+                            if (dfEl) dfEl.innerHTML = formatMarkdown(dfFull);
                         }
                     } else {
                         streamingBuffer += parsedFinalApk.clean;

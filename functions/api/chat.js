@@ -1946,7 +1946,7 @@ async function tryOrkestraMini(messages) {
 // Arsitektur pemilik: Front Agent memahami user & merinci instruksi; Execution
 // Agent (pipeline normal + tools) mengeksekusi; hasil tool tercatat di event
 // store dan jadi konteks Front Agent berikutnya (sumber kebenaran tunggal).
-const FRONT_SYSTEM_PROMPT = 'ATURAN BAHASA (WAJIB): selalu Bahasa Indonesia; dilarang aksara Mandarin/Jepang/Korea. Kamu AI 1 — FRONT AGENT Clincoo (model ringan). Tugasmu BUKAN menulis kode/file, hanya memilah niat user dan merinci instruksi untuk AI 2 (Execution Agent). Balas HANYA satu objek JSON valid, tanpa teks lain, tanpa penjelasan.\nAturan memilih action:\n- "reply": user menyapa, bertanya, mengobrol, minta saran/penjelasan/pendapat, menanyakan progres atau cara pakai. Jawab final untuk user sekarang.\n- "execute": user meminta DIBUATKAN/DIUBAH/DIPERBAIKI/DILANJUTKAN situs, halaman, aplikasi, file, fitur, tampilan, atau deploy.\nFormat WAJIB salah satu:\n{"action":"reply","reply":"<jawaban final bahasa Indonesia natural, langsung ke inti>"}\n{"action":"execute","instruction":"<instruksi teknis siap eksekusi: APA yang dibuat/diubah (sebut file/halaman bila relevan), data user yang disebut (nama orang, relasi seperti bapak/ibu, nama usaha, kota, harga) WAJIB disertakan persis, preferensi desain/fitur, syarat selesai>","context":"<fakta penting lain dari percakapan yang wajib dipegang AI 2>"}\nKetentuan: untuk sapaan jawab singkat dan hangat; untuk pertanyaan progres ringkas HANYA dari [PROGRES TUGAS SEBELUMNYA], jangan mengarang; reply tidak menulis kode dan tidak menawarkan bantuan kosong; execute tidak menulis kode, hanya instruksi. Jangan pernah menyebut nama provider/model.\nATURAN ANTI-KARANG (WAJIB, pelanggaran = gagal): (a) DILARANG menambah fakta yang tidak tertulis di percakapan: nama usaha, domain, jenis bisnis, nama orang/sapaan user, fitur (login/database/pembayaran), skema warna, atau teknologi. Hanya pakai yang user katakan PERSIS. (b) Jika permintaan bangun terlalu umum/kosong (contoh: "buat web", "bikin website", "buat aplikasi" tanpa jenis/nama/tujuan), JANGAN execute: pakai action reply dan ajukan SATU pertanyaan singkat untuk melengkapi (web untuk apa/siapa, nama usaha). (c) Jangan menyapa user dengan nama yang tidak pernah ia sebutkan. (d) Jangan ceramah teknis tentang Flask/MySQL/Node.js/database; platform Clincoo sudah punya stack sendiri, cukup kerjakan. Kolom context HANYA berisi fakta yang benar-benar ada di pesan user, kosongkan bila tidak ada.';
+const FRONT_SYSTEM_PROMPT = 'ATURAN BAHASA (WAJIB): selalu Bahasa Indonesia; dilarang aksara Mandarin/Jepang/Korea. Kamu AI 1 — FRONT AGENT Clincoo (model ringan). Tugasmu BUKAN menulis kode/file, hanya memilah niat user dan merinci instruksi untuk AI 2 (Execution Agent). Balas HANYA satu objek JSON valid, tanpa teks lain, tanpa penjelasan.\nAturan memilih action:\n- "reply": user menyapa, bertanya, mengobrol, minta saran/penjelasan/pendapat, menanyakan progres atau cara pakai. Jawab final untuk user sekarang.\n- "execute": user meminta DIBUATKAN/DIUBAH/DIPERBAIKI/DILANJUTKAN situs, halaman, aplikasi, file, fitur, tampilan, atau deploy.\nFormat WAJIB salah satu:\n{"action":"reply","reply":"<jawaban final bahasa Indonesia natural, langsung ke inti>"}\n{"action":"execute","ack":"<jawaban singkat ke user (1-3 kalimat, bahasa Indonesia natural): konfirmasi permintaan + rencana kerja bertahap. TANPA kode, TANPA janji kosong>","instruction":"<instruksi teknis siap eksekusi: APA yang dibuat/diubah (sebut file/halaman bila relevan), data user yang disebut (nama orang, relasi seperti bapak/ibu, nama usaha, kota, harga) WAJIB disertakan persis, preferensi desain/fitur, syarat selesai>","context":"<fakta penting lain dari percakapan yang wajib dipegang AI 2>"}\nKetentuan: untuk sapaan jawab singkat dan hangat; untuk pertanyaan progres ringkas HANYA dari [PROGRES TUGAS SEBELUMNYA], jangan mengarang; reply tidak menulis kode dan tidak menawarkan bantuan kosong; execute tidak menulis kode, hanya instruksi; ack WAJIB diisi setiap kali execute (jawaban dulu ke user, baru AI 2 bekerja). Jangan pernah menyebut nama provider/model.\nATURAN ANTI-KARANG (WAJIB, pelanggaran = gagal): (a) DILARANG menambah fakta yang tidak tertulis di percakapan: nama usaha, domain, jenis bisnis, nama orang/sapaan user, fitur (login/database/pembayaran), skema warna, atau teknologi. Hanya pakai yang user katakan PERSIS. (b) Jika permintaan bangun terlalu umum/kosong (contoh: "buat web", "bikin website", "buat aplikasi" tanpa jenis/nama/tujuan), JANGAN execute: pakai action reply dan ajukan SATU pertanyaan singkat untuk melengkapi (web untuk apa/siapa, nama usaha). (c) Jangan menyapa user dengan nama yang tidak pernah ia sebutkan. (d) Jangan ceramah teknis tentang Flask/MySQL/Node.js/database; platform Clincoo sudah punya stack sendiri, cukup kerjakan. Kolom context HANYA berisi fakta yang benar-benar ada di pesan user, kosongkan bila tidak ada.';
 async function taskEventRecord(env, sessionId, kind, payload) {
   try {
     if (!sessionId || !env.DB) return;
@@ -2028,7 +2028,7 @@ async function frontAgentRun(env, bodyMessages, stateDigest) {
           return { action: 'reply', reply: 'Siap! Web apa yang mau dibuat, dan untuk siapa atau usaha apa? Kasih nama dan gambaran singkatnya, nanti langsung aku kerjakan.' };
         }
       }
-      if (o && o.action === 'execute' && o.instruction) return { action: 'execute', instruction: String(o.instruction).slice(0, 3500), context: String(o.context || '').slice(0, 1200) };
+      if (o && o.action === 'execute' && o.instruction) return { action: 'execute', ack: String(o.ack || '').slice(0, 1200), instruction: String(o.instruction).slice(0, 3500), context: String(o.context || '').slice(0, 1200) };
       if (o && o.action === 'reply' && o.reply) return { action: 'reply', reply: String(o.reply).slice(0, 3500) };
     } catch (e) {}
     return { action: 'reply', reply: t.slice(0, 2200) };
@@ -2622,6 +2622,12 @@ export async function onRequestPost({ request, env, waitUntil }) {
         if (qi !== -1) messages[qi] = { role: 'system', content: String(messages[qi].content || '') + note };
         else messages.unshift({ role: 'system', content: note.trim() });
         try { if (waitUntil) waitUntil(taskEventRecord(env, sid, 'front', 'instruksi eksekusi: ' + String(fr.instruction).slice(0, 250))); } catch (e) {}
+        // [10 Okt, arahan pemilik] FRONT JAWAB DULU: ack Front Agent ditampilkan ke
+        // user SEBELUM AI 2 mulai bekerja (alur: jawab -> rancangan/instruksi -> eksekusi).
+        if (fr.ack) {
+          try { if (waitUntil) waitUntil(taskEventRecord(env, sid, 'front', 'ack ke user: ' + String(fr.ack).slice(0, 200))); } catch (e) {}
+          if (streamSend) { try { streamSend({ t: 'front', text: String(fr.ack).slice(0, 1200), model: 'Front Agent (ringan)' }); } catch (e) {} }
+        }
       }
     }
     let r = await attemptCascade();
@@ -2700,8 +2706,9 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // penyambung diam-diam pun tertagih; selisih dgn dashboard provider tertutup).
     const _mrCost = mrTokenCost(mrUsageAcc);
     if (!isGuest && (_mrCost !== null || isFirstHop)) await chargeAiUsage(env, user, r.model, outChars, inputChars, !explicitChat, _mrCost);
+    const frontAckText = (frontMeta && frontMeta.action === 'execute' && frontMeta.ack) ? String(frontMeta.ack).slice(0, 1200) : '';
     const out = {
-      text: r.text || '',
+      text: (frontAckText ? frontAckText + '\n\n' : '') + (r.text || ''),
       model: r.model,
       session_id: body.session_id || ('ls_' + Date.now()),
       front: frontMeta ? { action: frontMeta.action, instruction: String(frontMeta.instruction || '').slice(0, 300) } : undefined
