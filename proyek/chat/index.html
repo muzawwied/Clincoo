@@ -6891,7 +6891,20 @@ window.chatLivePreview = function () {
                     if (resultJson && resultJson.session_id) { currentSessionId = resultJson.session_id; try { localStorage.setItem(lsChatKey() + '_session', currentSessionId); } catch(e) {} }
                     // POLLING: blok [[POLL]]...[[/POLL]] dari jawaban final diubah jadi
                     // kartu pertanyaan interaktif; teks yang tampil bersih tanpa marker.
-                    const finalText = (resultJson && resultJson.text ? resultJson.text : "");
+                    let finalText = (resultJson && resultJson.text ? resultJson.text : "");
+                    // [10 Okt, laporan owner] MODE CHAT tidak punya tool tulis-file: jawaban yang
+                    // malah berisi blok kode HTML/CSS/JS besar (draf file di bubble) diganti arahan
+                    // singkat ke mode Build/Workspace. Jaring pengaman di atas guard prompt server.
+                    try {
+                        const __m = (typeof window.selectedAiMode === 'function' && window.selectedAiMode()) || 'chat';
+                        if (__m === 'chat') {
+                            const __fences = finalText.match(/```[a-z]*\n[\s\S]*?```/gi) || [];
+                            const __bigCode = __fences.some(function (b) { return b.length > 900 && /<!DOCTYPE|<html|<head|<body|<script|<style|\{[\s\S]*:[\s\S]*;[\s\S]*\}/i.test(b); });
+                            if (__bigCode) {
+                                finalText = 'Membuat atau melanjutkan situs paling pas dikerjakan di mode Build (Workspace), supaya file benar-benar tersimpan dan bisa langsung dipreview. Ganti pilihan "Chat" di kolom ketik jadi "Build", lalu kirim ulang permintaanmu.';
+                            }
+                        }
+                    } catch (e) {}
                     const parsedFinal = parsePollBlock(finalText);
                     // [10 Okt] jaring pengaman: buang kalimat beraksara Mandarin/Jepang/Korea (di luar blok kode)
                     try {

@@ -2238,6 +2238,24 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // 'chat' = GRATIS (tanpa cek saldo; cap harian/bulanan jadi batasnya),
     // 'build' = ModelRouter berbayar, saldo kredit dipotong sesuai pemakaian.
     const explicitChat = !isGuest && String(body.mode || '').trim() === 'chat';
+    // [10 Okt, laporan owner: "udah ada Workspace masih buat file di chat"] Mode CHAT tidak
+    // punya tool tulis-file. Kalau user minta bangun/lanjut situs di mode Chat, AI DILARANG
+    // menulis kode HTML/CSS/JS di bubble; arahkan ke mode Build (Workspace) dengan singkat.
+    if (explicitChat && isFirstHop) {
+      try {
+        const __recent = (Array.isArray(body.messages) ? body.messages : []).filter(function (m) { return m && m.role !== 'system'; }).slice(-8);
+        const __tx = function (m) { const c = m && m.content; return typeof c === 'string' ? c : (Array.isArray(c) ? c.map(function (p) { return (p && typeof p === 'object') ? (p.text || '') : String(p || ''); }).join(' ') : ''); };
+        const __last = __tx(__recent.filter(function (m) { return m.role === 'user'; }).pop() || {}).toLowerCase();
+        const __ctx = __recent.map(__tx).join(' ').toLowerCase();
+        const __buildAsk = detectBuildIntent(body.messages) || (/^\s*(ya\s+|iya\s+)?(lanjut|lanjutkan|terusin|teruskan|gas|oke lanjut|ok lanjut)/.test(__last) && /(web|situs|website|portofolio|portfolio|landing|aplikasi|halaman|index\.html)/.test(__ctx));
+        if (__buildAsk) {
+          const __guard = '\n\n[ATURAN MODE CHAT — MUTLAK]: Mode Chat TIDAK bisa membuat atau menyimpan file proyek. DILARANG menulis kode HTML/CSS/JS/blok kode panjang atau draf file ke dalam jawaban, dan DILARANG berjanji "saya akan membuat file". Jawab SINGKAT (1-2 kalimat, tanpa kode): bilang bahwa membuat/melanjutkan situs dikerjakan di mode Build (Workspace) supaya file benar-benar tersimpan dan bisa dipreview, lalu suruh user pindah ke mode Build lewat pilihan "Chat" di kolom ketik dan kirim ulang permintaannya. Tidak perlu membahas stack atau langkah teknis.';
+          const __si = messages.findIndex(function (m) { return m && m.role === 'system'; });
+          if (__si !== -1) messages[__si] = { role: 'system', content: String(messages[__si].content || '') + __guard };
+          else messages.unshift({ role: 'system', content: __guard.trim() });
+        }
+      } catch (e) {}
+    }
     if (isFirstHop) {
       const q = isGuest ? await guestQuotaCheck(env, guestKey) : await quotaCheck(env, user, 1, explicitChat);
       if (q.exceeded) {
