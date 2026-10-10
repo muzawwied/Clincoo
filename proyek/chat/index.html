@@ -4362,9 +4362,52 @@ window.chatLivePreview = function () {
         }
         const wsVerifyLabel = function (path, v) {
             if (!v) return null;
-            if (v.ok) return 'OK — ' + v.msg;
-            return 'GAGAL — ' + v.msg + '. WAJIB tulis ulang file ini (write_file ke path sama) SEBELUM lanjut atau sebelum bilang selesai.';
+            if (v.ok) return 'OK — ' + v.msg + (v.warn ? ' | ' + v.warn : '');
+            return 'GAGAL — ' + v.msg + (v.warn ? ' | ' + v.warn : '') + '. WAJIB tulis ulang file ini (write_file ke path sama) SEBELUM lanjut atau sebelum bilang selesai.';
         };
+
+        // [10 Okt, laporan pemilik: live preview "setengah mati"] HTML boleh
+        // merujuk aset lokal (script.js, style.css, logo.png) yang tidak ada
+        // di workspace — preview & situs terus render TANPA aset itu dan
+        // terasa rusak (tombol mati, gaya hilang, logo kosong). Deteksi
+        // referensi yang menunjuk file yang tidak ada supaya AI memperbaiki
+        // saat menulis, bukan setelah user lihat preview rusak.
+        function wsMissingRefs(htmlPath, content) {
+            const missing = [];
+            if (!content || String(content).indexOf('<') === -1) return missing;
+            const data = wsLoad();
+            const owned = {};
+            Object.keys(data).forEach(function(fk) {
+                (data[fk] || []).forEach(function(it) { if (it && it.type === 'file' && it.path) owned[String(it.path).toLowerCase()] = true; });
+            });
+            const bp = String(htmlPath);
+            const base = bp.indexOf('/') === -1 ? '' : bp.slice(0, bp.lastIndexOf('/') + 1);
+            const re = /(?:src|href|data-src)\s*=\s*["']([^"']+\.(?:js|mjs|css|png|jpe?g|svg|webp|gif|ico|json|woff2?|ttf|mp4|webm|mp3))["']/gi;
+            let m;
+            while ((m = re.exec(content)) !== null) {
+                const ref0 = String(m[1]).split(/[?#]/)[0];
+                if (/^(?:https?:)?\/\//i.test(ref0) || ref0.indexOf('data:') === 0 || ref0.indexOf('#') === 0 || ref0.indexOf('mailto:') === 0 || ref0.indexOf('tel:') === 0) continue;
+                const parts = (base + ref0.replace(/^\.?\//, '')).split('/');
+                const out = [];
+                for (let i = 0; i < parts.length; i++) { if (parts[i] === '..') out.pop(); else if (parts[i] && parts[i] !== '.') out.push(parts[i]); }
+                const rp = out.join('/').toLowerCase();
+                if (rp && !owned[rp] && missing.indexOf(rp) === -1) missing.push(rp);
+            }
+            return missing;
+        }
+        function wsVerifyFull(path, content) {
+            const v = wsVerifySyntax(path, content);
+            try {
+                if (/\.html?$/i.test(String(path))) {
+                    const missing = wsMissingRefs(path, content);
+                    if (missing.length) {
+                        const note = 'PERINGATAN ASET: HTML merujuk ' + missing.slice(0, 4).join(', ') + (missing.length > 4 ? ' (+' + (missing.length - 4) + ')' : '') + ' yang BELUM ada di workspace. Kalau akan ditulis selanjutnya, lanjutkan — tapi WAJIB tulis file itu sebelum bilang selesai; kalau tidak, preview & situs tampil rusak (aset tidak ikut).';
+                        return { ok: v ? v.ok : true, msg: (v && v.msg) || '', warn: note };
+                    }
+                }
+            } catch (e) {}
+            return v;
+        }
 
         async function wsWriteFile(args) {
             const path = args && args.path;
@@ -4395,7 +4438,7 @@ window.chatLivePreview = function () {
                 }
                 const err = wsSave(data);
                 if (err) return err;
-                const _vb = wsVerifySyntax(info.itemPath, content); const _vbl = wsVerifyLabel(info.itemPath, _vb); return { success: true, action: existingIdx !== -1 ? 'overwritten' : 'created', path: info.itemPath, size: sizeStr, cloud: true, verify: _vbl };
+                const _vb = wsVerifyFull(info.itemPath, content); const _vbl = wsVerifyLabel(info.itemPath, _vb); return { success: true, action: existingIdx !== -1 ? 'overwritten' : 'created', path: info.itemPath, size: sizeStr, cloud: true, verify: _vbl };
             }
 
             const data = wsLoad();
@@ -4417,7 +4460,7 @@ window.chatLivePreview = function () {
             }
             const err = wsSave(data);
             if (err) return err;
-            const _vn = wsVerifySyntax(info.itemPath, content); const _vnl = wsVerifyLabel(info.itemPath, _vn); return { success: true, action: created ? 'created' : 'overwritten', path: info.itemPath, size: sizeStr, verify: _vnl };
+            const _vn = wsVerifyFull(info.itemPath, content); const _vnl = wsVerifyLabel(info.itemPath, _vn); return { success: true, action: created ? 'created' : 'overwritten', path: info.itemPath, size: sizeStr, verify: _vnl };
         }
 
         async function wsAppendFile(args) {
@@ -4451,7 +4494,7 @@ window.chatLivePreview = function () {
             // masih setengah pasti "rusak", memverifikasi tiap potongan cuma bikin noise.
             let verifyLabel = ' belum diverifikasi (file belum selesai — lanjut append_file, done:true di bagian terakhir)';
             if (args && args.done) {
-                const _va = wsVerifySyntax(info.itemPath, merged); verifyLabel = wsVerifyLabel(info.itemPath, _va);
+                const _va = wsVerifyFull(info.itemPath, merged); verifyLabel = wsVerifyLabel(info.itemPath, _va);
             }
             return { success: true, action: 'appended', path: info.itemPath, size: it.size, chars_total: merged.length, verify: verifyLabel };
         }
@@ -5087,7 +5130,7 @@ window.chatLivePreview = function () {
             // workspace — di situs itu tampil kotak logo kosong. Teruskan warning ke
             // jawaban AI supaya logo dibuat ulang & di-deploy ulang, bukan dibiarkan.
             const _lw = Array.isArray(d.warnings) ? d.warnings : [];
-            return { success: true, url: url, verify: _dv, pages_url: d.pages_url || '', public_domain: d.public_domain || '', pages_project: d.pages_project || '', file_count: d.fileCount || 0, warnings: _lw, message: 'Situs berhasil di-deploy' + (url ? ' ke ' + url : '') + (d.public_domain ? ' (subdomain clincoo.biz.id aktif)' : '') + '.' + (_lw.length ? ' PERINGATAN: ' + _lw.join('; ') + ' — WAJIB panggil generate_image (set_as_logo) ulang lalu deploy lagi supaya logo tampil, jangan biarkan placeholder kosong.' : '') };
+            return { success: true, url: url, verify: _dv, pages_url: d.pages_url || '', public_domain: d.public_domain || '', pages_project: d.pages_project || '', file_count: d.fileCount || 0, warnings: _lw, message: 'Situs berhasil di-deploy' + (url ? ' ke ' + url : '') + (d.public_domain ? ' (subdomain clincoo.biz.id aktif)' : '') + '.' + (_lw.length ? ' PERINGATAN: ' + _lw.join('; ') + ' — WAJIB buat file aset yang hilang itu (atau perbaiki referensinya), lalu deploy ulang supaya semua aset tampil, jangan biarkan situs setengah rusak.' : '') };
         }
 
         // manage_domain: AI kelola domain kustom + setel record DNS langsung (via /api/deploy)
@@ -5506,7 +5549,7 @@ window.chatLivePreview = function () {
                     } else {
                         data[info.folderKey].push({ type: 'file', name: info.name, size: sizeStr, path: info.itemPath, content: isBig ? '' : content, cloud: isBig ? true : undefined });
                     }
-                    results.push({ path: info.itemPath, ok: true, cloud: isBig ? true : undefined, verify: wsVerifyLabel(info.itemPath, wsVerifySyntax(info.itemPath, content)) });
+                    results.push({ path: info.itemPath, ok: true, cloud: isBig ? true : undefined, verify: wsVerifyLabel(info.itemPath, wsVerifyFull(info.itemPath, content)) });
                 } else {
                     results.push({ path: info.itemPath, ok: false, error: 'gagal unggah file besar ke cloud' });
                 }

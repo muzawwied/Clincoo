@@ -1148,32 +1148,42 @@ export async function onRequestPost({ request, env }) {
 
     await applyDeployMutations(db, T, projectId, files, fileContent, setContent, user, planInfo);
 
-    // [10 Okt, laporan pemilik: logo jadi placeholder bulat kosong di halaman utama]
-    // HTML yang merujuk file logo (logo.png/jpg/jpeg/svg/webp/ico) tapi filenya
-    // tidak ada di workspace -> di situs tampil kotak logo kosong. Deteksi
-    // SEBELUM unggah dan laporkan via warnings pada respons sukses, supaya
-    // AI/klien tahu harus membuat ulang logonya, bukan bingung lihat placeholder.
+    // [10 Okt, laporan pemilik: logo placeholder & live preview "setengah mati"]
+    // HTML boleh merujuk aset lokal (logo.png, script.js, style.css, gambar)
+    // yang tidak ada di workspace -> situs live tampil tanpa aset itu: logo
+    // kosong, tombol mati, gaya hilang. Deteksi SEMUA referensi aset lokal
+    // yang hilang SEBELUM unggah, laporkan via warnings pada respons sukses
+    // supaya AI membuat/memperbaiki aset lalu deploy ulang — bukan user
+    // bingung melihat situs setengah rusak.
     const logoWarnings = [];
     {
       const owned = new Set(files.map(f => String(f.path).toLowerCase()));
-      const refRe = /(?:src|href|content|data-src|data-logo)\s*=\s*["']([^"']*logo[^"']*\.(?:png|jpe?g|svg|webp|ico))["']/gi;
+      const refRe = /(?:src|href|data-src|data-logo)\s*=\s*["']([^"']+\.(?:js|mjs|css|png|jpe?g|svg|webp|gif|ico|json|woff2?|ttf|mp4|webm|mp3))["']/gi;
+      const perRef = new Map();
       for (const f of files) {
         if (!/\.html?$/i.test(String(f.path)) || f.is_big) continue;
         const html = String(f.content || '');
+        const base = String(f.path).indexOf('/') === -1 ? '' : String(f.path).slice(0, String(f.path).lastIndexOf('/') + 1);
         let m;
         while ((m = refRe.exec(html)) !== null) {
           const ref0 = String(m[1] || '').split(/[?#]/)[0];
           if (/^(?:https?:)?\/\//i.test(ref0) || ref0.startsWith('data:')) continue;
-          const ref = ref0.replace(/^\.?\//, '').toLowerCase();
-          if (ref && !owned.has(ref)) {
-            const w = String(f.path) + ' merujuk ' + ref + ' yang tidak ada di workspace (logo akan tampil kosong)';
-            if (logoWarnings.indexOf(w) === -1) logoWarnings.push(w);
-          }
+          const parts = (base + ref0.replace(/^\.?\//, '')).split('/');
+          const st = [];
+          for (let i = 0; i < parts.length; i++) { if (parts[i] === '..') st.pop(); else if (parts[i] && parts[i] !== '.') st.push(parts[i]); }
+          const ref = st.join('/').toLowerCase();
+          if (!ref || owned.has(ref)) continue;
+          if (!perRef.has(ref)) perRef.set(ref, []);
+          const arr = perRef.get(ref);
+          if (arr.indexOf(String(f.path)) === -1) arr.push(String(f.path));
         }
+      }
+      for (const [ref, froms] of perRef) {
+        logoWarnings.push(ref + ' tidak ada di workspace (dipakai di ' + froms.slice(0, 2).join(', ') + (froms.length > 2 ? ' dst.' : '') + ') — aset ini TIDAK ikut tampil di situs');
       }
       if (logoWarnings.length) {
         try { await db.prepare(`INSERT INTO ${T.deployLogs} (project_id, status, url, message, created_at) VALUES (?, 'warning', '', ?, datetime('now'))`)
-          .bind(projectId, 'peringatan aset logo: ' + logoWarnings.join('; ')).run(); } catch (e) {}
+          .bind(projectId, 'peringatan aset hilang: ' + logoWarnings.join('; ')).run(); } catch (e) {}
       }
     }
 

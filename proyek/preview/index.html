@@ -67,6 +67,10 @@
         #pv-frame { flex: 1; width: 100%; border: 0; background: #fff; }
         html[data-dark] #pv-frame { background: #fff; }
 
+        /* Strip peringatan aset hilang — muncul di bawah iframe */
+        #pv-warn { padding: 10px 14px; font-size: 12.5px; line-height: 1.5; background: #fef3c7; color: #78350f; border-top: 1px solid #f59e0b; }
+        #pv-warn[hidden] { display: none; }
+
         /* ===== Splash screen Clincoo (state kosong) ===== */
         #pv-msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 24px; text-align: center; color: #71717a; background: inherit; z-index: 5; }
         #pv-msg img { width: 58px; height: 58px; border-radius: 14px; animation: pv-breathe 2.6s ease-in-out infinite; }
@@ -103,6 +107,7 @@
         </div>
     </div>
     <iframe id="pv-frame" title="Preview proyek"></iframe>
+    <div id="pv-warn" hidden></div>
     <div id="pv-pop" hidden></div>
     <div id="pv-mark" aria-hidden="true"><img src="../../assets/logo-clincoo.png?v=20261007" alt="">Clincoo</div>
     <div id="pv-msg">
@@ -299,6 +304,27 @@
         return htmls[0];
     }
 
+    // referensi aset lokal di HTML yang tidak ada di map workspace
+    function missingRefs(map, entry, html) {
+        var out = [];
+        try {
+            var bp = String(entry || '');
+            var base = bp.indexOf('/') === -1 ? '' : bp.slice(0, bp.lastIndexOf('/') + 1);
+            var re = /(?:src|href|data-src)\s*=\s*["']([^"']+\.(?:js|mjs|css|png|jpe?g|svg|webp|gif|ico|json|woff2?|ttf|mp4|webm|mp3))["']/gi;
+            var m;
+            while ((m = re.exec(String(html || ''))) !== null) {
+                var ref0 = String(m[1]).split(/[?#]/)[0];
+                if (/^(?:https?:)?\/\//i.test(ref0) || ref0.indexOf('data:') === 0 || ref0.indexOf('#') === 0) continue;
+                var parts = (base + ref0.replace(/^\.?\//, '')).split('/');
+                var st = [];
+                for (var i = 0; i < parts.length; i++) { if (parts[i] === '..') st.pop(); else if (parts[i] && parts[i] !== '.') st.push(parts[i]); }
+                var rp = st.join('/');
+                if (rp && !map[norm(rp)] && out.indexOf(rp) === -1) out.push(rp);
+            }
+        } catch (e) {}
+        return out;
+    }
+
     // ===== render =====
     function render(map) {
         var entry = pickEntry(map);
@@ -344,6 +370,19 @@
             if (it.content.indexOf('data:') === 0 || it.content.indexOf('http') === 0) return attr + '="' + it.content + '"';
             return m0;
         });
+
+        // [10 Okt, laporan pemilik: live preview "setengah mati"] Preview jalan,
+        // tapi kalau HTML merujuk aset lokal yang TIDAK ada di workspace
+        // (mis. script.js lupa dibuat), halaman render tanpa JS/CSS/gambar itu
+        // dan terasa rusak — tanpa penjelasan. Tampilkan strip peringatan
+        // yang menyebut aset mana yang hilang, jadi jelas ini masalah isi
+        // workspace, bukan preview-nya.
+        var warnEl = document.getElementById('pv-warn');
+        var missing = missingRefs(map, entry, html);
+        if (missing.length) {
+            warnEl.textContent = 'Aset tidak ditemukan di workspace: ' + missing.join(', ') + ' — halaman dipratinjau tanpa aset tersebut. Minta AI membuat file yang hilang, lalu pratinjau diperbarui otomatis.';
+            warnEl.hidden = false;
+        } else { warnEl.hidden = true; warnEl.textContent = ''; }
 
         if (blobUrl) { try { URL.revokeObjectURL(blobUrl); } catch (e) {} }
         blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
