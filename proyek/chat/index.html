@@ -4,7 +4,8 @@
 <script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script src="../../js/auth-client.js?v=5"></script>
   <script src="../../js/accent-init.js"></script>
-<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clincoo_current_project_id',__p);}}catch(e){}})();</script>
+<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){sessionStorage.setItem('clincoo_tab_project_id',__p);localStorage.setItem('clincoo_current_project_id',__p);}}catch(e){}})();</script>
+<script>(function(){try{var __t=new URLSearchParams(location.search).get('id');if(!__t){__t=sessionStorage.getItem('clincoo_tab_project_id')||'';}if(__t){try{localStorage.setItem('clincoo_current_project_id',__t);}catch(e){}}}catch(e){}})();</script>
 <script>/* embed=1: chat dalam overlay sheet di halaman lain (tanpa panel workspace sendiri) */(function(){try{if(/(^|[?&])embed=1(&|$)/.test(location.search)){document.documentElement.classList.add('embed-mode');}}catch(e){}})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
@@ -849,7 +850,7 @@
                         Live preview
                         <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10" /></svg>
                     </button>
-                    <a id="header-editor" href="/proyek/workspace/editor/" onclick="var __pid='';try{__pid=localStorage.getItem('clincoo_current_project_id')||''}catch(e){}if(__pid){this.href='/proyek/workspace/editor/?id='+encodeURIComponent(__pid)}" class="header-menu-item header-mobile-only w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <a id="header-editor" href="/proyek/workspace/editor/" onclick="var __pid='';try{__pid=sessionStorage.getItem('clincoo_tab_project_id')||localStorage.getItem('clincoo_current_project_id')||''}catch(e){}if(__pid){this.href='/proyek/workspace/editor/?id='+encodeURIComponent(__pid)}" class="header-menu-item header-mobile-only w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
                         <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 18l6-6-6-6M8 6l-6 6 6 6" /></svg>
 <span class="flex items-center gap-1.5">Editor <svg class="clincoo-premium-crown w-3.5 h-3.5 text-amber-500 shrink-0" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#f59e0b" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"></path></svg></span>                        <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10" /></svg>
                     </a>
@@ -1027,7 +1028,7 @@
         function splitSrcFor(nav) {
             if (nav === 'dashboard') return '/proyek/dashboard/?embed=1';
             if (nav === 'live') {
-                var pidL = ''; try { pidL = localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) {}
+                var pidL = ''; try { pidL = sessionStorage.getItem('clincoo_tab_project_id') || localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) {}
                 return '/proyek/preview/?embed=1' + (pidL ? '&id=' + encodeURIComponent(pidL) : '');
             }
             return '/proyek/code/?embed=1';
@@ -1158,12 +1159,12 @@
         window.chatSplitRefresh = function () { var f = document.getElementById('chat-ws-frame'); if (f && f.src) f.src = f.src; };
         window.chatSplitOpenTab = function () { var f = document.getElementById('chat-ws-frame'); if (f && f.dataset.src) window.open(f.dataset.src.replace('?embed=1&', '?').replace('?embed=1', ''), '_blank'); };
         window.chatSplitHistory = function () {
-            var pid = ''; try { pid = localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) {}
+            var pid = window.activeProjectId ? window.activeProjectId() : ''; try { if (!pid) { pid = localStorage.getItem('clincoo_current_project_id') || ''; } } catch (e) {}
             window.open('/proyek/build-deployment/' + (pid ? '?id=' + encodeURIComponent(pid) : ''), '_blank');
         };
         // Dari popup ••• ke header: buka editor kode proyek aktif
         window.chatOpenEditor = function () {
-            var pid = ''; try { pid = localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) {}
+            var pid = window.activeProjectId ? window.activeProjectId() : ''; try { if (!pid) { pid = localStorage.getItem('clincoo_current_project_id') || ''; } } catch (e) {}
             window.open('/proyek/workspace/editor/' + (pid ? '?id=' + encodeURIComponent(pid) : ''), '_blank');
         };
         window.toggleHeaderMenu = function (e) {
@@ -1175,7 +1176,7 @@
         });
         window.chatExportZip = function () {
     closeHeaderMenu();
-    var pid = ''; try { pid = localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) {}
+    var pid = window.activeProjectId ? window.activeProjectId() : ''; try { if (!pid) { pid = localStorage.getItem('clincoo_current_project_id') || ''; } } catch (e) {}
     var key = 'clincoo_workspace_files_' + (pid || 'global');
     var byPath = {};
     var raw = null;
@@ -1229,10 +1230,18 @@
         .catch(function () { finish(filesFromMap()); });
 };
 
-window.chatLivePreview = function () {
+
+        // [10 Okt, laporan owner: 2 project di 2 tab browser, Live preview-nya sama] Penyebab:
+        // 'clincoo_current_project_id' di localStorage DIPAKAI BERSAMA semua tab, jadi tab 2
+        // menimpa tab 1. Fix: tiap tab punya project sendiri di sessionStorage
+        // ('clincoo_tab_project_id') yang dicek DULU; localStorage hanya fallback/default.
+        window.activeProjectId = function () {
+            try { return sessionStorage.getItem('clincoo_tab_project_id') || localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) { return ''; }
+        };
+        window.chatLivePreview = function () {
     closeHeaderMenu();
     // Live preview pindah ke halaman khusus (/proyek/preview/) — konsisten desktop & mobile.
-    var pid = ''; try { pid = localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) {}
+    var pid = window.activeProjectId ? window.activeProjectId() : ''; try { if (!pid) { pid = localStorage.getItem('clincoo_current_project_id') || ''; } } catch (e) {}
     location.href = '/proyek/preview/' + (pid ? '?id=' + encodeURIComponent(pid) : '');
 };
 
@@ -7692,7 +7701,7 @@ window.chatLivePreview = function () {
         (function() {
             try {
                 var handoffMsg = localStorage.getItem('clincoo_current_chat_msg');
-                var handoffProjectId = localStorage.getItem('clincoo_current_project_id');
+                var handoffProjectId = sessionStorage.getItem('clincoo_tab_project_id') || localStorage.getItem('clincoo_current_project_id');
                 var urlProjectId = new URLSearchParams(window.location.search).get('id');
                 if (urlProjectId || handoffProjectId) {
                     currentProjectId = urlProjectId || handoffProjectId;
@@ -7931,7 +7940,7 @@ if (loadChatLog()) {
 
     function openFullEditor(e) {
       if (e) e.preventDefault();
-      var pid = ''; try { pid = localStorage.getItem('clincoo_current_project_id') || ''; } catch (err) {}
+      var pid = ''; try { pid = window.activeProjectId ? window.activeProjectId() : (localStorage.getItem('clincoo_current_project_id') || ''); } catch (err) {}
       if (!pid) { try { addNotification('Editor', 'Buka proyek dulu untuk mengakses editor.'); } catch (err) {} return; }
       // Editor = fitur paket Pro. Keputusan instan dari state/cache (tanpa menunggu server) —
       // revalidasi dilakukan di belakang supaya keputusan klik berikutnya tetap segar.

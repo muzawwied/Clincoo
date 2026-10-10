@@ -120,8 +120,11 @@
     'use strict';
     var qs = new URLSearchParams(location.search);
     var pid = '';
-    try { pid = qs.get('id') || localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) {}
-    if (pid) { try { localStorage.setItem('clincoo_current_project_id', pid); } catch (e) {} }
+    // [10 Okt, laporan owner: preview 2 project di 2 tab tampil sama] id project kini
+    // per-TAB: ?id= -> sessionStorage (dibagi hanya dalam tab ini), localStorage hanya
+    // fallback. Tulis-balik ke localStorage DIHAPUS supaya tab lain gak tertimpa.
+    try { pid = qs.get('id') || sessionStorage.getItem('clincoo_tab_project_id') || localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) {}
+    if (pid) { try { sessionStorage.setItem('clincoo_tab_project_id', pid); } catch (e) {} }
 
     // API: same-origin di domain Clincoo, absolut hanya untuk mirror (guest).
     var PV_API = /(^|\.)clincoo\.buzz$|(^|\.)clincoo\.biz\.id$|clincoo-be2\.pages\.dev$|^localhost$|^127\.0\.0\.1$/.test(location.hostname) ? '/api' : 'https://clincoo-be2.pages.dev/api';
