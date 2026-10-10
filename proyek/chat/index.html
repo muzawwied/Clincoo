@@ -3118,7 +3118,7 @@ window.chatLivePreview = function () {
                             <div class="flex flex-col gap-2 pt-1 w-full min-w-0">
                                 ${renderToolCallsCard(msg)}
                                 <div class="text-black text-[15px] leading-normal break-words w-full md-content pointer-events-auto overflow-hidden${(!msg.isProcessing && !msg.isTyping && msg.text && msg.role === 'ai') ? ' ai-answer-reveal' : ''}" style="word-break: break-word; overflow-wrap: break-word; max-width: 100%;" id="msg-text-${msg.id}">
-                                    ${(msg.isProcessing && isInfoOnlyToolCalls(msg.toolCalls)) ? processIndicator : (msg.isImageResponse ? msg.text : formatMarkdown(balanceMarkdown(msg.text)))}
+                                    ${(msg.isProcessing && isInfoOnlyToolCalls(msg.toolCalls)) ? (isLastAi ? processIndicator : '') : (msg.isImageResponse ? msg.text : formatMarkdown(balanceMarkdown(msg.text)))}
                                 </div>
                                 ${renderPollCard(msg)}
                                 ${renderApkCards(msg)}
@@ -6143,6 +6143,17 @@ window.chatLivePreview = function () {
                 processType: processType,
                 toolCalls: []
             };
+            // [10 Okt, laporan owner: dua "Thinking..." menumpuk] Bubble AI lain yang masih
+            // isProcessing & KOSONG (tanpa teks/tool) = bangkai dari panggilan fetch yang
+            // tumpang tindih. Hapus sebelum bubble baru dibuat supaya indikator cuma satu.
+            try {
+                for (let __i = messages.length - 1; __i >= 0; __i--) {
+                    const __m = messages[__i];
+                    if (__m && __m.role === 'ai' && __m.isProcessing && !String(__m.text || '').trim() && !(__m.toolCalls && __m.toolCalls.length) && __m.id !== aiMsgObj.id) {
+                        messages.splice(__i, 1);
+                    }
+                }
+            } catch (e) {}
             messages.push(aiMsgObj);
             renderMessages();
             try { saveChatLog(); } catch (e) {} // SESSION_RESUME_FIX
