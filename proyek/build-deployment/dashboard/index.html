@@ -315,6 +315,8 @@
         const API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev/api' : '/api';
         const pid = () => localStorage.getItem('clincoo_current_project_id') || '';
         let deployState = { pages_url: '', public_url: '', pollTimer: null, domainTimer: null, deploying: false };
+        // [10 Okt, arahan pemilik] URL internal (.pages.dev) TIDAK PERNAH ditampilkan ke user.
+        function __safeUrl(u) { return (u && !/\.pages\.dev(\/|$)/i.test(String(u))) ? u : ''; }
 
         // ===================== SESI DEPLOY (klik deploy cukup sekali) =====================
         // Sesi per proyek tersimpan di localStorage: halaman langsung membuka dashboard
@@ -379,13 +381,15 @@
 
             deployState.pages_url = ses.pages_url;
             deployState.public_url = ses.public_url || '';
-            const sUrl = deployState.public_url || ses.pages_url;
+            deployState.public_url = __safeUrl(ses.public_url);
+            const sUrl = deployState.public_url || __safeUrl(ses.pages_url) || '';
+            // sesi lama hanya menyimpan pages.dev -> tampil placeholder netral, polling status server mengisi domain publik
+            if (!sUrl) { try { link.textContent = 'memuat alamat…'; link.removeAttribute('href'); } catch (e) {} }
             try { var __lab = (ses.public_url || '').replace(/^https:\/\//, '').replace(/\.clincoo\.biz\.id$/, ''); if (__lab) window.__subFill && window.__subFill(__lab); } catch (e) {}
             indicator.className = 'w-2.5 h-2.5 rounded-full bg-green-500';
             shimmer.style.display = 'none';
             link.style.display = 'inline-block';
-            link.textContent = sUrl;
-            link.href = sUrl;
+            if (sUrl) { link.textContent = sUrl; link.href = sUrl; }
             timeLabel.innerText = timeAgo(ses.done_at || ses.started_at || Date.now());
             visitBtn.disabled = false;
             visitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -400,7 +404,7 @@
                 renderPreviewUrl(st);
                 if (st.last_deploy_by) setDeployedBy(st.last_deploy_by);
                 if (dep && ['success', 'active'].includes(dep.status)) {
-                    const url = st.public_url || dep.url || ses.pages_url;
+                    const url = __safeUrl(st.public_url) || __safeUrl(dep.url) || __safeUrl(ses.pages_url) || '';
                     deployState.pages_url = url;
                     deployState.public_url = st.public_url || '';
                     link.textContent = url;
@@ -462,7 +466,7 @@
             link.style.display = 'inline-block';
             deployState.pages_url = st.pages_url || (ok ? (dep.url || '') : '');
             deployState.public_url = st.public_url || '';
-            const dispUrl = deployState.public_url || deployState.pages_url;
+            const dispUrl = __safeUrl(deployState.public_url) || __safeUrl(deployState.pages_url) || '';
             if (ok) writeDeploySession({ status: 'done', pages_url: deployState.pages_url, public_url: deployState.public_url, done_at: Date.now(), deployed_by: st.last_deploy_by || '', domains: st.domains || [] });
             link.textContent = dispUrl || 'gagal dideploy';
             link.href = dispUrl || '#';

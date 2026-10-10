@@ -774,7 +774,9 @@ export async function onRequestGet({ request, env }) {
       domains = doms.filter(x => x && x.name !== name + PUB_SUFFIX && !x.name.endsWith(LEGACY_PUB_SUFFIX)).map(x => ({ name: x.name, status: x.status || 'pending' }));
     }
     const pubLabel = (await getSetting(db, T.projectSettings, projectId, 'public_subdomain')) || '';
-    let publicUrl = pagesUrl;
+    // [10 Okt] default = domain publik berlabel (JANGAN jatuh ke pages.dev walau domain
+    // belum berstatus aktif) — URL internal tidak boleh bocor ke tampilan user.
+    let publicUrl = 'https://' + (pubLabel || name) + PUB_SUFFIX;
     if (Array.isArray(doms)) {
       const isUp = function (x) { return x && (x.status === 'active' || x.status === 'initializing'); };
       const pd = (pubLabel ? doms.find(x => x && x.name === pubLabel + PUB_SUFFIX && isUp(x)) : null)
@@ -1287,7 +1289,7 @@ export async function onRequestPost({ request, env }) {
     // Log sukses dibungkus try/catch: gagal mencatat log TIDAK boleh membuat
     // deploy sukses dilaporkan gagal (pernah bikin user nyangkut di halaman
     // "Mulai Konfigurasi" padahal situsnya sudah online).
-    const pubUrl = pubDomain ? ('https://' + pubDomain) : pagesUrl;
+    const pubUrl = pubDomain ? ('https://' + pubDomain) : ('https://' + (isPreview ? targetName : (pubLabel || targetName)) + PUB_SUFFIX);
     try {
       await db.prepare(`INSERT INTO ${T.deployLogs} (project_id, status, url, message, created_at) VALUES (?, ?, ?, ?, datetime('now'))`)
         .bind(projectId, isPreview ? 'preview' : 'success', pubUrl, (isPreview ? 'preview ' : 'deploy ') + files.length + ' file ke ' + targetName).run();
