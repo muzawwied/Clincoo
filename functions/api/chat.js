@@ -2075,7 +2075,16 @@ async function frontAgentRun(env, bodyMessages, stateDigest) {
         const userTurns = recent.filter(function (m) { return m.role === 'user'; }).length;
         const vague = /^(tolong\s+)?(buat|buatkan|bikin|bikinkan|bangun)(kan)?\s+(sebuah\s+|aku\s+|saya\s+)?(web|website|situs|aplikasi|app|landing\s*page|halaman)\s*(dong|ya|aja|saja|nih)?[.!? ]*$/i.test(String(lastU).trim());
         const askedBefore = recent.some(function (m) { return m.role === 'assistant'; });
-        if (!askedBefore && (vague || (words <= 3 && userTurns <= 1 && /\b(web|website|situs|aplikasi|app)\b/i.test(lastU)))) {
+        // [10 Okt, laporan owner: "buat situs portfolio" (3 kata) malah kena gerbang ini
+        // dan ditanya "situs ini untuk apa?" padahal topiknya sudah ada] GERBANG LEBIH PINTAR:
+        // buang kata generik (buat/bikin/web/situs/app/dong/ya/dll); kalau masih ada kata
+        // topik nyata (portfolio, kedai, toko, nama brand...) berarti permintaan sudah
+        // spesifik -> lewati gerbang, serahkan ke AI. Gerbang hanya menangkap pesan yang
+        // BENAR-BENAR tanpa topik ("buat web dong", "bikin situs ya").
+        const STOPW = new Set(['tolong','buat','buatkan','bikin','bikinkan','bangun','kan','web','website','situs','aplikasi','app','landing','page','halaman','dong','ya','aja','saja','nih','aku','saya','sebuah','untuk','bikinin','please']);
+        const contentWords = String(lastU).toLowerCase().replace(/[.,!?;:]/g,' ').split(/\s+/).filter(function (w) { return w && !STOPW.has(w); });
+        const hasTopic = contentWords.length > 0;
+        if (!askedBefore && !hasTopic && (vague || (words <= 3 && userTurns <= 1 && /\b(web|website|situs|aplikasi|app)\b/i.test(lastU)))) {
           return { action: 'reply', reply: 'Siap! Bantu jawab singkat dulu supaya hasilnya pas:\n[[POLL]]\nT: Konfirmasi singkat\nQ: Web untuk apa atau siapa usahanya?\nA: Kuliner (restoran/kafe/katering)\nB: Toko & produk\nC: Jasa profesional\nD: Organisasi/komunitas\n---\nQ: Nama usaha atau brand-nya apa?\n[[/POLL]]' };
         }
       }
