@@ -2530,12 +2530,14 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // execute-> instruksi terstruktur disuntik ke system prompt, AI 2 (pipeline
     //           normal + tools) mengeksekusi persis seperti sebelumnya.
     // Matikan per-request dengan body.agent='off'.
-    if (buildMode && isFirstHop && String(body.agent || 'auto') !== 'off') {
+    let frontMeta = null;
+    if (String(body.mode || '').trim() === 'build' && isFirstHop && String(body.agent || 'auto') !== 'off') {
       const sid = body.session_id || ('fa_' + String(Date.now()));
       try { if (waitUntil) waitUntil(scanMessagesForEvents(env, sid, (body.messages || []).slice(-3))); } catch (e) {}
       const digest = await taskStateDigest(env, sid);
       try { streamSend && streamSend({ t: 'progress', text: 'Memahami permintaan…' }); } catch (e) {}
       const fr = await frontAgentRun(env, body.messages, digest);
+      frontMeta = fr || null;
       if (fr && fr.action === 'reply' && fr.reply) {
         try { if (waitUntil) waitUntil(taskEventRecord(env, sid, 'front', 'jawab langsung: ' + String(fr.reply).slice(0, 150))); } catch (e) {}
         try { await chargeAiUsage(env, user, 'front-agent-ringan', String(fr.reply).length, 0, false, null); } catch (e) {}
@@ -2587,7 +2589,8 @@ export async function onRequestPost({ request, env, waitUntil }) {
         const outS = {
           text: r.text || '',
           model: r.model,
-          session_id: body.session_id || ('ls_' + Date.now())
+          session_id: body.session_id || ('ls_' + Date.now()),
+          front: frontMeta ? { action: frontMeta.action, instruction: String(frontMeta.instruction || '').slice(0, 300) } : undefined
         };
         if (r.tool_calls) outS.tool_calls = r.tool_calls;
         // Kredit sesungguhnya: model yang menjawab + panjang output (teks + tool/code)
@@ -2634,7 +2637,8 @@ export async function onRequestPost({ request, env, waitUntil }) {
     const out = {
       text: r.text || '',
       model: r.model,
-      session_id: body.session_id || ('ls_' + Date.now())
+      session_id: body.session_id || ('ls_' + Date.now()),
+      front: frontMeta ? { action: frontMeta.action, instruction: String(frontMeta.instruction || '').slice(0, 300) } : undefined
     };
     if (r.tool_calls) out.tool_calls = r.tool_calls;
     return new Response(JSON.stringify(out), {
