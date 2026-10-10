@@ -2006,7 +2006,10 @@ async function frontAgentRun(env, bodyMessages, stateDigest) {
     const recent = chat.slice(-12);
     const sys = FRONT_SYSTEM_PROMPT + (stateDigest ? '\n\n[PROGRES TUGAS SEBELUMNYA (event store — sumber kebenaran)]:\n' + stateDigest : '');
     const frMsgs = [{ role: 'system', content: sys }].concat(recent);
-    const r = await withTimeout(tryOpenRouterText(orKeys, frMsgs, null, null, null), 25000);
+    // Model ringan Front Agent: jalur gratis internal dulu (cepat, terverifikasi
+    // hidup 10 Okt), OpenRouter GLM sebagai cadangan bila internal tewas.
+    let r = await withTimeout(tryOrkestraMini(frMsgs), 22000).catch(function () { return null; });
+    if (!r || r.error || !r.text) r = await withTimeout(tryOpenRouterText(orKeys, frMsgs, null, null, null), 25000).catch(function () { return null; });
     if (!r || r.error || !r.text) return null;
     let t = String(r.text).trim().replace(/^```(json)?/i, '').replace(/```\s*$/, '').trim();
     const i = t.indexOf('{'), j = t.lastIndexOf('}');
