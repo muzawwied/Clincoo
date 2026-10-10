@@ -40,7 +40,7 @@ function clientIp(request) {
   try { return (request && request.headers && request.headers.get('cf-connecting-ip')) || 'unknown'; } catch (e) { return 'unknown'; }
 }
 
-const WORKERS_AI_MODELS = ['@cf/zai-org/glm-4.7-flash'];
+const WORKERS_AI_MODELS = []; // glm dihapus (arahan pemilik 10 Okt)
 const GEMINI_MODELS = ['gemini-3.6-flash', 'gemini-3-flash-preview'];
 const MODELROUTER_MODELS = ['claude-haiku-5.5'];
 

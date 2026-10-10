@@ -51,7 +51,7 @@ const DEFAULT_BUDGET_MS = 50_000;
 const MAX_BUDGET_MS = 90_000;
 
 // ===== Provider chain (sama filosofi /api/ai, model 2026 non-Llama) =====
-const WORKERS_AI_MODELS = ['@cf/zai-org/glm-5.2', '@cf/deepseek-ai/deepseek-v4-flash-0731', '@cf/zai-org/glm-4.7-flash'];
+const WORKERS_AI_MODELS = ['@cf/deepseek-ai/deepseek-v4-flash-0731']; // glm dihapus (arahan pemilik 10 Okt)
 const GEMINI_MODELS = ['gemini-3.6-flash', 'gemini-3-flash-preview'];
 
 // ===== Provider 0: ModelRouter (modelrouter.id) — orkestrator utama =====

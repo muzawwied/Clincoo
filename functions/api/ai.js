@@ -155,7 +155,7 @@ async function getOpenRouterKeys(env) {
 }
 
 // ===== Provider 0: GLM 5.3 Flash via OpenRouter (UTAMA) =====
-const OPENROUTER_MODELS = ['z-ai/glm-5.3-flash'];
+const OPENROUTER_MODELS = []; // glm dihapus (arahan pemilik 10 Okt)
 async function tryOpenRouter(keys, messages, stream) {
   const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
   const sys = messages.filter(m => m.role === 'system').map(m => m.content).join('\n');
@@ -216,7 +216,7 @@ async function tryOpenRouter(keys, messages, stream) {
 //   deepseek-v4  : agentic cepat, reasoning, ctx 1.3M token
 //   glm-4.7-flash: cepat & multilingual (100+ bahasa — ramah Bahasa Indonesia)
 // GLM 5.x & deepseek-v4 di Workers AI hanya untuk plan berbayar (diuji 2026-10-01) — fallback saja.
-const WORKERS_AI_MODELS = ['@cf/zai-org/glm-4.7-flash'];
+const WORKERS_AI_MODELS = []; // glm dihapus (arahan pemilik 10 Okt)
 
 async function tryWorkersAI(env, messages, stream) {
   if (!env.AI) return { error: 'Workers AI binding tidak tersedia' };
