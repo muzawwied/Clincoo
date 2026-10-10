@@ -52,7 +52,7 @@ const PREFERRED_MODELS = ['gemini-3.6-flash', 'gemini-3-flash-preview'];
 // Model lama tetap di daftar sebagai cadangan bila GLM 5.3 Flash gagal.
 // GLM 5.x & deepseek-v4 di Workers AI hanya tersedia di plan berbayar (diuji 2026-10-01) —
 // [7 Okt] Gemini utama (terverifikasi aktif); OpenRouter & Workers AI fallback.
-const WORKERS_AI_MODELS = ['@cf/zai-org/glm-4.7-flash'];
+const WORKERS_AI_MODELS = []; // glm dihapus total (arahan pemilik 10 Okt)
 function textOf(m) {
   if (typeof m.content === 'string') return m.content;
   if (Array.isArray(m.content)) return m.content.filter(b => b && b.type === 'text').map(b => b.text).join('\n');
@@ -117,10 +117,10 @@ async function getOpenRouterKeys(env) {
 // dan jarang timeout dibanding reasoning model -> jumlah error "gangguan koneksi"
 // turun. Cadangan berurutan: Luna Pro, Sol Pro (login saja). Nemotron DIHAPUS 9 Okt (arahan pemilik).
 // [9 Okt, arahan pemilik] Nemotron DILARANG (kualitas buruk) — hanya GLM + cadangan GPT.
-const OPENROUTER_MODELS = ['z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro']; // [10 Okt] haiku DILARANG pemilik (kualitas buruk)
+const OPENROUTER_MODELS = ['openai/gpt-6-luna-pro']; // [10 Okt] haiku & glm DILARANG pemilik
 // Rantai khusus TAMU (anonim, gratis): TANPA Sol Pro — model premium hanya
 // untuk user login; tamu tidak boleh membakar biaya provider premium.
-const GUEST_OR_MODELS = ['z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro'];
+const GUEST_OR_MODELS = ['openai/gpt-6-luna-pro']; // glm dihapus (arahan 10 Okt: konsistensi sonnet)
 // [6 Okt 2026, arahan owner: "ambil ai gratis baru"] Model :free OpenRouter — gratis
 // (limit per kunci ~50 req/hari), tools didukung. Kandidat F balapan + pengaman saat
 // kredit berbayar OR habis (402). Teruji memenangkan balapan di labs (jawaban bersih ~4s).
@@ -521,7 +521,7 @@ async function tryEmergentText(keys, messages, onDelta) {
 // [10 Okt, arahan pemilik] haiku-5.5 kredit MR habis — model AI 2 (Execution
 // Agent) SEmentara pakai glm-5.3-flash (utama) + nemotron cadangan. Balikin
 // 'claude-haiku-5.5' ke depan list begitu kredit terisi lagi.
-const MODELROUTER_MODELS = ['claude-sonnet-5.5', 'glm-5.3-flash']; // [10 Okt, arahan pemilik] SONNET 5.5 UTAMA utk AI 2 (Execution Agent) — haiku DILARANG (kualitas buruk, perbandingan owner: sonnet jauh lebih bagus walau ~15x harga). glm-5.3-flash cadangan saat saldo MR kurang/bermasalah. nemotron DILARANG (arahan 9 Okt).
+const MODELROUTER_MODELS = ['claude-sonnet-5.5']; // [10 Okt, arahan pemilik] SONNET 5.5 SATU-SATUNYA model AI 2 (Execution Agent). glm DIHAPUS total (arahan 10 Okt: sonnet hasilnya bagus, glm malah ngerusak jadi gak konsisten).ku DILARANG (kualitas buruk, perbandingan owner: sonnet jauh lebih bagus walau ~15x harga). glm-5.3-flash cadangan saat saldo MR kurang/bermasalah. nemotron DILARANG (arahan 9 Okt).
 // [7 Okt] Gateway ModelRouter memotong koneksi pada ~10 detik wall-time per
 // request (diverifikasi: 384 tok = 9.4s OK, 512+ tok / non-stream generasi
 // panjang = HTTP 000). Solusi: potong generasi jadi chunk kecil (256 tok,
@@ -534,7 +534,7 @@ const MODELROUTER_MODELS = ['claude-sonnet-5.5', 'glm-5.3-flash']; // [10 Okt, a
 // gateway MR ~10s wall-time.
 // [9 Okt] haiku-5.5: 512 tok = ~5.2s pada ~99 tok/s (aman di bawah potongan ~10s).
 // CHAT_BUILD_MODE_FIX: build lebih pintar/panjang (1024 tok, disambung auto-continue)
-const MR_MAX_TOKENS = { 'claude-sonnet-5.5': 512, 'glm-5.3-flash': 384 }; // sonnet: chunk 512 (aman < potongan gateway ~10s), disambung AUTO-CONTINUE utk output panjang
+const MR_MAX_TOKENS = { 'claude-sonnet-5.5': 512 }; // sonnet: chunk 512 (aman < potongan gateway ~10s), disambung AUTO-CONTINUE utk output panjang
 const MR_ENDPOINT = 'https://modelrouter.id/v1/chat/completions';
 // [7 Okt, arahan pemilik: "jadikan model Orkestra di mode build"] Semua respons
 // ModelRouter (haiku-5.5 -> glm-5.3-flash; nemotron dihapus 9 Okt, arahan pemilik)
@@ -774,7 +774,7 @@ async function getCfAiCreds(env) {
 
 // [6 Okt 2026] llama-3.3-70b utama (TTFB ~1.1s, tools valid, teruji); glm-4.7-flash
 // di akun baru terbukti lambat (30s+) dan sering balas kosong -> hanya cadangan.
-const CF_AI_MODELS = ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/zai-org/glm-4.7-flash'];
+const CF_AI_MODELS = ['@cf/meta/llama-3.3-70b-instruct-fp8-fast']; // glm dihapus (arahan 10 Okt)
 
 async function tryCfAiRest(creds, messages, gDecls, onDelta) {
   if (!creds || !creds.token || !creds.accountId) return null;
@@ -839,14 +839,14 @@ async function tryCfAiRest(creds, messages, gDecls, onDelta) {
 // Router AI Indonesia (router.clouvia.id/v1) — API kompatibel penuh OpenAI.
 // Dipakai saat OpenRouter gagal (limit/kredit) supaya chat tidak langsung jatuh
 // ke GLM 4.7 Flash (Workers AI) yang kualitas formatnya jauh lebih rendah.
-const CLOUVIA_MODELS = ['glm5.3-flash', 'coding-high-flash', 'free-model'];
+const CLOUVIA_MODELS = ['coding-high-flash', 'free-model']; // glm dihapus (arahan 10 Okt)
 // 'gpt-6.1-sol' via Clouvia (4 Okt 2026): jalur utama user login — gratis, tanpa
 // kartu. CATATAN JUJUR: backend model ini ternyata GLM (Z.ai) yang direlabel Clouvia,
 // BUKAN Sol Pro asli (yang hanya ada di OpenRouter). Tetap dipakai karena: (1) mematuhi
 // role system (glm5.3-flash tidak — gateway membuangnya) sehingga system prompt utuh
 // sampai ke model, (2) tool-calling berfungsi, (3) gratis. Begitu OpenRouter di-top-up,
 // urutkan Sol Pro asli di depan rute ini (OPENROUTER_MODELS).
-const CLOUVIA_SOL_MODELS = ['deepseek-v4-pro', 'glm5.3-flash'];
+const CLOUVIA_SOL_MODELS = ['deepseek-v4-pro']; // glm dihapus (arahan 10 Okt)
 // 'free-model' = lapis terakhir Clouvia: tidak menguras saldo berbayar (pakai
 // kuota free_balance), jadi chat tetap hidup walau 50M+ token balance habis.
 
@@ -1197,11 +1197,10 @@ function aiCostOf(model, outputChars, inputChars) {
 // provider). null bila MR tak terpakai -> fallback estimasi karakter.
 function mrTokenCost(acc) {
   // [10 Okt] SONNET 5.5 ~15x harga haiku (owner: $0.03 vs $0.002 per 1K) ->
-  // 15 kredit / 30.000 token. glm tetap 1,5. haiku DILARANG pemilik.
+  // 15 kredit / 30.000 token. glm dihapus total (arahan 10 Okt).
   const sn = (acc && acc['claude-sonnet-5.5']) || 0;
-  const g = (acc && acc['glm-5.3-flash']) || 0;
-  if (sn + g <= 0) return null;
-  return Math.max(0.01, Math.round((sn * 15 + g * 1.5) / 30000 * 100) / 100);
+  if (sn <= 0) return null;
+  return Math.max(0.01, Math.round((sn * 15) / 30000 * 100) / 100);
 }
 async function chargeAiUsage(env, user, model, outputChars, inputChars, charge = true, costOverride = null) {
   if (!user || !user.key) return;
