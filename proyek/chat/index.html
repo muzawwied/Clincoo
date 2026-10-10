@@ -512,24 +512,26 @@
         .poll-step-body { min-width: 0; flex: 1; }
         .poll-step-q { font-size: 13.5px; font-weight: 500; color: #1f2937; line-height: 1.45; padding-top: 1px; }
         .poll-step.locked .poll-step-q { font-weight: 400; color: #6b7280; }
-        .poll-opts { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.375rem; }
-        .poll-opt { display: flex; align-items: center; gap: 0.625rem; width: 100%; text-align: left; padding: 0.625rem 0.75rem; border-radius: 10px; background: #ffffff; border: 1px solid #e5e7eb; font-size: 13px; color: #1f2937; cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease; }
-        .poll-opt:hover { background: #fafafa; border-color: #9ca3af; transform: translateY(-1px); }
-        .poll-opt:active { transform: translateY(0); background: #f3f4f6; }
+        .poll-opts { margin-top: 0.5rem; display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.375rem; }
+        .poll-opt { display: inline-flex; align-items: center; width: auto; max-width: 100%; text-align: left; padding: 0.45rem 0.9rem; border-radius: 999px; background: #ffffff; border: 1px solid #e5e7eb; font-size: 12.5px; color: #1f2937; cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease; }
+        .poll-opt:hover { background: #fafafa; border-color: #9ca3af; }
+        .poll-opt:active { background: #f3f4f6; }
         .poll-opt-text { min-width: 0; flex: 1; line-height: 1.4; }
         .poll-opt-letter { flex-shrink: 0; width: 22px; height: 22px; border-radius: 6px; background: #f3f4f6; border: 1px solid #e5e7eb; color: #4b5563; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
         .poll-opt:hover .poll-opt-letter { border-color: #111827; color: #111827; }
+        .poll-opt .poll-opt-letter { display: none; }
         .poll-opt.other { border-style: dashed; color: #6b7280; }
         .poll-other-title { display: block; font-weight: 500; color: #4b5563; }
         .poll-other-sub { display: block; font-size: 11px; color: #9ca3af; margin-top: 1px; }
-        .poll-manual { margin-top: 0.5rem; display: flex; gap: 0.5rem; align-items: center; }
+        .poll-manual { margin-top: 0.5rem; display: flex; gap: 0.5rem; align-items: center; flex: 1 1 100%; width: 100%; }
         .poll-manual input { flex: 1; min-width: 0; border: 1px solid #d1d5db; border-radius: 999px; background: #ffffff; color: #1f2937; font-size: 13px; padding: 0.5rem 0.875rem; outline: none; transition: border-color 0.15s ease; font-family: inherit; }
         .poll-manual input:focus { border-color: #111827; }
         .poll-manual button { flex-shrink: 0; border: none; border-radius: 999px; background: #111827; color: #ffffff; font-size: 12px; font-weight: 600; padding: 0.5rem 0.9rem; cursor: pointer; }
         body.dark-mode .poll-manual input { background: #18181b; border-color: #3f3f46; color: #e5e7eb; }
+        body.dark-mode .poll-ans { background: #14251a; border-color: #1f3d2b; }
         body.dark-mode .poll-manual input:focus { border-color: #e5e7eb; }
         body.dark-mode .poll-manual button { background: #e5e7eb; color: #111827; }
-        .poll-ans { margin-top: 0.25rem; font-size: 12.5px; color: #15803d; }
+        .poll-ans { margin-top: 0.25rem; display: inline-block; padding: 0.3rem 0.8rem; border-radius: 999px; background: #f0fdf4; border: 1px solid #bbf7d0; font-size: 12px; color: #15803d; line-height: 1.45; }
         .poll-card-hint { font-size: 11.5px; color: #9ca3af; margin-top: 0.625rem; line-height: 1.5; }
         body.dark-mode .poll-card { background: transparent; border-color: transparent; }
         body.dark-mode .poll-head-title { color: #9ca3af; }
@@ -2527,27 +2529,19 @@ window.chatLivePreview = function () {
                 const rail = (i < qs.length - 1) ? `<span class="poll-rail${i < st.current ? ' done' : ''}"></span>` : '';
                 let bodyHtml = '';
                 if (answered) {
-                    bodyHtml = `<div class="poll-ans">✓ ${escText(st.answers[i] || '')}</div>`;
+                    bodyHtml = `<div class="poll-ans">✓ <span>${escText(st.answers[i] || '')}</span></div>`;
                 } else if (active) {
                     const opts = s.options.map(function (o, oi) {
-                        return `<button type="button" class="poll-opt" onclick="pollPickOption('${msg.id}', ${i}, ${oi})">
-                            <span class="poll-opt-letter">${letters[oi] || (oi + 1)}</span>
-                            <span class="poll-opt-text">${escText(o)}</span>
-                        </button>`;
+                        return `<button type="button" class="poll-opt" onclick="pollPickOption('${msg.id}', ${i}, ${oi})"><span class="poll-opt-text">${escText(o)}</span></button>`;
                     }).join('');
-                    const manual = (st.manualOpen === i)
-                        ? `<div class="poll-manual">
-                            <input type="text" id="poll-manual-input" placeholder="Tulis jawabanmu sendiri di sini…" onkeydown="if(event.key==='Enter'){event.preventDefault();pollSubmitManual('${msg.id}', ${i});}" maxlength="500">
-                            <button type="button" onclick="pollSubmitManual('${msg.id}', ${i})">Kirim</button>
-                        </div>`
-                        : '';
+                    // [10 Okt, arahan pemilik] "Lainnya" = INPUT LANGSUNG yang selalu
+                    // tampil di bawah opsi kapsul, bukan tombol yang harus diklik dulu.
                     bodyHtml = `<div class="poll-opts">
                         ${opts}
-                        <button type="button" class="poll-opt other" onclick="pollPickOther('${msg.id}', ${i})">
-                            <span class="poll-opt-letter">+</span>
-                            <span class="poll-opt-text"><span class="poll-other-title">Lainnya…</span><span class="poll-other-sub">tulis jawabanmu sendiri</span></span>
-                        </button>
-                        ${manual}
+                        <div class="poll-manual">
+                            <input type="text" id="poll-manual-input" placeholder="Atau tulis jawabanmu sendiri di sini…" onkeydown="if(event.key==='Enter'){event.preventDefault();pollSubmitManual('${msg.id}', ${i});}" maxlength="500">
+                            <button type="button" onclick="pollSubmitManual('${msg.id}', ${i})">Kirim</button>
+                        </div>
                     </div>`;
                 }
                 return `
@@ -2569,7 +2563,7 @@ window.chatLivePreview = function () {
                         <span class="poll-head-badge${doneAll ? ' done' : ''}">${doneAll ? 'Selesai' : (Math.min(st.current + 1, qs.length) + '/' + qs.length)}</span>
                     </div>
                     <div class="poll-steps">${stepsHtml}</div>
-                    ${doneAll ? '' : '<div class="poll-card-hint">Pilih jawaban yang paling sesuai, atau tulis sendiri lewat "Lainnya…". Satu pertanyaan terbuka dulu, sisanya menyusul.</div>'}
+                    ${doneAll ? '' : '<div class="poll-card-hint">Pilih jawaban yang paling sesuai, atau tulis sendiri di kolom bawah. Satu pertanyaan per langkah, sisanya menyusul.</div>'}
                 </div>
             `;
         }
