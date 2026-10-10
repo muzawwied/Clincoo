@@ -8,7 +8,7 @@ if up.exists():
     u = up.read_text(encoding="utf-8")
     if "CHAT_BUILD_MODE_FIX" not in u:
         old = "workspace_tools: true,"
-        new = "workspace_tools: ((typeof window.selectedAiMode === 'function' && window.selectedAiMode()) === 'build'), // CHAT_BUILD_MODE_FIX"
+        new = "workspace_tools: ((typeof window.selectedAiMode === 'function' && window.selectedAiMode()) === 'build'), /* CHAT_BUILD_MODE_FIX */"
         n = u.count(old)
         if n:
             u = u.replace(old, new)
