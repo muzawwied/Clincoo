@@ -2284,7 +2284,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // 'chat'  = obrolan via Gemini AI Studio (kandidat utama race) + batas harian/bulanan,
     //           TANPA auto-eskalasi ke model berbayar walau prompt terdengar "bangun situs";
     // 'build' = ModelRouter berbayar, kredit dipotong sesuai pemakaian (usage-based).
-    const buildMode = ENABLE_BUILD_ROUTE && (body.mode === 'build' || (!explicitChat && detectBuildIntent(body.messages))) && !isGuest && !!mrKeys.length && !hasImages;
+    const buildMode = ENABLE_BUILD_ROUTE && (body.mode === 'build' || (!explicitChat && detectBuildIntent(body.messages))) && !isGuest && !hasImages; // AI Studio (Gemini) — tak butuh kunci MR
     const aiMain = !!(env.AI && !hasImages);
     const toolDecls = (gTools && gTools[0] && gTools[0].functionDeclarations) || null;
     // Cascade lengkap (OpenRouter -> Clouvia -> Workers AI -> Gemini) dijalankan
@@ -2305,9 +2305,22 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // [7 Okt 2026, arahan pemilik] MODE BUILD -> ModelRouter (GLM 5.3 Flash berbayar)
       // UTAMA di tiap hop tool (kode besar butuh model konsisten). Gagal -> cascade
       // gratis di bawah tetap menyelamatkan jawaban.
+      // [10 Okt, arahan pemilik "make ai studio"] MODE BUILD -> Gemini AI
+      // Studio 3.6 Flash UTAMA (kunci AI Studio milik sendiri; kredit ModelRouter
+      // haiku-5.5 habis). ModelRouter tetap cadangan di bawahnya.
       if (buildMode && (!r || r.error)) {
-        const mr = await withTimeout(tryModelRouterText(mrKeys, workMessages, toolDecls, MODELROUTER_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null, mrUsageAcc), 90000, 'ModelRouter').catch(e => ({ error: e.message }));
-        if (mr && !mr.error) r = mr;
+        try {
+          const gKeys = await getGeminiKeys(env);
+          if (gKeys && gKeys.length) {
+            const { systemInstruction, contents } = toGeminiPayload(workMessages);
+            const gem = await withTimeout(tryModels(gKeys, systemInstruction, contents, gTools, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 90000, 'Gemini-build-3.6').catch(e => ({ error: e.message }));
+            if (gem && !gem.error && (gem.text || gem.tool_calls)) r = gem;
+          }
+        } catch (e) {}
+        if ((!r || r.error) && mrKeys.length) {
+          const mr = await withTimeout(tryModelRouterText(mrKeys, workMessages, toolDecls, MODELROUTER_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null, mrUsageAcc), 90000, 'ModelRouter').catch(e => ({ error: e.message }));
+          if (mr && !mr.error) r = mr;
+        }
       }
       const USE_CLOUVIA_FIRST = false;
       if (USE_CLOUVIA_FIRST && !isGuest && !hasImages && cvKeysEarly.length) {
