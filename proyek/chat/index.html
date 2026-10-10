@@ -4135,7 +4135,16 @@ window.chatLivePreview = function () {
                 const batch = files.slice(bi, bi + BATCH); bi += BATCH;
                 return fetch(WS_CLOUD_API, { method: 'POST', headers: H, body: JSON.stringify({ project_id: pid, files: batch, replace: true, keep_paths: allPaths }) })
                     .then(function(r) { if (!r.ok) { return Promise.reject(new Error('HTTP ' + r.status)); } return r.json(); })
-                    .then(function(d) { if (d && d.error) { return Promise.reject(new Error(d.error)); } return sendNext(); });
+                    .then(function(d) {
+                        if (d && d.error) { return Promise.reject(new Error(d.error)); }
+                        // [10 Okt] Server bisa menerima sebagian file tapi menolak yang lain
+                        // (warning) — dulu berlalu diam-diam, file ditolak tanpa ada yang sadar.
+                        // Tampilkan notifikasi supaya user/AI tahu ada file yang gagal.
+                        if (d && d.warnings && d.warnings.length) {
+                            try { addNotification('Workspace', 'Peringatan sinkronisasi: ' + d.warnings[0]); } catch (e) {}
+                        }
+                        return sendNext();
+                    });
             };
             sendNext().catch(function(err) {
                 if (attempt < 3) { wsCloudTimer = setTimeout(function() { wsCloudTimer = null; wsCloudPushRun(attempt + 1); }, 2000 * (attempt + 1)); return; }
@@ -4154,6 +4163,26 @@ window.chatLivePreview = function () {
                     if (files.length) {
                         const localRaw = localStorage.getItem(wsFilesKey());
                         const merged = wsUnflatten(files);
+                        // [10 Okt, laporan pemilik: logo hilang sebelum sempat deploy]
+                        // Data server boleh lebih baru, tapi file lokal yang BERISI
+                        // konten dan belum ada di server (belum sempat terdorong,
+                        // mis. logo hasil generate_image) tidak boleh dibuang saat
+                        // pull — kalau dibuang, tab lain menimpa localStorage dan
+                        // file itu hilang permanen. Pertahankan entri tersebut.
+                        const localTree = wsLoad();
+                        const srvPaths = {};
+                        Object.keys(merged).forEach(function(fk) {
+                            (merged[fk] || []).forEach(function(it) { if (it && it.path) srvPaths[String(it.path).toLowerCase()] = true; });
+                        });
+                        Object.keys(localTree).forEach(function(fk) {
+                            (localTree[fk] || []).forEach(function(it) {
+                                if (!it || it.type !== 'file' || !it.path) return;
+                                if (srvPaths[String(it.path).toLowerCase()]) return;
+                                if (!it.content && !it.cloud) return; // entri tanpa isi tidak bernilai
+                                if (!Array.isArray(merged[fk])) merged[fk] = [];
+                                if (!merged[fk].some(function(x) { return x && x.path && String(x.path).toLowerCase() === String(it.path).toLowerCase(); })) merged[fk].push(it);
+                            });
+                        });
                         const mergedStr = JSON.stringify(merged);
                         if (mergedStr !== localRaw) {
                             try { localStorage.setItem(wsFilesKey(), mergedStr); } catch (e) {}
@@ -4937,6 +4966,21 @@ window.chatLivePreview = function () {
             //    (tab Workspace lain mendapat storage event -> file langsung muncul di pohon file)
             const wr = await wsWriteFile({ path: name, content: g.data_url });
             if (wr && wr.success === false) return wr;
+            // [10 Okt, laporan pemilik: logo jadi placeholder kosong di halaman utama]
+            // File <= batas lokal tersimpan di localStorage lalu baru terdorong via
+            // sinkronisasi batch (debounce 3 detik). Race: tab lain menarik data
+            // server LAMA sebelum batch jalan -> localStorage ditimpa -> file hilang
+            // -> deploy tanpa logo -> situs tampil lingkaran kosong. Solusi: dorong
+            // file ini LANGSUNG ke server sekarang, sinkron jangan menunggu batch.
+            if (String(g.data_url).length <= WS_BIG_LIMIT) {
+                try {
+                    await fetch(WS_CLOUD_API, {
+                        method: 'POST',
+                        headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()),
+                        body: JSON.stringify({ project_id: pid, files: [{ path: name, content: g.data_url }] })
+                    });
+                } catch (e) {}
+            }
             // 3) opsional: pasang sebagai logo di Pengaturan Umum
             if (setAsLogo) {
                 const sRes = await fetch(TOOL_API_BASE + '/api/project-settings', {
@@ -5038,7 +5082,12 @@ window.chatLivePreview = function () {
             const url = d.public_url || (d.public_domain ? ('https://' + d.public_domain) : '') || (d.deployment && d.deployment.url) || d.pages_url || '';
             try { window.AI_WORK_STATE.deployOk = true; window.AI_WORK_STATE.deployUrl = url; window.AI_WORK_STATE.deploys++; window.AI_WORK_STATE.writesAtDeploy = window.AI_WORK_STATE.writes; } catch (e) {}
             const _dv = d.verify ? ('http_status' in d.verify ? (d.verify.ok ? 'OK — ' + (d.verify.message || 'halaman live & valid') : 'GAGAL — ' + (d.verify.error || 'halaman live bermasalah') + (d.verify.warnings ? ' | peringatan: ' + d.verify.warnings.join('; ') : '') + '. WAJIB perbaiki dan deploy ulang sebelum bilang selesai.') : JSON.stringify(d.verify)) : null;
-            return { success: true, url: url, verify: _dv, pages_url: d.pages_url || '', public_domain: d.public_domain || '', pages_project: d.pages_project || '', file_count: d.fileCount || 0, message: 'Situs berhasil di-deploy' + (url ? ' ke ' + url : '') + (d.public_domain ? ' (subdomain clincoo.biz.id aktif)' : '') + '.' };
+            // [10 Okt, laporan pemilik: logo placeholder] Server mendeteksi HTML yang
+            // merujuk file logo (logo.png/jpg/svg dst) tapi filenya tidak ada di
+            // workspace — di situs itu tampil kotak logo kosong. Teruskan warning ke
+            // jawaban AI supaya logo dibuat ulang & di-deploy ulang, bukan dibiarkan.
+            const _lw = Array.isArray(d.warnings) ? d.warnings : [];
+            return { success: true, url: url, verify: _dv, pages_url: d.pages_url || '', public_domain: d.public_domain || '', pages_project: d.pages_project || '', file_count: d.fileCount || 0, warnings: _lw, message: 'Situs berhasil di-deploy' + (url ? ' ke ' + url : '') + (d.public_domain ? ' (subdomain clincoo.biz.id aktif)' : '') + '.' + (_lw.length ? ' PERINGATAN: ' + _lw.join('; ') + ' — WAJIB panggil generate_image (set_as_logo) ulang lalu deploy lagi supaya logo tampil, jangan biarkan placeholder kosong.' : '') };
         }
 
         // manage_domain: AI kelola domain kustom + setel record DNS langsung (via /api/deploy)

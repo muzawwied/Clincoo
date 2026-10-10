@@ -1114,7 +1114,8 @@ export async function onRequestPost({ request, env }) {
       const vfy1 = await verifyDeployedPage(pubDomain ? ('https://' + pubDomain) : pubUrl);
       return json({
         success: true, pages_project: name, pages_url: pubUrl, public_url: pubDomain ? ('https://' + pubDomain) : pagesUrl,
-        public_domain: pubDomain || '', verify: vfy1, deployment: { id: dep.id, url: (dep.aliases && dep.aliases[0]) || dep.url || pagesUrl, aliases: dep.aliases || [], status: (dep.latest_stage && dep.latest_stage.status) || 'idle', created: dep.created_on }, fileCount: n
+        public_domain: pubDomain || '', verify: vfy1, deployment: { id: dep.id, url: (dep.aliases && dep.aliases[0]) || dep.url || pagesUrl, aliases: dep.aliases || [], status: (dep.latest_stage && dep.latest_stage.status) || 'idle', created: dep.created_on }, fileCount: n,
+        warnings: logoWarnings || []
       });
     }
 
@@ -1146,6 +1147,35 @@ export async function onRequestPost({ request, env }) {
     };
 
     await applyDeployMutations(db, T, projectId, files, fileContent, setContent, user, planInfo);
+
+    // [10 Okt, laporan pemilik: logo jadi placeholder bulat kosong di halaman utama]
+    // HTML yang merujuk file logo (logo.png/jpg/jpeg/svg/webp/ico) tapi filenya
+    // tidak ada di workspace -> di situs tampil kotak logo kosong. Deteksi
+    // SEBELUM unggah dan laporkan via warnings pada respons sukses, supaya
+    // AI/klien tahu harus membuat ulang logonya, bukan bingung lihat placeholder.
+    const logoWarnings = [];
+    {
+      const owned = new Set(files.map(f => String(f.path).toLowerCase()));
+      const refRe = /(?:src|href|content|data-src|data-logo)\s*=\s*["']([^"']*logo[^"']*\.(?:png|jpe?g|svg|webp|ico))["']/gi;
+      for (const f of files) {
+        if (!/\.html?$/i.test(String(f.path)) || f.is_big) continue;
+        const html = String(f.content || '');
+        let m;
+        while ((m = refRe.exec(html)) !== null) {
+          const ref0 = String(m[1] || '').split(/[?#]/)[0];
+          if (/^(?:https?:)?\/\//i.test(ref0) || ref0.startsWith('data:')) continue;
+          const ref = ref0.replace(/^\.?\//, '').toLowerCase();
+          if (ref && !owned.has(ref)) {
+            const w = String(f.path) + ' merujuk ' + ref + ' yang tidak ada di workspace (logo akan tampil kosong)';
+            if (logoWarnings.indexOf(w) === -1) logoWarnings.push(w);
+          }
+        }
+      }
+      if (logoWarnings.length) {
+        try { await db.prepare(`INSERT INTO ${T.deployLogs} (project_id, status, url, message, created_at) VALUES (?, 'warning', '', ?, datetime('now'))`)
+          .bind(projectId, 'peringatan aset logo: ' + logoWarnings.join('; ')).run(); } catch (e) {}
+      }
+    }
 
     await setPhase(db, T.projectSettings, projectId, 'Menyiapkan proyek Pages...');
     // Guard ukuran: deploy kini STREAMING — file besar diproses satu-per-satu
