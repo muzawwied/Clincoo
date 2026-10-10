@@ -518,7 +518,10 @@ async function tryEmergentText(keys, messages, onDelta) {
 // non-reasoning, ~99 tok/s (256 tok = 2.6s), tool_calls NATIVE jalan,
 // jauh di bawah potongan gateway MR ~10s. glm-5.3-flash cadangan
 // (reasoning ikut dihitung: 384 tok = 8.0s, mepet jendela), lightning terakhir.
-const MODELROUTER_MODELS = ['claude-haiku-5.5']; // [9 Okt] fokus HANYA haiku 5.5 (arahan pemilik)
+// [10 Okt, arahan pemilik] haiku-5.5 kredit MR habis — model AI 2 (Execution
+// Agent) SEmentara pakai glm-5.3-flash (utama) + nemotron cadangan. Balikin
+// 'claude-haiku-5.5' ke depan list begitu kredit terisi lagi.
+const MODELROUTER_MODELS = ['glm-5.3-flash', 'nemotron-3-ultra', 'nemotron-3.5-lightning'];
 // [7 Okt] Gateway ModelRouter memotong koneksi pada ~10 detik wall-time per
 // request (diverifikasi: 384 tok = 9.4s OK, 512+ tok / non-stream generasi
 // panjang = HTTP 000). Solusi: potong generasi jadi chunk kecil (256 tok,
@@ -1938,6 +1941,84 @@ async function tryOrkestraMini(messages) {
   return { text, model: d.model || 'orkestra-1-mini' };
 }
 
+// ===================== [10 Okt] TWO-AGENT PIPELINE =====================
+// AI 1 FRONT AGENT (model ringan, tanpa tools) + TASK STATE / EVENT STORE (D1).
+// Arsitektur pemilik: Front Agent memahami user & merinci instruksi; Execution
+// Agent (pipeline normal + tools) mengeksekusi; hasil tool tercatat di event
+// store dan jadi konteks Front Agent berikutnya (sumber kebenaran tunggal).
+const FRONT_SYSTEM_PROMPT = 'Kamu AI 1 — FRONT AGENT Clincoo (model ringan). Tugasmu BUKAN menulis kode/file, hanya memilah niat user dan merinci instruksi untuk AI 2 (Execution Agent). Balas HANYA satu objek JSON valid, tanpa teks lain, tanpa penjelasan.\nAturan memilih action:\n- "reply": user menyapa, bertanya, mengobrol, minta saran/penjelasan/pendapat, menanyakan progres atau cara pakai. Jawab final untuk user sekarang.\n- "execute": user meminta DIBUATKAN/DIUBAH/DIPERBAIKI/DILANJUTKAN situs, halaman, aplikasi, file, fitur, tampilan, atau deploy.\nFormat WAJIB salah satu:\n{"action":"reply","reply":"<jawaban final bahasa Indonesia natural, langsung ke inti>"}\n{"action":"execute","instruction":"<instruksi teknis siap eksekusi: APA yang dibuat/diubah (sebut file/halaman bila relevan), data user yang disebut (nama orang, relasi seperti bapak/ibu, nama usaha, kota, harga) WAJIB disertakan persis, preferensi desain/fitur, syarat selesai>","context":"<fakta penting lain dari percakapan yang wajib dipegang AI 2>"}\nKetentuan: untuk sapaan jawab singkat dan hangat; untuk pertanyaan progres ringkas HANYA dari [PROGRES TUGAS SEBELUMNYA], jangan mengarang; reply tidak menulis kode dan tidak menawarkan bantuan kosong; execute tidak menulis kode, hanya instruksi. Jangan pernah menyebut nama provider/model.';
+async function taskEventRecord(env, sessionId, kind, payload) {
+  try {
+    if (!sessionId || !env.DB) return;
+    await env.DB.prepare('CREATE TABLE IF NOT EXISTS task_state (session_id TEXT, h TEXT, kind TEXT, payload TEXT, created_at TEXT, PRIMARY KEY (session_id, h))').run();
+    const h = String(kind) + '|' + String(payload).slice(0, 400);
+    let hash = 5381;
+    for (let i = 0; i < h.length; i++) hash = ((hash * 33) + h.charCodeAt(i)) >>> 0;
+    await env.DB.prepare('INSERT OR IGNORE INTO task_state (session_id, h, kind, payload, created_at) VALUES (?, ?, ?, ?, ?)')
+      .bind(String(sessionId).slice(0, 80), String(hash), String(kind).slice(0, 24), String(payload).slice(0, 600), new Date().toISOString()).run();
+  } catch (e) {}
+}
+async function taskStateDigest(env, sessionId) {
+  try {
+    if (!sessionId || !env.DB) return '';
+    await env.DB.prepare('CREATE TABLE IF NOT EXISTS task_state (session_id TEXT, h TEXT, kind TEXT, payload TEXT, created_at TEXT, PRIMARY KEY (session_id, h))').run();
+    const rows = await env.DB.prepare('SELECT kind, payload FROM task_state WHERE session_id = ? ORDER BY created_at ASC LIMIT 60').bind(String(sessionId).slice(0, 80)).all();
+    return (rows.results || []).map(function (r) { return '- [' + r.kind + '] ' + r.payload; }).join('\n').slice(0, 2500);
+  } catch (e) { return ''; }
+}
+// catat event tool dari blok function_call/function_response yang dikirim ulang
+// klien tiap hop — cukup 3 pesan terakhir (hop baru), hash mencegah dobel.
+async function scanMessagesForEvents(env, sessionId, msgs) {
+  try {
+    for (const m of (msgs || [])) {
+      if (!m || !Array.isArray(m.content)) continue;
+      for (const b of m.content) {
+        if (!b || typeof b !== 'object') continue;
+        if (b.type === 'function_call' && b.name) {
+          let brief = '';
+          try { const a = typeof b.args === 'string' ? JSON.parse(b.args) : (b.args || {}); brief = String(a.path || a.app_name || a.query || a.prompt || '').slice(0, 90); } catch (e) {}
+          await taskEventRecord(env, sessionId, 'call', b.name + (brief ? ' ' + brief : ''));
+        } else if (b.type === 'function_response' && b.name) {
+          let s = ''; try { s = typeof b.response === 'string' ? b.response : JSON.stringify(b.response || b.result || ''); } catch (e) {}
+          const ok = /"success"\s*:\s*true/i.test(s) ? 'OK' : (/"error"/i.test(s) ? 'GAGAL' : 'selesai');
+          let extra = ''; const um = s.match(/"url"\s*:\s*"([^"]+)"/); if (um) extra = ' -> ' + um[1].slice(0, 80);
+          await taskEventRecord(env, sessionId, 'hasil', b.name + ' ' + ok + extra);
+        }
+      }
+    }
+  } catch (e) {}
+}
+async function frontAgentRun(env, bodyMessages, stateDigest) {
+  try {
+    const orKeys = await getOpenRouterKeys(env);
+    if (!orKeys.length) return null;
+    const chat = [];
+    for (const m of (bodyMessages || [])) {
+      if (!m || m.role === 'system') continue;
+      let txt = '';
+      if (typeof m.content === 'string') txt = m.content;
+      else if (Array.isArray(m.content)) txt = m.content.filter(function (b) { return b && b.type === 'text'; }).map(function (b) { return b.text || ''; }).join('\n');
+      txt = String(txt).trim();
+      if (!txt) continue;
+      chat.push({ role: m.role === 'assistant' ? 'assistant' : 'user', content: txt.slice(0, 3500) });
+    }
+    if (!chat.length) return null;
+    const recent = chat.slice(-12);
+    const sys = FRONT_SYSTEM_PROMPT + (stateDigest ? '\n\n[PROGRES TUGAS SEBELUMNYA (event store — sumber kebenaran)]:\n' + stateDigest : '');
+    const frMsgs = [{ role: 'system', content: sys }].concat(recent);
+    const r = await withTimeout(tryOpenRouterText(orKeys, frMsgs, null, null, null), 25000);
+    if (!r || r.error || !r.text) return null;
+    let t = String(r.text).trim().replace(/^```(json)?/i, '').replace(/```\s*$/, '').trim();
+    const i = t.indexOf('{'), j = t.lastIndexOf('}');
+    if (i === -1 || j <= i) return { action: 'reply', reply: t.slice(0, 2200) };
+    try {
+      const o = JSON.parse(t.slice(i, j + 1));
+      if (o && o.action === 'execute' && o.instruction) return { action: 'execute', instruction: String(o.instruction).slice(0, 3500), context: String(o.context || '').slice(0, 1200) };
+      if (o && o.action === 'reply' && o.reply) return { action: 'reply', reply: String(o.reply).slice(0, 3500) };
+    } catch (e) {}
+    return { action: 'reply', reply: t.slice(0, 2200) };
+  } catch (e) { return null; }
+}
 export async function onRequestPost({ request, env, waitUntil }) {
   try {
     // ===== [8 Okt 2026] AI PLACEHOLDER — dievaluasi PALING PERTAMA =====
@@ -2442,6 +2523,37 @@ export async function onRequestPost({ request, env, waitUntil }) {
     }
     return r;
     };
+    // ===== [10 Okt, arahan pemilik] TWO-AGENT PIPELINE: AI 1 FRONT AGENT =====
+    // Hanya buildMode + hop pertama (hop lanjutan/nudge save_user_message=false).
+    // reply  -> jawab final TANPA menyentuh AI 2 (sapaan tidak lagi memicu folder
+    //           view / deploy / tulis file; kredit berbayar tidak terbakar).
+    // execute-> instruksi terstruktur disuntik ke system prompt, AI 2 (pipeline
+    //           normal + tools) mengeksekusi persis seperti sebelumnya.
+    // Matikan per-request dengan body.agent='off'.
+    if (buildMode && isFirstHop && String(body.agent || 'auto') !== 'off') {
+      const sid = body.session_id || ('fa_' + String(Date.now()));
+      try { if (waitUntil) waitUntil(scanMessagesForEvents(env, sid, (body.messages || []).slice(-3))); } catch (e) {}
+      const digest = await taskStateDigest(env, sid);
+      try { streamSend && streamSend({ t: 'progress', text: 'Memahami permintaan…' }); } catch (e) {}
+      const fr = await frontAgentRun(env, body.messages, digest);
+      if (fr && fr.action === 'reply' && fr.reply) {
+        try { if (waitUntil) waitUntil(taskEventRecord(env, sid, 'front', 'jawab langsung: ' + String(fr.reply).slice(0, 150))); } catch (e) {}
+        try { await chargeAiUsage(env, user, 'front-agent-ringan', String(fr.reply).length, 0, false, null); } catch (e) {}
+        if (streamSend) {
+          streamSend({ t: 'final', text: fr.reply, model: 'Front Agent (ringan)', session_id: body.session_id || ('ls_' + Date.now()) });
+          streamWriter.close().catch(function () {});
+          return;
+        }
+        return new Response(JSON.stringify({ text: fr.reply, model: 'Front Agent (ringan)', session_id: body.session_id || ('ls_' + Date.now()) }), { status: 200, headers: { 'Content-Type': 'application/json', ...CORS } });
+      }
+      if (fr && fr.action === 'execute' && fr.instruction) {
+        const note = '\n\n[INSTRUKSI EKSEKUSI dari Front Agent — PRIORITAS TERTINGGI, kerjakan SEKARANG tanpa bertanya]: ' + fr.instruction + (fr.context ? '\nFAKTA/KONTEKS USER yang WAJIB dipakai persis: ' + fr.context : '');
+        const qi = messages.findIndex(function (m) { return m && m.role === 'system'; });
+        if (qi !== -1) messages[qi] = { role: 'system', content: String(messages[qi].content || '') + note };
+        else messages.unshift({ role: 'system', content: note.trim() });
+        try { if (waitUntil) waitUntil(taskEventRecord(env, sid, 'front', 'instruksi eksekusi: ' + String(fr.instruction).slice(0, 250))); } catch (e) {}
+      }
+    }
     let r = await attemptCascade();
     // RETRY OTOMATIS SEBELUM ERROR SAMPAI KE USER: semua provider gagal bersamaan
     // hampir selalu sesaat (429/limit sibuk). Tunggu 2.5 detik lalu ulangi seluruh
