@@ -6484,15 +6484,14 @@ window.chatLivePreview = function () {
                                     lastEventAt = Date.now(); // event hidup -> stream masih sehat
                                     if (evt.t === 'delta') {
                                         hasReceivedData = true;
-                                        if (!__composingNotified) { __composingNotified = true; setAiStatus('Composing the answer…'); }
+                                        if (!__composingNotified) { __composingNotified = true; }
                                         deltaStreamed += evt.text || '';
                                         streamingBuffer = deltaStreamed;
                                         return;
                                     }
                                     if (evt.t === 'progress') {
                                         hasReceivedData = true;
-                                        if (evt.text) setAiStatus(evt.text);
-                                        return;
+                                        return; // [10 Okt] label progress hardcode dimatikan
                                     }
                                     // thinking: jangan hardcode ulang — biarkan status tool/progress terakhir
                                     if (evt.t === 'thinking') return;
@@ -6631,7 +6630,6 @@ window.chatLivePreview = function () {
                             }
                             if (unfinishedTag && silentRounds < unfinishedMax && isGenerating) {
                                 silentRounds++;
-                                setAiStatus(FINAL_NUDGE_EXTRA ? 'Checking the results…' : 'Continuing the remaining work…');
                                 pushSilentNudge(FINAL_NUDGE_EXTRA || (unfinishedTag === 'promise'
                                     ? 'VERIFIKASI FAKTA (WAJIB dipegang, ini hasil cek nyata, bukan asumsi): sampai giliran ini TIDAK ada satu pun file yang benar-benar tertulis lewat write_file dan workspace proyek masih kosong. Jangan menutup giliran dengan janji menulis atau klaim "sudah tersimpan" — LANGSUNG panggil write_file satu per satu untuk seluruh file situs SEKARANG di giliran ini; jika tool gagal, laporkan kegagalan secara jujur kepada user.'
                                     : ''));
@@ -6763,7 +6761,6 @@ window.chatLivePreview = function () {
                         }));
                         apiMessagesWithTools.push({ role: 'user', content: functionResponses });
                         // fase nyata berikutnya: semua tool selesai, AI kini membaca hasilnya
-                        setAiStatus('Analyzing the results…');
                         compactToolHopHistory(apiMessagesWithTools); // circuit-breaker: cegah payload lintas-hop membengkak tak terbatas
                         // Tampilkan progres eksekusi tugas secara langsung ke chat (mirip kartu "Ran command")
                         renderMessages();

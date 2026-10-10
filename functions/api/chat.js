@@ -2553,7 +2553,6 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // kalau tidak progres hop sebelumnya kadang belum masuk konteks Front Agent.
       try { await scanMessagesForEvents(env, sid, (body.messages || []).slice(-3)); } catch (e) {}
       const digest = await taskStateDigest(env, sid);
-      try { streamSend && streamSend({ t: 'progress', text: 'Memahami permintaan…' }); } catch (e) {}
       const fr = await frontAgentRun(env, body.messages, digest);
       frontMeta = fr || null;
       if (fr && fr.action === 'reply' && fr.reply) {
@@ -2580,7 +2579,6 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // cascade SEKALI lagi — kalau berhasil, user tidak pernah melihat error sama sekali.
     // Konteks ke-limiter TIDAK di-retry (retry tidak menolong, perlu pemangkasan riwayat).
     if ((!r || r.error) && !(r && r.contextOverflow)) {
-      try { streamSend && streamSend({ t: 'progress', text: 'Retrying…' }); } catch (e) {}
       await new Promise(res => setTimeout(res, 2500));
       r = await attemptCascade();
     }
@@ -2589,7 +2587,6 @@ export async function onRequestPost({ request, env, waitUntil }) {
     }
 
     if (streamSend) {
-      if (r && !r.error) streamSend({ t: 'progress', text: 'Composing answer…' });
       if (r && r.error) {
         // quota_exhausted di jalur stream = SEMUA model provider 429 (bukan kuota user):
         // kirim pesan bersih tanpa nama model — sama seperti jalur non-stream di bawah.
