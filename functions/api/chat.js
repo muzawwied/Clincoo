@@ -117,7 +117,7 @@ async function getOpenRouterKeys(env) {
 // dan jarang timeout dibanding reasoning model -> jumlah error "gangguan koneksi"
 // turun. Cadangan berurutan: Luna Pro, Sol Pro (login saja). Nemotron DIHAPUS 9 Okt (arahan pemilik).
 // [9 Okt, arahan pemilik] Nemotron DILARANG (kualitas buruk) — hanya GLM + cadangan GPT.
-const OPENROUTER_MODELS = ['anthropic/claude-haiku-5.5', 'z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro']; // haiku 5.5 prioritas
+const OPENROUTER_MODELS = ['z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro']; // [10 Okt] haiku DILARANG pemilik (kualitas buruk)
 // Rantai khusus TAMU (anonim, gratis): TANPA Sol Pro — model premium hanya
 // untuk user login; tamu tidak boleh membakar biaya provider premium.
 const GUEST_OR_MODELS = ['z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro'];
@@ -521,7 +521,7 @@ async function tryEmergentText(keys, messages, onDelta) {
 // [10 Okt, arahan pemilik] haiku-5.5 kredit MR habis — model AI 2 (Execution
 // Agent) SEmentara pakai glm-5.3-flash (utama) + nemotron cadangan. Balikin
 // 'claude-haiku-5.5' ke depan list begitu kredit terisi lagi.
-const MODELROUTER_MODELS = ['glm-5.3-flash', 'nemotron-3-ultra', 'nemotron-3.5-lightning'];
+const MODELROUTER_MODELS = ['claude-sonnet-5.5', 'glm-5.3-flash']; // [10 Okt, arahan pemilik] SONNET 5.5 UTAMA utk AI 2 (Execution Agent) — haiku DILARANG (kualitas buruk, perbandingan owner: sonnet jauh lebih bagus walau ~15x harga). glm-5.3-flash cadangan saat saldo MR kurang/bermasalah. nemotron DILARANG (arahan 9 Okt).
 // [7 Okt] Gateway ModelRouter memotong koneksi pada ~10 detik wall-time per
 // request (diverifikasi: 384 tok = 9.4s OK, 512+ tok / non-stream generasi
 // panjang = HTTP 000). Solusi: potong generasi jadi chunk kecil (256 tok,
@@ -534,7 +534,7 @@ const MODELROUTER_MODELS = ['glm-5.3-flash', 'nemotron-3-ultra', 'nemotron-3.5-l
 // gateway MR ~10s wall-time.
 // [9 Okt] haiku-5.5: 512 tok = ~5.2s pada ~99 tok/s (aman di bawah potongan ~10s).
 // CHAT_BUILD_MODE_FIX: build lebih pintar/panjang (1024 tok, disambung auto-continue)
-const MR_MAX_TOKENS = { 'claude-haiku-5.5': 1024, 'nemotron-3.5-lightning': 96, 'glm-5.3-flash': 384, 'nemotron-3-ultra': 96 };
+const MR_MAX_TOKENS = { 'claude-sonnet-5.5': 512, 'glm-5.3-flash': 384 }; // sonnet: chunk 512 (aman < potongan gateway ~10s), disambung AUTO-CONTINUE utk output panjang
 const MR_ENDPOINT = 'https://modelrouter.id/v1/chat/completions';
 // [7 Okt, arahan pemilik: "jadikan model Orkestra di mode build"] Semua respons
 // ModelRouter (haiku-5.5 -> glm-5.3-flash; nemotron dihapus 9 Okt, arahan pemilik)
@@ -1196,10 +1196,12 @@ function aiCostOf(model, outputChars, inputChars) {
 // haiku 1 kredit / 30.000 token, glm 1,5 kredit / 30.000 token (persis harga
 // provider). null bila MR tak terpakai -> fallback estimasi karakter.
 function mrTokenCost(acc) {
-  const h = (acc && acc['claude-haiku-5.5']) || 0;
+  // [10 Okt] SONNET 5.5 ~15x harga haiku (owner: $0.03 vs $0.002 per 1K) ->
+  // 15 kredit / 30.000 token. glm tetap 1,5. haiku DILARANG pemilik.
+  const sn = (acc && acc['claude-sonnet-5.5']) || 0;
   const g = (acc && acc['glm-5.3-flash']) || 0;
-  if (h + g <= 0) return null;
-  return Math.max(0.01, Math.round((h * 1 + g * 1.5) / 30000 * 100) / 100);
+  if (sn + g <= 0) return null;
+  return Math.max(0.01, Math.round((sn * 15 + g * 1.5) / 30000 * 100) / 100);
 }
 async function chargeAiUsage(env, user, model, outputChars, inputChars, charge = true, costOverride = null) {
   if (!user || !user.key) return;
