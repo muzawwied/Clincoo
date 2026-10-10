@@ -867,6 +867,7 @@ export async function onRequestPost({ request, env }) {
     if (subRaw) {
       const sub = slugify(subRaw);
       if (sub && sub.length >= 3 && sub.length <= 40 && sub !== prevPubLabel) {
+        if (prevPubLabel) { try { await setSetting(db, T.projectSettings, projectId, 'prev_public_subdomain', prevPubLabel); } catch (e) {} }
         await setSetting(db, T.projectSettings, projectId, 'public_subdomain', sub);
       }
     }
@@ -1082,13 +1083,18 @@ export async function onRequestPost({ request, env }) {
       }
       const dep = depData.result || {};
       const pubDomain = await ensurePublicDomain(creds, name, pubLabel);
-      // [10 Okt] lepas domain publik LAMA (otomatis/label sebelumnya) best-effort
+      // [10 Okt] lepas domain publik LAMA (otomatis/label sebelumnya) best-effort.
+      // Marker dibaca dari D1: prepare (request sebelumnya) sudah menimpa
+      // public_subdomain dengan label baru — prevPubLabel di request INI tidak
+      // lagi memuat label lama.
       if (pubDomain) {
-        for (const od of [name + PUB_SUFFIX, prevPubLabel ? (prevPubLabel + PUB_SUFFIX) : '']) {
+        const prevPubMark = (await getSetting(db, T.projectSettings, projectId, 'prev_public_subdomain')) || '';
+        for (const od of [name + PUB_SUFFIX, prevPubMark ? (prevPubMark + PUB_SUFFIX) : '']) {
           if (!od || od === pubDomain) continue;
           try { await cfFetch('/accounts/' + creds.accountId + '/pages/projects/' + name + '/domains/' + od, creds.apiKey, { method: 'DELETE' }); } catch (e) {}
           try { await removePublicDomainDns(creds, od); } catch (e) {}
         }
+        if (prevPubMark) { try { await setSetting(db, T.projectSettings, projectId, 'prev_public_subdomain', ''); } catch (e) {} }
       }
       const pubUrl = pubDomain ? ('https://' + pubDomain) : pagesUrl;
       const n = Object.keys(manifest).length;
@@ -1267,6 +1273,16 @@ export async function onRequestPost({ request, env }) {
     }
     const dep = depData.result || {};
     const pubDomain = await ensurePublicDomain(creds, targetName, isPreview ? '' : pubLabel);
+    if (!isPreview && pubDomain) {
+      // [10 Okt] lepas domain publik lama (auto/label sebelumnya) — sama dgn finalize
+      const prevPubMark = (await getSetting(db, T.projectSettings, projectId, 'prev_public_subdomain')) || '';
+      for (const od of [name + PUB_SUFFIX, prevPubMark ? (prevPubMark + PUB_SUFFIX) : '']) {
+        if (!od || od === pubDomain) continue;
+        try { await cfFetch('/accounts/' + creds.accountId + '/pages/projects/' + name + '/domains/' + od, creds.apiKey, { method: 'DELETE' }); } catch (e) {}
+        try { await removePublicDomainDns(creds, od); } catch (e) {}
+      }
+      if (prevPubMark) { try { await setSetting(db, T.projectSettings, projectId, 'prev_public_subdomain', ''); } catch (e) {} }
+    }
 
     // Log sukses dibungkus try/catch: gagal mencatat log TIDAK boleh membuat
     // deploy sukses dilaporkan gagal (pernah bikin user nyangkut di halaman

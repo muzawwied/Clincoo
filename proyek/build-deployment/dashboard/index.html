@@ -178,11 +178,7 @@
                     
                     <!-- URL Preview: ter-update otomatis setiap perubahan kode (deploy latar belakang ke branch preview) -->
                     <div id="preview-url-block" class="hidden mt-3">
-                        <p class="text-xs text-gray-500 flex items-center gap-1.5">
-                            <i data-lucide="eye" class="w-3.5 h-3.5 shrink-0"></i> URL Preview
-                        </p>
                         <a id="preview-link" href="#" target="_blank" class="hidden text-blue-600 dark:text-blue-400 font-medium text-sm hover:underline break-all"></a>
-                        <p id="preview-note" class="text-xs text-gray-400 mt-0.5">Preview aktif otomatis setelah perubahan kode disimpan di Workspace.</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-3 w-full md:w-auto mt-2 md:mt-0">
@@ -439,10 +435,10 @@
         function renderPreviewUrl(st) {
             const blk = document.getElementById('preview-url-block');
             if (!blk || !st || !st.preview_url) return;
-            blk.classList.remove('hidden');
             const a = document.getElementById('preview-link');
             const note = document.getElementById('preview-note');
             if (st.preview_deployed && a) {
+                blk.classList.remove('hidden'); // blok hanya tampil bila link preview siap
                 a.classList.remove('hidden');
                 a.textContent = st.preview_url;
                 a.href = st.preview_url;
