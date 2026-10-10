@@ -5812,7 +5812,13 @@ window.chatLivePreview = function () {
         // heuristik jawaban "belum tuntas" tetap dibatasi 1 sesuai keluhan lama).
         // Kartu checkpoint manual hanya fallback TERAKHIR bila provider benar-benar
         // mati setelah percobaan ini.
-        const QUOTA_MAX_ROUNDS = 2;
+        const QUOTA_MAX_ROUNDS = 12;
+        // [10 Okt, arahan pemilik] token/limit habis di tengah checkpoint = auto-lanjut
+        // TERUS (lanjut checkpoint lama / buat baru di bawahnya), bukan berhenti minta
+        // "lanjut" manual. Counter TERPISAH dari silentRounds supaya retry kuota tidak
+        // membakar budget auto-lanjut biasa. Fallback kartu manual tetap ada sebagai
+        // jaring terakhir bila provider benar-benar tewas beruntun.
+        let quotaRounds = 0;
 
         // ROOT CAUSE ditemukan dari video keluhan user: payload riwayat tool
         // membengkak TANPA BATAS dalam SATU generasi (sampai 20 hop/giliran via
@@ -6675,6 +6681,17 @@ window.chatLivePreview = function () {
                             }
                             if (unfinishedTag && silentRounds < unfinishedMax && isGenerating) {
                                 silentRounds++;
+                                // [10 Okt, arahan pemilik] AI kirim pesan teks di tengah kerja ->
+                                // catatan bermakna dibekukan jadi CHECKPOINT bubble ini, pekerjaan
+                                // lanjut otomatis di bubble BARU di bawahnya (bukan digabung 1 bubble).
+                                if (cleanNow && cleanNow.length >= CHECKPOINT_MIN_CHARS && checkpointRounds < CHECKPOINT_MAX_ROUNDS) {
+                                    checkpointRounds++;
+                                    const cpIdx = messages.findIndex(m => m.id === aiMsgObj.id);
+                                    if (cpIdx !== -1) { messages[cpIdx].checkpointNote = true; messages[cpIdx].midPhase = false; }
+                                    FINAL_NUDGE_EXTRA = '';
+                                    try { await continueSilently(aiMsgObj, cleanNow, 'Lanjutkan pekerjaan dari checkpoint teks terakhir. LANGSUNG kerjakan sisa tugas; DILARANG membaca ulang (read_file/list_files) file yang sudah tertulis di riwayat.'); } catch (e2) {}
+                                    return;
+                                }
                                 pushSilentNudge(FINAL_NUDGE_EXTRA || (unfinishedTag === 'promise'
                                     ? 'VERIFIKASI FAKTA (WAJIB dipegang, ini hasil cek nyata, bukan asumsi): sampai giliran ini TIDAK ada satu pun file yang benar-benar tertulis lewat write_file dan workspace proyek masih kosong. Jangan menutup giliran dengan janji menulis atau klaim "sudah tersimpan" — LANGSUNG panggil write_file satu per satu untuk seluruh file situs SEKARANG di giliran ini; jika tool gagal, laporkan kegagalan secara jujur kepada user.'
                                     : ''));
@@ -6910,8 +6927,9 @@ window.chatLivePreview = function () {
                                 // AUTO-LANJUT SILENT: konteks penuh di TENGAH tugas — server memangkas
                                 // riwayat otomatis pada request berikutnya, jadi TIDAK perlu menunggu
                                 // user mengetik "lanjut": teruskan diam-diam sampai tugas tuntas.
-                                if (isGenerating && silentRounds < (e.ctxOverflow ? SILENT_MAX_ROUNDS : QUOTA_MAX_ROUNDS)) {
-                                    silentRounds++;
+                                if (isGenerating && quotaRounds < QUOTA_MAX_ROUNDS) {
+                                    quotaRounds++;
+                                    if (quotaRounds >= 3) await new Promise(r => setTimeout(r, 4000)); // backoff ringan utk kehabisan beruntun
                                     hasReceivedData = true;
                                     clearTimeout(apiTimeout);
                                     clearInterval(statusInterval);
@@ -6919,11 +6937,11 @@ window.chatLivePreview = function () {
                                         if (e.ctxOverflow) {
                                             await continueSilently(aiMsgObj,
                                                 buildCheckpointText(doneTools, 'Konteks dipangkas otomatis — saya lanjutkan sisa tugasnya.'),
-                                                'Riwayat lama sudah dipangkas otomatis — lanjutkan HANYA sisa tugas yang belum selesai, tanpa mengulang bagian yang sudah beres.');
+                                                'Riwayat lama sudah dipangkas otomatis — lanjutkan HANYA sisa tugas yang belum selesai, tanpa mengulang bagian yang sudah beres. DILARANG membaca ulang / list ulang file yang sudah ada di riwayat — langsung kerjakan sisa tugasnya sampai tuntas.');
                                         } else {
                                             await continueSilently(aiMsgObj,
                                                 buildCheckpointText(doneTools, 'Limit AI tercapai sebentar — saya lanjutkan sisa tugasnya.'),
-                                                'Limit kuota AI barusan tercapai di tengah pengerjaan dan kini sudah pulih — lanjutkan HANYA sisa tugas yang belum selesai dari titik terakhir, tanpa mengulang bagian yang sudah beres.');
+                                                'Limit kuota AI barusan tercapai di tengah pengerjaan dan kini sudah pulih — lanjutkan HANYA sisa tugas yang belum selesai dari titik terakhir, tanpa mengulang bagian yang sudah beres. DILARANG membaca ulang / list ulang file yang sudah ada di riwayat — langsung kerjakan sisa tugasnya sampai tuntas.');
                                         }
                                     } catch (e2) {}
                                     return;
