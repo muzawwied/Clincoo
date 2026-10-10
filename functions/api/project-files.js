@@ -33,6 +33,8 @@ const SMALL_MAX_CHARS = 700_000;        // <= ini: content TEXT biasa satu baris
 const CHUNK_CHARS = 1_500_000;          // ukuran potongan base64 per baris D1 (1,5MB — aman di bawah batas baris 2MB; file 25MB hanya ~23 insert, jauh di bawah limit 50 query/request plan gratis)
 const BIG_MAX_BYTES = 25 * 1024 * 1024; // batas atas file besar (25MB, sama dgn batas aset Cloudflare Pages)
 
+function likeEsc(s) { return String(s).replace(/[\\%_]/g, function (m) { return '\\' + m; }); }
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', ...CORS } });
 }
@@ -254,6 +256,32 @@ export async function onRequestPost({ request, env }) {
     await ensureFilesTable(db, T.files);
     const chunksTable = await ensureChunksTable(db, projectId);
 
+    // [10 Okt, laporan pemilik: "rename lama-lama berubah sendiri"] rename kini
+    // dieksekusi LANGSUNG di D1 (baris + chunk dipindah), tidak lagi menunggu
+    // push penuh dari klien yang bisa gagal senyap.
+    if (body.rename && body.rename.from && body.rename.to) {
+      const from = String(body.rename.from).trim();
+      const to = String(body.rename.to).trim();
+      if (!from || !to || from === to) return json({ error: 'rename: from/to tidak valid' }, 400);
+      const rows = await db.prepare(
+        `SELECT path FROM ${T.files} WHERE project_id = ? AND (path = ? OR path LIKE ? ESCAPE '\\') ORDER BY path ASC LIMIT 20000`
+      ).bind(projectId, from, likeEsc(from) + '/%').all();
+      const stmts = [];
+      for (const r of (rows.results || [])) {
+        const np = to + r.path.slice(from.length);
+        stmts.push(db.prepare(`DELETE FROM ${T.files} WHERE project_id = ? AND path = ?`).bind(projectId, np));
+        stmts.push(db.prepare(`UPDATE ${T.files} SET path = ?, updated_at = datetime('now') WHERE project_id = ? AND path = ?`).bind(np, projectId, r.path));
+        const ch = await db.prepare(`SELECT idx, chunk FROM ${chunksTable} WHERE path = ? ORDER BY idx ASC`).bind(r.path).all();
+        for (const c of (ch.results || [])) {
+          stmts.push(db.prepare(`INSERT OR REPLACE INTO ${chunksTable} (path, idx, chunk) VALUES (?, ?, ?)`).bind(np, c.idx, c.chunk));
+        }
+        stmts.push(db.prepare(`DELETE FROM ${chunksTable} WHERE path = ?`).bind(r.path));
+      }
+      if (stmts.length) await db.batch(stmts);
+      try { await db.prepare('DELETE FROM project_files WHERE project_id = ?').bind(projectId).run(); } catch (e) {}
+      return json({ success: true, renamed: (rows.results || []).length });
+    }
+
     const filesToSave = body.files && Array.isArray(body.files) ? body.files
       : (body.path !== undefined ? [{ path: body.path, content: body.content, content_b64: body.content_b64 }] : []);
     if (filesToSave.length === 0) return json({ error: 'path/content or files[] required' }, 400);
@@ -407,7 +435,16 @@ export async function onRequestDelete({ request, env }) {
 
     const T = await getProjectTables(db, projectId);
     const chunksTable = await ensureChunksTable(db, projectId);
-    if (path) {
+    if (path && url.searchParams.get('prefix') === '1') {
+      // [10 Okt] hapus folder beserta seluruh isinya (path ATAU path/...)
+      const rows = await db.prepare(
+        `SELECT path FROM ${T.files} WHERE project_id = ? AND (path = ? OR path LIKE ? ESCAPE '\\')`
+      ).bind(projectId, path, likeEsc(path) + '/%').all().catch(() => null);
+      await db.prepare(
+        `DELETE FROM ${T.files} WHERE project_id = ? AND (path = ? OR path LIKE ? ESCAPE '\\')`
+      ).bind(projectId, path, likeEsc(path) + '/%').run();
+      if (rows && Array.isArray(rows.results)) await deleteChunks(db, chunksTable, rows.results.map(r => r.path));
+    } else if (path) {
       await db.prepare(`DELETE FROM ${T.files} WHERE project_id = ? AND path = ?`).bind(projectId, path).run();
       await deleteChunks(db, chunksTable, [path]);
     } else {

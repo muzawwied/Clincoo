@@ -3958,12 +3958,34 @@ window.chatLivePreview = function () {
             clearTimeout(wsCloudTimer);
             wsCloudTimer = setTimeout(function() {
                 wsCloudTimer = null;
-                // replace:true (bukan DELETE-dulu): chunk file besar TIDAK ikut terhapus,
-                // dan tidak ada jendela "cloud kosong" bila POST-nya gagal.
-                const payload = { project_id: pid, files: wsFlatten(wsLoad()), replace: true };
-                fetch(WS_CLOUD_API, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()), body: JSON.stringify(payload) })
-                    .catch(function() {});
+                wsCloudPushRun(0);
             }, 3000);
+        }
+        // [10 Okt, laporan pemilik: "file yang dihapus muncul lagi, nama berubah sendiri"]
+        // Push SATU-POST berisi seluruh tree sering mati di tengah (batas CPU/kuota)
+        // TANPA error yang terlihat -> hapus/rename tidak pernah sampai ke D1, lalu
+        // pull berikutnya menghidupkan file lama. Sekarang: bertahap 40 file/POST
+        // dgn keep_paths penuh + retry + notifikasi bila tetap gagal.
+        function wsCloudPushRun(attempt) {
+            const pid = wsProjectId();
+            if (!pid) return;
+            const files = wsFlatten(wsLoad());
+            if (!files.length) return;
+            const allPaths = files.map(function(f) { return f.path; });
+            const BATCH = 40;
+            const H = Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders());
+            let bi = 0;
+            const sendNext = function() {
+                if (bi >= files.length) return Promise.resolve();
+                const batch = files.slice(bi, bi + BATCH); bi += BATCH;
+                return fetch(WS_CLOUD_API, { method: 'POST', headers: H, body: JSON.stringify({ project_id: pid, files: batch, replace: true, keep_paths: allPaths }) })
+                    .then(function(r) { if (!r.ok) { return Promise.reject(new Error('HTTP ' + r.status)); } return r.json(); })
+                    .then(function(d) { if (d && d.error) { return Promise.reject(new Error(d.error)); } return sendNext(); });
+            };
+            sendNext().catch(function(err) {
+                if (attempt < 3) { wsCloudTimer = setTimeout(function() { wsCloudTimer = null; wsCloudPushRun(attempt + 1); }, 2000 * (attempt + 1)); return; }
+                try { addNotification('Workspace', 'Gagal menyimpan perubahan workspace (' + ((err && err.message) || 'jaringan') + '). Perubahan terakhir belum tersimpan di cloud.'); } catch (e) {}
+            });
         }
 
         // Tarik data workspace dari D1 sekali saat halaman dibuka
@@ -4267,7 +4289,7 @@ window.chatLivePreview = function () {
             return { success: true, action: existed ? 'exists' : 'created', path: norm, note: existed ? 'Folder sudah ada sebelumnya — TIDAK dibuat ulang; lanjut ke langkah berikutnya.' : '' };
         }
 
-        function wsRenameItem(args) {
+        async function wsRenameItem(args) {
             const path = args && args.path;
             const newName = args && args.new_name ? String(args.new_name).trim() : '';
             if (!path || !newName) return { success: false, error: 'Parameter path dan new_name wajib.' };
@@ -4302,10 +4324,21 @@ window.chatLivePreview = function () {
             item.path = newPath;
             const err = wsSave(data);
             if (err) return err;
+            // [10 Okt] rename LANGSUNG di server — tanpa ini rename "berubah sendiri"
+            // kembali ke nama lama saat push penuh gagal & data ditarik ulang.
+            try {
+                const r = await fetch(WS_CLOUD_API, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()), body: JSON.stringify({ project_id: wsProjectId(), rename: { from: oldPath, to: newPath } }) });
+                const d = await r.json().catch(function() { return {}; });
+                if (!r.ok || (d && d.error)) {
+                    return { success: false, error: 'Nama berubah di lokal, tapi server menolak rename (' + ((d && d.error) || ('HTTP ' + r.status)) + ').' };
+                }
+            } catch (e) {
+                return { success: false, error: 'Rename tersimpan lokal, tapi gagal terkirim ke server (' + ((e && e.message) || 'jaringan') + ').' };
+            }
             return { success: true, action: 'renamed', old_path: oldPath, new_path: newPath };
         }
 
-        function wsDeleteItem(args) {
+        async function wsDeleteItem(args) {
             const path = args && args.path;
             if (!path) return { success: false, error: 'Parameter path wajib.' };
             const data = wsLoad();
@@ -4323,6 +4356,18 @@ window.chatLivePreview = function () {
             items.splice(found.index, 1);
             const err = wsSave(data);
             if (err) return err;
+            // [10 Okt] hapus LANGSUNG di server — jangan bergantung pada push penuh
+            // yang bisa gagal senyap (dulu: file "muncul lagi" setelah reload).
+            try {
+                const qs = '?project_id=' + encodeURIComponent(wsProjectId()) + '&path=' + encodeURIComponent(item.path) + (item.type === 'folder' ? '&prefix=1' : '');
+                const r = await fetch(WS_CLOUD_API + qs, { method: 'DELETE', headers: wsAuthHeaders() });
+                const d = await r.json().catch(function() { return {}; });
+                if (!r.ok || (d && d.error)) {
+                    return { success: false, error: 'Terhapus di lokal, tapi server masih menyimpannya (' + ((d && d.error) || ('HTTP ' + r.status)) + '). Buka ulang halaman lalu hapus lagi.' };
+                }
+            } catch (e) {
+                return { success: false, error: 'Terhapus di lokal, tapi gagal terkirim ke server (' + ((e && e.message) || 'jaringan') + ').' };
+            }
             return { success: true, action: 'deleted', path: item.path, type: item.type };
         }
 

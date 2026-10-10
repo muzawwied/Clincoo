@@ -1200,6 +1200,26 @@ function ccBytesLabel(b){
 }
 function wsDirtySet(on){try{if(on)localStorage.setItem(wsDirtyKey(),'1');else localStorage.removeItem(wsDirtyKey());}catch(e){}}
 function wsDirtyIs(){try{return !!localStorage.getItem(wsDirtyKey());}catch(e){return false;}}
+// [10 Okt, laporan pemilik: "file yang dihapus muncul lagi, nama berubah sendiri"]
+// Hapus & ganti nama kini dieksekusi LANGSUNG di server (bukan hanya lewat push
+// penuh yang bisa gagal senyap). Gagal -> toast, supaya kelihatan.
+function srvDeletePath(p){
+  if(!LINK_PID)return;
+  try{
+    fetch(WS_API+'?project_id='+encodeURIComponent(LINK_PID)+'&path='+encodeURIComponent(p),{method:'DELETE',headers:ccAuthHeaders()})
+      .then(function(r){if(!r.ok)toast('Hapus belum tersimpan di cloud (HTTP '+r.status+') — ulangi sesudah koneksi stabil.');})
+      .catch(function(){toast('Hapus belum terkirim ke server — periksa koneksi.');});
+  }catch(e){}
+}
+function srvRenamePath(from,to){
+  if(!LINK_PID||!from||!to||from===to)return;
+  try{
+    fetch(WS_API,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},ccAuthHeaders()),
+      body:JSON.stringify({project_id:LINK_PID,rename:{from:from,to:to}})})
+      .then(function(r){if(!r.ok)toast('Ganti nama belum tersimpan di cloud (HTTP '+r.status+') — ulangi sesudah koneksi stabil.');})
+      .catch(function(){toast('Ganti nama belum terkirim ke server — periksa koneksi.');});
+  }catch(e){}
+}
 function persist(){
   try{localStorage.setItem('clincoo_editor_project',JSON.stringify(project));}catch(e){} // cache lokal best-effort; cloud = sumber utama
   if(LINK_PID){
@@ -2772,7 +2792,7 @@ function ctxMenu(e,path,isDir){
     ['Ganti nama',()=>renameModal(path)],
     ['Duplikat',()=>{const nn=path.replace(/(\.[^.]+)$/,' copy$1');if(project[nn]!==undefined){toast('Sudah ada: '+nn);return;}project[nn]=project[path];persist();renderTree();toast('Diduplikat');}],
     ['—',null],
-    ['Hapus',()=>{if(splitPath===path)closeSplit();delete project[path];if(models[path]){models[path].dispose();delete models[path];}if(tabs.includes(path))closeTab(path);persist();renderTree();toast('Terhapus: '+nameOf(path));}],
+    ['Hapus',()=>{if(splitPath===path)closeSplit();delete project[path];if(models[path]){models[path].dispose();delete models[path];}if(tabs.includes(path))closeTab(path);persist();renderTree();srvDeletePath(path);toast('Terhapus: '+nameOf(path));}],
   ];
   m.innerHTML=items.map((it,i)=>it[0]==='—'?'<div class="dd-sep"></div>':`<div class="dd-item" data-i="${i}">${esc(it[0])}</div>`).join('');
   $$('#ctxmenu .dd-item').forEach(el=>el.onclick=()=>{m.classList.remove('show');items[+el.dataset.i][1]();});
@@ -2801,7 +2821,7 @@ function doRename(oldPath){
   const ti=tabs.indexOf(oldPath);
   if(ti>=0)tabs[ti]=nn;
   if(activePath===oldPath)activePath=nn;
-  persist();renderAll();closeModal();
+  persist();renderAll();closeModal();srvRenamePath(oldPath,nn);
   if(tabs.includes(nn))openFile(nn);
   toast('Diganti nama: '+nameOf(nn));
 }
