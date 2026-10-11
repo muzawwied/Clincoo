@@ -50,6 +50,21 @@ async function bumpWsRev(db, projectId) {
   } catch (e) {}
 }
 
+// Tombstones prevent delayed full-sync requests from resurrecting deleted files.
+async function ensureWsDeletedTable(db) {
+  await db.prepare(`CREATE TABLE IF NOT EXISTS ws_deleted_paths (
+    project_id TEXT NOT NULL,
+    path TEXT NOT NULL,
+    deleted_at TEXT DEFAULT (datetime('now')),
+    PRIMARY KEY (project_id, path)
+  )`).run();
+}
+async function addDeletedPath(db, projectId, path) {
+  await ensureWsDeletedTable(db);
+  await db.prepare(`INSERT INTO ws_deleted_paths (project_id, path, deleted_at) VALUES (?, ?, datetime('now'))
+    ON CONFLICT(project_id, path) DO UPDATE SET deleted_at = datetime('now')`).bind(projectId, path).run();
+}
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', ...CORS } });
 }
@@ -281,6 +296,17 @@ export async function onRequestPost({ request, env }) {
     const T = await getProjectTables(db, projectId);
     await ensureFilesTable(db, T.files);
     const chunksTable = await ensureChunksTable(db, projectId);
+    await ensureWsDeletedTable(db);
+
+    // Only explicit user-created paths may clear a tombstone; ordinary syncs cannot.
+    const restorePaths = Array.isArray(body.restore_paths)
+      ? [...new Set(body.restore_paths.map(p => String(p || '').trim()).filter(Boolean))]
+      : [];
+    if (restorePaths.length) {
+      await db.batch(restorePaths.map(p => db.prepare(
+        'DELETE FROM ws_deleted_paths WHERE project_id = ? AND path = ?'
+      ).bind(projectId, p)));
+    }
 
     // [10 Okt, laporan pemilik: "rename lama-lama berubah sendiri"] rename kini
     // dieksekusi LANGSUNG di D1 (baris + chunk dipindah), tidak lagi menunggu
@@ -295,6 +321,12 @@ export async function onRequestPost({ request, env }) {
       const stmts = [];
       for (const r of (rows.results || [])) {
         const np = to + r.path.slice(from.length);
+        stmts.push(db.prepare(
+          'DELETE FROM ws_deleted_paths WHERE project_id = ? AND path = ?'
+        ).bind(projectId, np));
+        stmts.push(db.prepare(
+          "INSERT INTO ws_deleted_paths (project_id, path, deleted_at) VALUES (?, ?, datetime('now')) ON CONFLICT(project_id, path) DO UPDATE SET deleted_at = datetime('now')"
+        ).bind(projectId, r.path));
         stmts.push(db.prepare(`DELETE FROM ${T.files} WHERE project_id = ? AND path = ?`).bind(projectId, np));
         stmts.push(db.prepare(`UPDATE ${T.files} SET path = ?, updated_at = datetime('now') WHERE project_id = ? AND path = ?`).bind(np, projectId, r.path));
         const ch = await db.prepare(`SELECT idx, chunk FROM ${chunksTable} WHERE path = ? ORDER BY idx ASC`).bind(r.path).all();
@@ -439,6 +471,21 @@ export async function onRequestPost({ request, env }) {
       if (delStmts.length) await db.batch(delStmts);
     }
 
+    // A delayed/old POST may race with DELETE. Persistent tombstones are applied
+    // after writes so an old snapshot cannot recreate a deleted path.
+    const tombstones = await db.prepare(
+      'SELECT path FROM ws_deleted_paths WHERE project_id = ?'
+    ).bind(projectId).all();
+    const deadPaths = (tombstones.results || []).map(r => String(r.path));
+    if (deadPaths.length) {
+      const deadStmts = [];
+      for (const p of deadPaths) {
+        deadStmts.push(db.prepare(`DELETE FROM ${T.files} WHERE project_id = ? AND path = ?`).bind(projectId, p));
+        deadStmts.push(db.prepare(`DELETE FROM ${chunksTable} WHERE path = ?`).bind(p));
+      }
+      await db.batch(deadStmts);
+    }
+
     // Update project's updated_at in projects table if exists
     try { await db.prepare("UPDATE projects SET updated_at = datetime('now') WHERE id = ?").bind(projectId).run(); } catch(e) {}
 
@@ -463,19 +510,31 @@ export async function onRequestDelete({ request, env }) {
 
     const T = await getProjectTables(db, projectId);
     const chunksTable = await ensureChunksTable(db, projectId);
+    await ensureWsDeletedTable(db);
     if (path && url.searchParams.get('prefix') === '1') {
-      // [10 Okt] hapus folder beserta seluruh isinya (path ATAU path/...)
+      // Record every known descendant and the folder itself before deleting rows.
       const rows = await db.prepare(
-        `SELECT path FROM ${T.files} WHERE project_id = ? AND (path = ? OR path LIKE ? ESCAPE '\\')`
+        `SELECT path FROM ${T.files} WHERE project_id = ? AND (path = ? OR path LIKE ? ESCAPE '\\\\')`
       ).bind(projectId, path, likeEsc(path) + '/%').all().catch(() => null);
+      const affected = rows && Array.isArray(rows.results) ? rows.results.map(r => String(r.path)) : [];
+      if (!affected.includes(path)) affected.push(path);
+      await db.batch(affected.map(p => db.prepare(
+        "INSERT INTO ws_deleted_paths (project_id, path, deleted_at) VALUES (?, ?, datetime('now')) ON CONFLICT(project_id, path) DO UPDATE SET deleted_at = datetime('now')"
+      ).bind(projectId, p)));
       await db.prepare(
-        `DELETE FROM ${T.files} WHERE project_id = ? AND (path = ? OR path LIKE ? ESCAPE '\\')`
+        `DELETE FROM ${T.files} WHERE project_id = ? AND (path = ? OR path LIKE ? ESCAPE '\\\\')`
       ).bind(projectId, path, likeEsc(path) + '/%').run();
       if (rows && Array.isArray(rows.results)) await deleteChunks(db, chunksTable, rows.results.map(r => r.path));
     } else if (path) {
+      await addDeletedPath(db, projectId, path);
       await db.prepare(`DELETE FROM ${T.files} WHERE project_id = ? AND path = ?`).bind(projectId, path).run();
       await deleteChunks(db, chunksTable, [path]);
     } else {
+      const rows = await db.prepare(`SELECT path FROM ${T.files} WHERE project_id = ?`).bind(projectId).all().catch(() => null);
+      const paths = rows && Array.isArray(rows.results) ? rows.results.map(r => String(r.path)) : [];
+      if (paths.length) await db.batch(paths.map(p => db.prepare(
+        "INSERT INTO ws_deleted_paths (project_id, path, deleted_at) VALUES (?, ?, datetime('now')) ON CONFLICT(project_id, path) DO UPDATE SET deleted_at = datetime('now')"
+      ).bind(projectId, p)));
       await db.prepare(`DELETE FROM ${T.files} WHERE project_id = ?`).bind(projectId).run();
       try { await db.prepare(`DELETE FROM ${chunksTable}`).run(); } catch (e) {}
     }
