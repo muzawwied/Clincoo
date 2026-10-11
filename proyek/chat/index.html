@@ -6237,6 +6237,23 @@
                     return 'ack';
                 }
             }
+            // [11 Okt, laporan owner screenshot: mode Build menulis server Express langsung di
+            // bubble sebagai teks] Mode Build WAJIB menulis lewat write_file. Blok kode besar
+            // di jawaban final padahal belum ada satu pun write_file di giliran ini = AI
+            // "menempel draf" di chat. Tolak: nudge keras pakai write_file, tanpa batas panjang teks.
+            try {
+                const _wm = (typeof window.selectedAiMode === 'function' && window.selectedAiMode()) || 'chat';
+                if (_wm === 'build') {
+                    const _tn0 = (aiMsgObj && aiMsgObj.toolCalls || []).map(function (tc) { return tc.name; });
+                    const _wrote0 = _tn0.some(function (n3) { return n3 === 'write_file' || n3 === 'write_files'; });
+                    const _fences = t.match(/```[a-z0-9_+-]*\n[\s\S]*?```/gi) || [];
+                    const _codeLen = _fences.reduce(function (a, b) { return a + b.length; }, 0);
+                    if (!_wrote0 && _codeLen > 700) {
+                        FINAL_NUDGE_EXTRA = 'KESALAHAN: kamu menulis kode sebagai teks di chat. Di mode Build DILARANG menempel isi file/kode di bubble. Ulangi SEKARANG: simpan kode itu dengan memanggil tool write_file (satu panggilan per file, path lengkap), lalu balas dengan laporan singkat 2-4 kalimat tanpa blok kode.';
+                        return 'promise';
+                    }
+                }
+            } catch (e) {}
             const tail = t.slice(-260);
             // [9 Okt, laporan owner screenshot: setelah "Lanjut" AI cuma list_items/read_file lalu
             // menutup dengan "Saya cek dulu isi proyek yang sudah ada." dan BERHENTI] -> kalimat
@@ -7030,10 +7047,21 @@
                             }
                             if (unfinishedTag && silentRounds < unfinishedMax && isGenerating) {
                                 silentRounds++;
+                                // [11 Okt] kode bocor di bubble (mode Build): buang blok kode besar dari
+                                // teks yang tampil — kode asli akan ditulis ulang lewat write_file.
+                                try {
+                                    if (FINAL_NUDGE_EXTRA && /menulis kode sebagai teks di chat/.test(FINAL_NUDGE_EXTRA)) {
+                                        const _bi = messages.findIndex(function (m) { return m.id === aiMsgObj.id; });
+                                        if (_bi !== -1) {
+                                            const _tt = String(messages[_bi].text || '').replace(/```[a-z0-9_+-]*\n[\s\S]*?```/gi, function (b) { return b.length > 400 ? '' : b; }).replace(/\n{3,}/g, '\n\n').trim();
+                                            messages[_bi].text = _tt;
+                                        }
+                                    }
+                                } catch (e) {}
                                 // [10 Okt, arahan pemilik] AI kirim pesan teks di tengah kerja ->
                                 // catatan bermakna dibekukan jadi CHECKPOINT bubble ini, pekerjaan
                                 // lanjut otomatis di bubble BARU di bawahnya (bukan digabung 1 bubble).
-                                if (cleanNow && cleanNow.length >= CHECKPOINT_MIN_CHARS && checkpointRounds < CHECKPOINT_MAX_ROUNDS) {
+                                if (cleanNow && cleanNow.length >= CHECKPOINT_MIN_CHARS && checkpointRounds < CHECKPOINT_MAX_ROUNDS && !(FINAL_NUDGE_EXTRA && /menulis kode sebagai teks di chat/.test(FINAL_NUDGE_EXTRA))) {
                                     checkpointRounds++;
                                     const cpIdx = messages.findIndex(m => m.id === aiMsgObj.id);
                                     if (cpIdx !== -1) { messages[cpIdx].checkpointNote = true; messages[cpIdx].midPhase = false; }
