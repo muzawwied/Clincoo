@@ -1290,11 +1290,35 @@ function linkedCloudPushNow(attempt,keepalive){
   const allPaths=files.map(f=>f.path);
   const BATCH=40;
   const batches=[];
+  const serverDeletedPaths=new Set();
   for(let i=0;i<files.length;i+=BATCH)batches.push(files.slice(i,i+BATCH));
-  const sendBatch=(bi)=>bi>=batches.length?Promise.resolve({ok:true,status:200,d:{success:true}})
+  const sendBatch=(bi)=>bi>=batches.length?Promise.resolve({ok:true,status:200,d:{success:true,deleted_paths:Array.from(serverDeletedPaths)}})
     :fetch(WS_API,{method:'POST',headers:H,body:JSON.stringify({project_id:LINK_PID,files:batches[bi],replace:true,keep_paths:allPaths,restore_paths:batches[bi].filter(f=>wsRestorePaths.has(f.path)).map(f=>f.path)})})
       .then(r=>r.json().then(d=>({ok:r.ok,status:r.status,d:d})).catch(()=>({ok:false,status:r.status,d:null})))
       .then(res=>{
+        if(res.d && Array.isArray(res.d.deleted_paths) && res.d.deleted_paths.length){
+          let changed=false;
+          res.d.deleted_paths.forEach(function(rawPath){
+            const p=String(rawPath||'');
+            if(!p)return;
+            serverDeletedPaths.add(p);
+            if(Object.prototype.hasOwnProperty.call(project,p)){
+              if(splitPath===p)closeSplit();
+              delete project[p];
+              if(bigFiles[p])delete bigFiles[p];
+              if(models[p]){models[p].dispose();delete models[p];}
+              if(tabs.includes(p))closeTab(p);
+              changed=true;
+            }
+          });
+          if(changed){
+            try{
+              localStorage.setItem('clincoo_editor_project_'+(LINK_PID||'global'),JSON.stringify(project));
+              localStorage.setItem(wsFilesKey(),JSON.stringify(flatToWs()));
+            }catch(e){}
+            renderTree();
+          }
+        }
         if(!res.ok||!res.d||res.d.error){
           const quotaMsg=(res.status===402&&res.d&&res.d.error)?res.d.error:null;
           if(attempt<2&&!quotaMsg){
@@ -1313,7 +1337,8 @@ function linkedCloudPushNow(attempt,keepalive){
         .then(r=>r.ok?r.json():Promise.reject())
         .then(d=>{
           const there=((d&&d.files)||[]).length;
-          if(there!==files.length)throw new Error('verifikasi gagal');
+          const expected=files.filter(f=>!serverDeletedPaths.has(String(f.path))).length;
+          if(there!==expected)throw new Error('verifikasi gagal');
           wsDirtySet(false);
           wsRestorePaths.clear();
           setCloudDot(true);
