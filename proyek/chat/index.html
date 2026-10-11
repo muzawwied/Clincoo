@@ -7506,6 +7506,29 @@
                             // jawaban sudah keluar: tampilkan apa adanya, TANPA catatan error apa pun
                             streamingBuffer = answeredSoFar;
                             if (msgIndex !== -1) messages[msgIndex].isError = false;
+                            // [11 Okt, tes Kopi Rimbun] stream putus di tengah jawaban berisi
+                            // JANJI ("Mari kita buat seluruh halaman ini sekarang.") tanpa
+                            // tool call di giliran ini -> kalau dibiarkan, bubble difinalisasi
+                            // sebagai jawaban utuh dan tugas MENCABANG di situ (gak ada chip
+                            // Lanjutkan, gak ada auto-lanjut). FIX: deteksi janji pada potongan
+                            // teks, pasang checkpoint chip, lalu auto-kirim 'lanjut' senyap
+                            // (pola yang sama dengan resume saat reload halaman).
+                            try {
+                                const _uTag = finalLooksUnfinished(String(answeredSoFar), aiMsgObj);
+                                if (_uTag && msgIndex !== -1) {
+                                    messages[msgIndex].checkpoint = true;
+                                    messages[msgIndex].retryable = true;
+                                    setTimeout(function () {
+                                        try {
+                                            if (isGenerating) return;
+                                            messages.push({ id: generateId(), role: 'user', text: 'lanjut', time: Date.now(), silent: true });
+                                            renderMessages();
+                                            scrollToBottom(true);
+                                            fetchAIResponse();
+                                        } catch (e) {}
+                                    }, 1200);
+                                }
+                            } catch (e) {}
                         } else {
                             streamingBuffer = errText;
                             // FIX: kartu status sebelumnya menulis "ketuk 'Coba lagi'" padahal
