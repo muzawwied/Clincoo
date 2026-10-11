@@ -1176,8 +1176,10 @@ function loadProject(){
   if(LINK_PID){ // proyek Clincoo: berkas apa adanya (kosong ya kosong)
     try{
       let raw=localStorage.getItem(wsFilesKey());
-      // migrasi: data lama tersimpan di kunci global Clincoo
-      if(!raw){raw=localStorage.getItem('clincoo_workspace_files');}
+
+      // migrasi: data lama pakai SEKALI lalu HAPUS — [11 Okt] kunci global yang selalu
+      // ada bikin tiap proyek baru mewarisi file proyek lain (biang preview antar tab ngecache).
+      if(!raw){raw=localStorage.getItem('clincoo_workspace_files');if(raw){try{localStorage.removeItem('clincoo_workspace_files');}catch(e0){}}}
       if(raw){const d=JSON.parse(raw);const r=wsToFlat(d);linkedEmptyFolders=r.emptyFolders;
         try{localStorage.setItem(wsFilesKey(),raw);}catch(e){}
         return r.files;}

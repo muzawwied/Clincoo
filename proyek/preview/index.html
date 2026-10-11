@@ -219,7 +219,11 @@
     // ===== sumber 1: cache lokal (render instan) =====
     function loadFiles() {
         var map = {};
-        var keys = ['clincoo_workspace_files_' + (pid || 'global'), 'clincoo_workspace_files'];
+
+        // [11 Okt, laporan owner: preview ngecache dari tab/proyek lain] fallback ke kunci
+        // global DIBUANG saat ada project id — kunci itu bisa berisi file proyek SIAPA PUN.
+        // Kunci global hanya utk mode tamu tanpa project id.
+        var keys = pid ? ['clincoo_workspace_files_' + pid] : ['clincoo_workspace_files_global', 'clincoo_workspace_files'];
         for (var k = 0; k < keys.length; k++) {
             var raw = null;
             try { raw = localStorage.getItem(keys[k]); } catch (e) {}
