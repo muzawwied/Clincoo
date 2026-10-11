@@ -7631,7 +7631,9 @@
         }
         async function runAgentTask(goal) {
             window.__agentAbort = false;
-            isGenerating = true;
+            // [11 Okt, permintaan owner] tombol kirim harus berubah jadi kotak STOP
+            // saat AI agent bekerja — dulu hanya flag yang diset, ikon tetap 'kirim'.
+            toggleActionState(true);
             const aiMsg = { id: generateId(), role: 'ai', text: '\u26A1 Memulai tugas agent...', isProcessing: true, toolCalls: [] };
             messages.push(aiMsg);
             renderMessages();
@@ -7664,8 +7666,8 @@
             try {
                 const res = await fetch(AGENT_API, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, agentAuthHeaders()), body: JSON.stringify({ action: 'start', goal: goal, project_id: (typeof currentProjectId !== 'undefined' ? currentProjectId : undefined) }) });
                 const data = await res.json().catch(function () { return {}; });
-                if (res.status === 429 && data.quota_exhausted) { upd('Kuota AI hari ini sudah habis \u2014 tugas batal. Coba lagi besok.', true, true); isGenerating = false; return; }
-                if (!res.ok || !data.ok) { upd('Gagal memulai tugas: ' + (data.error || 'HTTP ' + res.status), true, true); isGenerating = false; return; }
+                if (res.status === 429 && data.quota_exhausted) { upd('Kuota AI hari ini sudah habis \u2014 tugas batal. Coba lagi besok.', true, true); toggleActionState(false); return; }
+                if (!res.ok || !data.ok) { upd('Gagal memulai tugas: ' + (data.error || 'HTTP ' + res.status), true, true); toggleActionState(false); return; }
                 task = data.task;
 
                 while (!window.__agentAbort) {
@@ -7680,13 +7682,13 @@
                     }
                     if (task.status === 'done') {
                         upd(task.result ? String(task.result) : 'Tugas selesai.', true, false);
-                        isGenerating = false;
+                        toggleActionState(false);
                         try { saveChatLog(); } catch (e) {}
                         return;
                     }
                     if (task.status === 'failed') {
                         upd('Tugas gagal: ' + (task.error || 'provider AI tidak tersedia'), true, true);
-                        isGenerating = false;
+                        toggleActionState(false);
                         return;
                     }
                     if (task.status === 'paused') {
@@ -7694,7 +7696,7 @@
                         const rr = await fetch(AGENT_API, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, agentAuthHeaders()), body: JSON.stringify({ action: 'resume', task_id: task.id }) });
                         if (rr.status === 429) {
                             upd('\u23F8\uFE0F Tugas dijeda \u2014 kuota habis. Lanjut otomatis begitu kuota terisi.\n\n' + agentEventsText(evs), true, false);
-                            isGenerating = false;
+                            toggleActionState(false);
                             return;
                         }
                         await agentSleep(2000);
@@ -7706,7 +7708,7 @@
             } catch (e) {
                 upd('Gagal menjalankan tugas: ' + (e && e.message), true, true);
             }
-            isGenerating = false;
+            toggleActionState(false);
         }
 
         // ===== TOOL REVIEW KODE: kirim seluruh file workspace ke /api/review =====
