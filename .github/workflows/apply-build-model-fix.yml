@@ -8,6 +8,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Apply patch
         run: node scripts/apply-build-model-fix.js
       - name: Commit if changed
