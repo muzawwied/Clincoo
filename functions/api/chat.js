@@ -2470,16 +2470,16 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // Delta ModelRouter ditampung dulu agar bila provider gagal setelah mengirim
       // sebagian teks, fallback Gemini tidak menempelkan jawaban kedua ke teks parsial.
       if (buildMode && (!r || r.error)) {
-        // AI 2 / Build: Clouvia menjadi provider utama dengan model gpt-6-astra.
+        // AI 2 / Build: gunakan model Clouvia yang sudah terdaftar/tersedia.
         // ModelRouter dan Gemini dipertahankan sebagai fallback jika Clouvia gagal.
         if (cvKeysEarly.length) {
           const cvBuild = await withTimeout(
             tryClouviaText(
-              cvKeysEarly, workMessages, toolDecls, ['gpt-6-astra'],
+              cvKeysEarly, workMessages, toolDecls, CLOUVIA_MODELS,
               streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null
             ),
             40000,
-            'Clouvia-Build-gpt-6-astra'
+            'Clouvia-Build-coding-high-flash'
           ).catch(e => ({ error: e.message }));
           if (cvBuild && !cvBuild.error && (cvBuild.text || cvBuild.tool_calls)) r = cvBuild;
         }
