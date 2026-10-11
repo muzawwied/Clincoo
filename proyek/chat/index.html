@@ -6248,7 +6248,16 @@
                     return m.role === 'user' && !m.silent && /buat(kan)?\b|bikin|bangun|rancang|kembangkan|lanjut|perbaiki|deploy|tambah(kan)?|ubah|ulang|revisi|update|fix/i.test(m.text || '');
                 });
                 if (_userAskedWork && !_didAct && t.length <= 4000) { // AUTO_CONTINUE_LENGTH_FIX
-                    const INTENT_RE = /(saya|aku|kami)\s+(akan\s+)?(cek|periksa|lihat|baca|lanjut(kan)?|perbaiki|deploy|kerjakan|buat|bikin|tulis|menulis|ubah|tambah(kan)?|susun|membangun|bangun|menyusun)\b|sedang\s+saya\s+(perbaiki|kerjakan|deploy|reboot|buat|tulis|menulis)|sekarang\s+saya\s+(tulis|menulis|buat|bikin|kerjakan|mulai)|fokus\s+(penuh\s+)?pada\s+membangun|(deploy|publish)\s+(sebelumnya\s+)?gagal[^\n]{0,120}(perbaiki|ulang|reboot)|belum\s+selesai\)?\.?\s*$|(dalam\s+satu\s+giliran)/i; // AUTO_CONTINUE_LENGTH_FIX
+                    // [11 Okt, uji QA] AI menutup dengan MEMINTA KONFIRMASI ("Silakan
+                    // konfirmasi jika sudah benar", "apakah sudah sesuai?") padahal user
+                    // sudah minta dibuatkan -> tugas jelas, JANGAN tunggu jawaban user:
+                    // langsung nudge kerjakan sekarang.
+                    const CONFIRM_ASK_RE = /(silakan|boleh|apakah|mohon)\s+(konfirmasi|tunggu|izin|persetujuan|kabar)|(sudah|sudahkah)\s*(benar|sesuai|baik|ok|oke|tepat)\s*\?|konfirmasi\s+(dulu|jika|duluya)/i;
+                    if (CONFIRM_ASK_RE.test(tail) || CONFIRM_ASK_RE.test(t)) {
+                        FINAL_NUDGE_EXTRA = 'Permintaan user SUDAH jelas dan spesifik — JANGAN minta konfirmasi/bertanya lagi. LANGSUNG kerjakan sekarang: panggil write_file untuk file pertama (index.html) di respons ini juga. Tanpa narasi rencana.';
+                        return 'promise';
+                    }
+                    const INTENT_RE = /(saya|aku|kami)\s+(akan\s+)?(cek|periksa|lihat|baca|lanjut(kan)?|perbaiki|deploy|kerjakan|buat|membuat|bikin|tulis|menulis|ubah|mengubah|tambah(kan)?|menambah(kan)?|susun|menyusun|membangun|bangun|menyiapkan|mengerjakan|memulai)\b|sedang\s+saya\s+(perbaiki|kerjakan|deploy|reboot|buat|tulis|menulis)|sekarang\s+saya\s+(tulis|menulis|buat|bikin|kerjakan|mulai)|fokus\s+(penuh\s+)?pada\s+membangun|(deploy|publish)\s+(sebelumnya\s+)?gagal[^\n]{0,120}(perbaiki|ulang|reboot)|belum\s+selesai\)?\.?\s*$|(dalam\s+satu\s+giliran)/i; // AUTO_CONTINUE_LENGTH_FIX
                     if (INTENT_RE.test(t) || INTENT_RE.test(tail)) {
                         const stateTail = t.slice(-180).replace(/\s+/g, ' ').trim();
                         FINAL_NUDGE_EXTRA = 'JANGAN berhenti di kalimat niat dan JANGAN ulangi narasi. State terakhir: "' + stateTail + '". LANGSUNG panggil tool nyata SEKARANG (write_file / append_file / deploy_project) dari titik itu — tanpa sesi baru, tanpa minta izin, tanpa ringkasan.';
