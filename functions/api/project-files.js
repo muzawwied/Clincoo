@@ -471,12 +471,28 @@ export async function onRequestPost({ request, env }) {
       if (delStmts.length) await db.batch(delStmts);
     }
 
-    // A delayed/old POST may race with DELETE. Persistent tombstones are applied
-    // after writes so an old snapshot cannot recreate a deleted path.
-    const tombstones = await db.prepare(
-      'SELECT path FROM ws_deleted_paths WHERE project_id = ?'
+    // A delayed/old POST may race with DELETE. Apply tombstones after writes,
+    // but only issue deletes for resurrected rows and only report paths this client
+    // currently knows about (keeps large projects within D1/Worker limits).
+    const clientPaths = [...new Set([
+      ...(Array.isArray(body.keep_paths) ? body.keep_paths : []),
+      ...keepPaths
+    ].map(p => String(p || '')).filter(Boolean))];
+    const reportedDeletedPaths = new Set();
+    for (let i = 0; i < clientPaths.length; i += 400) {
+      const group = clientPaths.slice(i, i + 400);
+      if (!group.length) continue;
+      const marks = group.map(() => '?').join(',');
+      const found = await db.prepare(
+        `SELECT path FROM ws_deleted_paths WHERE project_id = ? AND path IN (${marks})`
+      ).bind(projectId, ...group).all();
+      for (const row of (found.results || [])) reportedDeletedPaths.add(String(row.path));
+    }
+    const resurrected = await db.prepare(
+      `SELECT d.path FROM ws_deleted_paths d INNER JOIN ${T.files} f
+       ON f.project_id = d.project_id AND f.path = d.path WHERE d.project_id = ?`
     ).bind(projectId).all();
-    const deadPaths = (tombstones.results || []).map(r => String(r.path));
+    const deadPaths = (resurrected.results || []).map(r => String(r.path));
     if (deadPaths.length) {
       const deadStmts = [];
       for (const p of deadPaths) {
@@ -491,7 +507,7 @@ export async function onRequestPost({ request, env }) {
 
     if (errors.length && keepPaths.length === errors.length) return json({ error: errors[0] }, 400);
     await bumpWsRev(db, projectId);
-    return json({ success: true, saved: keepPaths.length, deleted_paths: deadPaths, warnings: errors.length ? errors : undefined });
+    return json({ success: true, saved: keepPaths.length, deleted_paths: [...reportedDeletedPaths], warnings: errors.length ? errors : undefined });
   } catch (err) {
     return json({ error: err.message }, 500);
   }
