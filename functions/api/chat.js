@@ -2470,7 +2470,20 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // Delta ModelRouter ditampung dulu agar bila provider gagal setelah mengirim
       // sebagian teks, fallback Gemini tidak menempelkan jawaban kedua ke teks parsial.
       if (buildMode && (!r || r.error)) {
-        if (mrKeys.length) {
+        // AI 2 / Build: Clouvia menjadi provider utama dengan model gpt-6-astra.
+        // ModelRouter dan Gemini dipertahankan sebagai fallback jika Clouvia gagal.
+        if (cvKeysEarly.length) {
+          const cvBuild = await withTimeout(
+            tryClouviaText(
+              cvKeysEarly, workMessages, toolDecls, ['gpt-6-astra'],
+              streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null
+            ),
+            40000,
+            'Clouvia-Build-gpt-6-astra'
+          ).catch(e => ({ error: e.message }));
+          if (cvBuild && !cvBuild.error && (cvBuild.text || cvBuild.tool_calls)) r = cvBuild;
+        }
+        if ((!r || r.error) && mrKeys.length) {
           let mrDelta = '';
           const mr = await withTimeout(
             tryModelRouterText(
@@ -2479,7 +2492,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
               mrUsageAcc
             ),
             14000,
-            'ModelRouter-Build'
+            'ModelRouter-Build-fallback'
           ).catch(e => ({ error: e.message }));
           if (mr && !mr.error && (mr.text || mr.tool_calls)) {
             r = mr;
@@ -2498,7 +2511,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
         }
       }
       const USE_CLOUVIA_FIRST = true;
-      if (USE_CLOUVIA_FIRST && !isGuest && !hasImages && cvKeysEarly.length) {
+      if (USE_CLOUVIA_FIRST && !buildMode && !isGuest && !hasImages && cvKeysEarly.length) {
         const sp = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, CLOUVIA_SOL_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 40000, 'ClouviaSolPro').catch(e => ({ error: e.message }));
         if (sp) r = sp;
       }
