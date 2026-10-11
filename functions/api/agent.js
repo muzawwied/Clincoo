@@ -1,19 +1,3 @@
-// Cloudflare Pages Function — /api/agent "Agent Mode Clincoo" (SELF-CONTAINED)
-// Agent AI mandiri: satu tujuan besar dieksekusi jadi langkah-langkah kecil
-// SECARA OTOMATIS tanpa konfirmasi per langkah — seperti agen di platform builder:
-//   1. AI menyusun rencana terstruktur (JSON langkah-langkah)
-//   2. Loop server-side menjalankan langkah satu per satu dengan auto-retry
-//      dan failover provider (ModelRouter nemotron-3-ultra -> DeepSeek free -> GLM-5.2 -> DeepSeek V4 -> GLM-4.7 Flash -> Gemini)
-//   3. State tersimpan di D1 SETIAP langkah — kena limit/error pun, task di-RESUME
-//      otomatis dari posisi terakhir, bukan mulai dari nol
-// Endpoint (murni backend — frontend belum perlu berubah):
-//   POST /api/agent { action: 'start', goal, project_id?, budget_seconds? }
-//   POST /api/agent { action: 'resume', task_id }   // lanjut dari langkah terakhir
-//   POST /api/agent { action: 'status', task_id }   // atau pakai GET ?task_id=
-// Catatan kapabilitas: agent v1 bekerja pada level pengetahuan/teks/kode (analisis,
-// rencana kerja, menulis kode & konten) — aksi berdampak nyata ke workspace/deploy
-// tetap lewat /api/chat yang punya akses tools klien.
-
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -58,8 +42,8 @@ const GEMINI_MODELS = ['gemini-3.6-flash', 'gemini-3-flash-preview'];
 // nemotron-3-ultra (diuji OK 2026-10-07) + deepseek-v4.1-flash:free sebagai cadangan gratis.
 // Urutan default: nemotron (reasoning, untuk planning) -> deepseek free.
 // Urutan FAST: deepseek free duluan (tanpa reasoning ~2x lebih cepat) -> nemotron cadangan.
-const MODELROUTER_MODELS = ['claude-haiku-5.5']; // fokus HANYA haiku 5.5
-const MODELROUTER_FAST = ['claude-haiku-5.5']; // fokus HANYA haiku 5.5
+const MODELROUTER_MODELS = ['claude-sonnet-5.5']; // fokus HANYA sonnet 5.5
+const MODELROUTER_FAST = ['claude-sonnet-5.5']; // fokus HANYA sonnet 5.5
 async function tryModelRouter(key, messages, models) {
   if (!key) return { error: 'Kunci ModelRouter tidak tersedia' };
   const list = Array.isArray(models) && models.length ? models : MODELROUTER_MODELS;
