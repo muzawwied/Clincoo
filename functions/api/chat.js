@@ -2447,7 +2447,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // 'chat'  = obrolan via Gemini AI Studio (kandidat utama race) + batas harian/bulanan,
     //           TANPA auto-eskalasi ke model berbayar walau prompt terdengar "bangun situs";
     // 'build' = ModelRouter berbayar, kredit dipotong sesuai pemakaian (usage-based).
-    const buildMode = ENABLE_BUILD_ROUTE && (body.mode === 'build' || (!explicitChat && detectBuildIntent(body.messages))) && !isGuest && !hasImages; // AI Studio (Gemini) — tak butuh kunci MR
+    const buildMode = ENABLE_BUILD_ROUTE && (body.mode === 'build' || (!explicitChat && detectBuildIntent(body.messages))) && !isGuest && !hasImages; // jalur execution agent, ModelRouter utama + Gemini fallback
     const aiMain = !!(env.AI && !hasImages);
     const toolDecls = (gTools && gTools[0] && gTools[0].functionDeclarations) || null;
     // Cascade lengkap (OpenRouter -> Clouvia -> Workers AI -> Gemini) dijalankan
@@ -2485,9 +2485,6 @@ export async function onRequestPost({ request, env, waitUntil }) {
             r = mr;
             if (mrDelta && streamSend) streamSend({ t: 'delta', text: mrDelta });
           }
-        }
-        if ((!r || r.error) && !mrKeys.length) {
-          // Tidak ada kredensial ModelRouter: langsung gunakan Gemini tanpa menunggu timeout.
         }
         if (!r || r.error) {
           try {
