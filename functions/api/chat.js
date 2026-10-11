@@ -2517,10 +2517,11 @@ export async function onRequestPost({ request, env, waitUntil }) {
         // AKARNYA: race menang oleh kandidat TERCEPAT bukan TERBAIK — model
         // cadangan gratis (Workers AI / :free) sering nge-stream duluan dan
         // mengabaikan aturan persona (bahasa Indonesia, dilarang jadi chatbot
-        // pasif). FIX: kandidat lemah baru ikut balapan setelah 8 detik bila
-        // model utama belum mengirim delta — kualitas dijaga jalur utama,
-        // cadangan tetap tersedia saat jalur utama mati/lambat.
-        const WEAK_DELAY_MS = 8000;
+        // pasif). FIX: kandidat lemah baru ikut balapan setelah jeda singkat bila
+        // model utama belum mengirim delta. Jeda diturunkan dari 8s ke 5s
+        // sebagai kompromi: fallback lebih cepat saat Gemini macet, tetapi
+        // model utama tetap punya waktu untuk mulai menjawab demi kualitas.
+        const WEAK_DELAY_MS = 5000;
         const weakLate = (id, fn) => cand(id, new Promise((resolve, reject) => {
           setTimeout(() => { if (winner) return resolve({ error: 'telat — pemenang sudah ada' }); fn().then(resolve, reject); }, WEAK_DELAY_MS);
         }));
