@@ -23,3 +23,4 @@ Setiap push ke `main` otomatis memicu build & deploy produksi.
 > Agent lain: kalau kamu memegang salinan kode lama, **jangan deploy ke
 > produksi**. Ambil kode terbaru dari repo ini, atau cukup push commit —
 > produksi dikelola git, bukan upload manual.
+# redeploy: aktivasi env D1MIGR (gateway D1 akun baru)
