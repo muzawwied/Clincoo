@@ -497,7 +497,18 @@
                             '&redirect_uri=' + encodeURIComponent(redirectUri) +
                             '&response_type=code&scope=openid%20email%20profile&state=' + st + '&prompt=select_account';
                     })
-                    .catch(err => showModal('Gagal Memulai Login Google', err.message, 'error'));
+                    .catch(err => {
+                        // [11 Okt] server deployment sedang ditingkatkan (config OAuth tidak terbaca):
+                        // arahkan SEKALI ke halaman tunggu + game offline; halaman itu otomatis kembali
+                        // ke Clincoo begitu sistem normal. Jangan loop: pakai penanda sesi.
+                        var _isDown = /belum dikonfigurasi|tidak tersedia|gangguan/i.test(String(err.message || ''));
+                        if (_isDown && !sessionStorage.getItem('clincoo_maint_bounce')) {
+                            sessionStorage.setItem('clincoo_maint_bounce', '1');
+                            window.location.href = '/maintenance.html';
+                            return;
+                        }
+                        showModal('Gagal Memulai Login Google', err.message, 'error');
+                    });
             }
         }
 
