@@ -35,6 +35,21 @@ const BIG_MAX_BYTES = 25 * 1024 * 1024; // batas atas file besar (25MB, sama dgn
 
 function likeEsc(s) { return String(s).replace(/[\\%_]/g, function (m) { return '\\' + m; }); }
 
+// [11 Okt, arahan owner: data workspace harus real-time] REVISI MONOTONIK per proyek.
+// Sidik jari lama (COUNT + MAX(updated_at)) resolusinya 1 DETIK — dua tulisan dalam
+// detik yang sama (khas saat AI/MCP sibuk menulis) tidak mengubah sidik jari, jadi
+// polling klien melewatkannya dan tampilan "masih versi lama". Counter ini naik
+// pada SETIAP tulisan/hapus/rename, pasti terdeteksi.
+async function ensureWsRevTable(db) {
+  try { await db.prepare('CREATE TABLE IF NOT EXISTS ws_rev (project_id TEXT PRIMARY KEY, rev INTEGER NOT NULL DEFAULT 0)').run(); } catch (e) {}
+}
+async function bumpWsRev(db, projectId) {
+  try {
+    await ensureWsRevTable(db);
+    await db.prepare('INSERT INTO ws_rev (project_id, rev) VALUES (?, 1) ON CONFLICT(project_id) DO UPDATE SET rev = rev + 1').bind(projectId).run();
+  } catch (e) {}
+}
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', ...CORS } });
 }
@@ -209,6 +224,9 @@ export async function onRequestGet({ request, env }) {
     // [11 Okt, arahan owner: data workspace harus real-time di semua bagian]
     // Klien polling mode ini tiap beberapa detik; pull penuh HANYA bila berubah.
     if (url.searchParams.get('rev') === '1') {
+      await ensureWsRevTable(db);
+      const r = await db.prepare('SELECT rev FROM ws_rev WHERE project_id = ?').bind(projectId).first();
+      if (r && r.rev != null) return json({ rev: String(Number(r.rev) || 0) });
       const row = await db.prepare(`SELECT COUNT(*) c, COALESCE(MAX(updated_at),'') m FROM ${T.files} WHERE project_id = ?`).bind(projectId).first();
       return json({ rev: String((row && row.c) || 0) + ':' + String((row && row.m) || '') });
     }
@@ -287,6 +305,7 @@ export async function onRequestPost({ request, env }) {
       }
       if (stmts.length) await db.batch(stmts);
       try { await db.prepare('DELETE FROM project_files WHERE project_id = ?').bind(projectId).run(); } catch (e) {}
+      await bumpWsRev(db, projectId);
       return json({ success: true, renamed: (rows.results || []).length });
     }
 
@@ -424,6 +443,7 @@ export async function onRequestPost({ request, env }) {
     try { await db.prepare("UPDATE projects SET updated_at = datetime('now') WHERE id = ?").bind(projectId).run(); } catch(e) {}
 
     if (errors.length && keepPaths.length === errors.length) return json({ error: errors[0] }, 400);
+    await bumpWsRev(db, projectId);
     return json({ success: true, saved: keepPaths.length, warnings: errors.length ? errors : undefined });
   } catch (err) {
     return json({ error: err.message }, 500);
@@ -460,6 +480,7 @@ export async function onRequestDelete({ request, env }) {
       try { await db.prepare(`DELETE FROM ${chunksTable}`).run(); } catch (e) {}
     }
     try { await db.prepare('DELETE FROM project_files WHERE project_id = ?').bind(projectId).run(); } catch(e) {}
+    await bumpWsRev(db, projectId);
     return json({ success: true });
   } catch (err) {
     return json({ error: err.message }, 500);
