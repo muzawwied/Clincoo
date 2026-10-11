@@ -1562,6 +1562,9 @@ async function openFile(path,focus=true){
     editor.setModel(m);
   }
   renderAll();
+  // [11 Okt] pratinjau mengikuti file yang dibuka: kalau panel pratinjau sedang
+  // terbuka dan file baru itu HTML, langsung ganti titik masuk pratinjau.
+  if(path&&/\.html?$/i.test(path)&&$('#phone-preview').classList.contains('show')){previewEntry=path;phRefresh();}
   if(focus){if(!mediaKindOf(path))editor.focus();closeMobileSidebar();}
 }
 function createStarterFiles(){
@@ -2519,9 +2522,14 @@ function resolveLocalAsset(ref, liveAll){
   return hit!==undefined?hit:null;
 }
 let previewMissing=[];
-function buildPreview(){
+let previewEntry=null; // file HTML aktif yang jadi titik masuk pratinjau (per-file)
+function buildPreview(entry){
   previewMissing=[];
-  let html=liveVal('index.html');
+  // [11 Okt, permintaan owner: "jalankan" harus per file] pratinjau mengikuti file
+  // yang sedang dibuka kalau itu HTML; kalau bukan, pakai index.html lalu HTML pertama.
+  let html=null;
+  if(entry&&/\.html?$/i.test(entry)&&liveVal(entry)!==undefined)html=liveVal(entry);
+  if(html===null)html=liveVal('index.html');
   if(html===undefined){
     const firstHtml=Object.keys(project).find(p=>p.endsWith('.html'));
     if(!firstHtml)return null;
@@ -2593,7 +2601,8 @@ async function runPreview(){
       if(got){bigFileCache[p]=got.content;fetched++;}
     }
   }catch(e){}
-  const html=buildPreview();
+  previewEntry=(activePath&&/\.html?$/i.test(activePath)&&!bigFiles[activePath])?activePath:null;
+  const html=buildPreview(previewEntry);
   if(html===null){toast('Tidak ada berkas HTML untuk pratinjau');return;}
   const pv=$('#phone-preview');
   if(!pv.classList.contains('show')){
@@ -2612,7 +2621,7 @@ function closePreview(){$('#phone-preview').classList.remove('show');outPrint('â
 function phRefresh(){
   if(!$('#phone-preview').classList.contains('show'))return;
   clearTimeout(phTimer);
-  phTimer=setTimeout(()=>{const h=buildPreview();if(h!==null)$('#preview-frame').srcdoc=h;},650);
+  phTimer=setTimeout(()=>{const h=buildPreview(previewEntry);if(h!==null)$('#preview-frame').srcdoc=h;},650);
 }
 (function(){
   const pv=document.getElementById('phone-preview'),head=document.getElementById('ph-head'),rz=document.getElementById('ph-resize');
