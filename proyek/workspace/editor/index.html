@@ -1202,6 +1202,8 @@ function loadProject(){
   return JSON.parse(JSON.stringify(FILES));
 }
 function wsDirtyKey(){return 'clincoo_ws_dirty_'+(LINK_PID||'global');}
+// Paths explicitly created/restored by the user after deletion.
+const wsRestorePaths = new Set();
 function ccBytesLabel(b){
   const n=Number(b)||0;
   if(n>1024*1024)return (n/1024/1024).toFixed(2)+' MB';
@@ -1276,7 +1278,7 @@ function linkedCloudPushNow(attempt,keepalive){
   linkedEmptyFolders.forEach(f=>files.push({path:f+'/',content:''}));
   const H=Object.assign({'Content-Type':'application/json'},ccAuthHeaders());
   if(keepalive){ // flush saat tab ditutup: POST kecil saja yang mungkin; batch besar tidak muat keepalive (64KB)
-    const opt={method:'POST',headers:H,body:JSON.stringify({project_id:LINK_PID,files,replace:true}),keepalive:true};
+    const opt={method:'POST',headers:H,body:JSON.stringify({project_id:LINK_PID,files,replace:true,restore_paths:files.filter(f=>wsRestorePaths.has(f.path)).map(f=>f.path)}),keepalive:true};
     fetch(WS_API,opt).catch(()=>{});
     return;
   }
@@ -1290,7 +1292,7 @@ function linkedCloudPushNow(attempt,keepalive){
   const batches=[];
   for(let i=0;i<files.length;i+=BATCH)batches.push(files.slice(i,i+BATCH));
   const sendBatch=(bi)=>bi>=batches.length?Promise.resolve({ok:true,status:200,d:{success:true}})
-    :fetch(WS_API,{method:'POST',headers:H,body:JSON.stringify({project_id:LINK_PID,files:batches[bi],replace:true,keep_paths:allPaths})})
+    :fetch(WS_API,{method:'POST',headers:H,body:JSON.stringify({project_id:LINK_PID,files:batches[bi],replace:true,keep_paths:allPaths,restore_paths:batches[bi].filter(f=>wsRestorePaths.has(f.path)).map(f=>f.path)})})
       .then(r=>r.json().then(d=>({ok:r.ok,status:r.status,d:d})).catch(()=>({ok:false,status:r.status,d:null})))
       .then(res=>{
         if(!res.ok||!res.d||res.d.error){
@@ -1313,6 +1315,7 @@ function linkedCloudPushNow(attempt,keepalive){
           const there=((d&&d.files)||[]).length;
           if(there!==files.length)throw new Error('verifikasi gagal');
           wsDirtySet(false);
+          wsRestorePaths.clear();
           setCloudDot(true);
           wsBackoffMs=0;
         })
@@ -2794,6 +2797,7 @@ function createFile(){
   if(!name){toast('Nama tidak boleh kosong');return;}
   if(project[name]!==undefined){toast('Berkas sudah ada');return;}
   project[name]=name.endsWith('.html')?'<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8">\n  <title>Berkas Baru</title>\n</head>\n<body>\n  \n</body>\n</html>':'';
+  wsRestorePaths.add(name);
   persist();renderTree();openFile(name);closeModal();
   toast('Berkas dibuat: '+name);
 }
@@ -2827,9 +2831,9 @@ function ctxMenu(e,path,isDir){
     ['Buka',()=>openFile(path)],
     ['Buka di panel split',()=>splitEditor(path)],
     ['Ganti nama',()=>renameModal(path)],
-    ['Duplikat',()=>{const nn=path.replace(/(\.[^.]+)$/,' copy$1');if(project[nn]!==undefined){toast('Sudah ada: '+nn);return;}project[nn]=project[path];persist();renderTree();toast('Diduplikat');}],
+    ['Duplikat',()=>{const nn=path.replace(/(\.[^.]+)$/,' copy$1');if(project[nn]!==undefined){toast('Sudah ada: '+nn);return;}project[nn]=project[path];wsRestorePaths.add(nn);persist();renderTree();toast('Diduplikat');}],
     ['—',null],
-    ['Hapus',()=>{if(splitPath===path)closeSplit();delete project[path];if(models[path]){models[path].dispose();delete models[path];}if(tabs.includes(path))closeTab(path);persist();renderTree();srvDeletePath(path);toast('Terhapus: '+nameOf(path));}],
+    ['Hapus',()=>{if(splitPath===path)closeSplit();delete project[path];wsRestorePaths.delete(path);if(models[path]){models[path].dispose();delete models[path];}if(tabs.includes(path))closeTab(path);persist();renderTree();srvDeletePath(path);toast('Terhapus: '+nameOf(path));}],
   ];
   m.innerHTML=items.map((it,i)=>it[0]==='—'?'<div class="dd-sep"></div>':`<div class="dd-item" data-i="${i}">${esc(it[0])}</div>`).join('');
   $$('#ctxmenu .dd-item').forEach(el=>el.onclick=()=>{m.classList.remove('show');items[+el.dataset.i][1]();});
@@ -2854,6 +2858,7 @@ function doRename(oldPath){
   if(project[nn]!==undefined){toast('Nama sudah dipakai');return;}
   if(splitPath===oldPath)closeSplit();
   project[nn]=project[oldPath];delete project[oldPath];
+  wsRestorePaths.delete(oldPath);wsRestorePaths.add(nn);
   if(models[oldPath]){models[oldPath].dispose();delete models[oldPath];}
   const ti=tabs.indexOf(oldPath);
   if(ti>=0)tabs[ti]=nn;
