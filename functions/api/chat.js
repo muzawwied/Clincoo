@@ -2383,6 +2383,22 @@ export async function onRequestPost({ request, env, waitUntil }) {
     const decls = workspaceDecls(body);
     // CHAT_BUILD_MODE_FIX: mode chat = tanpa tools workspace (cegah list_items loop)
     const wantTools = body.workspace_tools === true && String(body.mode || '').trim() !== 'chat';
+    // [11 Okt, laporan owner: mode Build masih menulis package.json/server.js sebagai blok kode
+    // di bubble chat] Guard server-side: di mode Build (tools aktif) kode WAJIB lewat write_file,
+    // BUKAN blok kode di chat. Ditempel ke system prompt di semua hop supaya tidak bisa terlewat.
+    if (wantTools && Array.isArray(messages)) {
+      try {
+        const __bg = '\n\n[ATURAN MODE BUILD — MUTLAK]: DILARANG menulis isi file/kode (package.json, .env.example, server.js, HTML, CSS, JS, dsb.) sebagai blok kode ``` di jawaban chat. SETIAP file WAJIB disimpan lewat tool write_file (path + isi lengkap), satu file per panggilan; file besar lanjut dengan append_file. Di chat cukup tulis 1-2 kalimat laporan singkat (nama file + fungsinya), TANPA menampilkan isi kodenya. Pengecualian hanya jika user eksplisit minta kodenya ditampilkan di chat.';
+        const __bi = messages.findIndex(function (m) { return m && m.role === 'system'; });
+        if (__bi !== -1) {
+          if (String(messages[__bi].content || '').indexOf('[ATURAN MODE BUILD — MUTLAK]') === -1) {
+            messages[__bi] = { role: 'system', content: String(messages[__bi].content || '') + __bg };
+          }
+        } else {
+          messages.unshift({ role: 'system', content: __bg.trim() });
+        }
+      } catch (e) {}
+    }
     // [11 Okt, arahan pemilik: "kemampuan AI ditambah agar seperti asisten pribadi"]
     // Mode CHAT kini punya tool RISET WEB saja: web_search + read_web_page +
     // search_clincoo_kb — bisa jawab pertanyaan real-time/fakta terbaru dengan
