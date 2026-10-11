@@ -1300,7 +1300,7 @@ function linkedCloudPushNow(attempt,keepalive){
           let changed=false;
           res.d.deleted_paths.forEach(function(rawPath){
             const p=String(rawPath||'');
-            if(!p)return;
+            if(!p||wsRestorePaths.has(p))return; // a deliberate recreate in this sync wins
             serverDeletedPaths.add(p);
             if(Object.prototype.hasOwnProperty.call(project,p)){
               if(splitPath===p)closeSplit();
