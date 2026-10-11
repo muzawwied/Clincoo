@@ -4326,8 +4326,26 @@
             const path = args && args.path;
             if (!path) return { success: false, error: 'Parameter path wajib.' };
             const data = wsLoad();
-            const found = wsFindItem(data, path);
-            if (!found) return { success: false, error: 'File "' + path + '" tidak ditemukan.' };
+            let found = wsFindItem(data, path);
+            // [11 Okt, laporan owner: "Reading file: server.js" gagal padahal file ada]
+            // Tree lokal bisa basi (file dibuat dari tab/perangkat lain dan pull
+            // tertunda/gagal) — sebelum bilang "tidak ditemukan", cek langsung ke
+            // cloud (server) untuk path itu.
+            if (!found) {
+                const cloudItem = await wsCloudFetchBig(path).catch(() => null);
+                if (cloudItem && typeof cloudItem.content === 'string') {
+                    return {
+                        success: true,
+                        name: String(path).split('/').pop(),
+                        path: path,
+                        size: cloudItem.size || '',
+                        content: cloudItem.content.substring(0, 60000),
+                        truncated: cloudItem.content.length > 60000,
+                        cloud: true
+                    };
+                }
+                return { success: false, error: 'File "' + path + '" tidak ditemukan.' };
+            }
             if (found.item.type !== 'file') return { success: false, error: '"' + path + '" adalah folder, bukan file.' };
             let content = found.item.content || '';
             let isCloud = false;
