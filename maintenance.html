@@ -69,13 +69,13 @@
   <div class="card" id="card">
     <div class="badge"><span class="dot" id="dot"></span><span id="badgeText">SISTEM SEDANG DITINGKATKAN</span></div>
     <h1>Tunggu sebentar, ya</h1>
-    <p class="sub">Clincoo sedang melakukan peningkatan server deployment. Sambil menunggu, coba ketinggian skormu di game di bawah — halaman ini otomatis membuka Clincoo lagi begitu sistem siap.</p>
+    <p class="sub">Clincoo sedang melakukan peningkatan server deployment. Sambil menunggu, susun balok setinggi mungkin di bawah — halaman ini otomatis membuka Clincoo lagi begitu sistem siap.</p>
 
     <div class="game-wrap">
       <canvas id="game" width="560" height="220"></canvas>
       <div class="score">SKOR <span id="score">0</span></div>
     </div>
-    <p class="hint">Lompat: ketuk layar / tekan Spasi &#8593;</p>
+    <p class="hint">Letakkan: ketuk layar / tekan Spasi. Balok meluncur — ketuk tepat di atas balok bawahnya!</p>
 
     <div class="status wait-only" id="statusText">Mengecek sistem&hellip;</div>
     <div class="ok-banner">
@@ -106,106 +106,111 @@
   var cardEl = document.getElementById('card');
   var nextCheck = 0, checking = false, everOk = false;
 
-  // ---- GAME: runner monokrom ala game offline browser ----
-  var player = { x: 64, y: GROUND, vy: 0, w: 26, h: 26, onGround: true };
-  var obstacles = [], clouds = [];
-  var speed = 5, spawnTimer = 0, score = 0, best = 0, running = true, tPrev = 0;
-  try { best = parseInt(localStorage.getItem('clincoo_runner_best') || '0', 10) || 0; } catch (e) {}
+  // ---- GAME: Susun Balok (stack) monokrom ala game offline ----
+  var player = null;
+  var blocks = [];        // {x, w} balok yang sudah tersusun, index 0 = paling atas
+  var moving = null;     // balak yang sedang meluncur {x, w, dir}
+  var BH = 16;           // tinggi tiap balok
+  var speed = 2.6, score = 0, best = 0, running = true, tPrev = 0, flash = 0;
+  try { best = parseInt(localStorage.getItem('clincoo_stack_best') || '0', 10) || 0; } catch (e) {}
 
-  function jump() {
-    if (player.onGround) { player.vy = -10.2; player.onGround = false; }
+  function newMoving() {
+    var top = blocks[0];
+    var dir = 1;
+if (Math.random() < .5) { moving = { x: -top.w, w: top.w, dir: 1 }; }
+    else { moving = { x: W, w: top.w, dir: -1 }; }
+  }
+  function reset() {
+    blocks = [{ x: (W - 90) / 2, w: 90 }];
+    speed = 2.6; score = 0; running = true; newMoving();
+    scoreEl.textContent = '0';
+  }
+  function place() {
+    if (!running || !moving) return;
+    var top = blocks[0];
+    var l = Math.max(moving.x, top.x), r = Math.min(moving.x + moving.w, top.x + top.w);
+    if (r <= l) { gameOver(); return; }             // gak nyambung sama sekali
+    var perfect = Math.abs(moving.x - top.x) <= 3;
+    var nx = perfect ? top.x : l, nw = perfect ? top.w : (r - l);
+    if (nw < 3) { gameOver(); return; }
+    blocks.unshift({ x: nx, w: nw });
+    score++;
+    scoreEl.textContent = score;
+    if (perfect) flash = 10;
+    speed = Math.min(7, 2.6 + score * .18);
+    moving = null;
+    newMoving();
+  }
+  function gameOver() {
+    running = false; moving = null;
+    if (score > best) { best = score; try { localStorage.setItem('clincoo_stack_best', String(best)); } catch (e) {} }
+    ctx.fillStyle = 'rgba(10,10,10,.72)'; ctx.fillRect(0, H/2 - 34, W, 68);
+    ctx.fillStyle = '#f5f5f5'; ctx.font = '600 15px Inter, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Menara ' + score + ' lantai' + (best ? ' \u00b7 Terbaik ' + best : ''), W/2, H/2 - 6);
+    ctx.fillStyle = '#8f8f8f'; ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Ketuk untuk main lagi dari dasar', W/2, H/2 + 16);
+    ctx.textAlign = 'left';
   }
   function onTap(e) {
-    if (e.target.closest && e.target.closest('a,button')) return;
-    e.preventDefault(); jump();
+    if (e && e.target && e.target.closest && e.target.closest('a,button')) return;
+    if (e) e.preventDefault();
+    if (!running) { reset(); return; }
+    place();
   }
   window.addEventListener('keydown', function (e) {
-    if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); jump(); }
+    if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); onTap(null); }
   });
   canvas.addEventListener('pointerdown', onTap);
 
-  function spawnObstacle() {
-    var h = 22 + Math.random() * 18;
-    obstacles.push({ x: W + 10, y: GROUND - h, w: 14 + Math.random() * 12, h: h });
-  }
-  function spawnCloud() {
-    clouds.push({ x: W + 10, y: 20 + Math.random() * 60, r: 8 + Math.random() * 10 });
-  }
-
-  function rectHit(a, b) {
-    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
-  }
-
   function draw() {
     ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = '#111';
-    ctx.fillRect(0, 0, W, H);
-    // awan
-    ctx.fillStyle = '#2a2a2a';
-    clouds.forEach(function (c) {
-      ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2); ctx.fill();
-    });
-    // garis tanah
-    ctx.strokeStyle = '#3a3a3a'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(0, GROUND + .5); ctx.lineTo(W, GROUND + .5); ctx.stroke();
-    ctx.fillStyle = '#242424';
-    for (var gx = 0; gx < W; gx += 18) ctx.fillRect(gx, GROUND + 8, 10, 1);
-    // rintangan
-    ctx.fillStyle = '#d4d4d4';
-    obstacles.forEach(function (o) { ctx.fillRect(o.x, o.y, o.w, o.h); });
-    // pemain (kubus + mata)
-    ctx.fillStyle = '#f5f5f5';
-    ctx.fillRect(player.x, player.y - player.h, player.w, player.h);
-    ctx.fillStyle = '#0a0a0a';
-    ctx.fillRect(player.x + 14, player.y - player.h + 7, 6, 6);
-    if (!player.onGround) { ctx.fillStyle = '#525252'; ctx.fillRect(player.x + 6, GROUND + 4, 14, 2); }
-    // skor terbaik
-    if (best > 0) {
-      ctx.fillStyle = '#5a5a5a'; ctx.font = '11px Inter, sans-serif';
-      ctx.fillText('BEST ' + best, 12, 18);
+    ctx.fillStyle = '#111'; ctx.fillRect(0, 0, W, H);
+    // garis panduan lembut
+    ctx.strokeStyle = '#1d1d1d'; ctx.lineWidth = 1;
+    for (var gy = 0; gy < H; gy += 28) { ctx.beginPath(); ctx.moveTo(0, gy + .5); ctx.lineTo(W, gy + .5); ctx.stroke(); }
+    var baseY = H - 14; // garis tanah menara
+    ctx.strokeStyle = '#3a3a3a';
+    ctx.beginPath(); ctx.moveTo(0, baseY + .5); ctx.lineTo(W, baseY + .5); ctx.stroke();
+    // balok tersusun (index 0 paling atas); kamera naik saat menara makin tinggi
+    var camY = Math.max(0, (blocks.length - 1) * BH - (H - 90));
+    var tone = ['#f5f5f5', '#e5e5e5', '#d4d4d4', '#c4c4c4', '#b5b5b5', '#a5a5a5', '#969696'];
+    for (var i = 0; i < blocks.length; i++) {
+      var b = blocks[i];
+      var y = baseY - (blocks.length - 1 - i) * BH - camY;
+      if (y < -BH || y > H) continue;
+      ctx.fillStyle = tone[(blocks.length - 1 - i) % tone.length];
+      ctx.fillRect(b.x, y, b.w, BH - 2);
     }
+    // balok meluncur
+    if (moving) {
+      var my = baseY - blocks.length * BH - camY;
+      ctx.fillStyle = '#fafafa';
+      ctx.fillRect(moving.x, my, moving.w, BH - 2);
+      // bayangan target di balok teratas
+      var top = blocks[0];
+      var l = Math.max(moving.x, top.x), r = Math.min(moving.x + moving.w, top.x + top.w);
+      if (r > l) { ctx.fillStyle = 'rgba(245,245,245,.14)'; ctx.fillRect(l, baseY - ((blocks.length - 1) * BH) - camY, r - l, BH - 2); }
+    }
+    if (flash > 0) {
+      ctx.fillStyle = 'rgba(245,245,245,' + (flash / 26) + ')';
+      ctx.fillRect(0, 0, W, H); flash--;
+    }
+    if (best > 0) { ctx.fillStyle = '#5a5a5a'; ctx.font = '11px Inter, sans-serif'; ctx.fillText('TERBAIK ' + best, 12, 18); }
   }
 
   function loop(t) {
     requestAnimationFrame(loop);
     if (!tPrev) tPrev = t;
     var dt = Math.min(32, t - tPrev); tPrev = t;
-    if (!running) { draw(); return; }
     var k = dt / 16.67;
-    speed = Math.min(10, 5 + score / 400);
-    score += k; scoreEl.textContent = Math.floor(score);
-    // fisika
-    player.vy += 0.55 * k; player.y += player.vy * k;
-    if (player.y >= GROUND) { player.y = GROUND; player.vy = 0; player.onGround = true; }
-    // spawn
-    spawnTimer -= k;
-    if (spawnTimer <= 0) { spawnObstacle(); spawnTimer = Math.max(38, 90 - score / 40) + Math.random() * 40; }
-    if (Math.random() < 0.004) spawnCloud();
-    // gerak
-    obstacles.forEach(function (o) { o.x -= speed * k; });
-    clouds.forEach(function (c) { c.x -= speed * .25 * k; });
-    obstacles = obstacles.filter(function (o) { return o.x + o.w > -4; });
-    clouds = clouds.filter(function (c) { return c.x + c.r > -4; });
-    // tabrakan
-    var box = { x: player.x + 3, y: player.y - player.h + 3, w: player.w - 6, h: player.h - 6 };
-    for (var i = 0; i < obstacles.length; i++) {
-      if (rectHit(box, obstacles[i])) {
-        running = false;
-        if (score > best) { best = Math.floor(score); try { localStorage.setItem('clincoo_runner_best', String(best)); } catch (e) {} }
-        ctx.fillStyle = 'rgba(10,10,10,.72)'; ctx.fillRect(0, H/2 - 34, W, 68);
-        ctx.fillStyle = '#f5f5f5'; ctx.font = '600 15px Inter, sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText('Skor ' + Math.floor(score) + (best ? ' · Terbaik ' + best : ''), W/2, H/2 - 6);
-        ctx.fillStyle = '#8f8f8f'; ctx.font = '12px Inter, sans-serif';
-        ctx.fillText('Ketuk untuk main lagi', W/2, H/2 + 16);
-        ctx.textAlign = 'left';
-        return;
-      }
+    if (running && moving) {
+      moving.x += moving.dir * speed * k;
+      if (moving.x <= -6) { moving.x = -6; moving.dir = 1; }
+      if (moving.x + moving.w >= W + 6) { moving.x = W + 6 - moving.w; moving.dir = -1; }
     }
     draw();
   }
-  canvas.addEventListener('pointerdown', function () {
-    if (!running) { running = true; obstacles = []; score = 0; speed = 5; }
-  });
+  reset();
   requestAnimationFrame(loop);
 
   // ---- CEK SISTEM OTOMATIS ----
