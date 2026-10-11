@@ -1,4 +1,5 @@
 import { PLAN_AI_API_CREDITS, ADMIN_EMAILS, getEffectivePlanByUserKey } from '../../api/plan-helpers.js';
+import { maybeWrapDB } from '../../api/_d1remote.js';
 
 // Cloudflare Pages Function — /v1/chat/completions "Clincoo Open API" (SELF-CONTAINED)
 // Endpoint AI kompatibel OpenAI untuk proyek user. Secret di keluarkan per proyek
@@ -389,6 +390,7 @@ async function refundCredits(db, projectId, cost) {
 }
 
 export async function onRequestPost({ request, env }) {
+  try { maybeWrapDB(env); } catch (e) {}
   const ip = clientIp(request);
   if (!rateLimitOk(ip)) return json({ error: { message: 'Terlalu banyak permintaan. Coba lagi sebentar.', type: 'rate_limit', code: 429 } }, 429);
 

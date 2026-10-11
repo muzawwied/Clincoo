@@ -29,6 +29,7 @@
 //   5. Security headers di semua respons API + Cache-Control: no-store untuk /api/admin
 //      (data sensitif tidak pernah nempel di cache).
 import { initTables as initAuthTables, getUserByToken, getToken } from './auth/shared.js';
+import { maybeWrapDB } from './_d1remote.js';
 
 // /api/pay  -> publik: action create/status meng-autentikasi sendiri via pay_key
 //             (clc_pay_...) demi situs deploy; action lain tetap cek sesi (requireOwned).
@@ -113,6 +114,10 @@ async function logBlocked(env, type, ip, detail) {
 }
 
 export async function onRequest({ request, env, next }) {
+  // d1Remote (opsional): jika DB_GATEWAY_URL/KEY diset, env.DB diproxy ke
+  // gateway D1 di akun baru. Tanpa env tsb tidak ada perubahan perilaku.
+  try { maybeWrapDB(env); } catch (e) {}
+
   if (request.method === 'OPTIONS') {
     // Preflight CORS: hanya echo origin yang lolos allowlist (bukan '*' — audit #3).
     // Origin asing tetap bisa request tanpa-cors dari server, tapi browser diblok.

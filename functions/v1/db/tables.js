@@ -4,6 +4,7 @@
 // Mirroring /v1/chat/completions: kunci dicari di db_app_keys → project_id.
 
 import { getEffectivePlanByUserKey } from '../../api/plan-helpers.js';
+import { maybeWrapDB } from '../../api/_d1remote.js';
 
 const GATEWAY = 'https://clinqoo-db-gateway.vylonium.workers.dev';
 const CORS = {
@@ -66,12 +67,14 @@ async function planOfProject(env, projectId) {
 export async function onRequestOptions() { return new Response(null, { status: 204, headers: CORS }); }
 
 export async function onRequestGet({ request, env }) {
+  try { maybeWrapDB(env); } catch (e) {}
   const a = await authProject(env, request);
   if (a.error) return a.error;
   return gw(env, 'GET', '/tables?project_id=' + encodeURIComponent(a.projectId));
 }
 
 export async function onRequestPost({ request, env }) {
+  try { maybeWrapDB(env); } catch (e) {}
   const a = await authProject(env, request);
   if (a.error) return a.error;
   let body;
@@ -83,6 +86,7 @@ export async function onRequestPost({ request, env }) {
 }
 
 export async function onRequestDelete({ request, env }) {
+  try { maybeWrapDB(env); } catch (e) {}
   const a = await authProject(env, request);
   if (a.error) return a.error;
   const name = new URL(request.url).searchParams.get('name') || '';

@@ -7,6 +7,7 @@
 //   DELETE ?table=nama&id=
 
 import { getEffectivePlanByUserKey } from '../../api/plan-helpers.js';
+import { maybeWrapDB } from '../../api/_d1remote.js';
 
 const GATEWAY = 'https://clinqoo-db-gateway.vylonium.workers.dev';
 const CORS = {
@@ -69,6 +70,7 @@ async function planOfProject(env, projectId) {
 export async function onRequestOptions() { return new Response(null, { status: 204, headers: CORS }); }
 
 export async function onRequestGet({ request, env }) {
+  try { maybeWrapDB(env); } catch (e) {}
   const a = await authProject(env, request);
   if (a.error) return a.error;
   const u = new URL(request.url);
@@ -79,6 +81,7 @@ export async function onRequestGet({ request, env }) {
 }
 
 export async function onRequestPost({ request, env }) {
+  try { maybeWrapDB(env); } catch (e) {}
   const a = await authProject(env, request);
   if (a.error) return a.error;
   let body;
@@ -90,6 +93,7 @@ export async function onRequestPost({ request, env }) {
 }
 
 export async function onRequestPatch({ request, env }) {
+  try { maybeWrapDB(env); } catch (e) {}
   const a = await authProject(env, request);
   if (a.error) return a.error;
   let body;
@@ -101,6 +105,7 @@ export async function onRequestPatch({ request, env }) {
 }
 
 export async function onRequestDelete({ request, env }) {
+  try { maybeWrapDB(env); } catch (e) {}
   const a = await authProject(env, request);
   if (a.error) return a.error;
   const u = new URL(request.url);
