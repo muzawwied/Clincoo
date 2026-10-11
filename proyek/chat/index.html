@@ -3790,7 +3790,7 @@
             schedulePromptChips();
         }
 
-        function stopGeneration() {
+        function stopGeneration(userInitiated = false) {
             try { window.__agentAbort = true; } catch (e) {}
             if (abortController) {
                 abortController.abort();
@@ -3813,9 +3813,13 @@
             if (currentAiMessageId) {
                 const textEl = document.getElementById(`msg-text-${currentAiMessageId}`);
                 const finishedMsg = messages.find(m => m.id === currentAiMessageId);
-                // [11 Okt, permintaan owner] pembatas "Respon dihentikan" harus muncul di
-                // SEMUA jalur stop — flag dipasang di sini, bukan cuma di handler tombol.
-                if (finishedMsg) { finishedMsg.completed = true; finishedMsg.stoppedByUser = true; try { saveChatLog(); } catch (e) {} }
+                // Label "Respon dihentikan" hanya untuk klik tombol Hentikan oleh pengguna.
+                // Pemanggilan internal saat jawaban selesai normal / retry / gambar tidak menandai stop.
+                if (finishedMsg) {
+                    finishedMsg.completed = true;
+                    if (userInitiated) finishedMsg.stoppedByUser = true;
+                    try { saveChatLog(); } catch (e) {}
+                }
                 if (finishedMsg && finishedMsg.text) {
                     try {
                         const urlParams = new URLSearchParams(window.location.search);
@@ -7786,7 +7790,7 @@
         btnAction.addEventListener('click', (e) => {
             e.preventDefault();
             if (isGenerating) {
-                stopGeneration();
+                stopGeneration(true);
                 const currentMsg = messages.find(m => m.id === currentAiMessageId);
                 if (currentMsg) {
                     currentMsg.isProcessing = false;
