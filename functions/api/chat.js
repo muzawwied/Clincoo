@@ -853,7 +853,7 @@ const CLOUVIA_MODELS = ['coding-high-flash', 'free-model']; // glm dihapus (arah
 // role system (glm5.3-flash tidak — gateway membuangnya) sehingga system prompt utuh
 // sampai ke model, (2) tool-calling berfungsi, (3) gratis. Begitu OpenRouter di-top-up,
 // urutkan Sol Pro asli di depan rute ini (OPENROUTER_MODELS).
-const CLOUVIA_SOL_MODELS = ['deepseek-v4-pro']; // glm dihapus (arahan 10 Okt)
+const CLOUVIA_SOL_MODELS = ['coding-high']; // Provider utama Clincoo dialihkan ke Clouvia Router
 // 'free-model' = lapis terakhir Clouvia: tidak menguras saldo berbayar (pakai
 // kuota free_balance), jadi chat tetap hidup walau 50M+ token balance habis.
 
@@ -2497,7 +2497,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
           } catch (e) {}
         }
       }
-      const USE_CLOUVIA_FIRST = false;
+      const USE_CLOUVIA_FIRST = true;
       if (USE_CLOUVIA_FIRST && !isGuest && !hasImages && cvKeysEarly.length) {
         const sp = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, CLOUVIA_SOL_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 40000, 'ClouviaSolPro').catch(e => ({ error: e.message }));
         if (sp) r = sp;
