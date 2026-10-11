@@ -3827,9 +3827,10 @@
                             const projIndex = projects.findIndex(p => p.id === projectId);
                             if (projIndex !== -1) {
                                 const cleanText = stripMdSyntax(finishedMsg.text);
-                                const firstLine = cleanText.split('\n')[0].substring(0, 50);
-                                // pesan error/kuota AI jangan disimpen jadi nama proyek
-                                const badName = /^(kuota ai|maaf, terjadi kesalahan|maaf, terjadi)/i.test(firstLine.trim());
+                                // [11 Okt, permintaan owner] nama proyek JANGAN diambil dari isi chat —
+                                // cukup nama generik acak; deskripsi tetap dari konteks.
+                                const firstLine = ['New App', 'New Proyek', 'New Chat'][Math.floor(Math.random() * 3)];
+                                const badName = /^(kuota ai|maaf, terjadi kesalahan|maaf, terjadi)/i.test(cleanText.trim());
                                 if (!projects[projIndex].aiName && !badName) {
                                     projects[projIndex].aiName = firstLine;
                                     projects[projIndex].aiDesc = cleanText.substring(0, 120);
