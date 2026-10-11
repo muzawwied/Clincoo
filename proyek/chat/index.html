@@ -3308,7 +3308,7 @@
                                 ${(msg.stoppedByUser && !msg.isProcessing && !msg.isTyping) ? `
                                     <div class="stopped-divider fade-in select-none">
                                         <span class="stopped-line"></span>
-                                        <span class="stopped-text">Dihentikan</span>
+                                        <span class="stopped-text">Respon dihentikan</span>
                                         <span class="stopped-line"></span>
                                     </div>
                                 ` : ''}
@@ -3813,7 +3813,9 @@
             if (currentAiMessageId) {
                 const textEl = document.getElementById(`msg-text-${currentAiMessageId}`);
                 const finishedMsg = messages.find(m => m.id === currentAiMessageId);
-                if (finishedMsg) { finishedMsg.completed = true; try { saveChatLog(); } catch (e) {} }
+                // [11 Okt, permintaan owner] pembatas "Respon dihentikan" harus muncul di
+                // SEMUA jalur stop — flag dipasang di sini, bukan cuma di handler tombol.
+                if (finishedMsg) { finishedMsg.completed = true; finishedMsg.stoppedByUser = true; try { saveChatLog(); } catch (e) {} }
                 if (finishedMsg && finishedMsg.text) {
                     try {
                         const urlParams = new URLSearchParams(window.location.search);
