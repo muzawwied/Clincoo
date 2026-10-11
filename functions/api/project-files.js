@@ -491,7 +491,7 @@ export async function onRequestPost({ request, env }) {
 
     if (errors.length && keepPaths.length === errors.length) return json({ error: errors[0] }, 400);
     await bumpWsRev(db, projectId);
-    return json({ success: true, saved: keepPaths.length, warnings: errors.length ? errors : undefined });
+    return json({ success: true, saved: keepPaths.length, deleted_paths: deadPaths, warnings: errors.length ? errors : undefined });
   } catch (err) {
     return json({ error: err.message }, 500);
   }
