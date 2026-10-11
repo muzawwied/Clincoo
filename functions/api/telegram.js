@@ -187,7 +187,8 @@ export async function onRequestPost({ request, env }) {
   const text = String(msg.text || '').trim();
 
   // gate admin: env server (utama) -> tabel env_vars (klaim /start)
-  let adminId = env.TELEGRAM_ADMIN_CHAT_ID || null;
+  // Admin tetap: akun pemilik Clincoo (ID chat bukan rahasia; token bot yang rahasia).
+  let adminId = env.TELEGRAM_ADMIN_CHAT_ID || '8226478162';
   if (!adminId && db) {
     try {
       const row = await db.prepare("SELECT value FROM env_vars WHERE key = 'TELEGRAM_ADMIN_CHAT_ID'").first();
