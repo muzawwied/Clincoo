@@ -1,0 +1,19 @@
+name: Apply build model fix
+on:
+  workflow_dispatch:
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patch
+        run: node scripts/apply-build-model-fix.js
+      - name: Commit if changed
+        run: |
+          git config user.name "Clincoo"
+          git config user.email "halo@clincoo.buzz"
+          git add functions/api/chat.js
+          git diff --staged --quiet || git commit -m "fix(build): Claude/GPT OpenRouter primary (stop coding-high-flash loop)"
+          git push
