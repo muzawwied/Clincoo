@@ -3959,11 +3959,17 @@
             return { 'root': [] };
         }
 
-        function wsSave(data) {
+        function wsSave(data, dirtyPaths) {
             try {
                 localStorage.setItem(wsFilesKey(), JSON.stringify(data));
             } catch (e) {
                 return { success: false, error: 'Gagal menyimpan workspace: penyimpanan browser penuh.' };
+            }
+            // [11 Okt, laporan owner: "hapus file/folder muncul lagi"] Push penuh dari
+            // cache basi adalah biang kebangkitan: file yang dihapus di tab lain ikut
+            // terdorong ulang. Sekarang hanya path yang BENAR-BENAR diubah yang tercatat.
+            if (Array.isArray(dirtyPaths)) {
+                dirtyPaths.forEach(function (dp) { if (dp) wsDirtyPaths[String(dp)] = true; });
             }
             wsCloudPushSchedule();
             return null;
@@ -4116,6 +4122,8 @@
 
         let wsCloudTimer = null;
 
+        let wsDirtyPaths = {}; // path -> true; hanya ini yang boleh didorong ke cloud
+
         function wsCloudPushSchedule() {
             const pid = wsProjectId();
             if (!pid) return;
@@ -4133,16 +4141,17 @@
         function wsCloudPushRun(attempt) {
             const pid = wsProjectId();
             if (!pid) return;
-            const files = wsFlatten(wsLoad());
-            if (!files.length) return;
-            const allPaths = files.map(function(f) { return f.path; });
+            const dirty = Object.keys(wsDirtyPaths);
+            if (!dirty.length) return; // [11 Okt] tidak ada perubahan lokal -> JANGAN dorong tree basi
+            const files = wsFlatten(wsLoad()).filter(function (f) { return f && f.path && dirty.indexOf(String(f.path)) !== -1; });
+            if (!files.length) { wsDirtyPaths = {}; return; }
             const BATCH = 40;
             const H = Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders());
             let bi = 0;
             const sendNext = function() {
                 if (bi >= files.length) return Promise.resolve();
                 const batch = files.slice(bi, bi + BATCH); bi += BATCH;
-                return fetch(WS_CLOUD_API, { method: 'POST', headers: H, body: JSON.stringify({ project_id: pid, files: batch, replace: true, keep_paths: allPaths }) })
+                return fetch(WS_CLOUD_API, { method: 'POST', headers: H, body: JSON.stringify({ project_id: pid, files: batch }) })
                     .then(function(r) { if (!r.ok) { return Promise.reject(new Error('HTTP ' + r.status)); } return r.json(); })
                     .then(function(d) {
                         if (d && d.error) { return Promise.reject(new Error(d.error)); }
@@ -4155,7 +4164,10 @@
                         return sendNext();
                     });
             };
-            sendNext().catch(function(err) {
+            sendNext().then(function() {
+                // [11 Okt] hanya path dirty ini yang dikirim & sukses — bersihkan.
+                files.forEach(function(f) { delete wsDirtyPaths[String(f.path)]; });
+            }).catch(function(err) {
                 if (attempt < 3) { wsCloudTimer = setTimeout(function() { wsCloudTimer = null; wsCloudPushRun(attempt + 1); }, 2000 * (attempt + 1)); return; }
                 try { addNotification('Workspace', 'Gagal menyimpan perubahan workspace (' + ((err && err.message) || 'jaringan') + '). Perubahan terakhir belum tersimpan di cloud.'); } catch (e) {}
             });
@@ -4163,6 +4175,9 @@
 
         // Tarik data workspace dari D1 sekali saat halaman dibuka
         function wsCloudPull() {
+        // [11 Okt] tarik ulang tiap kali tab dapat fokus — cache gak basi, file yang
+        // dihapus di tab lain cepat hilang dari view AI juga.
+        window.addEventListener('focus', function () { try { wsCloudPull(); } catch (e) {} });
             const pid = wsProjectId();
             if (!pid || wsCloudTimer) return;
             fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { headers: wsAuthHeaders() })
@@ -4200,8 +4215,12 @@
                         const localRaw = localStorage.getItem(wsFilesKey());
                         if (localRaw && localRaw !== JSON.stringify({ 'root': [] })) {
                             fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { method: 'DELETE', headers: wsAuthHeaders() }).catch(function() {});
-                            fetch(WS_CLOUD_API, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()),
-                                body: JSON.stringify({ project_id: pid, files: wsFlatten(wsLoad()) }) }).catch(function() {});
+                            const __dirty = Object.keys(wsDirtyPaths);
+                            const __f = __dirty.length ? wsFlatten(wsLoad()).filter(function (x) { return x && x.path && __dirty.indexOf(String(x.path)) !== -1; }) : [];
+                            if (__f.length) {
+                                fetch(WS_CLOUD_API, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()),
+                                    body: JSON.stringify({ project_id: pid, files: __f }) }).catch(function() {});
+                            }
                         }
                     }
                 })
@@ -4445,7 +4464,7 @@
                 } else {
                     data[info.folderKey].push({ type: 'file', name: info.name, size: sizeStr, path: info.itemPath, content: '', cloud: true });
                 }
-                const err = wsSave(data);
+                const err = wsSave(data, [info.itemPath]);
                 if (err) return err;
                 const _vb = wsVerifyFull(info.itemPath, content); const _vbl = wsVerifyLabel(info.itemPath, _vb); return { success: true, action: existingIdx !== -1 ? 'overwritten' : 'created', path: info.itemPath, size: sizeStr, cloud: true, verify: _vbl };
             }
@@ -4467,7 +4486,7 @@
                 data[info.folderKey].push({ type: 'file', name: info.name, size: sizeStr, path: info.itemPath, content: content });
                 created = true;
             }
-            const err = wsSave(data);
+            const err = wsSave(data, [info.itemPath]);
             if (err) return err;
             const _vn = wsVerifyFull(info.itemPath, content); const _vnl = wsVerifyLabel(info.itemPath, _vn); return { success: true, action: created ? 'created' : 'overwritten', path: info.itemPath, size: sizeStr, verify: _vnl };
         }
@@ -4497,7 +4516,7 @@
             } else {
                 it.content = merged; it.cloud = false; it.size = wsSizeStr(merged);
             }
-            const err = wsSave(data);
+            const err = wsSave(data, [info.itemPath]);
             if (err) return err;
             // Verifikasi sintaks hanya saat AI tandai bagian TERAKHIR (done) — file yang
             // masih setengah pasti "rusak", memverifikasi tiap potongan cuma bikin noise.
@@ -5563,7 +5582,7 @@
                     results.push({ path: info.itemPath, ok: false, error: 'gagal unggah file besar ke cloud' });
                 }
             }
-            const err = wsSave(data);
+            const err = wsSave(data, [info.itemPath]);
             if (err) return err;
             const ok = results.filter(function(r) { return r.ok; }).length;
             const _fails = results.filter(function (r) { return r && r.verify && r.verify.indexOf('GAGAL') === 0; });
@@ -5698,7 +5717,7 @@
                     data[info.folderKey].push({ type: 'file', name: info.name, size: sizeStr, path: info.itemPath, content: f.content });
                 }
             }
-            const err = wsSave(data);
+            const err = wsSave(data, [info.itemPath]);
             if (err) return err;
             return { success: true, repo: slug, ref: branch, target: 'workspace', folder: folder, cloned: files.length, skipped_binary: skippedBinary, skipped_fetch: skippedFetch, truncated: truncated, note: 'Repo tersimpan di folder workspace "' + folder + '" — bisa langsung diedit atau di-deploy.' };
         }
@@ -5870,7 +5889,7 @@
                     data[info.folderKey].push({ type: 'file', name: info.name, size: sizeStr, path: info.itemPath, content: f.content });
                 }
             }
-            const err = wsSave(data);
+            const err = wsSave(data, [info.itemPath]);
             if (err) return err;
             return { success: true, url: rawUrl, target: 'workspace', folder: folder, files: files.length, assets_found: assetsFound, skipped_fetch: skippedFetch, truncated: truncated, note: (folder ? 'Situs tersimpan di folder workspace "' + folder + '/" (index.html + ' + savedCount + ' asset)' : 'Situs tersimpan langsung di ROOT workspace: index.html + ' + savedCount + ' asset di assets/') + ' — bisa langsung diedit atau di-deploy. Gambar/font tetap dimuat dari server asal.' };
         }

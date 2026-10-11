@@ -970,6 +970,8 @@
 
     // Ambil data workspace dari D1; kalau D1 kosong tapi lokal ada, unggah (migrasi sekali)
     function wsCloudPull() {
+    // [11 Okt] tarik ulang saat tab dapat fokus (dengan guard dirty) supaya cache gak basi
+    window.addEventListener('focus', function() { try { wsCloudPull(); } catch (e) {} });
       const pid = wsProjectId();
       if (!pid || wsCloudTimer) { // jangan menimpa saat ada push tertunda
         if (!pid) { wsInitialSync = false; renderFileList(); }
@@ -1893,6 +1895,18 @@
         }
         items.splice(itemIndex, 1);
       }
+      // [11 Okt, laporan owner: "hapus file/folder muncul lagi"] hapus langsung di
+      // server saat tombol Hapus dikonfirmasi — jangan bergantung pada push penuh
+      // yang debounced/bisa gagal senyap. Gagal -> toast, terlihat jelas.
+      try {
+        const __p = item && item.path ? String(item.path) : '';
+        if (__p) {
+          const __q = '?project_id=' + encodeURIComponent(wsProjectId()) + '&path=' + encodeURIComponent(__p) + (item.type === 'folder' ? '&prefix=1' : '');
+          fetch(WS_CLOUD_API + __q, { method: 'DELETE', headers: wsAuthHeaders() })
+            .then(function(r) { if (!r.ok) addNotification('Workspace', 'Hapus belum sampai ke server (HTTP ' + r.status + ') — file bisa muncul lagi. Ulangi saat koneksi stabil.'); })
+            .catch(function() { addNotification('Workspace', 'Hapus belum terkirim ke server — periksa koneksi, file bisa muncul lagi.'); });
+        }
+      } catch (e) {}
       saveData();
       renderFileList();
     }

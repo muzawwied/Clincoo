@@ -1371,7 +1371,7 @@ function askOpenerForProject(){if(window.opener){try{window.opener.postMessage({
 /* CLOUD-FIRST: setelah render awal dari cache lokal, tarik versi terbaru dari cloud.
    Cloud menang SELALU (mencegah cache lokal basi/korak menimpa data baru), kecuali
    user sudah mulai mengetik (userIsEditing) — perubahan user tetap di atas. */
-function cloudFirstSync(){
+function cloudFirstSync(fromFocus){
   if(!LINK_PID)return;
   // [8 Okt 2026] Ada perubahan lokal yang belum berhasil terkirim (dirty) —
   // terutama hapus file pada proyek besar yang push-nya gagal karena body gede.
@@ -1383,7 +1383,10 @@ function cloudFirstSync(){
     .then(d=>{
       const files=(d&&d.files)||[];
       if(!files.length){ // cloud kosong tapi lokal ada isi -> dorong lokal ke cloud
-        if(Object.keys(project).length)linkedCloudPushSchedule();
+        // [11 Okt] saat re-sync karena FOKUS, jangan dorong cache lokal basi ke cloud
+        // kosong — itu menghidupkan SEMUA file yang barusan dihapus di tempat lain.
+        // Dorong hanya pada sinkronisasi awal (migrasi proyek baru).
+        if(!fromFocus && Object.keys(project).length)linkedCloudPushSchedule();
         return;
       }
       if(userIsEditing())return;
@@ -1410,6 +1413,9 @@ function cloudFirstSync(){
       renderAll();openDefaultTabs();setCloudDot(true);
     }).catch(()=>{});
 }
+/* [11 Okt, laporan owner: "hapus file muncul lagi"] editor yang lama terbuka punya
+   cache basi; tiap kali dapat fokus, tarik versi terbaru (dirty & userIsEditing tetap menang). */
+window.addEventListener('focus',function(){try{cloudFirstSync(true);}catch(e){}});
 function linkedCloudPullForce(){
   if(!LINK_PID)return;
   fetch(WS_API+'?project_id='+encodeURIComponent(LINK_PID),{headers:ccAuthHeaders()})
