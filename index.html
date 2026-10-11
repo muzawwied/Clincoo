@@ -2343,5 +2343,17 @@
   } catch (e) {}
 })();
 </script>
+<script>
+// [11 Okt] Deteksi senyap: bila server deployment bermasalah, arahkan pengunjung
+// ke halaman game. Tanpa teks status apa pun — tidak membocorkan apa pun.
+(function clincoo_health_probe(){
+  try {
+    fetch('/api/health', { cache: 'no-store' })
+      .then(function(r){ return r.json(); })
+      .then(function(d){ if (!d || !d.ok) window.location.replace('/maintenance.html'); })
+      .catch(function(){});
+  } catch (e) {}
+})();
+</script>
 </body>
 </html>
