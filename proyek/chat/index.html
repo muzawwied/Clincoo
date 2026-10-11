@@ -3312,7 +3312,7 @@
                                         <span class="stopped-line"></span>
                                     </div>
                                 ` : ''}
-                                <div class="flex items-center gap-3 mt-1 pointer-events-auto" id="action-bar-${msg.id}" style="${(msg.isProcessing || msg.isTyping || msg.midPhase) ? 'display: none;' : ''}">
+                                <div class="flex items-center gap-3 mt-1 pointer-events-auto" id="action-bar-${msg.id}" style="${(msg.isProcessing || msg.isTyping || msg.midPhase || (msg.checkpointNote && isGenerating)) ? 'display: none;' : ''}">
                                     ${msg.isImageResponse ? 
                                     `<button onclick="downloadImage('${msg.imageUrl}', 'clincoo-image.jpg')" class="relative text-gray-400 hover:text-black transition p-1" title="Unduh Gambar">
                                         <i class="ph ph-download-simple text-lg"></i>
@@ -6120,7 +6120,7 @@
         // tugas final. Plafon terpisah dari silentRounds (yang tetap 1) supaya gak jadi spam.
         let checkpointRounds = 0;
         const CHECKPOINT_MAX_ROUNDS = 12;
-        const CHECKPOINT_MIN_CHARS = 40; // catatan terlalu pendek/basa-basi = gak layak jadi checkpoint
+        const CHECKPOINT_MIN_CHARS = 120; // catatan terlalu pendek/basa-basi = gak layak jadi checkpoint
         let silentRounds = 0; const toolSigCounts = {}; // anti-loop: hitungan tool+args identik per generasi
         // Diturunkan dari 3 -> 1: user komplain AI kebanyakan buka bubble jawaban baru
         // sendiri (auto-lanjut diam-diam). Sekarang AI hanya boleh melanjutkan otomatis
@@ -7084,7 +7084,7 @@
                                     const cpIdx = messages.findIndex(m => m.id === aiMsgObj.id);
                                     if (cpIdx !== -1) { messages[cpIdx].checkpointNote = true; messages[cpIdx].midPhase = false; }
                                     FINAL_NUDGE_EXTRA = '';
-                                    try { await continueSilently(aiMsgObj, cleanNow, 'Lanjutkan pekerjaan dari checkpoint teks terakhir. LANGSUNG kerjakan sisa tugas; DILARANG membaca ulang (read_file/list_files) file yang sudah tertulis di riwayat.'); } catch (e2) {}
+                                    try { await continueSilently(aiMsgObj, cleanNow, 'Lanjutkan pekerjaan dari checkpoint teks terakhir. LANGSUNG kerjakan sisa tugas; DILARANG membaca ulang (read_file/list_files) file yang sudah tertulis di riwayat. JANGAN membuka dengan kalimat "Melanjutkan dari checkpoint" atau "saya lanjutkan", dan JANGAN menulis isi kode di teks: langsung panggil tool write_file/append_file untuk bagian berikutnya, tanpa pengantar.'); } catch (e2) {}
                                     return;
                                 }
                                 pushSilentNudge(FINAL_NUDGE_EXTRA || (unfinishedTag === 'promise'
@@ -7263,7 +7263,7 @@
                         hasReceivedData = true;
                         clearTimeout(apiTimeout);
                         clearInterval(statusInterval);
-                        try { await continueSilently(aiMsgObj, '', 'Lanjutkan pekerjaan dari checkpoint terakhir sampai tuntas. Di tiap fase baru, tulis SATU laporan singkat (1-2 kalimat) tentang apa yang baru kamu kerjakan dan apa langkah berikutnya, lalu langsung panggil tool-nya. Jangan mengulang laporan lama.'); } catch (e2) {}
+                        try { await continueSilently(aiMsgObj, '', 'Lanjutkan pekerjaan dari checkpoint terakhir sampai tuntas. Di tiap fase baru, tulis SATU laporan singkat (1-2 kalimat) tentang apa yang baru kamu kerjakan dan apa langkah berikutnya, lalu langsung panggil tool-nya. Jangan mengulang laporan lama. JANGAN membuka dengan kalimat "Melanjutkan dari checkpoint" atau "saya lanjutkan", dan JANGAN menulis isi kode di teks: langsung panggil tool write_file/append_file untuk bagian berikutnya, tanpa pengantar.'); } catch (e2) {}
                         return;
                     }
 
