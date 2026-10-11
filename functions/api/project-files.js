@@ -514,7 +514,7 @@ export async function onRequestDelete({ request, env }) {
     if (path && url.searchParams.get('prefix') === '1') {
       // Record every known descendant and the folder itself before deleting rows.
       const rows = await db.prepare(
-        `SELECT path FROM ${T.files} WHERE project_id = ? AND (path = ? OR path LIKE ? ESCAPE '\\\\')`
+        `SELECT path FROM ${T.files} WHERE project_id = ? AND (path = ? OR path LIKE ? ESCAPE '\\')`
       ).bind(projectId, path, likeEsc(path) + '/%').all().catch(() => null);
       const affected = rows && Array.isArray(rows.results) ? rows.results.map(r => String(r.path)) : [];
       if (!affected.includes(path)) affected.push(path);
@@ -522,7 +522,7 @@ export async function onRequestDelete({ request, env }) {
         "INSERT INTO ws_deleted_paths (project_id, path, deleted_at) VALUES (?, ?, datetime('now')) ON CONFLICT(project_id, path) DO UPDATE SET deleted_at = datetime('now')"
       ).bind(projectId, p)));
       await db.prepare(
-        `DELETE FROM ${T.files} WHERE project_id = ? AND (path = ? OR path LIKE ? ESCAPE '\\\\')`
+        `DELETE FROM ${T.files} WHERE project_id = ? AND (path = ? OR path LIKE ? ESCAPE '\\')`
       ).bind(projectId, path, likeEsc(path) + '/%').run();
       if (rows && Array.isArray(rows.results)) await deleteChunks(db, chunksTable, rows.results.map(r => r.path));
     } else if (path) {
