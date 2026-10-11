@@ -46,7 +46,7 @@ function clientIp(request) {
   try { return (request && request.headers && request.headers.get('cf-connecting-ip')) || 'unknown'; } catch (e) { return 'unknown'; }
 }
 
-const PREFERRED_MODELS = ['gemini-3.6-flash', 'gemini-3-flash-preview'];
+const PREFERRED_MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash'];
 
 // ===== AI UTAMA: GLM 5.3 Flash (Workers AI, binding internal) =====
 // Model lama tetap di daftar sebagai cadangan bila GLM 5.3 Flash gagal.
