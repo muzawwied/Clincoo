@@ -2530,7 +2530,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
         // Gemini masih hidup (gemini-3.6-flash + gemini-3-flash-preview balas 200 di
         // hampir semua kunci) -> GEMINI JADI KANDIDAT UTAMA. OpenRouter juga masih
         // guna (4/6 kunci masih 200 utk glm-5.3-flash) -> TIDAK dihapus, tapi diturunkan
-        // jadi kandidat lemah (ikut balapan setelah 8s bila Gemini belum mengirim delta).
+        // jadi kandidat lemah (ikut balapan setelah 5s bila Gemini belum mengirim delta).
         // KANDIDAT P (UTAMA): Gemini 3.6 Flash (napas 30s, dukungan tools penuh)
         const cands = [];
         if (apiKey.length) {
