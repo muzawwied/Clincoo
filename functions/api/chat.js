@@ -130,13 +130,14 @@ const FREE_OR_MODELS = ['cohere/north-mini-code:free', 'google/gemma-4-26b-a4b-i
 // 2048 lolos di 3 kunci sehat (1 kunci 402 lalu dilewati cepat), 1024 lolos semua.
 // Jawaban panjang tetap utuh: AUTO-CONTINUE (stream & non-stream) menyambung saat
 // finish_reason=length.
-// [11 Okt, arahan pemilik: "max token dinaikkan"] 2048 -> 8192: file/jawaban besar
-// selesai dalam SATU generasi, jauh lebih sedikit sambungan (dulu file 20KB+ butuh
-// banyak hop auto-continue yang rawar putus tengah). Kunci 402 (reservasi kredit ~
+// [11 Okt, uji produksi] 8192 DIBALIKKAN ke 2048: generasi 8192 token bikin
+// server function jebol kena batas resource Cloudflare (error 1102) di tengah
+// stream -> "Koneksi AI terputus" berulang di mode Build. 2048 terbukti stabil;
+// file besar tetap utuh via sambungan auto-continue (finish_reason=length). Kunci 402 (reservasi kredit ~
 // proporsional max_tokens) otomatis diulang SEKALI di level aman 2048 (terbukti
 // lolos uji 5 Okt di semua kunci sehat) sebelum jatuh ke kunci/model lain — kunci
 // sehat tidak dibuang hanya karena reservasi besar.
-const OR_MAX_TOKENS = 8192;
+const OR_MAX_TOKENS = 2048;
 const OR_MAX_TOKENS_SAFE = 2048; // fallback saat 402 reservasi
 async function orFetch(key, payload) {
   const send = (max) => fetch('https://openrouter.ai/api/v1/chat/completions', {
