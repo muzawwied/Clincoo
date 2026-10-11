@@ -205,6 +205,14 @@ export async function onRequestGet({ request, env }) {
       return json({ files, total_small: totalSmall, next_offset: next, has_more: next < totalSmall });
     }
 
+    // Mode: sidik jari revisi — polling near-real-time klien (paling ringan).
+    // [11 Okt, arahan owner: data workspace harus real-time di semua bagian]
+    // Klien polling mode ini tiap beberapa detik; pull penuh HANYA bila berubah.
+    if (url.searchParams.get('rev') === '1') {
+      const row = await db.prepare(`SELECT COUNT(*) c, COALESCE(MAX(updated_at),'') m FROM ${T.files} WHERE project_id = ?`).bind(projectId).first();
+      return json({ rev: String((row && row.c) || 0) + ':' + String((row && row.m) || '') });
+    }
+
     // Mode: metadata saja (ringan — dipakai verifikasi jumlah & daftar ukuran)
     if (url.searchParams.get('meta') === '1') {
       const rows = await db.prepare(`SELECT path, is_big, size, updated_at FROM ${T.files} WHERE project_id = ? ORDER BY path ASC`).bind(projectId).all();

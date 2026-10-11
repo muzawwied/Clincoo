@@ -970,8 +970,23 @@
 
     // Ambil data workspace dari D1; kalau D1 kosong tapi lokal ada, unggah (migrasi sekali)
     function wsCloudPull() {
-    // [11 Okt] tarik ulang saat tab dapat fokus (dengan guard dirty) supaya cache gak basi
-    window.addEventListener('focus', function() { try { wsCloudPull(); } catch (e) {} });
+    // [11 Okt] Near-real-time: cek sidik jari revisi tiap 8 detik & saat fokus.
+    // Pull penuh HANYA bila revisi cloud berubah — cache selalu divalidasi, gak basi.
+    let wsLastRev = null;
+    function wsRevCheck() {
+      const pid = wsProjectId();
+      if (!pid || wsCloudTimer) return;
+      fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&rev=1', { headers: wsAuthHeaders() })
+        .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function(d) {
+          const rev = (d && d.rev) || '';
+          if (wsLastRev === null) { wsLastRev = rev; return; }
+          if (rev !== wsLastRev) { wsLastRev = rev; wsCloudPull(); }
+        })
+        .catch(function() {});
+    }
+    setInterval(function() { if (!document.hidden) { try { wsRevCheck(); } catch (e) {} } }, 8000);
+    window.addEventListener('focus', function() { try { wsRevCheck(); } catch (e) {} });
       const pid = wsProjectId();
       if (!pid || wsCloudTimer) { // jangan menimpa saat ada push tertunda
         if (!pid) { wsInitialSync = false; renderFileList(); }

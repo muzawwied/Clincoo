@@ -1415,7 +1415,19 @@ function cloudFirstSync(fromFocus){
 }
 /* [11 Okt, laporan owner: "hapus file muncul lagi"] editor yang lama terbuka punya
    cache basi; tiap kali dapat fokus, tarik versi terbaru (dirty & userIsEditing tetap menang). */
-window.addEventListener('focus',function(){try{cloudFirstSync(true);}catch(e){}});
+let ccLastRev=null;
+function ccRevCheck(){
+  if(!LINK_PID||wsDirtyIs()||userIsEditing())return;
+  fetch(WS_API+'?project_id='+encodeURIComponent(LINK_PID)+'&rev=1',{headers:ccAuthHeaders()})
+    .then(r=>r.ok?r.json():Promise.reject())
+    .then(d=>{
+      const rev=(d&&d.rev)||'';
+      if(ccLastRev===null){ccLastRev=rev;return;}
+      if(rev!==ccLastRev){ccLastRev=rev;cloudFirstSync(true);}
+    }).catch(()=>{});
+}
+setInterval(function(){if(!document.hidden){try{ccRevCheck();}catch(e){}}},8000);
+window.addEventListener('focus',function(){try{ccRevCheck();}catch(e){}});
 function linkedCloudPullForce(){
   if(!LINK_PID)return;
   fetch(WS_API+'?project_id='+encodeURIComponent(LINK_PID),{headers:ccAuthHeaders()})

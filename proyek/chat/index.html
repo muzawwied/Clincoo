@@ -4175,9 +4175,24 @@
 
         // Tarik data workspace dari D1 sekali saat halaman dibuka
         function wsCloudPull() {
-        // [11 Okt] tarik ulang tiap kali tab dapat fokus — cache gak basi, file yang
-        // dihapus di tab lain cepat hilang dari view AI juga.
-        window.addEventListener('focus', function () { try { wsCloudPull(); } catch (e) {} });
+        // [11 Okt] Near-real-time: cek sidik jari revisi (1 query kecil) tiap 8 detik
+        // & saat tab fokus. Pull PENUH hanya bila revisi cloud berubah — hemat kuota,
+        // tapi semua permukaan konvergen dalam hitungan detik, bukan menunggu reload.
+        let wsLastRev = null;
+        function wsRevCheck() {
+            const pid = wsProjectId();
+            if (!pid || wsCloudTimer) return; // ada push tertunda: jangan bertabrakan
+            fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&rev=1', { headers: wsAuthHeaders() })
+                .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+                .then(function (d) {
+                    const rev = (d && d.rev) || '';
+                    if (wsLastRev === null) { wsLastRev = rev; return; }
+                    if (rev !== wsLastRev) { wsLastRev = rev; wsCloudPull(); }
+                })
+                .catch(function () {});
+        }
+        setInterval(function () { if (!document.hidden) wsRevCheck(); }, 8000);
+        window.addEventListener('focus', function () { try { wsRevCheck(); } catch (e) {} });
             const pid = wsProjectId();
             if (!pid || wsCloudTimer) return;
             fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { headers: wsAuthHeaders() })
@@ -7626,6 +7641,10 @@
         function handleSubmit() {
             const val = chatInput.value.trim();
             if ((!val && currentAttachments.length === 0) || isGenerating) return;
+            // [11 Okt, arahan owner: data real-time di semua bagian] sebelum AI kerja,
+            // cek sidik jari revisi cloud — kalau ada perubahan dari tempat lain
+            // (editor/tab lain), tarik dulu supaya AI membaca kondisi terbaru.
+            try { wsRevCheck(); } catch (e) {}
 
             
             const attachmentsToKeep = [...currentAttachments];
