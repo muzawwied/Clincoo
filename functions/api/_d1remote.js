@@ -1,11 +1,11 @@
 // _d1remote.js — d1Remote shim (opsional).
-// Jika env DB_GATEWAY_URL + DB_GATEWAY_KEY diset, env.DB dibungkus jadi proxy
+// Jika env D1MIGR_URL + D1MIGR_KEY diset, env.DB dibungkus jadi proxy
 // yang menjalankan semua query lewat gateway D1 lintas akun (Worker di akun
 // baru). Jika tidak diset, env.DB asli dipakai apa adanya (tidak ada perilaku
 // berubah). Dipasang di _middleware.js SEBELUM handler lain jalan.
 export function maybeWrapDB(env) {
   if (!env) return;
-  const url = env.DB_GATEWAY_URL, key = env.DB_GATEWAY_KEY;
+  const url = env.D1MIGR_URL, key = env.D1MIGR_KEY;
   if (!url || !key || (env.DB && env.DB.__d1remote)) return;
   const base = String(url).replace(/\/+$/, '');
   const headers = {
