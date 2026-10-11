@@ -401,7 +401,7 @@ document.addEventListener('DOMContentLoaded', function () { emailGate(); });
     var byPath = {};
     var raw = null;
     try { raw = localStorage.getItem(key); } catch (e) {}
-    if (!raw) { try { var legacy = localStorage.getItem('clincoo_workspace_files'); if (legacy) { localStorage.setItem(key, legacy); raw = legacy; } } catch (e) {} }
+    if (!raw) { try { var legacy = localStorage.getItem('clincoo_workspace_files'); if (legacy) { localStorage.setItem(key, legacy); raw = legacy; try { localStorage.removeItem('clincoo_workspace_files'); } catch (e0) {} } } catch (e) {} }
     try {
         var d = JSON.parse(raw) || {};
         Object.keys(d).forEach(function (k) {
