@@ -32,8 +32,10 @@ async function tg(env, method, body) {
   });
   return r.json().catch(() => null);
 }
-function sendText(env, chatId, text) {
-  return tg(env, 'sendMessage', { chat_id: chatId, text: String(text || '').slice(0, 3900) });
+async function sendText(env, chatId, text) {
+  // Selalu kembalikan Response valid ke Pages (bukan hasil JSON Telegram).
+  try { await tg(env, 'sendMessage', { chat_id: chatId, text: String(text || '').slice(0, 3900) }); } catch (e) {}
+  return jsonb({ ok: true });
 }
 
 // ---------- helper DB ----------
@@ -172,7 +174,11 @@ async function askAI(env, db, text, fromName) {
 }
 
 // ---------- webhook utama ----------
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost(ctx) {
+  try { return await handleUpdate(ctx); } catch (e) { return jsonb({ ok: true }); }
+}
+
+async function handleUpdate({ request, env }) {
   const secret = env.TELEGRAM_WEBHOOK_SECRET;
   if (!secret || request.headers.get('x-telegram-bot-api-secret-token') !== secret) {
     return new Response('Not found', { status: 404 });
