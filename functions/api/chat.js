@@ -2770,12 +2770,41 @@ export async function onRequestPost({ request, env, waitUntil }) {
       if (fr && fr.action === 'reply' && fr.reply) {
         try { if (waitUntil) waitUntil(taskEventRecord(env, sid, 'front', 'jawab langsung: ' + String(fr.reply).slice(0, 150))); } catch (e) {}
         try { await chargeAiUsage(env, user, 'front-agent-ringan', String(fr.reply).length, 0, false, null); } catch (e) {}
+        // [12 Okt, arahan pemilik: "mode chat lebih pintar dari build"] Balasan
+        // mode Build dibikin setara mode Chat: Front Agent kecil hanya MEMILAH,
+        // jawaban final ditulis model besar yang sama dengan mode Chat (DeepSeek
+        // flash Clouvia). Jawaban Front jadi fallback bila Clouvia gagal.
+        // Polling [[POLL]] & format terstruktur tetap dipakai apa adanya.
+        let finalText = fr.reply, finalModel = 'Front Agent (ringan)';
+        if (!/\[\[POLL\]\]/.test(String(fr.reply))) {
+          try {
+            const cvkFront = await getClouviaKeys(env);
+            if (cvkFront.length) {
+              const srMsgs = messages.slice();
+              if (digest) {
+                const si2 = srMsgs.findIndex(function (m) { return m && m.role === 'system'; });
+                const prog = '\n\n[PROGRES TUGAS SEBELUMNYA (event store — sumber kebenaran)]:\n' + digest;
+                if (si2 !== -1) srMsgs[si2] = { role: 'system', content: String(srMsgs[si2].content || '') + prog };
+                else srMsgs.unshift({ role: 'system', content: prog.trim() });
+              }
+              const sr = await withTimeout(
+                tryClouviaText(cvkFront, srMsgs, null, CLOUVIA_CHAT_MODELS, null),
+                40000, 'Clouvia-Build-SmartReply'
+              ).catch(function () { return null; });
+              if (sr && !sr.error && sr.text) {
+                finalText = sr.text;
+                finalModel = sr.model || 'Clincoo AI';
+                try { await chargeAiUsage(env, user, 'clouvia-deepseek-flash', String(sr.text).length, 0, false, null); } catch (e) {}
+              }
+            }
+          } catch (e) {}
+        }
         if (streamSend) {
-          streamSend({ t: 'final', text: fr.reply, model: 'Front Agent (ringan)', session_id: body.session_id || ('ls_' + Date.now()) });
+          streamSend({ t: 'final', text: finalText, model: finalModel, session_id: body.session_id || ('ls_' + Date.now()) });
           streamWriter.close().catch(function () {});
           return;
         }
-        return new Response(JSON.stringify({ text: fr.reply, model: 'Front Agent (ringan)', session_id: body.session_id || ('ls_' + Date.now()) }), { status: 200, headers: { 'Content-Type': 'application/json', ...CORS } });
+        return new Response(JSON.stringify({ text: finalText, model: finalModel, session_id: body.session_id || ('ls_' + Date.now()) }), { status: 200, headers: { 'Content-Type': 'application/json', ...CORS } });
       }
       if (fr && fr.action === 'execute' && fr.instruction) {
         const note = '\n\n[INSTRUKSI EKSEKUSI dari Front Agent — PRIORITAS TERTINGGI, kerjakan SEKARANG tanpa bertanya]: ' + fr.instruction + (fr.context ? '\nFAKTA/KONTEKS USER yang WAJIB dipakai persis: ' + fr.context : '') + '\nATURAN AI 2 (MUTLAK): Front Agent SUDAH menangani semua pertanyaan ke user. Kamu DILARANG bertanya apa pun ke user, DILARANG membuka dengan pertanyaan. Data yang belum disebut user diputuskan sendiri (nama brand fiktif catchy, konten realistis). Respons pertamamu = 1 kalimat singkat lalu LANGSUNG panggil tool write_file sungguhan.';
