@@ -7418,8 +7418,9 @@
                             messages[sbIdx].subdomainState = { done: false, sub: parsedFinalSub.suggestion || '', check: 'idle', note: '' };
                         }
                     }
-                    if (deltaStreamed) {
-                        if (parsedFinalSub.clean !== deltaStreamed) {
+                    if (deltaStreamed || frontAckText) {
+                        // Final adalah sumber kebenaran; jangan append final ke delta yang sudah tampil.
+                        if (parsedFinalSub.clean !== deltaStreamed || frontAckText) {
                             // final beda dari teks terstream (mis. ada catatan tool di tengah) -> render otentik
                             const dfFull = (frontAckText ? frontAckText + '\n\n' : '') + parsedFinalSub.clean;
                             streamingBuffer = dfFull;
