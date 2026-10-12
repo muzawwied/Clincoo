@@ -2464,6 +2464,7 @@
                 case 'list_items': return 'Viewing folder: ' + (a.path || 'root');
                 case 'read_file': return 'Reading file: ' + (a.path || '');
                 case 'write_file': return (tc.ok === false ? 'Failed to write file: ' : 'Writing file: ') + (a.path || '');
+                case 'edit_file': return (tc.ok === false ? 'Failed to edit file: ' : 'Editing file: ') + (a.path || '') + (Array.isArray(a.edits) ? ' (' + a.edits.length + ' patches)' : '');
                 case 'create_folder': return (tc.ok === false ? 'Failed to create folder: ' : 'Creating folder: ') + (a.path || '');
                 case 'rename_item': return 'Renaming: ' + (a.path || '') + ' → ' + (a.new_name || '');
                 case 'delete_item': return 'Deleting: ' + (a.path || '');
@@ -4567,6 +4568,71 @@
             return { success: true, action: 'appended', path: info.itemPath, size: it.size, chars_total: merged.length, verify: verifyLabel };
         }
 
+        // [12 Okt 2026] EDIT BERTAHAP: patch search-replace persis tanpa menulis
+        // ulang seluruh file — hemat token, cepat, dan bagian lain tak tersentuh.
+        // Bisa batch via edits:[{search,replace}]. Gagal ketemu -> kembalikan
+        // petunjuk lokasi terdekat supaya AI bisa memperbaiki sendiri.
+        async function wsEditFile(args) {
+            const path = args && args.path;
+            if (!path) return { success: false, error: 'Parameter path wajib.' };
+            const info = wsParentInfo(path);
+            if (!info) return { success: false, error: 'Path file tidak valid: ' + path };
+            if (info.name.includes('/')) return { success: false, error: 'Nama file tidak boleh mengandung "/".' };
+            const data = wsLoad();
+            if (!Array.isArray(data[info.folderKey])) data[info.folderKey] = [];
+            const idx = data[info.folderKey].findIndex(function (i) {
+                return i && i.type === 'file' && i.name.toLowerCase() === info.name.toLowerCase();
+            });
+            if (idx === -1) return { success: false, error: 'File "' + path + '" tidak ditemukan — untuk membuat file baru gunakan write_file.' };
+            const it = data[info.folderKey][idx];
+            let content = it.content || '';
+            if (!content && it.cloud) {
+                const got = await wsCloudFetchBig(it.path);
+                if (!got) return { success: false, error: 'File besar "' + path + '" gagal diambil dari cloud.' };
+                content = got.content;
+            }
+            if (!content) return { success: false, error: 'File kosong — tidak ada yang bisa diedit, gunakan write_file.' };
+            const patches = (Array.isArray(args && args.edits) && args.edits.length)
+                ? args.edits
+                : ((args && typeof args.search === 'string' && args.search) ? [{ search: args.search, replace: args.replace }] : []);
+            if (!patches.length) return { success: false, error: 'Parameter wajib: search + replace (atau array edits).' };
+            let applied = 0; const fails = [];
+            for (const p of patches) {
+                const s = p && typeof p.search === 'string' ? p.search : '';
+                const r = p && typeof p.replace === 'string' ? p.replace : '';
+                if (!s) { fails.push({ search: '(kosong)', reason: 'string search kosong' }); continue; }
+                const at = content.indexOf(s);
+                if (at === -1) {
+                    let hint = '';
+                    try {
+                        const probe = (s.split(/\s+/)[0] || s.slice(0, 12)).replace(/[.*+?^${}()|[\]\\]/g, '');
+                        const ln = probe ? content.indexOf(probe) : -1;
+                        if (ln !== -1) hint = ' Petunjuk: teks mirip ditemukan di sekitar: ' + JSON.stringify(content.slice(Math.max(0, ln - 30), ln + 70));
+                    } catch (e) {}
+                    fails.push({ search: s.slice(0, 120), reason: 'tidak ditemukan di file' + hint });
+                    continue;
+                }
+                if (args && args.all) { content = content.split(s).join(r); }
+                else { content = content.slice(0, at) + r + content.slice(at + s.length); }
+                applied++;
+            }
+            if (!applied) {
+                return { success: false, error: 'PATCH GAGAL: tidak ada perubahan diterapkan.', failed: fails,
+                    hint: 'read_file file ini, salin string search yang PERSIS sama dengan isi file, lalu ulangi edit_file.' };
+            }
+            if (content.length > WS_BIG_LIMIT) {
+                const up = await wsCloudSaveBig(info.itemPath, content);
+                if (!up.ok) return { success: false, error: up.error };
+                it.content = ''; it.cloud = true; it.size = wsBytesLabel(new Blob([content]).size);
+            } else {
+                it.content = content; it.cloud = false; it.size = wsSizeStr(content);
+            }
+            const err = wsSave(data, [info.itemPath]);
+            if (err) return err;
+            const _ve = wsVerifyFull(info.itemPath, content); const _vel = wsVerifyLabel(info.itemPath, _ve);
+            return { success: true, action: 'edited', path: info.itemPath, patches_applied: applied, patches_failed: (fails.length ? fails : undefined), size: it.size, verify: _vel };
+        }
+
         function wsCreateFolder(args) {
             const path = args && args.path;
             if (!path) return { success: false, error: 'Parameter path wajib.' };
@@ -4771,6 +4837,7 @@
                 case 'notion_request': return 'Accessing Notion connector…';
                 case 'write_files': return 'Writing ' + (Array.isArray(a.files) ? a.files.length : '?') + ' files…';
                 case 'append_file': return 'Appending to file' + (p ? ': ' + p : '…');
+                case 'edit_file': return 'Editing file' + (p ? ': ' + p : '…') + (Array.isArray(a.edits) ? ' (' + a.edits.length + ' patches)' : '');
                 case 'clone_repo': return 'Cloning repo: ' + String(a.repo || '') + '…';
                 case 'clone_url': return 'Cloning site: ' + String(a.url || '') + '…';
                 case 'build_apk': return 'Building Android APK (' + String(a.action || 'start') + (a.build_id ? ': ' + a.build_id : '') + ')…';
@@ -4891,6 +4958,7 @@
                     case 'read_file': window.AI_WORK_STATE.reads++; return wsReadFile(args);
                     case 'write_file': window.AI_WORK_STATE.writes++; return wsWriteFile(args);
                     case 'append_file': window.AI_WORK_STATE.writes++; return await wsAppendFile(args);
+                    case 'edit_file': window.AI_WORK_STATE.writes++; return await wsEditFile(args);
                     case 'write_files': window.AI_WORK_STATE.writes += (args && Array.isArray(args.files) ? args.files.length : 1); break;
                     case 'create_folder': return wsCreateFolder(args);
                     case 'rename_item': return wsRenameItem(args);
