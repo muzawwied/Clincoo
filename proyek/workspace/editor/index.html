@@ -505,6 +505,13 @@ body.light #statusbar{background:#131316}
 .ph-btn:hover{background:var(--bg4);color:var(--text)}
 .ph-btn.ph-close:hover{background:rgba(229,84,84,.16);color:var(--err)}
 #phone-preview iframe{flex:1;border:none;background:#fff}
+#pv-errbar{position:absolute;left:10px;right:10px;bottom:10px;z-index:60;display:flex;align-items:flex-start;gap:8px;padding:9px 12px;font-size:12px;line-height:1.5;background:#fee2e2;color:#7f1d1d;border:1px solid #ef4444;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+#pv-errbar[hidden]{display:none}
+#pv-errbar .pv-errmsg{flex:1;overflow-wrap:anywhere;max-height:60px;overflow:auto}
+#pv-errbar button{border:0;border-radius:7px;padding:5px 9px;font-size:11.5px;font-weight:600;cursor:pointer;flex-shrink:0}
+#pv-errbar .pv-errfix{background:#b91c1c;color:#fff}
+#pv-errbar .pv-errfix:hover{background:#991b1b}
+#pv-errbar .pv-errx{background:transparent;color:#7f1d1d;font-size:13px;padding:5px 5px}
 .ph-resize{position:absolute;right:0;bottom:0;width:22px;height:22px;cursor:nwse-resize;display:grid;place-items:center;color:rgba(255,255,255,.35);touch-action:none}
 .ph-resize::before{content:'';width:9px;height:9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;border-radius:0 0 3px 0}
 .ph-resize:hover{color:rgba(255,255,255,.7)}
@@ -2588,7 +2595,14 @@ function buildPreview(entry){
   // Pengaman: cegah gambar/SVG/ikon tanpa gaya membesar dan menutupi seluruh pratinjau
   // ketika sebagian CSS gagal dimuat (mis. dari jaringan lambat) — bukan pengganti CSS asli.
   const guardCss='<style>img,svg,picture,video{max-width:100%;height:auto}</style>';
-  html=/<head[^>]*>/i.test(html)?html.replace(/<head[^>]*>/i,m=>m+guardCss):guardCss+html;
+  // [12 Okt] ERROR FEEDBACK LOOP: penangkap error runtime di dalam pratinjau
+  // (window error + promise rejection) dikirim ke halaman ini via postMessage,
+  // lalu muncul banner merah dengan tombol "Perbaiki otomatis" yang mengirim
+  // pesan error persis ke AI chat.
+  const errCap='<script>(function(){function s(t,m){try{parent.postMessage({__ccPreviewError:{type:t,msg:String(m||"").slice(0,400)}},location.origin)}catch(e){}}'
+    +'window.addEventListener("error",function(e){var f=(e.filename||"").split("/").pop();s("error",(e.message||"Script error")+(f?" ("+f+":"+e.lineno+")":""))},true);'
+    +'window.addEventListener("unhandledrejection",function(e){var r=e&&e.reason;s("promise",(r&&(r.message||r))||"Promise ditolak")});})();<\/script>';
+  html=/<head[^>]*>/i.test(html)?html.replace(/<head[^>]*>/i,m=>m+errCap+guardCss):errCap+guardCss+html;
   return html;
 }
 const PH_PRESETS={phone:{w:390,h:780},tablet:{w:600,h:820},desktop:{w:900,h:600}};
@@ -2644,6 +2658,31 @@ async function runPreview(){
   $('#preview-frame').srcdoc=html;
   outPrint('▶ Pratinjau dijalankan — <b>'+new Date().toLocaleTimeString('id-ID')+'</b>');
   if(previewMissing.length)outPrint('⚠ Aset tidak ditemukan di proyek, dilewati: <b>'+previewMissing.map(esc).join(', ')+'</b>');
+}
+// [12 Okt] ERROR FEEDBACK LOOP: error runtime di pratinjau -> banner + perbaiki otomatis
+let pvErrSeen={}, pvErrCount=0, pvErrLast='';
+window.addEventListener('message',function(ev){
+  const d=ev&&ev.data&&ev.data.__ccPreviewError;
+  if(!d||!d.msg)return;
+  if(pvErrSeen[d.msg])return;
+  pvErrSeen[d.msg]=true;pvErrCount++;pvErrLast=d.msg;
+  let bar=$('#pv-errbar');
+  if(!bar){
+    bar=document.createElement('div');bar.id='pv-errbar';
+    bar.innerHTML='<span class="pv-errmsg"></span>'
+      +'<button class="pv-errfix" onclick="pvErrFix()">Perbaiki otomatis</button>'
+      +'<button class="pv-errx" onclick="this.parentElement.hidden=true" title="Tutup">✕</button>';
+    $('#phone-preview').appendChild(bar);
+  }
+  bar.querySelector('.pv-errmsg').textContent=(pvErrCount>1?pvErrCount+' error — ':'')+d.msg;
+  bar.hidden=false;
+});
+function pvErrFix(){
+  if(!pvErrLast)return;
+  const entry=previewEntry||'index.html';
+  const msg='Preview mendeteksi error (file '+entry+'): '+pvErrLast+'.\n\nTolong perbaiki file terkait sampai errornya hilang.';
+  try{localStorage.setItem('clincoo_ai_prefill',msg);}catch(e){}
+  location.href='/proyek/chat/'+(LINK_PID?'?id='+encodeURIComponent(LINK_PID):'');
 }
 function closePreview(){$('#phone-preview').classList.remove('show');outPrint('■ Pratinjau ditutup');}
 function phRefresh(){

@@ -71,6 +71,17 @@
         #pv-warn { padding: 10px 14px; font-size: 12.5px; line-height: 1.5; background: #fef3c7; color: #78350f; border-top: 1px solid #f59e0b; }
         #pv-warn[hidden] { display: none; }
 
+        /* [12 Okt] Error loop: error runtime di iframe preview -> banner + tombol perbaiki otomatis */
+        #pv-errbar { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; font-size: 12.5px; line-height: 1.5;
+                     background: #fee2e2; color: #7f1d1d; border-top: 1px solid #ef4444; }
+        #pv-errbar[hidden] { display: none; }
+        #pv-errbar .pv-errmsg { flex: 1; overflow-wrap: anywhere; }
+        #pv-errbar .pv-errcount { font-weight: 700; }
+        #pv-errbar button { border: 0; border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer; flex-shrink: 0; }
+        #pv-errbar .pv-errfix { background: #b91c1c; color: #fff; }
+        #pv-errbar .pv-errfix:hover { background: #991b1b; }
+        #pv-errbar .pv-errx { background: transparent; color: #7f1d1d; font-size: 14px; padding: 5px 6px; }
+
         /* ===== Splash screen Clincoo (state kosong) ===== */
         #pv-msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 24px; text-align: center; color: #71717a; background: inherit; z-index: 5; }
         #pv-msg img { width: 58px; height: 58px; border-radius: 14px; animation: pv-breathe 2.6s ease-in-out infinite; }
@@ -108,6 +119,12 @@
     </div>
     <iframe id="pv-frame" title="Preview proyek"></iframe>
     <div id="pv-warn" hidden></div>
+    <div id="pv-errbar" hidden>
+        <span class="pv-errcount" id="pv-errcount" hidden>1</span>
+        <span class="pv-errmsg" id="pv-errmsg"></span>
+        <button type="button" class="pv-errfix" id="pv-errfix">Perbaiki otomatis</button>
+        <button type="button" class="pv-errx" id="pv-errx" title="Tutup" aria-label="Tutup">✕</button>
+    </div>
     <div id="pv-pop" hidden></div>
     <div id="pv-mark" aria-hidden="true"><img src="../../assets/logo-clincoo.png?v=20261007" alt="">Clincoo</div>
     <div id="pv-msg">
@@ -391,12 +408,47 @@
             warnEl.hidden = false;
         } else { warnEl.hidden = true; warnEl.textContent = ''; }
 
+        // [12 Okt] ERROR FEEDBACK LOOP: suntik penangkap error runtime ke preview.
+        // Error JS/promise rejection di dalam iframe dikirim ke sini (parent) via
+        // postMessage -> banner merah + tombol "Perbaiki otomatis" yang mengirim
+        // pesan error PERSIS ke AI chat lewat mekanisme prefill sekali-kirim.
+        if (!window.__ccErrCapOn) {
+            window.__ccErrCapOn = true;
+            var __cap = '<script>(function(){function s(t,m){try{parent.postMessage({__ccPreviewError:{type:t,msg:String(m||"").slice(0,400)}},location.origin)}catch(e){}}'
+                + 'window.addEventListener("error",function(e){var f=(e.filename||"").split("/").pop();s("error",(e.message||"Script error")+(f?" ("+f+":"+e.lineno+")":""))},true);'
+                + 'window.addEventListener("unhandledrejection",function(e){var r=e&&e.reason;s("promise",(r&&(r.message||r))||"Promise ditolak")});})();<' + '/script>';
+            html = html.replace(/<head[^>]*>/i, function (m) { return m + __cap; });
+            if (html.indexOf('__ccPreviewError') === -1) html = __cap + html;
+        }
         if (blobUrl) { try { URL.revokeObjectURL(blobUrl); } catch (e) {} }
         blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
         frame.src = blobUrl;
         showing();
         updateFileUI(map, entry);
     }
+
+    // [12 Okt] Terima error dari iframe preview, tampilkan banner + tombol perbaiki.
+    var errSeen = {}; var errCount = 0; var errLast = '';
+    var errbar = document.getElementById('pv-errbar');
+    var errmsgEl = document.getElementById('pv-errmsg');
+    var errcountEl = document.getElementById('pv-errcount');
+    document.getElementById('pv-errx').onclick = function () { errbar.hidden = true; };
+    document.getElementById('pv-errfix').onclick = function () {
+        if (!errLast) return;
+        var msg = 'Preview mendeteksi error' + (entryPath ? ' (file ' + entryPath + ')' : '') + ': ' + errLast + '.\n\nTolong perbaiki file terkait sampai errornya hilang.';
+        try { localStorage.setItem('clincoo_ai_prefill', msg); } catch (e) {}
+        location.href = '/proyek/chat/' + (pid ? '?id=' + encodeURIComponent(pid) : '');
+    };
+    window.addEventListener('message', function (ev) {
+        var d = ev && ev.data && ev.data.__ccPreviewError;
+        if (!d || !d.msg) return;
+        if (errSeen[d.msg]) return;
+        errSeen[d.msg] = true; errCount++;
+        errLast = d.msg;
+        errmsgEl.textContent = d.msg;
+        if (errCount > 1) { errcountEl.textContent = errCount + ' error'; errcountEl.hidden = false; }
+        errbar.hidden = false;
+    });
 
     // ===== UI: tombol file & popover =====
     function updateFileUI(map, entry) {
