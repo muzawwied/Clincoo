@@ -855,7 +855,8 @@ const CLOUVIA_MODELS = ['coding-high-flash', 'free-model']; // glm dihapus (arah
 // role system (glm5.3-flash tidak — gateway membuangnya) sehingga system prompt utuh
 // sampai ke model, (2) tool-calling berfungsi, (3) gratis. Begitu OpenRouter di-top-up,
 // urutkan Sol Pro asli di depan rute ini (OPENROUTER_MODELS).
-const CLOUVIA_SOL_MODELS = ['claude-sonnet-5-thinking-agentic']; // Model utama Clouvia sesuai arahan pemilik
+const CLOUVIA_SOL_MODELS = ['claude-sonnet-5-thinking-agentic']; // Build: Clouvia sonnet-agentic
+const CLOUVIA_CHAT_MODELS = ['deepseek-v4.1-flash']; // Chat: DeepSeek flash (cepat)
 // 'free-model' = lapis terakhir Clouvia: tidak menguras saldo berbayar (pakai
 // kuota free_balance), jadi chat tetap hidup walau 50M+ token balance habis.
 
@@ -2534,7 +2535,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
       }
       const USE_CLOUVIA_FIRST = true;
       if (USE_CLOUVIA_FIRST && !buildMode && !isGuest && !hasImages && cvKeysEarly.length) {
-        const sp = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, CLOUVIA_SOL_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 40000, 'ClouviaSolPro').catch(e => ({ error: e.message }));
+        const sp = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, CLOUVIA_CHAT_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 40000, 'ClouviaChatFlash').catch(e => ({ error: e.message }));
         if (sp) r = sp;
       }
       // [7 Okt 2026, arahan pemilik] GEMINI UTAMA (kunci aktif terverifikasi 200);
