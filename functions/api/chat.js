@@ -2781,6 +2781,25 @@ export async function onRequestPost({ request, env, waitUntil }) {
             const cvkFront = await getClouviaKeys(env);
             if (cvkFront.length) {
               const srMsgs = messages.slice();
+              // [12 Okt, temuan owner: Build jawab "aku tidak tahu apa itu Clincoo",
+              // Chat benar karena punya search_clincoo_kb] Jalur ini tanpa loop tool,
+              // jadi riset dokumentasi dilakukan SERVER lebih dulu lalu hasilnya
+              // disuntikkan sebagai konteks. Hanya untuk pertanyaan seputar Clincoo.
+              try {
+                const lastUser = [...messages].reverse().find(function (m) { return m && m.role === 'user'; });
+                let lastTxt = '';
+                if (lastUser) lastTxt = typeof lastUser.content === 'string' ? lastUser.content : (Array.isArray(lastUser.content) ? lastUser.content.filter(function (b) { return b && b.type === 'text'; }).map(function (b) { return b.text || ''; }).join(' ') : '');
+                if (/clincoo|fitur|harga|paket|langganan|deploy|domain|template|mcp|kredit|cara\s+(pakai|menggunakan)/i.test(lastTxt)) {
+                  const kb = await withTimeout(searchClincooBlog(env, lastTxt.slice(0, 200)), 6000, 'KB-SmartReply').catch(function () { return null; });
+                  const kbStr = kb ? JSON.stringify(kb).slice(0, 5000) : '';
+                  if (kbStr && kbStr.length > 40) {
+                    const kbNote = '\n\n[DOKUMENTASI RESMI CLINCOO (hasil pencarian server, gunakan sebagai sumber fakta; jangan mengarang di luar ini; jangan bilang tidak tahu apa itu Clincoo — Clincoo adalah platform/ruang kerja web untuk membuat, menyunting, dan menerbitkan website dengan AI)]:\n' + kbStr;
+                    const ki = srMsgs.findIndex(function (m) { return m && m.role === 'system'; });
+                    if (ki !== -1) srMsgs[ki] = { role: 'system', content: String(srMsgs[ki].content || '') + kbNote };
+                    else srMsgs.unshift({ role: 'system', content: kbNote.trim() });
+                  }
+                }
+              } catch (e) {}
               if (digest) {
                 const si2 = srMsgs.findIndex(function (m) { return m && m.role === 'system'; });
                 const prog = '\n\n[PROGRES TUGAS SEBELUMNYA (event store — sumber kebenaran)]:\n' + digest;
