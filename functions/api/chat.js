@@ -176,8 +176,10 @@ async function readOAICompatStream(res, onDelta) {
   let buf = '', text = '', fin = null;
   const tcMap = {};
   let streamEnd = false;
+  let streamBroken = false;
   while (!streamEnd) {
-    const rd = await reader.read();
+    let rd;
+    try { rd = await reader.read(); } catch (eRd) { streamBroken = true; break; } // stream putus di tengah: pakai hasil parsial
     if (rd.done) break;
     buf += dec.decode(rd.value, { stream: true });
     let nl;
@@ -209,7 +211,7 @@ async function readOAICompatStream(res, onDelta) {
     }
   }
   const tcs = Object.keys(tcMap).sort((a, b) => Number(a) - Number(b)).map((k) => tcMap[k]).filter((x) => x.name);
-  return { text, fin, tcs };
+  return { text, fin, tcs, broken: streamBroken };
 }
 
 // [7 Okt 2026, laporan owner: narasi dobel "responsif.Baik, saya akan..." + builder
