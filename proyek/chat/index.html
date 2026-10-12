@@ -6237,7 +6237,7 @@
             function walk(v) {
                 if (typeof v === 'string') {
                     return v.length > limit
-                        ? (v.slice(0, limit) + ' ... (dipotong, total ' + v.length + ' karakter -- AI sudah menulis/membaca ini sendiri, tidak perlu diulang penuh)')
+                        ? (v.slice(0, limit) + ' ... [CUPLIKAN SAJA untuk hemat konteks — file ASLI di server UTUH, total ' + v.length + ' karakter, tersimpan PENUH; JANGAN mengira file terpotong/rusak, JANGAN baca ulang untuk memastikan, verify tool sudah membuktikan valid]')
                         : v;
                 }
                 if (Array.isArray(v)) return v.map(walk);
