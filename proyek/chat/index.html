@@ -6613,8 +6613,8 @@
 
             let streamingBuffer = "";
             let deltaStreamed = "";
-            // [10 Okt, arahan pemilik] ack Front Agent (event stream "front"): jawaban
-            // ditampilkan SEBELUM AI 2 mulai bekerja, bukan ditimpa hasil eksekusi.
+            // Ack Front Agent hanya sementara selama proses berjalan. Saat jawaban
+            // utama tiba, jawaban utama menggantikan ack agar bubble tidak berisi dua sapaan.
             let frontAckText = "";
             let isFetchComplete = false;
             let charIndex = 0;
@@ -6978,16 +6978,16 @@ const __modeBlock = __curMode === 'build'
                                         hasReceivedData = true;
                                         if (!__composingNotified) { __composingNotified = true; }
                                         deltaStreamed += evt.text || '';
-                                        streamingBuffer = (frontAckText && deltaStreamed.indexOf(frontAckText) === -1) ? (frontAckText + '\n\n' + deltaStreamed) : deltaStreamed;
+                                        // Delta adalah jawaban utama; jangan gabungkan ack sementara ke jawaban final.
+                                        streamingBuffer = deltaStreamed;
                                         return;
                                     }
                                     if (evt.t === 'progress') {
                                         hasReceivedData = true;
                                         return; // [10 Okt] label progress hardcode dimatikan
                                     }
-                                    // [10 Okt, arahan pemilik] FRONT JAWAB DULU: ack Front Agent
-                                    // tampil sebagai teks bubble SEKARANG, AI 2 lanjut bekerja
-                                    // di bawahnya (bubble tetap sama utk fase tool pertama).
+                                    // Ack sementara selama AI bekerja. Jawaban utama nanti
+                                    // mengganti teks ini, bukan ditambahkan di bawahnya.
                                     if (evt.t === 'front') {
                                         hasReceivedData = true;
                                         const fTxt = String(evt.text || '').trim();
@@ -6995,7 +6995,7 @@ const __modeBlock = __curMode === 'build'
                                             frontAckText = frontAckText ? (frontAckText + '\n\n' + fTxt) : fTxt;
                                             const fIdx2 = messages.findIndex(m => m.id === aiMsgObj.id);
                                             if (fIdx2 !== -1) {
-                                                messages[fIdx2].text = messages[fIdx2].text ? (messages[fIdx2].text + '\n\n' + fTxt) : fTxt;
+                                                messages[fIdx2].text = fTxt;
                                                 try { renderMessages(); } catch (e) {}
                                                 try { scrollToBottom(false); } catch (e) {}
                                             }
@@ -7430,7 +7430,7 @@ const __modeBlock = __curMode === 'build'
                         // Final adalah sumber kebenaran; jangan append final ke delta yang sudah tampil.
                         if (parsedFinalSub.clean !== deltaStreamed || frontAckText) {
                             // final beda dari teks terstream (mis. ada catatan tool di tengah) -> render otentik
-                            const dfFull = (frontAckText ? frontAckText + '\n\n' : '') + parsedFinalSub.clean;
+                            const dfFull = parsedFinalSub.clean;
                             streamingBuffer = dfFull;
                             charIndex = dfFull.length;
                             const dfIdx = messages.findIndex(m => m.id === aiMsgObj.id);
