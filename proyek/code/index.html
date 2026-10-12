@@ -746,6 +746,28 @@
       try { pid = (sessionStorage.getItem('clincoo_tab_project_id')||localStorage.getItem('clincoo_current_project_id')); } catch (e) {}
       return 'clincoo_ws_dirty_' + (pid ? String(pid) : 'global');
     }
+    // [12 Okt, laporan pemilik: "file yang dihapus muncul lagi"] pelacak tombstone:
+    // path yang sudah dihapus di server (jangan hidupkan dari cache basi) dan
+    // path yang sengaja dibuat ulang (kirim restore_paths supaya tidak disapu).
+    var wsKnownDeleted = {};
+    var wsRestorePaths = {};
+    var wsLastSavedPaths = null;
+    function wsTrackKnownDeleted(list) {
+      (Array.isArray(list) ? list : []).forEach(function (p) { wsKnownDeleted[String(p)] = true; delete wsRestorePaths[String(p)]; });
+    }
+    function wsDropKnownDeletedFromTree() {
+      let changed = false;
+      Object.keys(projectFilesData || {}).forEach(function (fk) {
+        const arr = projectFilesData[fk];
+        if (!Array.isArray(arr)) return;
+        for (let i = arr.length; i--;) {
+          const it = arr[i];
+          if (it && it.type === 'file' && it.path && wsKnownDeleted[String(it.path)] && !wsRestorePaths[String(it.path)]) { arr.splice(i, 1); changed = true; }
+        }
+      });
+      if (changed) { try { localStorage.setItem(wsFilesKey(), JSON.stringify(projectFilesData)); } catch (e) {} renderFileList(); }
+      return changed;
+    }
     function wsDirtySet(on) {
       try { if (on) localStorage.setItem(wsDirtyKey(), '1'); else localStorage.removeItem(wsDirtyKey()); } catch (e) {}
     }
@@ -955,6 +977,8 @@
         if (!Array.isArray(base[fk])) base[fk] = [];
         projectFilesData[fk].forEach(function(it) {
           if (!it || !it.path) return;
+          // [12 Okt] zombie: sudah dihapus di server & bukan recreate disengaja -> buang
+          if (it.type === 'file' && wsKnownDeleted[String(it.path)] && !wsRestorePaths[String(it.path)]) return;
           const arr = base[fk];
           let i = arr.length;
           while (i--) { if (arr[i] && arr[i].path && arr[i].path.toLowerCase() === it.path.toLowerCase()) { arr[i] = it; return; } }
@@ -995,10 +1019,11 @@
       if (wsDirtyIs()) { // ada edit lokal belum terkirim: gabung cloud dulu, lalu dorong versi gabungan
         fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { headers: wsAuthHeaders() })
           .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
-          .then(function(d) { return (d && d.files) || []; })
+          .then(function(d) { try { wsTrackKnownDeleted(d && d.deleted_paths); } catch (e) {} return (d && d.files) || []; })
           .then(function(files) {
             if (files.length) {
               const merged = wsMergeCloudIntoLocal(files);
+              try { wsDropKnownDeletedFromTree(); } catch (e) {}
               const mergedStr = JSON.stringify(merged);
               if (mergedStr !== JSON.stringify(projectFilesData)) {
                 projectFilesData = merged;
@@ -1015,6 +1040,7 @@
       fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { headers: wsAuthHeaders() })
         .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
         .then(function(d) {
+          try { wsTrackKnownDeleted(d && d.deleted_paths); } catch (e) {}
           const files = (d && d.files) || [];
           if (files.length) {
             const merged = wsUnflatten(files);
@@ -1025,12 +1051,15 @@
               renderFileList();
             }
           } else {
-            // D1 belum berisi untuk proyek ini: migrasikan data lokal ke cloud
+            // [12 Okt, laporan pemilik: "yang dihapus muncul lagi"] D1 kosong =
+            // SEMUA file proyek ini memang sudah dihapus. Dulu cache lokal
+            // didorong balik ke cloud (file mati hidup lagi). Sekarang:
+            // cache lokal dibersihkan supaya tampilan = kenyataan.
             const localRaw = localStorage.getItem(wsFilesKey());
             if (localRaw && localRaw !== JSON.stringify({ 'root': [] })) {
-              fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { method: 'DELETE', headers: wsAuthHeaders() }).catch(function() {});
-              fetch(WS_CLOUD_API, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()),
-                body: JSON.stringify({ project_id: pid, files: wsFlatten(projectFilesData) }) }).catch(function() {});
+              projectFilesData = { 'root': [] };
+              try { localStorage.setItem(wsFilesKey(), JSON.stringify({ 'root': [] })); } catch (e) {}
+              renderFileList();
             }
           }
         })
@@ -1064,13 +1093,17 @@
     function wsCloudPushNow(attempt, keepalive) {
       const pid = wsProjectId();
       if (!pid) return;
-      const payload = { project_id: pid, files: wsFlatten(projectFilesData), replace: true };
+      // [12 Okt] restore_paths: file yang sengaja dibuat ulang di path ter-tombstone
+      const __restore = wsFlatten(projectFilesData).filter(function (f) { return f && f.path && wsRestorePaths[String(f.path)]; }).map(function (f) { return String(f.path); });
+      const payload = { project_id: pid, files: wsFlatten(projectFilesData), replace: true, restore_paths: __restore };
       const H = Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders());
       const opt = { method: 'POST', headers: H, body: JSON.stringify(payload) };
       if (keepalive) { opt.keepalive = true; }
       fetch(WS_CLOUD_API, opt)
         .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
-        .then(function() {
+        .then(function(pushResp) {
+          // [12 Okt] file yang ternyata sudah dihapus di server: buang dari pohon lokal
+          try { wsTrackKnownDeleted(pushResp && pushResp.deleted_paths); wsDropKnownDeletedFromTree(); } catch (e) {}
           // Verifikasi: jumlah file di cloud == yang dikirim (POST benar-benar masuk)
           return fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&meta=1', { headers: wsAuthHeaders() });
         })
@@ -1081,6 +1114,7 @@
           if (there === sent) {
             wsDirtySet(false);
             wsCloudFailNotified = false;
+            try { Object.keys(wsRestorePaths).forEach(function (p) { if (!wsKnownDeleted[p]) delete wsRestorePaths[p]; }); } catch (e) {}
           } else { throw new Error('verifikasi gagal'); }
         })
         .catch(function() {
@@ -1115,6 +1149,15 @@
         console.warn('Cache lokal penuh (aman): perubahan tetap disimpan ke cloud.');
         try { addNotification('Workspace', 'Penyimpanan browser penuh — tidak masalah, perubahan tetap tersimpan ke cloud.'); } catch (e2) {}
       }
+      // [12 Okt] file BARU di path yang server tandai dihapus = sengaja membuat ulang
+      try {
+        const nowPaths = {};
+        Object.keys(projectFilesData || {}).forEach(function (fk) {
+          (projectFilesData[fk] || []).forEach(function (it) { if (it && it.type === 'file' && it.path) nowPaths[String(it.path)] = true; });
+        });
+        if (wsLastSavedPaths) Object.keys(nowPaths).forEach(function (p) { if (!wsLastSavedPaths[p] && wsKnownDeleted[p]) { wsRestorePaths[p] = true; delete wsKnownDeleted[p]; } });
+        wsLastSavedPaths = nowPaths;
+      } catch (e) {}
       wsCloudPushSchedule();
       try { if (window.WSGitHubSync) WSGitHubSync.schedule(); } catch (e) {}
     }

@@ -261,7 +261,18 @@ export async function onRequestGet({ request, env }) {
       size: r.size || 0,
       updated_at: r.updated_at
     }));
-    return json({ files });
+    // [12 Okt, laporan pemilik: "file yang dihapus muncul lagi"] kirim daftar
+    // tombstone juga — klien (chat/kode) tahu path mana yang BENAR-BENAR sudah
+    // dihapus lintas-perangkat, jadi cache lokalnya gak menghidupkan zombie.
+    let deletedPaths = [];
+    try {
+      await ensureWsDeletedTable(db);
+      const dRows = await db.prepare(
+        'SELECT path FROM ws_deleted_paths WHERE project_id = ? ORDER BY deleted_at DESC LIMIT 500'
+      ).bind(projectId).all();
+      deletedPaths = (dRows.results || []).map(r => String(r.path));
+    } catch (e) {}
+    return json({ files, deleted_paths: deletedPaths });
   } catch (err) {
     return json({ error: err.message }, 500);
   }

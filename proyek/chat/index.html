@@ -4037,13 +4037,18 @@
             const pid = wsProjectId();
             if (!pid) return { ok: false, error: 'File besar memerlukan proyek aktif (cloud storage).' };
             try {
+                // [12 Okt] file besar di path yang dulu dihapus: sertakan restore_paths
+                // supaya tombstone server dibersihkan, bukan menyapu upload barunya.
+                var __restore = [];
+                try { if (wsKnownDeleted[wsNormalize(path)]) { wsRestorePaths[wsNormalize(path)] = true; __restore = [wsNormalize(path)]; } } catch (e) {}
                 const res = await fetch(WS_CLOUD_API, {
                     method: 'POST',
                     headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()),
-                    body: JSON.stringify({ project_id: pid, files: [{ path: path, content_b64: wsB64Encode(content) }] })
+                    body: JSON.stringify({ project_id: pid, files: [{ path: path, content_b64: wsB64Encode(content) }], restore_paths: __restore })
                 });
                 const d = await res.json().catch(() => ({}));
                 if (!res.ok || d.error) return { ok: false, error: d.error || 'Gagal menyimpan file besar ke cloud.' };
+                try { delete wsKnownDeleted[wsNormalize(path)]; } catch (e) {}
                 return { ok: true, size: wsB64Decode(wsB64Encode(content)).length };
             } catch (e) {
                 return { ok: false, error: 'Gagal terhubung ke cloud: ' + (e && e.message ? e.message : String(e)) };
@@ -4131,6 +4136,11 @@
         let wsCloudTimer = null;
 
         let wsDirtyPaths = {}; // path -> true; hanya ini yang boleh didorong ke cloud
+        // [12 Okt] path yang SERVER tandai sudah dihapus (tombstone) — supaya klien
+        // gak menghidupkan zombie dari cache basi, dan tahu kapan perlu restore_paths
+        // saat file itu memang sengaja dibuat ulang.
+        var wsKnownDeleted = {};   // path -> true
+        var wsRestorePaths = {};   // path -> true (sengaja dibuat ulang, kirim restore_paths)
 
         function wsCloudPushSchedule() {
             const pid = wsProjectId();
@@ -4159,10 +4169,32 @@
             const sendNext = function() {
                 if (bi >= files.length) return Promise.resolve();
                 const batch = files.slice(bi, bi + BATCH); bi += BATCH;
-                return fetch(WS_CLOUD_API, { method: 'POST', headers: H, body: JSON.stringify({ project_id: pid, files: batch }) })
+                const restore = batch.filter(function(f) { return f && f.path && wsRestorePaths[String(f.path)]; }).map(function(f) { return String(f.path); });
+                return fetch(WS_CLOUD_API, { method: 'POST', headers: H, body: JSON.stringify({ project_id: pid, files: batch, restore_paths: restore }) })
                     .then(function(r) { if (!r.ok) { return Promise.reject(new Error('HTTP ' + r.status)); } return r.json(); })
                     .then(function(d) {
                         if (d && d.error) { return Promise.reject(new Error(d.error)); }
+                        // [12 Okt] file yang ternyata sudah dihapus di server jangan
+                        // hidup lagi di pohon lokal — buang dari cache + tandai mati.
+                        if (d && Array.isArray(d.deleted_paths) && d.deleted_paths.length) {
+                            const data = wsLoad();
+                            let changed = false;
+                            d.deleted_paths.forEach(function(rawPath) {
+                                const p = String(rawPath || '');
+                                if (!p) return;
+                                wsKnownDeleted[p] = true;
+                                delete wsRestorePaths[p];
+                                Object.keys(data).forEach(function(fk) {
+                                    const arr = data[fk];
+                                    if (!Array.isArray(arr)) return;
+                                    const i = arr.findIndex(function(x) { return x && x.path && String(x.path).toLowerCase() === p.toLowerCase(); });
+                                    if (i !== -1) { arr.splice(i, 1); changed = true; }
+                                });
+                                delete wsDirtyPaths[p];
+                            });
+                            if (changed) { try { localStorage.setItem(wsFilesKey(), JSON.stringify(data)); } catch (e) {} }
+                        }
+                        if (d && d.success) { batch.forEach(function(f) { if (f && f.path) { delete wsRestorePaths[String(f.path)]; delete wsKnownDeleted[String(f.path)]; } }); }
                         // [10 Okt] Server bisa menerima sebagian file tapi menolak yang lain
                         // (warning) — dulu berlalu diam-diam, file ditolak tanpa ada yang sadar.
                         // Tampilkan notifikasi supaya user/AI tahu ada file yang gagal.
@@ -4221,13 +4253,25 @@
                         Object.keys(merged).forEach(function(fk) {
                             (merged[fk] || []).forEach(function(it) { if (it && it.path) srvPaths[String(it.path).toLowerCase()] = true; });
                         });
+                        // [12 Okt, laporan pemilik: "yang dihapus muncul lagi"] dulu SEMUA
+                        // file lokal yang tidak ada di server dipertahankan — itu membuat
+                        // file yang sudah dihapus dari tab/perangkat lain hidup kembali.
+                        // Sekarang hanya DUA pengecualian: (a) menunggu dorongan
+                        // (dirty — mis. hasil generate_image belum terkirim), atau
+                        // (b) memang sengaja dibuat ulang setelah dihapus.
+                        const srvDeleted = {};
+                        (d && Array.isArray(d.deleted_paths) ? d.deleted_paths : []).forEach(function(p) { srvDeleted[String(p).toLowerCase()] = true; wsKnownDeleted[String(p)] = true; });
                         Object.keys(localTree).forEach(function(fk) {
                             (localTree[fk] || []).forEach(function(it) {
                                 if (!it || it.type !== 'file' || !it.path) return;
-                                if (srvPaths[String(it.path).toLowerCase()]) return;
-                                if (!it.content && !it.cloud) return; // entri tanpa isi tidak bernilai
+                                const lp = String(it.path).toLowerCase();
+                                if (srvPaths[lp]) return;
+                                if (wsDirtyPaths[it.path] || wsRestorePaths[it.path]) { /* pending dorongan / sengaja dibuat ulang */ }
+                                else if (srvDeleted[lp]) return; // mati di server -> jangan hidupkan lagi
+                                else if (!it.content && !it.cloud) return; // entri tanpa isi tidak bernilai
+                                else if (!wsDirtyPaths[it.path]) return; // cache basi -> server yang benar
                                 if (!Array.isArray(merged[fk])) merged[fk] = [];
-                                if (!merged[fk].some(function(x) { return x && x.path && String(x.path).toLowerCase() === String(it.path).toLowerCase(); })) merged[fk].push(it);
+                                if (!merged[fk].some(function(x) { return x && x.path && String(x.path).toLowerCase() === lp; })) merged[fk].push(it);
                             });
                         });
                         const mergedStr = JSON.stringify(merged);
@@ -4235,14 +4279,19 @@
                             try { localStorage.setItem(wsFilesKey(), mergedStr); } catch (e) {}
                         }
                     } else {
+                        // [12 Okt] Server kosong = SEMUA file proyek ini memang sudah
+                        // dihapus. Dulu cache lokal dipertahankan (file "muncul lagi").
+                        // Sekarang: dorong dulu file yang menunggu (dirty), lalu kosongkan
+                        // cache lokal supaya tampilan sama dengan kenyataan.
                         const localRaw = localStorage.getItem(wsFilesKey());
                         if (localRaw && localRaw !== JSON.stringify({ 'root': [] })) {
-                            fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { method: 'DELETE', headers: wsAuthHeaders() }).catch(function() {});
-                            const __dirty = Object.keys(wsDirtyPaths);
+                            const __dirty = Object.keys(wsDirtyPaths).filter(function (p) { return !wsKnownDeleted[p]; });
                             const __f = __dirty.length ? wsFlatten(wsLoad()).filter(function (x) { return x && x.path && __dirty.indexOf(String(x.path)) !== -1; }) : [];
                             if (__f.length) {
                                 fetch(WS_CLOUD_API, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()),
-                                    body: JSON.stringify({ project_id: pid, files: __f }) }).catch(function() {});
+                                    body: JSON.stringify({ project_id: pid, files: __f, restore_paths: __f.filter(function (x) { return x && x.path && wsRestorePaths[String(x.path)]; }).map(function (x) { return String(x.path); }) }) }).catch(function() {});
+                            } else {
+                                try { localStorage.setItem(wsFilesKey(), JSON.stringify({ 'root': [] })); } catch (e) {}
                             }
                         }
                     }
@@ -4482,6 +4531,9 @@
             const path = args && args.path;
             const content = args && typeof args.content === 'string' ? args.content : '';
             if (!path) return { success: false, error: 'Parameter path wajib.' };
+            // [12 Okt] tulis file yang sebelumnya dihapus = sengaja membuat ulang:
+            // tandai restore supaya server membersihkan tombstone-nya, bukan menyapu file barunya.
+            try { if (wsKnownDeleted[wsNormalize(path)]) wsRestorePaths[wsNormalize(path)] = true; } catch (e) {}
             const info = wsParentInfo(path);
             if (!info) return { success: false, error: 'Path file tidak valid: ' + path };
             if (info.name.includes('/')) return { success: false, error: 'Nama file tidak boleh mengandung "/".' };
@@ -4717,6 +4769,8 @@
             items.splice(found.index, 1);
             const err = wsSave(data);
             if (err) return err;
+            // [12 Okt] catat sebagai known-deleted supaya pull/merge berikutnya gak menghidupkan lagi
+            try { wsKnownDeleted[wsNormalize(item.path)] = true; delete wsRestorePaths[wsNormalize(item.path)]; } catch (e) {}
             // [10 Okt] hapus LANGSUNG di server — jangan bergantung pada push penuh
             // yang bisa gagal senyap (dulu: file "muncul lagi" setelah reload).
             try {
@@ -5664,6 +5718,8 @@
                 const path = f && f.path;
                 const content = f && typeof f.content === 'string' ? f.content : '';
                 if (!path) { results.push({ path: null, ok: false, error: 'path kosong' }); continue; }
+                // [12 Okt] tulis ulang path yang dulu dihapus = sengaja membuat ulang -> restore
+                try { if (wsKnownDeleted[wsNormalize(path)]) wsRestorePaths[wsNormalize(path)] = true; } catch (e) {}
                 const info = wsParentInfo(path);
                 if (!info || info.name.includes('/')) { results.push({ path: path, ok: false, error: 'path tidak valid' }); continue; }
                 wsEnsureFolderChain(data, info.folderKey);
