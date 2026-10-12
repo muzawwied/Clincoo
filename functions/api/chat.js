@@ -2209,6 +2209,14 @@ export async function onRequestPost({ request, env, waitUntil }) {
     if (!messages.some(m => m && m.role === 'system')) {
       messages = [{ role: 'system', content: SINGLE_SYSTEM_PROMPT }, ...messages];
     }
+    // [12 Okt, arahan pemilik] MODE CHAT: AI dilarang menulis kode di chat —
+    // permintaan kode/aplikasinya diarahkan ke mode Build (kapsul Build).
+    if (String(body.mode || '').trim() === 'chat') {
+      const CHAT_NO_CODE_RULE = ' ATURAN MODE CHAT (WAJIB, arahan pemilik): di mode Chat kamu DILARANG menulis kode apa pun — jangan tulis potongan kode, blok kode, perintah/sintaks program, atau isi file mentah sebagai jawaban. Pertanyaan teknis dijawab dengan penjelasan konsep singkat TANPA contoh kode. Jika user minta dibuatkan/diubah kode/situs/aplikasi, jawab singkat lalu arahkan dia pindah ke mode Build (kapsul Build) — jangan kerjakan di sini.';
+      const si = messages.findIndex(m => m && m.role === 'system');
+      if (si !== -1) messages[si] = { role: 'system', content: String(messages[si].content || '') + CHAT_NO_CODE_RULE };
+      else messages = [{ role: 'system', content: CHAT_NO_CODE_RULE.trim() }, ...messages];
+    }
     // Mode fallback (body.message tanpa array messages): pesan user WAJIB ikut
     // masuk. Bug lama: pesan user dibuang (request hanya berisi system prompt,
     // model menjawab ngawur karena tidak tahu pertanyaannya).
@@ -2472,8 +2480,21 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // Delta ModelRouter ditampung dulu agar bila provider gagal setelah mengirim
       // sebagian teks, fallback Gemini tidak menempelkan jawaban kedua ke teks parsial.
       if (buildMode && (!r || r.error)) {
-        // [11 Okt] AI 2 / Build: Claude/GPT OpenRouter → Clouvia Sonnet → ModelRouter → Gemini
-        if (orKeysEarly.length) {
+        // [12 Okt, arahan pemilik] MODE BUILD -> Clouvia sonnet-agentic UTAMA
+        // (terverifikasi 12 Okt: patuh system prompt + tool_calls jalan normal).
+        // Cadangan di bawah: OpenRouter -> ModelRouter -> Gemini.
+        if (cvKeysEarly.length) {
+          const cvBuild = await withTimeout(
+            tryClouviaText(
+              cvKeysEarly, workMessages, toolDecls, CLOUVIA_SOL_MODELS,
+              streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null
+            ),
+            120000,
+            'Clouvia-Build-Sonnet'
+          ).catch(e => ({ error: e.message }));
+          if (cvBuild && !cvBuild.error && (cvBuild.text || cvBuild.tool_calls)) r = cvBuild;
+        }
+        if ((!r || r.error) && orKeysEarly.length) {
           const orBuild = await withTimeout(
             tryOpenRouterText(
               orKeysEarly, workMessages, toolDecls, BUILD_OR_MODELS,
@@ -2483,17 +2504,6 @@ export async function onRequestPost({ request, env, waitUntil }) {
             'OpenRouter-Build-Claude-GPT'
           ).catch(e => ({ error: e.message }));
           if (orBuild && !orBuild.error && (orBuild.text || orBuild.tool_calls)) r = orBuild;
-        }
-        if ((!r || r.error) && cvKeysEarly.length) {
-          const cvBuild = await withTimeout(
-            tryClouviaText(
-              cvKeysEarly, workMessages, toolDecls, CLOUVIA_SOL_MODELS,
-              streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null
-            ),
-            60000,
-            'Clouvia-Build-Claude-Sonnet'
-          ).catch(e => ({ error: e.message }));
-          if (cvBuild && !cvBuild.error && (cvBuild.text || cvBuild.tool_calls)) r = cvBuild;
         }
         if ((!r || r.error) && mrKeys.length) {
           let mrDelta = '';
