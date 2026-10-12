@@ -856,6 +856,13 @@ const CLOUVIA_MODELS = ['coding-high-flash', 'free-model']; // glm dihapus (arah
 // sampai ke model, (2) tool-calling berfungsi, (3) gratis. Begitu OpenRouter di-top-up,
 // urutkan Sol Pro asli di depan rute ini (OPENROUTER_MODELS).
 const CLOUVIA_SOL_MODELS = ['claude-sonnet-5-thinking-agentic']; // Model utama Clouvia sesuai arahan pemilik
+
+// [12 Okt 2026, arahan pemilik] MODE BUILD: AI Front & AI Execution DIPISAH jadi
+// 2 rantai tersendiri — keduanya GPT-6 Sol via provider Clouvia (router.clouvia.id).
+// Model 'gpt-6-sol' diverifikasi ada di katalog Clouvia (12 Okt). Cascade lama
+// (OpenRouter/Gemini/ModelRouter) tetap sebagai cadangan di bawahnya.
+const CLOUVIA_FRONT_SOL = ['gpt-6-sol']; // rantai tersendiri AI 1 (Front Agent)
+const CLOUVIA_EXEC_SOL = ['gpt-6-sol'];  // rantai tersendiri AI 2 (Execution Agent)
 // 'free-model' = lapis terakhir Clouvia: tidak menguras saldo berbayar (pakai
 // kuota free_balance), jadi chat tetap hidup walau 50M+ token balance habis.
 
@@ -2054,7 +2061,17 @@ async function frontAgentRun(env, bodyMessages, stateDigest) {
     const frMsgs = [{ role: 'system', content: sys }].concat(recent);
     // Model ringan Front Agent: jalur gratis internal dulu (cepat, terverifikasi
     // hidup 10 Okt), OpenRouter GLM sebagai cadangan bila internal tewas.
-    let r = await withTimeout(tryOrkestraMini(frMsgs), 22000).catch(function () { return null; });
+    // [12 Okt, arahan pemilik] Front Agent UTAMA: GPT-6 Sol via Clouvia —
+    // rantai tersendiri, terpisah dari rantai Execution Agent.
+    let r = null;
+    try {
+      const cvKeysFront = await getClouviaKeys(env);
+      if (cvKeysFront.length) {
+        const fsr = await withTimeout(tryClouviaText(cvKeysFront, frMsgs, null, CLOUVIA_FRONT_SOL, null), 45000, 'ClouviaFrontSol').catch(function () { return null; });
+        if (fsr && !fsr.error && fsr.text) r = fsr;
+      }
+    } catch (e) {}
+    if (!r || r.error || !r.text) r = await withTimeout(tryOrkestraMini(frMsgs), 22000).catch(function () { return null; });
     if (!r || r.error || !r.text) r = await withTimeout(tryOpenRouterText(orKeys, frMsgs, null, null, null), 25000).catch(function () { return null; });
     if (!r || r.error || !r.text) return null;
     let t = String(r.text).trim().replace(/^```(json)?/i, '').replace(/```\s*$/, '').trim();
@@ -2472,8 +2489,16 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // Delta ModelRouter ditampung dulu agar bila provider gagal setelah mengirim
       // sebagian teks, fallback Gemini tidak menempelkan jawaban kedua ke teks parsial.
       if (buildMode && (!r || r.error)) {
-        // [11 Okt] AI 2 / Build: Claude/GPT OpenRouter → Clouvia Sonnet → ModelRouter → Gemini
-        if (orKeysEarly.length) {
+        // [12 Okt, arahan pemilik] MODE BUILD -> GPT-6 Sol via Clouvia UTAMA
+        // (rantai exec tersendiri, terpisah dari rantai Front Agent). Gagal baru
+        // jatuh ke rantai cadangan 11 Okt di bawah (OR -> Clouvia Sonnet -> MR -> Gemini).
+        try {
+          if (cvKeysEarly.length) {
+            const xs = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, CLOUVIA_EXEC_SOL, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 120000, 'ClouviaExecSol').catch(e => ({ error: e.message }));
+            if (xs && !xs.error && (xs.text || xs.tool_calls)) r = xs;
+          }
+        } catch (e) {}
+        if ((!r || r.error) && orKeysEarly.length) {
           const orBuild = await withTimeout(
             tryOpenRouterText(
               orKeysEarly, workMessages, toolDecls, BUILD_OR_MODELS,
