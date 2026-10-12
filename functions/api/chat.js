@@ -855,7 +855,7 @@ const CLOUVIA_MODELS = ['coding-high-flash', 'free-model']; // glm dihapus (arah
 // role system (glm5.3-flash tidak — gateway membuangnya) sehingga system prompt utuh
 // sampai ke model, (2) tool-calling berfungsi, (3) gratis. Begitu OpenRouter di-top-up,
 // urutkan Sol Pro asli di depan rute ini (OPENROUTER_MODELS).
-const CLOUVIA_SOL_MODELS = ['claude-sonnet-5-thinking-agentic']; // Build: Clouvia sonnet-agentic
+const CLOUVIA_BUILD_MODELS = ['gpt-6-astra']; // [12 Okt, arahan pemilik] Build: gpt-6-astra Clouvia (terverifikasi: patuh system prompt + tool_calls)
 const CLOUVIA_CHAT_MODELS = ['deepseek-v4.1-flash']; // Chat: DeepSeek flash (cepat)
 // 'free-model' = lapis terakhir Clouvia: tidak menguras saldo berbayar (pakai
 // kuota free_balance), jadi chat tetap hidup walau 50M+ token balance habis.
@@ -2487,11 +2487,11 @@ export async function onRequestPost({ request, env, waitUntil }) {
         if (cvKeysEarly.length) {
           const cvBuild = await withTimeout(
             tryClouviaText(
-              cvKeysEarly, workMessages, toolDecls, CLOUVIA_SOL_MODELS,
+              cvKeysEarly, workMessages, toolDecls, CLOUVIA_BUILD_MODELS,
               streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null
             ),
             120000,
-            'Clouvia-Build-Sonnet'
+            'Clouvia-Build-Astra'
           ).catch(e => ({ error: e.message }));
           if (cvBuild && !cvBuild.error && (cvBuild.text || cvBuild.tool_calls)) r = cvBuild;
         }
