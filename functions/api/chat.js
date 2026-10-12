@@ -2791,9 +2791,17 @@ export async function onRequestPost({ request, env, waitUntil }) {
                 if (lastUser) lastTxt = typeof lastUser.content === 'string' ? lastUser.content : (Array.isArray(lastUser.content) ? lastUser.content.filter(function (b) { return b && b.type === 'text'; }).map(function (b) { return b.text || ''; }).join(' ') : '');
                 if (/clincoo|fitur|harga|paket|langganan|deploy|domain|template|mcp|kredit|cara\s+(pakai|menggunakan)/i.test(lastTxt)) {
                   const kb = await withTimeout(searchClincooBlog(env, lastTxt.slice(0, 200)), 6000, 'KB-SmartReply').catch(function () { return null; });
-                  const kbStr = kb ? JSON.stringify(kb).slice(0, 5000) : '';
+                  // Rapi jadi teks manusia — JANGAN suntik JSON mentah ke prompt
+                  // (laporan owner 12 Okt: jawaban AI jadi norak/seperti error).
+                  let kbStr = '';
+                  if (kb && kb.found && Array.isArray(kb.results)) {
+                    kbStr = kb.results.map(function (x) {
+                      return '- ' + String(x.judul || '') + (x.ringkasan ? ' — ' + x.ringkasan : '') +
+                        (x.kutipan_relevan ? '\n' + String(x.kutipan_relevan).slice(0, 900) : '');
+                    }).join('\n\n').slice(0, 4500);
+                  }
                   if (kbStr && kbStr.length > 40) {
-                    const kbNote = '\n\n[DOKUMENTASI RESMI CLINCOO (hasil pencarian server, gunakan sebagai sumber fakta; jangan mengarang di luar ini; jangan bilang tidak tahu apa itu Clincoo — Clincoo adalah platform/ruang kerja web untuk membuat, menyunting, dan menerbitkan website dengan AI)]:\n' + kbStr;
+                    const kbNote = '\n\n[DOKUMENTASI RESMI CLINCOO (hasil pencarian server — pakai sebagai fakta; Clincoo adalah platform/ruang kerja web untuk membuat, menyunting, dan menerbitkan website dengan AI). Jawab dengan bahasa manusia yang rapi; DILARANG menampilkan JSON, teks dokumen mentah, atau format teknis apa pun ke user]:\n' + kbStr;
                     const ki = srMsgs.findIndex(function (m) { return m && m.role === 'system'; });
                     if (ki !== -1) srMsgs[ki] = { role: 'system', content: String(srMsgs[ki].content || '') + kbNote };
                     else srMsgs.unshift({ role: 'system', content: kbNote.trim() });
