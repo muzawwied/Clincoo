@@ -855,7 +855,7 @@ const CLOUVIA_MODELS = ['coding-high-flash', 'free-model']; // glm dihapus (arah
 // role system (glm5.3-flash tidak — gateway membuangnya) sehingga system prompt utuh
 // sampai ke model, (2) tool-calling berfungsi, (3) gratis. Begitu OpenRouter di-top-up,
 // urutkan Sol Pro asli di depan rute ini (OPENROUTER_MODELS).
-const CLOUVIA_BUILD_MODELS = ['gpt-6-astra']; // [12 Okt, arahan pemilik] Build: gpt-6-astra Clouvia (terverifikasi: patuh system prompt + tool_calls)
+const CLOUVIA_BUILD_MODELS = ['deepseek-v4-flash']; // [12 Okt, arahan pemilik] Build: ganti gpt-6-astra -> deepseek-v4-flash Clouvia
 const CLOUVIA_CHAT_MODELS = ['deepseek-v4.1-flash']; // Chat: DeepSeek flash (cepat)
 // 'free-model' = lapis terakhir Clouvia: tidak menguras saldo berbayar (pakai
 // kuota free_balance), jadi chat tetap hidup walau 50M+ token balance habis.
