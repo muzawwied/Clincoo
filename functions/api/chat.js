@@ -2160,7 +2160,9 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // Jalur Gemini: HANYA functionDeclarations (tanpa google_search — kombinasi
     // keduanya ditolak Gemini API dan memicu bug JSON palsu).
     const decls = workspaceDecls(body);
-    const wantTools = body.workspace_tools === true && String(body.mode || '').trim() !== 'chat'; // CHAT_BUILD_MODE_FIX
+    const requestMode = String(body.mode || '').trim().toLowerCase();
+    // Build adalah sumber kebenaran: tools wajib aktif meski klien lama tidak mengirim workspace_tools.
+    const wantTools = requestMode === 'build' || (body.workspace_tools === true && requestMode !== 'chat');
     const gTools = wantTools
       ? [{ functionDeclarations: decls }]
       : null;
@@ -2198,7 +2200,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // 'chat'  = obrolan via Gemini AI Studio (kandidat utama race) + batas harian/bulanan,
     //           TANPA auto-eskalasi ke model berbayar walau prompt terdengar "bangun situs";
     // 'build' = ModelRouter berbayar, kredit dipotong sesuai pemakaian (usage-based).
-    const buildMode = ENABLE_BUILD_ROUTE && (body.mode === 'build' || (!explicitChat && detectBuildIntent(body.messages))) && !isGuest && !!mrKeys.length && !hasImages;
+    const buildMode = ENABLE_BUILD_ROUTE && (body.mode === 'build' || (!explicitChat && detectBuildIntent(body.messages))) && !isGuest && !hasImages;
     const aiMain = !!(env.AI && !hasImages);
     const toolDecls = (gTools && gTools[0] && gTools[0].functionDeclarations) || null;
     // Cascade lengkap (OpenRouter -> Clouvia -> Workers AI -> Gemini) dijalankan
