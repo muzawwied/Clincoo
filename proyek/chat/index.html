@@ -7371,16 +7371,18 @@
                     // POLLING: blok [[POLL]]...[[/POLL]] dari jawaban final diubah jadi
                     // kartu pertanyaan interaktif; teks yang tampil bersih tanpa marker.
                     let finalText = (resultJson && resultJson.text ? resultJson.text : "");
-                    // [10 Okt, laporan owner] MODE CHAT tidak punya tool tulis-file: jawaban yang
-                    // malah berisi blok kode HTML/CSS/JS besar (draf file di bubble) diganti arahan
-                    // singkat ke mode Build/Workspace. Jaring pengaman di atas guard prompt server.
+                    // MODE CHAT tidak memiliki tool tulis-file. Jika model mengeluarkan
+                    // klaim "write_file tidak tersedia"/checkpoint hilang, jangan tampilkan
+                    // penjelasan panjang yang membingungkan; arahkan ke Build. Blok kode besar
+                    // juga dialihkan agar draf file tidak disangka sudah tersimpan.
                     try {
                         const __m = (typeof window.selectedAiMode === 'function' && window.selectedAiMode()) || 'chat';
                         if (__m === 'chat') {
                             const __fences = finalText.match(/```[a-z]*\n[\s\S]*?```/gi) || [];
                             const __bigCode = __fences.some(function (b) { return b.length > 900 && /<!DOCTYPE|<html|<head|<body|<script|<style|\{[\s\S]*:[\s\S]*;[\s\S]*\}/i.test(b); });
-                            if (__bigCode) {
-                                finalText = 'Membuat atau melanjutkan situs paling pas dikerjakan di mode Build (Workspace), supaya file benar-benar tersimpan dan bisa langsung dipreview. Ganti pilihan "Chat" di kolom ketik jadi "Build", lalu kirim ulang permintaanmu.';
+                            const __falseToolDeadEnd = /(?:tidak punya|tidak tersedia|tidak ada)\s+(?:tool|alat)[\s\S]{0,180}(?:write_file|append_file|alat tulis)|(?:write_file|append_file)[\s\S]{0,180}(?:tidak punya|tidak tersedia|tidak ada)|checkpoint[\s\S]{0,100}(?:tersisa|dilanjutkan)/i.test(finalText);
+                            if (__bigCode || __falseToolDeadEnd) {
+                                finalText = 'Permintaan membuat atau mengubah file perlu dijalankan di mode Build (Workspace) agar tool tulis-file aktif dan hasilnya benar-benar tersimpan. Ganti pilihan "Chat" di kolom ketik menjadi "Build", lalu kirim ulang permintaanmu. Pesan ini belum berarti file sudah dibuat atau diubah.';
                             }
                         }
                     } catch (e) {}
