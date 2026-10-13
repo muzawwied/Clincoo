@@ -42,8 +42,8 @@ const GEMINI_MODELS = ['gemini-3.6-flash', 'gemini-3-flash-preview'];
 // nemotron-3-ultra (diuji OK 2026-10-07) + deepseek-v4.1-flash:free sebagai cadangan gratis.
 // Urutan default: nemotron (reasoning, untuk planning) -> deepseek free.
 // Urutan FAST: deepseek free duluan (tanpa reasoning ~2x lebih cepat) -> nemotron cadangan.
-const MODELROUTER_MODELS = ['claude-sonnet-5.5']; // fokus HANYA sonnet 5.5
-const MODELROUTER_FAST = ['claude-sonnet-5.5']; // fokus HANYA sonnet 5.5
+const MODELROUTER_MODELS = ['deepseek-v4.1-flash:free']; // fokus HANYA sonnet 5.5
+const MODELROUTER_FAST = ['deepseek-v4.1-flash:free']; // fokus HANYA sonnet 5.5
 async function tryModelRouter(key, messages, models) {
   if (!key) return { error: 'Kunci ModelRouter tidak tersedia' };
   const list = Array.isArray(models) && models.length ? models : MODELROUTER_MODELS;
