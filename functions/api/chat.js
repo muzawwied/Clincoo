@@ -119,7 +119,7 @@ async function getOpenRouterKeys(env) {
 // [9 Okt, arahan pemilik] Nemotron DILARANG (kualitas buruk) — hanya GLM + cadangan GPT.
 const OPENROUTER_MODELS = ['openai/gpt-6-luna-pro']; // [10 Okt] haiku & glm DILARANG pemilik
 // [11 Okt] Mode Build: Claude Sonnet + GPT langsung via OpenRouter
-const BUILD_OR_MODELS = ['anthropic/claude-sonnet-5.5', 'openai/gpt-6-luna-pro'];
+const BUILD_OR_MODELS = ['deepseek/deepseek-v4.1-flash', 'openai/gpt-6-luna-pro'];
 // Rantai khusus TAMU (anonim, gratis): TANPA Sol Pro — model premium hanya
 // untuk user login; tamu tidak boleh membakar biaya provider premium.
 const GUEST_OR_MODELS = ['openai/gpt-6-luna-pro']; // glm dihapus (arahan 10 Okt: konsistensi sonnet)
@@ -532,7 +532,7 @@ async function tryEmergentText(keys, messages, onDelta) {
 // [10 Okt, arahan pemilik] haiku-5.5 kredit MR habis — model AI 2 (Execution
 // Agent) SEmentara pakai glm-5.3-flash (utama) + nemotron cadangan. Balikin
 // 'claude-haiku-5.5' ke depan list begitu kredit terisi lagi.
-const MODELROUTER_MODELS = ['claude-sonnet-5.5']; // [10 Okt, arahan pemilik] SONNET 5.5 SATU-SATUNYA model AI 2 (Execution Agent). glm DIHAPUS total (arahan 10 Okt: sonnet hasilnya bagus, glm malah ngerusak jadi gak konsisten).ku DILARANG (kualitas buruk, perbandingan owner: sonnet jauh lebih bagus walau ~15x harga). glm-5.3-flash cadangan saat saldo MR kurang/bermasalah. nemotron DILARANG (arahan 9 Okt).
+const MODELROUTER_MODELS = ['deepseek-v4.1-flash:free']; // [10 Okt, arahan pemilik] SONNET 5.5 SATU-SATUNYA model AI 2 (Execution Agent). glm DIHAPUS total (arahan 10 Okt: sonnet hasilnya bagus, glm malah ngerusak jadi gak konsisten).ku DILARANG (kualitas buruk, perbandingan owner: sonnet jauh lebih bagus walau ~15x harga). glm-5.3-flash cadangan saat saldo MR kurang/bermasalah. nemotron DILARANG (arahan 9 Okt).
 // [7 Okt] Gateway ModelRouter memotong koneksi pada ~10 detik wall-time per
 // request (diverifikasi: 384 tok = 9.4s OK, 512+ tok / non-stream generasi
 // panjang = HTTP 000). Solusi: potong generasi jadi chunk kecil (256 tok,
@@ -545,7 +545,7 @@ const MODELROUTER_MODELS = ['claude-sonnet-5.5']; // [10 Okt, arahan pemilik] SO
 // gateway MR ~10s wall-time.
 // [9 Okt] haiku-5.5: 512 tok = ~5.2s pada ~99 tok/s (aman di bawah potongan ~10s).
 // CHAT_BUILD_MODE_FIX: build lebih pintar/panjang (1024 tok, disambung auto-continue)
-const MR_MAX_TOKENS = { 'claude-sonnet-5.5': 512 }; // sonnet: chunk 512 (aman < potongan gateway ~10s), disambung AUTO-CONTINUE utk output panjang
+const MR_MAX_TOKENS = { 'deepseek-v4.1-flash:free': 2048, 'claude-sonnet-5.5': 512 }; // sonnet: chunk 512 (aman < potongan gateway ~10s), disambung AUTO-CONTINUE utk output panjang
 const MR_ENDPOINT = 'https://modelrouter.id/v1/chat/completions';
 // [7 Okt, arahan pemilik: "jadikan model Orkestra di mode build"] Semua respons
 // ModelRouter (haiku-5.5 -> glm-5.3-flash; nemotron dihapus 9 Okt, arahan pemilik)
@@ -1208,11 +1208,11 @@ function aiCostOf(model, outputChars, inputChars) {
 // haiku 1 kredit / 30.000 token, glm 1,5 kredit / 30.000 token (persis harga
 // provider). null bila MR tak terpakai -> fallback estimasi karakter.
 function mrTokenCost(acc) {
-  // [10 Okt] SONNET 5.5 ~15x harga haiku (owner: $0.03 vs $0.002 per 1K) ->
-  // 15 kredit / 30.000 token. glm dihapus total (arahan 10 Okt).
   const sn = (acc && acc['claude-sonnet-5.5']) || 0;
-  if (sn <= 0) return null;
-  return Math.max(0.01, Math.round((sn * 15) / 30000 * 100) / 100);
+  if (sn > 0) return Math.max(0.01, Math.round((sn * 15) / 30000 * 100) / 100);
+  const ds = (acc && acc['deepseek-v4.1-flash:free']) || 0;
+  if (ds > 0) return 0;
+  return null;
 }
 async function chargeAiUsage(env, user, model, outputChars, inputChars, charge = true, costOverride = null) {
   if (!user || !user.key) return;
@@ -2507,7 +2507,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
               mrUsageAcc
             ),
             120000,
-            'ModelRouter-Build-Sonnet'
+            'ModelRouter-Build-DeepSeek'
           ).catch(e => ({ error: e.message }));
           if (mr && !mr.error && (mr.text || mr.tool_calls)) {
             r = mr;
