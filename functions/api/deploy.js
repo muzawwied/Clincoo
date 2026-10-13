@@ -994,7 +994,7 @@ export async function onRequestPost({ request, env }) {
       }
     }
 
-    // ==== Deploy orkestrasi browser (proyek berisi banyak file besar) ====
+    // ==== Deploy terkoordinasi browser (proyek berisi banyak file besar) ====
     // Worker paket gratis dibatasi ~10ms CPU per request — hash & upload file
     // besar tidak muat dalam satu request (error 1102). Alur barunya:
     // 'prepare' -> token + daftar file + patch konten (ringan), browser

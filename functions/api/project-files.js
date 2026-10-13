@@ -192,7 +192,7 @@ export async function onRequestGet({ request, env }) {
       return json({ path: row.path, content: row.content || '', size: row.size || 0, is_big: 0, updated_at: row.updated_at });
     }
 
-    // Mode: potongan CHUNK file besar (deploy orkestrasi browser — Worker paket
+    // Mode: potongan CHUNK file besar (deploy terkoordinasi browser — Worker paket
     // gratis hanya punya ~10ms CPU per request, jadi konten file besar dikirim ke
     // browser per-potongan kecil untuk di-hash & di-upload dari klien).
     if (onePath && url.searchParams.get('chunks') === '1') {
@@ -210,7 +210,7 @@ export async function onRequestGet({ request, env }) {
       return json({ path: onePath, from, count: chunks.length, total_chunks: total, chunks });
     }
 
-    // Mode: halaman konten file KECIL untuk deploy orkestrasi browser —
+    // Mode: halaman konten file KECIL untuk deploy terkoordinasi browser —
     // dihalaman ~2.5MB supaya JSON respons tetap di bawah limit CPU Worker.
     if (url.searchParams.get('deploy_content') === '1') {
       const offset = Math.max(0, parseInt(url.searchParams.get('offset') || '0', 10) || 0);

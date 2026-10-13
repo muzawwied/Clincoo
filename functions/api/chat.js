@@ -515,7 +515,7 @@ async function tryEmergentText(keys, messages, onDelta) {
       const text = raw.replace(/<function_calls>[\s\S]*?<\/function_calls>/g, '').trim();
       if (text) {
         if (onDelta) onDelta(text);
-        return { text, model: 'orkestra-1-flash' };
+        return { text, model: 'clincoo-ai-flash' };
       }
     } catch (e) {}
   }
@@ -547,11 +547,9 @@ const MODELROUTER_MODELS = ['deepseek-v4.1-flash:free']; // [10 Okt, arahan pemi
 // CHAT_BUILD_MODE_FIX: build lebih pintar/panjang (1024 tok, disambung auto-continue)
 const MR_MAX_TOKENS = { 'deepseek-v4.1-flash:free': 2048, 'claude-sonnet-5.5': 512 }; // sonnet: chunk 512 (aman < potongan gateway ~10s), disambung AUTO-CONTINUE utk output panjang
 const MR_ENDPOINT = 'https://modelrouter.id/v1/chat/completions';
-// [7 Okt, arahan pemilik: "jadikan model Orkestra di mode build"] Semua respons
-// ModelRouter (haiku-5.5 -> glm-5.3-flash; nemotron dihapus 9 Okt, arahan pemilik)
-// tampil dengan SATU brand: 'orkestra-1-pro'. Backend tidak diungkap ke user
-// (konsisten aturan CLINCOO_SOUL). Kunci harga: 'orkestra-1-pro' di MODEL_PRICES.
-const mrLabel = () => 'orkestra-1-pro';
+// [7 Okt, arahan pemilik] Semua respons ModelRouter
+// tampil dengan SATU brand tanpa mengungkap backend (konsisten CLINCOO_SOUL).
+const mrLabel = () => 'clincoo-ai-pro';
 // [7 Okt 2026, arahan pemilik: "AI build bantu di mode chat, di belakang layar"]
 // Deteksi niat BUILD dari isi pesan user terakhir (mode Chat): kalau minta
 // bikin/ubah situs/kode atau deploy, hop ini otomatis naik ke ModelRouter
@@ -1943,23 +1941,23 @@ function serverProgressText(tc) {
 // membawa balapan 7 model + standar kualitas + verifikasi perintah install ke
 // registry resmi. Protokol chat polos: TANPA tools dan TANPA vision; bila gagal,
 // kandidat lain mengambil alih — jalur tools/tugas web tidak tersentuh.
-const ORKESTRA_MINI_URL = 'https://clincoo-labs-pro.clincoo-agent.workers.dev/api/v1/chat';
-function orkestraSanitize(messages) {
+const LABS_MINI_URL = 'https://clincoo-labs-pro.clincoo-agent.workers.dev/api/v1/chat';
+function labsSanitize(messages) {
   return (Array.isArray(messages) ? messages : [])
     .filter(m => m && typeof m.content === 'string' && m.content.trim() && (m.role === 'user' || m.role === 'assistant' || m.role === 'system'))
     .slice(-24)
     .map(m => ({ role: m.role, content: String(m.content).slice(0, 16000) }));
 }
-async function tryOrkestraMini(messages) {
-  const res = await fetch(ORKESTRA_MINI_URL, {
+async function tryLabsMini(messages) {
+  const res = await fetch(LABS_MINI_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: orkestraSanitize(messages) })
+    body: JSON.stringify({ messages: labsSanitize(messages) })
   });
-  if (!res.ok) return { error: 'orkestra HTTP ' + res.status };
+  if (!res.ok) return { error: 'labs HTTP ' + res.status };
   const d = await res.json().catch(() => null);
   const text = d && typeof d.text === 'string' ? d.text.trim() : '';
-  if (!text) return { error: 'orkestra kosong' };
+  if (!text) return { error: 'labs kosong' };
   return { text, model: d.model || 'clincoo-ai' };
 }
 
@@ -2066,7 +2064,7 @@ async function frontAgentRun(env, bodyMessages, stateDigest) {
     const frMsgs = [{ role: 'system', content: sys }].concat(recent);
     // Model ringan Front Agent: jalur gratis internal dulu (cepat, terverifikasi
     // hidup 10 Okt), OpenRouter GLM sebagai cadangan bila internal tewas.
-    let r = await withTimeout(tryOrkestraMini(frMsgs), 22000).catch(function () { return null; });
+    let r = await withTimeout(tryLabsMini(frMsgs), 22000).catch(function () { return null; });
     if (!r || r.error || !r.text) r = await withTimeout(tryOpenRouterText(orKeys, frMsgs, null, null, null), 25000).catch(function () { return null; });
     if (!r || r.error || !r.text) return null;
     let t = String(r.text).trim().replace(/^```(json)?/i, '').replace(/```\s*$/, '').trim();
@@ -2604,7 +2602,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
         }
         // [9 Okt 2026, arahan pemilik: "kalo chat make gemini yang dari AI Studio"]
         // MODE CHAT: kandidat balapan CUMA Gemini AI Studio (kunci aktif ada).
-        // Kandidat lain (Emergent/OpenRouter/WorkersAI/Orkestra) hanya ikut race
+        // Kandidat lain (Emergent/OpenRouter/WorkersAI/Labs) hanya ikut race
         // di mode build / tanpa mode — chat mode jatuh ke mereka HANYA lewat
         // cascade penyelamat bila semua kunci Gemini gagal (jawaban tetap hidup).
         if (!explicitChat && emKeys.length && !hasImages) {
@@ -2631,7 +2629,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
         // KANDIDAT OK: worker labs-pro — balapan 7 model + standar
         // kualitas + verifikasi install). Hanya chat murni tanpa tools/vision.
         if (!explicitChat && !toolDecls && !hasImages) {
-          cands.push(cand('OK', withTimeout(tryOrkestraMini(workMessages), 22000, 'OrkestraMini-race')));
+          cands.push(cand('OK', withTimeout(tryLabsMini(workMessages), 22000, 'LabsMini-race')));
         }
         const o = await new Promise((resolve) => {
           let settled = false;

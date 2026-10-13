@@ -38,7 +38,7 @@ const MAX_BUDGET_MS = 90_000;
 const WORKERS_AI_MODELS = ['@cf/deepseek-ai/deepseek-v4-flash-0731']; // glm dihapus (arahan pemilik 10 Okt)
 const GEMINI_MODELS = ['gemini-3.6-flash', 'gemini-3-flash-preview'];
 
-// ===== Provider 0: ModelRouter (modelrouter.id) — orkestrator utama =====
+// ===== Provider 0: ModelRouter (modelrouter.id) — router utama =====
 // nemotron-3-ultra (diuji OK 2026-10-07) + deepseek-v4.1-flash:free sebagai cadangan gratis.
 // Urutan default: nemotron (reasoning, untuk planning) -> deepseek free.
 // Urutan FAST: deepseek free duluan (tanpa reasoning ~2x lebih cepat) -> nemotron cadangan.

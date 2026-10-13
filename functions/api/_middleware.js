@@ -221,7 +221,7 @@ export async function onRequest({ request, env, next }) {
     // koneksi" padahal penyebabnya payload kelewat besar, bukan koneksi.
     let bigUpload = false;
     // Pengecualian ketiga: /api/deploy-upload (login) — proxy upload aset Pages
-    // untuk deploy orkestrasi browser; satu file besar (maks 25 MB) dikirim
+    // untuk deploy terkoordinasi browser; satu file besar (maks 25 MB) dikirim
     // sebagai SATU payload JSON base64, jadi butuh cap 50 MB juga.
     const isBigPath = path === '/api/project-files' || path === '/api/deploy-upload' || /^\/api\/chat(\/|$)/.test(path);
     const capFor = (path === '/api/project-files' || path === '/api/deploy-upload') ? 50 * 1024 * 1024 : 15 * 1024 * 1024;

@@ -1,4 +1,4 @@
-// ==== Proxy upload aset Pages untuk deploy orkestrasi browser ====
+// ==== Proxy upload aset Pages untuk deploy terkoordinasi browser ====
 // Worker paket gratis hanya punya ~10ms CPU per request — hash & upload file
 // besar dikerjakan BROWSER (dashboard), bukan Worker. Browser tidak bisa
 // memanggil api.cloudflare.com langsung (tanpa header CORS), jadi request
