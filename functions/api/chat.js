@@ -2057,7 +2057,14 @@ export async function onRequestPost({ request, env, waitUntil }) {
       streamReadable = ts.readable;
       streamWriter = ts.writable.getWriter();
       const enc = new TextEncoder();
-      const rawSend = (obj) => streamWriter.write(enc.encode(JSON.stringify(obj) + '\n')).catch(() => {});
+      let lastSent = Date.now(), hb = null;
+      const stopHb = () => { if (hb) { clearInterval(hb); hb = null; } };
+      const rawSend = (obj) => {
+        lastSent = Date.now();
+        return streamWriter.write(enc.encode(JSON.stringify(obj) + '\n')).catch(() => { stopHb(); });
+      };
+      hb = setInterval(() => { if (Date.now() - lastSent >= 8000) rawSend({ t: 'thinking' }); }, 4000);
+      setTimeout(stopHb, 300000);
       const CJK = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af\uff00-\uffef\u3000-\u303f]/;
       let held = '', inCode = false;
       const flushUnits = (final) => {
@@ -2091,7 +2098,9 @@ export async function onRequestPost({ request, env, waitUntil }) {
           const out = flushUnits(true);
           if (out) rawSend({ t: 'delta', text: out });
         }
-        return rawSend(obj);
+        const sent = rawSend(obj);
+        if (obj && (obj.t === 'final' || obj.t === 'error')) stopHb();
+        return sent;
       };
     }
 
@@ -2141,6 +2150,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
       r = null;
       if (buildMode && (!r || r.error)) {
         if (mrKeys.length) {
+          if (streamSend) streamSend({ t: 'progress', text: 'Menghubungi AI builder…' });
           let mrDelta = '';
           const mr = await withTimeout(
             tryModelRouterText(
@@ -2157,6 +2167,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
           }
         }
         if ((!r || r.error) && orKeysEarly.length) {
+          if (streamSend && mrKeys.length) streamSend({ t: 'progress', text: 'Jalur utama sibuk, beralih ke cadangan…' });
           const orBuild = await withTimeout(
             tryOpenRouterText(
               orKeysEarly, workMessages, toolDecls, BUILD_OR_MODELS,
@@ -2267,6 +2278,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
         if (w) r = w;
       }
       if ((!r || r.error) && cvKeysEarly.length && !hasImages) {
+        if (streamSend) streamSend({ t: 'progress', text: 'Mencoba jalur terakhir…' });
         const c = await withTimeout(
           tryClouviaText(cvKeysEarly, workMessages, toolDecls, buildMode ? CLOUVIA_BUILD_MODELS : undefined, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null),
           buildMode ? 90000 : 40000,
