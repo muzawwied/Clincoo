@@ -2851,14 +2851,32 @@ export async function onRequestPost({ request, env, waitUntil }) {
                 if (si2 !== -1) srMsgs[si2] = { role: 'system', content: String(srMsgs[si2].content || '') + prog };
                 else srMsgs.unshift({ role: 'system', content: prog.trim() });
               }
-              const sr = await withTimeout(
-                tryClouviaText(cvkFront, srMsgs, null, CLOUVIA_CHAT_MODELS, null),
-                40000, 'Clouvia-Build-SmartReply'
-              ).catch(function () { return null; });
-              if (sr && !sr.error && sr.text) {
-                finalText = sr.text;
-                finalModel = sr.model || 'Clincoo AI';
-                try { await chargeAiUsage(env, user, 'clouvia-deepseek-flash', String(sr.text).length, 0, false, null); } catch (e) {}
+              // [13 Okt, arahan pemilik: "masih lama jawabnya"] Clouvia sedang
+              // overload (23-76s/panggilan) — jawaban obrolan Build jadi molor.
+              // ModelRouter deepseek:free (2-4s) dicoba DULU; Clouvia hanya
+              // cadangan bila ModelRouter gagal; jawaban Front tetap jaring terakhir.
+              let sr = null;
+              if (mrKeys && mrKeys.length) {
+                sr = await withTimeout(
+                  tryModelRouterText(mrKeys, srMsgs, null, ['deepseek-v4.1-flash:free'], null, mrUsageAcc),
+                  15000, 'MR-Build-SmartReply'
+                ).catch(function () { return null; });
+                if (sr && !sr.error && sr.text) {
+                  finalText = sr.text;
+                  finalModel = sr.model || 'Clincoo AI';
+                  try { await chargeAiUsage(env, user, 'modelrouter-deepseek-flash', String(sr.text).length, 0, false, null); } catch (e) {}
+                }
+              }
+              if ((!sr || sr.error || !sr.text) && cvkFront.length) {
+                sr = await withTimeout(
+                  tryClouviaText(cvkFront, srMsgs, null, CLOUVIA_CHAT_MODELS, null),
+                  30000, 'Clouvia-Build-SmartReply'
+                ).catch(function () { return null; });
+                if (sr && !sr.error && sr.text) {
+                  finalText = sr.text;
+                  finalModel = sr.model || 'Clincoo AI';
+                  try { await chargeAiUsage(env, user, 'clouvia-deepseek-flash', String(sr.text).length, 0, false, null); } catch (e) {}
+                }
               }
             }
           } catch (e) {}
