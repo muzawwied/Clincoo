@@ -532,7 +532,8 @@ async function tryEmergentText(keys, messages, onDelta) {
 // [10 Okt, arahan pemilik] haiku-5.5 kredit MR habis — model AI 2 (Execution
 // Agent) SEmentara pakai glm-5.3-flash (utama) + nemotron cadangan. Balikin
 // 'claude-haiku-5.5' ke depan list begitu kredit terisi lagi.
-const MODELROUTER_MODELS = ['deepseek-v4.1-flash:free']; // [10 Okt, arahan pemilik] SONNET 5.5 SATU-SATUNYA model AI 2 (Execution Agent). glm DIHAPUS total (arahan 10 Okt: sonnet hasilnya bagus, glm malah ngerusak jadi gak konsisten).ku DILARANG (kualitas buruk, perbandingan owner: sonnet jauh lebih bagus walau ~15x harga). glm-5.3-flash cadangan saat saldo MR kurang/bermasalah. nemotron DILARANG (arahan 9 Okt).
+const MODELROUTER_MODELS = ['claude-sonnet-5.5']; // Model utama Mode Build (Execution Agent).
+const MODELROUTER_CHAT_MODELS = ['deepseek-v4.1-flash:free']; // Model utama Mode Chat via ModelRouter.
 // [7 Okt] Gateway ModelRouter memotong koneksi pada ~10 detik wall-time per
 // request (diverifikasi: 384 tok = 9.4s OK, 512+ tok / non-stream generasi
 // panjang = HTTP 000). Solusi: potong generasi jadi chunk kecil (256 tok,
@@ -2548,10 +2549,24 @@ export async function onRequestPost({ request, env, waitUntil }) {
           } catch (e) {}
         }
       }
+      // MODE CHAT: ModelRouter menjadi provider utama dengan DeepSeek V4.1 Flash Free.
+      // Jika ModelRouter gagal/tidak tersedia, lanjut ke Clouvia dan cascade lama.
+      if (!buildMode && explicitChat && !isGuest && !hasImages && mrKeys.length) {
+        const mrChat = await withTimeout(
+          tryModelRouterText(
+            mrKeys, workMessages, toolDecls, MODELROUTER_CHAT_MODELS,
+            streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null,
+            mrUsageAcc
+          ),
+          90000,
+          'ModelRouter-Chat-DeepSeek-Free'
+        ).catch(e => ({ error: e.message }));
+        if (mrChat && !mrChat.error && (mrChat.text || (mrChat.tool_calls && mrChat.tool_calls.length))) r = mrChat;
+      }
       const USE_CLOUVIA_FIRST = true;
-      if (USE_CLOUVIA_FIRST && !buildMode && !isGuest && !hasImages && cvKeysEarly.length) {
+      if ((!r || r.error) && USE_CLOUVIA_FIRST && !buildMode && !isGuest && !hasImages && cvKeysEarly.length) {
         const sp = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, CLOUVIA_CHAT_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 40000, 'ClouviaChatFlash').catch(e => ({ error: e.message }));
-        if (sp) r = sp;
+        if (sp && !sp.error) r = sp;
       }
       // [7 Okt 2026, arahan pemilik] GEMINI UTAMA (kunci aktif terverifikasi 200);
       // OpenRouter diturunkan jadi kandidat lemah (masih guna, 4/6 kunci hidup —
