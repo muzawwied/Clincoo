@@ -609,6 +609,17 @@ function processPromptSubmission() {
     
     try {
         saveProjects(projects);
+        // [13 Okt, laporan owner] daftarkan proyek ke server SEKARANG dengan keepalive
+        // (navigasi halaman membatalkan push debounce 700ms -> proyek tak terdaftar,
+        // tidak muncul di daftar proyek/chat).
+        try {
+            fetch(PROJECTS_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                keepalive: true,
+                body: JSON.stringify({ action: 'replace_all', projects: projects })
+            }).catch(function () {});
+        } catch (e0) {}
         localStorage.setItem('clincoo_current_chat_msg', prompt);
         localStorage.setItem('clincoo_current_project_id', projectId);
         const filePreviewContainer = document.getElementById('file-preview-container');

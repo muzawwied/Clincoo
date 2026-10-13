@@ -1623,6 +1623,19 @@
             projects.unshift(newProject);
             try {
                 localStorage.setItem('clincoo_projects', JSON.stringify(projects));
+                // [13 Okt, laporan owner: "pesan dari homepage ga masuk ke bagian chat"]
+                // pushProjectsToServer menunda 700 ms; navigasi ke halaman chat MEMBATALKAN
+                // request-nya -> proyek baru tidak terdaftar di server -> tidak muncul di
+                // daftar proyek/chat sama sekali. Kirim SEKARANG dengan keepalive:true
+                // (request tetap hidup melewati navigasi halaman).
+                try {
+                    fetch(PROJECTS_API, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        keepalive: true,
+                        body: JSON.stringify({ action: 'replace_all', projects: projects })
+                    }).catch(function () {});
+                } catch (e0) {}
                 pushProjectsToServer(projects);
                 localStorage.setItem('clincoo_current_chat_msg', prompt);
                 localStorage.setItem('clincoo_current_project_id', projectId);
