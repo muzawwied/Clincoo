@@ -12,7 +12,12 @@ export function json(data, status) {
   return new Response(JSON.stringify(data), { status: status || 200, headers: JSON_HEADERS });
 }
 
+// [13 Okt] Hemat kuota gateway D1: skema cukup dibuat SEKALI per isolate, bukan 5 query
+// (3 CREATE + 2 ALTER yg selalu gagal) di tiap request auth. Sebelumnya ikut
+// menghabiskan kuota Workers harian akun gateway -> login 'Client ID Google tidak tersedia'.
+let __authTablesReady = false;
 export async function initTables(db) {
+  if (__authTablesReady) return;
   await db.prepare(`CREATE TABLE IF NOT EXISTS auth_users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -40,6 +45,7 @@ export async function initTables(db) {
   // Migrasi aman untuk DB yang sudah ada sebelumnya
   try { await db.prepare('ALTER TABLE auth_oauth_accounts ADD COLUMN access_token TEXT').run(); } catch (e) {}
   try { await db.prepare('ALTER TABLE auth_oauth_accounts ADD COLUMN scope TEXT').run(); } catch (e) {}
+  __authTablesReady = true;
 }
 
 function hexToBytes(hex) {
@@ -191,9 +197,18 @@ export async function turnstileOk(db, token, ip) {
   } catch (e) { return false; }
 }
 
+// [13 Okt] Cache 5 menit per isolate (nilai env_vars hampir tak pernah berubah) +
+// JANGAN cache hasil kosong/gagal: kalau gateway D1 sempat gangguan, request berikutnya
+// langsung coba lagi. Nilai lama tetap dipakai bila baca gagal (stale-if-error).
+const __envCache = new Map();
 export async function getEnvVarDb(db, key) {
+  const now = Date.now();
+  const c = __envCache.get(key);
+  if (c && now - c.t < 300000) return c.v;
   try {
     const row = await db.prepare('SELECT value FROM env_vars WHERE key = ?').bind(key).first();
-    return row ? row.value : null;
-  } catch (e) { return null; }
+    const v = row ? row.value : null;
+    if (v) __envCache.set(key, { v, t: now });
+    return v;
+  } catch (e) { return c ? c.v : null; }
 }

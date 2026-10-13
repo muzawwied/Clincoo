@@ -32,6 +32,18 @@ export function maybeWrapDB(env) {
     return res;
   }
 
+  // [13 Okt] HEMAT KUOTA GATEWAY: tiap query D1 prod = 1 request Worker di akun gateway
+  // (paket gratis 100 ribu/hari; sempat 280 ribu -> error 1027 -> login "Client ID Google
+  // tidak tersedia"). DDL idempoten (CREATE ... IF NOT EXISTS, dan ALTER ADD COLUMN yang
+  // sudah pernah dicoba) cukup dikirim SEKALI per isolate; sisanya dilewati lokal.
+  const g = globalThis;
+  g.__d1ddlDone = g.__d1ddlDone || new Set();
+  const DDL_IDEMP = /^\s*(create\s+(unique\s+)?(table|index)\s+if\s+not\s+exists|alter\s+table\s+\S+\s+add\s+column)\b/i;
+  const ddlKey = (sql) => String(sql).replace(/\s+/g, ' ').trim();
+  const ddlSkip = (sql) => DDL_IDEMP.test(sql) && g.__d1ddlDone.has(ddlKey(sql));
+  const ddlMark = (sql) => { if (DDL_IDEMP.test(sql)) g.__d1ddlDone.add(ddlKey(sql)); };
+  const OKRES = { results: [], meta: {}, success: true };
+
   function stmt(sql, params) {
     return {
       __sql: sql,
@@ -46,7 +58,16 @@ export function maybeWrapDB(env) {
         return { results: r.results || [], meta: r.meta || {} };
       },
       run: async function () {
-        const r = await call('/query', { sql, params: params || [] });
+        if (ddlSkip(sql)) return OKRES;
+        let r;
+        try {
+          r = await call('/query', { sql, params: params || [] });
+        } catch (e) {
+          // ALTER ADD COLUMN yang gagal ("duplicate column") = kolom sudah ada -> jangan diulang tiap request
+          if (/^\s*alter\s+table/i.test(sql) && /duplicate column/i.test(String(e && e.message))) ddlMark(sql);
+          throw e;
+        }
+        ddlMark(sql);
         return { results: r.results || [], meta: r.meta || {}, success: true };
       },
       raw: async function () {

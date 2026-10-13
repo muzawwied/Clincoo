@@ -157,7 +157,10 @@ export async function onRequest({ request, env, next }) {
       const minute = Math.floor(Date.now() / 60000); // jendela 1 menit
       const window = Math.floor(minute / 5);         // bucket 5 menit
       const key = ip + '|' + window;
-      await env.DB.prepare('CREATE TABLE IF NOT EXISTS rl_auth (k TEXT PRIMARY KEY, c INTEGER DEFAULT 0, exp INTEGER)').run();
+      if (!globalThis.__rlAuthOk) { // [13 Okt] hemat kuota gateway D1: CREATE cukup sekali per isolate
+        await env.DB.prepare('CREATE TABLE IF NOT EXISTS rl_auth (k TEXT PRIMARY KEY, c INTEGER DEFAULT 0, exp INTEGER)').run();
+        globalThis.__rlAuthOk = true;
+      }
       const row = await env.DB.prepare('SELECT c FROM rl_auth WHERE k = ?').bind(key).first();
       const count = (row?.c || 0) + 1;
       if (!row) {
