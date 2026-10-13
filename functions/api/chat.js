@@ -119,7 +119,7 @@ async function getOpenRouterKeys(env) {
 // [9 Okt, arahan pemilik] Nemotron DILARANG (kualitas buruk) — hanya GLM + cadangan GPT.
 const OPENROUTER_MODELS = ['openai/gpt-6-luna-pro']; // [10 Okt] haiku & glm DILARANG pemilik
 // [11 Okt] Mode Build: Claude Sonnet + GPT langsung via OpenRouter
-const BUILD_OR_MODELS = ['deepseek/deepseek-v4.1-flash', 'openai/gpt-6-luna-pro'];
+const BUILD_OR_MODELS = ['openai/gpt-6-luna-pro', 'deepseek/deepseek-v4.1-flash']; // [13 Okt, arahan pemilik] GPT-6 Luna Pro UTAMA mode Build (sementara), deepseek OR cadangan
 // Rantai khusus TAMU (anonim, gratis): TANPA Sol Pro — model premium hanya
 // untuk user login; tamu tidak boleh membakar biaya provider premium.
 const GUEST_OR_MODELS = ['openai/gpt-6-luna-pro']; // glm dihapus (arahan 10 Okt: konsistensi sonnet)
@@ -2493,11 +2493,23 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // Delta ModelRouter ditampung dulu agar bila provider gagal setelah mengirim
       // sebagian teks, fallback Gemini tidak menempelkan jawaban kedua ke teks parsial.
       if (buildMode && (!r || r.error)) {
-        // [13 Okt, arahan pemilik] MODE BUILD -> AI 2 (Execution Agent) UTAMA:
-        // ModelRouter claude-sonnet-5.5. Delta ditampung dulu; kalau ModelRouter
-        // bermasalah (saldo/down/timeout), langsung jatuh ke Clouvia deepseek-v4-pro-v3
-        // lalu OpenRouter lalu Gemini — AI 2 tidak pernah hard-error.
-        if (mrKeys.length) {
+        // [13 Okt, arahan pemilik] MODE BUILD -> AI 2 (Execution Agent) UTAMA
+        // (sementara): OpenRouter GPT-6 Luna Pro. Kalau OpenRouter bermasalah
+        // (kuota/down/timeout), jatuh ke ModelRouter -> Clouvia -> Gemini.
+        // AI 2 tidak pernah hard-error.
+        if (orKeysEarly.length) {
+          const orBuild = await withTimeout(
+            tryOpenRouterText(
+              orKeysEarly, workMessages, toolDecls, BUILD_OR_MODELS,
+              streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null
+            ),
+            120000,
+            'OpenRouter-Build-LunaPro'
+          ).catch(e => ({ error: e.message }));
+          if (orBuild && !orBuild.error && (orBuild.text || orBuild.tool_calls)) r = orBuild;
+        }
+        // [13 Okt] MODE BUILD cadangan #1: ModelRouter (delta ditampung dulu).
+        if ((!r || r.error) && mrKeys.length) {
           let mrDelta = '';
           const mr = await withTimeout(
             tryModelRouterText(
@@ -2513,9 +2525,9 @@ export async function onRequestPost({ request, env, waitUntil }) {
             if (mrDelta && streamSend) streamSend({ t: 'delta', text: mrDelta });
           }
         }
-        // [12 Okt, arahan pemilik] MODE BUILD cadangan #1: Clouvia deepseek-v4-pro-v3
+        // [12 Okt, arahan pemilik] MODE BUILD cadangan #2: Clouvia deepseek-v4-pro-v3
         // (terverifikasi 12 Okt: patuh system prompt + tool_calls jalan normal).
-        // Cadangan di bawah: OpenRouter -> Gemini.
+        // Cadangan terakhir: Gemini.
         if ((!r || r.error) && cvKeysEarly.length) {
           const cvBuild = await withTimeout(
             tryClouviaText(
@@ -2526,17 +2538,6 @@ export async function onRequestPost({ request, env, waitUntil }) {
             'Clouvia-Build-Astra'
           ).catch(e => ({ error: e.message }));
           if (cvBuild && !cvBuild.error && (cvBuild.text || cvBuild.tool_calls)) r = cvBuild;
-        }
-        if ((!r || r.error) && orKeysEarly.length) {
-          const orBuild = await withTimeout(
-            tryOpenRouterText(
-              orKeysEarly, workMessages, toolDecls, BUILD_OR_MODELS,
-              streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null
-            ),
-            90000,
-            'OpenRouter-Build-Claude-GPT'
-          ).catch(e => ({ error: e.message }));
-          if (orBuild && !orBuild.error && (orBuild.text || orBuild.tool_calls)) r = orBuild;
         }
         if (!r || r.error) {
           try {
