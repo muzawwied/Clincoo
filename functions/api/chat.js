@@ -2703,7 +2703,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // sama sekali -> kemungkinan besar janji kosong. Pertanyaan biasa (tanpa intent
       // build) & ringkasan final setelah file ditulis TIDAK dinue -> hemat 3x biaya.
       const flatHist = (() => { try { return JSON.stringify(workMessages); } catch (e) { return ''; } })();
-      const hasWriteCall = flatHist.indexOf('"write_file"') !== -1;
+      const hasWriteCall = flatHist.indexOf('"write_file"') !== -1 || flatHist.indexOf('"write_files"') !== -1 || flatHist.indexOf('"edit_file"') !== -1;
       const identityDone = flatHist.indexOf('"generate_image"') !== -1 || flatHist.indexOf('"set_project_info"') !== -1;
       const lastUser = [...workMessages].reverse().find(m => m && m.role === 'user' && typeof m.content === 'string');
       const buildIntent = /\b(buat|buatkan|bikin|bikinkan|bangun|dibuatkan|dibangun|tolong buat|minta buat|landing ?page|situs|website|web ?page|aplikasi|webnya|situnya|lanjut)\b/i.test(String((lastUser && lastUser.content) || ''));
@@ -2713,13 +2713,19 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // terpotong di sesi panjang (window pesan terbatas), jadi deteksi tetap kena meski
       // buildIntent/identityDone gagal baca histori penuh.
       const promiseLanguage = /tunggu (sebentar|sejenak)|mohon tunggu|harap tunggu|akan (saya )?(buat|membuat|bikin|lanjutkan|menyelesaikan|mulai)|sedang (membuat|menyiapkan|mengerjakan|memproses)|segera (saya )?(buat|lanjutkan)|silakan tunggu/i.test(String(r.text || ''));
+      // [13 Okt, laporan owner screenshot: "berhenti2gini sih aneh"] AI sudah edit_file lalu
+      // menulis "…lalu verifikasi struktur berkas" TANPA tool call -> giliran ditutup, UI
+      // nyangkut "Thinking…". Guard lama mati begitu ada write apa pun. Kasus B: sudah
+      // menulis, tapi kalimat model menjanjikan langkah lanjutan (verifikasi/cek/lanjut)
+      // tanpa tool_calls -> nudge agar benar-benar memanggil tool (list_files/read_file).
+      const followUpPromise = /(lalu|kemudian|setelah itu|selanjutnya|berikutnya|sekarang)\s+(saya\s+)?(verifikasi|memverifikasi|cek|periksa|memeriksa|lanjut|melanjutkan|baca|membaca|uji|menguji)|akan (saya )?(verifikasi|memverifikasi|cek|periksa|memeriksa|uji)|saya (perbaiki|ubah|edit|tulis|buat)\b[^.]{0,80}\b(lalu|kemudian)\b/i.test(String(r.text || ''));
       const isPlanGap = toolDecls && !hasImages && noToolsAtAll && String(r.text || '').trim()
-        && !hasWriteCall && (buildIntent || identityDone || promiseLanguage)
+        && ((!hasWriteCall && (buildIntent || identityDone || promiseLanguage)) || (hasWriteCall && (followUpPromise || promiseLanguage)))
         && !/\[\[POLL\]\]|\[\[FORM\]\]|\[\[PLUGIN:/i.test(r.text);
       if (isPlanGap && planGapNudgeCount < 2) {
         planGapNudgeCount++;
         workMessages.push({ role: 'assistant', content: r.text });
-        workMessages.push({ role: 'user', content: 'Kamu baru menulis rencana/klaim TANPA memanggil tool apa pun — itu janji kosong, bukan progres (lihat aturan (7): dilarang keras). DILARANG mengarang fitur/URL yang tidak pernah disebut sistem (mis. "workspace.clincoo.buzz" atau link publik otomatis) — itu melanggar aturan (3) dilarang mengarang fakta. JANGAN menulis teks apa pun lagi. LANGSUNG panggil tool yang sesuai SEKARANG (write_file untuk tiap file tersisa, generate_image, atau set_project_info) untuk benar-benar melanjutkan pekerjaan.' });
+        workMessages.push({ role: 'user', content: 'Kamu baru menulis rencana/klaim TANPA memanggil tool apa pun — itu janji kosong, bukan progres (lihat aturan (7): dilarang keras). DILARANG mengarang fitur/URL yang tidak pernah disebut sistem (mis. "workspace.clincoo.buzz" atau link publik otomatis) — itu melanggar aturan (3) dilarang mengarang fakta. JANGAN menulis teks apa pun lagi. LANGSUNG panggil tool yang sesuai SEKARANG (write_file/edit_file untuk file tersisa, read_file atau list_files untuk memverifikasi hasil editmu, generate_image, atau set_project_info) untuk benar-benar melanjutkan pekerjaan. Kalau pekerjaan SUDAH benar-benar selesai dan terverifikasi, tulis ringkasan akhir SATU kali tanpa menjanjikan langkah lanjutan.' });
         // [7 Okt 2026, laporan owner: teks "janji kosong" sudah ter-stream ke layar user
         // SEBELUM terdeteksi plan-gap (deteksi baru bisa setelah r.text lengkap) -> race
         // ulang di sHop berikutnya bisa menang kandidat BEDA yang JUGA menulis janji
