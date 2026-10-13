@@ -2494,10 +2494,30 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // Delta ModelRouter ditampung dulu agar bila provider gagal setelah mengirim
       // sebagian teks, fallback Gemini tidak menempelkan jawaban kedua ke teks parsial.
       if (buildMode && (!r || r.error)) {
-        // [12 Okt, arahan pemilik] MODE BUILD -> Clouvia sonnet-agentic UTAMA
+        // [13 Okt, arahan pemilik] MODE BUILD -> AI 2 (Execution Agent) UTAMA:
+        // ModelRouter claude-sonnet-5.5. Delta ditampung dulu; kalau ModelRouter
+        // bermasalah (saldo/down/timeout), langsung jatuh ke Clouvia deepseek-v4-pro-v3
+        // lalu OpenRouter lalu Gemini — AI 2 tidak pernah hard-error.
+        if (mrKeys.length) {
+          let mrDelta = '';
+          const mr = await withTimeout(
+            tryModelRouterText(
+              mrKeys, workMessages, toolDecls, MODELROUTER_MODELS,
+              (tx) => { mrDelta += String(tx || ''); },
+              mrUsageAcc
+            ),
+            120000,
+            'ModelRouter-Build-Sonnet'
+          ).catch(e => ({ error: e.message }));
+          if (mr && !mr.error && (mr.text || mr.tool_calls)) {
+            r = mr;
+            if (mrDelta && streamSend) streamSend({ t: 'delta', text: mrDelta });
+          }
+        }
+        // [12 Okt, arahan pemilik] MODE BUILD cadangan #1: Clouvia deepseek-v4-pro-v3
         // (terverifikasi 12 Okt: patuh system prompt + tool_calls jalan normal).
-        // Cadangan di bawah: OpenRouter -> ModelRouter -> Gemini.
-        if (cvKeysEarly.length) {
+        // Cadangan di bawah: OpenRouter -> Gemini.
+        if ((!r || r.error) && cvKeysEarly.length) {
           const cvBuild = await withTimeout(
             tryClouviaText(
               cvKeysEarly, workMessages, toolDecls, CLOUVIA_BUILD_MODELS,
@@ -2518,22 +2538,6 @@ export async function onRequestPost({ request, env, waitUntil }) {
             'OpenRouter-Build-Claude-GPT'
           ).catch(e => ({ error: e.message }));
           if (orBuild && !orBuild.error && (orBuild.text || orBuild.tool_calls)) r = orBuild;
-        }
-        if ((!r || r.error) && mrKeys.length) {
-          let mrDelta = '';
-          const mr = await withTimeout(
-            tryModelRouterText(
-              mrKeys, workMessages, toolDecls, MODELROUTER_MODELS,
-              (tx) => { mrDelta += String(tx || ''); },
-              mrUsageAcc
-            ),
-            30000,
-            'ModelRouter-Build-fallback'
-          ).catch(e => ({ error: e.message }));
-          if (mr && !mr.error && (mr.text || mr.tool_calls)) {
-            r = mr;
-            if (mrDelta && streamSend) streamSend({ t: 'delta', text: mrDelta });
-          }
         }
         if (!r || r.error) {
           try {
