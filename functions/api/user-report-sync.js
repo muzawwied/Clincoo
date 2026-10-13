@@ -108,18 +108,30 @@ export async function syncUserReport(env, opts) {
   const dlTables = (dlTablesR.results || [])
     .map(r => r.name)
     .filter(n => /^p_proj\d+_deploy_logs$/.test(n));
-  await Promise.all(dlTables.map(async tn => {
+  // [13 Okt] FIX KRITIS: dulu tiap tabel dites SATU-SATU -> lewat gateway D1 (shim _d1remote)
+  // tiap query = 1 subrequest fetch; 148 tabel > batas 50 subrequest Pages -> fungsi selalu
+  // error sejak cutover D1 11 Okt (commit users-live.md terakhir 11 Okt 02:16).
+  // Kini SEMUA dikerjakan sekali lewat db.batch() = 1 subrequest.
+  const dlStmts = [], dlOwners = [];
+  for (const tn of dlTables) {
+    const projId = tn.slice(2, -12); // buang prefix 'p_' dan suffix '_deploy_logs'
+    // user_projects.id = 'proj_<ts>' (dengan underscore), nama tabel = 'p_proj<ts>_...' (tanpa)
+    const owner = ownerMap[projId] || ownerMap['proj_' + projId.slice(4)] || ownerMap[projId.replace('proj', 'proj_')];
+    if (!owner) continue;
+    dlStmts.push(db.prepare('SELECT status FROM ' + tn + ' ORDER BY id DESC LIMIT 1'));
+    dlOwners.push(owner);
+  }
+  if (dlStmts.length) {
     try {
-      const projId = tn.slice(2, -12); // buang prefix 'p_' dan suffix '_deploy_logs'
-      // user_projects.id = 'proj_<ts>' (dengan underscore), nama tabel = 'p_proj<ts>_...' (tanpa)
-      const owner = ownerMap[projId] || ownerMap['proj_' + projId.slice(4)] || ownerMap[projId.replace('proj', 'proj_')];
-      if (!owner) return;
-      const r = await db.prepare('SELECT status FROM ' + tn + ' ORDER BY id DESC LIMIT 1').first();
-      if (r && r.status === 'success') {
-        pubSiteMap[owner] = (pubSiteMap[owner] || 0) + 1;
-      }
+      const rs = await db.batch(dlStmts);
+      rs.forEach((r, i) => {
+        const row = (r && r.results && r.results[0]) || null;
+        if (row && row.status === 'success') {
+          pubSiteMap[dlOwners[i]] = (pubSiteMap[dlOwners[i]] || 0) + 1;
+        }
+      });
     } catch (e) { /* tabel project bisa jadi kosong / belum ada */ }
-  }));
+  }
 
   // ---- susun laporan markdown ----
   let oauthCount = 0, paidCount = 0, totalBal = 0, suspCount = 0, totalPub = 0, botCount = 0, violCount = 0;
