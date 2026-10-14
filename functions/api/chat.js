@@ -521,7 +521,16 @@ async function tryEmergentText(keys, messages, onDelta) {
 // non-reasoning, ~99 tok/s (256 tok = 2.6s), tool_calls NATIVE jalan,
 // jauh di bawah potongan gateway MR ~10s. glm-5.3-flash cadangan
 // (reasoning ikut dihitung: 384 tok = 8.0s, mepet jendela), lightning terakhir.
-const MODELROUTER_MODELS = ['claude-haiku-5.5']; // [9 Okt] fokus HANYA haiku 5.5 (arahan pemilik)
+// [14 Okt 2026, arahan pemilik] MODE BUILD dua model ModelRouter:
+// FRONTEND (file web html/css/js) -> deepseek-v4.1-flash:free (cepat, gratis, tool OK)
+// BACKEND (function/api/database/server) -> claude-sonnet-5.5 (kuat untuk logika;
+//   perlu saldo ModelRouter — jika habis otomatis jatuh ke deepseek free berikutnya)
+const MR_FRONTEND_MODELS = ['deepseek-v4.1-flash:free'];
+const MR_BACKEND_MODELS = ['claude-sonnet-5.5', 'deepseek-v4.1-flash:free'];
+// [14 Okt] MODE CHAT -> ModelRouter deepseek-v4.1-flash:free jadi kandidat utama
+// (berlomba dengan Gemini; chat tetap gratis bagi user).
+const CHAT_MR_MODELS = ['deepseek-v4.1-flash:free'];
+const MODELROUTER_MODELS = ['deepseek-v4.1-flash:free', 'claude-sonnet-5.5']; // fallback umum (dulu: haiku-5.5 saja)
 // [7 Okt] Gateway ModelRouter memotong koneksi pada ~10 detik wall-time per
 // request (diverifikasi: 384 tok = 9.4s OK, 512+ tok / non-stream generasi
 // panjang = HTTP 000). Solusi: potong generasi jadi chunk kecil (256 tok,
@@ -533,7 +542,7 @@ const MODELROUTER_MODELS = ['claude-haiku-5.5']; // [9 Okt] fokus HANYA haiku 5.
 // dihitung -> 384 tok; ultra ~21 tok/s -> 96 tok. Semua di bawah potongan
 // gateway MR ~10s wall-time.
 // [9 Okt] haiku-5.5: 512 tok = ~5.2s pada ~99 tok/s (aman di bawah potongan ~10s).
-const MR_MAX_TOKENS = { 'claude-haiku-5.5': 1024 /* CHAT_BUILD_MODE_FIX */, 'nemotron-3.5-lightning': 96, 'glm-5.3-flash': 384, 'nemotron-3-ultra': 96 };
+const MR_MAX_TOKENS = { 'claude-haiku-5.5': 1024 /* CHAT_BUILD_MODE_FIX */, 'nemotron-3.5-lightning': 96, 'glm-5.3-flash': 384, 'nemotron-3-ultra': 96, 'deepseek-v4.1-flash:free': 1024 /* [14 Okt] */, 'claude-sonnet-5.5': 1024 /* [14 Okt] */ };
 const MR_ENDPOINT = 'https://modelrouter.id/v1/chat/completions';
 // [7 Okt, arahan pemilik: "jadikan model Orkestra di mode build"] Semua respons
 // ModelRouter (haiku-5.5 -> glm-5.3-flash; nemotron dihapus 9 Okt, arahan pemilik)
@@ -596,6 +605,22 @@ function mrJoinContinuation(prev, cont) {
   // Kata utuh + kalimat baru berhuruf kapital -> beri jarak, jangan menempel.
   if (/[A-Za-zÀ-ÿ0-9]$/.test(p) && /^[A-Z][a-z]/.test(c)) return p + ' ' + c;
   return p + c;
+}
+// [14 Okt 2026, arahan pemilik] RUTE MODEL PER PERMINTAAN (mode Build):
+// permintaan backend (function/api/database/server/pembayaran) -> sonnet-5.5,
+// lainnya (frontend: html/css/js/teks) -> deepseek-v4.1-flash:free.
+// Deteksi dari 6 pesan terakhir (termasuk tool_calls utk path functions/).
+function mrModelsForRequest(msgs) {
+  try {
+    const tail = (msgs || []).slice(-6).map(function (m) {
+      let s = (m && typeof m.text === 'string') ? m.text : '';
+      s += ' ' + ((m && typeof m.content === 'string') ? m.content : JSON.stringify((m && m.content) || {}));
+      if (m && m.tool_calls) s += ' ' + JSON.stringify(m.tool_calls);
+      return s.toLowerCase();
+    }).join(' ');
+    if (/(backend|endpoint|webhook|database|d1\s|auth|login|payment|pembayaran|stripe|midtrans|cron|token|functions\/|function\/|custom_function|\/api|api\skey|backend\s)/.test(tail)) return MR_BACKEND_MODELS;
+    return MR_FRONTEND_MODELS;
+  } catch (e) { return MODELROUTER_MODELS; }
 }
 async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usageAcc) {
   const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
@@ -1194,11 +1219,20 @@ function aiCostOf(model, outputChars, inputChars) {
 // [9 Okt, arahan pemilik] Biaya dari token NYATA per model (mrUsageAcc):
 // haiku 1 kredit / 30.000 token, glm 1,5 kredit / 30.000 token (persis harga
 // provider). null bila MR tak terpakai -> fallback estimasi karakter.
+// [14 Okt, arahan pemilik model baru] bobot biaya token ModelRouter:
+// haiku 1, glm 1.5, sonnet-5.5 = 3 (reasoning kuat), deepseek-v4.1-flash:free = 0 (gratis).
 function mrTokenCost(acc) {
-  const h = (acc && acc['claude-haiku-5.5']) || 0;
-  const g = (acc && acc['glm-5.3-flash']) || 0;
-  if (h + g <= 0) return null;
-  return Math.max(0.01, Math.round((h * 1 + g * 1.5) / 30000 * 100) / 100);
+  if (!acc) return null;
+  const W = { 'claude-haiku-5.5': 1, 'glm-5.3-flash': 1.5, 'claude-sonnet-5.5': 3 };
+  let used = false, total = 0;
+  for (const k of Object.keys(acc)) {
+    used = true;
+    if (k === 'deepseek-v4.1-flash:free') continue; // gratis: bobot 0
+    total += (W[k] != null ? W[k] : 1) * (acc[k] || 0);
+  }
+  if (!used) return null;
+  if (total <= 0) return 0; // 100% model gratis -> biaya 0 (bukan null: tetap dicatat)
+  return Math.max(0.01, Math.round(total / 30000 * 100) / 100);
 }
 async function chargeAiUsage(env, user, model, outputChars, inputChars, charge = true, costOverride = null) {
   if (!user || !user.key) return;
@@ -2239,7 +2273,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // UTAMA di tiap hop tool (kode besar butuh model konsisten). Gagal -> cascade
       // gratis di bawah tetap menyelamatkan jawaban.
       if (buildMode && (!r || r.error)) {
-        const mr = await withTimeout(tryModelRouterText(mrKeys, workMessages, toolDecls, MODELROUTER_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null, mrUsageAcc), 90000, 'ModelRouter').catch(e => ({ error: e.message }));
+        const mr = await withTimeout(tryModelRouterText(mrKeys, workMessages, toolDecls, mrModelsForRequest(workMessages), streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null, mrUsageAcc), 90000, 'ModelRouter').catch(e => ({ error: e.message }));
         if (mr && !mr.error) r = mr;
       }
       const USE_CLOUVIA_FIRST = false;
@@ -2289,6 +2323,12 @@ export async function onRequestPost({ request, env, waitUntil }) {
         // jadi kandidat lemah (ikut balapan setelah 8s bila Gemini belum mengirim delta).
         // KANDIDAT P (UTAMA): Gemini 3.6 Flash (napas 30s, dukungan tools penuh)
         const cands = [];
+        // [14 Okt, arahan pemilik] MODE CHAT: kandidat UTAMA = ModelRouter
+        // deepseek-v4.1-flash:free — balapan sejajar dengan Gemini; pemenang = delta pertama.
+        // Chat mode tetap GRATIS bagi user (pemakaian dicatat, saldo tidak dipotong).
+        if (explicitChat && mrKeys.length && !hasImages) {
+          cands.push(cand('M', withTimeout(tryModelRouterText(mrKeys, workMessages, toolDecls, CHAT_MR_MODELS, makeOnDelta('M'), mrUsageAcc), 45000, 'MR-chat-deepseek')));
+        }
         if (apiKey.length) {
           const { systemInstruction, contents } = toGeminiPayload(workMessages);
           cands.push(cand('P', withTimeout(tryModels(apiKey, systemInstruction, contents, gTools, makeOnDelta('P'), explicitChat ? CHAT_MODELS : PREFERRED_MODELS), 45000, 'Gemini-utama')));
