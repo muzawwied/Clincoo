@@ -47,6 +47,9 @@ function clientIp(request) {
 }
 
 const PREFERRED_MODELS = ['gemini-3.6-flash', 'gemini-3-flash-preview'];
+// Mode Chat mengikuti permintaan: hanya pakai Gemini 3.6 Flash stabil dari AI Studio.
+// Model preview tetap tersedia sebagai pilihan umum/fallback di mode lain.
+const CHAT_MODELS = ['gemini-3.6-flash'];
 
 // ===== AI UTAMA: GLM 5.3 Flash (Workers AI, binding internal) =====
 // Model lama tetap di daftar sebagai cadangan bila GLM 5.3 Flash gagal.
@@ -1640,7 +1643,7 @@ function _geminiKeyOrder(keys) {
   return good.concat(cooled);
 }
 
-async function tryModels(apiKeys, systemInstruction, contents, tools, onDelta) {
+async function tryModels(apiKeys, systemInstruction, contents, tools, onDelta, models = PREFERRED_MODELS) {
   const keys = _geminiKeyOrder(Array.isArray(apiKeys) ? apiKeys.filter(Boolean) : [apiKeys].filter(Boolean));
   let lastError = null;
   const statuses = [];
@@ -1652,7 +1655,7 @@ async function tryModels(apiKeys, systemInstruction, contents, tools, onDelta) {
   // _geminiKeyOrder, cap 8 request) dan jawaban valid PERTAMA langsung dipakai;
   // kunci hang hang sendiri di sisinya tanpa menahan siapa pun.
   const pairs = [];
-  for (const k of keys) for (const m of PREFERRED_MODELS) pairs.push({ key: k, model: m });
+  for (const k of keys) for (const m of models) pairs.push({ key: k, model: m });
   if (pairs.length > 8) pairs.length = 8;
   let winnerIdx = null; // attempt yang delta-nya boleh diteruskan ke klien
   const attempt = async (idx) => {
@@ -2272,7 +2275,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
         const cands = [];
         if (apiKey.length) {
           const { systemInstruction, contents } = toGeminiPayload(workMessages);
-          cands.push(cand('P', withTimeout(tryModels(apiKey, systemInstruction, contents, gTools, makeOnDelta('P')), 45000, 'Gemini-utama')));
+          cands.push(cand('P', withTimeout(tryModels(apiKey, systemInstruction, contents, gTools, makeOnDelta('P'), explicitChat ? CHAT_MODELS : PREFERRED_MODELS), 45000, 'Gemini-utama')));
         }
         // [9 Okt 2026, arahan pemilik: "kalo chat make gemini yang dari AI Studio"]
         // MODE CHAT: kandidat balapan CUMA Gemini AI Studio (kunci aktif ada).
@@ -2341,7 +2344,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
       }
       if ((!r || r.error) && apiKey.length) {
         const { systemInstruction, contents } = toGeminiPayload(workMessages);
-        r = await withTimeout(tryModels(apiKey, systemInstruction, contents, gTools, streamSend ? (chunkText) => streamSend({ t: 'delta', text: chunkText }) : null), 25000, 'Gemini').catch(e => ({ error: e.message }));
+        r = await withTimeout(tryModels(apiKey, systemInstruction, contents, gTools, streamSend ? (chunkText) => streamSend({ t: 'delta', text: chunkText }) : null, explicitChat ? CHAT_MODELS : PREFERRED_MODELS), 25000, 'Gemini').catch(e => ({ error: e.message }));
       }
       // Fallback terakhir (dipakai bila GLM utama dilewati, mis. chat bergambar): teks saja
       if ((!r || r.error) && env.AI && !hasImages && !aiMain) {
