@@ -1309,11 +1309,11 @@
             const wrap = document.getElementById('prompt-chips');
             if (!wrap) return;
             if (isGenerating || (typeof quotaLocked !== 'undefined' && quotaLocked)) { stopPromptChipCycle(); wrap.classList.add('hidden'); return; }
+            let best = null, bestScore = 0;
             if (best === null && promptChipCycle) { stopPromptChipCycle(); }
             const vis = messages.filter(m => m && !m.isHidden && !m.silent && m.text);
             let txt = '';
             for (let i = Math.max(0, vis.length - 10); i < vis.length; i++) txt += ' ' + String(vis[i].text).toLowerCase();
-            let best = null, bestScore = 0;
             PROMPT_CHIP_LIB.forEach(topic => {
                 let score = 0;
                 topic.keys.forEach(k => { if (txt.indexOf(k) !== -1) score += 1; });
@@ -6858,8 +6858,10 @@ const __modeBlock = __curMode === 'build'
   : '\\n\\n[MODE SAAT INI: CHAT]. Kamu sedang di mode Chat (tanpa tools workspace). Kalau user minta dibuat/ubah/dibaca file proyek, jawab singkat: kerjakan lewat mode Build (tombol mode di kotak input) lalu kirim ulang — tanpa menulis kode di jawaban.';
 
                         
+                let apiMessages = [];
+                let apiMessagesWithTools = [];
                 try {
-                    const apiMessages = [
+                    apiMessages = [
 { role: 'system', content: systemInstructions + __modeBlock + timeContext + githubConnectionContext + (externalContext ? `\n\n${externalContext}` : '') + '\n\n[STATE SESI KERJA (FAKTA hasil tool nyata, DIPEGANG — jangan ulangi pekerjaan yang sudah SUKSES)]: ' + (typeof window.workStateText === 'function' ? window.workStateText() : '') }
                     ];
 
@@ -6921,7 +6923,7 @@ const __modeBlock = __curMode === 'build'
                     let resultJson = null;
                     let hopError = null;
                     let accumulatedFinal = ''; // teks final digabung antar-ronde auto-lanjut
-                    const apiMessagesWithTools = apiMessages.slice();
+                    apiMessagesWithTools = apiMessages.slice();
                     const MAX_TOOL_HOPS = 120; // FILE_200KB_PLUS // dinaikkan 32->64: file besar ditulis per potongan via append_file butuh lebih banyak ronde: proyek kompleks (desain+struktur+file banyak) butuh lebih banyak ronde tool agar selesai dalam satu jalan, tidak terputus di tengah. AMAN karena circuit-breaker compactToolHopHistory() di bawah mencegah payload membengkak tak terbatas lintas hop.
                     // AUTO-LANJUT SILENT (provider sibuk): limit 429 sesaat dari model ->
                     // tunggu & ulangi diam-diam, jangan langsung putus tugas panjang.
