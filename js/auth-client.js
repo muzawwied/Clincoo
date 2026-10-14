@@ -235,4 +235,18 @@ try {
   } else {
     patchProjectLinks();
   }
+
+  // Muat Bug Beetle di seluruh halaman Clincoo yang memakai auth-client.
+  // Ditunda sampai body tersedia agar widget tidak tersisip di luar dokumen halaman.
+  function loadBugBeetle() {
+    if (window.__clincooBugBeetleLoader) return;
+    window.__clincooBugBeetleLoader = true;
+    var script = document.createElement('script');
+    var base = location.hostname.indexOf('github.io') !== -1 ? '/Clincoo.' : '';
+    script.src = base + '/js/bug-beetle.js?v=1';
+    script.async = true;
+    (document.head || document.documentElement).appendChild(script);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadBugBeetle, { once: true });
+  else loadBugBeetle();
 })();
