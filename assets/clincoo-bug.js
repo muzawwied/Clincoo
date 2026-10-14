@@ -72,7 +72,7 @@
   style.textContent = `
     #clincoo-bug-root{position:fixed;z-index:2147483000;right:20px;bottom:20px;isolation:isolate}
     #clincoo-bug-fab{
-      width:56px;height:56px;border-radius:50%;border:2px solid var(--cb-border);
+      width:56px;height:56px;border-radius:50%;border:0;
       display:grid;place-items:center;cursor:grab;touch-action:none;user-select:none;
       background:var(--cb-fab-bg);color:var(--cb-fg);box-shadow:0 8px 28px rgba(0,0,0,.16);
       padding:0;transition:transform .15s,box-shadow .15s
