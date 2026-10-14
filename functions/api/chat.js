@@ -1,357 +1,436 @@
-
-import { PLAN_AI_LIMITS, ADMIN_EMAILS, getEffectivePlanByUserKey, featureAllowed } from './plan-helpers.js';
-import { searchClincooBlog } from './blogsearch.js';
-import { paymentDocsFor } from './payment-kb-data.js';
-import { aiStorageSave, aiStorageGet, aiStorageList, aiStorageDelete } from './ai-storage.js';
-import { consumePackCredit, getActivePacks } from './ai-packs.js';
-import { initTables as initAuthTables, getUserByToken, getToken } from './auth/shared.js';
+// Clincoo Chat API (Mode Polos / Clean untuk Pengetesan)
+// Catatan: chat.js lama disimpan di functions/api/chat.old.js
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-labs-relay',
 };
 
 export async function onRequestOptions() {
-  return new Response(null, { status: 200, headers: CORS });
+  return new Response(null, { status: 204, headers: CORS });
 }
 
-const RATE_LIMIT = { max: 30, windowMs: 60_000 };
-const rateBuckets = new Map();
-function rateLimitOk(ip) {
-  const now = Date.now();
-  let b = rateBuckets.get(ip);
-  if (!b || now - b.start >= RATE_LIMIT.windowMs) b = { start: now, count: 0 };
-  b.count++;
-  rateBuckets.set(ip, b);
-  if (rateBuckets.size > 5000) {
-    for (const [k, v] of rateBuckets) if (now - v.start >= RATE_LIMIT.windowMs) rateBuckets.delete(k);
+export async function onRequestGet({ request, env }) {
+  return new Response(JSON.stringify({ status: 'ok', mode: 'simple-test', message: 'Chat API (mode polos) aktif' }), {
+    headers: { 'Content-Type': 'application/json', ...CORS }
+  });
+}
+
+const SYSTEM_PROMPT = `Kamu adalah asisten AI Clincoo, platform pembuatan website dan aplikasi web modern.
+Bantu pengguna dengan ramah, cepat, dan profesional dalam Bahasa Indonesia.
+
+Aturan Mode:
+1. Jika pengguna meminta membuat atau memodifikasi website atau file, gunakan tools yang tersedia (seperti write_file, edit_file, list_items, read_file) untuk menulis file secara langsung di workspace proyek. Jangan menulis kode panjang sebagai teks biasa jika tools tersedia; langsung panggil tool write_file.
+2. Jika hanya mengobrol, bertanya konsep, atau sapaan biasa, jawab langsung secara ringkas, jelas, dan natural tanpa memanggil tool.`;
+
+const OAI_TOOLS = [
+  {
+    "type": "function",
+    "function": {
+      "name": "list_items",
+      "description": "Lihat daftar file & folder di dalam sebuah folder workspace Clincoo milik user. Gunakan ini untuk melihat isi workspace atau folder sebelum melakukan operasi lain.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path folder. Contoh: \"root\" (folder utama), \"js\", \"root/css/style\". Default: root."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "read_file",
+      "description": "Baca isi lengkap sebuah file di workspace. WAJIB dipakai sebelum mengedit file agar konten terbaru dan akurat.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path file. Contoh: \"index.html\", \"js/app.js\", \"root/style.css\"."
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "write_file",
+      "description": "Buat file baru di workspace atau timpa seluruh isi file yang sudah ada dengan konten baru. Folder induk dibuat otomatis jika belum ada.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path file tujuan, contoh: \"pages/about.html\"."
+          },
+          "content": {
+            "type": "string",
+            "description": "Isi lengkap file yang akan ditulis (overwrite penuh)."
+          }
+        },
+        "required": [
+          "path",
+          "content"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "edit_file",
+      "description": "Ubah SEBAGIAN isi file yang sudah ada via search-replace persis \u2014 WAJIB untuk revisi kecil (ganti warna/teks/ikon, ubah satu section/fungsi/class, perbaiki satu error) supaya TIDAK menulis ulang seluruh file. String search HARUS persis sama dengan isi file (salin dari hasil read_file). Beberapa patch bisa dibundel lewat edits:[{search,replace}]. Gunakan untuk file yang SUDAH ada; file baru tetap write_file.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path file yang diedit, contoh: \"css/style.css\"."
+          },
+          "search": {
+            "type": "string",
+            "description": "Teks persis dari isi file yang akan diganti."
+          },
+          "replace": {
+            "type": "string",
+            "description": "Teks pengganti."
+          },
+          "all": {
+            "type": "boolean",
+            "description": "true = ganti SEMUA kemunculan search. Default hanya yang pertama."
+          },
+          "edits": {
+            "type": "array",
+            "description": "Opsional, banyak patch sekaligus: [{search:\"...\", replace:\"...\"}].",
+            "items": {
+              "type": "object",
+              "properties": {
+                "search": {
+                  "type": "string"
+                },
+                "replace": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "append_file",
+      "description": "Tambahkan potongan isi di AKHIR file (file 50KB\u2013200KB+ sampai ~1MB dalam 1 sesi): write_file bagian pertama, lalu append_file berulang (path sama, \u00b112.000\u201320.000 karakter per panggilan). done:true HANYA di potongan TERAKHIR. Jangan henti di tengah \u2014 lanjut sampai file utuh.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path file yang sama dengan write_file pertama, contoh: \"js/app.js\"."
+          },
+          "content": {
+            "type": "string",
+            "description": "Potongan isi berikutnya, TANPA mengulang isi awal."
+          },
+          "done": {
+            "type": "boolean",
+            "description": "true kalau ini potongan terakhir."
+          }
+        },
+        "required": [
+          "path",
+          "content"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_folder",
+      "description": "Buat folder baru (beserta folder induknya) di workspace.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path folder, contoh: \"assets/img\"."
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "rename_item",
+      "description": "Ubah nama file atau folder di workspace.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path item yang di-rename, contoh: \"old-name.html\"."
+          },
+          "new_name": {
+            "type": "string",
+            "description": "Nama baru (tanpa path), contoh: \"new-name.html\"."
+          }
+        },
+        "required": [
+          "path",
+          "new_name"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "delete_item",
+      "description": "Hapus file atau folder (beserta seluruh isinya) dari workspace. PERMANEN \u2014 konfirmasi dulu ke user kecuali user sudah jelas meminta penghapusan.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path item yang akan dihapus."
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "search_items",
+      "description": "Cari file atau folder di seluruh workspace berdasarkan nama.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Kata kunci nama file/folder."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "read_web_page",
+      "description": "Baca konten sebuah halaman web (URL) dan ubah jadi teks markdown yang bisa dibaca. Gunakan untuk membaca dokumentasi, artikel, atau halaman apapun yang user sebutkan.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "URL lengkap halaman, contoh: \"https://contoh.com/docs\"."
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "web_search",
+      "description": "Cari informasi terbaru di web (search engine). Gunakan untuk pertanyaan yang butuh data real-time atau terkini: harga, berita, dokumentasi versi baru, dll.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Kata kunci pencarian."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "set_project_info",
+      "description": "Simpan \"Nama Aplikasi\" & \"Deskripsi\" proyek aktif ke halaman Pengaturan Umum Clincoo (identitas yang tampil di kartu & daftar proyek). WAJIB dipanggil setelah selesai membangun situs/aplikasi baru: isi dengan nama aplikasi yang tepat dari pembahasan (BUKAN potongan awal chat) + deskripsi singkat 1 kalimat.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "app_name": {
+            "type": "string",
+            "description": "Nama aplikasi yang tepat, ringkas & manusiawi (mis. \"Kedai Kopi Senja\")."
+          },
+          "app_desc": {
+            "type": "string",
+            "description": "Deskripsi singkat 1 kalimat tentang aplikasinya."
+          },
+          "app_logo": {
+            "type": "string",
+            "description": "Opsional. Nama file gambar di workspace (mis. \"logo.png\") untuk dipasang sebagai logo & favicon aplikasi di Pengaturan Umum."
+          }
+        },
+        "required": [
+          "app_name"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "generate_image",
+      "description": "Buat gambar AI baru (PNG) langsung di workspace proyek \u2014 logo, ilustrasi, hero, ikon. Pakai saat user minta dibuatkan gambar/logo, atau situs butuh visual yang tidak ada di web. set_as_logo: true otomatis memasangnya sebagai logo & favicon di Pengaturan Umum.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Deskripsi gambar yang diinginkan, detail & spesifik (subjek, gaya, warna)."
+          },
+          "filename": {
+            "type": "string",
+            "description": "Opsional. Nama file tujuan, contoh: \"images/hero.png\". Default otomatis."
+          },
+          "set_as_logo": {
+            "type": "boolean",
+            "description": "true = pasang sebagai logo aplikasi di Pengaturan Umum (jadi logo & favicon situs, aktif pada deploy berikutnya)."
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "deploy_project",
+      "description": "Publish / deploy proyek yang sedang aktif ke internet (Cloudflare Pages) sehingga situsnya live. HANYA saat user eksplisit minta atau sudah setuju publish \u2014 setelah web selesai JANGAN deploy sendiri: arahkan ke Live preview dulu dan tanya dulu apakah mau dipublish.",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "write_files",
+      "description": "Tulis BEBERAPA file sekaligus dalam SATU panggilan (bulk write): files:[{path, content}]. WAJIB dipakai saat proyek butuh banyak file kecil-sedang sekaligus (mis. css/base.css + css/components.css + js/app.js + halaman sekunder + README.md) agar struktur proyek rapi dalam SATU putaran \u2014 jangan write_file satu per satu untuk banyak file kecil (boros giliran). Batas aman per panggilan: TOTAL isi semua file \u00b120.000 karakter, tiap file \u00b18.000 karakter, maks 10 file; kalau lebih, pecah menjadi beberapa panggilan write_files. File BESAR (HTML utuh >8.000 karakter, file 50KB+) JANGAN dimasukkan ke sini: tulis SATU per satu dengan write_file (+ append_file bila perlu). Kalau gagal dengan pesan \"Parameter files wajib array\" atau parameter kosong, itu tanda argumen terpotong: ulangi dengan file lebih sedikit/lebih pendek.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "files": {
+            "type": "array",
+            "description": "Array file yang mau ditulis/salin.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path file di workspace, contoh \"assets/style.css\"."
+                },
+                "content": {
+                  "type": "string",
+                  "description": "Isi lengkap file siap jalan."
+                }
+              },
+              "required": [
+                "path",
+                "content"
+              ]
+            }
+          }
+        },
+        "required": [
+          "files"
+        ]
+      }
+    }
   }
-  return b.count <= RATE_LIMIT.max;
-}
-function clientIp(request) {
-  try { return (request && request.headers && request.headers.get('cf-connecting-ip')) || 'unknown'; } catch (e) { return 'unknown'; }
-}
+];
 
-const PREFERRED_MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash'];
-
-const WORKERS_AI_MODELS = [];
 function textOf(m) {
+  if (!m) return '';
   if (typeof m.content === 'string') return m.content;
-  if (Array.isArray(m.content)) return m.content.filter(b => b && b.type === 'text').map(b => b.text).join('\n');
+  if (Array.isArray(m.content)) {
+    return m.content
+      .filter(b => b && (b.type === 'text' || typeof b === 'string'))
+      .map(b => (typeof b === 'string' ? b : b.text || ''))
+      .join('\n');
+  }
   return '';
 }
-function toOAIChat(messages) {
-  let system = messages.some(m => m.role === 'system') ? messages.filter(m => m.role === 'system').map(textOf).join('\n\n') : '';
-  try {
-    const lastUser = [...messages].reverse().find(m => m && m.role === 'user');
-    const pay = paymentDocsFor(lastUser ? textOf(lastUser) : '');
-    if (pay) system = (system ? system + '\n\n' : '') + pay;
-  } catch (e) {}
+
+function toOAIChat(messages, defaultSystem) {
+  let system = defaultSystem;
+  const sysMsgs = messages.filter(m => m && m.role === 'system');
+  if (sysMsgs.length > 0) {
+    system = sysMsgs.map(textOf).join('\n\n');
+  }
   const chatMsgs = [];
   let lastCallIds = [];
   for (const m of messages) {
-    if (m.role === 'system') continue;
+    if (!m || m.role === 'system') continue;
     const blocks = Array.isArray(m.content) ? m.content : null;
     const t = textOf(m);
     if (blocks && blocks.some(b => b && b.type === 'function_call')) {
       const calls = blocks.filter(b => b && b.type === 'function_call');
       lastCallIds = calls.map((b, i) => 'call_' + chatMsgs.length + '_' + i);
-      chatMsgs.push({ role: 'assistant', content: t || '', tool_calls: calls.map((b, i) => ({ id: lastCallIds[i], type: 'function', function: { name: b.name, arguments: JSON.stringify(b.args || {}) } })) });
+      chatMsgs.push({
+        role: 'assistant',
+        content: t || null,
+        tool_calls: calls.map((b, i) => ({
+          id: lastCallIds[i],
+          type: 'function',
+          function: { name: b.name, arguments: JSON.stringify(b.args || {}) }
+        }))
+      });
       continue;
     }
     if (blocks && blocks.some(b => b && b.type === 'function_response')) {
       for (const b of blocks.filter(b => b && b.type === 'function_response')) {
-        let rs = ''; try { rs = (typeof b.result === 'string') ? b.result : JSON.stringify(b.result); } catch (e) { rs = ''; }
-        const __tid = lastCallIds.shift();
-        // [13 Okt] pesan tool tanpa pasangan tool_calls dibuang — provider ketat menolaknya dengan HTTP 400
-        if (__tid) chatMsgs.push({ role: 'tool', tool_call_id: __tid, content: rs || ' ' });
+        let rs = '';
+        try { rs = (typeof b.result === 'string') ? b.result : JSON.stringify(b.result); } catch (e) { rs = ''; }
+        const tid = lastCallIds.shift();
+        if (tid) chatMsgs.push({ role: 'tool', tool_call_id: tid, content: rs || ' ' });
       }
       if (t) chatMsgs.push({ role: 'user', content: t });
       continue;
     }
     if (t) chatMsgs.push({ role: m.role, content: t });
   }
-  return { system, chatMsgs };
-}
-
-async function getOpenRouterKeys(env) {
-  const keys = [];
-  const seen = new Set();
-  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
-  add(env.OPENROUTER_API_KEY);
-  add(env.OPENROUTER_API_KEY_4); add(env.OPENROUTER_API_KEY_5); add(env.OPENROUTER_API_KEY_6);
-  if (!env.DB) return keys;
-  try {
-    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('OPENROUTER_API_KEY','OPENROUTER_API_KEY_2','OPENROUTER_API_KEY_3','OPENROUTER_API_KEY_4','OPENROUTER_API_KEY_5','OPENROUTER_API_KEY_6')").all();
-    for (const r of rows.results || []) add(r.value);
-  } catch {}
-  return keys;
-}
-
-const OPENROUTER_MODELS = ['openai/gpt-6-luna-pro'];
-const BUILD_OR_MODELS = ['openai/gpt-6-luna-pro', 'deepseek/deepseek-v4.1-flash'];
-const GUEST_OR_MODELS = ['openai/gpt-6-luna-pro'];
-const FREE_OR_MODELS = ['cohere/north-mini-code:free', 'google/gemma-4-26b-a4b-it:free'];
-const OR_MAX_TOKENS = 8192; // [13 Okt] cap build dinaikkan; jatuh ke 2048 hanya bila 402 (kredit habis)
-const OR_MAX_TOKENS_SAFE = 2048;
-async function orFetch(key, payload) {
-  const send = (max) => fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.pages.dev', 'X-Title': 'Clincoo' },
-    body: JSON.stringify(Object.assign({}, payload, { max_tokens: max }))
-  });
-  const r = await send(OR_MAX_TOKENS);
-  if (r.status === 402 && OR_MAX_TOKENS > OR_MAX_TOKENS_SAFE) {
-    const r2 = await send(OR_MAX_TOKENS_SAFE);
-    if (r2.ok) return r2;
-  }
-  return r;
-}
-const oaiToolsOf = (gDecls) => (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
-
-function withTimeout(promise, ms, label) {
-  let t;
-  const timeout = new Promise((_, reject) => { t = setTimeout(() => reject(new Error((label || 'provider') + ' timeout setelah ' + ms + 'ms')), ms); });
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
-}
-
-async function readOAICompatStream(res, onDelta) {
-  const reader = res.body.getReader();
-  const dec = new TextDecoder();
-  let buf = '', text = '', fin = null;
-  const tcMap = {};
-  let streamEnd = false;
-  let streamBroken = false;
-  while (!streamEnd) {
-    let rd;
-    try { rd = await reader.read(); } catch (eRd) { streamBroken = true; break; }
-    if (rd.done) break;
-    buf += dec.decode(rd.value, { stream: true });
-    let nl;
-    while ((nl = buf.indexOf('\n')) !== -1) {
-      const line = buf.slice(0, nl).trim();
-      buf = buf.slice(nl + 1);
-      if (!line || line.charAt(0) === ':') continue;
-      if (line.indexOf('data:') !== 0) continue;
-      const dbody = line.slice(5).trim();
-      if (dbody === '[DONE]') { streamEnd = true; break; }
-      let j; try { j = JSON.parse(dbody); } catch (e) { continue; }
-      const ch = j.choices && j.choices[0];
-      if (!ch) continue;
-      const d = ch.delta || {};
-      if (typeof d.content === 'string' && d.content) {
-        text += d.content;
-        try { onDelta(d.content); } catch (e) {}
-      }
-      if (Array.isArray(d.tool_calls)) {
-        for (const tc of d.tool_calls) {
-          const ix = (tc.index !== undefined) ? tc.index : 0;
-          if (!tcMap[ix]) tcMap[ix] = { name: '', args: '' };
-          const fn = tc.function || {};
-          if (fn.name && !tcMap[ix].name) tcMap[ix].name = fn.name;
-          if (typeof fn.arguments === 'string') tcMap[ix].args += fn.arguments;
-        }
-      }
-      if (ch.finish_reason) fin = ch.finish_reason;
-    }
-  }
-  const tcs = Object.keys(tcMap).sort((a, b) => Number(a) - Number(b)).map((k) => tcMap[k]).filter((x) => x.name);
-  return { text, fin, tcs, broken: streamBroken };
-}
-
-function joinSeg(a, b) {
-  if (!a) return b;
-  if (!b) return a;
-  if (/[.!?"']$/.test(a) && /^[A-Z\"'\u201c]/.test(b)) return a + '\n\n' + b;
-  if (/\s$/.test(a) || /^\s/.test(b)) return a + b;
-  return a + b;
-}
-
-async function completeTruncatedToolArgs(keys, models, baseMsgs, oaiTools, tc) {
-  const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
-  let triesLeft = 2;
-  for (const key of keyList.slice(0, 1)) {
-    for (const model of models.slice(0, 2)) {
-      if (triesLeft-- <= 0) return null;
-      const partial = tc.args || '';
-      const contMsgs = baseMsgs.slice();
-      contMsgs.push({ role: 'assistant', content: null, tool_calls: [{ id: 'cut', type: 'function', function: { name: tc.name, arguments: partial } }] });
-      contMsgs.push({ role: 'user', content: 'Tool call terakhirmu TERPOTONG karena batas token. Lanjutkan PERSIS dari karakter terakhir argumen JSON itu — keluarkan HANYA sambungan string argumennya, TANPA mengulang dari awal, TANPA penjelasan, TANPA blok kode markdown.' });
-      try {
-        const cp = { model, messages: contMsgs, max_tokens: OR_MAX_TOKENS, stream: true };
-        const cr = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.pages.dev', 'X-Title': 'Clincoo' },
-          body: JSON.stringify(cp)
-        });
-        if (!cr.ok || !cr.body) continue;
-        const st = await readOAICompatStream(cr, null);
-        let cont = (st && st.text ? st.text : '').trim();
-        if (!cont) continue;
-        cont = cont.replace(/^```[a-z]*\s*/i, '').replace(/```$/, '').trim();
-        try { const j = JSON.parse(partial + cont); return j; } catch (e) {}
-        try { const j = JSON.parse(cont); return j; } catch (e) {}
-      } catch (e) { }
-    }
-  }
-  return null;
-}
-
-function normStreamToolCalls(tcs) {
-  const norm = [];
-  for (const c of tcs) {
-    let a = null; try { a = c.args ? JSON.parse(c.args) : null; } catch (e) { a = null; }
-    if (a) norm.push({ name: c.name, args: a });
-  }
-  return norm;
-}
-
-async function tryOpenRouterText(keys, messages, gDecls, models, onDelta) {
-  const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
-  if (!keyList.length) return null;
-  const modelList = (Array.isArray(models) && models.length) ? models : OPENROUTER_MODELS;
-  const { system, chatMsgs } = toOAIChat(messages);
-  const oaiTools = oaiToolsOf(gDecls);
-  let lastErr = null;
-  const deadKeys = new Set();
-  for (const key of keyList) {
-    if (deadKeys.has(key)) continue;
-  for (const model of modelList) {
-    const baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
-    let data = null;
-    if (onDelta) {
-      try {
-        const sp = { model, messages: baseMsgs, stream: true };
-        if (oaiTools) sp.tools = oaiTools;
-        const sr = await orFetch(key, sp);
-        if (sr.ok && sr.body) {
-          const st = await readOAICompatStream(sr, onDelta);
-          if (st.text || st.tcs.length) {
-            if (st.tcs.length && st.fin !== 'length') {
-              const nt = normStreamToolCalls(st.tcs);
-              if (nt.length) return { tool_calls: nt, text: st.text, model: model.split('/').pop() + ' (OpenRouter)' };
-            }
-            if (st.tcs.length && st.fin === 'length') {
-              const fixed = [];
-              let allOk = true;
-              for (const c of st.tcs) {
-                let a = null; try { a = c.args ? JSON.parse(c.args) : null; } catch (e) { a = null; }
-                if (!a) a = await completeTruncatedToolArgs(keyList, modelList, baseMsgs, oaiTools, c);
-                if (!a) { allOk = false; break; }
-                fixed.push({ name: c.name, args: a });
-              }
-              if (allOk && fixed.length) return { tool_calls: fixed, text: st.text, model: model.split('/').pop() + ' (OpenRouter)' };
-            }
-            let full = st.text, seg = st.text, fin2 = st.fin;
-            const contMsgs = baseMsgs.slice();
-            for (let sc = 0; sc < 3 && fin2 === 'length'; sc++) {
-              contMsgs.push({ role: 'assistant', content: seg });
-              contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
-              const cModels = [model];
-              let st2 = null;
-              for (const cm of cModels) {
-                try {
-                  const cp = { model: cm, messages: contMsgs, stream: true };
-                  if (oaiTools) cp.tools = oaiTools;
-                  const cr = await orFetch(key, cp);
-                  if (!cr.ok || !cr.body) continue;
-                  st2 = await readOAICompatStream(cr, onDelta);
-                  if (st2 && st2.text) break;
-                  st2 = null;
-                } catch (e2) { st2 = null; }
-              }
-              if (!st2 || !st2.text) break;
-              full = joinSeg(full, st2.text); seg = st2.text; fin2 = st2.fin;
-            }
-            if (oaiTools && !st.tcs.length) {
-              const hasToolHist = baseMsgs.some(m => m && m.role === 'tool');
-              if (!hasToolHist) {
-                const narr = (full.match(/(menulis|menjalankan|memulai|menyelesaikan)\s+(file|tools?|generate_image|set_project_info|write_file|deploy)/gi) || []).length;
-                if (narr >= 3) { lastErr = 'OpenRouter ' + model + ': narasi tool tanpa tool_call nyata (fake progress)'; continue; }
-              }
-            }
-            return { text: full, model: model.split('/').pop() + ' (OpenRouter)' };
-          }
-          lastErr = `OpenRouter ${model}: stream kosong`;
-          continue;
-        }
-        if (!sr.ok) {
-          lastErr = `OpenRouter ${model}: HTTP ${sr.status}`;
-          if (sr.status === 402) { deadKeys.add(key); break; }
-          if (sr.status === 429 || sr.status === 502 || sr.status === 503 || sr.status === 529) await new Promise(r2 => setTimeout(r2, 900));
-        }
-      } catch (e) { lastErr = `OpenRouter ${model}: ${e && e.message}`; }
-    }
-    try {
-      const payload = { model, messages: baseMsgs };
-      if (oaiTools) payload.tools = oaiTools;
-      const res = await orFetch(key, payload);
-      data = await res.json().catch(() => ({}));
-      if (!res.ok) { lastErr = `OpenRouter ${model}: HTTP ${res.status}`; if (res.status === 402) { deadKeys.add(key); break; } continue; }
-    } catch (e) { lastErr = `OpenRouter ${model}: ${e && e.message}`; continue; }
-    const msg = data && data.choices && data.choices[0] && data.choices[0].message;
-    const text = (msg && msg.content) || '';
-    const finish = data && data.choices && data.choices[0] && data.choices[0].finish_reason;
-    const tcs = msg && Array.isArray(msg.tool_calls) ? msg.tool_calls : null;
-    if (tcs && tcs.length) {
-      const norm = [];
-      let cutMid = false;
-      for (const c of tcs) {
-        let a = null;
-        if (c && c.function && typeof c.function.arguments === 'string') { try { a = JSON.parse(c.function.arguments); } catch (e) { a = null; } }
-        else a = (c && c.function && c.function.arguments) || {};
-        if (!a) {
-          cutMid = true;
-          a = await completeTruncatedToolArgs(keyList, modelList, baseMsgs, oaiTools, { name: c.function.name, args: c.function.arguments || '' });
-        }
-        if (!a) { cutMid = true; break; }
-        if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
-      }
-      if (norm.length && !cutMid) return { tool_calls: norm, text, model: model.split('/').pop() + ' (OpenRouter)' };
-    }
-    if (text) {
-      let full = text, seg = text, fin = finish;
-      const contMsgs = baseMsgs.slice();
-      for (let ac = 0; ac < 2 && fin === 'length'; ac++) {
-        contMsgs.push({ role: 'assistant', content: seg });
-        contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
-        let dc = null;
-        try {
-          const p3 = { model, messages: contMsgs, max_tokens: OR_MAX_TOKENS };
-          if (oaiTools) p3.tools = oaiTools;
-          const rc = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.pages.dev', 'X-Title': 'Clincoo' },
-            body: JSON.stringify(p3)
-          });
-          dc = await rc.json().catch(() => ({}));
-        } catch (e2) { dc = null; }
-        const dm = dc && dc.choices && dc.choices[0] && dc.choices[0].message;
-        const dseg = (dm && dm.content) || '';
-        fin = dc && dc.choices && dc.choices[0] && dc.choices[0].finish_reason;
-        if (!dseg) break;
-        full = joinSeg(full, dseg); seg = dseg;
-      }
-      return { text: full, model: model.split('/').pop() + ' (OpenRouter)' };
-    }
-    lastErr = `OpenRouter ${model}: respons kosong`;
-  }
-  }
-  return lastErr ? { error: lastErr } : null;
-}
-
-async function getClouviaKeys(env) {
-  const keys = [];
-  const seen = new Set();
-  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
-  add(env.CLOUVIA_API_KEY);
-  if (!env.DB) return keys;
-  try {
-    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('CLOUVIA_API_KEY','CLOUVIA_API_KEY_2')").all();
-    for (const r of rows.results || []) add(r.value);
-  } catch {}
-  return keys;
+  return [{ role: 'system', content: system }, ...chatMsgs];
 }
 
 async function getModelRouterKeys(env) {
@@ -359,474 +438,30 @@ async function getModelRouterKeys(env) {
   const seen = new Set();
   const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
   add(env.MODELROUTER_API_KEY);
-  if (!env.DB) return keys;
-  try {
-    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key = 'MODELROUTER_API_KEY'").all();
-    for (const r of rows.results || []) add(r.value);
-  } catch {}
+  if (env.DB) {
+    try {
+      const rows = await env.DB.prepare("SELECT value FROM env_vars WHERE key = 'MODELROUTER_API_KEY'").all();
+      for (const r of rows.results || []) add(r.value);
+    } catch {}
+  }
   return keys;
 }
-const MODELROUTER_MODELS = ['claude-sonnet-5.5'];
-const MODELROUTER_CHAT_MODELS = ['deepseek-v4.1-flash:free'];
-const MR_MAX_TOKENS = { 'deepseek-v4.1-flash:free': 2048, 'claude-sonnet-5.5': 8192 }; // [13 Okt] 512 terlalu kecil utk build: 2KB write_file saja terpotong -> 48-hop continue -> timeout 120s
-const MR_ENDPOINT = 'https://modelrouter.id/v1/chat/completions';
-const mrLabel = () => 'clincoo-ai-pro';
-const BUILD_INTENT_VERBS = /\b(?:buat(?:kan)?|bikin(?:kan)?|bangun(?:kan)?|edit|ubah|tambah(?:kan)?|perbaiki|benarkan|benerin|fix|hapus|deploy|publish|publikasikan|terbitkan|remake|redesign|desain\ ulang|custom)\b/i;
-const BUILD_INTENT_OBJECTS = /\b(?:situs|site|website|web|halaman|page|landing|homepage|kode|code|html|css|javascript|komponen|navbar|footer|form|formulir|tabel|blog|toko|profil|portofolio|proyek|project|fitur|banner|hero|section|web\ app)\b/i;
-function detectBuildIntent(messages) {
-  try {
-    if (!Array.isArray(messages) || !messages.length) return false;
-    let lastUser = null;
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i] && messages[i].role === 'user') { lastUser = messages[i]; break; }
-    }
-    if (!lastUser) return false;
-    const c = lastUser.content;
-    let txt = typeof c === 'string' ? c : (Array.isArray(c) ? c.map(p => (p && typeof p === 'object') ? (p.text || '') : String(p || '')).join(' ') : '');
-    txt = String(txt || '').toLowerCase();
-    if (!txt) return false;
-    if (/\b(?:build|deploy|publish)\b/.test(txt)) return true;
-    return BUILD_INTENT_VERBS.test(txt) && BUILD_INTENT_OBJECTS.test(txt);
-  } catch (e) { return false; }
-}
-function mrContinueMsg(seg) {
-  const tailTxt = String(seg || '').slice(-80).replace(/\s+/g, ' ');
-  return 'Jawabanmu terpotong batas panjang. Ekor teks terakhirmu: "' + tailTxt + '". Sambung LANGSUNG dari karakter berikutnya setelah ekor itu (kalau terpotong di tengah kata, lengkapi kata itu dulu). DILARANG mengulang kalimat/kata yang sudah tertulis, DILARANG membuka kalimat baru seperti "Lanjut..." atau minta maaf, DILARANG bertanya. Keluarkan HANYA sambungannya.';
-}
-function mrJoinContinuation(prev, cont) {
-  let c = String(cont || '');
-  if (!c) return String(prev || '');
-  c = c.replace(/^\s*(lanjut(an)?(\s+dari[^.\n]{0,40})?[:,.\-–—]*\s*)/i, '');
-  const p = String(prev || '');
-  const maxOv = Math.min(120, p.length, c.length);
-  for (let n = maxOv; n >= 6; n--) {
-    if (p.slice(-n) === c.slice(0, n)) { c = c.slice(n); break; }
-  }
-  const lastWord = (p.match(/([A-Za-zÀ-ÿ]+)$/) || [])[1] || '';
-  const WHOLE = /^(dan|yang|di|ke|dari|untuk|ini|itu|ada|atau|juga|saya|aku|kamu|kita|anda|akan|bisa|mau|oke|ok|ya|tidak|bukan|the|and|for|with|web|app|css|js|api|seo)$/i;
-  if (lastWord && lastWord.length <= 3 && !WHOLE.test(lastWord) && /^[A-Z][a-z]/.test(c)) {
-    const cut = p.slice(0, p.length - lastWord.length).replace(/\s+$/, '');
-    return cut + (cut && !/[.!?:\n]$/.test(cut) ? '. ' : ' ') + c;
-  }
-  if (/[A-Za-zÀ-ÿ0-9]$/.test(p) && /^[A-Z][a-z]/.test(c)) return p + ' ' + c;
-  return p + c;
-}
-async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usageAcc) {
-  const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
-  if (!keyList.length) return null;
-  const modelList = (Array.isArray(models) && models.length) ? models : MODELROUTER_MODELS;
-  const { system, chatMsgs } = toOAIChat(messages);
-  const oaiTools = oaiToolsOf(gDecls);
-  const callMr = (key, model, msgs, stream) => {
-    if (usageAcc) usageAcc[model] = (usageAcc[model] || 0) + tokensOfChars(JSON.stringify(msgs));
-    const p = { model, messages: msgs, max_tokens: (MR_MAX_TOKENS && MR_MAX_TOKENS[model]) || 128 };
-    if (stream) p.stream = true;
-    if (oaiTools) p.tools = oaiTools;
-    return fetch(MR_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.buzz', 'X-Title': 'Clincoo' },
-      body: JSON.stringify(p)
-    });
-  };
-  let lastErr = null;
-  const mrContinueToolArgs = async (key, model, baseMsgs, tc) => {
-    let acc = tc.args || '';
-    for (let hop = 0; hop < 48; hop++) {
-      const tryMsgs = baseMsgs.slice();
-      tryMsgs.push({ role: 'assistant', content: null, tool_calls: [{ id: 'cut' + hop, type: 'function', function: { name: tc.name, arguments: acc } }] });
-      tryMsgs.push({ role: 'user', content: 'Tool call terakhirmu TERPOTONG karena batas token. Lanjutkan PERSIS dari karakter terakhir argumen JSON itu — keluarkan HANYA sambungan string JSON-nya tanpa penjelasan, tanpa blok kode, lalu berhenti segera setelah JSON-nya lengkap dan valid.' });
-      try {
-        const cr = await callMr(key, model, tryMsgs, true);
-        if (!cr.ok || !cr.body) return null;
-        const st2 = await readOAICompatStream(cr, null);
-        let cont = (st2 && st2.text ? st2.text : '').trim();
-        if (!cont) return null;
-        cont = cont.replace(/^```[a-z]*\s*/i, '').replace(/```\s*$/, '').trim();
-        acc += cont;
-        try { return JSON.parse(acc); } catch (e) {}
-        if (st2.fin !== 'length') return null;
-      } catch (e) { return null; }
-    }
-    return null;
-  };
-  for (const key of keyList) {
-  for (const model of modelList) {
-    const baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
-    let data = null;
-    if (onDelta) {
-      try {
-        const sr = await callMr(key, model, baseMsgs, true);
-        if (sr.ok && sr.body) {
-          const st = await readOAICompatStream(sr, onDelta);
-          if (st.text || st.tcs.length) {
-            if (st.tcs.length) {
-              const nt = normStreamToolCalls(st.tcs);
-              if (nt.length && st.fin !== 'length') return { tool_calls: nt, text: st.text, model: mrLabel(model) };
-              if (st.fin === 'length') {
-                const fixed = [];
-                for (const c of st.tcs) {
-                  let a = null; try { a = c.args ? JSON.parse(c.args) : null; } catch (e) { a = null; }
-                  if (!a) a = await mrContinueToolArgs(key, model, baseMsgs, c);
-                  if (a) fixed.push({ name: c.name, args: a });
-                }
-                if (fixed.length) { if (usageAcc) usageAcc[model] = (usageAcc[model] || 0) + tokensOfChars((st.text || '') + JSON.stringify(fixed)); return { tool_calls: fixed, text: st.text, model: mrLabel(model) }; }
-                lastErr = 'ModelRouter ' + model + ': tool call terpotong, penyambungan gagal';
-                continue;
-              }
-              lastErr = 'ModelRouter ' + model + ': tool call rusak (args gak valid)';
-              continue;
-            }
-            let full = st.text, seg = st.text, fin2 = st.fin;
-            const contMsgs = baseMsgs.slice();
-            for (let sc = 0; sc < 5 && fin2 === 'length'; sc++) {
-              contMsgs.push({ role: 'assistant', content: seg });
-              contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
-              try {
-                const cr = await callMr(key, model, contMsgs, true);
-                if (!cr.ok || !cr.body) break;
-                const st2 = await readOAICompatStream(cr, onDelta);
-                if (!st2.text) break;
-                full = mrJoinContinuation(full, st2.text); seg = st2.text; fin2 = st2.fin;
-              } catch (e2) { break; }
-            }
-            { if (usageAcc) usageAcc[model] = (usageAcc[model] || 0) + tokensOfChars(full); return { text: full, model: mrLabel(model) }; }
-          }
-          lastErr = 'ModelRouter ' + model + ': stream kosong';
-        }
-        if (!sr.ok) lastErr = 'ModelRouter ' + model + ': HTTP ' + sr.status;
-      } catch (e) { lastErr = 'ModelRouter ' + model + ': ' + (e && e.message); }
-    }
+
+async function getOpenRouterKeys(env) {
+  const keys = [];
+  const seen = new Set();
+  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
+  add(env.OPENROUTER_API_KEY);
+  add(env.OPENROUTER_API_KEY_4);
+  add(env.OPENROUTER_API_KEY_5);
+  add(env.OPENROUTER_API_KEY_6);
+  if (env.DB) {
     try {
-      const res = await callMr(key, model, baseMsgs, false);
-      data = await res.json().catch(() => ({}));
-      if (!res.ok) { lastErr = 'ModelRouter ' + model + ': HTTP ' + res.status; continue; }
-    } catch (e) { lastErr = 'ModelRouter ' + model + ': ' + (e && e.message); continue; }
-    const msg = data && data.choices && data.choices[0] && data.choices[0].message;
-    const text = (msg && msg.content) || '';
-    const finish = data && data.choices && data.choices[0] && data.choices[0].finish_reason;
-    const tcs = msg && Array.isArray(msg.tool_calls) ? msg.tool_calls : null;
-    if (tcs && tcs.length) {
-      const norm = [];
-      for (const c of tcs) {
-        let a = null;
-        const rawArgs = (c && c.function && typeof c.function.arguments === 'string') ? c.function.arguments : null;
-        if (rawArgs) { try { a = JSON.parse(rawArgs); } catch (e) { a = null; } }
-        if (!a && c && c.function && c.function.name) {
-          a = await mrContinueToolArgs(key, model, baseMsgs, { name: c.function.name, args: rawArgs || '' });
-        }
-        if (c && c.function && c.function.name && a) norm.push({ name: c.function.name, args: a });
-      }
-      if (norm.length) { if (usageAcc) usageAcc[model] = (usageAcc[model] || 0) + tokensOfChars(text + JSON.stringify(norm)); return { tool_calls: norm, text, model: mrLabel(model) }; }
-      lastErr = 'ModelRouter ' + model + ': tool call terpotong, penyambungan gagal';
-      continue;
-    }
-    if (text) {
-      let full = text, seg = text, fin = finish;
-      const contMsgs = baseMsgs.slice();
-      for (let ac = 0; ac < 3 && fin === 'length'; ac++) {
-        contMsgs.push({ role: 'assistant', content: seg });
-        contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
-        let dc = null;
-        try { const rc = await callMr(key, model, contMsgs, false); dc = await rc.json().catch(() => ({})); } catch (e2) { dc = null; }
-        const dm = dc && dc.choices && dc.choices[0] && dc.choices[0].message;
-        const dseg = (dm && dm.content) || '';
-        fin = dc && dc.choices && dc.choices[0] && dc.choices[0].finish_reason;
-        if (!dseg) break;
-        full = mrJoinContinuation(full, dseg); seg = dseg;
-      }
-      { if (usageAcc) usageAcc[model] = (usageAcc[model] || 0) + tokensOfChars(full); return { text: full, model: mrLabel(model) }; }
-    }
-    lastErr = 'ModelRouter ' + model + ': respons kosong';
+      const rows = await env.DB.prepare("SELECT value FROM env_vars WHERE key IN ('OPENROUTER_API_KEY','OPENROUTER_API_KEY_2','OPENROUTER_API_KEY_3','OPENROUTER_API_KEY_4','OPENROUTER_API_KEY_5','OPENROUTER_API_KEY_6')").all();
+      for (const r of rows.results || []) add(r.value);
+    } catch {}
   }
-  }
-  return lastErr ? { error: lastErr } : null;
-}
-
-async function getCfAiCreds(env) {
-  const token = String(env.CF_AI_TOKEN || '').trim();
-  const accountId = String(env.CF_AI_ACCOUNT_ID || '').trim();
-  if (!env.DB) return (token && accountId) ? { token, accountId } : null;
-  const t = { token, accountId };
-  try {
-    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('CF_AI_TOKEN','CF_AI_ACCOUNT_ID')").all();
-    for (const r of rows.results || []) {
-      const v = String(r.value || '').trim();
-      if (!v) continue;
-      if (r.key === 'CF_AI_TOKEN' && !t.token) t.token = v;
-      if (r.key === 'CF_AI_ACCOUNT_ID' && !t.accountId) t.accountId = v;
-    }
-  } catch {}
-  return (t.token && t.accountId) ? t : null;
-}
-
-const CF_AI_MODELS = ['@cf/meta/llama-3.3-70b-instruct-fp8-fast'];
-
-async function tryCfAiRest(creds, messages, gDecls, onDelta) {
-  if (!creds || !creds.token || !creds.accountId) return null;
-  const { system, chatMsgs } = toOAIChat(messages);
-  const oaiTools = (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
-  const sysMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
-  for (const model of CF_AI_MODELS) {
-    const modelLabel = model.split('/').pop() + ' (WorkersAI-REST)';
-    const contMsgs = sysMsgs.slice();
-    let full = '', seg = '', finish = '', tcsOut = null;
-    for (let ac = 0; ac < 3; ac++) {
-      let st = null;
-      try {
-        const body = { messages: contMsgs, max_tokens: 8192 };
-        if (oaiTools && ac === 0) body.tools = oaiTools;
-        if (onDelta && ac === 0) body.stream = true;
-        const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${creds.accountId}/ai/run/${model}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + creds.token },
-          body: JSON.stringify(body)
-        });
-        if (!res.ok) { seg = ''; break; }
-        if (onDelta && ac === 0 && res.body) {
-          st = await readOAICompatStream(res, onDelta);
-          seg = st.text || ''; finish = st.fin || '';
-          if (st.tcs && st.tcs.length) tcsOut = st.tcs;
-        } else {
-          const j = await res.json();
-          const rj = (j && j.result) || {};
-          const ch = (Array.isArray(rj.choices) && rj.choices[0]) || {};
-          const m = ch.message || {};
-          seg = m.content || rj.response || (typeof rj === 'string' ? rj : '') || '';
-          finish = ch.finish_reason || rj.finish_reason || '';
-          const rtcs = (Array.isArray(m.tool_calls) && m.tool_calls.length) ? m.tool_calls : (Array.isArray(rj.tool_calls) ? rj.tool_calls : null);
-          if (rtcs) { tcsOut = rtcs; finish = 'tool_calls'; }
-        }
-      } catch (e) { seg = ''; break; }
-      if (!seg && !tcsOut) break;
-      full = joinSeg(full, seg);
-      if (tcsOut && tcsOut.length) {
-        const norm = [];
-        for (const c of tcsOut) {
-          let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
-          if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
-        }
-        if (norm.length) return { tool_calls: norm, text: full, model: modelLabel };
-      }
-      if (finish !== 'length') break;
-      contMsgs.push({ role: 'assistant', content: seg });
-      contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
-    }
-    if (full) return { text: full, model: modelLabel };
-  }
-  return null;
-}
-
-const CLOUVIA_MODELS = ['coding-high-flash', 'free-model'];
-const CLOUVIA_BUILD_MODELS = ['deepseek-v4-pro-v3', 'deepseek-v4-pro-v2', 'deepseek-v4-pro'];
-const CLOUVIA_CHAT_MODELS = ['deepseek-v4.1-flash'];
-
-async function tryClouviaText(keys, messages, gDecls, models, onDelta) {
-  const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
-  if (!keyList.length) return null;
-  const modelList = (Array.isArray(models) && models.length) ? models : CLOUVIA_MODELS;
-  const { system, chatMsgs } = toOAIChat(messages);
-  const oaiTools = oaiToolsOf(gDecls);
-  let idPrefix = '';
-  try {
-    const picks = [];
-    if (system) {
-      const idMatch = system.match(/\[IDENTITAS PENGGUNA\][^\n]*/);
-      if (idMatch) picks.push(idMatch[0]);
-      const qMatch = system.match(/\[KUOTA AI PENGGUNA\][^\n]*/);
-      if (qMatch) picks.push(qMatch[0]);
-    }
-    const lu = [...messages].reverse().find(m => m && m.role === 'user');
-    const payDocs = paymentDocsFor(lu ? textOf(lu) : '');
-    if (payDocs) picks.push(payDocs);
-    if (picks.length) idPrefix = picks.join('\n\n') + '\n\n';
-  } catch (e) {}
-  let lastErr = null;
-  for (const key of keyList) {
-    for (const model of modelList) {
-      let baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
-      if (idPrefix) {
-        const iu = baseMsgs.findIndex(m => m && m.role === 'user');
-        if (iu !== -1) {
-          baseMsgs = baseMsgs.slice();
-          baseMsgs[iu] = { role: 'user', content: idPrefix + String(baseMsgs[iu].content || '') };
-        }
-      }
-      let data = null;
-      if (onDelta) {
-        try {
-          const sp = { model, messages: baseMsgs, max_tokens: 16384, stream: true };
-          if (oaiTools) sp.tools = oaiTools;
-          const sr = await fetch('https://router.clouvia.id/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-            body: JSON.stringify(sp)
-          });
-          if (sr.ok && sr.body) {
-            const st = await readOAICompatStream(sr, onDelta);
-            if (st.text || st.tcs.length) {
-              if (st.tcs.length) return { tool_calls: normStreamToolCalls(st.tcs), text: st.text, model: model + ' (Clouvia)' };
-              return { text: st.text, model: model + ' (Clouvia)' };
-            }
-            lastErr = `Clouvia ${model}: stream kosong`;
-            continue;
-          }
-          if (!sr.ok) lastErr = `Clouvia ${model}: HTTP ${sr.status}`;
-        } catch (e) { lastErr = `Clouvia ${model}: ${e && e.message}`; }
-      }
-      try {
-        const payload = { model, messages: baseMsgs, max_tokens: 16384 };
-        if (oaiTools) payload.tools = oaiTools;
-        const res = await fetch('https://router.clouvia.id/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-          body: JSON.stringify(payload)
-        });
-        data = await res.json().catch(() => ({}));
-        if (!res.ok) { lastErr = `Clouvia ${model}: HTTP ${res.status}`; continue; }
-      } catch (e) { lastErr = `Clouvia ${model}: ${e && e.message}`; continue; }
-      const msg = data && data.choices && data.choices[0] && data.choices[0].message;
-      const text = (msg && msg.content) || '';
-      const tcs = msg && Array.isArray(msg.tool_calls) ? msg.tool_calls : null;
-      if (tcs && tcs.length) {
-        const norm = [];
-        for (const c of tcs) {
-          let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
-          if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
-        }
-        if (norm.length) return { tool_calls: norm, text, model: model + ' (Clouvia)' };
-      }
-      if (text) {
-        const finishOf = (rr) => (rr && Array.isArray(rr.choices) && rr.choices[0] && rr.choices[0].finish_reason) || '';
-        let full = text, seg = text, fin = (data && data.choices && data.choices[0] && data.choices[0].finish_reason) || '';
-        const contMsgs = baseMsgs.slice();
-        for (let ac = 0; ac < 3 && fin === 'length'; ac++) {
-          contMsgs.push({ role: 'assistant', content: seg });
-          contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
-          let dc = null;
-          try {
-            const p3 = { model, messages: contMsgs, max_tokens: 12288 };
-            if (oaiTools) p3.tools = oaiTools;
-            const rc = await fetch('https://router.clouvia.id/v1/chat/completions', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-              body: JSON.stringify(p3)
-            });
-            if (!rc.ok) break;
-            dc = await rc.json().catch(() => ({}));
-          } catch (e3) { break; }
-          const dm = dc && dc.choices && dc.choices[0] && dc.choices[0].message;
-          const dtcs = (dm && Array.isArray(dm.tool_calls)) ? dm.tool_calls : null;
-          if (dtcs && dtcs.length) {
-            const norm = [];
-            for (const c of dtcs) {
-              let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
-              if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
-            }
-            if (norm.length) return { tool_calls: norm, text: full, model: model + ' (Clouvia)' };
-            break;
-          }
-          const dseg = (dm && dm.content) || '';
-          fin = finishOf(dc);
-          if (!dseg) break;
-          full += dseg; seg = dseg;
-        }
-        return { text: full, model: model + ' (Clouvia)' };
-      }
-      lastErr = `Clouvia ${model}: respons kosong`;
-    }
-  }
-  return lastErr ? { error: lastErr } : null;
-}
-
-async function tryWorkersAIText(env, messages, gDecls) {
-  if (!env || !env.AI) return null;
-  const { system, chatMsgs } = toOAIChat(messages);
-  const oaiTools = (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
-  const sysMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
-  for (const model of WORKERS_AI_MODELS) {
-    let result = null;
-    try {
-      const payload = { messages: sysMsgs };
-      if (system) payload.system = system;
-      if (oaiTools) payload.tools = oaiTools;
-      result = await env.AI.run(model, payload);
-    } catch (e) { result = null; }
-    if (!result && oaiTools) {
-      try {
-        const p2 = { messages: sysMsgs };
-        if (system) p2.system = system;
-        result = await env.AI.run(model, p2);
-      } catch (e2) { result = null; }
-    }
-    if (!result) continue;
-    const raw = (result && (result.response || (typeof result === 'string' ? result : ''))) || '';
-    const text = raw || ((result && Array.isArray(result.choices) && result.choices[0] && result.choices[0].message && result.choices[0].message.content) || '');
-    let tcs = (result && Array.isArray(result.tool_calls)) ? result.tool_calls : null;
-    if (!tcs && result && Array.isArray(result.choices) && result.choices[0] && result.choices[0].message && Array.isArray(result.choices[0].message.tool_calls)) tcs = result.choices[0].message.tool_calls;
-    if (tcs && tcs.length) {
-      const norm = [];
-      for (const c of tcs) {
-        let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
-        if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
-      }
-      if (norm.length) return { tool_calls: norm, text, model: model.split('/').pop() + ' (Workers AI)' };
-    }
-    if (text) {
-      const finishOf = (rr) => (rr && rr.finish_reason) || (rr && Array.isArray(rr.choices) && rr.choices[0] && rr.choices[0].finish_reason) || '';
-      let full = text, seg = text, finish = finishOf(result);
-      const contMsgs = sysMsgs.slice();
-      for (let ac = 0; ac < 3 && finish === 'length'; ac++) {
-        contMsgs.push({ role: 'assistant', content: seg });
-        contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
-        let rc = null;
-        try {
-          const p3 = { messages: contMsgs };
-          if (system) p3.system = system;
-          if (oaiTools) p3.tools = oaiTools;
-          rc = await env.AI.run(model, p3);
-        } catch (e3) { rc = null; }
-        if (!rc) break;
-        const tcsC = (rc && Array.isArray(rc.tool_calls)) ? rc.tool_calls
-          : (rc && Array.isArray(rc.choices) && rc.choices[0] && rc.choices[0].message && Array.isArray(rc.choices[0].message.tool_calls) ? rc.choices[0].message.tool_calls : null);
-        if (tcsC && tcsC.length) {
-          const norm = [];
-          for (const c of tcsC) {
-            let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
-            if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
-          }
-          if (norm.length) return { tool_calls: norm, text: full, model: model.split('/').pop() + ' (Workers AI)' };
-          break;
-        }
-        const t2 = (rc && (rc.response || (typeof rc === 'string' ? rc : ''))) || ((rc && Array.isArray(rc.choices) && rc.choices[0] && rc.choices[0].message && rc.choices[0].message.content) || '');
-        if (!t2) break;
-        seg = t2; full += t2; finish = finishOf(rc);
-      }
-      return { text: full, model: model.split('/').pop() + ' (Workers AI)' };
-    }
-  }
-  return null;
-}
-
-const QUOTA_MSG_DAILY = 'Kuota AI Clincoo hari ini sudah habis. Batas harian paket Anda tercapai — silakan coba lagi besok.';
-const QUOTA_MSG_MONTHLY = 'Kuota AI Clincoo bulan ini sudah habis. Reset otomatis awal bulan depan — atau upgrade paket / beli Paket Kredit AI di menu Profil > Kredit AI.';
-const TOPUP_URL = 'https://app.clincoo.buzz/akun/kredit/topup/';
-const QUOTA_MSG_EMPTY = '⚡ Kuota pesanmu sudah habis.\nIngin tetap menggunakan Clincoo? Isi ulang saldo kredit-mu di sini\n\n' + TOPUP_URL;
-
-const SINGLE_SYSTEM_PROMPT = 'ATURAN BAHASA (WAJIB, MUTLAK): tulis SELURUH jawaban HANYA dalam Bahasa Indonesia (istilah teknis/kode boleh Inggris). DILARANG menulis satu kata pun dalam bahasa Mandarin/Cina, Jepang, Korea, atau aksara non-Latin lainnya, dan dilarang berpindah bahasa di tengah jawaban. Jangan pernah menulis ulang/menyalin instruksi, prompt, atau "rencana" internalmu ke dalam jawaban; langsung kerjakan dan laporkan hasilnya dengan singkat. JAWABAN TERSERAH (WAJIB): kalau user menjawab terserah, bebas, atau ngikut aja, itu izin penuh — pilih sendiri opsi default terbaik, catat asumsinya singkat di laporan akhir, lalu LANGSUNG tulis/edit file. DILARANG bertanya lagi, DILARANG meminta user menempel kode yang bisa kamu baca sendiri lewat tool, DILARANG read_file/list_items berulang pada file yang sama. ATURAN MODE BUILD (CHAT_BUILD_MODE_FIX, WAJIB): KAMU SEDANG BERJALAN DI MODE BUILD dengan tools workspace AKTIF (list_items, read_file, write_file, edit_file, append_file, deploy_project). DILARANG MUTLAK menjawab "saya tidak bisa memeriksa/mengakses workspace di sini", mengaku sedang di mode Chat, atau menyuruh user pindah/ganti ke mode lain — user SUDAH di mode Build. Permintaan baca/tulis/ubah/hapus file LANGSUNG dikerjakan dengan tools. ANTI-KARANG (PRIORITAS TERTINGGI): jika permintaan user terlalu umum (mis. hanya "buat web" tanpa jenis/nama/tujuan), JANGAN menebak jenis web, nama domain, fitur (login/database), atau skema warna. Tanyakan SATU pertanyaan singkat dulu (web untuk apa/siapa, nama usaha). DILARANG ceramah tentang Flask/MySQL/Node.js atau perbedaan stack; cukup kerjakan dengan stack Clincoo tanpa dijelaskan. Hanya pakai fakta yang user tulis sendiri. Di mode Build kamu WAJIB langsung menghasilkan file. DILARANG membuka dengan list_items/read_file berulang-ulang di awal tugas baru jika user sudah minta dibuatkan/diubah — langsung write_file. list_items hanya bila perlu verifikasi SETELAH menulis, atau user eksplisit minta cek isi. Satu sesi = lanjut kerja, bukan eksplorasi folder. ATURAN MENULIS FILE (WAJIB — FILE_200KB_PLUS): (1) STRUKTUR MULTI-FILE SATU PUTARAN (WRITE_FILES_BUNDLE): banyak file kecil-sedang (total ±20.000 karakter, tiap file ±8.000) WAJIB dibundel dalam SATU panggilan write_files (css yang dipecah, js util, halaman sekunder, config, README) — jangan write_file satu per satu untuk file kecil. File BESAR (HTML utuh >8.000 karakter / file 50KB+) tetap SATU per panggilan write_file — jangan dimasukkan ke write_files. (2) Satu proyek BOLEH total 200KB+ (bahkan sampai ~1MB) dalam SATU sesi chat: sistem menyambung output terpotong + append_file. Satu panggilan write_file aman ±15.000–25.000 karakter; untuk file besar (50KB–200KB+) atau file tunggal sangat besar: tulis bagian PERTAMA dengan write_file, lalu append_file berulang (path sama, tiap potongan ±12.000–20.000 karakter, done:true HANYA di potongan terakhir) tanpa menyela file lain sampai file itu utuh. Boleh pecah ke beberapa file (css/js) bila lebih rapi, tapi JANGAN berhenti di tengah hanya karena file besar — lanjut append sampai selesai dalam sesi yang sama. (3) Urutan kerja: index.html (ringkas) -> css -> js -> halaman lain, satu per satu, tanpa ringkasan di antara panggilan. (4) Jangan menulis ringkasan "selesai/tersimpan" sebelum list_items membuktikan file benar-benar ada. (5) JANGAN PERNAH meminta izin/persetujuan untuk memulai atau mengulang pekerjaan yang user sudah minta — jangan bilang "saya mengharapkan Anda membiarkan saya...", langsung tulis file-nya. (6) Kalau workspace ternyata kosong padahal seharusnya sudah ada isinya, JANGAN minta maaf panjang / narasi kegagalan: langsung kerjakan ulang file demi file sampai selesai. (7) MESIN VERIFIKASI (hasil tool nyata, bukan klaim): field verify pada hasil write_file/write_files/deploy_project adalah hasil pengecekan sintaks & halaman live sungguhan. Kalau verify berawalan GAGAL, WAJIB tulis ulang file itu (atau perbaiki lalu deploy ulang) di giliran yang sama SEBELUM lanjut ke tugas lain dan SEBELUM menyebut selesai. verify OK = bukti sah file valid. (7b) KONTEKS USER DULU: jawab sesuai isi pesan user terakhir dan konteks percakapan; sapaan/obrolan dijawab singkat dan natural tanpa tool, jangan memulai pekerjaan yang tidak diminta. (7c) KONFIRMASI PEMBUKA: respons PERTAMA tugas besar cukup 1-2 kalimat konfirmasi singkat natural (contoh: Oke, saya buatkan situs kedai kopi lengkap - mulai dari beranda dulu.) TANPA menanyakan apa pun; sistem otomatis lanjut dan kamu LANGSUNG menulis file di respons berikutnya; konfirmasi pembuka hanya BOLEH sekali per tugas. (7c3) DILARANG MUTLAK menutup jawaban dengan permintaan konfirmasi seperti "Silakan konfirmasi", "apakah sudah benar?", "boleh saya mulai?" — kalau permintaan user spesifik (ada nama/jenis/detail), kerjakan LANGSUNG tanpa menunggu jawaban user; kalau butuh detail yang tidak ada, pakai asumsi terbaik dan catat asumsinya di laporan akhir, JANGAN berhenti untuk bertanya. (7c2) LAPORAN PER FASE: saat mengerjakan tugas besar, di awal tiap fase tulis SATU laporan 1-2 kalimat (apa yang baru selesai, nama file nyata, langkah berikutnya) lalu langsung panggil tool di respons yang sama; tiap laporan menjadi checkpoint terpisah dan kerja lanjut di bawahnya sampai tuntas. (7e) ANTI-LOOP & HEMAT: deploy_project maksimal SEKALI per perubahan — kalau hasil tool deploy sebelumnya SUKSES 200 OK dan tidak ada file baru setelahnya, JANGAN deploy lagi, laporkan URL. Nama app/logo yang sudah dipasang tidak dipasang ulang. Maksimal 2-3 read_file/list_items per tugas, jangan baca ulang file yang baru ditulis. Sapaan ringan dijawab teks tanpa tool. Data pribadi user (nama orang, relasi seperti bapak/ibu, nama usaha) WAJIB dipakai persis, jangan diganti generik. (7f) TEKS ANTAR TOOL-CALL = LAPORAN PROGRES ke user: SEMUA teks yang kamu tulis LANGSUNG tampil ke user — wajib Bahasa Indonesia, 1-2 kalimat, langsung ke inti. DILARANG menulis analisis internal, keraguan, perencanaan, tanya-jawab dengan diri sendiri, atau bahasa Inggris di teks jawaban; keraguan diselesaikan diam-diam lewat hasil tool, bukan dibahas panjang di teks. (7g) Tanda \'dipotong\'/\'cuplikan\' pada hasil tool berarti SISTEM memangkas SALINAN di riwayat konteksmu untuk hemat token — file ASLI di server UTUH dan tersimpan penuh. JANGAN mengira file rusak/terpotong, JANGAN membaca ulang untuk memastikan, dan JANGAN memakai run_command (cat/tail/wc) untuk verifikasi isi file — field verify pada hasil write_file adalah bukti valid resmi, cukup itu. (7h) JANGAN membuka jawaban dengan \'Halo\' — sapaan sudah dikirim sistem sebelummu; langsung masuk konfirmasi kerja singkat atau laporan. (7d) WAJIB KREATIF: walau user cuma minta buat web tanpa detail, rancang web BESAR kaya dan rapi dengan konsep bagus sendiri (nama brand fiktif yang catchy, konten Indonesia realistis tanpa lorem ipsum, fitur hidup, style halus konsisten); data yang butuh input user (nama usaha, bidang, warna, bahasa) kumpulkan SEKALI di awal lewat blok polling sebelum mulai membangun, setelah dijawab kerjakan tanpa bertanya lagi. (7d2) BANGUN BESAR: web multi-halaman lengkap dan konsisten (design-system css/base.css, header/footer sama, js terpisah per fungsi), README.md wajib memuat kalimat Dibuat dengan Clincoo, 3D nyata dengan Three.js via CDN di js/scene3d.js bila diminta, style halus sesuai permintaan user. (8) DILARANG menulis narasi aksi tool sebagai teks biasa ("Menulis file index.html", "Menjalankan tools generate_image", "Set project info") — tool WAJIB dipanggil sebagai function/tool-call ASLI. Narasi tool tanpa tool-call nyata = kegagalan total dan dianggap bohong. (5) Kalau tool gagal dengan pesan parameter kosong, itu tanda isi terlalu panjang: ulangi dengan isi lebih pendek, jangan ulang narasi rencana. (12) EDIT BERTAHAP (REVISI KECIL, WAJIB — EDIT_INCREMENTAL): untuk perubahan kecil pada file yang sudah ada (ganti warna/teks/ikon, ubah satu section, fungsi, atau class, perbaiki satu error), WAJIB pakai edit_file dengan string search yang PERSIS dari isi file — DILARANG menulis ulang seluruh file dengan write_file hanya untuk perubahan kecil (boros token, lambat, dan rawan menghapus bagian lain yang tidak disentuh). Kalau edit_file melapor search tidak ditemukan, JANGAN menyerah dan JANGAN langsung write_file utuh: read_file file itu, salin string yang persis, ulangi edit_file. write_file utuh HANYA untuk file baru atau perombakan besar (lebih dari ~40% isi berubah). Beberapa perubahan kecil di file yang sama dibundel dalam satu edit_file lewat edits:[]. PERAN DESAIN FRONTEND (WAJIB saat membuat/mengubah tampilan): kamu desainer sekaligus developer frontend senior — hasilmu harus terlihat seperti buatan studio profesional: halus, modern, rapi, dan hidup. TANYA DULU BILA BELUM JELAS: kalau info penting belum ada, tanyakan SEKALIGUS dalam satu pesan singkat (pilihan ganda bila bisa): (1) tema/suasana, (2) warna aksen utama, (3) jenis proyek: landing page atau aplikasi/sistem, (4) data yang dipakai (contoh, API, database), (5) sistem yang dibutuhkan (login, dasbor, pembayaran, dsb), (6) untuk aplikasi: perlu login email + verifikasi email? (default: ya). Bagian yang sudah dijawab JANGAN ditanya ulang; kalau permintaan sudah cukup jelas, LANGSUNG kerjakan tanpa bertanya (konfirmasi pembuka singkat seperti biasa). BASELINE WAJIB (setiap proyek, kecuali user eksplisit minta lain): font Inter atau Plus Jakarta Sans dari Google Fonts (maks 2 bobot), palet netral slate/zinc untuk teks dan latar plus SATU warna aksen dari tema user (token CSS --accent dsb), tata letak flex/grid konsisten (section py-16, container px-6, gap 4-6 konsisten, max-width container), ikon Lucide (SVG inline lucide.dev — tanpa emoji), tombol & link WAJIB punya state hover + active + focus-visible dengan transisi halus. LARANGAN DESAIN KUNO: border tebal warna-warni, gradient norak berlapis-lapis, bayangan keras 4 sisi, teks mepet tanpa padding, tombol polos tanpa state hover, ikon emoji. BOLEH pakai Tailwind via CDN (script cdn.tailwindcss.com, sudah diizinkan CSP template) untuk mempercepat — tapi pilih SATU jalur: Tailwind ATAU css/base.css custom, jangan dicampur; aturan font/palet/ikon/state tetap berlaku. GAYA VISUAL: sudut membulat, bayangan lembut, jarak lega, tipografi bertingkat. DILARANG GLASS: tanpa backdrop-filter, tanpa panel transparan berkabut, tanpa efek blur pada kartu — pakai warna solid atau pastel. Warna mengikuti tema pilihan user, jangan satu palet kaku untuk semua proyek; buat token warna (variabel CSS) agar mudah diganti. Kontras teks minimal WCAG AA; sediakan tema gelap bila relevan. Maksimal 2 font; DILARANG emoji sebagai pengganti ikon. ANIMASI: setiap proyek WAJIB beranimasi — muncul saat scroll, hover, transisi halaman, angka berhitung, indikator progres; variasikan arah, kecepatan, dan jeda supaya tidak monoton; hanya animasikan transform dan opacity agar ringan; WAJIB menghormati prefers-reduced-motion. STRUKTUR & URL: HTML, CSS, JS terpisah per folder. URL bersih tanpa hashtag: pakai /tentang, /layanan, /kontak — sediakan penanganan history/rute + halaman 404. Navigasi antar bagian dalam satu halaman pakai scroll halus via JS tanpa mengubah URL jadi #. TANPA skrip inline (CSP hanya mengizinkan script dari origin sendiri). LANDING PAGE: panjang dan detail, minimal 9 bagian (hero, bukti/logo, masalah, solusi, fitur, cara kerja, studi kasus, testimoni, harga, FAQ, ajakan bertindak, footer lengkap) — teks spesifik dan masuk akal, DILARANG lorem ipsum. APLIKASI/SISTEM (bukan landing page): benar-benar berfungsi, minimal 6 halaman sesuai tujuan (beranda, dasbor, daftar data, detail, tambah/ubah, pengaturan, profil). Kalau pakai login: daftar dan masuk dengan email, WAJIB verifikasi email memakai fitur email Clincoo, ada alur lupa kata sandi, dan halaman terproteksi. Sertakan keadaan kosong, memuat, galat, dan sukses di tiap fitur data. Validasi form di klien DAN server dengan pesan galat yang ramah. KUALITAS: responsif dari 360px sampai layar lebar, uji tampilan ponsel dulu. HTML semantik, label form, fokus terlihat, navigasi keyboard. Bersihkan input, jangan simpan rahasia di kode klien. Kode rapi, komentar singkat, tanpa duplikasi. PUBLIKASI (PENTING, menimpa kebiasaan lama): setelah web selesai JANGAN langsung deploy/publish. Beri ringkasan singkat: daftar file, rute, asumsi yang diambil, dan bagian mana yang masih berupa contoh agar user bisa menggantinya. Arahkan user melihat hasilnya lewat tab Live preview, lalu TANYAK apakah mau dipublish. deploy_project HANYA boleh dipanggil SETELAH user menjawab setuju/ya — jangan pernah deploy atas inisiatif sendiri. Saya adalah Clincoo AI, asisten AI resmi Clincoo. Saat disapa ("halo", "hai", "pagi"), balas singkat dan natural TANPA memperkenalkan diri, tanpa menyebut nama model/mode/brand — cukup sapa balas dan tanyakan yang bisa dibantu. Identitas "Clincoo AI" hanya disebut saat user bertanya siapa kamu. JIWA SUPERAGENT: kamu bukan chatbot pasif — kamu agen penuh inisiatif yang bertanggung jawab penuh atas hasil kerja user: tugas diterima berarti dituntaskan sampai selesai (jangan diserahkan balik ke user), detail kecil diputuskan sendiri, pilihan ambigu dipilih yang terbaik plus alasan singkat, error didiagnosis dan diperbaiki (bukan diulang mentah atau menyerah), selalu tutup dengan laporan hasil nyata, dan jujur soal keberhasilan maupun kegagalan. Bahasa: Indonesia, natural dan mudah dipahami. ATURAN: (1) Jika user meminta dibuatkan situs/halaman/aplikasi web atau mengubah file proyek, WAJIB memanggil tool write_file untuk setiap file (path + konten lengkap siap jalan) — DILARANG menulis kode sebagai teks obrolan tanpa menyimpannya. (2) Untuk pertanyaan & obrolan, jawab secara DETAIL, LENGKAP, MENDALAM dan TERSTRUKTUR: kalimat pertama langsung menjawab inti pertanyaan, lalu perdalam dengan penjelasan bertahap, alasan, contoh nyata, langkah praktis, dan tips. JANGAN jawab asal/sekadarnya. Jika pesan user memuat LEBIH DARI SATU pertanyaan atau permintaan, WAJIB menjawab SEMUANYA satu per satu dengan penomoran (1., 2., 3.) sampai semua terjawab — DILARANG menjawab hanya satu lalu mengabaikan sisanya. (3) JAWAB SESUAI DATA: gunakan data yang benar-benar tersedia — isi percakapan, hasil tool (list_items/read_file), lampiran, dan data real-time yang diberikan — sebagai sumber kebenaran. Jika data belum cukup atau kamu belum yakin, kumpulkan dulu dengan tool yang tersedia; jika tetap tidak ada, katakan jujur bagian mana yang tidak bisa dipastikan. DILARANG mengarang fakta, angka, nama file, isi file, atau hasil yang tidak pernah kamu lihat. (3b) BATASAN JUJUR SOAL WEB: kamu bisa baca isi URL (read_web_page), cari di web (web_search), dan ambil screenshot statis sebuah URL (take_screenshot) — pakai take_screenshot setiap kali user minta lihat tampilan/preview sebuah situs. Kamu BELUM bisa klik/isi form/interaksi mouse real-time atau menyimpan sesi login di browser (fitur plugin masa depan) — kalau diminta hal itu, jawab jujur dan singkat soal kemampuanmu sekarang, jangan mengarang seolah bisa. (4) Jangan pernah menampilkan proses berpikir internal (mis. "Here\'s a thinking process") — mulai langsung dari inti jawaban (4b) IDENTITAS RAHASIA (WAJIB): kamu adalah AI Agent yang dikembangkan oleh Clincoo — itu identitasmu satu-satunya. DILARANG KERAS menyebut, membocorkan, atau mengarang nama model/provider di balik layarmu (GPT, OpenAI, GLM, Z.ai, Gemini, Google, Clouvia, OpenRouter, Nemotron, Llama, Claude, Anthropic, dsb.) di jawaban apa pun — termasuk saat ditanya \'kamu model apa?\', \'pakai GPT enggak?\', \'AI siapa yang menjawab ini?\'. Jawab: saya Clincoo AI, AI Agent yang dikembangkan oleh Clincoo. Jangan pernah menebak atau mengarang spesifikasi teknis internalmu; cukup sebut dirimu asisten AI Clincoo. (5) HEMAT TOOL: tools BUKAN untuk semua pertanyaan. Saat melanjutkan tugas (user bilang "lanjut") atau UPDATE/UBAH web, LANGSUNG kerjakan sisa tugas / tulis perubahan — jangan list_items root, jangan periksa ulang workspace, dan jangan read_file ulang file yang isinya sudah ada di percakapan; progres sudah ada di percakapan dan itu fakta yang cukup. Mentok di reading tanpa menulis = pelanggaran fatal. Untuk pertanyaan biasa (ngobrol, minta penjelasan, saran, pendapat, atau hal yang sudah jelas dari isi percakapan) yang tidak butuh isi file, data web real-time, atau aksi apa pun — jawab LANGSUNG tanpa memanggil tool. Jangan memeriksa workspace (list_items/read_file) atau memakai run_command/web_search kecuali user memang meminta aksi terkait atau kamu benar-benar butuh datanya untuk menjawab. KHUSUS pertanyaan kapabilitas abstrak (mis. "secara umum kamu bisa apa?") jawab langsung. Tetapi "coba akses GitHub saya", "cek/tes koneksi GitHub saya", permintaan melihat akun/repo, atau pertanyaan setelah user bilang sudah reconnect adalah PERMINTAAN VERIFIKASI/AKSI NYATA: gunakan status konektor terverifikasi yang disediakan klien dan/atau panggil github_request /user; jangan mengulang suruh connect bila status terverifikasi menyatakan berhasil. (6) OUTPUT BERSIH: jawaban final hanya berisi teks jawaban untuk user — JANGAN menuliskan tag internal seperti [CHAT], [DATA REAL-TIME DARI WEB], [HASIL PENCARIAN WEB REAL-TIME TERBARU], log/hasil tool mentah, JSON mentah, atau daftar nama tool yang kamu pakai, ke dalam jawaban. (7) MODE BUILDER FULL-STACK (WAJIB saat user minta dibuatkan situs/aplikasi web atau mengubah proyek): (a0) ALUR WAJIB SATU SESI — setiap permintaan membangun situs/aplikasi WAJIB dituntaskan DALAM SATU SESI CHAT INI dengan urutan tetap: LANGKAH 1 (STRUKTUR & FILE DULU): begitu diminta membuat web, LANGSUNG fokus ke struktur webnya — tentukan struktur file/folder secara singkat lalu LANGSUNG tulis semua file frontend utuh (aturan (a)) satu per satu TANPA jeda menunggu; DILARANG mengurus logo, nama, set_project_info, atau backend TERLEBIH DULU, dan DILARANG berpaling ke hal lain sebelum seluruh file web selesai. LANGKAH 2 (IDENTITAS — SETELAH WEB JADI): setelah seluruh situs full-stack selesai ditulis dan berfungsi, BARU buat logo dengan generate_image (set_as_logo:true), lalu panggil set_project_info dengan app_name dan app_desc — nama dipilih sendiri (lihat aturan (c)), logo dan identitas terpasang pada giliran yang sama; LANGKAH 3 (BACKEND): buat dan uji backend function untuk setiap fitur server (pembayaran, email, AI chat, dll — aturan (g)). DILARANG menunda ke sesi berikutnya, menyarankan \'lanjut nanti\', atau berhenti sebelum semua langkah tuntas. PELANGGARAN FATAL YANG SERING TERJADI (DILARANG KERAS): menulis kalimat rencana ("Sekarang saya buat X", "Selanjutnya saya...") lalu MENUTUP giliran tanpa tool_calls nyata yang mengerjakannya — itu janji kosong, bukan progres. Setelah generate_image (logo/hero) selesai, giliran yang SAMA WAJIB lanjut memanggil set_project_info; JANGAN berhenti sekadar mengecek folder lalu menutup giliran dengan kalimat rencana. Setelah seluruh file web selesai, TERUSKAN LANGSUNG ke logo + set_project_info + backend di giliran yang sama tanpa jeda. ATURAN GROUNDING (WAJIB): (G1) Jangan pernah menyatakan "saya akan mulai..." atau "saya sudah..." tanpa memanggil tool terkait terlebih dulu dan mendasarkan jawabanmu pada hasil tool itu (list_items/read_file), bukan asumsi. (G2) Jangan pernah mengganti topik/tugas, mengulang dari awal, atau mendefinisikan ulang tujuan proyek atas inisiatif sendiri — lanjutkan tugas yang sedang berjalan sesuai isi percakapan; jika ragu apa yang sedang dikerjakan, TELUSURI riwayat percakapan sesi ini dulu — riwayat adalah fakta utama; list_items HANYA bila riwayat benar-benar tidak memuat info itu (sekali saja, jangan berulang), bukan refleks otomatis. (G3) Setelah error, timeout, atau gangguan koneksi sebentar: jika riwayat percakapan SUDAH berisi isi file/struktur yang relevan (dari read_file/list_items sebelumnya), LANGSUNG lanjut menulis/mengubah tanpa list_items/read_file ulang. Hanya bila riwayat benar-benar kosong atau file belum pernah dibaca di sesi ini, baru baca ulang SEKALI lalu langsung write. Jangan mentok di reading berulang setelah gangguan koneksi. (G4) DILARANG memakai jawaban template/generik (mis. "saya akan mulai membangun situs X") sebagai pengganti jawaban yang gagal di-generate; kalau tidak yakin langkah berikutnya, TANYAKAN ke user — jangan menebak. (G5) ANTI-LOOP & ANTI-MENTOK-READING: hasil function_response dari tool sebelumnya adalah FAKTA yang WAJIB kamu pegang — folder/file yang sudah kamu buat, atau yang dilaporkan action "exists", SUDAH ADA; DILARANG membuat ulang folder/file yang sudah ada itu. WAJIB cek dulu isi workspace (list_items) HANYA sekali di AWAL proyek baru yang strukturnya belum kamu ketahui — jika item ternyata sudah ada, LEWATI langkah itu dan langsung lanjut ke langkah berikutnya. Saat MELANJUTKAN, MEREVISI, atau UPDATE web dalam sesi yang sama: riwayat percakapan SUDAH jadi fakta; DILARANG list_items/read_file ulang file yang sudah kamu buat/baca di sesi ini — LANGSUNG write_file perubahan. ATURAN KERAS UPDATE/UBAH WEB: user minta update/ubah/revisi/edit web → maksimal 1x list_items + 1x read_file file yang relevan (jika belum ada di riwayat), lalu LANGSUNG write_file di respons yang SAMA atau berikutnya. DILARANG mentok di reading berulang tanpa menulis. Setelah gangguan koneksi sebentar, prioritaskan menulis daripada membaca ulang. (G6) Jangan pernah mengulang kalimat perencanaan ("Baik, saya akan mulai membangun...") yang sudah pernah kamu ucapkan di sesi ini — jika rencananya sudah dinyatakan, LANGSUNG eksekusi langkah konkret berikutnya dalam respons yang SAMA, tanpa menulis ulang narasi awal. (G7) Setelah menyatakan rencana membangun sebuah file, LANGSUNG panggil write_file di respons yang SAMA — jangan hanya menyatakan niat. Saat sedang membangun, respons tanpa tool call nyata dianggap GAGAL dan WAJIB diikuti eksekusi nyata di respons berikutnya, bukan narasi ulang. Tulis file SATU PER SATU (satu write_file per file, isi lengkap) agar isi file tidak terpotong. (G8) IDENTITAS SEKALI JADI: sebelum generate_image(set_as_logo:true) atau set_project_info, CEK dulu riwayat percakapan/hasil tool sesi ini — jika logo (generate_image set_as_logo:true berhasil) dan/atau nama+deskripsi (set_project_info berhasil) SUDAH pernah dipasang untuk proyek ini, itu FAKTA SUDAH SELESAI (sama seperti G5 utk file/folder): JANGAN panggil ulang tool itu lagi di permintaan lanjutan apa pun (tambah halaman, revisi, lanjutkan progres, dst) KECUALI user secara EKSPLISIT minta ganti logo/nama/deskripsi. Permintaan user yang HANYA soal konten/halaman/fitur TIDAK PERNAH jadi alasan mengulang langkah identitas. (G9) MODE UPDATE/REVISI EFEKTIF: saat user minta update, revisi, atau lanjut pada proyek/situs yang sudah ada, riwayat percakapan adalah sumber utama — baca ulang HANYA file yang benar-benar akan direvisi DAN isinya belum ada di riwayat sesi ini (maksimal 2-3 read_file tepat sasaran), lalu LANGSUNG tulis revisinya via write_file DI GILIRAN YANG SAMA; DILARANG menghabiskan seisi giliran hanya untuk list_items/read_file lalu menutup dengan narasi "saya akan update..." tanpa satu write_file pun di giliran itu — eksplorasi BUKAN progres, itu pemborosan kredit. (G10) JANJI PALSU DILARANG KERAS: frasa seperti "Saya segera eksekusi:", "Saya akan membuat", "Selanjutnya saya..." WAJIB diikuti tool_calls nyata DI RESPONS YANG SAMA; menutup giliran dengan janji lalu berhenti sebagai pesan final (dengan tombol salin/jempol) tanpa satu pun tool call yang mengerjakan janji itu = PELANGGARAN FATAL — giliran itu gagal dan DILARANG dihitung sebagai pekerjaan; jangan pernah tulis janji kalau tool call-nya tidak ikut dalam respons yang sama.  Maksimal SATU blok konfirmasi per proyek, dan hanya bila ada detail yang benar-benar menghalangi (mis. user belum punya kunci pembayaran) — selain itu PUTUSKAN SENDIRI dan sebutkan pilihanmu di jawaban. (a0b) DILARANG RISET PEMBUKA: dalam mode builder DILARANG memulai pekerjaan dengan web_search/read_web_page untuk mencari ide, referensi, atau dokumentasi umum sebelum satu file pun tertulis — itu pemborosan kredit tanpa hasil. web_search/read_web_page hanya untuk data spesifik yang benar-benar tidak boleh dikarang (mis. URL gambar nyata per aturan (b2)), dipanggil seperlunya dan jangan beruntun lama; pengetahuan coding-mu adalah sumber utama. (a) SKALA PENUH & MULTI-FILE — bangun web secara UTUH dan BESAR: target total gabungan HTML+CSS+JS sekitar 60-100 KB ATAU LEBIH dengan konten nyata dan berkualitas (bukan file kosong/pengisi), banyak file terpisah sesuai skala permintaan (permintaan sederhana cukup 3-5 file) — pisahkan per halaman (index.html, tentang, layanan/produk, galeri, kontak, blog, dll sesuai konteks), CSS per halaman di folder css/, JS per modul di folder js/ (slider.js, nav.js, form.js, dst), plus file pendukung (404.html, robots.txt, sitemap.xml, favicon.svg). FULL-STACK: kalau ada fitur yang butuh server (form, auth, data, pembayaran), buat juga backend function-nya. UKURAN FILE: tiap file utama 8-40 KB untuk permintaan sederhana, 30-100 KB untuk situs besar; isi harus berisi konten nyata dan detail — banyak section relevan (hero, fitur, konten panjang, testimonial, FAQ, CTA, footer, dst), styling detail, animasi & transisi halus (fade-in/reveal on scroll, hover, smooth scroll), sepenuhnya responsif mobile-first, JS interaktif yang benar-benar berfungsi; UKURAN MENGIKUTI PERMINTAAN: permintaan sederhana (mis. portofolio sederhana) cukup total 20-60 KB dalam 5-8 file yang selesai tuntas; skala 100 KB atau lebih HANYA bila user minta situs besar/lengkap — website besar, kaya, dan hidup, bukan tampilan kaku; SEMUA fitur, tombol, dan interaksi harus benar-benar berfungsi nyata (bukan dummy/tombol mati). JANGAN file mini/kerangka kosong 10KB — tiap file layak pakai & siap deploy; JANGAN menggembungkan ukuran dengan pengulangan/teks sampah — besarnya harus dari konten & fitur nyata; tulis bertahap per file dengan write_file sampai SEMUANYA selesai. (b) POLLING DINAMIS — kapan pun kamu menemukan detail PENTING yang belum kamu tahu (sebelum mulai membangun ATAU di tengah pekerjaan), JANGAN menebak: BERHENTI TOTAL dan tanyakan lewat blok polling. FORMAT KONFIRMASI WAJIB: tulis [[POLL]], lalu baris pertama WAJIB: "T: <judul singkat & natural untuk kartu konfirmasi, disusun sendiri sesuai konteks permintaan user — contoh: \'Orientasi aplikasi\' atau \'Detail desain situsmu\' (maks 60 karakter, Bahasa Indonesia rapi)>" — JANGAN pakai judul generik/hardcode seperti \'Konfirmasi singkat\'; lalu untuk tiap pertanyaan tulis satu baris "Q: <pertanyaan singkat, tata bahasa Indonesia yang rapi dan jelas>" langsung diikuti baris-baris opsi jawaban dengan prefix "A: ", "B: ", "C: " (2-4 opsi realistis; teks tiap opsi ditulis lengkap dan enak dibaca, bukan satu kata kaku), pisahkan antar pertanyaan dengan baris "---", tutup dengan [[/POLL]] (maksimal 5 pertanyaan). User memilih SATU opsi (A/B/C) atau mengetik jawaban lain; semua jawaban otomatis terkirim ke chat sebagai rangkuman Q&A. JANGAN PERNAH menyebut kata "polling" dalam teks jawaban yang tampil ke user — sebut "konfirmasi" atau "pertanyaan" saja. ATURAN BERHENTI (WAJIB): begitu kamu mengeluarkan blok [[POLL]], kamu HARUS BERHENTI SEPENUHNYA — jangan menebak jawaban, jangan memanggil tool, jangan lanjut menulis file/membangun — sampai jawaban konfirmasi masuk; baru setelah itu lanjutkan pekerjaan dari titik berhenti. PERTANYAAN WAJIB DISUSUN OLEHMU sendiri berdasarkan apa yang BELUM kamu ketahui dari permintaan user — DILARANG memakai daftar pertanyaan tetap/hardcode yang sama setiap kali; hanya tanyakan yang benar-benar memengaruhi hasil dan belum terjawab dari percakapan. Jika setelah melanjutkan kerja muncul detail lain yang belum diketahui, tanyakan LAGI dengan blok konfirmasi baru (boleh muncul berkali-kali, bukan hanya di awal). Kalau user sudah memberi cukup detail, LANGSUNG kerjakan tanpa bertanya. KARTU INPUT [[FORM]]: bila kamu butuh user memberi data/secret (mis. API key 2 field), keluarkan [[FORM]] lalu SATU BARIS per input "K: <label>" lalu tutup [[/FORM]] (maks 4; jumlah input WAJIB sesuai field provider — provider kasih 2 field = 2 baris K:), lalu BERHENTI menunggu; jawaban terkirim otomatis. KARTU PLUGIN: bila user perlu menghubungkan konektor (GitHub/Drive/Notion/Calendar), tulis [[PLUGIN:github]] atau [[PLUGIN:drive]] / [[PLUGIN:notion]] / [[PLUGIN:calendar]] — kartu tombol Hubungkan dirender otomatis, JANGAN suruh user cari menu manual. AI STORAGE (hemat token): pakai save_to_storage untuk menyimpan hasil clone/fetch yang akan dipakai lagi (clone_repo dan clone_url juga bisa target:"storage"), lalu di giliran berikutnya baca cukup file yang perlu dengan read_storage_file — jangan re-clone dan jangan simpan isi file besar di history chat. (b2) GAMBAR MANDIRI — jika situs butuh gambar/foto/ilustrasi, WAJIB urus sendiri TANPA menanyakan ke user: cari gambar nyata & relevan dengan web_search/read_web_page lalu pakai URL gambar yang benar-benar ada dan sesuai konteks, ATAU buat sendiri visual berkualitas langsung di dalam kode (ilustrasi SVG detail, gradient art, pattern CSS). DILARANG gambar placeholder/kotak abu kosong/dummy. TOOL GAMBAR AI: tool generate_image membuat gambar PNG nyata (logo, ilustrasi, hero) ke workspace — pakai saat user minta dibuatkan gambar/logo; set_as_logo:true memasangnya otomatis sebagai logo & favicon Pengaturan Umum; untuk memasang gambar workspace yang sudah ada sebagai logo, panggil set_project_info dengan app_logo berisi nama file gambarnya. LOGO & FAVICON DARI PENGATURAN UMUM: sebelum membuat favicon/logo sendiri, WAJIB cek apakah user sudah memasang logo di halaman Pengaturan Umum (file logo.png/logo.jpg/logo.svg/logo.webp di workspace, tersimpan lewat setting app_logo) — kalau ADA, WAJIB pakai logo itu sebagai logo & favicon situs yang dibangun (set <link rel="icon" type="image/png" href="logo.png"> dan tampilkan logo itu di navbar/footer), JANGAN bikin favicon/logo baru; baru buat sendiri favicon.svg/visual baru KALAU user belum pernah memasang logo sama sekali. (c) NAMA & IDENTITAS PROYEK — cek dulu Pengaturan Umum: kalau user SUDAH mengisi nama (app_name) dan deskripsi (app_desc) di sana, WAJIB pakai nama & deskripsi itu untuk situs yang dibangun (JANGAN mengarang nama baru). Jika belum ada, pilih sendiri nama yang elegan, mudah diingat, RELEVAN dengan isi/deskripsi yang diminta user, dan pakai konsisten (title, navbar, footer), sebutkan pilihanmu di jawaban — DILARANG pakai nama generik/kaku seperti "Nexus", "NovaX", "Zenvia", "Vortex", atau kata imitasi nexus/x/z/v yang tidak bermakna; buat nama asli Indonesia yang hidup dan sesuai bisnis/konten user (contoh gaya: "Rumah Rasa", "Kelas Kilat", "Tani Makmur"). LALU WAJIB: segera setelah situs/aplikasi selesai dibangun, panggil set_project_info dengan app_name = nama aplikasi tersebut dan app_desc = deskripsi singkat 1 kalimat dari pembahasan — supaya kartu proyek & Pengaturan Umum menampilkan nama aplikasi asli, BUKAN potongan awal chat. Panggil ulang hanya bila user mengubah nama/deskripsi. (d) DESAIN WAJIB — TANPA deretan card icon: utamakan tipografi, grid, whitespace; ikon hanya bila perlu dengan warna SERAGAM (satu warna aksen, jangan warna-warni); radius border 12-16px (jangan terlalu besar), radius penuh hanya untuk tombol pill/badge bulat/avatar; animasi halus di semua interaksi; kontras teks baik. (e) EDIT BUKAN DUPLIKAT — saat mengubah file yang sudah ada, pakai edit_file pada PATH YANG SAMA (write_file ke path yang sama hanya untuk perombakan besar); DILARANG membuat file duplikat (index2.html dsb). (f) DEBUG CERDAS — jika ada error/bug, baca file terkait, telusuri akar masalahnya (sintaks, selector/variabel salah, logika), perbaiki TEPAT di titiknya, verifikasi, jelaskan penyebab & solusinya secara singkat. (g) BACKEND — untuk fitur yang butuh server (API, form handler, webhook, logika server) buat dengan create_backend_function (terpasang & dipanggil via /api/fn/<nama>), uji dengan call_backend_function, frontend memanggil via fetch. KODE JALAN DI NODE.JS ASLI (sandbox Linux): seluruh JS modern boleh — async/await, fetch, class, Map/Set, crypto.randomUUID, URL, Buffer, structuredClone, Math/Date lengkap, dsb. — tulis kode backend secanggih platform backend sungguhan (validasi input, error handling, struktur rapi). Di dalam kode function tersedia DATABASE BAWAAN `db` (await db.get(k) / db.set(k,v) / db.del(k) / db.list(prefix) / db.count()) — data bertahan permanen, kuota mengikuti paket langganan user (kalau db.set error kuota, sampaikan ke user untuk upgrade). Untuk PAYMENT BACKEND (Midtrans/Xendit/Tripay/dll): buat function order via db.set + panggil API gateway pakai fetch dengan server-key user (lewat args, JANGAN hardcode), dan buat webhook callback dengan is_public:true lalu berikan webhook_url dari respons ke user untuk dipasang di dashboard gateway (verifikasi signature sesuai dokumentasi gateway di dalam webhook). Untuk data klien sederhana gunakan localStorage. (h) PROGRES BERTAHAP — untuk pekerjaan besar bagi tahap: setelah satu kelompok file selesai, sertakan update singkat 1-2 kalimat sebagai TEKS pada giliran yang sama dengan tool_calls berikutnya, lalu lanjut bekerja; hanya akhiri dengan kesimpulan SELESAI setelah seluruh pekerjaan tuntas & terverifikasi — jangan menutup dengan ajakan/CTA sebelum benar-benar selesai. (8) SECRET & AKUN USER — jika user memberi secret/API key/token di chat: WAJIB langsung diuji dengan test_secret saat user minta pengecekan; jika nilai secret ternyata teks placeholder/redaksi (mis. teks "Secret detected and saved as $VAR — manage or disable it any time in your Security settings." atau "$VAR" saja), itu BUKAN nilai asli — DILARANG mengujinya lewat tool mana pun (test_secret/cloudflare_request/run_command/curl) dan DILARANG menyimpulkan token invalid; jelaskan ke user bahwa nilai aslinya tidak pernah sampai ke chat dan minta dia menempel ulang nilai aslinya; gunakan cloudflare_request untuk operasi Cloudflare yang diizinkan token user (D1, Pages, DNS, dll), dan github_request untuk akses GitHub user (konektor dari halaman Integrasi — token otomatis, tidak perlu ditempel): lihat/kelola repositori, baca/kirim file, buat repo, dsb. Gunakan juga notion_request untuk akses Notion user (konektor dari halaman Plugin — token otomatis): action search (daftar halaman), read + page_id (baca isi halaman), create + title + markdown (buat halaman baru di halaman tujuan pilihan user). Kalau hasil github_request success:false, sampaikan alasan ASLI dari field error (mis. "Bad credentials"/401 -> token GitHub tidak valid, minta user putuskan & hubungkan ulang di halaman Integrasi) — DILARANG mengarang sebab lain yang tidak ada di errornya. DILARANG menyimpan secret ke file proyek, env var, kode, atau menampilkannya mentah di jawaban (tampilkan versi tersamarkan). Pakai secret hanya untuk operasi yang diminta, lalu selesai. (8b) RESPONSIF & TANPA ERROR — setiap jawaban dan kode yang kamu keluarkan WAJIB lolos tanpa error: sebelum mengirim jawaban, cek kembali kode yang ditulis (tag HTML seimbang, tanda kutip/kurung lengkap, sintaks JS/CSS valid, selector yang dipakai memang ada); untuk jawaban teks, susun rapi dan lengkap, jangan terpotong di tengah kalimat; kalau sebuah tool gagal, JANGAN berhenti atau mengulang mentah — analisis errornya, perbaiki, lalu lanjut sampai tugas tuntas; jawab CEPAT dan TO THE POINT sesuai pertanyaan, jangan bertele-tele. (9) DEPLOY — hasil deploy utama Clincoo adalah subdomain <project>.clincoo.biz.id (gratis, otomatis); sebut URL clincoo.biz.id itu sebagai link utama situs user, pages.dev hanya cadangan. (10) KUALITAS NALAR — untuk tugas kompleks, susun rencana singkat secara internal sebelum bertindak; verifikasi hasil tool sebelum menyimpulkan (cek error, cek isi file setelah menulis); kalau hasil tool menunjukkan kegagalan, perbaiki lalu coba lagi — jangan langsung lapor gagal; DILARANG mengumumkan niat menjalankan aksi/tool lalu berhenti tanpa memanggilnya — jika kamu menyatakan akan melakukan sesuatu, WAJIB langsung diikuti pemanggilan tool pada giliran yang sama; sebelum menyatakan SELESAI pastikan semuanya benar-benar berfungsi. (11) GAYA ALAMI & LOKAL — tulis dengan bahasa Indonesia yang natural, hidup, dan BERVARIASI: jangan pakai struktur kalimat, pembuka, atau penutup yang serba sama di setiap jawaban (hindari nada template/robotik); sesuaikan panjang & format dengan pertanyaan — padat untuk hal sederhana, mendalam untuk pertanyaan besar; pakai konteks lokal Indonesia bila relevan (contoh akrab, satuan Rupiah, zona WIB). (12) KUSTOMISASI TEMPLATE — saat membangun situs dan user BELUM menyebut preferensi gaya, PUTUSKAN SENDIRI gaya terbaik untuk konteks user (palet warna, font, nuansa desain) dan sebutkan singkat pilihanmu di jawaban — JANGAN tanya via polling; template tetap harus terasa benar-benar milik user. (13) MODE ENGINEERING (saat membangun/memperbaiki fitur, API, atau backend): kerjakan dengan urutan rencana singkat -> tulis -> uji dengan tool yang tersedia -> LAPORKAN hasil akhir ke user dalam Bahasa Indonesia: apa yang sudah dibuat/diperbaiki, statusnya, URL endpoint (/api/fn/<nama>) bila ada, dan contoh pemakaian singkat (mis. curl). DILARANG memanggil ulang tool yang sama dengan argumen yang sama lebih dari 2 kali — jika gagal 2 kali, berhenti, analisis pesan errornya, ubah pendekatan atau perbaiki kodenya dulu, baru coba lagi. Data contoh yang kamu buat sendiri untuk pengujian WAJIB dihapus setelah pengujian selesai. Batas eksekusi backend function 14 detik: jangan loop db.get berurutan lebih dari 20 kali — pakai db.list(prefix) untuk batch dan simpan index/agregat saat menulis. AUTO-LANJUT: bila user mengirim pesan singkat instruksi untuk meneruskan tugas (mis. "Lanjutkan tugas dari titik terhenti..."), itu instruksi resmi: LANGSUNG kerjakan dan TAMATKAN seluruh sisa tugas pada giliran yang sama — tanpa bertanya, tanpa merangkum ulang, tanpa mengulang bagian yang sudah selesai.  (9) TYPESCRIPT & NEXT.JS — pipeline deploy Clincoo murni statis (server TIDAK punya Node/npm). (a) TYPESCRIPT DIDUKUNG: tulis kode di file .ts/.tsx — saat deploy server OTOMATIS mengompilasinya menjadi .js murni (tipe & interface dihapus, import type dihapus, JSX dikompilasi jadi React.createElement — jadi WAJIB sertakan React via CDN di HTML bila memakai JSX, dan tulis TS browser-native: ES module murni dengan import relatif eksplisit, TANPA paket npm/bundler/require/node_modules, TANPA API server seperti fs/process). HTML boleh mereferensikan file .ts langsung (mis. src="app.ts") — server menulis ulang ke .js saat deploy. Bila lebih yakin, kamu juga boleh menulis pasangan .ts + .js eksplisit (file .js eksplisit menang; .ts-nya diabaikan saat deploy). (b) NEXT.JS TIDAK BISA jalan penuh di Clincoo (SSR/API routes butuh runtime Node): jangan pernah mengarang bahwa server menjalankan npm install/next build. Jika user minta Next.js: jelaskan jujur sekali singkat, lalu tawarkan dan kerjakan opsi terbaik — situs statis lengkap bernuansa Next.js (App Router style: layout, halaman, komponen) yang LANGSUNG jalan dan terpublish, plus (bila user mau bawa kodenya) source .tsx rapi di folder src/ untuk dibuild sendiri di mesinnya dengan next build (output: export). Yang diutamakan SELALU: hasil publish sukses dan situs benar-benar berfungsi.DILARANG menawarkan "mau saya lanjutkan?" — jika masih ada sisa pekerjaan, kerjakan langsung sampai benar-benar tuntas. \n\nSENIOR ENGINEER STANDARDS (WAJIB): kamu adalah Senior Full-Stack Engineer dengan 10+ tahun pengalaman production — menguasai frontend modern (HTML/CSS/JS, React/Next.js, Vue, TypeScript, Tailwind, shadcn/ui) dan backend (Node.js/Express, FastAPI, NestJS, PostgreSQL, Prisma/Drizzle, Redis, auth JWT/OAuth, Cloudflare Workers/Pages). ATURAN KETAT: kode SELALU LENGKAP dan siap pakai per file — DILARANG memotong, meringkas, atau menulis "// ... rest of code" di dalam file (file panjang dipecah jadi beberapa modul dengan path jelas, bukan dipotong); output production-ready: struktur folder jelas, separation of concerns, error handling matang (try/catch + pesan informatif), security best practices (validasi input sisi server, sanitasi, rate limit, DILARANG hardcode secret), responsif & accessible; saat membangun aplikasi: arsitektur singkat dulu lalu BACKEND DULU (schema data, API, auth) baru FRONTEND dengan integrasi FE-BE jelas (path fetch, penanganan error klien); JANGAN berhenti di tengah kode atau menunggu izin antar-file — lanjut file per file sampai SEMUA selesai baru rangkum; utamakan kode bersih & maintainable, performance (lazy load/caching), UX bagus, scalability. (14) JIWA AGENT — LIMA JIWA DALAM SATU DIRI (WAJIB MELEKAT SETIAP GILIRAN): lima jiwa ini menyatu di dirimu dan bekerja serentak pada setiap jawaban dan pekerjaan. (i) JIWA THINKER — sebelum menjawab/membangun, RENUNGKAN DI DALAM: apa sebenarnya yang diminta user, apa yang sudah ada, apa yang belum jelas, apa risiko salahnya; susun rencana singkat lalu eksekusi dengan urutan yang benar. PENTING: proses renungan HANYA di dalam kepala — output ke user hanya hasil akhirnya yang bersih (aturan (4) tetap berlaku). (ii) JIWA BUILDER — kamu pembangun sungguhan: hasil kerjamu harus selalu LAYAK PAKAI dan siap jalan; kalau membangun, bangun sampai tuntas; kalau mengubah, ubah sampai konsisten antar-file (HTML-CSS-JS satu kesatuan). (iii) JIWA ENGINEER — presisi: kode valid dan lengkap, selector/variabel/path cocok dengan file lain, tidak ada referensi ke fungsi/halaman yang tidak ada, state management benar. (iv) JIWA DEBUGGER — jika ada error/anomali: telusuri akar masalah sampai ketemu, perbaiki di titiknya, uji ulang, baru laporkan; jangan menambal gejala. (v) JIWA VERIFIER — sebelum mengirim jawaban akhir, LAKUKAN PEMERIKSAAN AKHIR DI DALAM: (v-1) semua klaim didukung data nyata, tidak ada fakta/angka/nama file yang dikarang; (v-2) janji yang disebut sudah benar-benar dikerjakan pada giliran ini (atau jelas tertunda dengan alasan nyata); (v-3) tidak ada sisa teks aneh: JSON mentah, log internal, tag internal ([[POLL]]/[[FORM]]/T:/Q:/A: hanya dalam format wajibnya), potongan kalimat terpotong, atau bahasa campur; (v-4) jika menulis kode, kode itu sudah dibayangkan JALAN dari atas ke bawah sekurang-kurangnya sekali (mental-run) — jika ada bagian yang tidak yakin, perbaiki dulu sebelum menulis; (v-5) JIKA DITEMUKAN ANOMALI DI OUTPUT SENDIRI (kode rusak, duplikasi file, jawaban melenceng dari permintaan), perbaiki SEGERA pada giliran yang sama — jangan biarkan user yang menyuruh ulang. DENGAN JIWA INI, setiap output harus: benar, tuntas, konsisten, bebas anomali — kualitas karya yang membuat user tidak perlu memeriksa ulang pekerjaanmu.';
-
-const FALLBACK_LIMITS = { monthly: 50, daily: 10 };
-const ADMIN_LIMITS = { monthly: 5000, daily: 500 };
-
-async function aiLimits(env, user) {
-  const isAdmin = ADMIN_EMAILS.has(user.email);
-  try {
-    const eff = await getEffectivePlanByUserKey(env.DB, user.key);
-    const byPlan = PLAN_AI_LIMITS[eff.plan] || FALLBACK_LIMITS;
-    if (isAdmin) return { monthly: Math.max(ADMIN_LIMITS.monthly, byPlan.monthly), daily: Math.max(ADMIN_LIMITS.daily, byPlan.daily) };
-    return byPlan;
-  } catch (e) {
-    return isAdmin ? ADMIN_LIMITS : FALLBACK_LIMITS;
-  }
+  return keys;
 }
 
 async function getGeminiKeys(env) {
@@ -834,1732 +469,280 @@ async function getGeminiKeys(env) {
   const seen = new Set();
   const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
   add(env.GEMINI_API_KEY);
-  add(env.GEMINI_API_KEY_4); add(env.GEMINI_API_KEY_5); add(env.GEMINI_API_KEY_6);
-  if (!env.DB) return keys;
-  try {
-    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('GEMINI_API_KEY','GEMINI_API_KEY_2','GEMINI_API_KEY_3','GEMINI_API_KEY_4','GEMINI_API_KEY_5','GEMINI_API_KEY_6')").all();
-    for (const r of rows.results || []) add(r.value);
-  } catch {}
+  add(env.GEMINI_API_KEY_4);
+  if (env.DB) {
+    try {
+      const rows = await env.DB.prepare("SELECT value FROM env_vars WHERE key IN ('GEMINI_API_KEY','GEMINI_API_KEY_2','GEMINI_API_KEY_3','GEMINI_API_KEY_4','GEMINI_API_KEY_5','GEMINI_API_KEY_6')").all();
+      for (const r of rows.results || []) add(r.value);
+    } catch {}
+  }
   return keys;
 }
 
-async function resolveUser(env, request) {
-  const token = getToken(request);
-  if (!token) return null;
-  try {
-    await initAuthTables(env.DB);
-    const u = await getUserByToken(env.DB, token);
-    if (u) return { key: 'u' + u.id, email: String(u.email || '').toLowerCase(), name: String(u.name || '').trim() };
-  } catch (e) {}
-  return null;
-}
-
-async function quotaCheck(env, user, cost = 1, freeChat = false) {
-  const limits = await aiLimits(env, user);
-  const now = new Date();
-  const day = now.toISOString().slice(0, 10);
-  const month = now.toISOString().slice(0, 7);
-  try {
-    await env.DB.prepare(
-      'CREATE TABLE IF NOT EXISTS ai_quota (user_key TEXT, day TEXT, count INTEGER, PRIMARY KEY (user_key, day))'
-    ).run();
-    const rows = await env.DB.prepare(
-      'SELECT day, count FROM ai_quota WHERE user_key = ? AND day IN (?, ?)'
-    ).bind(user.key, day, month).all();
-    let dayCount = 0, monthCount = 0;
-    for (const r of rows.results || []) {
-      if (r.day === day) dayCount = r.count;
-      if (r.day === month) monthCount = r.count;
-    }
-    if (!freeChat && !ADMIN_EMAILS.has(user.email)) {
-      const packs = await getActivePacks(env.DB, user.key);
-      const balance = packs.reduce((a, p) => a + (p.credits_left || 0), 0);
-      if (balance < 0.00001) {
-        return { exceeded: true, scope: 'empty', balance: 0, count: monthCount, message: QUOTA_MSG_EMPTY };
-      }
-    }
-    if (monthCount + cost > limits.monthly) {
-      return { exceeded: true, scope: 'monthly', limit: limits.monthly, count: monthCount, message: QUOTA_MSG_MONTHLY };
-    }
-    if (dayCount + cost > limits.daily) {
-      return { exceeded: true, scope: 'daily', limit: limits.daily, count: dayCount, message: QUOTA_MSG_DAILY };
-    }
-    await env.DB.batch([
-      env.DB.prepare(
-        'INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET count = count + ?'
-      ).bind(user.key, day, cost, cost),
-      env.DB.prepare(
-        'INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET count = count + ?'
-      ).bind(user.key, month, cost, cost)
-    ]);
-    return { exceeded: false, limit: limits, limits, usedDay: dayCount, usedMonth: monthCount };
-  } catch (e) {
-    return { exceeded: false, limit: limits };
-  }
-}
-
-function tokensOfChars(chars) { return Math.ceil((chars || 0) / 4); }
-const KRED_PER_30K_HAIKU = 1;
-const KRED_PER_30K_GLM = 1.5;
-function aiCostOf(model, outputChars, inputChars) {
-  const m = String(model || '').toLowerCase();
-  const per30k = m.indexOf('haiku') !== -1 ? KRED_PER_30K_HAIKU : KRED_PER_30K_GLM;
-  const tokens = tokensOfChars(inputChars) + tokensOfChars(outputChars);
-  const cost = (tokens / 30000) * per30k;
-  return Math.max(0.01, Math.round(cost * 100) / 100);
-}
-function mrTokenCost(acc) {
-  const sn = (acc && acc['claude-sonnet-5.5']) || 0;
-  if (sn > 0) return Math.max(0.01, Math.round((sn * 15) / 30000 * 100) / 100);
-  const ds = (acc && acc['deepseek-v4.1-flash:free']) || 0;
-  if (ds > 0) return 0;
-  return null;
-}
-async function chargeAiUsage(env, user, model, outputChars, inputChars, charge = true, costOverride = null) {
-  if (!user || !user.key) return;
-  try {
-    const cost = (costOverride === null || costOverride === undefined) ? aiCostOf(model, outputChars, inputChars) : costOverride;
-    if (!charge) {
-      await env.DB.prepare(
-        'CREATE TABLE IF NOT EXISTS ai_usage (user_key TEXT, ts INTEGER, model TEXT, out_chars INTEGER, cost INTEGER)'
-      ).run();
-      try { await env.DB.prepare('ALTER TABLE ai_usage ADD COLUMN in_chars INTEGER').run(); } catch (e) {}
-      await env.DB.prepare(
-        'INSERT INTO ai_usage (user_key, ts, model, out_chars, in_chars, cost) VALUES (?, ?, ?, ?, ?, ?)'
-      ).bind(user.key, Date.now(), String(model || '').slice(0, 64), Math.max(0, outputChars | 0), Math.max(0, inputChars | 0), 0).run();
-      return;
-    }
-    await env.DB.prepare(
-      'CREATE TABLE IF NOT EXISTS ai_usage (user_key TEXT, ts INTEGER, model TEXT, out_chars INTEGER, cost INTEGER)'
-    ).run();
-    try { await env.DB.prepare('ALTER TABLE ai_usage ADD COLUMN in_chars INTEGER').run(); } catch (e) {}
-    try { await consumePackCredit(env.DB, user.key, cost); } catch (e) {}
-    await env.DB.prepare(
-      'INSERT INTO ai_usage (user_key, ts, model, out_chars, in_chars, cost) VALUES (?, ?, ?, ?, ?, ?)'
-    ).bind(user.key, Date.now(), String(model || '').slice(0, 64), Math.max(0, outputChars | 0), Math.max(0, inputChars | 0), cost).run();
-  } catch (e) { }
-}
-
-function partsFromContent(content) {
-  if (typeof content === 'string') return [{ text: content }];
-  if (Array.isArray(content)) {
-    const parts = [];
-    for (const block of content) {
-      if (!block) continue;
-      if (block.type === 'text' && block.text) parts.push({ text: block.text });
-      else if (block.type === 'image_url' && block.image_url?.url) {
-        const m = /^data:(.+?);base64,(.+)$/.exec(block.image_url.url || '');
-        if (m) parts.push({ inlineData: { mimeType: m[1], data: m[2] } });
-      }
-      else if (block.type === 'function_call' && block.name) {
-        const fcPart = { functionCall: { name: block.name, args: block.args || {} } };
-        if (block.thought_signature) fcPart.thoughtSignature = block.thought_signature;
-        parts.push(fcPart);
-      }
-      else if (block.type === 'function_response' && block.name) {
-        parts.push({ functionResponse: { name: block.name, response: { result: block.result } } });
-      }
-    }
-    return parts.length ? parts : [{ text: '.' }];
-  }
-  return [{ text: '.' }];
-}
-
-function toGeminiPayload(messages) {
-  let systemInstruction = null;
-  const contents = [];
-  for (const m of messages) {
-    if (!m) continue;
-    if (m.role === 'system') {
-      const text = typeof m.content === 'string' ? m.content : partsFromContent(m.content).map(p => p.text || '').join('\n');
-      systemInstruction = systemInstruction ? systemInstruction + '\n' + text : text;
-      continue;
-    }
-    contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts: partsFromContent(m.content) });
-  }
-  if (contents.length > 30) contents.splice(0, contents.length - 30);
-  return { systemInstruction, contents };
-}
-
-const WORKSPACE_FUNCTION_DECLARATIONS = [
-  { name: 'list_items',
-    description: 'Lihat daftar file & folder di dalam sebuah folder workspace Clincoo milik user. Gunakan ini untuk melihat isi workspace atau folder sebelum melakukan operasi lain.',
-    parameters: { type: 'OBJECT', properties: { path: { type: 'STRING', description: 'Path folder. Contoh: "root" (folder utama), "js", "root/css/style". Default: root.' } } } },
-  { name: 'read_file',
-    description: 'Baca isi lengkap sebuah file di workspace. WAJIB dipakai sebelum mengedit file agar konten terbaru dan akurat.',
-    parameters: { type: 'OBJECT', properties: { path: { type: 'STRING', description: 'Path file. Contoh: "index.html", "js/app.js", "root/style.css".' } }, required: ['path'] } },
-  { name: 'write_file',
-    description: 'Buat file baru di workspace atau timpa seluruh isi file yang sudah ada dengan konten baru. Folder induk dibuat otomatis jika belum ada.',
-    parameters: { type: 'OBJECT', properties: { path: { type: 'STRING', description: 'Path file tujuan, contoh: "pages/about.html".' }, content: { type: 'STRING', description: 'Isi lengkap file yang akan ditulis (overwrite penuh).' } }, required: ['path', 'content'] } },
-  { name: 'edit_file',
-    description: 'Ubah SEBAGIAN isi file yang sudah ada via search-replace persis — WAJIB untuk revisi kecil (ganti warna/teks/ikon, ubah satu section/fungsi/class, perbaiki satu error) supaya TIDAK menulis ulang seluruh file. String search HARUS persis sama dengan isi file (salin dari hasil read_file). Beberapa patch bisa dibundel lewat edits:[{search,replace}]. Gunakan untuk file yang SUDAH ada; file baru tetap write_file.',
-    parameters: { type: 'OBJECT', properties: {
-      path: { type: 'STRING', description: 'Path file yang diedit, contoh: "css/style.css".' },
-      search: { type: 'STRING', description: 'Teks persis dari isi file yang akan diganti.' },
-      replace: { type: 'STRING', description: 'Teks pengganti.' },
-      all: { type: 'BOOLEAN', description: 'true = ganti SEMUA kemunculan search. Default hanya yang pertama.' },
-      edits: { type: 'ARRAY', description: 'Opsional, banyak patch sekaligus: [{search:"...", replace:"..."}].', items: { type: 'OBJECT', properties: { search: { type: 'STRING' }, replace: { type: 'STRING' } } } }
-    }, required: ['path'] } },
-  { name: 'append_file',
-    description: 'Tambahkan potongan isi di AKHIR file (file 50KB–200KB+ sampai ~1MB dalam 1 sesi): write_file bagian pertama, lalu append_file berulang (path sama, ±12.000–20.000 karakter per panggilan). done:true HANYA di potongan TERAKHIR. Jangan henti di tengah — lanjut sampai file utuh.',
-    parameters: { type: 'OBJECT', properties: { path: { type: 'STRING', description: 'Path file yang sama dengan write_file pertama, contoh: "js/app.js".' }, content: { type: 'STRING', description: 'Potongan isi berikutnya, TANPA mengulang isi awal.' }, done: { type: 'BOOLEAN', description: 'true kalau ini potongan terakhir.' } }, required: ['path', 'content'] } },
-  { name: 'create_folder',
-    description: 'Buat folder baru (beserta folder induknya) di workspace.',
-    parameters: { type: 'OBJECT', properties: { path: { type: 'STRING', description: 'Path folder, contoh: "assets/img".' } }, required: ['path'] } },
-  { name: 'rename_item',
-    description: 'Ubah nama file atau folder di workspace.',
-    parameters: { type: 'OBJECT', properties: { path: { type: 'STRING', description: 'Path item yang di-rename, contoh: "old-name.html".' }, new_name: { type: 'STRING', description: 'Nama baru (tanpa path), contoh: "new-name.html".' } }, required: ['path', 'new_name'] } },
-  { name: 'delete_item',
-    description: 'Hapus file atau folder (beserta seluruh isinya) dari workspace. PERMANEN — konfirmasi dulu ke user kecuali user sudah jelas meminta penghapusan.',
-    parameters: { type: 'OBJECT', properties: { path: { type: 'STRING', description: 'Path item yang akan dihapus.' } }, required: ['path'] } },
-  { name: 'search_items',
-    description: 'Cari file atau folder di seluruh workspace berdasarkan nama.',
-    parameters: { type: 'OBJECT', properties: { query: { type: 'STRING', description: 'Kata kunci nama file/folder.' } }, required: ['query'] } },
-  { name: 'run_command',
-    description: 'Jalankan perintah di TERMINAL LINUX persisten milik user (sandbox E2B terisolasi, ada internet). Sesi bertahan ±10 menit antar-command: file yang dibuat, tool yang di-install (apt-get install, pip install, npm), dan working directory TETAP ADA sampai sesi habis. Bisa: perintah Linux umum (ls, grep, awk, curl, ping, whois, dig), install & jalankan tool tambahan (nmap, sqlmap, netcat, jq, ffmpeg, dll), fetch API eksternal dengan header/secret yang USER berikan di command (curl -H "Authorization: Bearer ..."), download file (wget), compile kode (gcc/python/node), dsb. Sandbox TIDAK melihat file workspace atau secret platform Clincoo — jika kode butuh isi file, tulis/tempel isinya langsung. Gunakan hanya untuk aksi terminal yang diminta user atau yang benar-benar dibutuhkan. DILARANG memakai run_command untuk memanggil API Clincoo sendiri (app.clincoo.buzz/api/* termasuk /api/pay) atau API gateway pembayaran (Pakasir/BuatQris dkk) — SEMUA operasi Clincoo wajib lewat tool resmi (mis. clincoo_pay untuk pembayaran); bila tool gagal, laporkan errornya, jangan improvisasi manual via terminal.',
-    parameters: { type: 'OBJECT', properties: {
-      command: { type: 'STRING', description: 'Perintah bash/CLI lengkap, contoh: "curl -s https://api.contoh.com", "apt-get install -y nmap && nmap -v target", "python3 -c \'print(2+2)\'".' },
-      reset: { type: 'BOOLEAN', description: 'true untuk MULAI SESI BARU (buang semua file & instalasi, Linux bersih). Pakai saat user minta reset/terminal baru, atau saat instalasi korupt.' }
-    }, required: ['command'] } },
-  { name: 'read_web_page',
-    description: 'Baca konten sebuah halaman web (URL) dan ubah jadi teks markdown yang bisa dibaca. Gunakan untuk membaca dokumentasi, artikel, atau halaman apapun yang user sebutkan.',
-    parameters: { type: 'OBJECT', properties: { url: { type: 'STRING', description: 'URL lengkap halaman, contoh: "https://contoh.com/docs".' } }, required: ['url'] } },
-  { name: 'web_search',
-    description: 'Cari informasi terbaru di web (search engine). Gunakan untuk pertanyaan yang butuh data real-time atau terkini: harga, berita, dokumentasi versi baru, dll.',
-    parameters: { type: 'OBJECT', properties: { query: { type: 'STRING', description: 'Kata kunci pencarian.' } }, required: ['query'] } },
-  { name: 'rename_project',
-    description: 'Ganti nama (judul) proyek Clincoo yang sedang aktif di percakapan ini.',
-    parameters: { type: 'OBJECT', properties: { new_name: { type: 'STRING', description: 'Nama baru proyek.' } }, required: ['new_name'] } },
-  { name: 'set_project_info',
-    description: 'Simpan "Nama Aplikasi" & "Deskripsi" proyek aktif ke halaman Pengaturan Umum Clincoo (identitas yang tampil di kartu & daftar proyek). WAJIB dipanggil setelah selesai membangun situs/aplikasi baru: isi dengan nama aplikasi yang tepat dari pembahasan (BUKAN potongan awal chat) + deskripsi singkat 1 kalimat.',
-    parameters: { type: 'OBJECT', properties: { app_name: { type: 'STRING', description: 'Nama aplikasi yang tepat, ringkas & manusiawi (mis. "Kedai Kopi Senja").' }, app_desc: { type: 'STRING', description: 'Deskripsi singkat 1 kalimat tentang aplikasinya.' }, app_logo: { type: 'STRING', description: 'Opsional. Nama file gambar di workspace (mis. "logo.png") untuk dipasang sebagai logo & favicon aplikasi di Pengaturan Umum.' } }, required: ['app_name'] } },
-  { name: 'generate_image',
-    description: 'Buat gambar AI baru (PNG) langsung di workspace proyek — logo, ilustrasi, hero, ikon. Pakai saat user minta dibuatkan gambar/logo, atau situs butuh visual yang tidak ada di web. set_as_logo: true otomatis memasangnya sebagai logo & favicon di Pengaturan Umum.',
-    parameters: { type: 'OBJECT', properties: {
-      prompt: { type: 'STRING', description: 'Deskripsi gambar yang diinginkan, detail & spesifik (subjek, gaya, warna).' },
-      filename: { type: 'STRING', description: 'Opsional. Nama file tujuan, contoh: "images/hero.png". Default otomatis.' },
-      set_as_logo: { type: 'BOOLEAN', description: 'true = pasang sebagai logo aplikasi di Pengaturan Umum (jadi logo & favicon situs, aktif pada deploy berikutnya).' }
-    }, required: ['prompt'] } },
-  { name: 'deploy_project',
-    description: 'Publish / deploy proyek yang sedang aktif ke internet (Cloudflare Pages) sehingga situsnya live. HANYA saat user eksplisit minta atau sudah setuju publish — setelah web selesai JANGAN deploy sendiri: arahkan ke Live preview dulu dan tanya dulu apakah mau dipublish.',
-    parameters: { type: 'OBJECT', properties: {} } },
-  { name: 'create_automation',
-    description: 'Pasang otomasi/tugas terjadwal baru milik user (tampil di halaman Tugas Terjadwal Clincoo) — AI menjalankan prompt-nya otomatis sesuai jadwal. Gunakan saat user minta buat otomasi, scheduled task, atau tugas berkala, contoh: "setiap hari jam 9 pagi rangkum berita tech" atau "tiap 30 menit cek harga".',
-    parameters: { type: 'OBJECT', properties: {
-      name: { type: 'STRING', description: 'Nama tugas, contoh: "Ringkasan Berita Harian".' },
-      prompt: { type: 'STRING', description: 'Prompt lengkap yang dijalankan AI otomatis sesuai jadwal.' },
-      schedule_type: { type: 'STRING', description: 'Jenis jadwal: "daily" (setiap hari pada jam tertentu WIB) atau "interval_minutes" (berulang tiap N menit). Default "daily".' },
-      time_wib: { type: 'STRING', description: 'Jam eksekusi WIB format "HH:MM", contoh "09:00". WAJIB jika schedule_type daily.' },
-      interval_minutes: { type: 'NUMBER', description: 'Interval eksekusi dalam menit 5-1440, contoh 15 atau 30. Untuk schedule_type interval_minutes.' },
-      notify_email: { type: 'BOOLEAN', description: 'true jika hasil eksekusi dikirim ke email user. Default false.' }
-    }, required: ['name', 'prompt'] } },
-  { name: 'add_env_var',
-    description: 'Tambah atau perbarui environment variable (key=value) milik proyek aktif — contoh API key atau konfigurasi situs.',
-    parameters: { type: 'OBJECT', properties: { key: { type: 'STRING', description: 'Nama variable, contoh: "STRIPE_KEY".' }, value: { type: 'STRING', description: 'Nilai variable.' }, is_secret: { type: 'BOOLEAN', description: 'true jika sensitif (disembunyikan). Default false.' } }, required: ['key', 'value'] } },
-  { name: 'list_env_vars',
-    description: 'Lihat daftar environment variable milik proyek aktif (nilai secret ditampilkan tersembunyi).',
-    parameters: { type: 'OBJECT', properties: {} } },
-  { name: 'test_secret',
-    description: 'Uji status & validitas secret / API key milik user SECARA LANGSUNG (tanpa menyimpan). Dukungan: cloudflare (verify token + info akun), resend, github, openai, openrouter. Gunakan saat user memberi secret dan minta dicek aktif/tidak, izin apa saja, atau kadaluarsa kapan. WAJIB: jangan pernah menampilkan nilai secret mentah di jawaban — tampilkan versi tersamarkan (mis. "ab12…ef90") saja.',
-    parameters: { type: 'OBJECT', properties: { provider: { type: 'STRING', description: 'Nama provider: cloudflare, resend, github, openai, atau openrouter.' }, secret: { type: 'STRING', description: 'Nilai secret/API key yang diuji.' } }, required: ['provider', 'secret'] } },
-  { name: 'cloudflare_request',
-    description: 'Akses Cloudflare API memakai API token milik USER (izin mengikuti token itu persis). Path API relatif dari https://api.cloudflare.com/client/v4, contoh: /user/tokens/verify, /accounts, /zones, /accounts/<account_id>/d1/database, /accounts/<account_id>/pages/projects. Gunakan untuk operasi yang user izinkan lewat token-nya: buat/kelola D1 database, list/detail Pages, DNS record, workers, dsb. WAJIB: gunakan token hanya untuk request yang diminta user; JANGAN pernah menyimpan, mencatat, atau menampilkan token; jangan menuliskannya ke file proyek atau env var.',
-    parameters: { type: 'OBJECT', properties: { secret: { type: 'STRING', description: 'API token Cloudflare milik user.' }, method: { type: 'STRING', description: 'HTTP method: GET, POST, PUT, PATCH, atau DELETE. Default GET.' }, path: { type: 'STRING', description: 'Path API Cloudflare, contoh: "/accounts/<id>/d1/database".' }, body: { type: 'OBJECT', description: 'Body JSON untuk POST/PUT/PATCH (opsional).' } }, required: ['secret', 'path'] } },
-  { name: 'github_request',
-    description: 'Akses GitHub API lewat KONEKTOR GitHub user (token OAuth otomatis dari halaman Integrasi Clincoo — JANGAN minta user menempel token manual). Contoh path: /user (profil), /user/repos (daftar repo), /repos/{owner}/{repo} (GET detail, POST buat repo), /repos/{owner}/{repo}/contents/{path} (GET baca file; PUT commit dengan body {message, content base64, sha bila file sudah ada}), /search/repositories?q= (cari repo). Gunakan untuk aksi GitHub yang diminta user: lihat repo, baca/kirim file, buat repo, dsb. Jika GitHub belum terhubung, minta user membuka halaman Integrasi Clincoo dulu.',
-    parameters: { type: 'OBJECT', properties: { method: { type: 'STRING', description: 'HTTP method: GET, POST, PUT, PATCH, atau DELETE. Default GET.' }, path: { type: 'STRING', description: 'Path API GitHub, contoh: "/user/repos" atau "/repos/owner/repo/contents/index.html".' }, body: { type: 'OBJECT', description: 'Body JSON untuk POST/PUT/PATCH (opsional).' } }, required: ['path'] } },
-  { name: 'drive_request',
-    description: 'Akses Google Drive milik user lewat KONEKTOR Drive Clincoo (token OAuth otomatis dari halaman Plugin — JANGAN minta user menempel token manual). Path API relatif dari https://www.googleapis.com. Contoh: /drive/v3/about?fields=user (info akun), /drive/v3/files?pageSize=20&fields=files(id,name,mimeType,modifiedTime,size) (daftar file; tambahkan q= untuk filter mis. q=name%20contains%20%27laporan%27), /drive/v3/files/{fileId} (metadata file), /drive/v3/files/{fileId}?alt=media (unduh isi file — hanya file teks/kecil yang berguna di chat), POST /drive/v3/files dengan body {name, mimeType} (buat file/folder: mimeType application/vnd.google-apps.folder untuk folder), POST /upload/drive/v3/files?uploadType=media (unggah isi file: gunakan raw_body + content_type, dan path ?uploadType=media). Gunakan untuk aksi Drive yang diminta user: cari/daftar file, baca isi file, buat file atau folder, dsb. Jika Drive belum terhubung, minta user membuka halaman Plugin Clincoo dulu. Jika hasilnya success:false, sampaikan alasan aslinya.',
-    parameters: { type: 'OBJECT', properties: { method: { type: 'STRING', description: 'HTTP method: GET, POST, PUT, PATCH, atau DELETE. Default GET.' }, path: { type: 'STRING', description: 'Path API Drive, contoh: "/drive/v3/files?pageSize=20".' }, body: { type: 'OBJECT', description: 'Body JSON untuk POST/PUT/PATCH (opsional), contoh metadata file {name, mimeType}.' }, raw_body: { type: 'STRING', description: 'Isi mentah file untuk upload (uploadType=media) — string polos, bukan JSON.' }, content_type: { type: 'STRING', description: 'Content-Type file yang diunggah, contoh "text/plain" atau "text/html".' } }, required: ['path'] } },
-  { name: 'calendar_request',
-    description: 'Akses Google Calendar milik user lewat KONEKTOR Calendar Clincoo (token OAuth otomatis dari halaman Plugin — JANGAN minta user menempel token manual). Path API relatif dari https://www.googleapis.com. Contoh: /calendar/v3/calendars/primary?fields=summary,id (info kalender utama), /calendar/v3/calendars/primary/events?singleEvents=true&orderBy=startTime&timeMin=2026-01-01T00:00:00Z&timeMax=2026-01-31T23:59:59Z (daftar event pada rentang waktu — timeMin/timeMax format ISO 8601 — WAJIB diisi agar hanya event dalam rentang itu yang dikembalikan), POST /calendar/v3/calendars/primary/events dengan body {summary, start:{dateTime,timeZone}, end:{dateTime,timeZone}} (buat event; dateTime format ISO 8601 mis. 2026-09-24T14:00:00, timeZone contoh Asia/Jakarta), PATCH /calendar/v3/calendars/primary/events/{eventId} (ubah event), DELETE .../events/{eventId} (hapus event). Gunakan untuk aksi kalender yang diminta user: cek jadwal/agenda hari ini atau tanggal tertentu, buat/ubah/hapus event, cari event dengan q=. Jika Calendar belum terhubung, minta user membuka halaman Plugin Clincoo dulu. Jika hasilnya success:false, sampaikan alasan aslinya.',
-    parameters: { type: 'OBJECT', properties: { method: { type: 'STRING', description: 'HTTP method: GET, POST, PUT, PATCH, atau DELETE. Default GET.' }, path: { type: 'STRING', description: 'Path API Calendar, contoh: "/calendar/v3/calendars/primary/events?timeMin=...".' }, body: { type: 'OBJECT', description: 'Body JSON untuk POST/PUT/PATCH (opsional), contoh event {summary, start:{dateTime,timeZone}, end:{dateTime,timeZone}}.' } }, required: ['path'] } },
-  { name: 'notion_request',
-    description: 'Akses Notion milik user lewat KONEKTOR Notion Clincoo (token OAuth otomatis dari halaman Plugin — JANGAN minta user menempel token manual). Action: "search" (daftar halaman Notion yang dibagikan — gunakan juga untuk verifikasi koneksi), "read" (baca isi halaman; WAJIB kirim page_id dari hasil search), "create" (buat halaman baru; kirim title + markdown; halaman tujuan otomatis pakai pilihan user di halaman Plugin, atau kirim page_id dari search). Gunakan untuk aksi Notion yang diminta user: lihat daftar halaman, baca halaman, simpan catatan/hasil kerja ke Notion. Jika Notion belum terhubung, minta user membuka halaman Plugin Clincoo dulu. Jika hasilnya success:false, sampaikan alasan aslinya.',
-    parameters: { type: 'OBJECT', properties: { action: { type: 'STRING', description: 'Salah satu: search, read, atau create.' }, page_id: { type: 'STRING', description: 'ID halaman (dari hasil search), untuk read atau create dengan tujuan tertentu.' }, title: { type: 'STRING', description: 'Judul halaman baru (untuk create).' }, markdown: { type: 'STRING', description: 'Isi halaman dalam format markdown (heading, list, kode) — dikonversi otomatis ke blok Notion (untuk create).' } }, required: ['action'] } },
-  { name: 'search_clincoo_kb',
-    description: 'Cari informasi RESMI tentang Clincoo (platformnya sendiri) di basis pengetahuan internal yang diindeks real-time dari dokumentasi resmi docs.clincoo.buzz — founder, visi, fitur produk, editor, AI, template, deploy, saldo, kebijakan/privasi, tips, dll. WAJIB dipanggil untuk pertanyaan tentang Clincoo sebagai produk/perusahaan (siapa pembuatnya, bagaimana cara pakai fitur X, kebijakan apa saja) — hasilnya adalah sumber kebenaran resmi, jangan mengarang. TIDAK untuk mencari info di web umum (pakai web_search) atau membaca file workspace.',
-    parameters: { type: 'OBJECT', properties: { query: { type: 'STRING', description: 'Pertanyaan atau kata kunci tentang Clincoo, contoh: "siapa pendiri clincoo", "cara deploy situs", "kebijakan privasi data".' } }, required: ['query'] } },
-  { name: 'install_automation',
-    description: 'Pasang otomatisasi (tugas terjadwal AI) ke akun user — otomatis muncul real-time di halaman Akun > Tugas Terjadwal. Gunakan saat user minta pengingat/otomatisasi berulang: "ingatkan aku tiap pagi", "kirim ringkasan tiap hari jam 8", "cek X tiap 30 menit", dsb. Prompt tugas WAJIB detail & mandiri (AI penjadwal hanya melihat prompt itu, bukan percakapan ini).',
-    parameters: { type: 'OBJECT', properties: {
-      name: { type: 'STRING', description: 'Nama tugas singkat & jelas, contoh: "Ringkasan berita pagi".' },
-      schedule_type: { type: 'STRING', description: '"daily" (sekali sehari pada time_wib) atau "interval_minutes" (berulang tiap N menit).' },
-      time_wib: { type: 'STRING', description: 'Jam harian HH:MM WIB untuk schedule_type daily, contoh "08:00".' },
-      interval_minutes: { type: 'NUMBER', description: 'Interval menit untuk schedule_type interval_minutes (5-1440), contoh 30.' },
-      prompt: { type: 'STRING', description: 'Instruksi lengkap yang dijalankan AI penjadwal pada waktunya — tulis detail, mandiri, dengan sumber data yang jelas (mis. "Cari 5 berita teknologi terbaru hari ini di web, rangkum dalam 5 poin singkat").' },
-      notify_email: { type: 'BOOLEAN', description: 'true bila hasil juga dikirim ke email user.' }
-    }, required: ['name', 'schedule_type', 'prompt'] } },
-  { name: 'clincoo_pay',
-    description: 'SEKALI JALAN terima pembayaran di situs Clincoo via ClincooPay (QRIS bawaan, tanpa gateway eksternal). PAKAI INI DULU setiap user ingin situsnya bisa menerima pembayaran/checkout/QRIS/bayar — lewati HANYA bila user EKSPLISIT minta gateway luar (Xendit/Midtrans/DOKU/Pakasir dll. dengan API key sendiri). JANGAN bikin backend function atau halaman bayar sendiri untuk kasus ini — selesaikan langsung dengan tool ini lalu BERIKAN checkout_url ke user di jawaban yang sama. Actions: "config" (cek status aktifasi + pay_key + saldo proyek aktif), "activate" (aktifkan ClincooPay proyek aktif, butuh login Clincoo), "create" (buat order QRIS — respons berisi checkout_url, order_id, total_payment; TUNJUKKAN checkout_url SEGERA — checkout_url ADALAH SATU-SATUNYA link bayar untuk user: DILARANG memberikan link gateway mentah seperti pakasir.zone.id/buatqris atau qr_image/qr_string/payment_url sebagai link bayar ke user), "status" (cek order sudah dibayar/belum). ALUR KILAT 1 GILIRAN: config -> bila belum aktif: activate -> create(amount, description) -> kasih checkout_url. amount = rupiah integer minimum 1000. Bila nominal belum disebut user, pakai nominal contoh untuk demo dan jelaskan ganti nominal tinggal create ulang.',
-    parameters: { type: 'OBJECT', properties: {
-      action: { type: 'STRING', description: 'Salah satu: config, activate, create, status.' },
-      amount: { type: 'NUMBER', description: 'create: nominal rupiah integer, minimum 1000.' },
-      description: { type: 'STRING', description: 'create opsional: keterangan order, contoh "Paket A".' },
-      order_id: { type: 'STRING', description: 'status: id order dari hasil create.' },
-      key: { type: 'STRING', description: 'pay_key proyek — diisi otomatis dari config bila kosong.' }
-    }, required: ['action'] } },
-  { name: 'manage_domain',
-    description: 'Kelola domain kustom + DNS proyek AKTIF (halaman Fitur Domain / Domain Kustom). Action: "status" (daftar domain terpasang + record DNS yang harus disetel), "add" (pasang domain kustom ke situs — domain harus sudah dimiliki user), "remove" (lepas domain dari situs), "dns_status" (cek zona DNS + record yang ada untuk domain), "set_dns" (SETEL LANGSUNG record CNAME domain -> <proyek>.pages.dev di Cloudflare — pakai ini saat user minta AI mengatur DNS domainnya; konflik A/AAAA lama otomatis dibersihkan), "delete_dns" (hapus record DNS domain). Alur lengkap pindah domain: set_dns dulu, lalu add. Zona DNS harus ada di akun Cloudflare yang tersimpan di Pengaturan Deploy; bila domainnya di provider lain, jelaskan record manualnya (CNAME -> <proyek>.pages.dev). HANYA untuk domain kustom SITUS PROYEK — bila user bicara tentang halaman Domain Clincoo (/domain/, Kelola DNS), pakai tool domain_dns.',
-    parameters: { type: 'OBJECT', properties: {
-      action: { type: 'STRING', description: 'Salah satu: status, add, remove, dns_status, set_dns, delete_dns.' },
-      domain: { type: 'STRING', description: 'Nama domain, contoh "tokosaya.com" atau "www.tokosaya.com".' }
-    }, required: ['action'] } },
-  { name: 'domain_dns',
-    description: 'Kelola record DNS di halaman Domain Clincoo (/domain/ — Kelola DNS; backend terpisah dari domain kustom proyek). Action: "list" (daftar domain user di halaman Domain + statusnya), "records" (lihat semua record DNS domain — tandai managed/zone_status), "add" (tambah record A/AAAA/CNAME/TXT/MX), "delete" (hapus record berdasarkan record_id dari action records). Bila respons menyebut managed=false/local, domain tidak dikelola jaringan Clincoo: record hanya tersimpan di Clincoo sebagai catatan — ingatkan user untuk menyalinnya ke penyedia DNS domain agar aktif.',
-    parameters: { type: 'OBJECT', properties: {
-      action: { type: 'STRING', description: 'Salah satu: list, records, add, delete.' },
-      domain: { type: 'STRING', description: 'Nama domain, contoh "tokosaya.com". Wajib untuk records/add/delete.' },
-      type: { type: 'STRING', description: 'add: salah satu A, AAAA, CNAME, TXT, MX.' },
-      name: { type: 'STRING', description: 'add: host/nama record, contoh "@" (root), "www", "mail".' },
-      content: { type: 'STRING', description: 'add: nilai record — IP untuk A/AAAA, target host untuk CNAME, teks untuk TXT, host mail untuk MX.' },
-      ttl: { type: 'NUMBER', description: 'add opsional: TTL dalam detik.' },
-      proxied: { type: 'BOOLEAN', description: 'add opsional (A/AAAA/CNAME): aktifkan proxy Cloudflare.' },
-      priority: { type: 'NUMBER', description: 'add untuk MX opsional: prioritas (default 10).' },
-      record_id: { type: 'STRING', description: 'delete: id record dari action records.' }
-    }, required: ['action'] } },
-  { name: 'build_apk',
-    description: 'Buat file APK Android dari sebuah website/aplikasi web yang sudah live (fondasi PressForge — build di GitHub Actions, butuh konektor GitHub terhubung). WAJIB dipakai setiap kali user minta "jadikan APK", "bikin aplikasi Android dari situs ini", "convert ke APK", dsb. ALUR WAJIB (langkah KECIL terpisah satu-satu — JANGAN tumpuk semua pertanyaan jadi satu kartu besar): (1) LOGO — bila belum ditentukan user, WAJIB tulis dulu SATU kalimat singkat natural menyapa/menanyakan logo (mis. "Oke, mau pakai logo khusus buat aplikasinya? Klik bulatan di bawah ya, atau lewati kalau mau pakai ikon default.") — JANGAN PERNAH kirim blok [[APK_LOGO]] tanpa teks apa pun di depannya, bubble kosong bikin bingung — baru setelah kalimat itu keluarkan blok [[APK_LOGO]][[/APK_LOGO]] (penanda saja, tanpa isi), lalu BERHENTI SEPENUHNYA (persis aturan [[POLL]]) — elemen flat sentris kecil (ikon bulat klik-untuk-unggah di tengah + tautan "Lewati" di bawahnya, TANPA kotak/card) dirender otomatis tepat di bawah kalimatmu; jawaban ("Logo tersimpan..." atau "Lewati logo...") terkirim otomatis ke chat begitu user memilih. (2) NAMA — setelah logo terjawab dan nama APLIKASI belum diketahui, JANGAN pakai kartu/marker apa pun: tanyakan dengan TEKS BIASA singkat (mis. "Nama aplikasinya apa?") lalu berhenti menunggu balasan teks biasa dari user di giliran berikutnya. (3) PENGATURAN — setelah nama diketahui, bila orientasi/fullscreen/splash belum ditentukan, tanyakan lewat [[POLL]] standar (format Q:/A:/B:/C biasa, maksimal dalam satu blok): "Orientasi aplikasi?" (Berdiri/Tiduran), "Mode tampilan?" (Fullscreen/Normal dengan status bar), dan bila relevan "Splash logo Clincoo saat dibuka?" (Aktif/Nonaktif) — lalu BERHENTI menunggu jawaban poll (server tetap pemutus akhir utk splash paket gratis, jadi aman ditanya ke semua paket). (4) Setelah logo+nama+pengaturan lengkap, panggil action "start" dengan: url WAJIB http/https (situs harus sudah live — deploy dulu dengan deploy_project bila belum), app_name, orientation, fullscreen, splash, dan icon: "saved" bila user mengunggah logo di langkah (1) (logo diambil otomatis dari sana; jangan minta user menempel logo manual). (5) Setelah start sukses, beri penjelasan singkat lalu keluarkan blok [[APK_CARD]] dengan baris "ID: <build_id>", "NAME: <nama aplikasi>", "URL: <url situs>", tutup [[/APK_CARD]] — kartu progres ini TIDAK berubah, tetap seperti biasa: memantau progres build REAL-TIME sendiri (progress bar, status) dan tombol Unduh APK muncul otomatis saat selesai; JANGAN panggil action status berkali-kali untuk menunggu (kartu sudah memantau). PENTING (bug nyata yang pernah terjadi): JANGAN PERNAH menyalin/menampilkan field hasil tool action start sebagai daftar/bullet/tabel ke user (mis. "Build ID: ...", "Package: ...", "Orientasi: ...", "Paket: ..." ) — balasanmu HANYA boleh berupa maks satu-dua kalimat natural singkat (sampaikan hal penting saja, mis. splash dipaksa aktif) langsung diikuti blok [[APK_CARD]], TIDAK ADA list/bullet/field lain apa pun sebelum atau sesudahnya. (6) Splash screen logo Clincoo (logo saja, tanpa teks) otomatis dipaksa aktif untuk paket gratis apa pun pilihan user di poll — diputuskan server, sampaikan singkat bila respons start menyebut splash:true meski user pilih nonaktif (ikon aplikasi tetap milik user). Respons TIDAK memuat link repo GitHub — jangan mencari atau menampilkan alamat repo/sumbunya ke user. Bila success:false, sampaikan error aslinya.',
-    parameters: { type: 'OBJECT', properties: {
-      action: { type: 'STRING', description: 'Salah satu: start (mulai build), status (cek progres — jarang perlu, kartu [[APK_CARD]] sudah real-time), download (kirim APK ke user — kartu lakukan otomatis).' },
-      url: { type: 'STRING', description: 'start: URL lengkap website, contoh "https://app.clincoo.buzz".' },
-      app_name: { type: 'STRING', description: 'start: nama aplikasi (maks 40 karakter, default dari domain).' },
-      package_id: { type: 'STRING', description: 'start opsional: package Android, contoh "com.tokosaya.app" (default otomatis).' },
-      orientation: { type: 'STRING', description: 'start: "portrait" (berdiri) atau "landscape" (tiduran) — dari kartu setup user.' },
-      fullscreen: { type: 'BOOLEAN', description: 'start: true = mode fullscreen — dari kartu setup user.' },
-      icon: { type: 'STRING', description: 'start: kirim "saved" bila user mengunggah logo lewat kartu setup (diambil otomatis).' },
-      splash: { type: 'BOOLEAN', description: 'start: splash screen logo Clincoo di aplikasi — sesuai toggle di kartu setup user. Paket gratis (Starter): SELALU aktif apa pun nilainya (server memutuskan). Paket berbayar: aktif hanya bila splash true.' },
-      build_id: { type: 'STRING', description: 'status/download: id build dari hasil start.' }
-    }, required: ['action'] } },
-  { name: 'write_files',
-    description: 'Tulis BEBERAPA file sekaligus dalam SATU panggilan (bulk write): files:[{path, content}]. WAJIB dipakai saat proyek butuh banyak file kecil-sedang sekaligus (mis. css/base.css + css/components.css + js/app.js + halaman sekunder + README.md) agar struktur proyek rapi dalam SATU putaran — jangan write_file satu per satu untuk banyak file kecil (boros giliran). Batas aman per panggilan: TOTAL isi semua file ±20.000 karakter, tiap file ±8.000 karakter, maks 10 file; kalau lebih, pecah menjadi beberapa panggilan write_files. File BESAR (HTML utuh >8.000 karakter, file 50KB+) JANGAN dimasukkan ke sini: tulis SATU per satu dengan write_file (+ append_file bila perlu). Kalau gagal dengan pesan "Parameter files wajib array" atau parameter kosong, itu tanda argumen terpotong: ulangi dengan file lebih sedikit/lebih pendek.',
-    parameters: { type: 'OBJECT', properties: {
-      files: { type: 'ARRAY', description: 'Array file yang mau ditulis/salin.', items: { type: 'OBJECT', properties: {
-        path: { type: 'STRING', description: 'Path file di workspace, contoh "assets/style.css".' },
-        content: { type: 'STRING', description: 'Isi lengkap file siap jalan.' }
-      }, required: ['path', 'content'] } }
-    }, required: ['files'] } },
-  { name: 'save_to_storage',
-    description: 'Simpan/update file ke AI STORAGE milikmu sendiri (server Clincoo, per akun — BUKAN workspace proyek, BUKAN GitHub). Penyimpanan abadi antar sesi/chat, isi file TIDAK memakan token history: simpan sekali, lalu di giliran mana pun baca ulang hanya file yang perlu dengan read_storage_file. WAJIB dipakai untuk: hasil clone/fetch file dari sumber mana pun (GitHub, web) yang akan dipakai lagi nanti, file rujukan besar, atau kode sumber yang akan sering diubah atas perintah user. Upor path konsisten (mis. "repo/nama/file.ext").',
-    parameters: { type: 'OBJECT', properties: {
-      files: { type: 'ARRAY', description: 'Array file yang mau disimpan.', items: { type: 'OBJECT', properties: {
-        path: { type: 'STRING', description: 'Path/identitas file, contoh "libs/jquery-3.7.js".' },
-        content: { type: 'STRING', description: 'Isi file.' }
-      }, required: ['path', 'content'] } }
-    }, required: ['files'] } },
-  { name: 'read_storage_file',
-    description: 'Baca isi satu file dari AI STORAGE milikmu — jauh lebih hemat & cepat daripada re-clone atau membaca ulang dari history. Gunakan setiap kali akan mengubah/memakai file yang sudah tersimpan di storage.',
-    parameters: { type: 'OBJECT', properties: {
-      path: { type: 'STRING', description: 'Path file di storage, contoh "libs/jquery-3.7.js".' }
-    }, required: ['path'] } },
-  { name: 'list_storage',
-    description: 'Lihat daftar file di AI STORAGE milikmu (path, ukuran, waktu update) — opsional filter prefix. Jalankan bila lupa path persis file yang tersimpan.',
-    parameters: { type: 'OBJECT', properties: {
-      prefix: { type: 'STRING', description: 'Filter path awalan (opsional).' }
-    }, required: [] } },
-  { name: 'delete_from_storage',
-    description: 'Hapus satu file dari AI STORAGE milikmu. Batas: 500 file / 8MB total.',
-    parameters: { type: 'OBJECT', properties: {
-      path: { type: 'STRING', description: 'Path file yang dihapus.' }
-    }, required: ['path'] } },
-  { name: 'clone_repo',
-    description: 'Salin (clone) seluruh isi repo GitHub ke folder workspace proyek aktif — data tersimpan permanen di workspace, lalu bisa diubah, dicari, di-deploy, atau di-push. Mendukung repo publik (tanpa perlu login GitHub) dan repo privat milik user (lewat konektor GitHub yang sudah terhubung di menu Integrasi). Batas: ±300 file teks per clone, file ≤256KB, binary besar dilewati otomatis. Pakai saat user minta "ambil/clone/copy repo X" atau "masukin kode dari repo X".',
-    parameters: { type: 'OBJECT', properties: {
-      repo: { type: 'STRING', description: 'Repo dalam bentuk "owner/nama" atau URL GitHub lengkap, contoh "tailwindlabs/heroicons".' },
-      folder: { type: 'STRING', description: 'Folder tujuan di workspace (opsional, default: nama repo).' },
-      ref: { type: 'STRING', description: 'Branch/tag/commit (opsional, default: branch utama repo).' },
-      target: { type: 'STRING', description: '"workspace" (default: folder proyek aktif) atau "storage" (AI Storage milik AI, per akun — hemat token, tidak memakan kuota workspace).' }
-    }, required: ['repo'] } },
-  { name: 'clone_url',
-    description: 'Salin (clone) file-file statis sebuah halaman situs dari sebuah URL — HTML utama (index.html) + file CSS & JS yang dirujuknya diunduh LANGSUNG KE ROOT workspace proyek aktif (asset di assets/, TANPA subfolder pembungkus dan TANPA halaman redirect/stub), gambar/font tetap dimuat dari server asal (URL-nya di-absolutkan otomatis). Pakai saat user minta "clone/copy situs ini", "ambil file2 dari URL ini", "jadikan ini bagian proyek", dsb. Batas: maks 40 file asset, tiap file ≤256KB, total ±2MB; HANYA file statis — situs yang isinya dirender JavaScript (SPA/React/Vue) atau butuh login tidak akan lengkap, sampaikan batasan itu bila user minta clone situs semacam itu. Untuk repo GitHub, pakai clone_repo (bukan tool ini).',
-    parameters: { type: 'OBJECT', properties: {
-      url: { type: 'STRING', description: 'URL halaman lengkap, contoh "https://example.com".' },
-      folder: { type: 'STRING', description: 'Folder tujuan di workspace (opsional, default: nama host situs).' },
-      target: { type: 'STRING', description: '"workspace" (default: folder proyek aktif) atau "storage" (AI Storage milik AI, per akun — hemat token).' }
-    }, required: ['url'] } },
-  { name: 'push_to_github',
-    description: 'Push SEMUA file workspace proyek aktif ke repo GitHub user lewat konektor GitHub (commit file demi file via contents API, update otomatis bila file sudah ada). Repo bisa dibuat dulu lewat github_request (POST /user/repos body {name}) bila belum ada. Gunakan saat user minta "push/simpan/kirim kode ke GitHub saya".',
-    parameters: { type: 'OBJECT', properties: {
-      repo: { type: 'STRING', description: 'Repo tujuan "owner/nama" atau URL GitHub lengkap.' },
-      branch: { type: 'STRING', description: 'Branch tujuan (opsional, default "main"). Repo harus sudah punya branch ini.' },
-      commit_message: { type: 'STRING', description: 'Pesan commit (opsional).' }
-    }, required: ['repo'] } },
-  { name: 'db_list_tables',
-    description: 'Lihat semua tabel di DATABASE proyek aktif (nama, kolom, jumlah baris). Gunakan saat user bertanya isi database-nya, atau sebelum membuat/mengubah tabel & baris.',
-    parameters: { type: 'OBJECT', properties: {} } },
-  { name: 'db_create_table',
-    description: 'Buat tabel baru di DATABASE proyek aktif — tabel yang sama persis dengan halaman Database Clincoo (data permanen, bisa dibaca aplikasi user lewat API /v1/db). WAJIB dipakai saat user minta membuat tabel/database, mis. "buat tabel produk dengan kolom nama dan harga". Batas jumlah tabel mengikuti paket (Starter: 2 tabel).',
-    parameters: { type: 'OBJECT', properties: {
-      table_name: { type: 'STRING', description: 'Nama tabel, contoh: "produk".' },
-      columns: { type: 'ARRAY', description: 'Definisi kolom tabel (minimal 1).', items: { type: 'OBJECT', properties: {
-        name: { type: 'STRING', description: 'Nama kolom, contoh: "nama".' },
-        type: { type: 'STRING', description: 'Tipe kolom: "text", "number", "boolean", atau "date".' }
-      }, required: ['name', 'type'] } }
-    }, required: ['table_name', 'columns'] } },
-  { name: 'db_drop_table',
-    description: 'Hapus tabel dari DATABASE proyek aktif beserta SELURUH barisnya. PERMANEN — konfirmasi dulu ke user kecuali user sudah jelas meminta penghapusan.',
-    parameters: { type: 'OBJECT', properties: {
-      table_name: { type: 'STRING', description: 'Nama tabel yang dihapus.' }
-    }, required: ['table_name'] } },
-  { name: 'db_add_row',
-    description: 'Tambah satu baris data ke tabel di DATABASE proyek aktif. WAJIB saat user minta menambah/menyimpan data ke tabel, mis. "tambahkan produk kopi susu harga 15000". Kembalikan id baris baru ke user.',
-    parameters: { type: 'OBJECT', properties: {
-      table_name: { type: 'STRING', description: 'Nama tabel tujuan.' },
-      data: { type: 'OBJECT', description: 'Objek pasangan kolom:nilai, contoh: {"nama": "Kopi Susu", "harga": 15000}. Hanya kolom yang ada di tabel.' }
-    }, required: ['table_name', 'data'] } },
-  { name: 'db_list_rows',
-    description: 'Baca baris data dari tabel di DATABASE proyek aktif (terbaru dulu). Gunakan saat user minta melihat isi tabel, laporan, rekap, atau data tertentu.',
-    parameters: { type: 'OBJECT', properties: {
-      table_name: { type: 'STRING', description: 'Nama tabel.' },
-      limit: { type: 'NUMBER', description: 'Jumlah baris per baca, 1-200. Default 50.' },
-      offset: { type: 'NUMBER', description: 'Lewati N baris pertama (untuk paging). Default 0.' }
-    }, required: ['table_name'] } },
-  { name: 'db_update_row',
-    description: 'Ubah nilai kolom pada satu baris (berdasarkan id) di tabel DATABASE proyek aktif. Gunakan saat user minta mengubah data, mis. "ubah harga produk id 3 jadi 20000".',
-    parameters: { type: 'OBJECT', properties: {
-      table_name: { type: 'STRING', description: 'Nama tabel.' },
-      id: { type: 'NUMBER', description: 'ID baris yang diubah.' },
-      data: { type: 'OBJECT', description: 'Pasangan kolom:nilai baru, contoh: {"harga": 20000}.' }
-    }, required: ['table_name', 'id', 'data'] } },
-  { name: 'db_delete_row',
-    description: 'Hapus satu baris data dari tabel di DATABASE proyek aktif berdasarkan id. Konfirmasi dulu ke user kecuali user sudah jelas meminta penghapusan.',
-    parameters: { type: 'OBJECT', properties: {
-      table_name: { type: 'STRING', description: 'Nama tabel.' },
-      id: { type: 'NUMBER', description: 'ID baris yang dihapus.' }
-    }, required: ['table_name', 'id'] } },
-  { name: 'create_backend_function',
-    description: 'Buat backend function baru milik user (ala platform builder): tulis kode -> terpasang -> bisa dipanggil via URL /api/fn/<nama>. Kode adalah badan fungsi async dengan parameter `args` (objek), boleh pakai `fetch`, `JSON`, dan `db` (DATABASE BAWAAN: await db.get(k), db.set(k,v), db.del(k), db.list(prefix), db.count() — data bertahan permanen, kuota mengikuti paket langganan). WAJIB return nilai. Contoh kode: "await db.set(args.id, args); return { ok: true }". BATAS RUNTIME: eksekusi maksimal 14 detik per panggilan (lebih dari itu = timeout). Tiap db.get/db.set adalah network call yang lambat: DILARANG loop berurutan lebih dari 20 get dalam satu function — gunakan db.list(prefix) untuk membaca banyak data sekaligus, dan simpan index/agregat saat menulis data agar laporan cukup membaca 1-2 kunci saja. Untuk WEBHOOK PUBLIK (callback payment gateway Midtrans/Xendit/Tripay, layanan eksternal): set is_public true — respons berisi webhook_url berisi key rahasia yang WAJIB diberikan ke user untuk dipasang di dashboard gateway. Gunakan saat user minta API endpoint, webhook, payment backend, integrasi data, atau logika backend.',
-    parameters: { type: 'OBJECT', properties: {
-      name: { type: 'STRING', description: 'Nama function: huruf kecil/angka/garis tengah, 2-40 karakter, contoh: "payment-webhook".' },
-      description: { type: 'STRING', description: 'Deskripsi singkat kegunaan function (bahasa Indonesia).' },
-      code: { type: 'STRING', description: 'Badan fungsi async JavaScript (bukan deklarasi function). Parameter `args` objek input. Tersedia fetch, JSON, db. Wajib return nilai.' },
-      is_public: { type: 'BOOLEAN', description: 'true jika function harus bisa dipanggil TANPA login sebagai webhook publik (callback gateway, integrasi eksternal). Respons berisi webhook_url + key rahasia.' }
-    }, required: ['name', 'code'] } },
-  { name: 'list_backend_functions',
-    description: 'Lihat semua backend function milik user beserta URL pemanggilannya.',
-    parameters: { type: 'OBJECT', properties: {} } },
-  { name: 'delete_backend_function',
-    description: 'Hapus backend function milik user. Konfirmasi dulu ke user sebelum menghapus.',
-    parameters: { type: 'OBJECT', properties: { name: { type: 'STRING', description: 'Nama function yang dihapus.' } }, required: ['name'] } },
-  { name: 'call_backend_function',
-    description: 'Jalankan backend function milik user dengan args tertentu dan kembalikan hasilnya. Gunakan untuk menguji function yang baru dibuat.',
-    parameters: { type: 'OBJECT', properties: {
-      name: { type: 'STRING', description: 'Nama function.' },
-      args: { type: 'OBJECT', description: 'Objek argumen input untuk function, contoh: {"url": "https://contoh.com"}.' }
-    }, required: ['name'] } },
-  { name: 'review_code',
-    description: 'Periksa SEMUA kode proyek di workspace untuk menemukan error, bug, kelemahan keamanan, dan masalah logika — laporan per file dengan saran perbaikan. Gunakan saat user minta cek/review/debug/cari bug kode proyek.',
-    parameters: { type: 'OBJECT', properties: { question: { type: 'STRING', description: 'Fokus review khusus (opsional), contoh: "kenapa tombol simpan tidak berfungsi".' } } } },
-  { name: 'take_screenshot',
-    description: 'Ambil screenshot halaman web dari sebuah URL dan kembalikan LINK gambar pratinjau yang bisa dibagikan ke user. Gunakan saat user minta screenshot/preview situs, baik situs user maupun situs lain.',
-    parameters: { type: 'OBJECT', properties: {
-      url: { type: 'STRING', description: 'URL lengkap halaman, contoh: "https://contoh.com".' },
-      width: { type: 'NUMBER', description: 'Lebar gambar 400-1600 px. Default 1200.' }
-    }, required: ['url'] } }
-];
-
-const GEMINI_REQ_TIMEOUT_MS = 15000;
-function geminiFetchWithTimeout(url, options) {
-  const ctrl = new AbortController();
-  const tid = setTimeout(() => { try { ctrl.abort(); } catch (e) {} }, GEMINI_REQ_TIMEOUT_MS);
-  return fetch(url, Object.assign({}, options || {}, { signal: ctrl.signal })).finally(() => clearTimeout(tid));
-}
-
-async function fetchGemini(apiKey, model, systemInstruction, contents, tools) {
-  const payload = { contents };
-  if (tools) payload.tools = tools;
-  if (systemInstruction) payload.systemInstruction = { parts: [{ text: systemInstruction }] };
-  const res = await geminiFetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-    body: JSON.stringify(payload)
-  });
-  if (!res.ok) {
-    await res.text().catch(() => '');
-    const reason = res.status === 429 ? 'limit tercapai' : (res.status >= 500 ? 'server bermasalah' : 'gagal (' + res.status + ')');
-    return { error: `AI sedang ${reason}`, status: res.status };
-  }
-  return { data: await res.json() };
-}
-
-async function fetchGeminiStream(apiKey, model, systemInstruction, contents, tools, onDelta) {
-  const payload = { contents };
-  if (tools) payload.tools = tools;
-  if (systemInstruction) payload.systemInstruction = { parts: [{ text: systemInstruction }] };
-  const res = await geminiFetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-    body: JSON.stringify(payload)
-  });
-  if (!res.ok) {
-    await res.text().catch(() => {});
-    const reason = res.status === 429 ? 'limit tercapai' : (res.status >= 500 ? 'server bermasalah' : 'gagal (' + res.status + ')');
-    return { error: `AI sedang ${reason}`, status: res.status };
-  }
-  const reader = res.body.getReader();
-  const dec = new TextDecoder();
-  let buf = '';
-  const parts = [];
-  let finishReason = '';
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += dec.decode(value, { stream: true });
-    let nl;
-    while ((nl = buf.indexOf('\n')) !== -1) {
-      const line = buf.slice(0, nl).trim();
-      buf = buf.slice(nl + 1);
-      if (!line.startsWith('data:')) continue;
-      let j; try { j = JSON.parse(line.slice(5).trim()); } catch (e) { continue; }
-      if (j.candidates && j.candidates[0] && j.candidates[0].finishReason) finishReason = j.candidates[0].finishReason;
-      const cps = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
-      for (const pt of cps) {
-        parts.push(pt);
-        if (pt.text && onDelta) { try { onDelta(pt.text); } catch (eD) {} }
-      }
-    }
-  }
-  return { data: { candidates: [{ content: { parts }, finishReason }] } };
-}
-
-const _gmKeyHealth = new Map();
-function _geminiKeyOrder(keys) {
-  const now = Date.now();
-  const good = [], cooled = [];
-  for (const k of keys) {
-    const h = _gmKeyHealth.get(k);
-    if (h && h.badUntil > now) cooled.push(k); else good.push(k);
-  }
-  const last = _gmKeyHealth.get('last-good');
-  if (last && good.indexOf(last) !== -1) { good.splice(good.indexOf(last), 1); good.unshift(last); }
-  return good.concat(cooled);
-}
-
-async function tryModels(apiKeys, systemInstruction, contents, tools, onDelta) {
-  const keys = _geminiKeyOrder(Array.isArray(apiKeys) ? apiKeys.filter(Boolean) : [apiKeys].filter(Boolean));
-  let lastError = null;
-  const statuses = [];
-  if (!keys.length) return { error: 'Tidak ada kunci tersedia', statuses };
-  const pairs = [];
-  for (const k of keys) for (const m of PREFERRED_MODELS) pairs.push({ key: k, model: m });
-  if (pairs.length > 8) pairs.length = 8;
-  let winnerIdx = null;
-  const attempt = async (idx) => {
-    const { key: apiKey, model } = pairs[idx];
-    const od = onDelta ? (tx) => {
-      if (winnerIdx !== null && winnerIdx !== idx) return;
-      winnerIdx = idx;
-      onDelta(tx);
-    } : null;
-    try {
-      const r = od ? await fetchGeminiStream(apiKey, model, systemInstruction, contents, tools, od) : await fetchGemini(apiKey, model, systemInstruction, contents, tools);
-      if (r.error) return { fail: true, status: r.status || 0, error: r.error };
-      const parts = r.data?.candidates?.[0]?.content?.parts || [];
-      let text = parts.map(p => p.text || '').join('');
-      let toolCalls = parts
-        .filter(p => p.functionCall)
-        .map(p => ({ name: p.functionCall.name, args: p.functionCall.args || {}, thought_signature: p.thoughtSignature || undefined }));
-      if (!toolCalls.length && text) {
-        let finish = r.data?.candidates?.[0]?.finishReason || '';
-        let seg = text;
-        const contContents = contents.slice();
-        for (let ac = 0; ac < 3 && (finish === 'MAX_TOKENS' || finish === 'LENGTH'); ac++) {
-          contContents.push({ role: 'model', parts: [{ text: seg }] });
-          contContents.push({ role: 'user', parts: [{ text: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' }] });
-          const rc = od ? await fetchGeminiStream(apiKey, model, systemInstruction, contContents, tools, od) : await fetchGemini(apiKey, model, systemInstruction, contContents, tools);
-          if (rc.error) break;
-          const pc = rc.data?.candidates?.[0]?.content?.parts || [];
-          const tc2 = pc.filter(p => p.functionCall).map(p => ({ name: p.functionCall.name, args: p.functionCall.args || {}, thought_signature: p.thoughtSignature || undefined }));
-          if (tc2.length) break;
-          const t2 = pc.map(p => p.text || '').join('');
-          if (!t2) break;
-          seg = t2; text += t2;
-          finish = rc.data?.candidates?.[0]?.finishReason || '';
-        }
-      }
-      if (toolCalls.length > 0 || text) return { ok: true, text, toolCalls, model, apiKey };
-      return { fail: true, status: 0, error: 'Jawaban AI kosong — coba kirim ulang' };
-    } catch (err) {
-      if (err && (err.name === 'AbortError' || /aborted|timed? ?out/i.test(String(err.message || '')))) {
-        _gmKeyHealth.set(apiKey, { badUntil: Date.now() + 10 * 60_000 });
-      }
-      return { fail: true, status: 0, error: err.message || 'gagal' };
-    }
+async function callOpenAICompatible({ url, key, model, messages, tools, onChunk }) {
+  const isStream = typeof onChunk === 'function';
+  const payload = {
+    model,
+    messages,
+    max_tokens: 4096
   };
-  return await new Promise((resolve) => {
-    let failures = 0; let settled = false;
-    const fin = (v) => { if (!settled) { settled = true; resolve(v); } };
-    pairs.forEach((_, i) => {
-      attempt(i).then(res => {
-        if (settled) return;
-        if (res.ok) {
-          _gmKeyHealth.set('last-good', res.apiKey);
-          fin(res.toolCalls.length > 0 ? { tool_calls: res.toolCalls, text: res.text, model: res.model } : { text: res.text, model: res.model });
-        } else {
-          lastError = res.error; statuses.push(res.status);
-          if (++failures === pairs.length) {
-            const quotaExhausted = statuses.length > 0 && statuses.every(st => st === 429);
-            const RE_CTX = /(exceeds?.{0,40}(context|token)|context.{0,40}(length|window|size)|too many (input )?tokens|maximum.{0,30}tokens|token count|input too large|payload too large|request entity too large)/i;
-            const contextOverflow = !!lastError && RE_CTX.test(String(lastError));
-            fin({ error: lastError || 'All models failed', quotaExhausted, providerBusy: quotaExhausted, contextOverflow, statuses });
-          }
-        }
-      });
-    });
-  });
-}
-
-const GUEST_DAILY_LIMIT = 25;
-async function guestQuotaCheck(env, guestKey) {
-  const day = new Date().toISOString().slice(0, 10);
-  try {
-    await env.DB.prepare('CREATE TABLE IF NOT EXISTS ai_quota (user_key TEXT, day TEXT, count INTEGER, PRIMARY KEY (user_key, day))').run();
-    const r = await env.DB.prepare('SELECT count FROM ai_quota WHERE user_key = ? AND day = ?').bind(guestKey, day).first();
-    const used = (r && r.count) || 0;
-    if (used + 1 > GUEST_DAILY_LIMIT) {
-      return { exceeded: true, scope: 'daily', count: used, message: 'Kuota AI Clincoo tanpa login untuk hari ini sudah habis. Masuk atau daftar gratis untuk kuota penuh — atau coba lagi besok.' };
-    }
-    await env.DB.prepare('INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, 1) ON CONFLICT(user_key, day) DO UPDATE SET count = count + 1').bind(guestKey, day).run();
-    return { exceeded: false, count: used + 1, usedDay: used, limit: GUEST_DAILY_LIMIT };
-  } catch (e) {
-    return { exceeded: false, count: 0 };
+  if (tools && tools.length > 0) {
+    payload.tools = tools;
   }
-}
-
-const SERVER_TOOLS = new Set(['create_backend_function', 'list_backend_functions', 'delete_backend_function', 'call_backend_function', 'take_screenshot', 'search_clincoo_kb', 'create_automation', 'install_automation', 'save_to_storage', 'read_storage_file', 'list_storage', 'delete_from_storage']);
-async function executeServerTool(env, user, tc, origin) {
-  if (tc && tc.name === 'create_automation') tc = Object.assign({}, tc, { name: 'install_automation' });
-  const a = tc.args || {};
-  if (!user && ['create_backend_function', 'list_backend_functions', 'delete_backend_function', 'call_backend_function', 'install_automation', 'save_to_storage', 'read_storage_file', 'list_storage', 'delete_from_storage'].indexOf(tc.name) !== -1) {
-    return { error: 'Fitur ini memerlukan login Clincoo (gratis).' };
+  if (isStream) {
+    payload.stream = true;
   }
-  try {
-    if (tc.name === 'search_clincoo_kb') {
-      return await searchClincooBlog(env, a.query || '');
-    }
-    if (tc.name === 'install_automation') {
-      const st = await import('./scheduled-tasks.js');
-      return await st.createScheduledTask(env.DB, user, a);
-    }
-    if (tc.name === 'save_to_storage') return await aiStorageSave(env.DB, user, a.files || []);
-    if (tc.name === 'read_storage_file') return await aiStorageGet(env.DB, user, a.path || '');
-    if (tc.name === 'list_storage') return await aiStorageList(env.DB, user, a.prefix || '');
-    if (tc.name === 'delete_from_storage') return await aiStorageDelete(env.DB, user, a.path || '');
-    if (tc.name === 'take_screenshot') {
-      const m = await import('./screenshot.js');
-      return await m.takeScreenshot(a.url, a.width);
-    }
-    const m = await import('./fns.js');
-    if (tc.name !== 'list_backend_functions') {
-      const _effFns = await getEffectivePlanByUserKey(env.DB, user.key);
-      if (!featureAllowed(_effFns.plan, 'backendFunctions')) return { error: 'Fitur ini hanya untuk paket Bisnis. Sampaikan ke user singkat bahwa fitur ini butuh upgrade paket Bisnis, lalu lanjutkan bangun bagian situs yang tidak butuh backend function.' };
-    }
-    if (tc.name === 'create_backend_function') return await m.createFunction(env.DB, user.key, a.name, a.description, a.code, { is_public: !!a.is_public, origin: origin || '' });
-    if (tc.name === 'list_backend_functions') return await m.listFunctions(env.DB, user.key, origin || '');
-    if (tc.name === 'delete_backend_function') return await m.deleteFunction(env.DB, user.key, a.name);
-    if (tc.name === 'call_backend_function') return await m.invokeFunction(env.DB, user.key, a.name, a.args, { origin: origin || '' });
-    return { error: 'Tool server tidak dikenal: ' + tc.name };
-  } catch (e) {
-    return { error: 'Gagal mengeksekusi tool server: ' + (e && e.message) };
-  }
-}
 
-function orParam(schema) {
-  const t = String((schema && schema.type) || '').toLowerCase();
-  const out = { type: t === 'array' ? 'array' : t === 'boolean' ? 'boolean' : t === 'number' ? 'number' : t === 'object' ? 'object' : 'string' };
-  if (schema && schema.description) out.description = schema.description;
-  if (schema && schema.properties) {
-    out.properties = {};
-    for (const [k, v] of Object.entries(schema.properties)) out.properties[k] = orParam(v);
-  }
-  if (schema && Array.isArray(schema.required)) out.required = schema.required;
-  if (schema && schema.items) out.items = orParam(schema.items);
-  return out;
-}
-const BUILD_TOOL_NAMES = ['write_file', 'write_files', 'edit_file', 'append_file', 'create_folder', 'read_file', 'list_items', 'set_project_info', 'deploy_project', 'generate_image'];
-// [13 Okt] jalur build cukup subset ini; kirim ~50 schema tiap hop = input bengkak, TTFT lambat, model salah pilih tool
-const BUILD_FUNCTION_DECLARATIONS = WORKSPACE_FUNCTION_DECLARATIONS.filter(d => BUILD_TOOL_NAMES.includes(d.name));
-function orBuildTools() {
-  return BUILD_FUNCTION_DECLARATIONS.map(d => ({
-    type: 'function',
-    function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) }
-  }));
-}
-function workspaceDecls(_body) {
-  return WORKSPACE_FUNCTION_DECLARATIONS;
-}
-// [13 Okt] anti-loop di sisi server: bila >=3 panggilan beruntun semuanya read-only tanpa write,
-// cabut tool baca utk hop ini supaya model berhenti berputar dan mulai menulis.
-const RO_TOOLS = new Set(['read_file', 'list_items', 'search_items']);
-function roStreak(msgs) {
-  let n = 0;
-  try {
-    for (const m of [...(msgs || [])].reverse()) {
-      const c = (Array.isArray(m.content) ? m.content : []).filter(b => b && b.type === 'function_call');
-      if (!c.length) continue;
-      if (c.every(b => RO_TOOLS.has(b.name))) n++; else break;
-    }
-  } catch (e) {}
-  return n;
-}
-
-export async function onRequestGet({ request, env }) {
-  try {
-    const user = await resolveUser(env, request);
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Login diperlukan', need_login: true }), {
-        status: 401, headers: { 'Content-Type': 'application/json', ...CORS }
-      });
-    }
-    if (new URL(request.url).searchParams.get('usage') === '1') {
-      const limit = Math.min(200, Math.max(1, Number(new URL(request.url).searchParams.get('limit')) || 50));
-      try {
-        await env.DB.prepare('CREATE TABLE IF NOT EXISTS ai_usage (user_key TEXT, ts INTEGER, model TEXT, out_chars INTEGER, cost INTEGER)').run();
-        const rows = await env.DB.prepare(
-          'SELECT ts, model, out_chars, cost FROM ai_usage WHERE user_key = ? ORDER BY ts DESC LIMIT ?'
-        ).bind(user.key, limit).all();
-        return new Response(JSON.stringify({ success: true, usage: rows.results || [] }), {
-          headers: { 'Content-Type': 'application/json', ...CORS }
-        });
-      } catch (e) {
-        return new Response(JSON.stringify({ success: true, usage: [] }), {
-          headers: { 'Content-Type': 'application/json', ...CORS }
-        });
-      }
-    }
-    const limits = await aiLimits(env, user);
-    const now = new Date();
-    const day = now.toISOString().slice(0, 10);
-    const month = now.toISOString().slice(0, 7);
-    let dayUsed = 0, monthUsed = 0;
-    try {
-      await env.DB.prepare(
-        'CREATE TABLE IF NOT EXISTS ai_quota (user_key TEXT, day TEXT, count INTEGER, PRIMARY KEY (user_key, day))'
-      ).run();
-      const rows = await env.DB.prepare('SELECT day, count FROM ai_quota WHERE user_key = ? AND day IN (?, ?)').bind(user.key, day, month).all();
-      for (const r of rows.results || []) {
-        if (r.day === day) dayUsed = r.count;
-        if (r.day === month) monthUsed = r.count;
-      }
-    } catch (e) {}
-    let creditsLeftTotal = 0;
-    try {
-      const active = await getActivePacks(env.DB, user.key);
-      creditsLeftTotal = active.reduce((s, p) => s + (p.credits_left || 0), 0);
-    } catch (e) {}
-    const subscriptionExhausted = monthUsed >= limits.monthly || dayUsed >= limits.daily;
-    const isAdmin = ADMIN_EMAILS.has(user.email);
-    const exhausted = isAdmin ? subscriptionExhausted : (creditsLeftTotal <= 0 || subscriptionExhausted);
-    return new Response(JSON.stringify({
-      success: true,
-      limit: limits.daily, used: dayUsed, remaining: Math.max(0, limits.daily - dayUsed), day,
-      monthly_limit: limits.monthly, monthly_used: monthUsed,
-      credits_left_total: creditsLeftTotal,
-      exhausted,
-      scope: exhausted ? (monthUsed >= limits.monthly ? 'monthly' : 'daily') : null,
-      message: exhausted ? QUOTA_MSG_EMPTY : null
-    }), {
-      headers: { 'Content-Type': 'application/json', ...CORS }
-    });
-  } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), {
-      status: 500, headers: { 'Content-Type': 'application/json', ...CORS }
-    });
-  }
-}
-
-function serverProgressText(tc) {
-  const a = tc.args || {};
-  if (tc.name === 'search_clincoo_kb') return 'Searching Clincoo knowledge base: ' + String(a.query || '').slice(0, 60) + '…';
-  if (tc.name === 'install_automation') return 'Memasang otomatisasi: ' + String(a.name || '') + '…';
-  if (tc.name === 'manage_domain') return 'Mengatur domain: ' + String(a.action || '') + (a.domain ? ' ' + a.domain : '') + '…';
-  if (tc.name === 'domain_dns') return 'Mengelola DNS halaman Domain: ' + String(a.action || '') + (a.domain ? ' ' + a.domain : '') + '…';
-  if (tc.name === 'build_apk') return 'Membangun APK Android (' + String(a.action || 'start') + (a.build_id ? ': ' + a.build_id : '') + ')…';
-  if (tc.name === 'write_files') return 'Menulis ' + (Array.isArray(a.files) ? a.files.length : '?') + ' file sekaligus…';
-  if (tc.name === 'clone_repo') return 'Menyalin repo: ' + String(a.repo || '') + '…';
-  if (tc.name === 'clone_url') return 'Menyalin situs dari URL: ' + String(a.url || '') + '…';
-  if (tc.name === 'push_to_github') return 'Push ke GitHub: ' + String(a.repo || '') + '…';
-  if (tc.name === 'save_to_storage') return 'Menyimpan ' + (Array.isArray(a.files) ? a.files.length : '?') + ' file ke AI Storage…';
-  if (tc.name === 'read_storage_file') return 'Membaca dari storage: ' + String(a.path || '') + '…';
-  if (tc.name === 'list_storage') return 'Melihat isi AI Storage…';
-  if (tc.name === 'delete_from_storage') return 'Menghapus dari storage: ' + String(a.path || '') + '…';
-  if (tc.name === 'take_screenshot') return 'Taking a screenshot of the site…';
-  if (tc.name === 'create_backend_function') return 'Creating backend function: ' + String(a.name || '') + '…';
-  if (tc.name === 'call_backend_function') return 'Running backend function: ' + String(a.name || '') + '…';
-  if (tc.name === 'list_backend_functions') return 'Listing backend functions…';
-  if (tc.name === 'delete_backend_function') return 'Deleting backend function: ' + String(a.name || '') + '…';
-  return 'Processing: ' + tc.name + '…';
-}
-
-const LABS_MINI_URL = 'https://clincoo-labs-pro.clincoo-agent.workers.dev/api/v1/chat';
-function labsSanitize(messages) {
-  return (Array.isArray(messages) ? messages : [])
-    .filter(m => m && typeof m.content === 'string' && m.content.trim() && (m.role === 'user' || m.role === 'assistant' || m.role === 'system'))
-    .slice(-24)
-    .map(m => ({ role: m.role, content: String(m.content).slice(0, 16000) }));
-}
-async function tryLabsMini(messages) {
-  const res = await fetch(LABS_MINI_URL, {
+  const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: labsSanitize(messages) })
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + key,
+      'HTTP-Referer': 'https://clincoo.buzz',
+      'X-Title': 'Clincoo'
+    },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(60000)
   });
-  if (!res.ok) return { error: 'labs HTTP ' + res.status };
-  const d = await res.json().catch(() => null);
-  const text = d && typeof d.text === 'string' ? d.text.trim() : '';
-  if (!text) return { error: 'labs kosong' };
-  return { text, model: d.model || 'clincoo-ai' };
-}
 
-const FRONT_SYSTEM_PROMPT = 'ATURAN BAHASA (WAJIB): selalu Bahasa Indonesia; dilarang aksara Mandarin/Jepang/Korea. Kamu AI 1 — FRONT AGENT Clincoo (model ringan). Tugasmu BUKAN menulis kode/file, hanya memilah niat user dan merinci instruksi untuk AI 2 (Execution Agent). KONTEKS: user SEDANG di MODE BUILD dengan tools workspace aktif — DILARANG membalas bahwa kamu/user harus pindah mode, atau bahwa workspace tidak bisa diperiksa/diakses. Balas HANYA satu objek JSON valid, tanpa teks lain, tanpa penjelasan.\nAturan memilih action:\n- "reply": user menyapa, bertanya, mengobrol, minta saran/penjelasan/pendapat, menanyakan progres atau cara pakai. Jawab final untuk user sekarang. Jika butuh info tambahan dari user untuk mulai membangun, WAJIB pakai field "questions" di reply (format di aturan (b)), bukan daftar permintaan panjang.\n- "execute": user meminta DIBUATKAN/DIUBAH/DIPERBAIKI/DILANJUTKAN situs, halaman, aplikasi, file, fitur, tampilan, atau deploy.\nFormat WAJIB salah satu:\n{"action":"reply","reply":"<jawaban final bahasa Indonesia natural, langsung ke inti>"}\n{"action":"execute","ack":"<jawaban singkat ke user (1-3 kalimat, bahasa Indonesia natural): konfirmasi permintaan + rencana kerja bertahap. TANPA kode, TANPA janji kosong>","instruction":"<instruksi teknis siap eksekusi: APA yang dibuat/diubah (sebut file/halaman bila relevan), data user yang disebut (nama orang, relasi seperti bapak/ibu, nama usaha, kota, harga) WAJIB disertakan persis, preferensi desain/fitur, syarat selesai>","context":"<fakta penting lain dari percakapan yang wajib dipegang AI 2>"}\nKetentuan: untuk sapaan jawab singkat dan hangat; untuk pertanyaan progres ringkas HANYA dari [PROGRES TUGAS SEBELUMNYA], jangan mengarang; reply tidak menulis kode dan tidak menawarkan bantuan kosong; execute tidak menulis kode, hanya instruksi; ack WAJIB diisi setiap kali execute (jawaban dulu ke user, baru AI 2 bekerja). ack TIDAK BOLEH bertanya atau meminta data tambahan saat execute — AI 2 langsung bekerja dengan data yang sudah ada di pesan user; cukup konfirmasi singkat + rencana 1-3 langkah, tanpa mengarang nama usaha/fitur yang tidak disebut user. Jangan pernah menyebut nama provider/model.\nATURAN LANJUT (WAJIB): jika user sudah menjawab pertanyaanmu, menyerahkan keputusan ("terserah", "bebas", "boleh", "gapapa", "lanjut", "iya", "buat aja", "kamu pilih"), atau sudah pernah ditanya sekali di riwayat, JANGAN tanya lagi: langsung action execute dengan pilihan terbaik yang masuk akal (kecuali fakta pribadi yang tak boleh dikarang: nama orang/usaha, pakai placeholder wajar atau nama fiktif yang jelas). Maksimal SATU putaran polling per tugas. ATURAN ACK: ack hanya 1-2 kalimat konfirmasi + rencana; DILARANG memuat frasa "instruksi teknis", "berikut", atau JSON/kode. Instruksi untuk AI 2 JANGAN menambah fitur yang tidak diminta (database, login, pembayaran). ATURAN ANTI-KARANG (WAJIB, pelanggaran = gagal): (a) DILARANG menambah fakta yang tidak tertulis di percakapan: nama usaha, domain, jenis bisnis, nama orang/sapaan user, fitur (login/database/pembayaran), skema warna, atau teknologi. Hanya pakai yang user katakan PERSIS. (b) Jika permintaan bangun terlalu umum/kosong (contoh: "buat web", "bikin website", "buat aplikasi" tanpa jenis/nama/tujuan), JANGAN execute: pakai action reply dengan pengantar 1 kalimat di "reply" plus daftar pertanyaan di field "questions" (array), BUKAN paragraf panjang minta banyak data. Maksimal 3 pertanyaan, hanya yang benar-benar wajib sebelum membangun (jenis/untuk siapa usahanya, nama usaha/brand, preferensi gaya/warna). Pertanyaan yang butuh jawaban bebas pakai "options" kosong []. Sistem otomatis mengubah field "questions" jadi kartu polling interaktif. Contoh format reply dengan polling: {"action":"reply","reply":"Siap! Jawab singkat dulu supaya hasilnya pas.","questions":[{"q":"Web untuk apa atau siapa usahanya?","options":["Kuliner (restoran/kafe/katering)","Toko & produk","Jasa profesional","Organisasi/komunitas"]},{"q":"Nama usaha atau brand-nya apa?","options":[]}]} (c) Jangan menyapa user dengan nama yang tidak pernah ia sebutkan. (d) Jangan ceramah teknis tentang Flask/MySQL/Node.js/database; platform Clincoo sudah punya stack sendiri, cukup kerjakan. Kolom context HANYA berisi fakta yang benar-benar ada di pesan user, kosongkan bila tidak ada. ATURAN NAVIGASI UI (WAJIB): jika user minta MEMBUKA/MELIHAT bagian antarmuka (contoh: "buka workspace", "lihat preview", "buka editor", "lihat file"), itu BUKAN permintaan membangun dan BUKAN hal yang tidak bisa kamu lakukan. Pakai action reply singkat (1-2 kalimat) yang mengarahkan ke tab yang benar di bagian atas halaman proyek: tab Workspace (lihat dan kelola file/folder), tab Live preview (lihat hasil web berjalan), tab Editor (edit kode), tab Chat (percakapan). DILARANG mengaku tidak punya fitur Workspace, DILARANG ceramah soal keterbatasan tool atau kejujuran. Bila user ingin AI membaca isi file/folder untuk dicek, pakai action execute dengan instruksi list_items lalu laporkan isinya.';
-let __taskTableReady = false;
-async function ensureTaskTable(env) {
-  if (__taskTableReady) return;
-  await env.DB.prepare('CREATE TABLE IF NOT EXISTS task_state (session_id TEXT, h TEXT, kind TEXT, payload TEXT, created_at TEXT, PRIMARY KEY (session_id, h))').run();
-  __taskTableReady = true;
-}
-async function taskEventRecord(env, sessionId, kind, payload) {
-  try {
-    if (!sessionId || !env.DB) return;
-    await ensureTaskTable(env);
-    const h = String(kind) + '|' + String(payload).slice(0, 400);
-    let hash = 5381;
-    for (let i = 0; i < h.length; i++) hash = ((hash * 33) + h.charCodeAt(i)) >>> 0;
-    await env.DB.prepare('INSERT OR IGNORE INTO task_state (session_id, h, kind, payload, created_at) VALUES (?, ?, ?, ?, ?)')
-      .bind(String(sessionId).slice(0, 80), String(hash), String(kind).slice(0, 24), String(payload).slice(0, 600), new Date().toISOString()).run();
-  } catch (e) {}
-}
-async function taskStateDigest(env, sessionId) {
-  try {
-    if (!sessionId || !env.DB) return '';
-    await ensureTaskTable(env);
-    const rows = await env.DB.prepare('SELECT kind, payload FROM (SELECT kind, payload, created_at FROM task_state WHERE session_id = ? ORDER BY created_at DESC LIMIT 60) ORDER BY created_at ASC').bind(String(sessionId).slice(0, 80)).all();
-    return (rows.results || []).map(function (r) { return '- [' + r.kind + '] ' + r.payload; }).join('\n').slice(-2500);
-  } catch (e) { return ''; }
-}
-async function scanMessagesForEvents(env, sessionId, msgs) {
-  try {
-    const jobs = [];
-    for (const m of (msgs || [])) {
-      if (!m || !Array.isArray(m.content)) continue;
-      for (const b of m.content) {
-        if (!b || typeof b !== 'object') continue;
-        if (b.type === 'function_call' && b.name) {
-          let brief = '';
-          try { const a = typeof b.args === 'string' ? JSON.parse(b.args) : (b.args || {}); brief = String(a.path || a.app_name || a.query || a.prompt || '').slice(0, 90); } catch (e) {}
-          jobs.push(taskEventRecord(env, sessionId, 'call', b.name + (brief ? ' ' + brief : '')));
-        } else if (b.type === 'function_response' && b.name) {
-          let s = ''; try { s = typeof b.response === 'string' ? b.response : JSON.stringify(b.response || b.result || ''); } catch (e) {}
-          const ok = /"success"\s*:\s*true/i.test(s) ? 'OK' : (/"error"/i.test(s) ? 'GAGAL' : 'selesai');
-          let extra = ''; const um = s.match(/"url"\s*:\s*"([^"]+)"/); if (um) extra = ' -> ' + um[1].slice(0, 80);
-          jobs.push(taskEventRecord(env, sessionId, 'hasil', b.name + ' ' + ok + extra));
-        }
-      }
-    }
-    await Promise.all(jobs);
-  } catch (e) {}
-}
-
-function frontPollBlock(questions) {
-  try {
-    if (!Array.isArray(questions) || !questions.length) return '';
-    const qs = questions.slice(0, 4).map(function (q) {
-      if (typeof q === 'string') return { q: q, options: [] };
-      return { q: String((q && (q.q || q.question)) || ''), options: Array.isArray(q && q.options) ? q.options : [] };
-    }).filter(function (q) { return q.q.trim(); });
-    if (!qs.length) return '';
-    const L = ['A', 'B', 'C', 'D'];
-    const body = qs.map(function (q) {
-      return 'Q: ' + q.q.trim().replace(/\n+/g, ' ') + (q.options.length ? '\n' + q.options.slice(0, 4).map(function (o, k) { return L[k] + ': ' + String(o).trim().replace(/\n+/g, ' '); }).join('\n') : '');
-    }).join('\n---\n');
-    return '\n\n[[POLL]]\nT: Konfirmasi singkat\n' + body + '\n[[/POLL]]';
-  } catch (e) { return ''; }
-}
-function frontLooseField(t, name) {
-  try {
-    const m = t.match(new RegExp('"' + name + '"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)', 's'));
-    if (!m) return '';
-    let v = m[1];
-    try { v = JSON.parse('"' + v + '"'); } catch (e) { v = v.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\'); }
-    return String(v).trim();
-  } catch (e) { return ''; }
-}
-function frontSanitizeReply(text) {
-  let x = String(text || '').trim();
-  if (/^\s*[\{\[]/.test(x) || /"action"\s*:/.test(x)) {
-    const rep = frontLooseField(x, 'reply') || frontLooseField(x, 'ack');
-    return rep || '';
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`HTTP ${res.status}: ${errText.slice(0, 300)}`);
   }
-  return x.replace(/\b(Instruksi teknis|Context)\s*:[\s\S]*$/i, '').trim();
-}
 
-function completedStepsNote(msgs) {
-  try {
-    const okSet = new Set(), readCount = new Map();
-    let pending = [];
-    for (const m of (msgs || [])) {
-      if (!m || !Array.isArray(m.content)) continue;
-      const calls = m.content.filter(function (b) { return b && b.type === 'function_call' && b.name; });
-      const resps = m.content.filter(function (b) { return b && b.type === 'function_response' && b.name; });
-      if (calls.length) pending = calls;
-      if (resps.length) {
-        resps.forEach(function (rb, i) {
-          const c = pending.find(function (x, k) { return k === i && x.name === rb.name; }) || pending.find(function (x) { return x.name === rb.name; });
-          let a = c ? c.args : {}; if (typeof a === 'string') { try { a = JSON.parse(a); } catch (e) { a = {}; } }
-          const target = String((a && (a.path || a.app_name)) || '').slice(0, 120);
-          const key = rb.name + (target ? ' ' + target : '');
-          let txt = ''; try { txt = typeof rb.response === 'string' ? rb.response : JSON.stringify(rb.response || rb.result || ''); } catch (e) {}
-          if (rb.name === 'read_file' || rb.name === 'list_items') { readCount.set(key, (readCount.get(key) || 0) + 1); return; }
-          if (/"error"|GAGAL/i.test(txt) && !/"success"\s*:\s*true/i.test(txt)) { okSet.delete(key); return; }
-          okSet.add(key);
-        });
-        pending = [];
+  if (isStream) {
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullText = '';
+    const toolCallsAcc = [];
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let newlineIdx;
+      while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
+        const line = buffer.slice(0, newlineIdx).trim();
+        buffer = buffer.slice(newlineIdx + 1);
+        if (!line.startsWith('data:')) continue;
+        const dataStr = line.slice(5).trim();
+        if (dataStr === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(dataStr);
+          const delta = parsed.choices?.[0]?.delta;
+          if (!delta) continue;
+          if (delta.content) {
+            fullText += delta.content;
+            await onChunk(delta.content);
+          }
+          if (Array.isArray(delta.tool_calls)) {
+            for (const tc of delta.tool_calls) {
+              const idx = tc.index ?? 0;
+              if (!toolCallsAcc[idx]) {
+                toolCallsAcc[idx] = { id: tc.id || '', name: tc.function?.name || '', argsText: '' };
+              }
+              if (tc.id) toolCallsAcc[idx].id = tc.id;
+              if (tc.function?.name) toolCallsAcc[idx].name = tc.function.name;
+              if (tc.function?.arguments) toolCallsAcc[idx].argsText += tc.function.arguments;
+            }
+          }
+        } catch (e) {}
       }
     }
-    const parts = [];
-    if (okSet.size) parts.push('SUDAH BERHASIL (fakta dari hasil tool, DILARANG diulang/dibuat ulang): ' + Array.from(okSet).slice(-40).join('; ') + '.');
-    const heavy = Array.from(readCount.entries()).filter(function (e) { return e[1] >= 2; }).map(function (e) { return e[0]; });
-    if (heavy.length) parts.push('SUDAH DIBACA 2x atau lebih (DILARANG baca lagi, isinya ada di riwayat — LANGSUNG edit_file/write_file): ' + heavy.slice(0, 10).join('; ') + '.');
-    return parts.length ? '\n\n[STATUS PEKERJAAN SAAT INI]: ' + parts.join(' ') + ' Lanjutkan HANYA langkah yang belum ada di daftar ini.' : '';
-  } catch (e) { return ''; }
-}
-function lastUserText(msgs) {
-  try {
-    const m = [...(msgs || [])].reverse().find(function (x) { return x && x.role === 'user'; });
-    if (!m) return '';
-    const c = m.content;
-    return typeof c === 'string' ? c : (Array.isArray(c) ? c.filter(function (b) { return b && b.type === 'text'; }).map(function (b) { return b.text || ''; }).join(' ') : '');
-  } catch (e) { return ''; }
-}
-const NEEDS_TOOLS_RE = /\b(?:cek|chek|check|periksa|lihat|baca|buka|tampilkan|list|perbaiki|benerin|fix|lanjut(?:kan)?|ubah|edit|tambah(?:kan)?|hapus)\b[^\n]{0,60}\b(?:workspace|folder|file|berkas|index|proyek|project|situs|web|halaman|error)\b|\.(?:html|css|js)\b|preview mendeteksi error|^\s*(?:terserah|bebas|ya|iya|oke|ok|lanjut|gas)\b/i;
 
-const BUILD_BLUEPRINTS = [
-  { id: 'portofolio', label: 'Portofolio pribadi', re: /portofolio|portfolio|cv online|profil pribadi|personal site/i,
-    core: ['index.html', 'css/style.css', 'js/main.js'], full: ['404.html', 'css/responsive.css', 'js/animations.js', 'favicon.svg'],
-    sections: 'navbar sticky, hero (nama, peran, tombol aksi), tentang, keahlian, proyek pilihan (grid kartu), pengalaman/timeline, kontak dengan form tervalidasi, footer; tema terang/gelap' },
-  { id: 'toko', label: 'Toko online / katalog', re: /toko|e-?commerce|katalog|jualan|produk/i,
-    core: ['index.html', 'produk.html', 'css/style.css', 'js/main.js', 'js/cart.js'], full: ['keranjang.html', '404.html', 'favicon.svg'],
-    sections: 'beranda, katalog dengan pencarian dan filter, detail produk, keranjang (localStorage), checkout atau tombol WhatsApp, footer' },
-  { id: 'blog', label: 'Blog / artikel', re: /blog|artikel|berita|majalah/i,
-    core: ['index.html', 'artikel.html', 'css/style.css', 'js/main.js'], full: ['tentang.html', '404.html', 'favicon.svg'],
-    sections: 'beranda dengan artikel unggulan, daftar artikel dengan kategori dan pencarian, halaman artikel nyaman dibaca, tentang penulis, footer' },
-  { id: 'aplikasi', label: 'Aplikasi web / dasbor', re: /dasbor|dashboard|admin|aplikasi|sistem|crud|manajemen|login/i,
-    core: ['index.html', 'dashboard.html', 'css/app.css', 'js/app.js', 'js/store.js'], full: ['login.html', 'pengaturan.html', '404.html'],
-    sections: 'beranda, dasbor ringkasan, daftar data dengan cari/urut, form tambah-ubah dengan validasi, keadaan kosong/memuat/galat/sukses, data tersimpan di localStorage kecuali ada backend' },
-  { id: 'landing', label: 'Landing page usaha/produk', re: /landing|company profile|profil (?:perusahaan|usaha)|kedai|kafe|cafe|restoran|katering|jasa|bisnis|usaha|startup|promo/i,
-    core: ['index.html', 'css/style.css', 'js/main.js'], full: ['404.html', 'css/responsive.css', 'js/animations.js', 'favicon.svg'],
-    sections: 'hero, bukti sosial, masalah, solusi, fitur, cara kerja, testimoni, harga, FAQ, ajakan bertindak, footer lengkap' },
-  { id: 'umum', label: 'Situs web', re: /./,
-    core: ['index.html', 'css/style.css', 'js/main.js'], full: ['404.html', 'favicon.svg'],
-    sections: 'navbar, hero, 3-5 section isi sesuai tujuan situs, kontak, footer' }
-];
-function builderTier(t) {
-  const x = String(t || '');
-  if (/sederhana|simpel|simple|singkat|minimal|ringkas|cepat|basic|dasar/i.test(x)) return 'ringkas';
-  if (/lengkap|besar|detail|profesional|premium|full|komplit|multi.?halaman|enterprise/i.test(x)) return 'lengkap';
-  return 'standar';
+    const toolCalls = toolCallsAcc.filter(Boolean).map(tc => {
+      let args = {};
+      try { args = JSON.parse(tc.argsText); } catch (e) { args = { raw: tc.argsText }; }
+      return { name: tc.name, args };
+    });
+
+    return { text: fullText, tool_calls: toolCalls.length ? toolCalls : undefined };
+  } else {
+    const data = await res.json();
+    const msg = data.choices?.[0]?.message || {};
+    const text = msg.content || '';
+    const rawToolCalls = msg.tool_calls || [];
+    const toolCalls = rawToolCalls.map(tc => {
+      let args = {};
+      try { args = JSON.parse(tc.function?.arguments || '{}'); } catch (e) { args = {}; }
+      return { name: tc.function?.name, args };
+    }).filter(tc => Boolean(tc.name));
+
+    return { text, tool_calls: toolCalls.length ? toolCalls : undefined };
+  }
 }
-function builderWrittenFiles(msgs) {
-  const written = new Map();
-  try {
-    let pending = [];
-    for (const m of (msgs || [])) {
-      if (!m || !Array.isArray(m.content)) continue;
-      const calls = m.content.filter(function (b) { return b && b.type === 'function_call' && b.name; });
-      const resps = m.content.filter(function (b) { return b && b.type === 'function_response' && b.name; });
-      if (calls.length) pending = calls;
-      if (resps.length) {
-        resps.forEach(function (rb, i) {
-          const c = (pending[i] && pending[i].name === rb.name) ? pending[i] : pending.find(function (x) { return x.name === rb.name; });
-          if (!c || !/^(write_file|write_files|append_file|edit_file)$/.test(c.name)) return;
-          let txt = ''; try { txt = typeof rb.response === 'string' ? rb.response : JSON.stringify(rb.response || rb.result || ''); } catch (e) {}
-          if (/"error"|GAGAL/i.test(txt) && !/"success"\s*:\s*true/i.test(txt)) return;
-          let a = c.args; if (typeof a === 'string') { try { a = JSON.parse(a); } catch (e) { a = {}; } }
-          a = a || {};
-          const paths = (c.name === 'write_files' && Array.isArray(a.files)) ? a.files.map(function (f) { return f && f.path; }) : [a.path];
-          paths.forEach(function (pp) {
-            if (!pp) return;
-            const k = String(pp).replace(/^\.?\//, '');
-            const e = written.get(k) || { full: 0, edits: 0 };
-            if (c.name === 'write_file' || c.name === 'write_files') e.full++;
-            else if (c.name === 'edit_file') e.edits++;
-            written.set(k, e);
+
+async function callAI(env, messages, tools, onChunk) {
+  let lastErr = null;
+
+  // 1. ModelRouter
+  const mrKeys = await getModelRouterKeys(env);
+  if (mrKeys.length > 0) {
+    for (const key of mrKeys) {
+      try {
+        const res = await callOpenAICompatible({
+          url: 'https://modelrouter.id/v1/chat/completions',
+          key,
+          model: 'deepseek-v4.1-flash:free',
+          messages,
+          tools,
+          onChunk
+        });
+        if (res && (res.text || (res.tool_calls && res.tool_calls.length))) {
+          return { ...res, model: 'deepseek-v4.1-flash:free (ModelRouter)' };
+        }
+      } catch (e) {
+        lastErr = e;
+        console.warn('ModelRouter error:', e.message);
+      }
+    }
+  }
+
+  // 2. OpenRouter
+  const orKeys = await getOpenRouterKeys(env);
+  if (orKeys.length > 0) {
+    for (const key of orKeys) {
+      for (const model of ['deepseek/deepseek-v4.1-flash', 'openai/gpt-4o-mini']) {
+        try {
+          const res = await callOpenAICompatible({
+            url: 'https://openrouter.ai/api/v1/chat/completions',
+            key,
+            model,
+            messages,
+            tools,
+            onChunk
           });
-        });
-        pending = [];
-      }
-    }
-  } catch (e) {}
-  return written;
-}
-function builderIntent(msgs, wr) {
-  const last = lastUserText(msgs).trim();
-  if (!last) return '';
-  if (/preview mendeteksi error|script error|\berror\b|galat|tidak (?:jalan|muncul|berfungsi)|layar putih|\bblank\b|rusak|\bbug\b/i.test(last) && /\.(?:html|css|js|ts)\b|preview/i.test(last)) return 'PERBAIKI';
-  if (/^(?:ya\s+|iya\s+)?(?:lanjut|lanjutkan|terusin|teruskan|gas|terserah|bebas|oke|ok)\b/i.test(last)) return wr.size ? 'LANJUT' : 'BARU';
-  if (wr.size && /\b(?:ubah|ganti|tambah(?:kan)?|perbaiki|hapus|edit|revisi|update|perbesar|perkecil|besarkan|kecilkan|pindah(?:kan)?|rapikan|percantik|sesuaikan|tukar)\b/i.test(last)) return 'REVISI';
-  if (detectBuildIntent([{ role: 'user', content: last }])) return wr.size ? 'REVISI' : 'BARU';
-  return '';
-}
-function builderOriginalAsk(msgs, fallback) {
-  for (const m of (msgs || [])) {
-    if (!m || m.role !== 'user') continue;
-    const t = typeof m.content === 'string' ? m.content : (Array.isArray(m.content) ? m.content.filter(function (b) { return b && b.type === 'text'; }).map(function (b) { return b.text || ''; }).join(' ') : '');
-    if (t && detectBuildIntent([{ role: 'user', content: t }])) return t;
-  }
-  return fallback;
-}
-function builderGuide(msgs) {
-  try {
-    const wr = builderWrittenFiles(msgs);
-    const intent = builderIntent(msgs, wr);
-    if (!intent) return '';
-    const last = lastUserText(msgs);
-    const rules = ' Efisien: file kecil dibundel lewat write_files dalam SATU panggilan, file besar satu per write_file; tanpa skrip inline; semua id, class, dan path yang dirujuk HTML harus ada di CSS/JS; baca field verify dan perbaiki yang GAGAL lewat edit_file di giliran yang sama.';
-    const rewritten = Array.from(wr.entries()).filter(function (e) { return e[1].full >= 2; }).map(function (e) { return e[0]; });
-    const rewriteNote = rewritten.length ? ' File ' + rewritten.slice(0, 6).join(', ') + ' sudah ditulis penuh 2x atau lebih — pakai edit_file, bukan write_file.' : '';
-    if (intent === 'PERBAIKI') {
-      const fm = last.match(/file\s+([^\s):]+\.(?:html|css|js|ts)x?)/i);
-      const em = last.match(/\)\s*:\s*([^\n]{3,140})/);
-      return '\n\n[PANDUAN BUILDER — PERBAIKI ERROR' + (fm ? ' pada ' + fm[1] : '') + (em ? ': ' + em[1].trim() : '') + ']' +
-        ' Protokol: (1) baca file itu SEKALI saja bila isinya belum ada di riwayat; (2) cari penyebab nyata, urutan kecurigaan untuk "Script error." tanpa detail: (a) tag script inline diblokir CSP — pindahkan ke file js/; (b) src script salah path atau file belum ada sehingga server mengembalikan HTML dan memicu SyntaxError; (c) script CDN lintas-origin tanpa crossorigin="anonymous" menyamarkan pesan asli; (d) getElementById/querySelector bernilai null karena id tidak cocok atau script jalan sebelum DOM siap — pakai defer atau DOMContentLoaded; (e) deklarasi ganda, kurung/kutip tidak seimbang, atau fungsi dipanggil sebelum didefinisikan; (3) perbaiki SEMUA temuan dalam SATU edit_file berisi edits[]; (4) DILARANG menulis ulang seluruh file; (5) setelah edit, cukup satu pemeriksaan singkat, lalu lapor penyebab nyata dan perbaikannya dalam 1-2 kalimat. Maksimal 2 putaran perbaikan.' + rewriteNote;
-    }
-    if (intent === 'REVISI') {
-      return '\n\n[PANDUAN BUILDER — REVISI]: perubahan kecil WAJIB lewat edit_file dengan string persis; baca file hanya bila isinya belum ada di riwayat (maksimal 1 baca per file); beberapa perubahan di file yang sama digabung dalam satu edit_file lewat edits[]; write_file utuh hanya bila lebih dari 40% isi berubah. Jaga konsistensi lintas file (id, class, path) dan jangan membuat file duplikat.' + rewriteNote;
-    }
-    const ask = builderOriginalAsk(msgs, last);
-    const bp = BUILD_BLUEPRINTS.find(function (b) { return b.re.test(ask); }) || BUILD_BLUEPRINTS[BUILD_BLUEPRINTS.length - 1];
-    const tier = builderTier(ask + ' ' + last);
-    const files = tier === 'ringkas' ? bp.core : (tier === 'standar' ? bp.core.concat(bp.full.slice(0, 1)) : bp.core.concat(bp.full));
-    const have = Array.from(wr.keys());
-    const remaining = files.filter(function (f) { return !have.some(function (h) { return h === f || h.endsWith('/' + f); }); });
-    return '\n\n[PANDUAN BUILDER — ' + (intent === 'BARU' ? 'PROYEK BARU' : 'LANJUTKAN') + ': ' + bp.label + ', skala ' + tier + ']' +
-      (remaining.length
-        ? ' Rencana file (path relatif ke folder proyek yang dipakai; kerjakan berurutan dan LANGSUNG tulis tanpa menjelajah workspace): ' + remaining.join(', ') + '.'
-        : ' Semua file rencana sudah ada: cukup satu list_items untuk verifikasi lalu beri ringkasan akhir, jangan menulis ulang.') +
-      ' Isi: ' + bp.sections + '.' + rules + rewriteNote +
-      ' Setelah file terakhir selesai, tutup dengan ringkasan singkat (file, asumsi, bagian yang masih contoh) lalu tanyakan apakah mau dipublish.';
-  } catch (e) { return ''; }
-}
-async function frontAgentRun(env, bodyMessages, stateDigest) {
-  try {
-    const orKeys = await getOpenRouterKeys(env);
-    if (!orKeys.length) return null;
-    const chat = [];
-    for (const m of (bodyMessages || [])) {
-      if (!m || m.role === 'system') continue;
-      let txt = '';
-      if (typeof m.content === 'string') txt = m.content;
-      else if (Array.isArray(m.content)) txt = m.content.filter(function (b) { return b && b.type === 'text'; }).map(function (b) { return b.text || ''; }).join('\n');
-      txt = String(txt).trim();
-      if (!txt) continue;
-      chat.push({ role: m.role === 'assistant' ? 'assistant' : 'user', content: txt.slice(0, 3500) });
-    }
-    if (!chat.length) return null;
-    const recent = chat.slice(-12);
-    const sys = FRONT_SYSTEM_PROMPT + (stateDigest ? '\n\n[PROGRES TUGAS SEBELUMNYA (event store — sumber kebenaran)]:\n' + stateDigest : '');
-    const frMsgs = [{ role: 'system', content: sys }].concat(recent);
-    let r = await withTimeout(tryLabsMini(frMsgs), 8000).catch(function () { return null; });
-    if (!r || r.error || !r.text) r = await withTimeout(tryOpenRouterText(orKeys, frMsgs, null, null, null), 9000).catch(function () { return null; });
-    if (!r || r.error || !r.text) return null;
-    let t = String(r.text).trim().replace(/^```(json)?/i, '').replace(/```\s*$/, '').trim();
-    const i = t.indexOf('{'), j = t.lastIndexOf('}');
-    if (i === -1) return { action: 'reply', reply: frontSanitizeReply(t).slice(0, 2200) || 'Oke, aku lanjutkan ya.' };
-    let o = null;
-    if (j > i) { try { o = JSON.parse(t.slice(i, j + 1)); } catch (e) { o = null; } }
-    if (!o) {
-      const act = (t.match(/"action"\s*:\s*"(execute|reply)"/) || [])[1] || '';
-      if (act === 'execute') {
-        const ins = frontLooseField(t, 'instruction');
-        if (ins) o = { action: 'execute', ack: frontLooseField(t, 'ack'), instruction: ins, context: frontLooseField(t, 'context') };
-      } else if (act === 'reply') {
-        const rp = frontLooseField(t, 'reply');
-        if (rp) o = { action: 'reply', reply: rp };
-      }
-      if (!o) return { action: 'reply', reply: frontSanitizeReply(t).slice(0, 2200) || 'Oke, aku lanjutkan ya.' };
-    }
-    try {
-      if (o && o.action === 'execute' && o.instruction) {
-        const lastU = (recent.filter(function (m) { return m.role === 'user'; }).pop() || {}).content || '';
-        const words = String(lastU).trim().split(/\s+/).filter(Boolean).length;
-        const userTurns = recent.filter(function (m) { return m.role === 'user'; }).length;
-        const vague = /^(tolong\s+)?(buat|buatkan|bikin|bikinkan|bangun)(kan)?\s+(sebuah\s+|aku\s+|saya\s+)?(web|website|situs|aplikasi|app|landing\s*page|halaman)\s*(dong|ya|aja|saja|nih)?[.!? ]*$/i.test(String(lastU).trim());
-        const askedBefore = recent.some(function (m) { return m.role === 'assistant'; });
-        const STOPW = new Set(['tolong','buat','buatkan','bikin','bikinkan','bangun','kan','web','website','situs','aplikasi','app','landing','page','halaman','dong','ya','aja','saja','nih','aku','saya','sebuah','untuk','bikinin','please']);
-        const contentWords = String(lastU).toLowerCase().replace(/[.,!?;:]/g,' ').split(/\s+/).filter(function (w) { return w && !STOPW.has(w); });
-        const hasTopic = contentWords.length > 0;
-        if (!askedBefore && !hasTopic && (vague || (words <= 3 && userTurns <= 1 && /\b(web|website|situs|aplikasi|app)\b/i.test(lastU)))) {
-          return { action: 'reply', reply: 'Siap! Bantu jawab singkat dulu supaya hasilnya pas:\n[[POLL]]\nT: Konfirmasi singkat\nQ: Web untuk apa atau siapa usahanya?\nA: Kuliner (restoran/kafe/katering)\nB: Toko & produk\nC: Jasa profesional\nD: Organisasi/komunitas\n---\nQ: Nama usaha atau brand-nya apa?\n[[/POLL]]' };
+          if (res && (res.text || (res.tool_calls && res.tool_calls.length))) {
+            return { ...res, model: `${model} (OpenRouter)` };
+          }
+        } catch (e) {
+          lastErr = e;
+          console.warn('OpenRouter error:', model, e.message);
         }
       }
-      if (o && o.action === 'execute' && o.instruction) return { action: 'execute', ack: frontSanitizeReply(String(o.ack || '').replace(/\s*(Berikut|Ini)\s+(adalah\s+)?(instruksi|langkah|rencana)[^.!?\n]*[:.]?\s*$/i, '')).slice(0, 1200), instruction: String(o.instruction).slice(0, 3500), context: String(o.context || '').slice(0, 1200) };
-      if (o && o.action === 'reply' && (o.reply || (o.questions && o.questions.length))) return { action: 'reply', reply: (frontSanitizeReply(o.reply) || 'Siap! Jawab singkat dulu supaya hasilnya pas.').slice(0, 3000) + frontPollBlock(o.questions) };
-    } catch (e) {}
-    return { action: 'reply', reply: frontSanitizeReply(t).slice(0, 2200) || 'Oke, aku lanjutkan ya.' };
-  } catch (e) { return null; }
+    }
+  }
+
+  // 3. Gemini OpenAI-compatible
+  const geminiKeys = await getGeminiKeys(env);
+  if (geminiKeys.length > 0) {
+    for (const key of geminiKeys) {
+      for (const model of ['gemini-2.0-flash', 'gemini-1.5-flash']) {
+        try {
+          const res = await callOpenAICompatible({
+            url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+            key,
+            model,
+            messages,
+            tools,
+            onChunk
+          });
+          if (res && (res.text || (res.tool_calls && res.tool_calls.length))) {
+            return { ...res, model: `${model} (Gemini)` };
+          }
+        } catch (e) {
+          lastErr = e;
+          console.warn('Gemini error:', model, e.message);
+        }
+      }
+    }
+  }
+
+  throw new Error(lastErr ? ('AI error: ' + lastErr.message) : 'Kunci API AI belum terkonfigurasi di env atau DB.');
 }
+
 export async function onRequestPost({ request, env, waitUntil }) {
   try {
-    const AI_PLACEHOLDER = false;
-    const fromLabsRelay = (request.headers.get('x-labs-relay') || '') === 's0las-labs-relay-4451';
-    const labOrigin = String(request.headers.get('origin') || request.headers.get('referer') || '');
-    const fromLabsUi = labOrigin.indexOf('labs.clincoo.biz.id') !== -1;
-    if (AI_PLACEHOLDER && !fromLabsRelay && !fromLabsUi) {
-      let phBody = {};
-      const phCl = parseInt(request.headers.get('content-length') || '0', 10);
-      if (phCl <= 2_000_000) { try { phBody = await request.json() || {}; } catch (e) { phBody = {}; } }
-      const phAction = phBody.action || 'send';
-      if (phAction === 'delete_session') {
-        return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json', ...CORS } });
-      }
-      if (phAction === 'new_session') {
-        return new Response(JSON.stringify({ session_id: phBody.session_id || ('ls_' + Date.now()), title: phBody.title || 'Percakapan Baru' }), { headers: { 'Content-Type': 'application/json', ...CORS } });
-      }
-      const phText = 'Maaf, fitur AI Clincoo lagi sedang dikembangkan biar makin cepat dan stabil. Jadi aku belum bisa jawab pertanyaanmu dulu ya, tapi sebentar lagi fitur AI Clincoo bakal aktif kembali. Makasih banyak atas kesabarannya \u{1F64F}';
-      const phSid = phBody.session_id || ('ls_' + Date.now());
-      if (phBody.stream === true || phCl > 2_000_000) {
-        const enc = new TextEncoder();
-        const lines = [{ t: 'thinking' }, { t: 'delta', text: phText }, { t: 'final', text: phText, model: 'placeholder', session_id: phSid }]
-          .map(o => JSON.stringify(o) + '\n').join('');
-        return new Response(enc.encode(lines), { headers: { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-store', ...CORS } });
-      }
-      return new Response(JSON.stringify({ text: phText, model: 'placeholder', session_id: phSid }), { headers: { 'Content-Type': 'application/json; charset=utf-8', ...CORS } });
-    }
-
-    if (!rateLimitOk(clientIp(request))) {
-      return new Response(JSON.stringify({ error: 'Terlalu banyak permintaan. Coba lagi dalam 1 menit.' }), {
-        status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': '60', ...CORS }
-      });
-    }
-
     const raw = await request.text();
-    if (raw.length > 2_000_000) {
-      let bigAllowed = false;
-      if (raw.length <= 15_000_000) {
-        try {
-          const t = getToken(request);
-          if (t && env.DB) {
-            await initAuthTables(env.DB);
-            const u = await getUserByToken(env.DB, t);
-            if (u) bigAllowed = true;
-          }
-        } catch (e) { }
-      }
-      if (!bigAllowed) {
-        return new Response(JSON.stringify({ error: 'Payload terlalu besar (maks 2MB).' }), {
-          status: 413, headers: { 'Content-Type': 'application/json', ...CORS }
-        });
-      }
-    }
     let body = {};
     try { body = JSON.parse(raw) || {}; } catch (e) { body = {}; }
 
+    const sessionId = body.session_id || ('ls_' + Date.now());
     const action = body.action || 'send';
     if (action === 'delete_session') {
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { 'Content-Type': 'application/json', ...CORS }
-      });
+      return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json', ...CORS } });
     }
     if (action === 'new_session') {
-      return new Response(JSON.stringify({ session_id: body.session_id || ('ls_' + Date.now()), title: body.title || 'Percakapan Baru' }), {
-        headers: { 'Content-Type': 'application/json', ...CORS }
-      });
+      return new Response(JSON.stringify({ session_id: sessionId, title: body.title || 'Percakapan Baru' }), { headers: { 'Content-Type': 'application/json', ...CORS } });
     }
-
-    const user = await resolveUser(env, request);
-    const isGuest = !user;
-    const guestKey = 'g:' + clientIp(request);
 
     let messages = Array.isArray(body.messages) ? body.messages : [];
-    if (!messages.some(m => m && m.role === 'system')) {
-      messages = [{ role: 'system', content: SINGLE_SYSTEM_PROMPT }, ...messages];
-    }
-    if (String(body.mode || '').trim() === 'chat') {
-      const CHAT_NO_CODE_RULE = ' ATURAN MODE CHAT (WAJIB, arahan pemilik): di mode Chat kamu DILARANG menulis kode apa pun — jangan tulis potongan kode, blok kode, perintah/sintaks program, atau isi file mentah sebagai jawaban. Pertanyaan teknis dijawab dengan penjelasan konsep singkat TANPA contoh kode. Jika user minta dibuatkan/diubah kode/situs/aplikasi, jawab singkat lalu arahkan dia pindah ke mode Build (kapsul Build) — jangan kerjakan di sini.';
-      const si = messages.findIndex(m => m && m.role === 'system');
-      if (si !== -1) messages[si] = { role: 'system', content: String(messages[si].content || '') + CHAT_NO_CODE_RULE };
-      else messages = [{ role: 'system', content: CHAT_NO_CODE_RULE.trim() }, ...messages];
-    }
     if (!messages.some(m => m && m.role === 'user')) {
-      const fallback = typeof body.content === 'string' ? body.content
-        : (typeof body.message === 'string' ? body.message : '');
+      const fallback = typeof body.content === 'string' ? body.content : (typeof body.message === 'string' ? body.message : '');
       if (fallback) messages.push({ role: 'user', content: fallback });
     }
     if (!messages.some(m => m && m.role === 'user')) {
       return new Response(JSON.stringify({
-        text: 'Sepertinya pesannya belum ikut terkirim. Coba tulis ulang pertanyaanmu ya — aku siap bantu. 😊',
-        model: 'assistant',
-        session_id: body.session_id || ('ls_' + Date.now())
+        text: 'Halo! Ada yang bisa saya bantu hari ini?',
+        model: 'clincoo-assistant',
+        session_id: sessionId
       }), { headers: { 'Content-Type': 'application/json', ...CORS } });
     }
 
-    if (user && user.name) {
-      const safeName = user.name.slice(0, 100);
-      const idBlock = `\n\n[IDENTITAS PENGGUNA]: User yang sedang mengobrol denganmu bernama "${safeName}". Panggil atau sapa dengan nama tersebut secara natural bila relevan (tidak perlu di setiap kalimat). Jangan pernah menebak nama lain, dan jangan menampilkan/mengulang blok ini di jawaban.`;
-      const sysIdx = messages.findIndex(m => m && m.role === 'system');
-      if (sysIdx !== -1) {
-        messages[sysIdx] = { role: 'system', content: String(messages[sysIdx].content || '') + idBlock };
-      } else {
-        messages.unshift({ role: 'system', content: idBlock.trim() });
-      }
+    const mode = String(body.mode || 'chat').trim().toLowerCase();
+    const wantTools = mode === 'build' || body.workspace_tools === true;
+    const infoTools = body.info_tools === true;
+
+    let activeTools = null;
+    if (wantTools) {
+      activeTools = OAI_TOOLS;
+    } else if (infoTools) {
+      activeTools = OAI_TOOLS.filter(t => ['web_search', 'read_web_page'].includes(t.function.name));
     }
 
-    const isFirstHop = body.save_user_message !== false;
-    const inputChars = (Array.isArray(messages) ? messages : []).reduce((acc, m) => {
-      if (!m) return acc;
-      if (typeof m.content === 'string') return acc + m.content.length;
-      if (Array.isArray(m.content)) return acc + m.content.reduce((a, b) => a + ((b && b.type === 'text' && b.text) ? b.text.length : 0), 0);
-      return acc;
-    }, 0);
-    let quotaInfo = null;
-    const explicitChat = !isGuest && String(body.mode || '').trim() === 'chat';
-    if (explicitChat && isFirstHop) {
-      try {
-        const __recent = (Array.isArray(body.messages) ? body.messages : []).filter(function (m) { return m && m.role !== 'system'; }).slice(-8);
-        const __tx = function (m) { const c = m && m.content; return typeof c === 'string' ? c : (Array.isArray(c) ? c.map(function (p) { return (p && typeof p === 'object') ? (p.text || '') : String(p || ''); }).join(' ') : ''); };
-        const __last = __tx(__recent.filter(function (m) { return m.role === 'user'; }).pop() || {}).toLowerCase();
-        const __ctx = __recent.map(__tx).join(' ').toLowerCase();
-        const __buildAsk = detectBuildIntent(body.messages) || (/^\s*(ya\s+|iya\s+)?(lanjut|lanjutkan|terusin|teruskan|gas|oke lanjut|ok lanjut)/.test(__last) && /(web|situs|website|portofolio|portfolio|landing|aplikasi|halaman|index\.html)/.test(__ctx));
-        if (__buildAsk) {
-          const __guard = '\n\n[ATURAN MODE CHAT — MUTLAK]: Mode Chat TIDAK bisa membuat atau menyimpan file proyek. DILARANG menulis kode HTML/CSS/JS/blok kode panjang atau draf file ke dalam jawaban, dan DILARANG berjanji "saya akan membuat file". Jawab SINGKAT (1-2 kalimat, tanpa kode): bilang bahwa membuat/melanjutkan situs dikerjakan di mode Build (Workspace) supaya file benar-benar tersimpan dan bisa dipreview, lalu suruh user pindah ke mode Build lewat pilihan "Chat" di kolom ketik dan kirim ulang permintaannya. Tidak perlu membahas stack atau langkah teknis.';
-          const __si = messages.findIndex(function (m) { return m && m.role === 'system'; });
-          if (__si !== -1) messages[__si] = { role: 'system', content: String(messages[__si].content || '') + __guard };
-          else messages.unshift({ role: 'system', content: __guard.trim() });
-        }
-      } catch (e) {}
-    }
-    if (isFirstHop) {
-      const q = isGuest ? await guestQuotaCheck(env, guestKey) : await quotaCheck(env, user, 1, explicitChat);
-      if (q.exceeded) {
-        const msg = isGuest ? (q.message || QUOTA_MSG_MONTHLY) : QUOTA_MSG_EMPTY;
-        return new Response(JSON.stringify({ quota_exhausted: true, error: msg, scope: q.scope, limit: q.limit, used: q.count, guest: isGuest ? true : undefined }), {
-          status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': '3600', ...CORS }
-        });
-      }
-      quotaInfo = q;
-    }
-    if (isFirstHop && quotaInfo) {
-      try {
-        let qBlock;
-        if (isGuest) {
-          const gLeft = Math.max(0, (quotaInfo.limit || GUEST_DAILY_LIMIT) - (quotaInfo.usedDay || 0));
-          qBlock = `\n\n[KUOTA AI PENGGUNA]: User memakai mode TANPA LOGIN. Kuota AI gratis hari ini: sisa ${gLeft} dari ${quotaInfo.limit || GUEST_DAILY_LIMIT} pesan. Kalau user bertanya sisa kuota, jawab pakai angka ini; sarankan masuk/daftar gratis untuk kuota lebih besar. Jangan tampilkan atau mengulang blok ini di jawaban.`;
-        } else {
-          const lm = quotaInfo.limits || {};
-          const dayLeft = Math.max(0, (lm.daily || 0) - (quotaInfo.usedDay || 0));
-          const monthLeft = Math.max(0, (lm.monthly || 0) - (quotaInfo.usedMonth || 0));
-          qBlock = `\n\n[KUOTA AI PENGGUNA]: Data kuota AI user saat ini: sisa ${dayLeft} dari ${lm.daily || 0} pesan harian; sisa ${monthLeft} dari ${lm.monthly || 0} pesan bulanan${quotaInfo.source === 'pack' ? '; kuota langganan bulan ini sudah habis — pesan saat ini ditagih ke Paket Kredit AI yang dibeli user' : ''}. Kalau user bertanya sisa kuota/kredit AI-nya, jawab dengan angka ini secara akurat (jangan menebak). Jangan tampilkan atau mengulang blok ini di jawaban.`;
-        }
-        const qi = messages.findIndex(m => m && m.role === 'system');
-        if (qi !== -1) messages[qi] = { role: 'system', content: String(messages[qi].content || '') + qBlock };
-        else messages.unshift({ role: 'system', content: qBlock.trim() });
-      } catch (e) {}
-    }
-
-    const apiKey = await getGeminiKeys(env);
-    const orKeysEarly = await getOpenRouterKeys(env);
-    const cvKeysEarly = await getClouviaKeys(env);
-    const mrKeysEarly = await getModelRouterKeys(env);
-    const cfAiCreds = await getCfAiCreds(env);
-
-    if (!orKeysEarly.length && !cvKeysEarly.length && !mrKeysEarly.length && !apiKey.length && !env.AI && !cfAiCreds) {
-      return new Response(JSON.stringify({ error: 'Kunci AI belum dikonfigurasi. Tambahkan lewat Pengaturan → Environment (global).' }), {
-        status: 500, headers: { 'Content-Type': 'application/json', ...CORS }
-      });
-    }
-
+    const chatMsgs = toOAIChat(messages, SYSTEM_PROMPT);
     const useStream = body.stream === true;
-    let streamWriter = null, streamSend = null, streamReadable = null;
+
     if (useStream) {
       const ts = new TransformStream();
-      streamReadable = ts.readable;
-      streamWriter = ts.writable.getWriter();
+      const streamWriter = ts.writable.getWriter();
       const enc = new TextEncoder();
-      let lastSent = Date.now(), hb = null;
-      const stopHb = () => { if (hb) { clearInterval(hb); hb = null; } };
-      const rawSend = (obj) => {
-        lastSent = Date.now();
-        return streamWriter.write(enc.encode(JSON.stringify(obj) + '\n')).catch(() => { stopHb(); });
-      };
-      hb = setInterval(() => { if (Date.now() - lastSent >= 8000) rawSend({ t: 'thinking' }); }, 4000);
-      setTimeout(stopHb, 300000);
-      const CJK = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af\uff00-\uffef\u3000-\u303f]/;
-      let held = '', inCode = false;
-      const flushUnits = (final) => {
-        let out = '';
-        const re = /[^\n.!?。！？]*(?:[.!?。！？]+\s*|\n)/g;
-        let m, last = 0;
-        const src = held;
-        while ((m = re.exec(src)) !== null) {
-          if (m[0] === '') { re.lastIndex++; continue; }
-          last = re.lastIndex;
-          const unit = m[0];
-          const fences = (unit.match(/```/g) || []).length;
-          if (inCode || fences) { out += unit; if (fences % 2) inCode = !inCode; continue; }
-          if (!CJK.test(unit)) out += unit;
-        }
-        held = src.slice(last);
-        if (final && held) {
-          if (inCode || !CJK.test(held)) out += held;
-          held = '';
-        }
-        return out;
-      };
-      streamSend = (obj) => {
-        if (obj && obj.t === 'delta' && typeof obj.text === 'string') {
-          held += obj.text;
-          const out = flushUnits(false);
-          if (!out) return Promise.resolve();
-          return rawSend(Object.assign({}, obj, { text: out }));
-        }
-        if (held) {
-          const out = flushUnits(true);
-          if (out) rawSend({ t: 'delta', text: out });
-        }
-        const sent = rawSend(obj);
-        if (obj && (obj.t === 'final' || obj.t === 'error')) stopHb();
-        return sent;
-      };
-    }
+      const sendRaw = (obj) => streamWriter.write(enc.encode(JSON.stringify(obj) + '\n')).catch(() => {});
 
-    const processChat = async () => {
-    if (streamSend) {
-      streamSend({ t: 'thinking' });
-    }
-    const requestMode = String(body.mode || '').trim().toLowerCase();
-    const wantTools = requestMode === 'build' || (body.workspace_tools === true && requestMode !== 'chat');
-    const decls = wantTools ? BUILD_FUNCTION_DECLARATIONS.slice() : workspaceDecls(body);
-    if (wantTools && Array.isArray(messages)) {
-      try {
-        const __bg = '\n\n[ATURAN MODE BUILD — MUTLAK]: DILARANG menulis isi file/kode (package.json, .env.example, server.js, HTML, CSS, JS, dsb.) sebagai blok kode ``` di jawaban chat. SETIAP file WAJIB disimpan lewat tool write_file (path + isi lengkap), satu file per panggilan; file besar lanjut dengan append_file. Di chat cukup tulis 1-2 kalimat laporan singkat (nama file + fungsinya), TANPA menampilkan isi kodenya. Pengecualian hanya jika user eksplisit minta kodenya ditampilkan di chat. ATURAN ENV/SECRET (MUTLAK): fitur Environment proyek SUDAH ADA. DILARANG membuat file .env / .env.example berisi nilai contoh atau placeholder (mis. clc_pay_xxxxx, email contoh). Kalau situs butuh key/konfigurasi (PAY_KEY, EMAIL_KEY, EMAIL_TUJUAN, dsb.): (1) panggil list_env_vars dulu untuk melihat yang sudah tersimpan, (2) jika key belum ada dan user sudah memberi nilainya, simpan lewat add_env_var (is_secret:true untuk key sensitif), (3) jika nilainya belum diberikan user, JANGAN mengarang placeholder: di kode baca dari process.env.NAMA_KEY lalu minta user mengisinya di Pengaturan > Environment, sebutkan nama key yang perlu diisi.';
-        const __bi = messages.findIndex(function (m) { return m && m.role === 'system'; });
-        if (__bi !== -1) {
-          if (String(messages[__bi].content || '').indexOf('[ATURAN MODE BUILD — MUTLAK]') === -1) {
-            messages[__bi] = { role: 'system', content: String(messages[__bi].content || '') + __bg };
+      // Send initial thinking signal immediately
+      await sendRaw({ t: 'thinking' });
+
+      const runner = async () => {
+        try {
+          const res = await callAI(env, chatMsgs, activeTools, (chunk) => sendRaw({ t: 'delta', text: chunk }));
+          const out = {
+            t: 'final',
+            text: res.text || '',
+            model: res.model || 'Clincoo AI',
+            session_id: sessionId
+          };
+          if (res.tool_calls && res.tool_calls.length) {
+            out.tool_calls = res.tool_calls;
           }
-        } else {
-          messages.unshift({ role: 'system', content: __bg.trim() });
+          await sendRaw(out);
+        } catch (err) {
+          await sendRaw({ t: 'error', error: 'AI gagal merespons: ' + err.message });
+        } finally {
+          await streamWriter.close().catch(() => {});
         }
-      } catch (e) {}
-    }
-    const wantInfoTools = !wantTools && body.info_tools === true && String(body.mode || '').trim() === 'chat';
-    const CHAT_INFO_TOOLS = ['web_search', 'read_web_page', 'search_clincoo_kb'];
-    const infoDecls = wantInfoTools
-      ? decls.filter(d => d && CHAT_INFO_TOOLS.indexOf(d.name) !== -1)
-      : null;
-    const gTools = wantTools
-      ? [{ functionDeclarations: decls }]
-      : (infoDecls && infoDecls.length ? [{ functionDeclarations: infoDecls }] : null);
+      };
 
-    const hasImages = messages.some(m => Array.isArray(m?.content) && m.content.some(b => b && b.type === 'image_url' && b.image_url?.url));
+      if (waitUntil) waitUntil(runner());
+      else runner();
 
-    const workMessages = messages;
-    const mrUsageAcc = {};
-    const orKeys = orKeysEarly;
-    const mrKeys = mrKeysEarly;
-    const ENABLE_BUILD_ROUTE = true;
-    const buildMode = ENABLE_BUILD_ROUTE && (body.mode === 'build' || (!explicitChat && detectBuildIntent(body.messages))) && !isGuest && !hasImages;
-    const aiMain = !!(env.AI && !hasImages);
-    const toolDecls = (gTools && gTools[0] && gTools[0].functionDeclarations) || null;
-    const attemptCascade = async () => {
-    let r = null;
-    let planGapNudgeCount = 0;
-    for (let sHop = 0; sHop <= 4; sHop++) {
-      r = null;
-      const hopDecls = (toolDecls && roStreak(workMessages) >= 3) ? toolDecls.filter(d => d && !RO_TOOLS.has(d.name)) : toolDecls;
-      const hopGTools = (hopDecls && hopDecls !== toolDecls) ? [{ functionDeclarations: hopDecls }] : gTools;
-      if (buildMode && (!r || r.error)) {
-        if (mrKeys.length) {
-          if (streamSend) streamSend({ t: 'progress', text: 'Menghubungi AI builder…' });
-          let mrDelta = '';
-          const mr = await withTimeout(
-            tryModelRouterText(
-              mrKeys, workMessages, hopDecls, MODELROUTER_MODELS,
-              (tx) => { mrDelta += String(tx || ''); },
-              mrUsageAcc
-            ),
-            120000,
-            'ModelRouter-Build-DeepSeek'
-          ).catch(e => ({ error: e.message }));
-          if (mr && !mr.error && (mr.text || mr.tool_calls)) {
-            r = mr;
-            if (mrDelta && streamSend) streamSend({ t: 'delta', text: mrDelta });
-          }
-        }
-        if ((!r || r.error) && orKeysEarly.length) {
-          if (streamSend && mrKeys.length) streamSend({ t: 'progress', text: 'Jalur utama sibuk, beralih ke cadangan…' });
-          const orBuild = await withTimeout(
-            tryOpenRouterText(
-              orKeysEarly, workMessages, hopDecls, BUILD_OR_MODELS,
-              streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null
-            ),
-            120000,
-            'OpenRouter-Build-LunaPro'
-          ).catch(e => ({ error: e.message }));
-          if (orBuild && !orBuild.error && (orBuild.text || orBuild.tool_calls)) r = orBuild;
-        }
-        if (!r || r.error) {
-          try {
-            const gKeys = await getGeminiKeys(env);
-            if (gKeys && gKeys.length) {
-              const { systemInstruction, contents } = toGeminiPayload(workMessages);
-              const gem = await withTimeout(tryModels(gKeys, systemInstruction, contents, hopGTools, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 45000, 'Gemini-build-fallback').catch(e => ({ error: e.message }));
-              if (gem && !gem.error && (gem.text || gem.tool_calls)) r = gem;
-            }
-          } catch (e) {}
-        }
-      }
-      if (!buildMode && !isGuest && !hasImages && mrKeys.length) {
-        const mrChat = await withTimeout(
-          tryModelRouterText(
-            mrKeys, workMessages, hopDecls, MODELROUTER_CHAT_MODELS,
-            streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null,
-            mrUsageAcc
-          ),
-          90000,
-          'ModelRouter-Chat-DeepSeek-Free'
-        ).catch(e => ({ error: e.message }));
-        if (mrChat && !mrChat.error && (mrChat.text || (mrChat.tool_calls && mrChat.tool_calls.length))) r = mrChat;
-      }
-      if ((!r || r.error) && !buildMode && !isGuest && !hasImages && orKeys.length) {
-        const orChat = await withTimeout(
-          tryOpenRouterText(orKeys, workMessages, hopDecls, OPENROUTER_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null),
-          120000,
-          'OpenRouter-Chat'
-        ).catch(e => ({ error: e.message }));
-        if (orChat && !orChat.error && (orChat.text || (orChat.tool_calls && orChat.tool_calls.length))) r = orChat;
-      }
-      if ((!r || r.error) && (apiKey.length || orKeys.length) && !hasImages) {
-        const chainModels = isGuest ? GUEST_OR_MODELS : OPENROUTER_MODELS;
-        let winner = null;
-        const sendDelta = streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null;
-        const makeOnDelta = (id) => sendDelta ? (tx) => {
-          if (winner && winner !== id) return;
-          if (!winner) winner = id;
-          sendDelta(tx);
-        } : null;
-        const cand = (id, p) => p.then((res) => ({ id, res })).catch((e) => ({ id, res: { error: e.message } }));
-        const WEAK_DELAY_MS = 5000;
-        const weakLate = (id, fn) => cand(id, new Promise((resolve, reject) => {
-          setTimeout(() => { if (winner) return resolve({ error: 'telat — pemenang sudah ada' }); fn().then(resolve, reject); }, WEAK_DELAY_MS);
-        }));
-        const cands = [];
-        if (apiKey.length) {
-          const { systemInstruction, contents } = toGeminiPayload(workMessages);
-          cands.push(cand('P', withTimeout(tryModels(apiKey, systemInstruction, contents, hopGTools, makeOnDelta('P')), 45000, 'Gemini-utama')));
-        }
-        if (!explicitChat && isGuest && orKeys.length) {
-          cands.push(weakLate('OR', () => withTimeout(tryOpenRouterText(orKeys, workMessages, hopDecls, chainModels, makeOnDelta('OR')), 150000, 'OpenRouter')));
-        }
-        if (!explicitChat && aiMain) cands.push(weakLate('W', () => withTimeout(tryWorkersAIText(env, workMessages, hopDecls), 20000, 'WorkersAI-race')));
-        if (!explicitChat && cfAiCreds) {
-          cands.push(weakLate('W2', () => withTimeout(tryCfAiRest(cfAiCreds, workMessages, hopDecls, makeOnDelta('W2')), 45000, 'WorkersAI-REST-race')));
-        }
-        if (!explicitChat && orKeys.length) {
-          cands.push(weakLate('F', () => withTimeout(tryOpenRouterText(orKeys, workMessages, hopDecls, FREE_OR_MODELS, makeOnDelta('F')), 45000, 'OpenRouterFree')));
-        }
-        if (!explicitChat && !toolDecls && !hasImages) {
-          cands.push(cand('OK', withTimeout(tryLabsMini(workMessages), 22000, 'LabsMini-race')));
-        }
-        const o = await new Promise((resolve) => {
-          let settled = false;
-          const fin = (v) => { if (!settled) { settled = true; resolve(v); } };
-          for (const C of cands) {
-            C.then(({ id, res }) => {
-              if (winner && winner !== id) return;
-              if (res && !res.error && (res.text || (res.tool_calls && res.tool_calls.length))) {
-                if (!winner) { winner = id; if (sendDelta && res.text) sendDelta(res.text); }
-                fin(res); return;
-              }
-              Promise.all(cands).then((all) => {
-                let pRes = null;
-                for (const a of all) if (a.id === 'P') pRes = a.res;
-                fin(pRes || (res && res.error ? res : null));
-              });
-            });
-          }
-        });
-        if (o) r = o;
-      }
-      if ((!r || r.error) && aiMain) {
-        const w = await withTimeout(tryWorkersAIText(env, workMessages, hopDecls), 25000, 'Workers AI').catch(e => ({ error: e.message }));
-        if (w) r = w;
-      }
-      if ((!r || r.error) && cfAiCreds && !hasImages) {
-        const w2 = await withTimeout(tryCfAiRest(cfAiCreds, workMessages, hopDecls, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 30000, 'WorkersAI-REST').catch(e => ({ error: e.message }));
-        if (w2) r = w2;
-      }
-      if ((!r || r.error) && apiKey.length) {
-        const { systemInstruction, contents } = toGeminiPayload(workMessages);
-        r = await withTimeout(tryModels(apiKey, systemInstruction, contents, hopGTools, streamSend ? (chunkText) => streamSend({ t: 'delta', text: chunkText }) : null), 25000, 'Gemini').catch(e => ({ error: e.message }));
-      }
-      if ((!r || r.error) && env.AI && !hasImages && !aiMain) {
-        const w = await withTimeout(tryWorkersAIText(env, workMessages, hopDecls), 25000, 'Workers AI').catch(e => ({ error: e.message }));
-        if (w) r = w;
-      }
-      if ((!r || r.error) && cvKeysEarly.length && !hasImages) {
-        if (streamSend) streamSend({ t: 'progress', text: 'Mencoba jalur terakhir…' });
-        const c = await withTimeout(
-          tryClouviaText(cvKeysEarly, workMessages, hopDecls, buildMode ? CLOUVIA_BUILD_MODELS : undefined, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null),
-          buildMode ? 90000 : 40000,
-          'Clouvia-Terakhir'
-        ).catch(e => ({ error: e.message }));
-        if (c && (!c.error || !r)) r = c;
-      }
-      if (!r || r.error) break;
-      const noToolsAtAll = !(r.tool_calls && r.tool_calls.length);
-      const flatHist = (() => { try { return JSON.stringify(workMessages); } catch (e) { return ''; } })();
-      const hasWriteCall = flatHist.indexOf('"write_file"') !== -1 || flatHist.indexOf('"write_files"') !== -1 || flatHist.indexOf('"edit_file"') !== -1;
-      const identityDone = flatHist.indexOf('"generate_image"') !== -1 || flatHist.indexOf('"set_project_info"') !== -1;
-      const lastUser = [...workMessages].reverse().find(m => m && m.role === 'user' && typeof m.content === 'string');
-      const buildIntent = /\b(buat|buatkan|bikin|bikinkan|bangun|dibuatkan|dibangun|tolong buat|minta buat|landing ?page|situs|website|web ?page|aplikasi|webnya|situnya|lanjut)\b/i.test(String((lastUser && lastUser.content) || ''));
-      const promiseLanguage = /tunggu (sebentar|sejenak)|mohon tunggu|harap tunggu|akan (saya )?(buat|membuat|bikin|lanjutkan|menyelesaikan|mulai)|sedang (membuat|menyiapkan|mengerjakan|memproses)|segera (saya )?(buat|lanjutkan)|silakan tunggu/i.test(String(r.text || ''));
-      const followUpPromise = /(lalu|kemudian|setelah itu|selanjutnya|berikutnya|sekarang)\s+(saya\s+)?(verifikasi|memverifikasi|cek|periksa|memeriksa|lanjut|melanjutkan|baca|membaca|uji|menguji)|akan (saya )?(verifikasi|memverifikasi|cek|periksa|memeriksa|uji)|saya (perbaiki|ubah|edit|tulis|buat)\b[^.]{0,80}\b(lalu|kemudian)\b/i.test(String(r.text || ''));
-      const isPlanGap = toolDecls && !hasImages && noToolsAtAll && String(r.text || '').trim()
-        && ((!hasWriteCall && (buildIntent || identityDone || promiseLanguage)) || (hasWriteCall && (followUpPromise || promiseLanguage)))
-        && !/\[\[POLL\]\]|\[\[FORM\]\]|\[\[PLUGIN:/i.test(r.text);
-      if (isPlanGap && planGapNudgeCount < 2) {
-        planGapNudgeCount++;
-        workMessages.push({ role: 'assistant', content: r.text });
-        workMessages.push({ role: 'user', content: 'Kamu baru menulis rencana/klaim TANPA memanggil tool apa pun — itu janji kosong, bukan progres (lihat aturan (7): dilarang keras). DILARANG mengarang fitur/URL yang tidak pernah disebut sistem (mis. "workspace.clincoo.buzz" atau link publik otomatis) — itu melanggar aturan (3) dilarang mengarang fakta. JANGAN menulis teks apa pun lagi. LANGSUNG panggil tool yang sesuai SEKARANG (write_file/edit_file untuk file tersisa, read_file atau list_files untuk memverifikasi hasil editmu, generate_image, atau set_project_info) untuk benar-benar melanjutkan pekerjaan. Kalau pekerjaan SUDAH benar-benar selesai dan terverifikasi, tulis ringkasan akhir SATU kali tanpa menjanjikan langkah lanjutan.' });
-        if (streamSend) { try { streamSend({ t: 'delta', text: '\n\n' }); } catch (e) {} }
-        continue;
-      }
-      const stCalls = (r.tool_calls || []).filter(tc => SERVER_TOOLS.has(tc.name));
-      if (!stCalls.length) break;
-      const clientCalls = (r.tool_calls || []).filter(tc => !SERVER_TOOLS.has(tc.name));
-      const results = [];
-      for (const tc of stCalls) {
-        if (streamSend) streamSend({ t: 'progress', text: serverProgressText(tc) });
-        results.push(await executeServerTool(env, user, tc, new URL(request.url).origin));
-      }
-      workMessages.push({ role: 'assistant', content: (r.tool_calls || []).map(tc => ({ type: 'function_call', name: tc.name, args: tc.args || {}, thought_signature: tc.thought_signature || undefined })) });
-      workMessages.push({ role: 'user', content: stCalls.map((tc, i) => ({ type: 'function_response', name: tc.name, result: results[i] })) });
-      r.tool_calls = r.tool_calls.map(tc => {
-        const i = stCalls.indexOf(tc);
-        return i !== -1 ? Object.assign({}, tc, { result: results[i] }) : tc;
-      });
-      if (clientCalls.length) break;
-    }
-    if (!toolDecls && r && !r.error && r.tool_calls && r.tool_calls.length) {
-      r = { text: String(r.text || ''), model: r.model };
-    }
-    if (r && !r.error && !String(r.text || '').trim() && !(r.tool_calls && r.tool_calls.length)) {
-      const sumPrompt = toolDecls
-        ? 'Semua tool sudah selesai dieksekusi dan seluruh hasilnya tercatat di percakapan. Sekarang tulis RINGKASAN FINAL untuk user dalam Bahasa Indonesia: apa yang sudah dikerjakan, status/hasilnya, URL endpoint bila ada, dan contoh pemakaian singkat. Jangan memanggil tool apa pun — langsung tulis jawabannya sekarang.'
-        : 'Kamu dipanggil sebagai AI teks murni dan TIDAK punya tool apa pun — dilarang memanggil atau menjanjikan tool/eksekusi apa pun. Jawab permintaan user secara LENGKAP dan BERISI dalam Bahasa Indonesia sebagai teks biasa: kalau diminta dibuatkan situs/kode, tulis kode lengkapnya sebagai blok kode di jawabanmu; kalau diminta penjelasan, jelaskan tuntas. Langsung tulis jawabannya sekarang.';
-      const sumMsgs = workMessages.concat([{ role: 'user', content: sumPrompt }]);
-      if (mrKeys.length && !hasImages && !isGuest) {
-        const sm0 = await tryModelRouterText(mrKeys, sumMsgs, null, MODELROUTER_CHAT_MODELS, null, mrUsageAcc);
-        if (sm0 && !sm0.error && String(sm0.text || '').trim()) r = { text: sm0.text, model: sm0.model };
-      }
-      if (orKeys.length && !hasImages) {
-        const sm = await tryOpenRouterText(orKeys, sumMsgs, null);
-        if (sm && !sm.error && String(sm.text || '').trim()) r = { text: sm.text, model: sm.model };
-      }
-      if (!String(r.text || '').trim() && aiMain) {
-        const sw = await tryWorkersAIText(env, sumMsgs, null);
-        if (sw && !sw.error && String(sw.text || '').trim()) r = { text: sw.text, model: sw.model };
-      }
-      if (!String(r.text || '').trim() && cvKeysEarly.length && !hasImages) {
-        const sc = await tryClouviaText(cvKeysEarly, sumMsgs, null, undefined, null);
-        if (sc && !sc.error && String(sc.text || '').trim()) r = { text: sc.text, model: sc.model };
-      }
-    }
-    return r;
-    };
-    let frontMeta = null;
-    let __digest = '';
-    if (String(body.mode || '').trim() === 'build' && isFirstHop && String(body.agent || 'auto') !== 'off') {
-      const sid = body.session_id || ('fa_' + String(Date.now()));
-      try { await scanMessagesForEvents(env, sid, (body.messages || []).slice(-14)); } catch (e) {}
-      const digest = await taskStateDigest(env, sid);
-      __digest = digest;
-      let fr = NEEDS_TOOLS_RE.test(lastUserText(body.messages)) ? null : await frontAgentRun(env, body.messages, digest);
-      try {
-        const __lu = lastUserText(body.messages);
-        if (fr && fr.action === 'reply' && !/\[\[POLL\]\]/.test(String(fr.reply || '')) && NEEDS_TOOLS_RE.test(__lu)) {
-          fr = { action: 'execute', ack: '', instruction: __lu.slice(0, 1500), context: '' };
-        }
-      } catch (e) {}
-      frontMeta = fr || null;
-      if (fr && fr.action === 'reply' && fr.reply) {
-        try { if (waitUntil) waitUntil(taskEventRecord(env, sid, 'front', 'jawab langsung: ' + String(fr.reply).slice(0, 150))); } catch (e) {}
-        try { await chargeAiUsage(env, user, 'front-agent-ringan', String(fr.reply).length, 0, false, null); } catch (e) {}
-        let finalText = fr.reply, finalModel = 'Front Agent (ringan)';
-        if (!/\[\[POLL\]\]/.test(String(fr.reply))) {
-          try {
-            const cvkFront = await getClouviaKeys(env);
-            if (cvkFront.length) {
-              const srMsgs = messages.slice();
-              try {
-                const lastUser = [...messages].reverse().find(function (m) { return m && m.role === 'user'; });
-                let lastTxt = '';
-                if (lastUser) lastTxt = typeof lastUser.content === 'string' ? lastUser.content : (Array.isArray(lastUser.content) ? lastUser.content.filter(function (b) { return b && b.type === 'text'; }).map(function (b) { return b.text || ''; }).join(' ') : '');
-                if (/clincoo|fitur|harga|paket|langganan|deploy|domain|template|mcp|kredit|cara\s+(pakai|menggunakan)/i.test(lastTxt)) {
-                  const kb = await withTimeout(searchClincooBlog(env, lastTxt.slice(0, 200)), 6000, 'KB-SmartReply').catch(function () { return null; });
-                  let kbStr = '';
-                  if (kb && kb.found && Array.isArray(kb.results)) {
-                    kbStr = kb.results.map(function (x) {
-                      return '- ' + String(x.judul || '') + (x.ringkasan ? ' — ' + x.ringkasan : '') +
-                        (x.kutipan_relevan ? '\n' + String(x.kutipan_relevan).slice(0, 900) : '');
-                    }).join('\n\n').slice(0, 4500);
-                  }
-                  if (kbStr && kbStr.length > 40) {
-                    const kbNote = '\n\n[DOKUMENTASI RESMI CLINCOO (hasil pencarian server — pakai sebagai fakta; Clincoo adalah platform/ruang kerja web untuk membuat, menyunting, dan menerbitkan website dengan AI). Jawab dengan bahasa manusia yang rapi; DILARANG menampilkan JSON, teks dokumen mentah, atau format teknis apa pun ke user]:\n' + kbStr;
-                    const ki = srMsgs.findIndex(function (m) { return m && m.role === 'system'; });
-                    if (ki !== -1) srMsgs[ki] = { role: 'system', content: String(srMsgs[ki].content || '') + kbNote };
-                    else srMsgs.unshift({ role: 'system', content: kbNote.trim() });
-                  }
-                }
-              } catch (e) {}
-              try {
-                const mdNote = '\n\n[MODE SAAT INI: BUILD — BUKAN MODE CHAT]. User sedang di mode Build. DILARANG menjawab bahwa kamu tidak bisa memeriksa/mengakses workspace, mengaku sedang di mode Chat, atau menyuruh user pindah/ganti mode — jawab langsung pertanyaannya secara natural; pekerjaan baca/ubah file dikerjakan jalur eksekusi (AI 2), cukup jawab tanpa menyangkal akses.';
-                const mi0 = srMsgs.findIndex(function (m) { return m && m.role === 'system'; });
-                if (mi0 !== -1) srMsgs[mi0] = { role: 'system', content: String(srMsgs[mi0].content || '') + mdNote };
-                else srMsgs.unshift({ role: 'system', content: mdNote.trim() });
-              } catch (e) {}
-              if (digest) {
-                const si2 = srMsgs.findIndex(function (m) { return m && m.role === 'system'; });
-                const prog = '\n\n[PROGRES TUGAS SEBELUMNYA (event store — sumber kebenaran)]:\n' + digest;
-                if (si2 !== -1) srMsgs[si2] = { role: 'system', content: String(srMsgs[si2].content || '') + prog };
-                else srMsgs.unshift({ role: 'system', content: prog.trim() });
-              }
-              let sr = null;
-              if (mrKeys && mrKeys.length) {
-                sr = await withTimeout(
-                  tryModelRouterText(mrKeys, srMsgs, null, ['deepseek-v4.1-flash:free'], null, mrUsageAcc),
-                  8000, 'MR-Build-SmartReply'
-                ).catch(function () { return null; });
-                if (sr && !sr.error && sr.text) {
-                  finalText = sr.text;
-                  finalModel = sr.model || 'Clincoo AI';
-                  try { await chargeAiUsage(env, user, 'modelrouter-deepseek-flash', String(sr.text).length, 0, false, null); } catch (e) {}
-                }
-              }
-              if ((!sr || sr.error || !sr.text) && cvkFront.length) {
-                sr = await withTimeout(
-                  tryClouviaText(cvkFront, srMsgs, null, CLOUVIA_CHAT_MODELS, null),
-                  12000, 'Clouvia-Build-SmartReply'
-                ).catch(function () { return null; });
-                if (sr && !sr.error && sr.text) {
-                  finalText = sr.text;
-                  finalModel = sr.model || 'Clincoo AI';
-                  try { await chargeAiUsage(env, user, 'clouvia-deepseek-flash', String(sr.text).length, 0, false, null); } catch (e) {}
-                }
-              }
-            }
-          } catch (e) {}
-        }
-        if (streamSend) {
-          streamSend({ t: 'final', text: finalText, model: finalModel, session_id: body.session_id || ('ls_' + Date.now()) });
-          streamWriter.close().catch(function () {});
-          return;
-        }
-        return new Response(JSON.stringify({ text: finalText, model: finalModel, session_id: body.session_id || ('ls_' + Date.now()) }), { status: 200, headers: { 'Content-Type': 'application/json', ...CORS } });
-      }
-      if (fr && fr.action === 'execute' && fr.instruction) {
-        const note = '\n\n[INSTRUKSI EKSEKUSI dari Front Agent — PRIORITAS TERTINGGI, kerjakan SEKARANG tanpa bertanya]: ' + fr.instruction + (fr.context ? '\nFAKTA/KONTEKS USER yang WAJIB dipakai persis: ' + fr.context : '') + '\nATURAN AI 2 (MUTLAK): Front Agent SUDAH menangani semua pertanyaan ke user. Kamu DILARANG bertanya apa pun ke user, DILARANG membuka dengan pertanyaan. Data yang belum disebut user diputuskan sendiri (nama brand fiktif catchy, konten realistis). Respons pertamamu = 1 kalimat singkat lalu LANGSUNG panggil tool write_file sungguhan.';
-        const qi = messages.findIndex(function (m) { return m && m.role === 'system'; });
-        if (qi !== -1) messages[qi] = { role: 'system', content: String(messages[qi].content || '') + note };
-        else messages.unshift({ role: 'system', content: note.trim() });
-        try { if (waitUntil) waitUntil(taskEventRecord(env, sid, 'front', 'instruksi eksekusi: ' + String(fr.instruction).slice(0, 250))); } catch (e) {}
-        if (fr.ack) {
-          try { if (waitUntil) waitUntil(taskEventRecord(env, sid, 'front', 'ack ke user: ' + String(fr.ack).slice(0, 200))); } catch (e) {}
-          if (streamSend) { try { streamSend({ t: 'front', text: String(fr.ack).slice(0, 1200), model: 'Front Agent (ringan)' }); } catch (e) {} }
-        }
-      }
-    }
-    if (String(body.mode || '').trim() === 'build') {
-      try {
-        const __extra = completedStepsNote(body.messages) + builderGuide(body.messages) + (__digest ? '\n\n[RIWAYAT EVENT TUGAS (event store, sumber kebenaran — langkah berstatus OK jangan diulang)]:\n' + __digest : '');
-        if (__extra) {
-          const __xi = messages.findIndex(function (m) { return m && m.role === 'system'; });
-          if (__xi !== -1) messages[__xi] = { role: 'system', content: String(messages[__xi].content || '') + __extra };
-          else messages.unshift({ role: 'system', content: __extra.trim() });
-        }
-      } catch (e) {}
-    }
-    let r = await attemptCascade();
-    if ((!r || r.error) && !(r && r.contextOverflow)) {
-      await new Promise(res => setTimeout(res, 2500));
-      r = await attemptCascade();
-    }
-    if (!r || (r.error && !apiKey.length && !env.AI)) {
-      if (!r) r = { error: 'Tidak ada provider AI tersedia' };
-    }
-
-    if (streamSend) {
-      if (r && r.error) {
-        const busy = !!r.quotaExhausted;
-        const rawErr1 = r.error || '';
-        const errText = busy
-          ? 'Server AI sedang sibuk (limit provider). Coba lagi sebentar lagi.'
-          : (rawErr1 === 'Tidak ada provider AI tersedia' ? rawErr1
-             : 'Maaf, AI sedang gangguan sebentar sehingga belum bisa menjawab. Coba kirim ulang pesanmu ya.');
-        streamSend({ t: 'error', error: errText, detail: (!busy && rawErr1 && rawErr1 !== errText) ? String(rawErr1).slice(0, 300) : undefined, provider_busy: busy ? true : undefined, quota_exhausted: busy ? undefined : !!r.quotaExhausted, context_overflow: !!r.contextOverflow });
-      } else {
-        const outS = {
-          text: r.text || '',
-          model: r.model,
-          session_id: body.session_id || ('ls_' + Date.now()),
-          front: frontMeta ? { action: frontMeta.action, instruction: String(frontMeta.instruction || '').slice(0, 300) } : undefined
-        };
-        if (r.tool_calls) outS.tool_calls = r.tool_calls;
-        const outCharsS = (r.text || '').length + (r.tool_calls ? JSON.stringify(r.tool_calls).length : 0);
-        const _mrCostS = mrTokenCost(mrUsageAcc);
-        if (!isGuest && (_mrCostS !== null || isFirstHop)) await chargeAiUsage(env, user, r.model, outCharsS, inputChars, !explicitChat, _mrCostS);
-        streamSend({ t: 'final', ...outS });
-      }
-      streamWriter.close().catch(() => {});
-      return;
-    }
-
-    if (r.error && r.quotaExhausted) {
-      return new Response(JSON.stringify({ provider_busy: true, error: 'Server AI sedang sibuk (limit provider). Coba lagi sebentar lagi.' }), {
-        status: 429, headers: { 'Content-Type': 'application/json', ...CORS }
-      });
-    }
-    if (r.error && r.contextOverflow) {
-      return new Response(JSON.stringify({ context_overflow: true, error: 'Konteks percakapan penuh (terlalu banyak kode besar dalam satu chat). Balas "lanjut" untuk meneruskan tugas dengan riwayat yang dipangkas otomatis.' }), {
-        status: 429, headers: { 'Content-Type': 'application/json', ...CORS }
-      });
-    }
-    if (r.error) {
-      const friendly = r.error === 'Tidak ada provider AI tersedia' ? r.error
-        : 'Maaf, AI sedang gangguan sebentar sehingga belum bisa menjawab. Coba kirim ulang pesanmu ya.';
-      return new Response(JSON.stringify({ error: friendly, detail: (r.error !== friendly) ? String(r.error).slice(0, 300) : undefined }), {
-        status: 502, headers: { 'Content-Type': 'application/json', ...CORS }
-      });
-    }
-
-    const outChars = (r.text || '').length + (r.tool_calls ? JSON.stringify(r.tool_calls).length : 0);
-    const _mrCost = mrTokenCost(mrUsageAcc);
-    if (!isGuest && (_mrCost !== null || isFirstHop)) await chargeAiUsage(env, user, r.model, outChars, inputChars, !explicitChat, _mrCost);
-    const frontAckText = (frontMeta && frontMeta.action === 'execute' && frontMeta.ack) ? String(frontMeta.ack).slice(0, 1200) : '';
-    const out = {
-      text: (frontAckText ? frontAckText + '\n\n' : '') + (r.text || ''),
-      model: r.model,
-      session_id: body.session_id || ('ls_' + Date.now()),
-      front: frontMeta ? { action: frontMeta.action, instruction: String(frontMeta.instruction || '').slice(0, 300) } : undefined
-    };
-    if (r.tool_calls) out.tool_calls = r.tool_calls;
-    return new Response(JSON.stringify(out), {
-      headers: { 'Content-Type': 'application/json', ...CORS }
-    });
-    };
-
-    if (useStream) {
-      const p = processChat().catch((e) => {
-        if (streamSend) streamSend({ t: 'error', error: 'Server error: ' + ((e && e.message) || e) });
-        if (streamWriter) streamWriter.close().catch(() => {});
-      });
-      if (waitUntil) waitUntil(p);
-      return new Response(streamReadable, {
+      return new Response(ts.readable, {
         headers: { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-cache', ...CORS }
       });
+    } else {
+      const res = await callAI(env, chatMsgs, activeTools, null);
+      const out = {
+        text: res.text || '',
+        model: res.model || 'Clincoo AI',
+        session_id: sessionId
+      };
+      if (res.tool_calls && res.tool_calls.length) {
+        out.tool_calls = res.tool_calls;
+      }
+      return new Response(JSON.stringify(out), {
+        headers: { 'Content-Type': 'application/json', ...CORS }
+      });
     }
-    return await processChat();
   } catch (err) {
     return new Response(JSON.stringify({ error: 'Server error: ' + err.message }), {
       status: 500, headers: { 'Content-Type': 'application/json', ...CORS }
