@@ -1,128 +1,67 @@
 (() => {
-  // Remove any stale copies, then install exactly one widget instance.
-  document.querySelectorAll('#clincoo-bug-fab, #clincoo-bug-panel, #clincoo-bug-style').forEach(node => node.remove());
   if (window.__clincooBugInstalled) return;
   window.__clincooBugInstalled = true;
-
   const logs = [];
-  const MAX_LOGS = 80;
-  const addLog = (type, args) => {
-    const message = Array.from(args).map(value => {
-      if (value instanceof Error) return value.stack || value.message;
-      if (typeof value === 'string') return value;
-      try { return JSON.stringify(value); } catch { return String(value); }
-    }).join(' ').slice(0, 1800);
-    logs.push({ type, message, time: new Date().toLocaleTimeString() });
-    if (logs.length > MAX_LOGS) logs.shift();
-  };
-
-  window.addEventListener('error', event => addLog('error', [event.message, event.filename, event.lineno ? ':' + event.lineno : '']));
-  window.addEventListener('unhandledrejection', event => addLog('error', ['Unhandled promise rejection:', event.reason]));
-
+  const MAX = 60;
+  const toText = v => { if (v instanceof Error) return v.stack || v.message; if (typeof v === 'string') return v; try { return JSON.stringify(v); } catch { return String(v); } };
   const style = document.createElement('style');
   style.id = 'clincoo-bug-style';
   style.textContent = `
-    #clincoo-bug-fab{position:fixed;z-index:2147483000;width:54px;height:54px;border:1px solid rgba(127,127,127,.35);border-radius:50%;display:grid;place-items:center;cursor:grab;touch-action:none;user-select:none;background:Canvas;color:CanvasText;box-shadow:0 5px 24px #0003;transition:box-shadow .15s,transform .15s}
-    #clincoo-bug-fab:hover{box-shadow:0 8px 28px #0004;transform:scale(1.04)}
-    #clincoo-bug-fab svg{width:29px;height:29px}
-    #clincoo-bug-panel{position:fixed;z-index:2147483001;right:20px;bottom:86px;width:min(430px,calc(100vw - 28px));max-height:min(520px,72vh);display:none;flex-direction:column;background:#111318;color:#e6e8ee;border:1px solid #393d49;border-radius:16px;box-shadow:0 16px 60px #0006;font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;overflow:hidden}
-    #clincoo-bug-panel.open{display:flex}
-    #clincoo-bug-panel *{box-sizing:border-box}
-    .clb-head{display:none}
-    .clb-status{display:none}
-    .clb-close{background:transparent;color:#ddd;border:0;font-size:22px;cursor:pointer}
-    .clb-logs{overflow:auto;padding:10px;min-height:100px;flex:1}
-    .clb-entry{padding:8px 9px;margin-bottom:7px;border-radius:7px;background:#1a1d25;white-space:pre-wrap;overflow-wrap:anywhere}
-    .clb-entry.error{border-left:3px solid #ff646e}.clb-entry.warn{border-left:3px solid #f4c66a}
-    .clb-time{color:#9299a9;font-size:10px;margin-right:8px}.clb-empty{display:none}
-    .clb-foot{padding:8px 10px;display:flex;align-items:center;gap:8px;justify-content:flex-end;font:12px system-ui,sans-serif}
-    .clb-report{border:0;border-radius:8px;background:#d9f99d;color:#17220b;padding:9px 12px;font-weight:700;cursor:pointer}
-    .clb-clear{border:1px solid #454a58;border-radius:8px;background:transparent;color:#d1d5df;padding:8px 10px;cursor:pointer}
-    @media(prefers-reduced-motion:reduce){#clincoo-bug-fab{transition:none}}
+    #clincoo-bug-fab{position:fixed;z-index:2147483000;width:52px;height:52px;border:1px solid var(--cb-border,#ddd);border-radius:50%;display:grid;place-items:center;cursor:grab;touch-action:none;user-select:none;background:var(--cb-bg,#fff);color:var(--cb-fg,#171717);box-shadow:0 5px 22px #0002;transition:box-shadow .16s; padding:0}
+    #clincoo-bug-fab:hover{box-shadow:0 8px 28px #0003}#clincoo-bug-fab:active{cursor:grabbing}#clincoo-bug-fab svg{width:23px;height:23px}
+    #clincoo-bug-panel{position:fixed;z-index:2147483001;right:20px;bottom:84px;width:min(390px,calc(100vw - 24px));max-height:min(520px,calc(100dvh - 100px));display:none;flex-direction:column;background:var(--cb-bg,#fff);color:var(--cb-fg,#171717);border:1px solid var(--cb-border,#e5e5e5);border-radius:12px;box-shadow:0 16px 48px #0002;overflow:hidden;font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif}
+    #clincoo-bug-panel.open{display:flex;animation:cb-enter .14s ease-out}@keyframes cb-enter{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}#clincoo-bug-panel *{box-sizing:border-box}
+    .clb-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--cb-border)}.clb-title{font-size:13px;font-weight:650}.clb-route{font-size:11px;color:var(--cb-muted);margin-top:3px;max-width:290px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.clb-close{background:transparent;color:inherit;border:0;font-size:20px;cursor:pointer;padding:0 4px}
+    .clb-status{padding:10px 16px 2px;display:flex;gap:7px;align-items:center;font-size:11px;color:var(--cb-muted)}.clb-dot{width:6px;height:6px;border-radius:50%;background:#ef4444}
+    .clb-logs{overflow:auto;padding:8px 16px 12px;min-height:90px;font:11px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}.clb-entry{padding:7px 0;border-bottom:1px solid var(--cb-border)}.clb-entry:last-child{border-bottom:0}.clb-time{color:var(--cb-muted);margin-right:8px}.clb-msg{color:#dc2626}.clb-empty{font:12px/1.6 Inter,ui-sans-serif,system-ui,sans-serif;color:var(--cb-muted);padding:6px 0 14px}
+    .clb-foot{padding:0 16px 14px;font:12px/1.5 Inter,ui-sans-serif,system-ui,sans-serif}.clb-report{color:var(--cb-fg);font-weight:600;text-decoration:underline;text-underline-offset:3px}.clb-note{font-size:10px;color:var(--cb-muted);margin-top:5px}
+    @media(max-width:520px){#clincoo-bug-fab{width:48px;height:48px}#clincoo-bug-panel{right:12px;bottom:74px;width:calc(100vw - 24px)}}@media(prefers-reduced-motion:reduce){#clincoo-bug-panel.open{animation:none}}
   `;
-  (document.head || document.documentElement).appendChild(style);
-
+  document.head.appendChild(style);
   const fab = document.createElement('button');
-  fab.id = 'clincoo-bug-fab';
-  fab.type = 'button';
-  fab.title = 'Clincoo Debug Console — geser atau klik';
-  fab.setAttribute('aria-label', 'Buka console error Clincoo');
-  fab.innerHTML = '<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 5.5c-5.8 0-10 4.2-10 10.2 0 5.7 4.4 10.5 10 10.5s10-4.8 10-10.5C26 9.7 21.8 5.5 16 5.5Z" fill="currentColor" opacity=".12"/><path d="M16 5.5c-5.8 0-10 4.2-10 10.2 0 5.7 4.4 10.5 10 10.5s10-4.8 10-10.5C26 9.7 21.8 5.5 16 5.5Z" stroke="currentColor" stroke-width="1.8"/><path d="M16 6v20M8.5 11.5l-3-2M23.5 11.5l3-2M7 17H3.5m21.5 0h3.5M9 22l-2.5 2M23 22l2.5 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 6c-4 0-6.5 3.5-6.5 8.5S12 23 16 23s6.5-3.5 6.5-8.5S20 6 16 6Z" stroke="currentColor" stroke-width="1.2"/></svg>';
+  fab.id = 'clincoo-bug-fab'; fab.type = 'button'; fab.title = 'Clincoo error console'; fab.setAttribute('aria-label','Buka console error Clincoo'); fab.setAttribute('aria-expanded','false');
+  fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8V4M8 4h8M7 8 4.5 5.5M17 8l2.5-2.5M5 12H2m20 0h-3M6 17l-2 2m14-2 2 2"/><path d="M12 8a6 6 0 0 0-6 6v2a6 6 0 0 0 12 0v-2a6 6 0 0 0-6-6Z"/><path d="M12 8v14M6.5 12h11"/></svg>';
   const panel = document.createElement('section');
-  panel.id = 'clincoo-bug-panel';
-  panel.setAttribute('role', 'dialog');
-  panel.setAttribute('aria-label', 'Clincoo console log');
-  panel.innerHTML = '<div class="clb-logs"></div><div class="clb-foot"><button class="clb-clear" type="button">Bersihkan</button><button class="clb-report" type="button">Laporkan ↗</button></div>';
-  (document.body || document.documentElement).append(fab, panel);
-  const logBox = panel.querySelector('.clb-logs');
-
-  function render() {
-    logBox.replaceChildren();
-    if (!logs.length) {
-      const empty = document.createElement('div');
-      empty.className = 'clb-empty';
-      return;
-    }
-    logs.slice().reverse().forEach(item => {
-      const row = document.createElement('div');
-      row.className = 'clb-entry ' + item.type;
-      const time = document.createElement('span');
-      time.className = 'clb-time';
-      time.textContent = item.time + ' [' + item.type.toUpperCase() + ']';
-      const msg = document.createElement('span');
-      msg.textContent = item.message;
-      row.append(time, msg);
-      logBox.appendChild(row);
-    });
+  panel.id='clincoo-bug-panel'; panel.setAttribute('role','dialog'); panel.setAttribute('aria-label','Clincoo error console');
+  panel.innerHTML='<header class="clb-head"><div><div class="clb-title">Clincoo · Error console</div><div class="clb-route"></div></div><button class="clb-close" type="button" aria-label="Tutup">×</button></header><div class="clb-status"><span class="clb-dot"></span><span class="clb-count">Memantau error</span></div><div class="clb-logs" aria-live="polite"></div><footer class="clb-foot"><a class="clb-report" target="_blank" rel="noopener noreferrer">Laporkan via WhatsApp ↗</a><div class="clb-note">Log terakhir disertakan di pesan laporan.</div></footer>';
+  (document.body||document.documentElement).append(fab,panel);
+  const box=panel.querySelector('.clb-logs'), count=panel.querySelector('.clb-count'), route=panel.querySelector('.clb-route'), report=panel.querySelector('.clb-report');
+  route.textContent=location.pathname+location.search;
+  function contrast(){
+    let bg='rgb(255,255,255)';
+    for(const el of [document.querySelector('main'),document.body,document.documentElement]){if(!el)continue;const c=getComputedStyle(el).backgroundColor;if(c&&c!=='transparent'&&c!=='rgba(0, 0, 0, 0)'){bg=c;break;}}
+    const n=bg.match(/[\\d.]+/g);let light=true;
+    if(n&&n.length>=3){const rgb=n.slice(0,3).map(Number).map(v=>{v/=255;return v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4)});light=.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2]>.42;}
+    panel.style.setProperty('--cb-bg',light?'#fff':'#171717');panel.style.setProperty('--cb-fg',light?'#171717':'#fff');panel.style.setProperty('--cb-border',light?'#e5e5e5':'#383838');panel.style.setProperty('--cb-muted',light?'#737373':'#a3a3a3');
+    fab.style.setProperty('--cb-bg',light?'#171717':'#fff');fab.style.setProperty('--cb-fg',light?'#fff':'#171717');fab.style.setProperty('--cb-border',light?'#171717':'#fff');
   }
-  const originalAddLog = addLog;
-  // Keep the console view fresh whenever a log arrives.
-  const observer = new MutationObserver(() => {});
-  const oldConsoleError = console.error;
-  console.error = (...args) => { originalAddLog('error', args); oldConsoleError(...args); if (panel.classList.contains('open')) render(); };
-  const oldConsoleWarn = console.warn;
-  console.warn = (...args) => { originalAddLog('warn', args); oldConsoleWarn(...args); if (panel.classList.contains('open')) render(); };
-  window.addEventListener('error', () => { if (panel.classList.contains('open')) render(); });
-  window.addEventListener('unhandledrejection', () => { if (panel.classList.contains('open')) render(); });
-
-  fab.addEventListener('click', () => {
-    if (dragged) { dragged = false; return; }
-    panel.classList.toggle('open');
-    if (panel.classList.contains('open')) render();
-  });
-  panel.querySelector('.clb-clear').addEventListener('click', () => { logs.length = 0; render(); });
-  panel.querySelector('.clb-report').addEventListener('click', () => {
-    const report = [
-      'Laporan error Clincoo',
-      'Halaman: ' + location.href,
-      'Waktu: ' + new Date().toLocaleString(),
-      '',
-      ...(logs.length ? logs.map(x => '[' + x.time + '] ' + x.type.toUpperCase() + ': ' + x.message) : ['Tidak ada error/warning tertangkap.'])
-    ].join('\n').slice(0, 12000);
-    const url = 'https://wa.me/?text=' + encodeURIComponent(report);
-    window.open(url, '_blank', 'noopener,noreferrer');
-  });
-
-  let dragging = false, dragged = false, startX = 0, startY = 0, originX = 0, originY = 0;
-  function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
-  fab.style.right = '22px'; fab.style.bottom = '22px';
-  fab.addEventListener('pointerdown', event => {
-    dragging = true; dragged = false;
-    startX = event.clientX; startY = event.clientY;
-    const rect = fab.getBoundingClientRect();
-    originX = rect.left; originY = rect.top;
-    fab.setPointerCapture(event.pointerId);
-  });
-  fab.addEventListener('pointermove', event => {
-    if (!dragging) return;
-    const dx = event.clientX - startX, dy = event.clientY - startY;
-    if (Math.abs(dx) + Math.abs(dy) > 5) dragged = true;
-    if (!dragged) return;
-    fab.style.left = clamp(originX + dx, 4, innerWidth - fab.offsetWidth - 4) + 'px';
-    fab.style.top = clamp(originY + dy, 4, innerHeight - fab.offsetHeight - 4) + 'px';
-    fab.style.right = 'auto'; fab.style.bottom = 'auto';
-  });
-  fab.addEventListener('pointerup', () => { dragging = false; });
-  fab.addEventListener('pointercancel', () => { dragging = false; });
-  document.addEventListener('keydown', event => { if (event.key === 'Escape') panel.classList.remove('open'); });
+  contrast();window.addEventListener('load',contrast,{once:true});
+  function refreshReport(){
+    const latest=logs.slice(-12).map(x=>'['+x.time+'] '+x.type.toUpperCase()+': '+x.message).join('\n');
+    const msg='Halo Clincoo, saya ingin melaporkan error.\nHalaman: '+location.href+'\nWaktu: '+new Date().toLocaleString('id-ID')+'\n\nLog error:\n'+(latest||'(Belum ada error tertangkap)');
+    report.href='https://wa.me/6283849297259?text='+encodeURIComponent(msg);
+  }
+  function render(){
+    count.textContent=logs.length?logs.length+' log tertangkap':'Memantau error';box.replaceChildren();
+    if(!logs.length){const e=document.createElement('div');e.className='clb-empty';e.textContent='Belum ada error yang tertangkap. Error baru akan muncul otomatis di sini.';box.appendChild(e);}
+    logs.forEach(x=>{const row=document.createElement('div');row.className='clb-entry';const time=document.createElement('span');time.className='clb-time';time.textContent=x.time;const msg=document.createElement('span');msg.className='clb-msg';msg.textContent=x.type.toUpperCase()+'  '+x.message;row.append(time,msg);box.appendChild(row);});
+    box.scrollTop=box.scrollHeight;refreshReport();
+  }
+  function add(type,args){logs.push({type,message:Array.from(args).map(toText).join(' ').slice(0,2000),time:new Date().toLocaleTimeString('id-ID',{hour12:false})});if(logs.length>MAX)logs.shift();if(panel.classList.contains('open'))render();else refreshReport();}
+  window.addEventListener('error',e=>{if(e.target&&e.target!==window)add('resource',['Gagal memuat',e.target.src||e.target.href||e.target.tagName]);else add('error',[e.message||'JavaScript error',e.filename?e.filename.split('/').pop()+':'+e.lineno:'']);},true);
+  window.addEventListener('unhandledrejection',e=>add('promise',[e.reason]));
+  const oldError=console.error.bind(console);console.error=(...a)=>{add('console',a);oldError(...a);};
+  const oldWarn=console.warn.bind(console);console.warn=(...a)=>{add('warning',a);oldWarn(...a);};
+  let dragging=false,dragged=false,sx=0,sy=0,ox=0,oy=0;
+  try{const p=JSON.parse(localStorage.getItem('clincoo-bug-pos')||'null');if(p&&Number.isFinite(p.x)&&Number.isFinite(p.y)){fab.style.left=Math.max(4,Math.min(innerWidth-56,p.x))+'px';fab.style.top=Math.max(4,Math.min(innerHeight-56,p.y))+'px';fab.style.right='auto';fab.style.bottom='auto';}else{fab.style.right='22px';fab.style.bottom='22px';}}catch(_){fab.style.right='22px';fab.style.bottom='22px';}
+  fab.addEventListener('pointerdown',e=>{if(e.button!==0&&e.pointerType==='mouse')return;dragging=true;dragged=false;sx=e.clientX;sy=e.clientY;const r=fab.getBoundingClientRect();ox=r.left;oy=r.top;fab.setPointerCapture(e.pointerId);});
+  fab.addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-sx,dy=e.clientY-sy;if(Math.abs(dx)+Math.abs(dy)>5)dragged=true;if(!dragged)return;fab.style.left=Math.max(4,Math.min(innerWidth-fab.offsetWidth-4,ox+dx))+'px';fab.style.top=Math.max(4,Math.min(innerHeight-fab.offsetHeight-4,oy+dy))+'px';fab.style.right='auto';fab.style.bottom='auto';});
+  function endDrag(){if(!dragging)return;dragging=false;if(dragged){const r=fab.getBoundingClientRect();try{localStorage.setItem('clincoo-bug-pos',JSON.stringify({x:r.left,y:r.top}));}catch(_){}}}
+  fab.addEventListener('pointerup',endDrag);fab.addEventListener('pointercancel',endDrag);
+  fab.addEventListener('click',()=>{if(dragged){dragged=false;return;}const open=!panel.classList.contains('open');panel.classList.toggle('open',open);fab.setAttribute('aria-expanded',String(open));if(open){contrast();render();}});
+  panel.querySelector('.clb-close').addEventListener('click',()=>{panel.classList.remove('open');fab.setAttribute('aria-expanded','false');});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){panel.classList.remove('open');fab.setAttribute('aria-expanded','false');}});
+  document.addEventListener('pointerdown',e=>{if(panel.classList.contains('open')&&!panel.contains(e.target)&&!fab.contains(e.target)){panel.classList.remove('open');fab.setAttribute('aria-expanded','false');}});
+  window.addEventListener('resize',()=>{const r=fab.getBoundingClientRect();fab.style.left=Math.max(4,Math.min(innerWidth-fab.offsetWidth-4,r.left))+'px';fab.style.top=Math.max(4,Math.min(innerHeight-fab.offsetHeight-4,r.top))+'px';fab.style.right='auto';fab.style.bottom='auto';});
+  refreshReport();
 })();
