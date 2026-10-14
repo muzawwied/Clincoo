@@ -1253,7 +1253,14 @@
                 return total;
             };
             window.__saveStaged = function () {
-                try { localStorage.setItem('clincoo_staged_attachments', JSON.stringify(window.__stagedAtt)); } catch (e) {}
+                try { localStorage.setItem('clincoo_staged_attachments', JSON.stringify(window.__stagedAtt)); return; } catch (e) {}
+                // kuota localStorage penuh: lepas isi file terbesar satu per satu (nama tetap ada)
+                var rescue = window.__stagedAtt.map(function (a) { return { id: a.id, type: a.type, name: a.name, size: a.size, extension: a.extension, data: a.data, text: a.text }; });
+                rescue.sort(function (a, b) { return ((b.data ? b.data.length : 0) + (b.text ? b.text.length : 0)) - ((a.data ? a.data.length : 0) + (a.text ? a.text.length : 0)); });
+                for (var i = 0; i < rescue.length; i++) {
+                    rescue[i].data = null; rescue[i].text = null;
+                    try { localStorage.setItem('clincoo_staged_attachments', JSON.stringify(rescue)); return; } catch (e2) {}
+                }
             };
             window.removeStagedChip = function (id) {
                 window.__stagedAtt = window.__stagedAtt.filter(function (a) { return a.id !== id; });
@@ -1309,6 +1316,7 @@
                 if (files.length > 0 && filePreviewContainer) {
                     filePreviewContainer.classList.remove('hidden');
                     filePreviewContainer.classList.add('flex');
+                    var skippedNames = [];
                     for (const file of files) {
                         const ext = (file.name.split('.').pop() || '').toLowerCase();
                         let iconStr = 'file';
@@ -1329,7 +1337,7 @@
                                 text = await __loadSpreadsheet(file);
                             } else if (!isImage && ext === 'docx' && file.size <= 10 * 1024 * 1024) {
                                 text = await __loadDocx(file);
-                            } else if (!isImage && !['zip', 'rar', '7z', 'tar', 'gz', 'pdf', 'doc', 'docx', 'xlsx', 'xls', 'xlsm', 'csv', 'ods'].includes(ext) && file.size <= 150 * 1024) {
+                            } else if (!isImage && !['zip', 'rar', '7z', 'tar', 'gz', 'pdf', 'doc', 'docx', 'xlsx', 'xls', 'xlsm', 'csv', 'ods'].includes(ext) && file.size <= 1500 * 1024) {
                                 text = await __readFileAsText(file);
                             }
                         } catch (err) {}
@@ -1338,6 +1346,7 @@
                         }
                         window.__stagedAtt.push({ id: attId, type: isImage ? 'image' : 'document', name: file.name, size: file.size, data: data, text: text, extension: ext });
                         __saveStaged();
+                        if (!data && !text) skippedNames.push(file.name);
                         const chip = document.createElement('div');
                         chip.className = 'file-chip inline-flex items-center gap-2 bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-xl text-xs text-gray-800 font-medium shadow-sm transition-colors duration-300 flex-shrink-0';
                         chip.setAttribute('data-att-id', attId);
@@ -1349,6 +1358,9 @@
                             </button>
                         `;
                         filePreviewContainer.appendChild(chip);
+                    }
+                    if (skippedNames.length) {
+                        alert('Isi file berikut tidak terbaca karena terlalu besar / tipenya belum didukung, jadi hanya namanya yang ikut: ' + skippedNames.join(', ') + '. Maksimum isi: file teks 1,5MB, gambar 2MB, PDF/Excel/DOCX 10MB. Kompres atau pecah filenya lalu unggah ulang.');
                     }
                     try { lucide.createIcons(); } catch (e) {}
                     try { forceCloseUploadMenu(); } catch (e2) {}
