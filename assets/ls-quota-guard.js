@@ -4,6 +4,21 @@
   if (window.__clincooLsQuotaGuard) return;
   window.__clincooLsQuotaGuard = true;
 
+  var MSG = 'Cache lokal penuh (aman): perubahan tetap disimpan ke cloud.';
+
+  /* Dedupe warn yang sama dari saveData() di workspace */
+  try {
+    var ow = console.warn.bind(console);
+    console.warn = function () {
+      var text = Array.prototype.join.call(arguments, ' ');
+      if (text.indexOf('Cache lokal penuh') !== -1) {
+        if (window.__clincooCacheFullWarned) return;
+        window.__clincooCacheFullWarned = true;
+      }
+      return ow.apply(console, arguments);
+    };
+  } catch (_) {}
+
   var raw = window.localStorage;
   if (!raw || !raw.setItem) return;
 
@@ -47,9 +62,7 @@
           } catch (e2) {
             if (!window.__clincooCacheFullWarned) {
               window.__clincooCacheFullWarned = true;
-              try {
-                console.warn('Cache lokal penuh (aman): perubahan tetap disimpan ke cloud.');
-              } catch (_) {}
+              try { console.warn(MSG); } catch (_) {}
             }
           }
         }
