@@ -521,12 +521,13 @@ async function tryEmergentText(keys, messages, onDelta) {
 // non-reasoning, ~99 tok/s (256 tok = 2.6s), tool_calls NATIVE jalan,
 // jauh di bawah potongan gateway MR ~10s. glm-5.3-flash cadangan
 // (reasoning ikut dihitung: 384 tok = 8.0s, mepet jendela), lightning terakhir.
-// [14 Okt 2026, arahan pemilik] MODE BUILD dua model ModelRouter:
-// FRONTEND (file web html/css/js) -> deepseek-v4.1-flash:free (cepat, gratis, tool OK)
-// BACKEND (function/api/database/server) -> claude-sonnet-5.5 (kuat untuk logika;
-//   perlu saldo ModelRouter — jika habis otomatis jatuh ke deepseek free berikutnya)
-const MR_FRONTEND_MODELS = ['deepseek-v4.1-flash:free'];
-const MR_BACKEND_MODELS = ['claude-sonnet-5.5', 'deepseek-v4.1-flash:free'];
+// [14 Okt 2026, KONFIRMASI PEMILIK: "di Clincoo build mode ada 2 AI"] — bukan
+// rute file frontend/backend. MODE BUILD = DUA AI (arsitektur Mode Build):
+//   AI 1 — FRONT AGENT (ringan, komunikasi): deepseek-v4.1-flash:free (gratis)
+//   AI 2 — EXECUTION AGENT (pengerja teknis, tools): claude-sonnet-5.5
+//          (butuh saldo ModelRouter; otomatis jatuh ke deepseek free bila gagal)
+const FRONT_MR_MODELS = ['deepseek-v4.1-flash:free'];
+const EXECUTION_MR_MODELS = ['claude-sonnet-5.5', 'deepseek-v4.1-flash:free'];
 // [14 Okt] MODE CHAT -> ModelRouter deepseek-v4.1-flash:free jadi kandidat utama
 // (berlomba dengan Gemini; chat tetap gratis bagi user).
 const CHAT_MR_MODELS = ['deepseek-v4.1-flash:free'];
@@ -606,22 +607,163 @@ function mrJoinContinuation(prev, cont) {
   if (/[A-Za-zÀ-ÿ0-9]$/.test(p) && /^[A-Z][a-z]/.test(c)) return p + ' ' + c;
   return p + c;
 }
-// [14 Okt 2026, arahan pemilik] RUTE MODEL PER PERMINTAAN (mode Build):
-// permintaan backend (function/api/database/server/pembayaran) -> sonnet-5.5,
-// lainnya (frontend: html/css/js/teks) -> deepseek-v4.1-flash:free.
-// Deteksi dari 6 pesan terakhir (termasuk tool_calls utk path functions/).
-function mrModelsForRequest(msgs) {
+// [14 Okt] ===== AI 1 — FRONT AGENT (dipulihkan dari chat.old.js, model baru) =====
+function lastUserText(msgs) {
   try {
-    const tail = (msgs || []).slice(-6).map(function (m) {
-      let s = (m && typeof m.text === 'string') ? m.text : '';
-      s += ' ' + ((m && typeof m.content === 'string') ? m.content : JSON.stringify((m && m.content) || {}));
-      if (m && m.tool_calls) s += ' ' + JSON.stringify(m.tool_calls);
-      return s.toLowerCase();
-    }).join(' ');
-    if (/(backend|endpoint|webhook|database|d1\s|auth|login|payment|pembayaran|stripe|midtrans|cron|token|functions\/|function\/|custom_function|\/api|api\skey|backend\s)/.test(tail)) return MR_BACKEND_MODELS;
-    return MR_FRONTEND_MODELS;
-  } catch (e) { return MODELROUTER_MODELS; }
+    const m = [...(msgs || [])].reverse().find(function (x) { return x && x.role === 'user'; });
+    if (!m) return '';
+    const c = m.content;
+    return typeof c === 'string' ? c : (Array.isArray(c) ? c.filter(function (b) { return b && b.type === 'text'; }).map(function (b) { return b.text || ''; }).join(' ') : '');
+  } catch (e) { return ''; }
 }
+
+const FRONT_SYSTEM_PROMPT = 'ATURAN BAHASA (WAJIB): selalu Bahasa Indonesia; dilarang aksara Mandarin/Jepang/Korea. Kamu AI 1 — FRONT AGENT Clincoo (model ringan). Tugasmu BUKAN menulis kode/file, hanya memilah niat user dan merinci instruksi untuk AI 2 (Execution Agent). KONTEKS: user SEDANG di MODE BUILD dengan tools workspace aktif — DILARANG membalas bahwa kamu/user harus pindah mode, atau bahwa workspace tidak bisa diperiksa/diakses. Balas HANYA satu objek JSON valid, tanpa teks lain, tanpa penjelasan.\nAturan memilih action:\n- "reply": user menyapa, bertanya, mengobrol, minta saran/penjelasan/pendapat, menanyakan progres atau cara pakai. Jawab final untuk user sekarang. Jika butuh info tambahan dari user untuk mulai membangun, WAJIB pakai field "questions" di reply (format di aturan (b)), bukan daftar permintaan panjang.\n- "execute": user meminta DIBUATKAN/DIUBAH/DIPERBAIKI/DILANJUTKAN situs, halaman, aplikasi, file, fitur, tampilan, atau deploy.\nFormat WAJIB salah satu:\n{"action":"reply","reply":"<jawaban final bahasa Indonesia natural, langsung ke inti>"}\n{"action":"execute","ack":"<jawaban singkat ke user (1-3 kalimat, bahasa Indonesia natural): konfirmasi permintaan + rencana kerja bertahap. TANPA kode, TANPA janji kosong>","instruction":"<instruksi teknis siap eksekusi: APA yang dibuat/diubah (sebut file/halaman bila relevan), data user yang disebut (nama orang, relasi seperti bapak/ibu, nama usaha, kota, harga) WAJIB disertakan persis, preferensi desain/fitur, syarat selesai>","context":"<fakta penting lain dari percakapan yang wajib dipegang AI 2>"}\nKetentuan: untuk sapaan jawab singkat dan hangat; untuk pertanyaan progres ringkas HANYA dari [PROGRES TUGAS SEBELUMNYA], jangan mengarang; reply tidak menulis kode dan tidak menawarkan bantuan kosong; execute tidak menulis kode, hanya instruksi; ack WAJIB diisi setiap kali execute (jawaban dulu ke user, baru AI 2 bekerja). ack TIDAK BOLEH bertanya atau meminta data tambahan saat execute — AI 2 langsung bekerja dengan data yang sudah ada di pesan user; cukup konfirmasi singkat + rencana 1-3 langkah, tanpa mengarang nama usaha/fitur yang tidak disebut user. Jangan pernah menyebut nama provider/model.\nATURAN LANJUT (WAJIB): jika user sudah menjawab pertanyaanmu, menyerahkan keputusan ("terserah", "bebas", "boleh", "gapapa", "lanjut", "iya", "buat aja", "kamu pilih"), atau sudah pernah ditanya sekali di riwayat, JANGAN tanya lagi: langsung action execute dengan pilihan terbaik yang masuk akal (kecuali fakta pribadi yang tak boleh dikarang: nama orang/usaha, pakai placeholder wajar atau nama fiktif yang jelas). Maksimal SATU putaran polling per tugas. ATURAN ACK: ack hanya 1-2 kalimat konfirmasi + rencana; DILARANG memuat frasa "instruksi teknis", "berikut", atau JSON/kode. Instruksi untuk AI 2 JANGAN menambah fitur yang tidak diminta (database, login, pembayaran). ATURAN ANTI-KARANG (WAJIB, pelanggaran = gagal): (a) DILARANG menambah fakta yang tidak tertulis di percakapan: nama usaha, domain, jenis bisnis, nama orang/sapaan user, fitur (login/database/pembayaran), skema warna, atau teknologi. Hanya pakai yang user katakan PERSIS. (b) Jika permintaan bangun terlalu umum/kosong (contoh: "buat web", "bikin website", "buat aplikasi" tanpa jenis/nama/tujuan), JANGAN execute: pakai action reply dengan pengantar 1 kalimat di "reply" plus daftar pertanyaan di field "questions" (array), BUKAN paragraf panjang minta banyak data. Maksimal 3 pertanyaan, hanya yang benar-benar wajib sebelum membangun (jenis/untuk siapa usahanya, nama usaha/brand, preferensi gaya/warna). Pertanyaan yang butuh jawaban bebas pakai "options" kosong []. Sistem otomatis mengubah field "questions" jadi kartu polling interaktif. Contoh format reply dengan polling: {"action":"reply","reply":"Siap! Jawab singkat dulu supaya hasilnya pas.","questions":[{"q":"Web untuk apa atau siapa usahanya?","options":["Kuliner (restoran/kafe/katering)","Toko & produk","Jasa profesional","Organisasi/komunitas"]},{"q":"Nama usaha atau brand-nya apa?","options":[]}]} (c) Jangan menyapa user dengan nama yang tidak pernah ia sebutkan. (d) Jangan ceramah teknis tentang Flask/MySQL/Node.js/database; platform Clincoo sudah punya stack sendiri, cukup kerjakan. Kolom context HANYA berisi fakta yang benar-benar ada di pesan user, kosongkan bila tidak ada. ATURAN NAVIGASI UI (WAJIB): jika user minta MEMBUKA/MELIHAT bagian antarmuka (contoh: "buka workspace", "lihat preview", "buka editor", "lihat file"), itu BUKAN permintaan membangun dan BUKAN hal yang tidak bisa kamu lakukan. Pakai action reply singkat (1-2 kalimat) yang mengarahkan ke tab yang benar di bagian atas halaman proyek: tab Workspace (lihat dan kelola file/folder), tab Live preview (lihat hasil web berjalan), tab Editor (edit kode), tab Chat (percakapan). DILARANG mengaku tidak punya fitur Workspace, DILARANG ceramah soal keterbatasan tool atau kejujuran. Bila user ingin AI membaca isi file/folder untuk dicek, pakai action execute dengan instruksi list_items lalu laporkan isinya.';
+const NEEDS_TOOLS_RE = /\b(?:cek|chek|check|periksa|lihat|baca|buka|tampilkan|list|perbaiki|benerin|fix|lanjut(?:kan)?|ubah|edit|tambah(?:kan)?|hapus)\b[^\n]{0,60}\b(?:workspace|folder|file|berkas|index|proyek|project|situs|web|halaman|error)\b|\.(?:html|css|js)\b|preview mendeteksi error|^\s*(?:terserah|bebas|ya|iya|oke|ok|lanjut|gas)\b/i;
+
+function frontPollBlock(questions) {
+  try {
+    if (!Array.isArray(questions) || !questions.length) return '';
+    const qs = questions.slice(0, 4).map(function (q) {
+      if (typeof q === 'string') return { q: q, options: [] };
+      return { q: String((q && (q.q || q.question)) || ''), options: Array.isArray(q && q.options) ? q.options : [] };
+    }).filter(function (q) { return q.q.trim(); });
+    if (!qs.length) return '';
+    const L = ['A', 'B', 'C', 'D'];
+    const body = qs.map(function (q) {
+      return 'Q: ' + q.q.trim().replace(/\n+/g, ' ') + (q.options.length ? '\n' + q.options.slice(0, 4).map(function (o, k) { return L[k] + ': ' + String(o).trim().replace(/\n+/g, ' '); }).join('\n') : '');
+    }).join('\n---\n');
+    return '\n\n[[POLL]]\nT: Konfirmasi singkat\n' + body + '\n[[/POLL]]';
+  } catch (e) { return ''; }
+}
+
+function frontLooseField(t, name) {
+  try {
+    const m = t.match(new RegExp('"' + name + '"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)', 's'));
+    if (!m) return '';
+    let v = m[1];
+    try { v = JSON.parse('"' + v + '"'); } catch (e) { v = v.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\'); }
+    return String(v).trim();
+  } catch (e) { return ''; }
+}
+
+function frontSanitizeReply(text) {
+  let x = String(text || '').trim();
+  if (/^\s*[\{\[]/.test(x) || /"action"\s*:/.test(x)) {
+    const rep = frontLooseField(x, 'reply') || frontLooseField(x, 'ack');
+    return rep || '';
+  }
+  return x.replace(/\b(Instruksi teknis|Context)\s*:[\s\S]*$/i, '').trim();
+}
+
+async function ensureTaskTable(env) {
+  if (__taskTableReady) return;
+  await env.DB.prepare('CREATE TABLE IF NOT EXISTS task_state (session_id TEXT, h TEXT, kind TEXT, payload TEXT, created_at TEXT, PRIMARY KEY (session_id, h))').run();
+  __taskTableReady = true;
+}
+
+async function taskEventRecord(env, sessionId, kind, payload) {
+  try {
+    if (!sessionId || !env.DB) return;
+    await ensureTaskTable(env);
+    const h = String(kind) + '|' + String(payload).slice(0, 400);
+    let hash = 5381;
+    for (let i = 0; i < h.length; i++) hash = ((hash * 33) + h.charCodeAt(i)) >>> 0;
+    await env.DB.prepare('INSERT OR IGNORE INTO task_state (session_id, h, kind, payload, created_at) VALUES (?, ?, ?, ?, ?)')
+      .bind(String(sessionId).slice(0, 80), String(hash), String(kind).slice(0, 24), String(payload).slice(0, 600), new Date().toISOString()).run();
+  } catch (e) {}
+}
+
+async function taskStateDigest(env, sessionId) {
+  try {
+    if (!sessionId || !env.DB) return '';
+    await ensureTaskTable(env);
+    const rows = await env.DB.prepare('SELECT kind, payload FROM (SELECT kind, payload, created_at FROM task_state WHERE session_id = ? ORDER BY created_at DESC LIMIT 60) ORDER BY created_at ASC').bind(String(sessionId).slice(0, 80)).all();
+    return (rows.results || []).map(function (r) { return '- [' + r.kind + '] ' + r.payload; }).join('\n').slice(-2500);
+  } catch (e) { return ''; }
+}
+
+async function scanMessagesForEvents(env, sessionId, msgs) {
+  try {
+    const jobs = [];
+    for (const m of (msgs || [])) {
+      if (!m || !Array.isArray(m.content)) continue;
+      for (const b of m.content) {
+        if (!b || typeof b !== 'object') continue;
+        if (b.type === 'function_call' && b.name) {
+          let brief = '';
+          try { const a = typeof b.args === 'string' ? JSON.parse(b.args) : (b.args || {}); brief = String(a.path || a.app_name || a.query || a.prompt || '').slice(0, 90); } catch (e) {}
+          jobs.push(taskEventRecord(env, sessionId, 'call', b.name + (brief ? ' ' + brief : '')));
+        } else if (b.type === 'function_response' && b.name) {
+          let s = ''; try { s = typeof b.response === 'string' ? b.response : JSON.stringify(b.response || b.result || ''); } catch (e) {}
+          const ok = /"success"\s*:\s*true/i.test(s) ? 'OK' : (/"error"/i.test(s) ? 'GAGAL' : 'selesai');
+          let extra = ''; const um = s.match(/"url"\s*:\s*"([^"]+)"/); if (um) extra = ' -> ' + um[1].slice(0, 80);
+          jobs.push(taskEventRecord(env, sessionId, 'hasil', b.name + ' ' + ok + extra));
+        }
+      }
+    }
+    await Promise.all(jobs);
+  } catch (e) {}
+}
+
+async function frontAgentRun(bodyMessages, stateDigest, mrKeys, usageAcc) {
+  try {
+    const keyList = Array.isArray(mrKeys) ? mrKeys.filter(Boolean) : [mrKeys].filter(Boolean);
+    if (!keyList.length) return null;
+    const chat = [];
+    for (const m of (bodyMessages || [])) {
+      if (!m || m.role === 'system') continue;
+      let txt = '';
+      if (typeof m.content === 'string') txt = m.content;
+      else if (Array.isArray(m.content)) txt = m.content.filter(function (b) { return b && b.type === 'text'; }).map(function (b) { return b.text || ''; }).join('\n');
+      txt = String(txt).trim();
+      if (!txt) continue;
+      chat.push({ role: m.role === 'assistant' ? 'assistant' : 'user', content: txt.slice(0, 3500) });
+    }
+    if (!chat.length) return null;
+    const recent = chat.slice(-12);
+    const sys = FRONT_SYSTEM_PROMPT + (stateDigest ? '\n\n[PROGRES TUGAS SEBELUMNYA (event store — sumber kebenaran)]:\n' + stateDigest : '');
+    const frMsgs = [{ role: 'system', content: sys }].concat(recent);
+    // [14 Okt, arahan pemilik] AI 1 FRONT AGENT = deepseek-v4.1-flash:free (ModelRouter).
+    // Timeout ketat 9 detik: kalau lambat/gagal, serahkan langsung ke AI 2 (user jangan menunggu).
+    let r = await withTimeout(tryModelRouterText(keyList, frMsgs, null, FRONT_MR_MODELS, null, usageAcc), 9000, 'FrontAgent').catch(function () { return null; });
+    if (!r || r.error || !r.text) return null;
+    let t = String(r.text).trim().replace(/^```(json)?/i, '').replace(/```\s*$/, '').trim();
+    const i = t.indexOf('{'), j = t.lastIndexOf('}');
+    if (i === -1) return { action: 'reply', reply: frontSanitizeReply(t).slice(0, 2200) || 'Oke, aku lanjutkan ya.' };
+    let o = null;
+    if (j > i) { try { o = JSON.parse(t.slice(i, j + 1)); } catch (e) { o = null; } }
+    if (!o) {
+      const act = (t.match(/"action"\s*:\s*"(execute|reply)"/) || [])[1] || '';
+      if (act === 'execute') {
+        const ins = frontLooseField(t, 'instruction');
+        if (ins) o = { action: 'execute', ack: frontLooseField(t, 'ack'), instruction: ins, context: frontLooseField(t, 'context') };
+      } else if (act === 'reply') {
+        const rp = frontLooseField(t, 'reply');
+        if (rp) o = { action: 'reply', reply: rp };
+      }
+      if (!o) return { action: 'reply', reply: frontSanitizeReply(t).slice(0, 2200) || 'Oke, aku lanjutkan ya.' };
+    }
+    try {
+      if (o && o.action === 'execute' && o.instruction) {
+        const lastU = (recent.filter(function (m) { return m.role === 'user'; }).pop() || {}).content || '';
+        const words = String(lastU).trim().split(/\s+/).filter(Boolean).length;
+        const userTurns = recent.filter(function (m) { return m.role === 'user'; }).length;
+        const vague = /^(tolong\s+)?(buat|buatkan|bikin|bikinkan|bangun)(kan)?\s+(sebuah\s+|aku\s+|saya\s+)?(web|website|situs|aplikasi|app|landing\s*page|halaman)\s*(dong|ya|aja|saja|nih)?[.!? ]*$/i.test(String(lastU).trim());
+        const askedBefore = recent.some(function (m) { return m.role === 'assistant'; });
+        const STOPW = new Set(['tolong','buat','buatkan','bikin','bikinkan','bangun','kan','web','website','situs','aplikasi','app','landing','page','halaman','dong','ya','aja','saja','nih','aku','saya','sebuah','untuk','bikinin','please']);
+        const contentWords = String(lastU).toLowerCase().replace(/[.,!?;:]/g,' ').split(/\s+/).filter(function (w) { return w && !STOPW.has(w); });
+        const hasTopic = contentWords.length > 0;
+        if (!askedBefore && !hasTopic && (vague || (words <= 3 && userTurns <= 1 && /\b(web|website|situs|aplikasi|app)\b/i.test(lastU)))) {
+          return { action: 'reply', reply: 'Siap! Bantu jawab singkat dulu supaya hasilnya pas:\n[[POLL]]\nT: Konfirmasi singkat\nQ: Web untuk apa atau siapa usahanya?\nA: Kuliner (restoran/kafe/katering)\nB: Toko & produk\nC: Jasa profesional\nD: Organisasi/komunitas\n---\nQ: Nama usaha atau brand-nya apa?\n[[/POLL]]' };
+        }
+      }
+      if (o && o.action === 'execute' && o.instruction) return { action: 'execute', ack: frontSanitizeReply(String(o.ack || '').replace(/\s*(Berikut|Ini)\s+(adalah\s+)?(instruksi|langkah|rencana)[^.!?\n]*[:.]?\s*$/i, '')).slice(0, 1200), instruction: String(o.instruction).slice(0, 3500), context: String(o.context || '').slice(0, 1200) };
+      if (o && o.action === 'reply' && (o.reply || (o.questions && o.questions.length))) return { action: 'reply', reply: (frontSanitizeReply(o.reply) || 'Siap! Jawab singkat dulu supaya hasilnya pas.').slice(0, 3000) + frontPollBlock(o.questions) };
+    } catch (e) {}
+    return { action: 'reply', reply: frontSanitizeReply(t).slice(0, 2200) || 'Oke, aku lanjutkan ya.' };
+  } catch (e) { return null; }
+}
+
 async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usageAcc) {
   const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
   if (!keyList.length) return null;
@@ -2252,6 +2394,28 @@ export async function onRequestPost({ request, env, waitUntil }) {
     //           TANPA auto-eskalasi ke model berbayar walau prompt terdengar "bangun situs";
     // 'build' = ModelRouter berbayar, kredit dipotong sesuai pemakaian (usage-based).
     const buildMode = ENABLE_BUILD_ROUTE && (body.mode === 'build' || (!explicitChat && detectBuildIntent(body.messages))) && !isGuest && !!mrKeys.length && !hasImages;
+
+    // [14 Okt, klarifikasi pemilik] DUA AI MODE BUILD:
+    // AI 1 FRONT AGENT (deepseek free, ringan) memilah niat user lebih dulu:
+    // pertanyaan ringan -> dijawab LANGSUNG tanpa membangunkan AI 2; permintaan
+    // kerja -> AI 2 EXECUTION AGENT (sonnet 5.5) yang mengerjakan + ack singkat.
+    let frontResult = null;
+    if (buildMode && isFirstHop && String(body.agent || 'auto') !== 'off' && !hasImages) {
+      const sid = String(body.session_id || ('fa_' + Date.now())).slice(0, 80);
+      try { await scanMessagesForEvents(env, sid, (body.messages || []).slice(-14)); } catch (e) {}
+      let fr = null;
+      try {
+        fr = NEEDS_TOOLS_RE.test(lastUserText(body.messages)) ? null
+          : await frontAgentRun(body.messages, await taskStateDigest(env, sid), mrKeys, mrUsageAcc);
+      } catch (e) { fr = null; }
+      if (fr && fr.action === 'reply' && String(fr.reply || '').trim()) {
+        try { await chargeAiUsage(env, user, 'front-agent-ringan', String(fr.reply).length, 0, false, null); } catch (e) {}
+        frontResult = { text: fr.reply, model: 'Front Agent (ringan)', front: { action: 'reply' } };
+      } else if (fr && fr.action === 'execute') {
+        try { if (waitUntil) waitUntil(taskEventRecord(env, sid, 'front', 'AI 1 serahkan ke AI 2 (Execution Agent): ' + String(fr.instruction || '').slice(0, 120))); } catch (e) {}
+        try { streamSend && streamSend({ t: 'front', text: String(fr.ack || '').slice(0, 1200) }); } catch (e) {}
+      }
+    }
     const aiMain = !!(env.AI && !hasImages);
     const toolDecls = (gTools && gTools[0] && gTools[0].functionDeclarations) || null;
     // Cascade lengkap (OpenRouter -> Clouvia -> Workers AI -> Gemini) dijalankan
@@ -2273,7 +2437,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // UTAMA di tiap hop tool (kode besar butuh model konsisten). Gagal -> cascade
       // gratis di bawah tetap menyelamatkan jawaban.
       if (buildMode && (!r || r.error)) {
-        const mr = await withTimeout(tryModelRouterText(mrKeys, workMessages, toolDecls, mrModelsForRequest(workMessages), streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null, mrUsageAcc), 90000, 'ModelRouter').catch(e => ({ error: e.message }));
+        const mr = await withTimeout(tryModelRouterText(mrKeys, workMessages, toolDecls, EXECUTION_MR_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null, mrUsageAcc), 90000, 'ModelRouter').catch(e => ({ error: e.message }));
         if (mr && !mr.error) r = mr;
       }
       const USE_CLOUVIA_FIRST = false;
@@ -2499,7 +2663,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     }
     return r;
     };
-    let r = await attemptCascade();
+    let r = frontResult || (await attemptCascade());
     // RETRY OTOMATIS SEBELUM ERROR SAMPAI KE USER: semua provider gagal bersamaan
     // hampir selalu sesaat (429/limit sibuk). Tunggu 2.5 detik lalu ulangi seluruh
     // cascade SEKALI lagi — kalau berhasil, user tidak pernah melihat error sama sekali.
