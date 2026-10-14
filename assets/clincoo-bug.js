@@ -1,5 +1,10 @@
 (() => {
-  if (window.__clincooBugInstalled) return;
+  // Defensively clean up duplicate widgets if this script was injected more than once.
+  for (const id of ['clincoo-bug-fab', 'clincoo-bug-panel', 'clincoo-bug-style']) {
+    const nodes = document.querySelectorAll('#' + id);
+    nodes.forEach((node, index) => { if (index > 0) node.remove(); });
+  }
+  if (window.__clincooBugInstalled || document.getElementById('clincoo-bug-fab')) return;
   window.__clincooBugInstalled = true;
 
   const logs = [];
@@ -18,6 +23,7 @@
   window.addEventListener('unhandledrejection', event => addLog('error', ['Unhandled promise rejection:', event.reason]));
 
   const style = document.createElement('style');
+  style.id = 'clincoo-bug-style';
   style.textContent = `
     #clincoo-bug-fab{position:fixed;z-index:2147483000;width:54px;height:54px;border:1px solid rgba(127,127,127,.35);border-radius:50%;display:grid;place-items:center;cursor:grab;touch-action:none;user-select:none;background:Canvas;color:CanvasText;box-shadow:0 5px 24px #0003;transition:box-shadow .15s,transform .15s}
     #clincoo-bug-fab:hover{box-shadow:0 8px 28px #0004;transform:scale(1.04)}
