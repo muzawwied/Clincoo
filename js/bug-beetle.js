@@ -270,5 +270,4 @@
   } catch (_) {}
 
   renderLogs();
-  addLog('info', 'Bug Beetle aktif', location.pathname);
 })();
