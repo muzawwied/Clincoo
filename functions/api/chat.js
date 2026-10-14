@@ -2414,7 +2414,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
         fr = NEEDS_TOOLS_RE.test(lastUserText(body.messages)) ? null
           : await frontAgentRun(body.messages, await taskStateDigest(env, sid), mrKeys, mrUsageAcc);
       } catch (e) { fr = null; }
-      if (!fr) { try { await taskEventRecord(env, sid, 'front', 'AI 1 tidak menjawab (gagal/timeout) -> langsung AI 2'); } catch (e) {}
+      if (!fr) { try { await taskEventRecord(env, sid, 'front', 'AI 1 tidak menjawab (gagal/timeout) -> langsung AI 2'); } catch (e) {} }
       if (fr && fr.action === 'reply' && String(fr.reply || '').trim()) {
         try { await taskEventRecord(env, sid, 'front', 'jawab langsung: ' + String(fr.reply).slice(0, 150)); } catch (e) {}
         try { await chargeAiUsage(env, user, 'front-agent-ringan', String(fr.reply).length, 0, false, null); } catch (e) {}
