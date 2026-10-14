@@ -2400,7 +2400,12 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // pertanyaan ringan -> dijawab LANGSUNG tanpa membangunkan AI 2; permintaan
     // kerja -> AI 2 EXECUTION AGENT (sonnet 5.5) yang mengerjakan + ack singkat.
     let frontResult = null;
-    if (buildMode && isFirstHop && String(body.agent || 'auto') !== 'off' && !hasImages) {
+    // [14 Okt FIX] Jangan gerbang pada isFirstHop: klien asli selalu mengirim
+    // save_user_message:false -> isFirstHop selalu false -> AI 1 tak pernah jalan.
+    // Gerbang benar: pesan terakhir = teks user baru (BUKAN lanjutan function_response).
+    const __lastMsg = messages[messages.length - 1];
+    const __isContinuation = !!(__lastMsg && Array.isArray(__lastMsg.content) && __lastMsg.content.some(function (b) { return b && b.type === 'function_response'; }));
+    if (buildMode && !__isContinuation && String(body.mode || '').trim() === 'build' && String(body.agent || 'auto') !== 'off' && !hasImages) {
       const sid = String(body.session_id || ('fa_' + Date.now())).slice(0, 80);
       try { await scanMessagesForEvents(env, sid, (body.messages || []).slice(-14)); } catch (e) {}
       let fr = null;
@@ -2408,7 +2413,9 @@ export async function onRequestPost({ request, env, waitUntil }) {
         fr = NEEDS_TOOLS_RE.test(lastUserText(body.messages)) ? null
           : await frontAgentRun(body.messages, await taskStateDigest(env, sid), mrKeys, mrUsageAcc);
       } catch (e) { fr = null; }
+      if (!fr) { try { await taskEventRecord(env, sid, 'front', 'AI 1 tidak menjawab (gagal/timeout) -> langsung AI 2'); } catch (e) {} }
       if (fr && fr.action === 'reply' && String(fr.reply || '').trim()) {
+        try { await taskEventRecord(env, sid, 'front', 'jawab langsung: ' + String(fr.reply).slice(0, 150)); } catch (e) {}
         try { await chargeAiUsage(env, user, 'front-agent-ringan', String(fr.reply).length, 0, false, null); } catch (e) {}
         frontResult = { text: fr.reply, model: 'Front Agent (ringan)', front: { action: 'reply' } };
       } else if (fr && fr.action === 'execute') {
