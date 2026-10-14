@@ -25,14 +25,14 @@
     #clincoo-bug-panel{position:fixed;z-index:2147483001;right:20px;bottom:86px;width:min(430px,calc(100vw - 28px));max-height:min(520px,72vh);display:none;flex-direction:column;background:#111318;color:#e6e8ee;border:1px solid #393d49;border-radius:16px;box-shadow:0 16px 60px #0006;font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;overflow:hidden}
     #clincoo-bug-panel.open{display:flex}
     #clincoo-bug-panel *{box-sizing:border-box}
-    .clb-head{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid #303440;font:600 14px/1.4 system-ui,sans-serif}
-    .clb-status{font:11px system-ui,sans-serif;color:#8be0a4;margin-left:8px}
+    .clb-head{display:none}
+    .clb-status{display:none}
     .clb-close{background:transparent;color:#ddd;border:0;font-size:22px;cursor:pointer}
     .clb-logs{overflow:auto;padding:10px;min-height:100px;flex:1}
     .clb-entry{padding:8px 9px;margin-bottom:7px;border-radius:7px;background:#1a1d25;white-space:pre-wrap;overflow-wrap:anywhere}
     .clb-entry.error{border-left:3px solid #ff646e}.clb-entry.warn{border-left:3px solid #f4c66a}
-    .clb-time{color:#9299a9;font-size:10px;margin-right:8px}.clb-empty{color:#9da4b4;padding:18px 8px;text-align:center}
-    .clb-foot{padding:11px 12px;border-top:1px solid #303440;display:flex;align-items:center;gap:10px;justify-content:space-between;font:12px system-ui,sans-serif}
+    .clb-time{color:#9299a9;font-size:10px;margin-right:8px}.clb-empty{display:none}
+    .clb-foot{padding:8px 10px;display:flex;align-items:center;gap:8px;justify-content:flex-end;font:12px system-ui,sans-serif}
     .clb-report{border:0;border-radius:8px;background:#d9f99d;color:#17220b;padding:9px 12px;font-weight:700;cursor:pointer}
     .clb-clear{border:1px solid #454a58;border-radius:8px;background:transparent;color:#d1d5df;padding:8px 10px;cursor:pointer}
     @media(prefers-reduced-motion:reduce){#clincoo-bug-fab{transition:none}}
@@ -49,7 +49,7 @@
   panel.id = 'clincoo-bug-panel';
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-label', 'Clincoo console log');
-  panel.innerHTML = '<div class="clb-head"><div>🪲 Clincoo Console <span class="clb-status">LIVE</span></div><button class="clb-close" type="button" aria-label="Tutup">×</button></div><div class="clb-logs"></div><div class="clb-foot"><span>Log error & warning halaman ini</span><div><button class="clb-clear" type="button">Bersihkan</button> <button class="clb-report" type="button">Laporkan ↗</button></div></div>';
+  panel.innerHTML = '<div class="clb-logs"></div><div class="clb-foot"><button class="clb-clear" type="button">Bersihkan</button><button class="clb-report" type="button">Laporkan ↗</button></div>';
   (document.body || document.documentElement).append(fab, panel);
   const logBox = panel.querySelector('.clb-logs');
 
@@ -58,8 +58,6 @@
     if (!logs.length) {
       const empty = document.createElement('div');
       empty.className = 'clb-empty';
-      empty.textContent = 'Belum ada error atau warning yang tertangkap ✨';
-      logBox.appendChild(empty);
       return;
     }
     logs.slice().reverse().forEach(item => {
@@ -89,7 +87,6 @@
     panel.classList.toggle('open');
     if (panel.classList.contains('open')) render();
   });
-  panel.querySelector('.clb-close').addEventListener('click', () => panel.classList.remove('open'));
   panel.querySelector('.clb-clear').addEventListener('click', () => { logs.length = 0; render(); });
   panel.querySelector('.clb-report').addEventListener('click', () => {
     const report = [
