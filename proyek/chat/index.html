@@ -1367,6 +1367,19 @@
             let pid = (typeof currentProjectId !== 'undefined' && currentProjectId) ? String(currentProjectId) : 'global';
             return LS_CHAT_PREFIX + pid;
         }
+        // Simpan log ke localStorage dengan 3 tingkat penyelamatan kalau kuota penuh:
+        // (1) utuh, (2) tanpa isi lampiran (nama file tetap tampil), (3) pesan lama dipangkas.
+        function persistChatLog(log) {
+            try { localStorage.setItem(lsChatKey(), JSON.stringify(log)); return true; } catch (e) {}
+            const lean = log.map(m => (m.attachments && m.attachments.length)
+                ? Object.assign({}, m, { attachments: m.attachments.map(a => Object.assign({}, a, { data: null, text: null })) })
+                : m);
+            try { localStorage.setItem(lsChatKey(), JSON.stringify(lean)); return true; } catch (e) {}
+            for (let n = lean.length - 20; n > 0; n -= 20) {
+                try { localStorage.setItem(lsChatKey(), JSON.stringify(lean.slice(-n))); return true; } catch (e) {}
+            }
+            return false;
+        }
         function saveChatLog() {
             try {
                 // FIX: toolCalls ikut disimpan (dulu HILANG saat pindah halaman — makanya
@@ -1387,9 +1400,19 @@
                     toolCalls: (m.toolCalls || []).map(t => ({
                         name: t.name, args: t.args, ok: t.ok,
                         result: String(t.result || '').slice(0, 400)
+                    })),
+                    // FIX [14 Okt]: lampiran IKUT tersimpan di riwayat — dulu field ini
+                    // tidak ikut di-map jadi semua lampiran hilang saat reload.
+                    // Konten dipatok: gambar maks 400.000 karakter base64, teks maks
+                    // 50.000 karakter. Kalau kuota masih jebol, persistChatLog di bawah
+                    // otomatis melepas isi lampiran lalu memangkas pesan lama.
+                    attachments: (m.attachments || []).slice(0, 10).map(a => ({
+                        id: a.id, type: a.type, name: a.name, size: a.size, extension: a.extension || '',
+                        data: (a.data && a.data.length <= 400000) ? a.data : null,
+                        text: a.text ? String(a.text).slice(0, 50000) : null
                     }))
                 }));
-                localStorage.setItem(lsChatKey(), JSON.stringify(log));
+                persistChatLog(log);
                 // SESSION_RESUME_FIX: timestamp lokal selalu naik — cegah cloud menimpa lokal lebih baru
                 try { localStorage.setItem(chatSyncTsKey(), String(Date.now())); } catch(e) {}
                 // FIX: session_id ikut dipersist per proyek — setelah reload/error,
@@ -1433,7 +1456,14 @@
                 chatSyncBusy = true;
                 try {
                     const ts = Date.now();
-                    const trimmed = Array.isArray(log) ? log.slice(-CHAT_SYNC_MAX_MSGS) : [];
+                    // sinkron cloud: isi gambar tidak ikut (payload ringan & aman D1);
+                    // teks dokumen dipatok 20.000 karakter
+                    const trimmed = Array.isArray(log) ? log.slice(-CHAT_SYNC_MAX_MSGS).map(function (m) {
+                        if (!m.attachments || !m.attachments.length) return m;
+                        return Object.assign({}, m, { attachments: m.attachments.map(function (a) {
+                            return Object.assign({}, a, { data: null, text: a.text ? String(a.text).slice(0, 20000) : null });
+                        }) });
+                    }) : [];
                     await fetch(CHAT_SYNC_API, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -2208,8 +2238,13 @@
                         text = await loadSpreadsheet(file);
                     } else if (extension === 'docx') {
                         text = await loadDocx(file);
-                    } else {
+                    } else if (file.size <= 10 * 1024 * 1024) {
                         text = await readAsText(file);
+                        // patok teks panjang supaya riwayat & kuota tetap aman
+                        if (text && text.length > 100000) text = text.slice(0, 100000);
+                    } else {
+                        alert('File ' + file.name + ' terlalu besar (maks 10MB untuk file teks).');
+                        continue;
                     }
                 }
 
