@@ -1,10 +1,7 @@
 (() => {
-  // Defensively clean up duplicate widgets if this script was injected more than once.
-  for (const id of ['clincoo-bug-fab', 'clincoo-bug-panel', 'clincoo-bug-style']) {
-    const nodes = document.querySelectorAll('#' + id);
-    nodes.forEach((node, index) => { if (index > 0) node.remove(); });
-  }
-  if (window.__clincooBugInstalled || document.getElementById('clincoo-bug-fab')) return;
+  // Remove any stale copies, then install exactly one widget instance.
+  document.querySelectorAll('#clincoo-bug-fab, #clincoo-bug-panel, #clincoo-bug-style').forEach(node => node.remove());
+  if (window.__clincooBugInstalled) return;
   window.__clincooBugInstalled = true;
 
   const logs = [];
