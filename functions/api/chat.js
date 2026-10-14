@@ -655,6 +655,7 @@ function frontSanitizeReply(text) {
   return x.replace(/\b(Instruksi teknis|Context)\s*:[\s\S]*$/i, '').trim();
 }
 
+let __taskTableReady = false; // [14 Okt FIX] ikut tertinggal saat dipindah dari chat.old.js
 async function ensureTaskTable(env) {
   if (__taskTableReady) return;
   await env.DB.prepare('CREATE TABLE IF NOT EXISTS task_state (session_id TEXT, h TEXT, kind TEXT, payload TEXT, created_at TEXT, PRIMARY KEY (session_id, h))').run();
