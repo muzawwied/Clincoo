@@ -2401,7 +2401,6 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // pertanyaan ringan -> dijawab LANGSUNG tanpa membangunkan AI 2; permintaan
     // kerja -> AI 2 EXECUTION AGENT (sonnet 5.5) yang mengerjakan + ack singkat.
     let frontResult = null;
-    const __frontDebug = { err: [], digestLen: -1, frAct: null, sid: null }; // [14 Okt] debug sementara
     // [14 Okt FIX] Jangan gerbang pada isFirstHop: klien asli selalu mengirim
     // save_user_message:false -> isFirstHop selalu false -> AI 1 tak pernah jalan.
     // Gerbang benar: pesan terakhir = teks user baru (BUKAN lanjutan function_response).
@@ -2409,20 +2408,16 @@ export async function onRequestPost({ request, env, waitUntil }) {
     const __isContinuation = !!(__lastMsg && Array.isArray(__lastMsg.content) && __lastMsg.content.some(function (b) { return b && b.type === 'function_response'; }));
     if (buildMode && !__isContinuation && String(body.mode || '').trim() === 'build' && String(body.agent || 'auto') !== 'off' && !hasImages) {
       const sid = String(body.session_id || ('fa_' + Date.now())).slice(0, 80);
-      __frontDebug.sid = sid;
-      try { await scanMessagesForEvents(env, sid, (body.messages || []).slice(-14)); } catch (e) { __frontDebug.err.push('scan:' + (e && e.message)); }
+      try { await scanMessagesForEvents(env, sid, (body.messages || []).slice(-14)); } catch (e) {}
       let fr = null;
       try {
-        const __digest = await taskStateDigest(env, sid);
-        __frontDebug.digestLen = String(__digest || '').length;
         fr = NEEDS_TOOLS_RE.test(lastUserText(body.messages)) ? null
-          : await frontAgentRun(body.messages, __digest, mrKeys, mrUsageAcc);
-      } catch (e) { fr = null; __frontDebug.err.push('run:' + (e && e.message)); }
-      __frontDebug.frAct = fr ? fr.action : null;
-      if (!fr) { try { await taskEventRecord(env, sid, 'front', 'AI 1 tidak menjawab (gagal/timeout) -> langsung AI 2'); } catch (e) { __frontDebug.err.push('rec0:' + (e && e.message)); } }
+          : await frontAgentRun(body.messages, await taskStateDigest(env, sid), mrKeys, mrUsageAcc);
+      } catch (e) { fr = null; }
+      if (!fr) { try { await taskEventRecord(env, sid, 'front', 'AI 1 tidak menjawab (gagal/timeout) -> langsung AI 2'); } catch (e) {}
       if (fr && fr.action === 'reply' && String(fr.reply || '').trim()) {
-        try { await taskEventRecord(env, sid, 'front', 'jawab langsung: ' + String(fr.reply).slice(0, 150)); } catch (e) { __frontDebug.err.push('rec1:' + (e && e.message)); }
-        try { await chargeAiUsage(env, user, 'front-agent-ringan', String(fr.reply).length, 0, false, null); } catch (e) { __frontDebug.err.push('chg:' + (e && e.message)); }
+        try { await taskEventRecord(env, sid, 'front', 'jawab langsung: ' + String(fr.reply).slice(0, 150)); } catch (e) {}
+        try { await chargeAiUsage(env, user, 'front-agent-ringan', String(fr.reply).length, 0, false, null); } catch (e) {}
         frontResult = { text: fr.reply, model: 'Front Agent (ringan)', front: { action: 'reply' } };
       } else if (fr && fr.action === 'execute') {
         try { if (waitUntil) waitUntil(taskEventRecord(env, sid, 'front', 'AI 1 serahkan ke AI 2 (Execution Agent): ' + String(fr.instruction || '').slice(0, 120))); } catch (e) {}
@@ -2719,7 +2714,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
         // penyambung diam-diam pun tertagih; selisih dgn dashboard provider tertutup).
         const _mrCostS = mrTokenCost(mrUsageAcc);
         if (!isGuest && (_mrCostS !== null || isFirstHop)) await chargeAiUsage(env, user, r.model, outCharsS, inputChars, !explicitChat, _mrCostS);
-        streamSend({ t: 'final', ...outS, __fd: buildMode ? __frontDebug : undefined });
+        streamSend({ t: 'final', ...outS });
       }
       streamWriter.close().catch(() => {}); // TANPA await: antrean writer sudah berurutan
       return; // mode stream: respons sudah terkirim sejak awal
