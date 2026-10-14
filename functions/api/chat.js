@@ -1818,6 +1818,22 @@ function orBuildTools() {
 function workspaceDecls(_body) {
   return WORKSPACE_FUNCTION_DECLARATIONS;
 }
+
+// [14 Okt 2026, laporan owner: error "AI sedang gangguan" 21:49 tanpa jejak]
+// Catat kegagalan provider FINAL ke ai_router_logs — HANYA yang gagal (hemat D1,
+// sukses tidak dicatat). errText boleh berisi nama provider utk diagnosis pemilik;
+// teks ini TIDAK pernah tampil ke user (klien hanya menampilkan pesan ramah).
+async function logAiFailure(env, projectId, errText, mode) {
+  try {
+    if (!env || !env.DB) return;
+    const db = env.DB;
+    await db.prepare('CREATE TABLE IF NOT EXISTS ai_router_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT, ts TEXT, model TEXT, ok INTEGER, ms INTEGER, tokens INTEGER, err TEXT)').run();
+    await db.prepare('INSERT INTO ai_router_logs (project_id, ts, model, ok, ms, tokens, err) VALUES (?, ?, ?, 0, 0, 0, ?)')
+      .bind(String(projectId || '-'), new Date().toISOString(), String(mode || 'ai').slice(0, 60), String(errText || '(tanpa pesan)').slice(0, 240)).run();
+    // hemat D1: simpan maksimal 500 baris terakhir (pola lama v1/chat)
+    await db.prepare('DELETE FROM ai_router_logs WHERE id NOT IN (SELECT id FROM (SELECT id FROM ai_router_logs ORDER BY id DESC LIMIT 500))').run();
+  } catch (e) {}
+}
 // messages klien (format blok Clincoo) -> pesan OpenAI-compatible
 
 // GET /api/chat — status kredit AI akun ini (dipakai UI: ClincooPay top-up + banner kredit habis)
@@ -2467,6 +2483,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
         // tampil apa adanya di bubble user — ganti teks ramah; detail asli di
         // field 'detail' (diabaikan klien lama, berguna utk debugging).
         const rawErr1 = r.error || '';
+        try { await logAiFailure(env, body.project_id, rawErr1, (buildMode ? 'build' : 'chat') + (busy ? ' [429-semua-provider]' : '') + (r.contextOverflow ? ' [konteks-penuh]' : '')); } catch (eLog) {}
         const errText = busy
           ? 'Server AI sedang sibuk (limit provider). Coba lagi sebentar lagi.'
           : (rawErr1 === 'Tidak ada provider AI tersedia' ? rawErr1
@@ -2492,6 +2509,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     }
 
     if (r.error && r.quotaExhausted) {
+      try { await logAiFailure(env, body.project_id, r.error, (buildMode ? 'build' : 'chat') + ' [429-semua-provider]'); } catch (eLog) {}
       // sibuknya provider, bukan kuota user: 503 + provider_busy supaya klien
       // tidak mengunci komposer / menawarkan upgrade paket.
       // 429 TANPA quota_exhausted: frontend tidak retry (bukan transient baginya)
@@ -2501,11 +2519,13 @@ export async function onRequestPost({ request, env, waitUntil }) {
       });
     }
     if (r.error && r.contextOverflow) {
+      try { await logAiFailure(env, body.project_id, r.error, (buildMode ? 'build' : 'chat') + ' [konteks-penuh]'); } catch (eLog) {}
       return new Response(JSON.stringify({ context_overflow: true, error: 'Konteks percakapan penuh (terlalu banyak kode besar dalam satu chat). Balas "lanjut" untuk meneruskan tugas dengan riwayat yang dipangkas otomatis.' }), {
         status: 429, headers: { 'Content-Type': 'application/json', ...CORS }
       });
     }
     if (r.error) {
+      try { await logAiFailure(env, body.project_id, r.error, (buildMode ? 'build' : 'chat')); } catch (eLog) {}
       // teks ramah utk user; detail teknis provider dipisah ke field 'detail'
       const friendly = r.error === 'Tidak ada provider AI tersedia' ? r.error
         : 'Maaf, AI sedang gangguan sebentar sehingga belum bisa menjawab. Coba kirim ulang pesanmu ya.';
