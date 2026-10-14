@@ -14,10 +14,6 @@
     if (logs.length > MAX_LOGS) logs.shift();
   };
 
-  ['error', 'warn'].forEach(type => {
-    const original = console[type].bind(console);
-    console[type] = (...args) => { addLog(type, args); original(...args); };
-  });
   window.addEventListener('error', event => addLog('error', [event.message, event.filename, event.lineno ? ':' + event.lineno : '']));
   window.addEventListener('unhandledrejection', event => addLog('error', ['Unhandled promise rejection:', event.reason]));
 
