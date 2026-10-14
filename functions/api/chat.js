@@ -2234,7 +2234,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // [7 Okt 2026, arahan pemilik] GEMINI UTAMA (kunci aktif terverifikasi 200);
       // OpenRouter diturunkan jadi kandidat lemah (masih guna, 4/6 kunci hidup —
       // TIDAK dihapus). Workers AI (glm-4.7-flash, gratis) tetap fallback gratis.
-      if ((!r || r.error) && (apiKey.length || orKeys.length) && !hasImages) {
+      if ((!r || r.error) && (apiKey.length || (!explicitChat && orKeys.length)) && !hasImages) {
         // [6 Okt 2026, arahan owner: "percepat jawaban ai"] MODE RACE 3 KANDIDAT:
         // (P) GLM 5.3 Flash OpenRouter — jalur utama (tools + streaming penuh);
         // (G) Gemini 3.6 Flash — biasanya TTFB tercepat (di labs menang 20/22 balapan);
@@ -2329,25 +2329,25 @@ export async function onRequestPost({ request, env, waitUntil }) {
         });
         if (o) r = o;
       }
-      if ((!r || r.error) && cvKeysEarly.length && !hasImages) {
+      if ((!r || r.error) && !explicitChat && cvKeysEarly.length && !hasImages) {
         const c = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, undefined, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 25000, 'Clouvia').catch(e => ({ error: e.message }));
         if (c) r = c;
       }
-      if ((!r || r.error) && aiMain) {
+      if ((!r || r.error) && !explicitChat && aiMain) {
         const w = await withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 25000, 'Workers AI').catch(e => ({ error: e.message }));
         if (w) r = w;
       }
       // [6 Okt 2026] Fallback REST akun C — pool kuota Workers AI kedua (gratis)
-      if ((!r || r.error) && cfAiCreds && !hasImages) {
+      if ((!r || r.error) && !explicitChat && cfAiCreds && !hasImages) {
         const w2 = await withTimeout(tryCfAiRest(cfAiCreds, workMessages, toolDecls, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 30000, 'WorkersAI-REST').catch(e => ({ error: e.message }));
         if (w2) r = w2;
       }
-      if ((!r || r.error) && apiKey.length) {
+      if ((!r || r.error) && !explicitChat && apiKey.length) {
         const { systemInstruction, contents } = toGeminiPayload(workMessages);
         r = await withTimeout(tryModels(apiKey, systemInstruction, contents, gTools, streamSend ? (chunkText) => streamSend({ t: 'delta', text: chunkText }) : null, explicitChat ? CHAT_MODELS : PREFERRED_MODELS), 25000, 'Gemini').catch(e => ({ error: e.message }));
       }
       // Fallback terakhir (dipakai bila GLM utama dilewati, mis. chat bergambar): teks saja
-      if ((!r || r.error) && env.AI && !hasImages && !aiMain) {
+      if ((!r || r.error) && !explicitChat && env.AI && !hasImages && !aiMain) {
         const w = await withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 25000, 'Workers AI').catch(e => ({ error: e.message }));
         if (w) r = w;
       }
@@ -2428,15 +2428,15 @@ export async function onRequestPost({ request, env, waitUntil }) {
         ? 'Semua tool sudah selesai dieksekusi dan seluruh hasilnya tercatat di percakapan. Sekarang tulis RINGKASAN FINAL untuk user dalam Bahasa Indonesia: apa yang sudah dikerjakan, status/hasilnya, URL endpoint bila ada, dan contoh pemakaian singkat. Jangan memanggil tool apa pun — langsung tulis jawabannya sekarang.'
         : 'Kamu dipanggil sebagai AI teks murni dan TIDAK punya tool apa pun — dilarang memanggil atau menjanjikan tool/eksekusi apa pun. Jawab permintaan user secara LENGKAP dan BERISI dalam Bahasa Indonesia sebagai teks biasa: kalau diminta dibuatkan situs/kode, tulis kode lengkapnya sebagai blok kode di jawabanmu; kalau diminta penjelasan, jelaskan tuntas. Langsung tulis jawabannya sekarang.';
       const sumMsgs = workMessages.concat([{ role: 'user', content: sumPrompt }]);
-      if (emKeys.length && !hasImages) {
+      if (!explicitChat && emKeys.length && !hasImages) {
         const se = await tryEmergentText(emKeys, sumMsgs, null);
         if (se && !se.error && String(se.text || '').trim()) r = se;
       }
-      if (orKeys.length && !hasImages) {
+      if (!explicitChat && orKeys.length && !hasImages) {
         const sm = await tryOpenRouterText(orKeys, sumMsgs, null);
         if (sm && !sm.error && String(sm.text || '').trim()) r = { text: sm.text, model: sm.model };
       }
-      if (!String(r.text || '').trim() && aiMain) {
+      if (!explicitChat && !String(r.text || '').trim() && aiMain) {
         const sw = await tryWorkersAIText(env, sumMsgs, null);
         if (sw && !sw.error && String(sw.text || '').trim()) r = { text: sw.text, model: sw.model };
       }
@@ -2448,13 +2448,13 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // hampir selalu sesaat (429/limit sibuk). Tunggu 2.5 detik lalu ulangi seluruh
     // cascade SEKALI lagi — kalau berhasil, user tidak pernah melihat error sama sekali.
     // Konteks ke-limiter TIDAK di-retry (retry tidak menolong, perlu pemangkasan riwayat).
-    if ((!r || r.error) && !(r && r.contextOverflow)) {
+    if ((!r || r.error) && !explicitChat && !(r && r.contextOverflow)) {
       try { streamSend && streamSend({ t: 'progress', text: 'Retrying…' }); } catch (e) {}
       await new Promise(res => setTimeout(res, 2500));
       r = await attemptCascade();
     }
     if (!r || (r.error && !apiKey.length && !env.AI)) {
-      if (!r) r = { error: 'Tidak ada provider AI tersedia' };
+      if (!r) r = { error: explicitChat ? 'Gemini 3.6 Flash dari Google AI Studio tidak tersedia saat ini.' : 'Tidak ada provider AI tersedia' };
     }
 
     if (streamSend) {
