@@ -433,6 +433,15 @@
     <aside id="app-sidebar" class="fixed inset-y-0 left-0 z-[60] w-72 max-w-[85vw] bg-white border-r border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex flex-col -translate-x-full transition-transform duration-300 ease-out" aria-label="Menu Samping" aria-hidden="true">
         <style>
             #menu-btn, body.dark-mode #menu-btn { background: transparent !important; border: none !important; box-shadow: none !important; }
+            #sidebar-nav .sb-item { color: #6b7280; }
+            #sidebar-nav .sb-item i, #sidebar-nav .sb-item svg, #sidebar-nav .sb-item span { color: #6b7280; }
+            #sidebar-nav .sb-item:hover, #sidebar-nav .sb-item:hover i, #sidebar-nav .sb-item:hover svg, #sidebar-nav .sb-item:hover span { color: #111827; }
+            body.dark-mode #sidebar-nav .sb-item, body.dark-mode #sidebar-nav .sb-item i, body.dark-mode #sidebar-nav .sb-item svg, body.dark-mode #sidebar-nav .sb-item span { color: #9ca3af !important; }
+            body.dark-mode #sidebar-nav .sb-item:hover, body.dark-mode #sidebar-nav .sb-item:hover i, body.dark-mode #sidebar-nav .sb-item:hover svg, body.dark-mode #sidebar-nav .sb-item:hover span { color: #ffffff !important; }
+            #sidebar-nav .sb-sub, #sidebar-nav .sb-sub i, #sidebar-nav .sb-sub svg, #sidebar-nav .sb-sub span { color: #6b7280 !important; }
+            #sidebar-nav .sb-sub:hover, #sidebar-nav .sb-sub:hover i, #sidebar-nav .sb-sub:hover svg, #sidebar-nav .sb-sub:hover span { color: #111827 !important; }
+            body.dark-mode #sidebar-nav .sb-sub, body.dark-mode #sidebar-nav .sb-sub i, body.dark-mode #sidebar-nav .sb-sub svg, body.dark-mode #sidebar-nav .sb-sub span { color: #9ca3af !important; }
+            body.dark-mode #sidebar-nav .sb-sub:hover, body.dark-mode #sidebar-nav .sb-sub:hover i, body.dark-mode #sidebar-nav .sb-sub:hover svg, body.dark-mode #sidebar-nav .sb-sub:hover span { color: #ffffff !important; }
         </style>
         <div class="flex items-center justify-between gap-3 p-2 pl-3">
             <div class="flex items-center gap-1.5">
@@ -453,49 +462,49 @@
         <nav id="sidebar-nav" class="flex-1 overflow-y-auto pb-3 flex flex-col">
             <a href="#" onclick="event.preventDefault();toggleSidebar(false);navigateTo('page-home');" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="home beranda">
                 <i data-lucide="home" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
-                <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Home</span>
+                <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Home</span>
             </a>
             <a href="domain/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="domain kustom">
                 <i data-lucide="globe" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
-                <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Domain</span>
+                <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Domain</span>
             </a>
             <a href="akun/kredit/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="kredit saldo ai top up">
                 <i data-lucide="coins" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
-                <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Kredit</span>
+                <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Kredit</span>
             </a>
             <a href="akun/proyek/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="proyek project daftar">
                 <i data-lucide="folder" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
-                <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Proyek</span>
+                <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Proyek</span>
             </a>
             <a href="templates/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="template">
                 <i data-lucide="layout-template" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
-                <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Template</span>
+                <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Template</span>
             </a>
             <a href="akun/notifikasi/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="notifikasi">
                 <i data-lucide="bell" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
-                <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Notifikasi</span>
+                <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Notifikasi</span>
             </a>
             <a href="akun/langganan/upgrade/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="upgrade langganan paket">
                 <i data-lucide="crown" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
-                <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Upgrade</span>
+                <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Upgrade</span>
             </a>
             <a href="https://blog.clincoo.buzz/bantuan/" target="_blank" rel="noopener" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="pusat bantuan help">
                 <i data-lucide="circle-help" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
-                <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Pusat Bantuan</span>
+                <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Pusat Bantuan</span>
             </a>
             <div class="sb-section" data-search="favorit template">
                 <button type="button" onclick="toggleSidebarDropdown('sidebar-fav-list', this)" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="template favorit">
                     <i data-lucide="heart" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
-                    <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900 flex-1 text-left">Template Favorit</span>
-                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 transition-transform"></i>
+                    <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900 flex-1 text-left">Template Favorit</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform"></i>
                 </button>
                 <div id="sidebar-fav-list" class="hidden flex-col max-h-52 overflow-y-auto"></div>
             </div>
             <div class="sb-section" data-search="daftar proyek">
                 <button type="button" onclick="toggleSidebarDropdown('sidebar-proj-list', this)" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="daftar proyek project">
                     <i data-lucide="layers" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
-                    <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900 flex-1 text-left">Daftar Proyek</span>
-                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 transition-transform"></i>
+                    <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900 flex-1 text-left">Daftar Proyek</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform"></i>
                 </button>
                 <div id="sidebar-proj-list" class="hidden flex-col max-h-52 overflow-y-auto border-t border-gray-100"></div>
             </div>
@@ -562,8 +571,8 @@
                         var t = ClincooTemplates.list && ClincooTemplates.list[key];
                         if (!t) return;
                         html += '<a href="' + esc(t.url) + '" onclick="toggleSidebar(false)" class="sb-sub flex items-center gap-2.5 px-6 py-2 pl-[3.25rem] hover:bg-gray-50 transition-colors" data-search="' + esc((t.name || '') + ' ' + key) + '">' +
-                            '<i data-lucide="star" class="w-4 h-4 text-gray-400 shrink-0"></i>' +
-                            '<span class="text-sm text-gray-600 truncate">' + esc(t.name || key) + '</span></a>';
+                            '<i data-lucide="star" class="w-4 h-4 text-gray-500 shrink-0"></i>' +
+                            '<span class="text-sm text-gray-500 truncate">' + esc(t.name || key) + '</span></a>';
                     });
                 }
                 if (!html) html = '<p class="sb-sub px-6 py-2 pl-[3.25rem] text-xs text-gray-400">Belum ada template favorit</p>';
@@ -584,8 +593,8 @@
                     try { _lg = (window.umumSettingsMap && window.umumSettingsMap[p.id] && window.umumSettingsMap[p.id].app_logo) || (_st && _st.app_logo) || ''; } catch (e3) {}
                     if (typeof _lg !== 'string' || !/^(data:image\/|https?:\/\/|\/)/.test(_lg)) _lg = '';
                     html2 += '<a href="proyek/workspace/?id=' + encodeURIComponent(p.id) + '" onclick="toggleSidebar(false)" class="sb-sub flex items-center gap-2.5 px-6 py-2 pl-[3.25rem] hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0" data-search="' + esc(name) + '">' +
-                        (_lg ? '<img src="' + esc(_lg) + '" alt="Logo" class="w-4 h-4 rounded-full object-cover shrink-0 border border-gray-200 dark:border-[#2f2f2f] bg-white">' : '<i data-lucide="folder" class="w-4 h-4 text-gray-400 shrink-0"></i>') +
-                        '<span class="text-sm text-gray-600 truncate">' + esc(name) + '</span></a>';
+                        (_lg ? '<img src="' + esc(_lg) + '" alt="Logo" class="w-4 h-4 rounded-full object-cover shrink-0 border border-gray-200 dark:border-[#2f2f2f] bg-white">' : '<i data-lucide="folder" class="w-4 h-4 text-gray-500 shrink-0"></i>') +
+                        '<span class="text-sm text-gray-500 truncate">' + esc(name) + '</span></a>';
                 });
                 if (!html2) html2 = '<p class="sb-sub px-6 py-2 pl-[3.25rem] text-xs text-gray-400">Belum ada proyek</p>';
                 projList.innerHTML = html2;
