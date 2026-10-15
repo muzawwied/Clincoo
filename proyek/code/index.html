@@ -1097,8 +1097,13 @@
       const __restore = wsFlatten(projectFilesData).filter(function (f) { return f && f.path && wsRestorePaths[String(f.path)]; }).map(function (f) { return String(f.path); });
       const payload = { project_id: pid, files: wsFlatten(projectFilesData), replace: true, restore_paths: __restore };
       const H = Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders());
-      const opt = { method: 'POST', headers: H, body: JSON.stringify(payload) };
-      if (keepalive) { opt.keepalive = true; }
+      const bodyStr = JSON.stringify(payload);
+      const opt = { method: 'POST', headers: H, body: bodyStr };
+      // [15 Okt] fetch keepalive DITOLAK browser bila body > 64KB — proyek berisi
+      // index.html 160KB + file baru ~180KB pasti gagal diam-diam saat tab
+      // ditutup. Payload >= 60KB: kirim fetch biasa; dirty flag (localStorage)
+      // menjamin percobaan ulang saat halaman dibuka kembali.
+      if (keepalive && bodyStr.length < 60000) { opt.keepalive = true; }
       fetch(WS_CLOUD_API, opt)
         .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
         .then(function(pushResp) {
@@ -1140,15 +1145,50 @@
     // push tertunda atau edit lokal belum terkirim (guard di dalam wsCloudPull).
     setInterval(function () { if (document.visibilityState === 'visible') wsCloudPull(); }, 10000);
 
+    // [15 Okt] PENYELAMAT KUOTA: cache localStorage gagal ditulis (kuota ~5MB
+    // origin habis — dipakai bersama riwayat chat, proyek lain, dll). Tanpa ini,
+    // file kecil (contoh nyata: index(5).html 180KB, di bawah WS_BIG_LIMIT)
+    // hanya hidup di MEMORI + cache gagal -> saat reload, wsCloudPull menarik
+    // versi cloud yang belum punya file itu -> file "hilang" tanpa jejak.
+    // Solusi: dorong ISI semua file + penanda folder ke cloud SEKARANG via
+    // upsert (replace:false — tidak menghapus apa pun), dengan retry berkala
+    // selama tab masih hidup.
+    var wsRescueTimer = null;
+    function wsCloudRescueUpload() {
+      const pid = wsProjectId();
+      if (!pid) return;
+      const files = wsFlatten(projectFilesData);
+      if (!files.length) return;
+      const payload = { project_id: pid, files: files, replace: false };
+      fetch(WS_CLOUD_API, {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()),
+        body: JSON.stringify(payload)
+      })
+        .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function() {
+          wsRescueTimer = null;
+          try { addNotification('Workspace', 'Cache browser penuh — isi file berhasil diselamatkan langsung ke cloud.'); } catch (e2) {}
+        })
+        .catch(function() {
+          try { addNotification('Workspace', 'Cache browser penuh DAN cloud belum terjangkau. Isi file masih di halaman ini — jangan ditutup; akan dicoba otomatis.'); } catch (e2) {}
+          wsRescueTimer = setTimeout(wsCloudRescueUpload, 8000);
+        });
+    }
+
     function saveData() {
       // Cache lokal best-effort: kalau kuota browser penuh, data TETAP aman —
-      // sumber utama ada di cloud (D1) via wsCloudPushSchedule.
+      // sumber utama ada di cloud (D1) via wsCloudPushSchedule + [15 Okt] penyelamatan
+      // isi langsung ke cloud (wsCloudRescueUpload) supaya file tidak pernah
+      // hanya hidup di memori.
+      var __cacheOk = false;
       try {
         localStorage.setItem(wsFilesKey(), JSON.stringify(projectFilesData));
+        __cacheOk = true;
       } catch (e) {
-        console.warn('Cache lokal penuh (aman): perubahan tetap disimpan ke cloud.');
-        try { addNotification('Workspace', 'Penyimpanan browser penuh — tidak masalah, perubahan tetap tersimpan ke cloud.'); } catch (e2) {}
+        console.warn('Cache lokal penuh: isi file diselamatkan langsung ke cloud.');
       }
+      if (!__cacheOk) wsCloudRescueUpload();
       // [12 Okt] file BARU di path yang server tandai dihapus = sengaja membuat ulang
       try {
         const nowPaths = {};
