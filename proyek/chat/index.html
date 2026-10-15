@@ -6929,30 +6929,33 @@ const __modeBlock = __curMode === 'build'
                                 }),
                                 signal: rc.signal
                             });
+                            } catch (eFetch) {
+                                // [15 Okt FIX] jaringan masih mati saat reconnect -> JANGAN
+                                // lolos sebagai error final: kembalikan false agar loop mencoba
+                                // reconnect lagi (backoff di atas naik per percobaan).
+                                return false;
                             } finally {
                                 clearTimeout(rcT);
                                 abortController.signal.removeEventListener('abort', onStop);
                             }
                             if (!response0.ok) {
-                                // error definitif dari server (mis. kuota) -> parse agar
-                                // penanganan tengah-tugas (checkpoint/auto-lanjut) jalan
+                                // [15 Okt FIX] reconnect dapat error HTTP (5xx / provider sibuk):
+                                // kondisi sementara -> kembalikan false, coba lagi di percobaan
+                                // berikutnya. Hanya kuota/konteks-penuh yang definitif (lempar).
                                 try {
                                     const ej = await response0.json();
-                                    if (ej && ej.error) {
-                                        // [14 Okt FIX] provider sibuk saat reconnect -> JANGAN
-                                        // dianggap koneksi mati (sebelumnya langsung jadi error
-                                        // "Koneksi AI terputus"): tandai providerBusy supaya
-                                        // jalur busy-retry (tunggu 8s/20s) yang menangani.
-                                        if (ej.provider_busy) { streamErr.providerBusy = true; }
+                                    if (ej && (ej.quota_exhausted || ej.context_overflow)) {
                                         const er = new Error('__QUOTA__');
-                                        er.quotaMsg = ej.error;
+                                        er.quotaMsg = ej.error || 'Kuota/limit AI sedang penuh.';
                                         if (ej.context_overflow) er.ctxOverflow = true;
-                                        if (!ej.quota_exhausted && !ej.context_overflow) throw streamErr;
                                         throw er;
                                     }
                                 } catch (e2) { if (e2 && e2.message === '__QUOTA__') throw e2; }
-                                throw streamErr; // fallback menangani
+                                try { if (response0.body) response0.body.cancel().catch(() => {}); } catch (e3) {}
+                                response0 = null;
+                                return false;
                             }
+                            return true;
                         };
                         const isNetDrop = (e) => e && e.name !== 'AbortError' && e.message !== '__QUOTA__' && !e.providerBusy && !e.isAppError;
                         const deltaBaseLen = deltaStreamed.length; // basis delta hop ini (utk reset saat reconnect)
@@ -7060,7 +7063,14 @@ const __modeBlock = __curMode === 'build'
                                 // drop stream saat app di-background sering butuh >1 percobaan
                                 // karena jaringan belum pulih seketika.
                                 if (isNetDrop(streamErr) && netTry < 5 && isGenerating) {
-                                    await reconnectStream(streamErr);
+                                    const rcOk = await reconnectStream(streamErr);
+                                    if (!rcOk) {
+                                        if (!isGenerating) throw new DOMException('Aborted', 'AbortError');
+                                        // jatah reconnect habis -> error asli ke fallback/user;
+                                        // masih ada jatah -> loop otomatis masuk catch lagi
+                                        // (readNdjsonStream tanpa body melempar) & reconnect ulang.
+                                        if (netTry >= 5) throw streamErr;
+                                    }
                                     continue;
                                 }
                                 throw streamErr;
@@ -7479,7 +7489,10 @@ const __modeBlock = __curMode === 'build'
                     try { (window.__kreditBC || (window.__kreditBC = new BroadcastChannel('clincoo_kredit_sync'))).postMessage({ t: 'chat-done' }); } catch (e2) {}
                     isFetchComplete = true;
                 } catch (e) {
-                    try { window.__lastChatErr = { name: e && e.name, msg: e && e.message, stack: String((e && e.stack) || '').slice(0, 400), t: Date.now() }; console.error('[Clincoo chat] error:', e); } catch (_e) {}
+                    // [15 Okt] AbortError = tombol Hentikan milik user / sinyal internal —
+                    // bukan error aplikasi: jangan dicatat ke __lastChatErr/laporan error
+                    // (sebelumnya setiap klik Stop membanjiri laporan error Telegram).
+                    if (!e || e.name !== 'AbortError') { try { window.__lastChatErr = { name: e && e.name, msg: e && e.message, stack: String((e && e.stack) || '').slice(0, 400), t: Date.now() }; console.error('[Clincoo chat] error:', e); } catch (_e) {} }
                     if (e.name !== 'AbortError') {
                         if (e.message === '__QUOTA__') {
                             const qMsg = e.quotaMsg || 'Kuota/limit AI sedang penuh.';
