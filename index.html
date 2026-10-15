@@ -469,7 +469,7 @@
                 <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Domain</span>
             </a>
             <a href="akun/kredit/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="kredit saldo ai top up">
-                <i data-lucide="coins" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                <svg class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12.5 7 7.5 13h4.5l-1 4 4.5-6h-4.5z"/></svg>
                 <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Kredit</span>
             </a>
             <a href="akun/proyek/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="proyek project daftar">
@@ -620,12 +620,18 @@
             if (e.key === 'Escape') { toggleSidebar(false); }
         });
         // ===== Popover pencarian fitur =====
+        // Ikon kustom ala Lucide (stroke currentColor) untuk menu yang ikon
+        // bawaannya terasa kaku/umum — sekarang dipakai: 'coin-bolt' untuk Kredit.
+        var SB_CUSTOM_ICONS = {
+            'coin-bolt': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12.5 7 7.5 13h4.5l-1 4 4.5-6h-4.5z"/></svg>'
+        };
+
         function sbPopGroups() {
             return [
                 { group: 'Menu', items: [
                     { label: 'Home', icon: 'home', act: function () { toggleSidebar(false); navigateTo('page-home'); } },
                     { label: 'Domain', icon: 'globe', act: function () { location.href = 'domain/'; } },
-                    { label: 'Kredit', icon: 'coins', act: function () { location.href = 'akun/kredit/'; } },
+                    { label: 'Kredit', icon: 'coin-bolt', act: function () { location.href = 'akun/kredit/'; } },
                     { label: 'Template', icon: 'layout-template', act: function () { location.href = 'templates/'; } },
                     { label: 'Notifikasi', icon: 'bell', act: function () { location.href = 'akun/notifikasi/'; } },
                     { label: 'Upgrade', icon: 'crown', act: function () { location.href = 'akun/langganan/upgrade/'; } },
@@ -683,8 +689,12 @@
                 html += '<p class="px-4 pt-2.5 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">' + g.group + '</p>';
                 hits.forEach(function (it) {
                     var i = acts.push(it) - 1;
+                    var __cust = SB_CUSTOM_ICONS[it.icon];
+                    var __icon = __cust
+                        ? __cust.replace('<svg ', '<svg class="w-4 h-4 shrink-0 text-gray-500 group-hover:text-gray-900 transition-colors" ', 1)
+                        : '<i data-lucide="' + it.icon + '" class="w-4 h-4 text-gray-500 group-hover:text-gray-900 transition-colors"></i>';
                     html += '<button type="button" data-sbpop="' + i + '" class="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition-colors group">' +
-                        '<i data-lucide="' + it.icon + '" class="w-4 h-4 text-gray-500 group-hover:text-gray-900 transition-colors"></i>' +
+                        __icon +
                         '<span class="text-sm font-medium text-gray-800 group-hover:text-gray-900">' + it.label + '</span></button>';
                 });
             });
