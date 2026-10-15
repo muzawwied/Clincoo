@@ -884,7 +884,6 @@
     </main>
 
     <footer id="chat-input-footer" class="fixed bottom-0 left-0 right-0 w-full bg-transparent px-4 py-4 z-20 pointer-events-none flex flex-col justify-end">
-        <div id="prompt-chips" class="hidden w-full max-w-4xl mx-auto overflow-x-auto hide-scrollbar gap-2 px-1 pb-2 pointer-events-auto"></div>
         <div id="chat-input-card" class="w-full bg-white rounded-[26px] shadow-[0_4px_24px_rgba(0,0,0,0.10)] p-4 sm:p-5 transition-all text-left border border-gray-100/80 pointer-events-auto max-w-4xl mx-auto">
             <div id="file-preview-container" class="hidden flex-nowrap overflow-x-auto hide-scrollbar gap-2 mb-2 w-full"></div>
             
@@ -1282,85 +1281,6 @@
         
         let messages = [];
 
-        const PROMPT_CHIP_LIB = [
-            { keys: ['domain', 'dns', 'subdomain', 'tld'], chips: ['Hubungkan domain kustom ke situsku', 'Atur DNS domain-ku', 'Cek status domain yang terhubung'] },
-            { keys: ['bayar', 'pembayaran', 'qris', 'checkout', 'top-up', 'topup', 'saldo', 'langganan', 'harga', 'paket'], chips: ['Aktifkan pembayaran QRIS di situsku', 'Buat order pembayaran demo Rp 25.000', 'Cek status order pembayaran'] },
-            { keys: ['deploy', 'production', 'publish', 'deployment'], chips: ['Deploy perubahan terakhir ke production', 'Tampilkan riwayat deployment', 'Cek status situs yang sudah live'] },
-            { keys: ['email', 'smtp', 'mail'], chips: ['Kirim email dari situsku', 'Panduan setup email di Clincoo'] },
-            { keys: ['database', 'entitas', 'entity', 'tabel', 'crud'], chips: ['Bikin fungsi backend CRUD', 'Baca data di database proyekku'] },
-            { keys: ['login', 'auth', 'akun', 'password', 'registrasi'], chips: ['Bikin halaman login dan registrasi', 'Tambah proteksi halaman khusus admin'] },
-            { keys: ['blog', 'artikel', 'dokumentasi', 'seo'], chips: ['Cari artikel dokumentasi Clincoo', 'Optimalkan SEO situsku'] },
-            { keys: ['apk', 'android'], chips: ['Build APK dari situsku'] },
-            { keys: ['error', 'bug', 'gagal', 'rusak', 'tidak jalan'], chips: ['Cek log error dan benerin bug-nya', 'Tes ulang fitur yang tadi gagal'] },
-            { keys: ['github', 'repo', 'commit'], chips: ['Push kode proyekku ke GitHub', 'Clone repo GitHub ke proyek ini'] },
-            { keys: ['api', 'endpoint', 'webhook', 'fungsi backend'], chips: ['Bikin endpoint API baru', 'Tes endpoint API yang sudah ada'] },
-            { keys: ['otomasi', 'jadwal', 'cron', 'terjadwal'], chips: ['Bikin automasi harian sederhana'] }
-        ];
-        let promptChipsTimer = null;
-        let promptChipCycle = null;
-        function stopPromptChipCycle() {
-            if (promptChipCycle) { clearInterval(promptChipCycle); promptChipCycle = null; }
-        }
-        function schedulePromptChips() {
-            if (promptChipsTimer) clearTimeout(promptChipsTimer);
-            promptChipsTimer = setTimeout(buildPromptChips, 120);
-        }
-        function buildPromptChips() {
-            const wrap = document.getElementById('prompt-chips');
-            if (!wrap) return;
-            if (isGenerating || (typeof quotaLocked !== 'undefined' && quotaLocked)) { stopPromptChipCycle(); wrap.classList.add('hidden'); return; }
-            let best = null, bestScore = 0;
-            if (best === null && promptChipCycle) { stopPromptChipCycle(); }
-            const vis = messages.filter(m => m && !m.isHidden && !m.silent && m.text);
-            let txt = '';
-            for (let i = Math.max(0, vis.length - 10); i < vis.length; i++) txt += ' ' + String(vis[i].text).toLowerCase();
-            PROMPT_CHIP_LIB.forEach(topic => {
-                let score = 0;
-                topic.keys.forEach(k => { if (txt.indexOf(k) !== -1) score += 1; });
-                if (score > bestScore) { bestScore = score; best = topic; }
-            });
-            if (!best) { stopPromptChipCycle(); wrap.classList.add('hidden'); wrap.setAttribute('data-sig', ''); return; }
-            const chips = best.chips.slice(0, 4);
-            const sig = chips.join('|');
-            if (wrap.getAttribute('data-sig') === sig) { wrap.classList.remove('hidden'); return; }
-            wrap.setAttribute('data-sig', sig);
-            stopPromptChipCycle();
-            wrap.innerHTML = '';
-            const b = document.createElement('button');
-            b.type = 'button';
-            b.className = 'whitespace-nowrap rounded-full bg-gray-100 px-3.5 py-1.5 text-[12px] text-gray-600 hover:bg-gray-200 hover:text-black cursor-pointer dark:bg-gray-800 dark:text-gray-300 dark:hover:text-white';
-            b.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
-            b.textContent = chips[0];
-            b.onclick = () => {
-                if (isGenerating) return;
-                const c = b.textContent;
-                const userMsg = { id: generateId(), role: 'user', text: c };
-                messages.push(userMsg);
-                silentRounds = 0;
-                renderMessages();
-                pinMessageToTop(userMsg.id);
-                stopPromptChipCycle();
-                wrap.classList.add('hidden');
-                fetchAIResponse();
-            };
-            wrap.appendChild(b);
-            if (chips.length > 1) {
-                let idx = 0;
-                promptChipCycle = setInterval(() => {
-                    if (!wrap.isConnected || wrap.classList.contains('hidden')) { stopPromptChipCycle(); return; }
-                    b.style.opacity = '0';
-                    b.style.transform = 'translateY(5px)';
-                    setTimeout(() => {
-                        idx = (idx + 1) % chips.length;
-                        b.textContent = chips[idx];
-                        b.style.opacity = '1';
-                        b.style.transform = 'translateY(0)';
-                    }, 350);
-                }, 5000);
-            }
-            wrap.classList.remove('hidden');
-        }
-
         // ===== MODE LOCALSTORAGE: riwayat chat per-proyek disimpan di browser =====
         const LS_CHAT_PREFIX = 'clincoo_ls_chat_';
         function lsChatKey() {
@@ -1432,10 +1352,9 @@
                     // FIX: pulihkan session_id proyek ini (kalau ada) supaya lanjutan
                     // percakapan tetap di SESI LAMA, bukan sesi baru tiap reload.
                     try { const sid = localStorage.getItem(lsChatKey() + '_session'); if (sid) currentSessionId = sid; } catch(e) {} // SESSION_RESUME_FIX
-                    schedulePromptChips(); return true;
+                    return true;
                 }
             } catch(e) {}
-            schedulePromptChips();
             return false;
         }
         // ===== SINKRONISASI RIWAYAT CHAT ANTAR PERANGKAT (1 akun, 1 proyek) =====
@@ -3823,7 +3742,6 @@
             } else {
                 btnAction.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>`;
             }
-            schedulePromptChips();
         }
 
         function stopGeneration(userInitiated = false) {
