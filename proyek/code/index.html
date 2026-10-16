@@ -810,6 +810,25 @@
         } catch (err) {}
       }
     });
+    // [16 Okt] SINKRON ANTAR-TAB TANPA localStorage: kuota cache penuh -> tulisan
+    // localStorage gagal -> event 'storage' tidak pernah kejalan di tab lain ->
+    // tab lain tidak tahu file yang barusan diimpor -> push replace:true dari tab
+    // itu MENGHAPUS file baru dari cloud. BroadcastChannel bebas kuota.
+    var wsTabCh = ('BroadcastChannel' in window) ? new BroadcastChannel('clincoo_ws_tree_' + (sessionStorage.getItem('clincoo_tab_project_id') || localStorage.getItem('clincoo_current_project_id') || 'global')) : null;
+    var wsTabChSendT = null;
+    function wsTabChSend() {
+      if (!wsTabCh) return;
+      clearTimeout(wsTabChSendT);
+      wsTabChSendT = setTimeout(function () {
+        try { wsTabCh.postMessage({ t: Date.now(), tree: projectFilesData }); } catch (e) {}
+      }, 250);
+    }
+    if (wsTabCh) wsTabCh.onmessage = function (ev) {
+      var d = ev && ev.data;
+      if (!d || !d.tree) return;
+      projectFilesData = d.tree;
+      try { renderFileList(); } catch (e) {}
+    };
 
     // ===== Sinkronisasi workspace ke Cloudflare D1 (data per-proyek) =====
     const WS_CLOUD_API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-files';
@@ -865,6 +884,15 @@
           const d = await res.json().catch(() => ({}));
           if (!res.ok || d.error) return { ok: false, error: d.error || ('Gagal mengunggah potongan ' + (idx + 1) + '/' + nChunks + ' dari ' + path + '.') };
         }
+        // [16 Okt] VERIFIKASI: yakin semua potongan benar-benar tersimpan di server.
+        // (tanpa ini, potongan yang hilang diam-diam = isi file terpotong/"hilang")
+        try {
+          const vr = await fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&path=' + encodeURIComponent(path) + '&chunks=1&from=' + nChunks + '&count=1', { headers: wsAuthHeaders() });
+          if (vr.ok) {
+            const vd = await vr.json();
+            if ((vd && Number(vd.total_chunks) || 0) !== nChunks) return { ok: false, error: 'Verifikasi gagal: server hanya menyimpan ' + ((vd && vd.total_chunks) || 0) + '/' + nChunks + ' potongan ' + path + '.' };
+          }
+        } catch (e) {}
         return { ok: true };
       } catch (e) {
         return { ok: false, error: 'Gagal terhubung ke cloud: ' + (e && e.message ? e.message : String(e)) };
@@ -924,9 +952,18 @@
         const res = await fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&path=' + encodeURIComponent(path) + '&content=1', { headers: wsAuthHeaders() });
         if (!res.ok) return null;
         const d = await res.json();
-        if (d && typeof d.content_b64 === 'string') return { content: wsB64Decode(d.content_b64), size: d.size || 0 };
-        if (d && typeof d.content === 'string') return { content: d.content, size: d.size || 0 };
-        return null;
+        let out = null;
+        if (d && typeof d.content_b64 === 'string') out = { content: wsB64Decode(d.content_b64), size: d.size || 0 };
+        else if (d && typeof d.content === 'string') out = { content: d.content, size: d.size || 0 };
+        // [16 Okt] file besar dengan ukuran tercatat tapi isi kosong/tidak lengkap
+        // = sisa unggahan yang terputus. Laporkan, jangan diam.
+        if (out && (d.size || 0) > 0) {
+          const got = new Blob([out.content || '']).size;
+          if (got < (d.size || 0) * 0.98) {
+            try { addNotification('Workspace', '⚠ Isi berkas ' + path + ' di cloud tidak lengkap (' + wsBytesLabel(got) + ' dari ' + wsBytesLabel(d.size) + ') — kemungkinan unggahan terputus. Silakan unggah ulang berkas ini.'); } catch (e) {}
+          }
+        }
+        return out;
       } catch (e) { return null; }
     }
 
@@ -992,8 +1029,12 @@
         ensureChain(folderKey);
         if (!Array.isArray(data[folderKey])) data[folderKey] = [];
         if (!data[folderKey].some(function(i) { return i.path.toLowerCase() === p.toLowerCase(); })) {
-          // file besar dari cloud: penanda tanpa isi — cache lokal tetap ringan
-          data[folderKey].push({ type: 'file', name: name, size: isBig ? (szBytes ? wsBytesLabel(szBytes) : 'besar') : wsSizeLabel(content), path: p, content: isBig ? '' : content, cloud: isBig ? true : undefined, cloudSize: szBytes || undefined });
+          // file besar dari cloud: penanda tanpa isi — cache lokal tetap ringan.
+          // [16 Okt] emptyBig: baris file besar di server TANPA potongan isi =
+          // sisa unggahan yang terputus (nama ada, isi hilang) -> diberi tanda
+          // supaya user tahu harus unggah ulang, bukan bingung file "kosong".
+          const chunkCount = Number(f && f.chunks) || 0;
+          data[folderKey].push({ type: 'file', name: name, size: isBig ? (szBytes ? wsBytesLabel(szBytes) : 'besar') : wsSizeLabel(content), path: p, content: isBig ? '' : content, cloud: isBig ? true : undefined, cloudSize: szBytes || undefined, emptyBig: isBig && chunkCount === 0 ? true : undefined });
         }
       });
       return data;
@@ -1141,9 +1182,40 @@
       if (cur.length || !batches.length) batches.push(cur);
       return batches;
     }
-    function wsCloudPushNow(attempt, keepalive) {
+    // [16 Okt] REKONSILIASI SEBELUM PUSH: file yang ada di cloud tapi tidak dikenal
+    // tab ini (diupload tab lain / cache lokal gagal tertulis / kuota penuh) TIDAK
+    // boleh ikut terhapus oleh replace:true. Sebelum push, tarik cloud dan gabungkan
+    // path yang hilang dari pohon lokal. Murah: lewati bila sidik jari rev tidak berubah.
+    async function wsReconcileBeforePush() {
+      try {
+        const pid = wsProjectId();
+        if (!pid) return;
+        const rr = await fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&rev=1', { headers: wsAuthHeaders() });
+        if (!rr.ok) return;
+        const rd = await rr.json();
+        const rev = (rd && rd.rev) || '';
+        if (wsLastRev !== null && rev === wsLastRev) return; // cloud tidak berubah sejak terakhir kita lihat
+        const r = await fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { headers: wsAuthHeaders() });
+        if (!r.ok) return;
+        const d = await r.json();
+        wsLastRev = rev;
+        const files = (d && d.files) || [];
+        if (!files.length) return; // cloud memang kosong — biarkan replace berjalan
+        try { wsTrackKnownDeleted(d && d.deleted_paths); } catch (e) {}
+        const merged = wsMergeCloudIntoLocal(files);
+        try { wsDropKnownDeletedFromTree(); } catch (e) {}
+        projectFilesData = merged;
+        try { localStorage.setItem(wsFilesKey(), JSON.stringify(projectFilesData)); } catch (e2) {}
+        renderFileList();
+      } catch (e) { /* gagal rekonsiliasi: tetap push (dirty menjamin ulang) */ }
+    }
+    async function wsCloudPushNow(attempt, keepalive) {
       const pid = wsProjectId();
       if (!pid) return;
+      // [16 Okt] bila bukan flush mati-tab: pastikan push tidak menghapus file
+      // cloud yang belum dikenal tab ini. Flush mati-tab (keepalive) dilewati demi
+      // kecepatan; dirty flag memastikan push ulang + rekonsiliasi saat dibuka lagi.
+      if (!keepalive) { try { await wsReconcileBeforePush(); } catch (e) {} }
       // [12 Okt] restore_paths: file yang sengaja dibuat ulang di path ter-tombstone
       const files = wsFlatten(projectFilesData);
       const __restore = files.filter(function (f) { return f && f.path && wsRestorePaths[String(f.path)]; }).map(function (f) { return String(f.path); });
@@ -1258,6 +1330,7 @@
         console.warn('Cache lokal penuh: isi file diselamatkan langsung ke cloud.');
       }
       if (!__cacheOk) wsCloudRescueUpload();
+      wsTabChSend(); // [16 Okt] tab lain langsung tahu walau cache penuh
       // [12 Okt] file BARU di path yang server tandai dihapus = sengaja membuat ulang
       try {
         const nowPaths = {};
@@ -1426,7 +1499,21 @@
       }
     }
 
+    var wsEmptyBigNotified = false;
+    function wsWarnEmptyBigOnce() {
+      if (wsEmptyBigNotified) return;
+      const bad = [];
+      Object.keys(projectFilesData || {}).forEach(function (fk) {
+        (projectFilesData[fk] || []).forEach(function (it) {
+          if (it && it.type === 'file' && it.emptyBig && it.path) bad.push(it.path);
+        });
+      });
+      if (!bad.length) return;
+      wsEmptyBigNotified = true;
+      try { addNotification('Workspace', '⚠ ' + bad.length + ' berkas tercatat di cloud TANPA isi (unggahan terputus: ' + bad.slice(0, 5).join(', ') + (bad.length > 5 ? ', …' : '') + '). Nama tersimpan, isinya tidak — silakan unggah ulang berkas tersebut.'); } catch (e) {}
+    }
     function renderFileList() {
+      try { wsWarnEmptyBigOnce(); } catch (e) {}
       const container = document.getElementById('file-list-container');
       const breadcrumb = document.getElementById('file-breadcrumb');
       if (!container) return;

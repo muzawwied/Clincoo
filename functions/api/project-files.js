@@ -164,6 +164,19 @@ async function deleteChunks(db, chunksTable, paths) {
   }
 }
 
+
+// [16 Okt] Ringkasan jumlah chunk per path — dipakai client mendeteksi baris file
+// besar TANPA isi (unggahan terputus: nama ada, isi hilang).
+async function chunksCountByPath(db, projectId) {
+  try {
+    const chunksTable = await ensureChunksTable(db, projectId);
+    const r = await db.prepare(`SELECT path, COUNT(*) c FROM ${chunksTable} GROUP BY path`).all();
+    const map = {};
+    for (const row of (r.results || [])) map[String(row.path)] = Number(row.c) || 0;
+    return map;
+  } catch (e) { return null; }
+}
+
 export async function onRequestGet({ request, env }) {
   const db = env.DB;
   if (!db) return json({ error: 'D1 not bound' }, 500);
@@ -249,17 +262,24 @@ export async function onRequestGet({ request, env }) {
     // Mode: metadata saja (ringan — dipakai verifikasi jumlah & daftar ukuran)
     if (url.searchParams.get('meta') === '1') {
       const rows = await db.prepare(`SELECT path, is_big, size, updated_at FROM ${T.files} WHERE project_id = ? ORDER BY path ASC`).bind(projectId).all();
-      return json({ files: rows.results || [] });
+      const bigChunks = await chunksCountByPath(db, projectId);
+      const files = (rows.results || []).map(r => ({
+        path: r.path, is_big: r.is_big, size: r.size || 0, updated_at: r.updated_at,
+        chunks: r.is_big ? ((bigChunks && bigChunks[String(r.path)]) || 0) : undefined
+      }));
+      return json({ files });
     }
 
     // Mode default: semua file; file besar TANPA konten (klien ambil via ?path&content=1)
     const rows = await db.prepare(`SELECT path, content, is_big, size, updated_at FROM ${T.files} WHERE project_id = ? ORDER BY path ASC`).bind(projectId).all();
+    const bigChunks = await chunksCountByPath(db, projectId);
     const files = (rows.results || []).map(r => ({
       path: r.path,
       content: r.is_big ? '' : (r.content || ''),
       is_big: r.is_big ? 1 : 0,
       size: r.size || 0,
-      updated_at: r.updated_at
+      updated_at: r.updated_at,
+      chunks: r.is_big ? ((bigChunks && bigChunks[String(r.path)]) || 0) : undefined
     }));
     // [12 Okt, laporan pemilik: "file yang dihapus muncul lagi"] kirim daftar
     // tombstone juga — klien (chat/kode) tahu path mana yang BENAR-BENAR sudah
