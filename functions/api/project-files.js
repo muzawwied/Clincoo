@@ -517,7 +517,10 @@ export async function onRequestPost({ request, env }) {
     try { await db.prepare("UPDATE projects SET updated_at = datetime('now') WHERE id = ?").bind(projectId).run(); } catch(e) {}
 
     if (errors.length && keepPaths.length === errors.length) return json({ error: errors[0] }, 400);
-    await bumpWsRev(db, projectId);
+    // [16 Okt] bump_rev:false = klien mengirim banyak batch/chunk dan hanya chunk
+    // TERAKHIR yang menaikkan rev (tanpa ini, tiap potongan memicu pull penuh di
+    // semua tab yang terbuka).
+    if (body.bump_rev !== false) await bumpWsRev(db, projectId);
     return json({ success: true, saved: keepPaths.length, deleted_paths: [...reportedDeletedPaths], warnings: errors.length ? errors : undefined });
   } catch (err) {
     return json({ error: err.message }, 500);

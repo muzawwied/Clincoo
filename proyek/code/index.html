@@ -769,10 +769,16 @@
       return changed;
     }
     function wsDirtySet(on) {
-      try { if (on) localStorage.setItem(wsDirtyKey(), '1'); else localStorage.removeItem(wsDirtyKey()); } catch (e) {}
+      // [16 Okt] kuota localStorage penuh -> flag tak tertulis diam-diam -> saat tab
+      // ditutup, push "dirty" tak pernah jalan dan hasil kerja hilang. Fallback:
+      // tulis juga ke sessionStorage (kuota terpisah).
+      try { if (on) localStorage.setItem(wsDirtyKey(), '1'); else localStorage.removeItem(wsDirtyKey()); return; } catch (e) {}
+      try { if (on) sessionStorage.setItem(wsDirtyKey(), '1'); else sessionStorage.removeItem(wsDirtyKey()); } catch (e2) {}
     }
     function wsDirtyIs() {
-      try { return !!localStorage.getItem(wsDirtyKey()); } catch (e) { return false; }
+      try { if (localStorage.getItem(wsDirtyKey())) return true; } catch (e) {}
+      try { if (sessionStorage.getItem(wsDirtyKey())) return true; } catch (e2) {}
+      return false;
     }
 
     function loadWorkspaceFiles() {
@@ -839,14 +845,26 @@
     async function wsCloudSaveBig(path, content) {
       const pid = wsProjectId();
       if (!pid) return { ok: false, error: 'File besar memerlukan proyek aktif.' };
+      // [16 Okt] UNGGAH PER-CHUNK: dulu seluruh base64 dikirim dalam SATU POST —
+      // file besar (jutaan karakter) tewas di batas CPU Worker free plan, upload
+      // gagal berulang dan file "hilang". Sekarang base64 dipotong ~700KB per POST
+      // (backend 8 Okt sudah mendukung chunk_b64/chunk_idx/total_bytes; chunk
+      // pertama otomatis mereset baris + potongan lama di server, jadi ulang dari
+      // nol aman). rev cloud hanya dinaikkan di chunk terakhir (tidak ribut).
+      const b64 = wsB64Encode(content);
+      const totalBytes = new Blob([content]).size;
+      const CH = 700_000; // kelipatan 4 — tiap potongan tetap base64 valid
+      const nChunks = Math.max(1, Math.ceil(b64.length / CH));
       try {
-        const res = await fetch(WS_CLOUD_API, {
-          method: 'POST',
-          headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()),
-          body: JSON.stringify({ project_id: pid, files: [{ path: path, content_b64: wsB64Encode(content) }] })
-        });
-        const d = await res.json().catch(() => ({}));
-        if (!res.ok || d.error) return { ok: false, error: d.error || 'Gagal menyimpan file besar ke cloud.' };
+        for (let idx = 0; idx < nChunks; idx++) {
+          const res = await fetch(WS_CLOUD_API, {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()),
+            body: JSON.stringify({ project_id: pid, bump_rev: idx === nChunks - 1, files: [{ path: path, chunk_b64: b64.slice(idx * CH, (idx + 1) * CH), chunk_idx: String(idx), total_bytes: totalBytes }] })
+          });
+          const d = await res.json().catch(() => ({}));
+          if (!res.ok || d.error) return { ok: false, error: d.error || ('Gagal mengunggah potongan ' + (idx + 1) + '/' + nChunks + ' dari ' + path + '.') };
+        }
         return { ok: true };
       } catch (e) {
         return { ok: false, error: 'Gagal terhubung ke cloud: ' + (e && e.message ? e.message : String(e)) };
@@ -857,6 +875,20 @@
     // tiap unggahan diulang otomatis 1x kalau gagal sebelum dilaporkan ke user.
     var wsUploadQ = [];
     var wsUploadRunning = 0;
+    var wsUploadStats = { total: 0, done: 0, failed: 0, name: '' };
+    function wsUploadStatsNotify() {
+      if (wsUploadStats.total === 0) return;
+      if (wsUploadStats.done + wsUploadStats.failed < wsUploadStats.total) return;
+      var t = wsUploadStats.total, ok = wsUploadStats.done, bad = wsUploadStats.failed;
+      wsUploadStats = { total: 0, done: 0, failed: 0, name: '' };
+      if (t > 1) {
+        try { addNotification('Workspace', bad ? ('Upload selesai: ' + ok + ' berhasil, ' + bad + ' gagal dari ' + t + ' berkas besar.') : ('Upload selesai: ' + ok + ' berkas besar berhasil tersimpan di cloud.')); } catch (e) {}
+      }
+    }
+    function wsUploadStatsSettle(ok) {
+      if (ok) wsUploadStats.done++; else wsUploadStats.failed++;
+      wsUploadStatsNotify();
+    }
     function wsUploadPump() {
       while (wsUploadRunning < 2 && wsUploadQ.length > 0) {
         (function (job) {
@@ -871,6 +903,7 @@
     }
     function wsCloudUploadQueued(path, content) {
       return new Promise(function (resolve) {
+        wsUploadStats.total++;
         wsUploadQ.push({
           run: function () {
             return wsCloudSaveBig(path, content).then(function (r) {
@@ -904,7 +937,10 @@
         (data[folderKey] || []).forEach(function(it) {
           if (!it || !it.path) return;
           if (it.type === 'file') {
-            if (it.cloud && !it.content) {
+            // [16 Okt] item yang SEDANG uploading dikirim sebagai penanda cloud:1 —
+            // jika konten lamanya ikut terdorong di tengah unggahan per-chunk, baris
+            // file bisa tertimpa is_big=0 dan isi baru hilang dari workspace.
+            if ((it.cloud && !it.content) || it.uploading) {
               // file besar: isinya sudah di server — kirim penanda agar baris + chunk-nya dipertahankan
               files.push({ path: it.path, content: '', cloud: 1, size: it.cloudSize || 0 });
             } else {
@@ -1090,51 +1126,76 @@
     // Tidak ada jendela "cloud kosong" seperti pola lama DELETE-then-POST, jadi
     // berkas tidak pernah hilang semua bila salah satu langkah gagal.
     // Subdomain live preview (-prv) di-update otomatis oleh backend setelah simpan.
+    // [16 Okt] PUSHER-BATCH: satu POST berisi SELURUH pohon (banyak file / total
+    // ber-MB) juga tewas di batas CPU Worker free plan -> sebagian file tak pernah
+    // sampai cloud dan (bila kuota cache lokal habis) hilang saat reload. Sekarang
+    // pohon dipecah ~1.2MB per POST; keep_paths = daftar path LENGKAP semua batch,
+    // jadi replace:true tiap batch tidak menghapus file milik batch lain.
+    function wsPushBatches(files) {
+      const batches = []; let cur = [], curLen = 0;
+      for (const f of (files || [])) {
+        const len = ((f && f.content) ? String(f.content).length : 0) + String((f && f.path) || '').length + 96;
+        if (curLen + len > 1_200_000 && cur.length) { batches.push(cur); cur = []; curLen = 0; }
+        cur.push(f); curLen += len;
+      }
+      if (cur.length || !batches.length) batches.push(cur);
+      return batches;
+    }
     function wsCloudPushNow(attempt, keepalive) {
       const pid = wsProjectId();
       if (!pid) return;
       // [12 Okt] restore_paths: file yang sengaja dibuat ulang di path ter-tombstone
-      const __restore = wsFlatten(projectFilesData).filter(function (f) { return f && f.path && wsRestorePaths[String(f.path)]; }).map(function (f) { return String(f.path); });
-      const payload = { project_id: pid, files: wsFlatten(projectFilesData), replace: true, restore_paths: __restore };
+      const files = wsFlatten(projectFilesData);
+      const __restore = files.filter(function (f) { return f && f.path && wsRestorePaths[String(f.path)]; }).map(function (f) { return String(f.path); });
+      const keepPaths = files.map(function (f) { return String((f && f.path) || ''); }).filter(Boolean);
+      const batches = wsPushBatches(files);
       const H = Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders());
-      const bodyStr = JSON.stringify(payload);
-      const opt = { method: 'POST', headers: H, body: bodyStr };
-      // [15 Okt] fetch keepalive DITOLAK browser bila body > 64KB — proyek berisi
-      // index.html 160KB + file baru ~180KB pasti gagal diam-diam saat tab
-      // ditutup. Payload >= 60KB: kirim fetch biasa; dirty flag (localStorage)
-      // menjamin percobaan ulang saat halaman dibuka kembali.
-      if (keepalive && bodyStr.length < 60000) { opt.keepalive = true; }
-      fetch(WS_CLOUD_API, opt)
-        .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
-        .then(function(pushResp) {
+      // [15 Okt] fetch keepalive DITOLAK browser bila body > 64KB — payload >= 60KB:
+      // kirim fetch biasa; dirty flag menjamin percobaan ulang saat halaman dibuka lagi.
+      (async function () {
+        for (let b = 0; b < batches.length; b++) {
+          const payload = { project_id: pid, files: batches[b], replace: true, keep_paths: keepPaths, restore_paths: __restore, bump_rev: b === batches.length - 1 };
+          const bodyStr = JSON.stringify(payload);
+          const opt = { method: 'POST', headers: H, body: bodyStr };
+          if (keepalive && bodyStr.length < 60000) { opt.keepalive = true; }
+          const res = await fetch(WS_CLOUD_API, opt);
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const pushResp = await res.json().catch(function () { return {}; });
           // [12 Okt] file yang ternyata sudah dihapus di server: buang dari pohon lokal
-          try { wsTrackKnownDeleted(pushResp && pushResp.deleted_paths); wsDropKnownDeletedFromTree(); } catch (e) {}
-          // Verifikasi: jumlah file di cloud == yang dikirim (POST benar-benar masuk)
-          return fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&meta=1', { headers: wsAuthHeaders() });
-        })
-        .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
-        .then(function(d) {
-          const sent = payload.files.length;
-          const there = ((d && d.files) || []).length;
-          if (there === sent) {
-            wsDirtySet(false);
-            wsCloudFailNotified = false;
-            try { Object.keys(wsRestorePaths).forEach(function (p) { if (!wsKnownDeleted[p]) delete wsRestorePaths[p]; }); } catch (e) {}
-          } else { throw new Error('verifikasi gagal'); }
-        })
-        .catch(function() {
-          if (attempt < 2) { setTimeout(function() { wsCloudPushNow(attempt + 1, keepalive); }, 1500 * (attempt + 1)); return; }
-          // Tetap dirty: pull berikutnya tidak akan menimpa data lokal yang lebih baru
-          if (!wsCloudFailNotified) {
-            wsCloudFailNotified = true;
-            try { addNotification('Workspace', 'Perubahan belum tersinkron ke cloud — akan dicoba otomatis. Jangan bersihkan data situs.'); } catch (e) {}
-          }
-          wsCloudPushSchedule(); // coba lagi di siklus berikutnya
-        });
+          try { wsTrackKnownDeleted(pushResp && pushResp.deleted_paths); } catch (e) {}
+          if (pushResp && pushResp.error) throw new Error(pushResp.error);
+        }
+        try { wsDropKnownDeletedFromTree(); } catch (e) {}
+        // Verifikasi: jumlah file di cloud == yang dikirim (semua batch benar-benar masuk)
+        const r = await fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&meta=1', { headers: wsAuthHeaders() });
+        if (!r.ok) throw new Error('verifikasi gagal');
+        const d = await r.json();
+        const there = ((d && d.files) || []).length;
+        if (there !== files.length) throw new Error('verifikasi gagal');
+        wsDirtySet(false);
+        wsCloudFailNotified = false;
+        try { Object.keys(wsRestorePaths).forEach(function (p) { if (!wsKnownDeleted[p]) delete wsRestorePaths[p]; }); } catch (e) {}
+      })().catch(function () {
+        if (attempt < 2) { setTimeout(function() { wsCloudPushNow(attempt + 1, keepalive); }, 1500 * (attempt + 1)); return; }
+        // Tetap dirty: pull berikutnya tidak akan menimpa data lokal yang lebih baru
+        if (!wsCloudFailNotified) {
+          wsCloudFailNotified = true;
+          try { addNotification('Workspace', 'Perubahan belum tersinkron ke cloud — akan dicoba otomatis. Jangan bersihkan data situs.'); } catch (e) {}
+        }
+        wsCloudPushSchedule(); // coba lagi di siklus berikutnya
+      });
     }
 
     // Flush sebelum halaman ditutup / disembunyikan: data terakhir tetap terkirim
     window.addEventListener('pagehide', function() { if (wsDirtyIs()) wsCloudPushNow(0, true); });
+    // [16 Okt] unggahan besar masih berjalan saat tab ditutup -> fetch dibunuh browser,
+    // antrean hilang (hanya di memori) dan file "hilang tanpa jejak". Minta konfirmasi dulu.
+    window.addEventListener('beforeunload', function (e) {
+      if (wsUploadRunning > 0 || wsUploadQ.length > 0) {
+        e.preventDefault();
+        e.returnValue = 'Masih ada ' + (wsUploadRunning + wsUploadQ.length) + ' berkas yang sedang diunggah. Yakin keluar?';
+      }
+    });
     document.addEventListener('visibilitychange', function() {
       if (document.visibilityState === 'hidden' && wsDirtyIs()) wsCloudPushNow(0, true);
       if (document.visibilityState === 'visible') wsCloudPull(); // refresh real-time lintas perangkat
@@ -1154,26 +1215,34 @@
     // upsert (replace:false — tidak menghapus apa pun), dengan retry berkala
     // selama tab masih hidup.
     var wsRescueTimer = null;
+    var wsRescueBusy = false;
     function wsCloudRescueUpload() {
       const pid = wsProjectId();
-      if (!pid) return;
+      if (!pid || wsRescueBusy) return;
       const files = wsFlatten(projectFilesData);
       if (!files.length) return;
-      const payload = { project_id: pid, files: files, replace: false };
-      fetch(WS_CLOUD_API, {
-        method: 'POST',
-        headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()),
-        body: JSON.stringify(payload)
-      })
-        .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
-        .then(function() {
-          wsRescueTimer = null;
-          try { addNotification('Workspace', 'Cache browser penuh — isi file berhasil diselamatkan langsung ke cloud.'); } catch (e2) {}
-        })
-        .catch(function() {
-          try { addNotification('Workspace', 'Cache browser penuh DAN cloud belum terjangkau. Isi file masih di halaman ini — jangan ditutup; akan dicoba otomatis.'); } catch (e2) {}
-          wsRescueTimer = setTimeout(wsCloudRescueUpload, 8000);
-        });
+      wsRescueBusy = true;
+      // [16 Okt] per-batch: satu POST besar bisa tewas di batas CPU Worker (dulu ->
+      // penyelamatan gagal diam-diam). replace:false — tidak menghapus apa pun.
+      const batches = wsPushBatches(files);
+      (async function () {
+        for (let b = 0; b < batches.length; b++) {
+          const res = await fetch(WS_CLOUD_API, {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders()),
+            body: JSON.stringify({ project_id: pid, files: batches[b], replace: false, bump_rev: b === batches.length - 1 })
+          });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const d = await res.json().catch(function () { return {}; });
+          if (d && d.error) throw new Error(d.error);
+        }
+        wsRescueBusy = false; wsRescueTimer = null;
+        try { addNotification('Workspace', 'Cache browser penuh — isi file berhasil diselamatkan langsung ke cloud.'); } catch (e2) {}
+      })().catch(function () {
+        wsRescueBusy = false;
+        try { addNotification('Workspace', 'Cache browser penuh DAN cloud belum terjangkau. Isi file masih di halaman ini — jangan ditutup; akan dicoba otomatis.'); } catch (e2) {}
+        wsRescueTimer = setTimeout(wsCloudRescueUpload, 8000);
+      });
     }
 
     function saveData() {
@@ -2287,9 +2356,55 @@
       e.target.value = '';
     }
 
+    // [16 Okt] alur file besar dipakai bersama oleh "impor file" dan "impor ZIP":
+    // penanda (nama) langsung disimpan + didorong ke cloud SEBELUM isi diunggah,
+    // jadi kegagalan/interupsi selalu meninggalkan jejak nama file, bukan hilang diam-diam.
+    function wsImportBigFile(filePath, targetPath, content, sizeStr, cloudSize, existingIndex, existingItem) {
+      if (!projectFilesData[targetPath]) projectFilesData[targetPath] = [];
+      let uploadingItem;
+      if (existingIndex !== -1) {
+        uploadingItem = existingItem || projectFilesData[targetPath][existingIndex];
+        uploadingItem.uploading = true;
+      } else {
+        uploadingItem = { type: 'file', name: filePath.split('/').pop(), size: sizeStr, path: filePath, content: '', cloud: true, cloudSize: cloudSize, uploading: true };
+        projectFilesData[targetPath].push(uploadingItem);
+      }
+      if (targetPath === currentFolderPath || targetPath.startsWith(currentFolderPath)) renderFileList();
+      saveData(); // [16 Okt] penanda nama file langsung tersimpan (cache + cloud)
+      return wsCloudUploadQueued(filePath, content).then(function (up) {
+        if (!up || !up.ok) {
+          delete uploadingItem.uploading;
+          if (existingIndex === -1) {
+            const idx = projectFilesData[targetPath].indexOf(uploadingItem);
+            if (idx !== -1) projectFilesData[targetPath].splice(idx, 1);
+          } else if (existingItem) {
+            // gagal menimpa: jangan biarkan penanda kosong menimpa isi lama
+            uploadingItem.content = existingItem.content; uploadingItem.cloud = existingItem.cloud; uploadingItem.cloudSize = existingItem.cloudSize; uploadingItem.size = existingItem.size;
+          }
+          saveData();
+          if (targetPath === currentFolderPath || targetPath.startsWith(currentFolderPath)) renderFileList();
+          try { addNotification('Workspace', 'Gagal mengunggah berkas besar ' + filePath + ': ' + ((up && up.error) || 'cloud tidak merespons') + '. Berkas tidak tersimpan — coba lagi.'); } catch (e) {}
+          wsUploadStatsSettle(false);
+          return;
+        }
+        delete uploadingItem.uploading;
+        uploadingItem.content = '';
+        uploadingItem.cloud = true;
+        uploadingItem.cloudSize = cloudSize;
+        uploadingItem.size = sizeStr;
+        saveData();
+        if (targetPath === currentFolderPath || targetPath.startsWith(currentFolderPath)) renderFileList();
+        wsUploadStatsSettle(true);
+      });
+    }
+
     function importSingleFile(file, targetPath) {
       if (!projectFilesData[targetPath]) projectFilesData[targetPath] = [];
       const reader = new FileReader();
+      // [16 Okt] berkas tak terbaca (rusak/diubah di disk) dulu lenyap TANPA kabar.
+      reader.onerror = function () {
+        try { addNotification('Workspace', 'Gagal membaca berkas ' + file.name + ' — tidak diimpor.'); } catch (e) {}
+      };
       reader.onload = function(event) {
         const content = event.target.result;
         const sizeStr = formatBytes(file.size);
@@ -2297,38 +2412,10 @@
         const existingIndex = projectFilesData[targetPath].findIndex(i => i.name === file.name && i.type === 'file');
 
         // FILE BESAR (>600 ribu karakter / ~10MB+ di data-URL): isi TIDAK masuk
-        // localStorage (kuota browser ~5MB) — unggah ke cloud, simpan penanda saja.
+        // localStorage (kuota browser ~5MB) — unggah ke cloud per-chunk, simpan penanda saja.
         if (content.length > WS_BIG_LIMIT) {
-          // Baris langsung tampil di daftar (dengan spinner di posisi titik-tiga)
-          // begitu unggah dimulai — sebelumnya file besar "hilang" sampai unggah selesai.
-          let uploadingItem;
-          if (existingIndex !== -1) {
-            uploadingItem = projectFilesData[targetPath][existingIndex];
-            uploadingItem.uploading = true;
-          } else {
-            uploadingItem = { type: 'file', name: file.name, size: sizeStr, path: filePath, content: '', cloud: true, cloudSize: file.size, uploading: true };
-            projectFilesData[targetPath].push(uploadingItem);
-          }
-          if (targetPath === currentFolderPath || targetPath.startsWith(currentFolderPath)) renderFileList();
-          wsCloudUploadQueued(filePath, content).then(function (up) {
-            if (!up.ok) {
-              delete uploadingItem.uploading;
-              if (existingIndex === -1) {
-                const idx = projectFilesData[targetPath].indexOf(uploadingItem);
-                if (idx !== -1) projectFilesData[targetPath].splice(idx, 1);
-              }
-              if (targetPath === currentFolderPath || targetPath.startsWith(currentFolderPath)) renderFileList();
-              try { addNotification('Workspace', 'Gagal mengunggah berkas besar ' + file.name + ': ' + up.error); } catch (e) {}
-              return;
-            }
-            delete uploadingItem.uploading;
-            uploadingItem.content = '';
-            uploadingItem.cloud = true;
-            uploadingItem.cloudSize = file.size;
-            uploadingItem.size = sizeStr;
-            saveData();
-            if (targetPath === currentFolderPath || targetPath.startsWith(currentFolderPath)) renderFileList();
-          });
+          wsImportBigFile(filePath, targetPath, content, sizeStr, file.size, existingIndex,
+            existingIndex !== -1 ? Object.assign({}, projectFilesData[targetPath][existingIndex]) : null);
           return;
         }
 
@@ -2358,6 +2445,7 @@
         
         if (!projectFilesData[currentFolderPath]) projectFilesData[currentFolderPath] = [];
         
+        const zipBigFiles = []; // [16 Okt] antre unggahan per-chunk utk file besar dalam ZIP
         let counter = 1;
         let finalFolderName = folderName;
         while(projectFilesData[currentFolderPath].find(i => i.type === 'folder' && i.name === finalFolderName)) {
@@ -2392,21 +2480,28 @@
              const ext = getFileExtension(fileName);
              const type = getFileType(fileName);
              
-             let fileContent, sizeStr;
+             let fileContent, sizeStr, bytes;
              if (type === 'code') {
                fileContent = await zipEntry.async("string");
-               const bytes = new Blob([fileContent]).size;
+               bytes = new Blob([fileContent]).size;
                sizeStr = formatBytes(bytes);
              } else {
                const base64 = await zipEntry.async("base64");
                const mimeType = getMimeType(ext);
                fileContent = `data:${mimeType};base64,${base64}`;
-               const bytes = atob(base64).length;
+               bytes = atob(base64).length;
                sizeStr = formatBytes(bytes);
              }
              
              if (!projectFilesData[currentIterPath]) projectFilesData[currentIterPath] = [];
              const filePath = currentIterPath + '/' + fileName;
+             // [16 Okt] file besar dalam ZIP dulu dimasukkan UTUH ke pohon ->
+             // kuota cache meledak, rescue/push satu-POST tewas, isi hilang.
+             // Sekarang: jalur unggah per-chunk yang sama dengan impor file biasa.
+             if (fileContent.length > WS_BIG_LIMIT) {
+               zipBigFiles.push(wsImportBigFile(filePath, currentIterPath, fileContent, sizeStr, bytes, -1, null));
+               continue;
+             }
              projectFilesData[currentIterPath].push({ type: 'file', name: fileName, size: sizeStr, path: filePath, content: fileContent });
           } else {
              const dirName = pathParts[pathParts.length - 1];
