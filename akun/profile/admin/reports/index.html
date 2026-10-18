@@ -25,14 +25,29 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@1.41.0"></script>
   <script>
-    tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } } };
+    tailwind.config = { darkMode: ['class', '.dark-mode'], theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } } };
   </script>
   <style>
         /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
         html, body { scrollbar-width: none; -ms-overflow-style: none; }
         html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
 
-    body { font-family: 'Inter', sans-serif; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #ffffff;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    body.dark-mode {
+      background-color: #000000;
+      color: #e0e0e0;
+    }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #ffffff !important; }
+    body.dark-mode .text-gray-700, body.dark-mode .text-gray-600 { color: #a1a1aa !important; }
+    body.dark-mode .text-gray-500 { color: #71717a !important; }
+    body.dark-mode .border-gray-100, body.dark-mode .border-gray-200 { border-color: #222222 !important; }
+    body.dark-mode .bg-gray-50, body.dark-mode .bg-gray-100 { background-color: #141414 !important; }
+
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .shimmer-bar {
@@ -70,20 +85,20 @@
           <h1 class="font-extrabold text-lg text-gray-900 dark:text-white tracking-tight">Laporan & Scan</h1>
           <div class="w-10 shrink-0"></div>
         </div>
-        <div class="flex items-center justify-center gap-1 pb-2.5 overflow-x-auto hide-scrollbar text-sm font-medium">
-          <a href="../" class="nav-tab-item px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 whitespace-nowrap text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#141414]">
+        <div class="flex flex-wrap items-center justify-center gap-1.5 pb-2.5 text-sm font-medium">
+          <a href="../" class="nav-tab-item px-4 py-1.5 rounded-full transition-all flex items-center gap-2 whitespace-nowrap text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#141414]">
             <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
             <span>Dashboard</span>
           </a>
-          <a href="../users/" class="nav-tab-item px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 whitespace-nowrap text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#141414]">
+          <a href="../users/" class="nav-tab-item px-4 py-1.5 rounded-full transition-all flex items-center gap-2 whitespace-nowrap text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#141414]">
             <i data-lucide="users" class="w-4 h-4"></i>
             <span>Data User</span>
           </a>
-          <a href="./" class="nav-tab-item px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 whitespace-nowrap bg-black text-white dark:bg-white dark:text-black font-semibold shadow-sm">
+          <a href="./" class="nav-tab-item px-4 py-1.5 rounded-full transition-all flex items-center gap-2 whitespace-nowrap bg-black text-white dark:bg-white dark:text-black font-semibold shadow-sm">
             <i data-lucide="shield-alert" class="w-4 h-4"></i>
             <span>Laporan & Scan</span>
           </a>
-          <a href="../activity/" class="nav-tab-item px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 whitespace-nowrap text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#141414]">
+          <a href="../activity/" class="nav-tab-item px-4 py-1.5 rounded-full transition-all flex items-center gap-2 whitespace-nowrap text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#141414]">
             <i data-lucide="activity" class="w-4 h-4"></i>
             <span>Aktivitas Sistem</span>
           </a>
@@ -95,8 +110,8 @@
 
       <!-- Tab switch -->
       <div class="flex items-center gap-2 mb-5">
-        <button id="tab-btn-reports" onclick="switchTab('reports')" class="px-4 py-2 text-sm font-semibold rounded-lg bg-black text-white dark:bg-white dark:text-black transition-all">Laporan</button>
-        <button id="tab-btn-flags" onclick="switchTab('flags')" class="px-4 py-2 text-sm font-semibold rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#141414] transition-all">Flag Otomatis <span id="flags-count" class="ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded-md bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400"></span></button>
+        <button id="tab-btn-reports" onclick="switchTab('reports')" class="px-4 py-2 text-sm font-semibold rounded-full bg-black text-white dark:bg-white dark:text-black transition-all">Laporan</button>
+        <button id="tab-btn-flags" onclick="switchTab('flags')" class="px-4 py-2 text-sm font-semibold rounded-full text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#141414] transition-all">Flag Otomatis <span id="flags-count" class="ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded-md bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400"></span></button>
       </div>
 
       <!-- TAB: Reports -->
