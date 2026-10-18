@@ -468,10 +468,12 @@
                 <i data-lucide="globe" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
                 <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Domain</span>
             </a>
-            <a href="akun/kredit/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="kredit saldo ai top up">
-                <svg class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12.5 7 7.5 13h4.5l-1 4 4.5-6h-4.5z"/></svg>
-                <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Kredit</span>
-            </a>
+            <!-- [18 Okt 2026, arahan pemilik] Menu Kredit/Top Up sementara jadi placeholder (tidak bisa diklik) -->
+            <div class="sb-item w-full flex items-center px-6 py-2 opacity-50" aria-disabled="true" title="Sedang dalam pengembangan" data-search="kredit saldo ai top up">
+                <svg class="w-5 h-5 text-gray-500 mr-4 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12.5 7 7.5 13h4.5l-1 4 4.5-6h-4.5z"/></svg>
+                <span class="text-[15px] font-medium text-gray-500">Kredit</span>
+                <span class="ml-auto text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full">Segera</span>
+            </div>
             <a href="akun/proyek/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="proyek project daftar">
                 <i data-lucide="folder" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
                 <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Proyek</span>
@@ -631,7 +633,8 @@
                 { group: 'Menu', items: [
                     { label: 'Home', icon: 'home', act: function () { toggleSidebar(false); navigateTo('page-home'); } },
                     { label: 'Domain', icon: 'globe', act: function () { location.href = 'domain/'; } },
-                    { label: 'Kredit', icon: 'coin-bolt', act: function () { location.href = 'akun/kredit/'; } },
+                    // [18 Okt 2026, arahan pemilik] Kredit/Top Up sementara placeholder non-aktif
+                    { label: 'Kredit', icon: 'coin-bolt', act: function () { if (window.aiBuildDevNotice) { window.aiBuildDevNotice('Top Up Kredit sedang dalam pengembangan — segera hadir'); } else { alert('Top Up Kredit sedang dalam pengembangan.'); } } },
                     { label: 'Template', icon: 'layout-template', act: function () { location.href = 'templates/'; } },
                     { label: 'Notifikasi', icon: 'bell', act: function () { location.href = 'akun/notifikasi/'; } },
                     { label: 'Upgrade', icon: 'crown', act: function () { location.href = 'akun/langganan/upgrade/'; } },
@@ -806,7 +809,8 @@
                     </button>
                     <div id="ai-mode-menu" class="absolute bottom-full right-0 mb-2 w-44 bg-white text-gray-800 border border-gray-100 rounded-lg shadow-xl p-1 flex flex-col gap-0.5 opacity-0 invisible translate-y-2 pointer-events-none transition-all duration-300 z-50 origin-bottom-right">
                         <button type="button" onclick="applyAiMode('chat')" class="w-full flex items-center px-3 py-1.5 hover:bg-gray-50 rounded-md transition-colors text-sm font-medium text-left cursor-pointer">Chat</button>
-                        <button type="button" onclick="applyAiMode('build')" class="w-full flex items-center px-3 py-1.5 hover:bg-gray-50 rounded-md transition-colors text-sm font-medium text-left cursor-pointer">Build</button>
+                        <!-- [18 Okt 2026, arahan pemilik] Mode Build ditutup sementara: tombol jadi placeholder non-aktif -->
+                        <button type="button" onclick="aiBuildDevNotice()" class="w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-left text-gray-400 cursor-not-allowed" title="Sedang dalam pengembangan"><span>Build</span><span class="text-[10px] font-semibold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">Segera</span></button>
                     </div>
                 </div>
                                 <button id="submit-prompt-btn" class="w-10 h-10 bg-accent text-white rounded-full hover:bg-accent-hover transition-all duration-200 active:scale-90 flex items-center justify-center cursor-pointer shadow-sm hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20">
@@ -1577,14 +1581,30 @@
                 }).catch(function () {});
             } catch (e) {}
         })();
+        // [18 Okt 2026, arahan pemilik] Mode Build ditutup sementara — pesan
+        // pengganti yang rapi saat user mencoba memilih Mode Build.
+        window.aiBuildDevNotice = function (msg) {
+          var el = document.getElementById('ai-build-dev-notice');
+          if (el) el.remove();
+          el = document.createElement('div');
+          el.id = 'ai-build-dev-notice';
+          var dark = document.body.classList.contains('dark-mode');
+          el.style.cssText = 'position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:9999;display:flex;align-items:center;gap:8px;max-width:92vw;padding:10px 16px;border-radius:14px;background:' + (dark ? '#1c1c1e' : '#111827') + ';color:' + (dark ? '#f3f4f6' : '#ffffff') + ';font-size:13px;font-weight:600;line-height:1.4;box-shadow:0 10px 30px rgba(0,0,0,.3);opacity:0;transition:opacity .25s ease;font-family:inherit;text-align:center;';
+          el.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.3 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0z"/></svg><span>' + (msg || 'Mode Build sedang dalam pengembangan. Sementara ini gunakan Mode Chat ya.') + '</span>';
+          document.body.appendChild(el);
+          requestAnimationFrame(function () { el.style.opacity = '1'; });
+          setTimeout(function () { el.style.opacity = '0'; setTimeout(function () { if (el.parentNode) el.remove(); }, 300); }, 3400);
+        };
         // ===== [7 Okt 2026] KAPSUL MODE AI (Chat / Build) di halaman utama =====
         // Pilihan tersimpan di localStorage 'clincoo_ai_mode' — kunci yang sama
         // dipakai halaman proyek/chat, jadi mode Build terbawa otomatis saat
         // prompt dari homepage diteruskan ke chat AI.
         (function () {
           const KEY = 'clincoo_ai_mode';
-          let choice;
-          try { choice = localStorage.getItem(KEY); } catch (e0) { choice = null; }
+          // [18 Okt 2026, arahan pemilik] Mode Build DINONAKTIFKAN sementara —
+          // pilihan 'build' yang tersimpan dihapus, semua sesi dipaksa Mode Chat.
+          let choice = 'chat';
+          try { localStorage.removeItem(KEY); } catch (e0) {}
           if (choice !== 'build') choice = 'chat';
           const mBtn = document.getElementById('ai-mode-btn');
           const mMenu = document.getElementById('ai-mode-menu');
@@ -1608,8 +1628,9 @@
             if (!e.target.closest('#ai-mode-btn') && !e.target.closest('#ai-mode-menu')) setOpen(false);
           });
           window.applyAiMode = function (id) {
-            choice = (id === 'build') ? 'build' : 'chat';
-            try { localStorage.setItem(KEY, choice); } catch (e0) {}
+            if (id === 'build') { window.aiBuildDevNotice(); return; } // [18 Okt 2026, arahan pemilik] Build sementara ditutup
+            choice = 'chat';
+            try { localStorage.setItem(KEY, 'chat'); } catch (e0) {}
             apply();
             setOpen(false);
           };
@@ -2350,6 +2371,9 @@
       document.getElementById('build-gate-ok').onclick = function(){ ov.remove(); origApply('build'); };
     }
     window.applyAiMode = function(id){
+      // [18 Okt 2026, arahan pemilik] Mode Build sementara ditutup — blokir
+      // SEBELUM gerbang premium; cukup pesan "sedang dikembangkan".
+      if (id === 'build') { if (window.aiBuildDevNotice) window.aiBuildDevNotice(); return; }
       try {
         var plan = window.clincooUserPlan || 'Starter';
         if (id === 'build' && plan === 'Starter') { showBuildGate(); return; }

@@ -267,9 +267,16 @@ async function load(isRefresh) {
         state.chatLog = data.chatLog || [];
         state.integrasi = data.integrasi || [];
         state.email = data.email || '';
-        // [8 Okt 2026, arahan pemilik] Top Up sepenuhnya di dalam Clincoo —
-        // tidak lagi membuka situs kredit-ai.pages.dev. Grant otomatis ke akun login.
-        document.getElementById('btn-topup').href = '/akun/kredit/topup/';
+        // [18 Okt 2026, arahan pemilik] Top Up sementara DINONAKTIFKAN — tombol jadi
+        // placeholder: tidak membuka halaman top-up, klik hanya menampilkan pemberitahuan.
+        (function () {
+          var btn = document.getElementById('btn-topup');
+          btn.removeAttribute('href');
+          btn.classList.add('opacity-50', 'cursor-not-allowed');
+          btn.title = 'Sedang dalam pengembangan';
+          btn.addEventListener('click', function (e) { e.preventDefault(); toast('Top Up Kredit sedang dalam pengembangan — segera hadir'); });
+        })();
+        if (location.search.indexOf('topup=segera') !== -1) toast('Top Up Kredit sedang dalam pengembangan — segera hadir');
         render(isRefresh && oldSaldo !== state.saldo);
         if (isRefresh && oldSaldo !== state.saldo) toast('Saldo kredit diperbarui');
     } catch (e) {
