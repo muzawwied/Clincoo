@@ -357,6 +357,19 @@ async function handleGetStats(db) {
     walletTotal = parseFloat(r?.total || 0);
   } catch (e) {}
 
+  // [18 Okt 2026, arahan pemilik] Total kredit AI aktif semua user (paket belum expired,
+  // logika sama dengan saldo kredit /api/kredit).
+  let aiCreditsTotal = 0;
+  try {
+    const now = new Date();
+    const rows = await db.prepare("SELECT credits_left, expires_at FROM ai_packs WHERE credits_left > 0").all();
+    for (const r of rows.results || []) {
+      if (r.expires_at && new Date(r.expires_at) <= now) continue;
+      aiCreditsTotal += parseFloat(r.credits_left || 0);
+    }
+    aiCreditsTotal = Math.round(aiCreditsTotal * 100) / 100;
+  } catch (e) {}
+
   let aiMessagesTotal = 0;
   try {
     const tables = await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND (name = 'chat_messages' OR name LIKE 'p_%_chat_messages')").all();
@@ -420,6 +433,7 @@ async function handleGetStats(db) {
       topup_total_amount: topupTotalAmount,
       topup_count: topupCount,
       wallet_total: walletTotal,
+      ai_credits_total: aiCreditsTotal,
       ai_messages_total: aiMessagesTotal,
       reports_open: reportsOpen
     },
