@@ -61,30 +61,16 @@
 
   <div id="admin-page-container" style="display: none;" class="flex-1 flex flex-col min-h-screen">
 
-    <header class="bg-white dark:bg-[#0a0a0a] border-b border-gray-100 dark:border-[#222] sticky top-0 z-40 transition-colors">
+    <header class="bg-white dark:bg-[#0a0a0a] sticky top-0 z-40 transition-colors">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
-          <div class="flex items-center gap-3">
-            <a href="../" class="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-50 dark:bg-[#141414] border border-gray-200 dark:border-[#262626] hover:bg-gray-100 dark:hover:bg-[#222] transition-all text-gray-700 dark:text-gray-200" title="Kembali ke Profil">
-              <i data-lucide="arrow-left" class="w-5 h-5"></i>
-            </a>
-            <div>
-              <div class="flex items-center gap-2">
-                <h1 class="font-extrabold text-lg sm:text-xl text-gray-900 dark:text-white tracking-tight" style="font-family: 'Space Grotesk', sans-serif;">Data User</h1>
-                <span class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-black dark:bg-white text-white dark:text-black rounded-md">ADMIN</span>
-              </div>
-              <p class="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">Kelola akun, saldo, langganan, dan status pengguna</p>
-            </div>
-          </div>
-          <div class="flex items-center gap-2">
-            <button id="global-refresh-btn" onclick="refreshPageData()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-100 dark:bg-[#141414] hover:bg-gray-200 dark:hover:bg-[#222] text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-[#262626] transition-all flex items-center gap-1.5 cursor-pointer">
-              <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="refresh-spin-icon"></i>
-              <span>Refresh</span>
-            </button>
-          </div>
+          <a href="../" class="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-100 dark:border-[#262626] hover:bg-gray-100 dark:hover:bg-[#1a1a1a] transition-all text-gray-700 dark:text-gray-200 shrink-0" title="Kembali">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+          </a>
+          <h1 class="font-extrabold text-lg text-gray-900 dark:text-white tracking-tight">Data User</h1>
+          <div class="w-10 shrink-0"></div>
         </div>
-
-        <div class="flex items-center gap-1 border-t border-gray-100 dark:border-[#222] py-2 overflow-x-auto hide-scrollbar text-sm font-medium">
+        <div class="flex items-center justify-center gap-1 pb-2.5 overflow-x-auto hide-scrollbar text-sm font-medium">
           <a href="../" class="nav-tab-item px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 whitespace-nowrap text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#141414]">
             <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
             <span>Dashboard</span>
@@ -148,16 +134,20 @@
 
     </main>
 
-    <!-- Modal konfirmasi aksi -->
-    <div id="confirm-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div class="w-full max-w-md bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] rounded-2xl p-6 shadow-2xl">
-        <div class="flex items-start gap-3 mb-1">
-          <div id="confirm-icon-wrap" class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/40 flex items-center justify-center shrink-0">
-            <i data-lucide="alert-triangle" class="w-5 h-5 text-red-600"></i>
-          </div>
-          <div>
-            <h3 id="confirm-title" class="font-bold text-gray-900 dark:text-white" style="font-family: 'Space Grotesk', sans-serif;">Konfirmasi</h3>
-            <p id="confirm-desc" class="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-relaxed"></p>
+    <!-- Popover detail user (klik card user) -->
+    <div id="user-popover" class="hidden fixed z-50 w-[min(22rem,calc(100vw-1.5rem))] bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] rounded-2xl shadow-2xl overflow-hidden" style="top:0;left:0;">
+      <div id="user-popover-body"></div>
+    </div>
+
+    <!-- Popover konfirmasi aksi (menggantikan pop-up/modal lama) -->
+    <div id="confirm-modal" class="hidden fixed z-50 w-[min(20rem,calc(100vw-1.5rem))] bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] rounded-2xl p-5 shadow-2xl" style="top:0;left:0;">
+      <div class="flex items-start gap-3 mb-1">
+        <div id="confirm-icon-wrap" class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/40 flex items-center justify-center shrink-0">
+          <i data-lucide="alert-triangle" class="w-5 h-5 text-red-600"></i>
+        </div>
+        <div class="min-w-0">
+          <h3 id="confirm-title" class="font-bold text-gray-900 dark:text-white" style="font-family: 'Space Grotesk', sans-serif;">Konfirmasi</h3>
+          <p id="confirm-desc" class="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-relaxed"></p>
         </div>
       </div>
       <div id="confirm-reason-wrap" class="hidden mt-4">
@@ -172,7 +162,6 @@
           <i data-lucide="loader-2" class="w-4 h-4 animate-spin hidden" id="confirm-cta-spinner"></i>
           <i data-lucide="check" class="w-4 h-4 hidden" id="confirm-cta-check"></i>
         </button>
-      </div>
       </div>
     </div>
 
@@ -242,6 +231,11 @@
         buildPlanFilter();
         renderSummary();
         renderUserList();
+        // [18 Okt 2026] popover detail user ikut diperbarui saat data real-time masuk
+        if (openUserId !== null && activePopover && activePopover.el.id === 'user-popover') {
+          const u2 = findUser(openUserId);
+          if (u2) renderUserPopover(u2);
+        }
         handleHashAction();
       } catch (err) {
         showToast(err.message || 'Gagal memuat data user', true);
@@ -317,17 +311,18 @@
         const isAdmin = u.role === 'admin' || u.role === 'owner'; // owner & admin tidak bisa di-suspend/hapus dari UI
         const canAct = !isAdmin;
         const suspendBtn = u.status === 'suspended'
-          ? `<button onclick="askConfirm('unsuspend', ${u.id})" ${canAct ? '' : 'disabled'} class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-all flex items-center gap-1.5 cursor-pointer ${canAct ? '' : 'opacity-40 cursor-not-allowed'}"><i data-lucide="play" class="w-3.5 h-3.5"></i>Aktifkan</button>`
-          : `<button onclick="askConfirm('suspend', ${u.id})" ${canAct ? '' : 'disabled'} class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all flex items-center gap-1.5 cursor-pointer ${canAct ? '' : 'opacity-40 cursor-not-allowed'}"><i data-lucide="pause" class="w-3.5 h-3.5"></i>Suspend</button>`;
+          ? `<button onclick="askConfirm('unsuspend', ${u.id}, this)" ${canAct ? '' : 'disabled'} class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-all flex items-center gap-1.5 cursor-pointer ${canAct ? '' : 'opacity-40 cursor-not-allowed'}"><i data-lucide="play" class="w-3.5 h-3.5"></i>Aktifkan</button>`
+          : `<button onclick="askConfirm('suspend', ${u.id}, this)" ${canAct ? '' : 'disabled'} class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all flex items-center gap-1.5 cursor-pointer ${canAct ? '' : 'opacity-40 cursor-not-allowed'}"><i data-lucide="pause" class="w-3.5 h-3.5"></i>Suspend</button>`;
         const delBtn = u.status === 'deleted'
           ? '<span class="text-[10px] text-gray-400 italic pr-1">terhapus</span>'
-          : `<button onclick="askConfirm('delete', ${u.id})" ${canAct ? '' : 'disabled'} class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all flex items-center gap-1.5 cursor-pointer ${canAct ? '' : 'opacity-40 cursor-not-allowed'}"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Hapus</button>`;
-        const balBtn = `<button onclick="askConfirm('adjust_balance', ${u.id})" class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-all flex items-center gap-1.5 cursor-pointer"><i data-lucide="wallet" class="w-3.5 h-3.5"></i>Saldo</button>`;
+          : `<button onclick="askConfirm('delete', ${u.id}, this)" ${canAct ? '' : 'disabled'} class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all flex items-center gap-1.5 cursor-pointer ${canAct ? '' : 'opacity-40 cursor-not-allowed'}"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Hapus</button>`;
+        const balBtn = `<button onclick="askConfirm('adjust_balance', ${u.id}, this)" class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-all flex items-center gap-1.5 cursor-pointer"><i data-lucide="wallet" class="w-3.5 h-3.5"></i>Saldo</button>`;
         const reason = u.status === 'suspended' && u.suspend_reason
           ? `<p class="text-[11px] text-red-500 dark:text-red-400 mt-0.5 pl-12 sm:pl-[52px]">Alasan: ${esc(u.suspend_reason)}</p>` : '';
 
         return `
-        <div class="px-4 py-3.5 rounded-lg border border-gray-100 dark:border-[#1c1c1c] hover:border-gray-200 dark:hover:border-[#333] transition-all bg-white dark:bg-transparent">
+        <div id="user-card-${u.id}" onclick="openUserPopover(${u.id}, this)" title="Klik untuk lihat detail user"
+          class="px-4 py-3.5 rounded-lg border border-gray-100 dark:border-[#1c1c1c] hover:border-gray-200 dark:hover:border-[#333] transition-all bg-white dark:bg-transparent cursor-pointer">
           <div class="flex items-center gap-3 flex-wrap sm:flex-nowrap">
             ${avatarHtml(u)}
             <div class="flex-1 min-w-0">
@@ -337,12 +332,12 @@
               </div>
               <p class="text-xs text-gray-500 dark:text-gray-400 truncate">${esc(u.email)}</p>
             </div>
-            <div class="hidden lg:flex flex-col items-end text-xs">
+            <div class="hidden sm:flex flex-col items-end text-xs">
               <span class="font-semibold text-gray-800 dark:text-gray-200">${formatRupiah(u.balance)}</span>
               <span class="text-gray-400">${esc(u.plan || 'Free')} · ${u.projects_count || 0} proyek</span>
               <span class="text-gray-400">${timeAgo(u.last_activity)}</span>
             </div>
-            <div class="flex items-center gap-1.5 ml-auto lg:ml-0">
+            <div class="flex flex-wrap items-center justify-end gap-1.5 w-full sm:w-auto" onclick="event.stopPropagation()">
               ${balBtn}
               ${suspendBtn}
               ${delBtn}
@@ -355,13 +350,102 @@
       if (window.lucide) lucide.createIcons();
     }
 
+    // ==== Popover helper (semua pop-up diganti popover) ====
+    let activePopover = null; // { el, anchor }
+    function positionPopover(pop, anchor) {
+      pop.classList.remove('hidden');
+      const r = anchor.getBoundingClientRect();
+      const pw = pop.offsetWidth, ph = pop.offsetHeight;
+      const vw = window.innerWidth, vh = window.innerHeight, m = 8;
+      let top = r.bottom + m;
+      if (top + ph > vh - m) top = Math.max(m, r.top - ph - m);
+      let left = r.left + (r.width / 2) - (pw / 2);
+      left = Math.min(Math.max(m, left), Math.max(m, vw - pw - m));
+      pop.style.top = top + 'px';
+      pop.style.left = left + 'px';
+    }
+    function closeActivePopover() {
+      if (!activePopover) return;
+      if (activePopover.el.id === 'user-popover') openUserId = null;
+      activePopover.el.classList.add('hidden');
+      activePopover = null;
+    }
+    document.addEventListener('click', (e) => {
+      if (!activePopover) return;
+      if (activePopover.el.contains(e.target)) return;
+      if (activePopover.anchor && activePopover.anchor.contains(e.target)) return;
+      closeActivePopover();
+    }, true);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeActivePopover(); });
+    window.addEventListener('resize', () => { if (activePopover) positionPopover(activePopover.el, activePopover.anchor); });
+    window.addEventListener('scroll', () => { if (activePopover) positionPopover(activePopover.el, activePopover.anchor); }, true);
+
+    // ==== Popover detail user (klik card -> data user real-time) ====
+    let openUserId = null;
+    function fmtDate(iso) {
+      if (!iso) return null;
+      const d = new Date(String(iso).replace(' ', 'T'));
+      return isNaN(d) ? String(iso) : d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    function detailRow(label, value) {
+      return `<div class="flex items-center justify-between gap-3 py-2 border-b border-gray-100 dark:border-[#1c1c1c] last:border-0">
+        <span class="text-xs text-gray-500 dark:text-gray-400">${label}</span>
+        <span class="text-xs font-semibold text-gray-900 dark:text-white text-right">${value}</span>
+      </div>`;
+    }
+    function renderUserPopover(u) {
+      const isAdmin = u.role === 'admin' || u.role === 'owner';
+      const canAct = !isAdmin;
+      const actBtn = (action, icon, label, danger, extra) => `<button onclick="askConfirm('${action}', ${u.id}, this)" ${(!danger || canAct) ? '' : 'disabled'} class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border ${danger ? 'border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30' : 'border-gray-200 dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-[#1a1a1a]'} transition-all flex items-center gap-1.5 cursor-pointer ${(!danger || canAct) ? '' : 'opacity-40 cursor-not-allowed'}"><i data-lucide="${icon}" class="w-3.5 h-3.5"></i>${label}</button>`;
+      document.getElementById('user-popover-body').innerHTML = `
+        <div class="p-4 pb-3 flex items-center gap-3 border-b border-gray-100 dark:border-[#1c1c1c]">
+          <div class="shrink-0">${avatarHtml(u)}</div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-sm font-bold text-gray-900 dark:text-white truncate">${esc(u.name || '(tanpa nama)')}</span>
+              ${statusBadge(u)}
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">${esc(u.email)}</p>
+          </div>
+        </div>
+        <div class="px-4 py-1">
+          ${detailRow('Plan', esc(u.plan || 'Free'))}
+          ${detailRow('Kredit AI', `${u.ai_credits || 0} kredit`)}
+          ${detailRow('Saldo Dompet', formatRupiah(u.balance))}
+          ${detailRow('Total Top Up', formatRupiah(u.topup_total))}
+          ${detailRow('Proyek', `${u.projects_count || 0} proyek`)}
+          ${detailRow('Terdaftar', fmtDate(u.created_at) || '—')}
+          ${detailRow('Terakhir Aktif', timeAgo(u.last_activity))}
+          ${u.status === 'suspended' && u.suspend_reason ? detailRow('Alasan Suspend', esc(u.suspend_reason)) : ''}
+        </div>
+        <div class="p-3 border-t border-gray-100 dark:border-[#1c1c1c] flex flex-wrap items-center justify-center gap-1.5 bg-gray-50/60 dark:bg-[#0d0d0d]">
+          ${actBtn('adjust_balance', 'wallet', 'Saldo', false)}
+          ${u.status === 'suspended'
+            ? actBtn('unsuspend', 'play', 'Aktifkan', true)
+            : (u.status === 'deleted' ? '' : actBtn('suspend', 'pause', 'Suspend', true))}
+          ${u.status === 'deleted' ? '' : actBtn('delete', 'trash-2', 'Hapus', true)}
+        </div>`;
+      if (window.lucide) lucide.createIcons();
+    }
+    function openUserPopover(userId, anchor) {
+      const u = findUser(userId);
+      if (!u) return;
+      openUserId = userId;
+      renderUserPopover(u);
+      const pop = document.getElementById('user-popover');
+      positionPopover(pop, anchor);
+      activePopover = { el: pop, anchor: anchor };
+      if (window.lucide) lucide.createIcons();
+    }
+
     // ==== Modal & aksi ====
     function findUser(id) { return allUsers.find(u => u.id === Number(id)); }
 
-    function askConfirm(action, userId) {
+    function askConfirm(action, userId, anchorEl) {
       const u = findUser(userId);
       if (!u) return;
       pendingAction = { action, user: u };
+      closeActivePopover(); // tutup popover detail user bila terbuka
       const isSuspend = action === 'suspend';
       const isDelete = action === 'delete';
       const isBalance = action === 'adjust_balance';
@@ -388,12 +472,22 @@
         reasonWrap.classList.add('hidden');
       }
       document.getElementById('confirm-cta-text').textContent = isSuspend ? 'Suspend sekarang' : isDelete ? 'Ya, hapus' : isBalance ? 'Simpan saldo' : 'Ya, aktifkan';
-      document.getElementById('confirm-modal').classList.remove('hidden');
+      const pop = document.getElementById('confirm-modal');
+      const anchor = (anchorEl && anchorEl.getBoundingClientRect) ? anchorEl : document.getElementById('user-card-' + u.id);
+      if (anchor) {
+        positionPopover(pop, anchor);
+        activePopover = { el: pop, anchor: anchor };
+      } else {
+        pop.classList.remove('hidden'); // tanpa anchor: tengah layar atas
+        pop.style.top = '72px';
+        pop.style.left = Math.max(8, (window.innerWidth - pop.offsetWidth) / 2) + 'px';
+      }
       if (window.lucide) lucide.createIcons();
     }
 
     function closeConfirmModal() {
       document.getElementById('confirm-modal').classList.add('hidden');
+      if (activePopover && activePopover.el.id === 'confirm-modal') activePopover = null;
       pendingAction = null;
     }
 
@@ -442,8 +536,6 @@
     }
 
     document.getElementById('confirm-cta').addEventListener('click', executePendingAction);
-    document.getElementById('confirm-modal').addEventListener('click', (e) => { if (e.target.id === 'confirm-modal') closeConfirmModal(); });
-
     document.addEventListener('DOMContentLoaded', async () => {
       const ok = await checkAdminPing();
       if (!ok) return;

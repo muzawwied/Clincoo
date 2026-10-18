@@ -479,6 +479,21 @@ async function handleGetUsers(db) {
     }
   } catch (e) {}
 
+  // [18 Okt 2026, arahan pemilik] Kredit AI per user (saldo paket aktif, sumber: ai_packs —
+  // rumus sama dengan /api/kredit). Untuk detail user real-time di panel admin.
+  const aiCreditsMap = new Map();
+  const now = new Date();
+  try {
+    const rows = await db.prepare("SELECT user_key, credits_left, expires_at FROM ai_packs WHERE credits_left > 0").all();
+    for (const r of rows.results || []) {
+      const m = /^u(\d+)$/.exec(r.user_key || '');
+      if (!m) continue;
+      if (r.expires_at && new Date(r.expires_at) <= now) continue;
+      const uid = parseInt(m[1], 10);
+      aiCreditsMap.set(uid, Math.round(((aiCreditsMap.get(uid) || 0) + parseFloat(r.credits_left || 0)) * 100) / 100);
+    }
+  } catch (e) {}
+
   const users = rawUsers.map(u => ({
     id: u.id,
     name: u.name || '',
@@ -492,7 +507,8 @@ async function handleGetUsers(db) {
     balance: balanceMap.get(u.id) || 0,
     projects_count: projectsCountMap.get(u.id) || 0,
     last_activity: lastActivityMap.get(u.id) || null,
-    topup_total: topupTotalMap.get(u.id) || 0
+    topup_total: topupTotalMap.get(u.id) || 0,
+    ai_credits: aiCreditsMap.get(u.id) || 0
   }));
 
   return json({ success: true, users });
