@@ -810,7 +810,7 @@
                     <div id="ai-mode-menu" class="absolute bottom-full right-0 mb-2 w-44 bg-white text-gray-800 border border-gray-100 rounded-lg shadow-xl p-1 flex flex-col gap-0.5 opacity-0 invisible translate-y-2 pointer-events-none transition-all duration-300 z-50 origin-bottom-right">
                         <button type="button" onclick="applyAiMode('chat')" class="w-full flex items-center px-3 py-1.5 hover:bg-gray-50 rounded-md transition-colors text-sm font-medium text-left cursor-pointer">Chat</button>
                         <!-- [18 Okt 2026, arahan pemilik] Mode Build ditutup sementara: tombol jadi placeholder non-aktif -->
-                        <button type="button" onclick="aiBuildDevNotice()" class="w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-left text-gray-400 cursor-not-allowed" title="Sedang dalam pengembangan"><span>Build</span><span class="text-[10px] font-semibold text-gray-400">Segera</span></button>
+                        <button type="button" disabled class="w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-left text-gray-400 cursor-not-allowed" title="Sedang dalam pengembangan"><span>Build</span><span class="text-[10px] font-semibold text-gray-400">Segera</span></button>
                     </div>
                 </div>
                                 <button id="submit-prompt-btn" class="w-10 h-10 bg-accent text-white rounded-full hover:bg-accent-hover transition-all duration-200 active:scale-90 flex items-center justify-center cursor-pointer shadow-sm hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20">
@@ -1628,7 +1628,7 @@
             if (!e.target.closest('#ai-mode-btn') && !e.target.closest('#ai-mode-menu')) setOpen(false);
           });
           window.applyAiMode = function (id) {
-            if (id === 'build') { window.aiBuildDevNotice(); return; } // [18 Okt 2026, arahan pemilik] Build sementara ditutup
+            if (id === 'build') return; // [18 Okt 2026, arahan pemilik] Build sementara ditutup — cukup label "Segera", tanpa pop-up
             choice = 'chat';
             try { localStorage.setItem(KEY, 'chat'); } catch (e0) {}
             apply();
@@ -2373,7 +2373,7 @@
     window.applyAiMode = function(id){
       // [18 Okt 2026, arahan pemilik] Mode Build sementara ditutup — blokir
       // SEBELUM gerbang premium; cukup pesan "sedang dikembangkan".
-      if (id === 'build') { if (window.aiBuildDevNotice) window.aiBuildDevNotice(); return; }
+      if (id === 'build') return; // [18 Okt] Build sementara ditutup — tanpa pop-up
       try {
         var plan = window.clincooUserPlan || 'Starter';
         if (id === 'build' && plan === 'Starter') { showBuildGate(); return; }

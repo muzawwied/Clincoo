@@ -934,7 +934,7 @@
                     <div id="ai-mode-menu" class="absolute bottom-full right-0 mb-2 w-44 bg-white text-gray-800 border border-gray-100 rounded-lg shadow-xl p-1 flex flex-col gap-0.5 opacity-0 invisible translate-y-2 pointer-events-none transition-all duration-300 z-50 origin-bottom-right">
                         <button type="button" onclick="applyAiMode('chat')" class="w-full flex items-center px-3 py-1.5 hover:bg-gray-50 rounded-md transition-colors text-sm font-medium text-left cursor-pointer">Chat</button>
                         <!-- [18 Okt 2026, arahan pemilik] Mode Build ditutup sementara: tombol jadi placeholder non-aktif -->
-                        <button type="button" onclick="aiBuildDevNotice()" class="w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-left text-gray-400 cursor-not-allowed" title="Sedang dalam pengembangan"><span>Build</span><span class="text-[10px] font-semibold text-gray-400">Segera</span></button>
+                        <button type="button" disabled class="w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-left text-gray-400 cursor-not-allowed" title="Sedang dalam pengembangan"><span>Build</span><span class="text-[10px] font-semibold text-gray-400">Segera</span></button>
                     </div>
                 </div>
                                 <button id="submit-prompt-btn" class="w-10 h-10 bg-black text-white rounded-full hover:bg-gray-800 transition-all duration-200 active:scale-90 flex items-center justify-center cursor-pointer shadow-sm hover:shadow-md shrink-0">
@@ -3839,76 +3839,6 @@
         // ===== [7 Okt 2026] KAPSUL MODE AI (Chat / Build) — pola sama dengan labs =====
         // Build = model berbayar via ModelRouter (backend routes body.mode='build');
         // default 'chat' = perilaku lama (gratis). Pilihan tersimpan di localStorage.
-        // [18 Okt 2026, arahan pemilik] Mode Build ditutup sementara — pesan
-        // pengganti yang rapi saat user mencoba memilih Mode Build.
-        window.aiBuildDevNotice = function (msg) {
-          var el = document.getElementById('ai-build-dev-notice');
-          if (el) el.remove();
-          el = document.createElement('div');
-          el.id = 'ai-build-dev-notice';
-          var dark = document.body.classList.contains('dark-mode');
-          el.style.cssText = 'position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:9999;display:flex;align-items:center;gap:8px;max-width:92vw;padding:10px 16px;border-radius:14px;background:' + (dark ? '#1c1c1e' : '#111827') + ';color:' + (dark ? '#f3f4f6' : '#ffffff') + ';font-size:13px;font-weight:600;line-height:1.4;box-shadow:0 10px 30px rgba(0,0,0,.3);opacity:0;transition:opacity .25s ease;font-family:inherit;text-align:center;';
-          el.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.3 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0z"/></svg><span>' + (msg || 'Mode Build sedang dalam pengembangan. Sementara ini gunakan Mode Chat ya.') + '</span>';
-          document.body.appendChild(el);
-          requestAnimationFrame(function () { el.style.opacity = '1'; });
-          setTimeout(function () { el.style.opacity = '0'; setTimeout(function () { if (el.parentNode) el.remove(); }, 300); }, 3400);
-        };
-        window.AI_MODE_CHOICE = (function () {
-          const KEY = 'clincoo_ai_mode';
-          // [18 Okt 2026, arahan pemilik] Mode Build DINONAKTIFKAN sementara —
-          // pilihan 'build' yang tersimpan dihapus, semua sesi dipaksa Mode Chat.
-          let choice = 'chat';
-          try { localStorage.removeItem(KEY); } catch (e0) {}
-          if (choice !== 'build') choice = 'chat';
-          const mBtn = document.getElementById('ai-mode-btn');
-          const mMenu = document.getElementById('ai-mode-menu');
-          if (!mBtn || !mMenu) return { get mode() { return choice; } }; // popover mode dihapus dari input chat (7 Okt 2026) — TETAP kembalikan objek, kalau tidak selectedAiMode() melempar TypeError (reading 'mode') & semua kirim chat gagal
-          const mLabel = document.getElementById('ai-mode-label');
-          const isOpen = function () { return mMenu.classList.contains('visible'); };
-          const setOpen = function (open) {
-            if (open) { mMenu.classList.remove('opacity-0', 'invisible', 'translate-y-2', 'pointer-events-none'); mMenu.classList.add('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto'); }
-            else { mMenu.classList.add('opacity-0', 'invisible', 'translate-y-2', 'pointer-events-none'); mMenu.classList.remove('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto'); }
-            const caret = document.getElementById('ai-mode-caret');
-            if (caret) caret.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
-          };
-          const apply = function () {
-            mLabel.textContent = choice === 'build' ? 'Build' : 'Chat';
-            mBtn.setAttribute('aria-expanded', isOpen() ? 'true' : 'false');
-          };
-          apply();
-          mBtn.addEventListener('click', function (e) { e.stopPropagation(); setOpen(!isOpen()); apply(); });
-          document.addEventListener('click', function (e) {
-            if (!e.target.closest('#ai-mode-btn') && !e.target.closest('#ai-mode-menu')) setOpen(false);
-          });
-          window.applyAiMode = function (id) {
-            if (id === 'build') { window.aiBuildDevNotice(); return; } // [18 Okt 2026, arahan pemilik] Build sementara ditutup
-            choice = 'chat';
-            try { localStorage.setItem(KEY, 'chat'); } catch (e0) {}
-            apply();
-            setOpen(false);
-          };
-          return { get mode() { return choice; } };
-        })();
-        window.selectedAiMode = function () { try { return (window.AI_MODE_CHOICE && window.AI_MODE_CHOICE.mode) || 'chat'; } catch (e) { return 'chat'; } };
-        // [10 Okt, laporan owner: AI deploy 4x padahal 200 OK, bikin logo/nama baru
-        // berulang, terlalu banyak read] FAKTA SESI KERJA — dicatat dari hasil tool
-        // NYATA dan ditempel ke system prompt tiap request, jadi model tidak "lupa"
-        // pekerjaan yang sudah sukses (riwayat tool lama bisa terpangkas kompak).
-        window.AI_WORK_STATE = window.AI_WORK_STATE || { appName: '', logoDone: false, deployOk: false, deployUrl: '', deploys: 0, writes: 0, writesAtDeploy: 0, reads: 0 };
-        window.workStateText = function () {
-            const w = window.AI_WORK_STATE;
-            const parts = [];
-            parts.push('nama app: ' + (w.appName ? ('SUDAH "' + w.appName + '" — JANGAN pasang/diulang') : 'belum ada'));
-            parts.push('logo app: ' + (w.logoDone ? 'SUDAH dibuat & dipasang — JANGAN generate logo baru' : 'belum ada'));
-            parts.push('deploy: ' + (w.deployOk ? ('SUKSES 200 OK, URL ' + w.deployUrl + ' — JANGAN deploy ulang selama tidak ada file baru setelahnya') : 'belum — JANGAN deploy atas inisiatif sendiri; selesaikan file, arahkan user ke Live preview, tanya dulu, baru deploy setelah user setuju'));
-            parts.push('file tertulis: ' + w.writes + '; tool baca (list/read/search): ' + w.reads + ' (jaga rendah — jangan baca yang sudah kamu tulis)');
-            return parts.join('; ');
-        };
-        // Model premium Sol Pro (gpt-6.1-sol-pro) tanpa tombol UI: frontend selalu
-        // kirim premium:true ke /api/chat (server hanya pakai utk user login & tanpa
-        // gambar; tamu/bergambar otomatis jatuh ke model biasa). Set false utk balik normal.
-        const AI_PREMIUM_MODEL = true; // backend AI Clincoo (kuota 25/hari user gratis, 500/hari admin)
-
         // Token login Clincoo dipakai tools API (github_request, cloudflare_request,
         // test_secret). Sebelumnya hanya ada di IIFE bawah file (script block lain),
         // sehingga tool GitHub melempar ReferenceError: clincooAuthToken is not defined.
@@ -8718,7 +8648,7 @@ function crownAction(e){
       if (!window.applyAiMode) { if (++tries < 60) setTimeout(wrap, 300); return; }
       var orig = window.applyAiMode;
       window.applyAiMode = function(id){
-        if (id === 'build') { if (window.aiBuildDevNotice) window.aiBuildDevNotice(); return; } // [18 Okt 2026, arahan pemilik] Mode Build sementara ditutup
+        if (id === 'build') return; // [18 Okt 2026, arahan pemilik] Mode Build sementara ditutup — tanpa pop-up
         if (id === 'build' && window.clincooUserPlan === 'Starter') { gateStarter(); return; } // diblokir, gate tampil
         return orig.apply(this, arguments);
       };
