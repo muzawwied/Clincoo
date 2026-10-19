@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../js/auth-client.js?v=2"></script>
+  <script src="../../js/accent-init.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="../../manifest.json">
+  <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.png">
+  <title>Clincoo - Buat Proyek</title>
+  <meta name="description" content="Buat proyek baru di Clincoo — panduan 3 langkah sampai proyekmu aktif.">
+  <meta property="og:title" content="Clincoo - Buat Proyek">
+  <meta property="og:description" content="Buat proyek baru di Clincoo — panduan 3 langkah sampai proyekmu aktif.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Clincoo">
+  <meta property="og:url" content="https://app.clincoo.buzz/proyek/baru/">
+  <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Clincoo">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <script src="https://unpkg.com/lucide@1.41.0"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    html, body { scrollbar-width: none; -ms-overflow-style: none; }
+    html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+    body { font-family: 'Inter', sans-serif; background-color: #ffffff; transition: background-color 0.3s ease, color 0.3s ease; }
+    :root { --accent-color: #000000; --accent-hover: #1f2937; }
+    .bg-accent { background-color: var(--accent-color) !important; }
+    .text-accent { color: var(--accent-color) !important; }
+    .border-accent { border-color: var(--accent-color) !important; }
+    body.dark-mode { background-color: #000000; color: #ffffff; }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode .bg-gray-50 { background-color: #141414 !important; }
+    body.dark-mode .bg-gray-100 { background-color: #1a1a1a !important; }
+    body.dark-mode .border-gray-100, body.dark-mode .border-gray-200, body.dark-mode .border-gray-300 { border-color: #222222 !important; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #f0f0f0 !important; }
+    body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 { color: #888888 !important; }
+    body.dark-mode .text-gray-400, body.dark-mode .text-gray-300 { color: #666666 !important; }
+    body.dark-mode .bg-accent { background-color: #ffffff !important; color: #000000 !important; }
+    body.dark-mode .bg-accent.text-white { color: #000000 !important; }
+    body.dark-mode .bg-accent.text-white svg { color: #000000 !important; stroke: #000000 !important; }
+    body.dark-mode button[onclick="goBack()"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
+    body.dark-mode button[onclick="goBack()"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
+    body.dark-mode button[onclick="goBack()"] svg { color: #ffffff !important; stroke: #ffffff !important; }
+    * { -webkit-tap-highlight-color: transparent; }
+    @keyframes popIn { from { opacity: 0; transform: translate(-50%, 8px) scale(.97); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+    #notice-pop.pop { animation: popIn .22s ease-out; }
+    .starter-card { transition: all .18s ease; }
+    .starter-card.active { border-color: var(--accent-color) !important; background-color: rgba(0,0,0,0.03); }
+    body.dark-mode .starter-card.active { background-color: #141414 !important; border-color: #ffffff !important; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col text-gray-900 pt-20">
+
+<button onclick="goBack()" class="fixed top-3 left-3 w-10 h-10 flex items-center justify-center rounded-full bg-white backdrop-blur border border-gray-100 shadow-sm hover:bg-gray-50 transition-all cursor-pointer text-gray-700 hover:text-black z-50" aria-label="Kembali">
+  <i data-lucide="arrow-left" class="w-5 h-5"></i>
+</button>
+
+<!-- Notice popover (bukan alert browser / modal) -->
+<div id="notice-pop" class="hidden fixed z-[60] top-20 left-1/2 -translate-x-1/2 w-[min(20rem,calc(100vw-1.5rem))] bg-white dark:bg-[#121212] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl px-4 py-3.5 flex items-center gap-2.5">
+  <i data-lucide="info" class="w-5 h-5 text-amber-500 shrink-0"></i>
+  <p id="notice-msg" class="text-[13px] font-medium text-gray-700 dark:text-gray-200 leading-snug"></p>
+</div>
+
+<main class="flex-1 w-full max-w-xl mx-auto pb-16 flex-col justify-start relative">
+
+  <div class="flex flex-col px-5 pb-2">
+    <h2 class="text-[24px] font-extrabold text-gray-900 tracking-tight">Buat Proyek Baru</h2>
+    <p class="text-[14px] text-gray-500 font-medium mt-0.5">Tiga langkah singkat — langsung diarahkan sampai proyekmu aktif.</p>
+  </div>
+
+  <!-- Kapsul langkah -->
+  <div class="flex items-center justify-center gap-1.5 mt-5 px-5">
+    <span id="pill-1" data-active="1" class="step-pill inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-bold bg-accent text-white transition-all">
+      <span class="w-4 h-4 rounded-full bg-white/25 flex items-center justify-center text-[10px]">1</span>Tujuan
+    </span>
+    <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-gray-300"></i>
+    <span id="pill-2" data-active="0" class="step-pill inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-bold bg-gray-100 text-gray-500 transition-all">
+      <span class="w-4 h-4 rounded-full bg-gray-300/50 flex items-center justify-center text-[10px]">2</span>Detail
+    </span>
+    <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-gray-300"></i>
+    <span id="pill-3" data-active="0" class="step-pill inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-bold bg-gray-100 text-gray-500 transition-all">
+      <span class="w-4 h-4 rounded-full bg-gray-300/50 flex items-center justify-center text-[10px]">3</span>Buat
+    </span>
+  </div>
+
+  <!-- LANGKAH 1: pilih tujuan -->
+  <section id="sec-1" class="px-5 mt-7">
+    <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Langkah 1 · Untuk apa proyekmu?</span>
+    <div id="starter-grid" class="grid grid-cols-2 gap-2.5 mt-3"></div>
+  </section>
+
+  <!-- LANGKAH 2: nama & prompt awal -->
+  <section id="sec-2" class="px-5 mt-7">
+    <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Langkah 2 · Detail proyek</span>
+    <input id="inp-name" type="text" maxlength="60" placeholder="Nama proyek (mis. Toko Kopi Kita)"
+      class="w-full mt-3 px-4 py-3 text-sm font-semibold rounded-full border border-gray-200 bg-gray-50 focus:outline-none focus:border-gray-900 dark:focus:border-white transition-colors">
+    <textarea id="inp-prompt" rows="3" maxlength="600" placeholder="Tulis prompt awal — apa yang mau kamu kerjakan di proyek ini?"
+      class="w-full mt-2.5 px-4 py-3.5 text-sm rounded-2xl border border-gray-200 bg-gray-50 focus:outline-none focus:border-gray-900 dark:focus:border-white transition-colors resize-none leading-relaxed"></textarea>
+    <p class="text-[12px] text-gray-400 font-medium mt-1.5">Prompt sudah terisi otomatis dari pilihanmu — bebas kamu ubah.</p>
+  </section>
+
+  <!-- LANGKAH 3: buat -->
+  <section id="sec-3" class="px-5 mt-7">
+    <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Langkah 3 · Siapkan</span>
+    <button onclick="createProject()" class="mt-3 w-full py-3.5 rounded-full bg-accent text-white text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
+      <i data-lucide="rocket" class="w-4 h-4"></i>Buat Proyek &amp; Masuk Chat
+    </button>
+    <p class="text-[12px] text-gray-400 font-medium mt-2 text-center">Proyek langsung terbuka di chat AI-mu — tinggal lanjut kerjakan.</p>
+  </section>
+
+</main>
+
+<script>
+  // Tombol kembali cerdas: datang dari halaman aplikasi -> history.back(),
+  // dibuka langsung/deep-link -> ke beranda Clincoo.
+  function goBack() {
+    try {
+      var sameOrigin = document.referrer && new URL(document.referrer).origin === location.origin;
+      if (sameOrigin && history.length > 1) { window.history.back(); return; }
+    } catch (e) {}
+    location.replace('../../');
+  }
+
+  // ==== Notice popover (pengganti alert browser) ====
+  var _noticeTimer = null;
+  function notice(msg) {
+    var pop = document.getElementById('notice-pop');
+    document.getElementById('notice-msg').textContent = msg;
+    pop.classList.remove('hidden');
+    pop.classList.remove('pop'); void pop.offsetWidth; pop.classList.add('pop');
+    if (_noticeTimer) clearTimeout(_noticeTimer);
+    _noticeTimer = setTimeout(function () { pop.classList.add('hidden'); }, 3500);
+  }
+  document.addEventListener('click', function (e) {
+    var pop = document.getElementById('notice-pop');
+    if (pop && !pop.classList.contains('hidden') && !pop.contains(e.target)) pop.classList.add('hidden');
+  });
+
+  // ==== Data pilihan tujuan (Mode Build belum tersedia — pilihan mengarah ke kerja
+  // chat AI, bukan janji "AI bikin web") ====
+  var STARTERS = [
+    { id: 'asisten', icon: 'sparkles', label: 'Asisten Harian', desc: 'Atur ide & tugas harian', prompt: 'Jadi asisten pribadiku. Bantu aku menyusun rencana harian dan ingatkan prioritas utamaku hari ini.' },
+    { id: 'riset',   icon: 'file-text', label: 'Riset & Naskah', desc: 'Riset dan tulis topik apa pun', prompt: 'Bantu aku meriset dan menulis topik ini: ' },
+    { id: 'belajar', icon: 'book-open', label: 'Belajar Hal Baru', desc: 'Diajari bertahap, bahasa santai', prompt: 'Ajarin aku tentang ' },
+    { id: 'usaha',   icon: 'store', label: 'Konsultasi Usaha', desc: 'Analisis & ide pemasaran', prompt: 'Aku punya usaha kecil. Bantu analisis kondisiku dan kasih ide pemasaran yang realistis untuk dijalankan sendiri.' },
+    { id: 'awal',    icon: 'pencil', label: 'Mulai dari Awal', desc: 'Tulis prompt sendiri', prompt: '' }
+  ];
+  var selectedStarter = null;
+
+  function renderStarters() {
+    var grid = document.getElementById('starter-grid');
+    grid.innerHTML = STARTERS.map(function (s) {
+      return '<button type="button" onclick="chooseStarter(\'' + s.id + '\')" data-id="' + s.id + '" ' +
+        'class="starter-card text-left px-3.5 py-3.5 rounded-2xl border border-gray-200 hover:border-gray-300 active:scale-[0.98] transition-all cursor-pointer">' +
+        '<i data-lucide="' + s.icon + '" class="w-5 h-5 text-gray-700 dark:text-gray-200"></i>' +
+        '<p class="text-[13.5px] font-bold text-gray-900 mt-2 leading-tight">' + s.label + '</p>' +
+        '<p class="text-[11.5px] text-gray-500 font-medium mt-0.5 leading-snug">' + s.desc + '</p>' +
+        '</button>';
+    }).join('');
+    if (window.lucide) lucide.createIcons();
+  }
+
+  function setPills(active) {
+    [1, 2, 3].forEach(function (n) {
+      var el = document.getElementById('pill-' + n);
+      var on = n <= active;
+      if (on) { el.className = 'step-pill inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-bold bg-accent text-white transition-all'; }
+      else { el.className = 'step-pill inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-bold bg-gray-100 text-gray-500 transition-all'; }
+    });
+  }
+
+  function chooseStarter(id) {
+    selectedStarter = id;
+    var cards = document.querySelectorAll('.starter-card');
+    for (var i = 0; i < cards.length; i++) cards[i].classList.toggle('active', cards[i].getAttribute('data-id') === id);
+    var s = null;
+    for (var j = 0; j < STARTERS.length; j++) if (STARTERS[j].id === id) s = STARTERS[j];
+    if (s && s.prompt) document.getElementById('inp-prompt').value = s.prompt;
+    if (id === 'awal') { document.getElementById('inp-prompt').value = ''; document.getElementById('inp-prompt').focus(); }
+    // Langkah 1 selesai -> sorot langkah 2 & scroll halus ke detail
+    setPills(2);
+    document.getElementById('sec-2').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  var nameInput = document.getElementById('inp-name');
+  var promptInput = document.getElementById('inp-prompt');
+  promptInput.addEventListener('input', function () { if (promptInput.value.trim()) setPills(3); });
+  nameInput.addEventListener('input', function () { if (nameInput.value.trim() && promptInput.value.trim()) setPills(3); });
+
+  // ==== Buat proyek: alur sama persis dengan homepage (processPromptSubmission) ====
+  var PROJECTS_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/projects';
+
+  function createProject() {
+    var name = nameInput.value.trim();
+    var prompt = promptInput.value.trim();
+    if (!prompt && !name) { notice('Pilih tujuan proyek atau tulis prompt dulu ya.'); return; }
+    if (!prompt) prompt = 'Mulai proyek "' + name + '". Tunjukkan apa saja yang bisa kamu bantu.';
+
+    // Bersihkan data handover lama (persis homepage)
+    try {
+      localStorage.removeItem('clincoo_current_chat_msg');
+      localStorage.removeItem('clincoo_current_project_id');
+      localStorage.removeItem('clincoo_current_attachments');
+    } catch (e) {}
+
+    var projectId = 'proj_' + Date.now();
+    var title = name;
+    if (!title) {
+      var parts = prompt.split(' ');
+      title = parts.slice(0, 4).join(' ');
+      if (parts.length > 4) title += '...';
+    }
+
+    var projects = [];
+    try {
+      var stored = localStorage.getItem('clincoo_projects');
+      if (stored) projects = JSON.parse(stored);
+    } catch (e) {}
+    projects.unshift({ id: projectId, title: title, prompt: prompt, updatedAt: new Date().toISOString() });
+
+    try {
+      localStorage.setItem('clincoo_projects', JSON.stringify(projects));
+      // Kirim SEKARANG dengan keepalive:true — request tetap hidup melewati
+      // navigasi halaman (perbaikan sama dengan homepage, 13 Okt).
+      fetch(PROJECTS_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify({ action: 'replace_all', projects: projects })
+      }).catch(function () {});
+      localStorage.setItem('clincoo_current_chat_msg', prompt);
+      localStorage.setItem('clincoo_current_project_id', projectId);
+    } catch (e) {}
+    window.location.href = '../chat/?id=' + projectId;
+  }
+
+  renderStarters();
+  setPills(1);
+  if (window.lucide) lucide.createIcons();
+</script>
+</body>
+</html>

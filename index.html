@@ -1849,14 +1849,14 @@
 
             if (homeList) {
                 if (projects.length === 0) {
-                    homeList.innerHTML = '<p class="text-sm text-gray-400 py-8 text-center w-full">Belum ada proyek. Buat proyek baru untuk memulai!</p>';
+                    homeList.innerHTML = '<a href="proyek/baru/" class="block text-center py-8 text-sm text-gray-400">Belum ada proyek. <span class="font-semibold text-gray-700 dark:text-gray-200 underline underline-offset-2">Buat proyek baru dengan panduan &rarr;</span></a>';
                 } else {
                     homeList.innerHTML = projects.slice(0, 6).map(createHomeCard).join('');
                 }
             }
             if (allList) {
                 if (projects.length === 0) {
-                    allList.innerHTML = '<p class="text-sm text-gray-400 py-8 text-center w-full">Belum ada proyek. Buat proyek baru untuk memulai!</p>';
+                    allList.innerHTML = '<a href="proyek/baru/" class="block text-center py-8 text-sm text-gray-400">Belum ada proyek. <span class="font-semibold text-gray-700 dark:text-gray-200 underline underline-offset-2">Buat proyek baru dengan panduan &rarr;</span></a>';
                 } else {
                     allList.innerHTML = projects.map(createAllCard).join('');
                 }
