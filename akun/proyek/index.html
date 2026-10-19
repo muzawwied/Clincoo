@@ -42,6 +42,8 @@
         .bg-accent { background-color: var(--accent-color) !important; }
         .text-accent { color: var(--accent-color) !important; }
         .hover\:bg-accent-hover:hover { background-color: var(--accent-hover) !important; }
+        body.dark-mode .bg-accent { background-color: #ffffff !important; color: #000000 !important; }
+        body.dark-mode .bg-accent svg { color: #000000 !important; stroke: #000000 !important; }
         body.dark-mode { background-color: #000000; color: #ffffff; }
         body.dark-mode .bg-white { background-color: #0a0a0a !important; }
         body.dark-mode .text-gray-900, body.dark-mode .text-gray-800 { color: #ffffff !important; }
@@ -89,9 +91,15 @@
     </header>
     <!-- Content -->
     <main class="max-w-3xl mx-auto px-5 pt-6 pb-10">
-        <div class="mb-4">
-            <h2 class="text-lg font-bold text-gray-900 tracking-tight">Semua proyek</h2>
-            <p class="text-sm text-gray-500">Kelola dan pantau seluruh proyek yang sedang Anda kerjakan.</p>
+        <!-- [19 Okt 2026, arahan pemilik] CTA capsule buat proyek baru via halaman panduan /proyek/baru/ -->
+        <div class="mb-4 flex items-start justify-between gap-3">
+            <div>
+                <h2 class="text-lg font-bold text-gray-900 tracking-tight">Semua proyek</h2>
+                <p class="text-sm text-gray-500">Kelola dan pantau seluruh proyek yang sedang Anda kerjakan.</p>
+            </div>
+            <a href="../../proyek/baru/" class="shrink-0 inline-flex items-center gap-1.5 bg-accent text-white text-[12px] font-bold rounded-full px-4 py-2.5 mt-1 active:scale-[0.98] transition-all">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>Buat Proyek Baru
+            </a>
         </div>
         <div id="all-projects-list" class="flex flex-col gap-4"></div>
     </main>
