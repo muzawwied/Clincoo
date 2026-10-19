@@ -339,16 +339,17 @@
         </div>
     </div>
 
-    <div id="system-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal()"></div>
-        <div class="bg-white dark:bg-[#121212] rounded-xl p-5 md:p-6 w-full max-w-sm relative z-10 shadow-xl border border-gray-100 dark:border-gray-800 animate-fade-in text-center">
+    <!-- [18 Okt 2026, arahan pemilik] pop-up -> popover: dialog info tanpa backdrop gelap -->
+    <div id="system-modal" class="hidden fixed z-50 w-[min(20rem,calc(100vw-1.5rem))]" style="top:84px;left:50%;transform:translateX(-50%)">
+        <div class="bg-white dark:bg-[#121212] rounded-2xl p-5 md:p-6 w-full relative shadow-2xl border border-gray-200 dark:border-gray-800 animate-fade-in text-center">
             <div id="modal-icon-wrap" class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 mx-auto">
                 <i data-lucide="check-circle" class="w-6 h-6"></i>
             </div>
             <h3 id="modal-title" class="text-base md:text-lg font-bold text-gray-900 dark:text-white mb-2"></h3>
             <p id="modal-message" class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed"></p>
-            <button onclick="closeModal()" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-lg font-semibold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors shadow-sm active:scale-95">Tutup</button>
+            <button onclick="closeModal()" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-full font-semibold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors shadow-sm active:scale-95">Tutup</button>
         </div>
+    </div>
 
     <script>
         // Library render QR dari string QRIS (ringan, tanpa dependency)
@@ -772,7 +773,23 @@
 
         function formatNumberOnly(num) { return Number(num).toLocaleString('id-ID'); }
 
-        function showModal(title, message, isError) {
+        // [18 Okt 2026, arahan pemilik] pop-up -> popover
+        function positionPopover(pop, anchor) {
+            pop.classList.remove('hidden');
+            const r = anchor.getBoundingClientRect();
+            const pw = pop.offsetWidth, ph = pop.offsetHeight;
+            const vw = window.innerWidth, vh = window.innerHeight, m = 8;
+            let top = r.bottom + m;
+            if (top + ph > vh - m) top = Math.max(m, r.top - ph - m);
+            let left = r.left + (r.width / 2) - (pw / 2);
+            left = Math.min(Math.max(m, left), Math.max(m, vw - pw - m));
+            pop.style.top = top + 'px';
+            pop.style.left = left + 'px';
+            pop.style.transform = 'none';
+        }
+
+        function showModal(title, message, isError, anchor) {
+            // [18 Okt 2026, arahan pemilik] pop-up -> popover
             var iconWrap = document.getElementById('modal-icon-wrap');
             if (iconWrap) {
                 var icon = isError ? 'alert-circle' : 'check-circle';
@@ -780,19 +797,44 @@
                 iconWrap.className = 'w-12 h-12 rounded-full ' + cls + ' flex items-center justify-center mb-4 mx-auto';
                 iconWrap.innerHTML = '<i data-lucide="' + icon + '" class="w-6 h-6"></i>';
             }
-            document.getElementById('modal-title').textContent = title || '';
-            document.getElementById('modal-message').textContent = message || '';
+            var titleEl = document.getElementById('modal-title');
+            var msgEl = document.getElementById('modal-message');
+            if (titleEl) titleEl.textContent = title || '';
+            if (msgEl) msgEl.textContent = message || '';
             var modal = document.getElementById('system-modal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+            if (!modal) return;
+            if (anchor && anchor instanceof HTMLElement) {
+                positionPopover(modal, anchor);
+            } else {
+                modal.classList.remove('hidden');
+                modal.style.top = '84px';
+                modal.style.left = '50%';
+                modal.style.transform = 'translateX(-50%)';
+            }
             try { lucide.createIcons(); } catch (e) {}
         }
 
         function closeModal() {
+            // [18 Okt 2026, arahan pemilik] pop-up -> popover
             var modal = document.getElementById('system-modal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
         }
+
+        document.addEventListener('click', function(e) {
+            var modal = document.getElementById('system-modal');
+            if (modal && !modal.classList.contains('hidden') && !modal.contains(e.target)) {
+                closeModal();
+            }
+        }, true);
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
     </script>
 
     <script>/* clincoo-sw-register */

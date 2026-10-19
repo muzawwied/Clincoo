@@ -533,16 +533,18 @@
         </div>
     </div>
 
-    <div id="system-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal()"></div>
-        <div class="bg-white dark:bg-[#121212] rounded-xl p-5 md:p-6 w-full max-w-sm relative z-10 shadow-xl border border-gray-100 dark:border-gray-800 animate-fade-in text-center">
-            <div id="modal-icon-wrap" class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 mx-auto">
-                <i data-lucide="check-circle" class="w-6 h-6"></i>
-            </div>
-            <h3 id="modal-title" class="text-base md:text-lg font-bold text-gray-900 dark:text-white mb-2"></h3>
-            <p id="modal-message" class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed"></p>
-            <button onclick="closeModal()" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-lg font-semibold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors shadow-sm active:scale-95">Tutup</button>
+    <!-- // [18 Okt 2026, arahan pemilik] pop-up -> popover -->
+    <div id="system-modal" class="hidden fixed z-50 w-[min(20rem,calc(100vw-1.5rem))] bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] rounded-2xl shadow-2xl p-5 md:p-6 text-center relative" style="top:84px;left:50%;transform:translateX(-50%);">
+        <button type="button" onclick="closeModal()" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 dark:bg-[#1a1a1a] hover:bg-gray-100 dark:hover:bg-[#222] text-gray-500 dark:text-gray-400 transition-all">
+            <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+        <div id="modal-icon-wrap" class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 mx-auto">
+            <i data-lucide="check-circle" class="w-6 h-6"></i>
         </div>
+        <h3 id="modal-title" class="text-base md:text-lg font-bold text-gray-900 dark:text-white mb-2"></h3>
+        <p id="modal-message" class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed"></p>
+        <button onclick="closeModal()" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-lg font-semibold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors shadow-sm active:scale-95">Tutup</button>
+    </div>
 
     <script>
         // Library render QR dari string QRIS (ringan, tanpa dependency)
@@ -1000,7 +1002,22 @@
 
         function formatNumberOnly(num) { return Number(num).toLocaleString('id-ID'); }
 
-        function showModal(title, message, isError) {
+        // [18 Okt 2026, arahan pemilik] pop-up -> popover
+        function positionPopover(pop, anchor) {
+          pop.classList.remove('hidden');
+          const r = anchor.getBoundingClientRect();
+          const pw = pop.offsetWidth, ph = pop.offsetHeight;
+          const vw = window.innerWidth, vh = window.innerHeight, m = 8;
+          let top = r.bottom + m;
+          if (top + ph > vh - m) top = Math.max(m, r.top - ph - m);
+          let left = r.left + (r.width / 2) - (pw / 2);
+          left = Math.min(Math.max(m, left), Math.max(m, vw - pw - m));
+          pop.style.top = top + 'px';
+          pop.style.left = left + 'px';
+          pop.style.transform = 'none';
+        }
+
+        function showModal(title, message, isError, anchor) {
             var iconWrap = document.getElementById('modal-icon-wrap');
             if (iconWrap) {
                 var icon = isError ? 'alert-circle' : 'check-circle';
@@ -1011,16 +1028,38 @@
             document.getElementById('modal-title').textContent = title || '';
             document.getElementById('modal-message').textContent = message || '';
             var modal = document.getElementById('system-modal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+            var btn = (anchor && anchor.nodeType === 1) ? anchor : (anchor && anchor.currentTarget ? anchor.currentTarget : null);
+            if (btn) {
+                positionPopover(modal, btn);
+            } else {
+                modal.classList.remove('hidden');
+                modal.style.top = '84px';
+                modal.style.left = '50%';
+                modal.style.transform = 'translateX(-50%)';
+            }
             try { lucide.createIcons(); } catch (e) {}
         }
 
         function closeModal() {
             var modal = document.getElementById('system-modal');
             modal.classList.add('hidden');
-            modal.classList.remove('flex');
         }
+
+        document.addEventListener('click', function(e) {
+            var pop = document.getElementById('system-modal');
+            if (pop && !pop.classList.contains('hidden')) {
+                if (!pop.contains(e.target) && !e.target.closest('[onclick*="Modal"]') && !e.target.closest('[onclick*="showModal"]')) {
+                    pop.classList.add('hidden');
+                }
+            }
+        }, true);
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                var pop = document.getElementById('system-modal');
+                if (pop) pop.classList.add('hidden');
+            }
+        });
     </script>
 
     <script>/* clincoo-sw-register */

@@ -188,7 +188,7 @@
             <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Tinjau log sesi masuk, aktivitas terkini, atau bersihkan cache pencarian lokal.</p>
           </div>
           <div class="w-full sm:w-64 shrink-0">
-            <button onclick="openHistoryModal()" class="w-full px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm">
+            <button onclick="openHistoryModal(this)" class="w-full px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm">
               <i data-lucide="history" class="w-4 h-4"></i>
               <span>Kelola Riwayat</span>
             </button>
@@ -224,7 +224,7 @@
           <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 mb-4 leading-relaxed">
             Menghapus akun Anda secara permanen beserta seluruh proyek, preferensi, dan riwayat yang tersimpan. Tindakan ini <strong>tidak dapat dibatalkan</strong>.
           </p>
-          <button onclick="openDeleteModal()" class="px-5 py-2.5 text-sm font-semibold bg-transparant border border-red-500 hover:bg-red-700 rounded-xl transition-all cursor-pointer active:scale-95 flex items-center gap-2">
+          <button onclick="openDeleteModal(this)" class="px-5 py-2.5 text-sm font-semibold bg-transparant border border-red-500 hover:bg-red-700 rounded-xl transition-all cursor-pointer active:scale-95 flex items-center gap-2">
            
             <span>Hapus Akun</span>
           </button>
@@ -236,9 +236,9 @@
 
 
 
-  <!-- Modal: Hapus Akun -->
-  <div id="delete-modal" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300 p-4">
-    <div class="modal-card bg-white rounded-2xl p-6 w-full max-w-md border border-gray-100 shadow-2xl transform scale-95 transition-transform duration-300">
+  <!-- Modal: Hapus Akun (Popover) -->
+  <!-- [18 Okt 2026, arahan pemilik] pop-up -> popover -->
+  <div id="delete-modal" class="hidden fixed z-50 w-[min(24rem,calc(100vw-1.5rem))] bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] rounded-2xl shadow-2xl p-6" style="top:0;left:0;">
       <div id="delete-step-1">
         <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-red-600 mb-4">
           <i data-lucide="alert-octagon" class="w-6 h-6"></i>
@@ -251,7 +251,7 @@
   type="text" 
   id="delete-confirm-input" 
   placeholder="HAPUS AKUN" 
-  class="w-full px-4 py-3 text-sm rounded-xl border border-gray-300 mb-5 font-mono focus:outline-none focus:ring-0"
+  class="w-full px-4 py-3 text-sm rounded-xl border border-gray-300 dark:border-slate-700 bg-transparent mb-5 font-mono focus:outline-none focus:ring-0 text-gray-900 dark:text-white"
   oninput="validateDeleteInput()"
 />
         <div class="flex gap-3">
@@ -268,15 +268,13 @@
         <h4 class="text-base font-bold text-gray-900 dark:text-white">Menghapus data akun Anda...</h4>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Mohon tunggu sebentar.</p>
       </div>
-    </div>
   </div>
 
-  <!-- Modal: Kelola Riwayat -->
-  <div id="history-modal" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300 p-4">
-    <div class="modal-card bg-white rounded-3xl p-6 w-full max-w-lg border border-gray-100 shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col max-h-[85vh]">
+  <!-- Modal: Kelola Riwayat (Popover) -->
+  <!-- [18 Okt 2026, arahan pemilik] pop-up -> popover -->
+  <div id="history-modal" class="hidden fixed z-50 w-[min(24rem,calc(100vw-1.5rem))] bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] rounded-2xl shadow-2xl p-6 flex flex-col max-h-[80vh]" style="top:0;left:0;">
       <div class="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-slate-800">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          
           Riwayat Aktivitas
         </h3>
         <button onclick="closeHistoryModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
@@ -306,13 +304,11 @@
           <span class="text-[11px] text-gray-400">22 Agt 2026</span>
         </div>
       </div>
-      <div class="pt-4 dark:border-slate-800 flex justify-between items-center gap-3">
+      <div class="pt-4 border-t border-gray-100 dark:border-slate-800 flex justify-between items-center gap-3">
         <button onclick="clearActivityHistory()" class="px-2 py-1 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-950/30 rounded-xl transition-all cursor-pointer">
           Bersihkan Semua
         </button>
-        
       </div>
-    </div>
   </div>
 
   <script>
@@ -631,26 +627,43 @@
       return;
     }
 
-    // Delete modal
-    function openDeleteModal() {
+    // [18 Okt 2026, arahan pemilik] pop-up -> popover
+    function positionPopover(pop, anchor) {
+      pop.classList.remove('hidden');
+      if (!anchor || !(anchor instanceof HTMLElement) || typeof anchor.getBoundingClientRect !== 'function') {
+        pop.style.top = '84px';
+        pop.style.left = '50%';
+        pop.style.transform = 'translateX(-50%)';
+        return;
+      }
+      pop.style.transform = '';
+      const r = anchor.getBoundingClientRect();
+      const pw = pop.offsetWidth, ph = pop.offsetHeight;
+      const vw = window.innerWidth, vh = window.innerHeight, m = 8;
+      let top = r.bottom + m;
+      if (top + ph > vh - m) top = Math.max(m, r.top - ph - m);
+      let left = r.left + (r.width / 2) - (pw / 2);
+      left = Math.min(Math.max(m, left), Math.max(m, vw - pw - m));
+      pop.style.top = top + 'px';
+      pop.style.left = left + 'px';
+    }
+
+    // Delete modal / popover
+    let deleteTriggerBtn = null;
+    function openDeleteModal(anchor) {
+      deleteTriggerBtn = (anchor && anchor instanceof HTMLElement) ? anchor : deleteTriggerBtn;
       const modal = document.getElementById('delete-modal');
       document.getElementById('delete-confirm-input').value = '';
       validateDeleteInput();
       document.getElementById('delete-step-1').classList.remove('hidden');
       document.getElementById('delete-step-loading').classList.add('hidden');
       document.getElementById('delete-step-loading').classList.remove('flex');
-      modal.classList.remove('hidden');
-      setTimeout(() => {
-        modal.classList.remove('opacity-0');
-        modal.querySelector('.modal-card').classList.remove('scale-95');
-      }, 10);
+      positionPopover(modal, deleteTriggerBtn);
     }
 
     function closeDeleteModal() {
       const modal = document.getElementById('delete-modal');
-      modal.classList.add('opacity-0');
-      modal.querySelector('.modal-card').classList.add('scale-95');
-      setTimeout(() => modal.classList.add('hidden'), 300);
+      if (modal) modal.classList.add('hidden');
     }
 
     function validateDeleteInput() {
@@ -703,7 +716,9 @@
     }
 
     // History modal - load from D1
-    async function openHistoryModal() {
+    let historyTriggerBtn = null;
+    async function openHistoryModal(anchor) {
+      historyTriggerBtn = (anchor && anchor instanceof HTMLElement) ? anchor : historyTriggerBtn;
       const modal = document.getElementById('history-modal');
       const listEl = document.getElementById('history-list');
       
@@ -717,11 +732,7 @@
         </div>
       `;
 
-      modal.classList.remove('hidden');
-      setTimeout(() => {
-        modal.classList.remove('opacity-0');
-        modal.querySelector('.modal-card').classList.remove('scale-95');
-      }, 10);
+      positionPopover(modal, historyTriggerBtn);
 
       // Load real activity from D1
       try {
@@ -771,10 +782,31 @@
 
     function closeHistoryModal() {
       const modal = document.getElementById('history-modal');
-      modal.classList.add('opacity-0');
-      modal.querySelector('.modal-card').classList.add('scale-95');
-      setTimeout(() => modal.classList.add('hidden'), 300);
+      if (modal) modal.classList.add('hidden');
     }
+
+    // [18 Okt 2026, arahan pemilik] pop-up -> popover event listeners
+    document.addEventListener('click', (e) => {
+      const deleteModal = document.getElementById('delete-modal');
+      if (deleteModal && !deleteModal.classList.contains('hidden')) {
+        if (!deleteModal.contains(e.target) && (!deleteTriggerBtn || !deleteTriggerBtn.contains(e.target))) {
+          closeDeleteModal();
+        }
+      }
+      const historyModal = document.getElementById('history-modal');
+      if (historyModal && !historyModal.classList.contains('hidden')) {
+        if (!historyModal.contains(e.target) && (!historyTriggerBtn || !historyTriggerBtn.contains(e.target))) {
+          closeHistoryModal();
+        }
+      }
+    }, true);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeDeleteModal();
+        closeHistoryModal();
+      }
+    });
 
     // Clear activity log from D1
     function clearActivityHistory() {
