@@ -1,0 +1,33 @@
+name: Dump ai_router_logs (diagnosa)
+
+# [21 Okt] Diagnosa one-off: ambil 15 baris terakhir tabel ai_router_logs
+# dari D1 clincoo-db untuk melihat error nyata saat chat gagal.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: SELECT 15 log terakhir
+        env:
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          DB_ID: 49b6fed3-a237-46e3-ab2b-b0de31cc862b
+        run: |
+          RESP=$(curl -sS -X POST \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/d1/database/${DB_ID}/query" \
+            -H "Authorization: Bearer ${CF_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"sql": "SELECT ts, model, ms, err FROM ai_router_logs ORDER BY id DESC LIMIT 15"}')
+          echo "$RESP" | python3 -c "
+          import sys, json
+          d = json.load(sys.stdin)
+          if not d.get('success'):
+              print('D1 error:', d.get('errors')); sys.exit(1)
+          for r in (d.get('result') or [{}])[0].get('results', []):
+              print(r.get('ts'), '|', r.get('model'), '|', r.get('ms'), 'ms |', (r.get('err') or '')[:200])
+          "
