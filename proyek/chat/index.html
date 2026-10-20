@@ -838,7 +838,7 @@
                         <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>
                         Eksport zip
                     </button>
-                    <button id="header-git-sync" type="button" onclick="gitSyncOpen()" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <button id="header-git-sync" type="button" onclick="openExportModal()" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
                         <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path><path stroke-linecap="round" stroke-linejoin="round" d="M9 18c-4.51 2-5-2-7-2"></path></svg>
                         Eksport Git
                     </button>
@@ -8671,397 +8671,482 @@ function crownAction(e){
      Popup eksport git langsung di halaman workspace (proyek/chat). Satu arah:
      kirim semua file workspace ke repo GitHub. File yang isinya identik tidak
      dikirim ulang (dicek via SHA blob Git). -->
-<div id="gitsync-modal" class="hidden fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-  <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl max-h-[92vh] overflow-y-auto">
-    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-      <div class="flex items-center gap-2.5">
-        <span class="w-9 h-9 rounded-xl bg-gray-900 flex items-center justify-center shrink-0"><svg class="w-[18px] h-[18px] text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path><path stroke-linecap="round" stroke-linejoin="round" d="M9 18c-4.51 2-5-2-7-2"></path></svg></span>
-        <div>
-          <h3 class="text-sm font-bold text-gray-900">Eksport ke Git</h3>
-          <p class="text-[11px] text-gray-400">Kirim semua file workspace ke GitHub</p>
+<div id="export-modal" class="hidden fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+  <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl flex flex-col max-h-[88vh]">
+    <style>.eg-pill{transition:all .2s}.eg-pill.on{background:#0f1115;color:#fff;border-color:#0f1115}</style>
+    <div class="px-6 pt-6 pb-5 flex-shrink-0">
+      <div class="flex items-start justify-between mb-4">
+        <div class="pr-8">
+          <h3 class="text-lg font-bold text-gray-900 leading-tight flex items-center gap-1.5">Eksport ke Git</h3>
+          <p class="text-[12.5px] text-gray-500 mt-0.5">Kirim file workspace proyek ke GitHub atau GitLab</p>
         </div>
+        <button onclick="closeExportModal()" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg></button>
       </div>
-      <button type="button" onclick="gitSyncClose()" class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+      <div class="flex gap-2">
+        <button id="eg-tab-gh" onclick="egSetPlatform('github')" class="eg-pill on flex-1 py-2.5 rounded-full border border-gray-200 text-[13px] font-semibold text-gray-700 hover:border-gray-300">GitHub</button>
+        <button id="eg-tab-gl" onclick="egSetPlatform('gitlab')" class="eg-pill flex-1 py-2.5 rounded-full border border-gray-200 text-[13px] font-semibold text-gray-700 hover:border-gray-300">GitLab</button>
+      </div>
     </div>
-
-    <div class="px-5 py-4 space-y-4">
-      <!-- Status koneksi -->
-      <div id="gs-conn-off" class="hidden rounded-xl border border-gray-100 p-4 text-center">
-        <p class="text-[13px] text-gray-600 mb-3">Hubungkan akun GitHub untuk mulai eksport.</p>
-        <button type="button" onclick="gitSyncConnect()" class="w-full py-2.5 rounded-xl bg-gray-900 text-white text-[13px] font-semibold hover:bg-gray-800 transition active:scale-[0.98]">Hubungkan GitHub</button>
-      </div>
-      <div id="gs-conn-on" class="hidden flex items-center gap-3 border border-gray-100 rounded-xl px-3.5 py-2.5">
-        <img id="gs-gh-avatar" class="h-9 w-9 rounded-full bg-gray-100" alt="">
-        <div class="min-w-0 flex-1">
-          <p id="gs-gh-name" class="text-[13px] font-semibold truncate"></p>
-          <p id="gs-gh-meta" class="text-[11px] text-gray-400 truncate"></p>
-        </div>
-        <span class="text-[11px] font-semibold text-emerald-600 shrink-0">Terhubung</span>
-      </div>
-
-      <!-- Konfigurasi repo -->
-      <div id="gs-config" class="hidden space-y-3">
-        <div>
-          <label class="block text-[12px] font-medium text-gray-600 mb-1.5">Repo GitHub <span class="text-gray-400">(owner/nama-repo)</span></label>
-          <input id="gs-repo" type="text" placeholder="contoh: muzawwied/nama-situs" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-[13px] focus:outline-none focus:border-gray-400">
-        </div>
-        <div class="relative">
-          <label class="block text-[12px] font-medium text-gray-600 mb-1.5">Branch</label>
-          <button id="gs-branch-btn" type="button" onclick="gitSyncToggleBranch(event)" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-[13px] flex items-center justify-between gap-2 hover:border-gray-300 transition bg-white">
-            <span id="gs-branch-label" class="truncate">main</span>
-            <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"></path></svg>
-          </button>
-          <div id="gs-branch-pop" class="hidden absolute left-0 right-0 mt-1.5 z-20 rounded-xl border border-gray-200 bg-white shadow-xl">
-            <div class="p-2 border-b border-gray-100">
-              <input id="gs-branch-filter" type="text" placeholder="Cari / ketik nama branch baru…" oninput="gitSyncFilterBranch()" onclick="event.stopPropagation()" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-[12.5px] focus:outline-none focus:border-gray-400">
-            </div>
-            <div id="gs-branch-list" class="max-h-44 overflow-y-auto py-1"></div>
-            <div class="p-2 border-t border-gray-100">
-              <button type="button" onclick="gitSyncApplyManual()" class="w-full py-1.5 rounded-lg bg-gray-900 text-white text-[12px] font-semibold hover:bg-gray-800 transition">Gunakan teks di atas</button>
+    <div class="px-6 flex-1 overflow-y-auto space-y-4 pb-4">
+      <!-- GitHub -->
+      <div id="eg-gh" class="space-y-3.5">
+        <div id="eg-gh-accounts" class="border-y border-gray-100 py-3.5 space-y-2.5"></div>
+        <div id="eg-gh-config" class="hidden space-y-3.5">
+          <div>
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Repo tujuan (owner/nama-repo)</label>
+            <input id="eg-gh-repo" type="text" placeholder="muzawwied/nama-repo" class="w-full px-4 py-2.5 text-[13px] rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-gray-400 transition-colors">
+          </div>
+          <div class="relative">
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Branch</label>
+            <button id="eg-branch-btn" type="button" onclick="egToggleBranch(event)" class="w-full px-4 py-2.5 text-[13px] rounded-xl border border-gray-200 bg-white text-left flex items-center justify-between gap-2 hover:border-gray-300 transition">
+              <span id="eg-branch-label" class="truncate">main</span>
+              <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"></path></svg>
+            </button>
+            <div id="eg-branch-pop" class="hidden absolute left-0 right-0 mt-1.5 z-20 rounded-xl border border-gray-200 bg-white shadow-xl">
+              <div class="p-2 border-b border-gray-100">
+                <input id="eg-branch-filter" type="text" placeholder="Cari / ketik nama branch baru…" oninput="egFilterBranch()" onclick="event.stopPropagation()" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-[12.5px] focus:outline-none focus:border-gray-400">
+              </div>
+              <div id="eg-branch-list" class="max-h-44 overflow-y-auto py-1"></div>
+              <div class="p-2 border-t border-gray-100">
+                <button type="button" onclick="egApplyManualBranch()" class="w-full py-1.5 rounded-lg bg-gray-900 text-white text-[12px] font-semibold hover:bg-gray-800 transition">Gunakan teks di atas</button>
+              </div>
             </div>
           </div>
+          <label class="flex items-start gap-2.5 text-[12px] text-gray-500 cursor-pointer select-none">
+            <input id="eg-gh-create" type="checkbox" class="mt-0.5 w-4 h-4 accent-black flex-shrink-0">
+            <span class="leading-relaxed">Buat repo baru otomatis jika belum ada (privat, atas nama akun GitHub yang terhubung)</span>
+          </label>
         </div>
-        <div class="flex gap-2">
-          <button id="gs-btn-sync" type="button" onclick="gitSyncNow()" class="flex-1 py-2.5 rounded-xl bg-gray-900 text-white text-[13px] font-semibold hover:bg-gray-800 transition active:scale-[0.98]">Eksport sekarang</button>
-          <button type="button" onclick="gitSyncSaveCfg()" class="px-4 py-2.5 rounded-xl border border-gray-200 text-[13px] font-semibold text-gray-600 hover:bg-gray-50 transition active:scale-[0.98]">Simpan</button>
-        </div>
-        <p id="gs-last" class="text-[11px] text-gray-400"></p>
       </div>
-
-      <div id="gs-status" class="hidden rounded-xl border px-3.5 py-2.5 text-[12.5px]"></div>
+      <!-- GitLab -->
+      <div id="eg-gl" class="hidden space-y-3.5">
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">URL GitLab</label>
+          <input id="eg-gl-base" type="text" value="https://gitlab.com" class="w-full px-4 py-2.5 text-[13px] rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-gray-400 transition-colors">
+        </div>
+        <div id="eg-gl-connected" class="hidden flex items-center gap-3 border-y border-gray-100 py-3.5">
+          <img id="eg-gl-avatar" class="h-10 w-10 rounded-full bg-gray-100" alt="">
+          <div class="min-w-0 flex-1">
+            <p id="eg-gl-name" class="text-sm font-semibold truncate"></p>
+            <p id="eg-gl-meta" class="text-xs text-gray-400 truncate"></p>
+          </div>
+          <span class="text-[12px] font-semibold text-emerald-600">Terhubung</span>
+        </div>
+        <div id="eg-gl-connect" class="space-y-3">
+          <p id="eg-gl-none" class="text-[12.5px] text-gray-400">Belum ada koneksi tersedia</p>
+          <button id="eg-gl-connect-btn" onclick="closeExportModal(); location.href='/integrasi/'" class="w-full py-3 rounded-full bg-gray-900 text-white font-semibold text-sm active:scale-95 transition">Hubungkan GitLab</button>
+          <button id="eg-gl-disconnect" onclick="egGlDisconnect()" class="hidden w-full py-3 rounded-full border border-red-200 text-sm font-semibold text-red-500 hover:bg-red-50 transition">Putuskan koneksi</button>
+        </div>
+        <div id="eg-gl-config" class="hidden space-y-3.5">
+          <div>
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Project tujuan (namespace/nama)</label>
+            <input id="eg-gl-project" type="text" placeholder="username/nama-project" class="w-full px-4 py-2.5 text-[13px] rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-gray-400 transition-colors">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Branch</label>
+            <input id="eg-gl-branch" type="text" value="main" class="w-full px-4 py-2.5 text-[13px] rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-gray-400 transition-colors">
+          </div>
+          <p class="text-[11px] text-gray-400 leading-relaxed">Project GitLab harus sudah ada; branch tujuan dibuat otomatis dari default branch jika belum ada.</p>
+        </div>
+      </div>
+      <!-- File workspace -->
+      <div class="border-t border-gray-100 pt-4">
+        <div class="flex items-center justify-between gap-3"><p class="text-[11px] font-bold uppercase tracking-wider text-gray-400">File workspace</p><span id="eg-count" class="text-[11px] font-semibold text-gray-400">Memuat...</span></div>
+        <div id="eg-list" class="mt-2.5 max-h-36 overflow-y-auto space-y-1.5"></div>
+        <p id="eg-empty" class="hidden mt-2.5 text-[12.5px] text-gray-400">Tidak ada file di workspace proyek ini. Buka workspace dan tambahkan file dulu.</p>
+      </div>
     </div>
-
-    <div class="px-5 pb-4 flex items-center justify-between">
-      <a href="/integrasi/github/" class="text-[12px] text-gray-400 underline hover:text-gray-600">Kelola koneksi</a>
-      <button type="button" onclick="gitSyncClose()" class="text-[12.5px] font-medium text-gray-500 hover:text-gray-700">Tutup</button>
+    <div class="px-6 pt-4 pb-6 flex-shrink-0">
+      <button id="eg-btn-export" onclick="doExport()" class="w-full py-3 rounded-full bg-gray-900 text-white font-semibold text-sm active:scale-95 transition">Eksport sekarang</button>
+      <p id="eg-progress" class="hidden mt-3 text-[12.5px] text-gray-500"></p>
+      <div id="eg-result" class="hidden mt-3 rounded-xl border px-3.5 py-2.5 text-[12.5px]"></div>
     </div>
   </div>
 </div>
 <script>
 (function () {
-  'use strict';
-  var GH_CLIENT_ID = 'Ov23ctIBGjQBolR5PS2C';
-  function $(id) { return document.getElementById(id); }
-  function tryJson(s, fb) { try { return JSON.parse(s) || fb; } catch (e) { return fb; } }
-  function pid() {
-    try {
-      if (typeof window.activeProjectId === 'function') { var p0 = window.activeProjectId(); if (p0) return String(p0); }
-      return sessionStorage.getItem('clincoo_tab_project_id') || localStorage.getItem('clincoo_current_project_id') || '';
-    } catch (e) { return ''; }
-  }
-  function cfgKey() { return 'clincoo_git_export_' + (pid() || 'global'); }
-  function cfg() { return tryJson(localStorage.getItem(cfgKey()) || '', {}); }
-  function cfgSave(c) { try { localStorage.setItem(cfgKey(), JSON.stringify(c)); } catch (e) {} }
+  // ===== Mesin Eksport ke Git — dipindah dari halaman Plugin (permintaan Boss
+  // 20-10-2026: pop-up eksport yang dipakai di workspace adalah yang dari
+  // /integrasi/, versi lama pop-up gitsync dihapus) =====
+  var platform = 'github';
+  var files = [];
+  var busy = false;
+  var egBranch = 'main';
+  var BLOCKED = { 'muzawwied/wallet': 'Repo Wallet (situs ClincooPay) dikunci dan tidak boleh dipakai sebagai tujuan eksport.' };
+  var GL = { tok: 'clincoo_gitlab_token', ref: 'clincoo_gitlab_refresh', exp: 'clincoo_gitlab_exp', cid: 'clincoo_gitlab_client_id', base: 'clincoo_gitlab_base', user: 'clincoo_gitlab_user', st: 'clincoo_gitlab_state', ver: 'clincoo_gitlab_verifier' };
+
+  function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v); } catch (e) { return ''; } }
+  function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
   function ghToken() { try { return localStorage.getItem('clincoo_gh_token') || localStorage.getItem('clincoo_github_token') || ''; } catch (e) { return ''; } }
-  function authH() {
-    var t = ''; try { t = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
-    return t ? { Authorization: 'Bearer ' + t } : {};
+  function $(id) { return document.getElementById(id); }
+  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function b64(str) {
+    try { return btoa(unescape(encodeURIComponent(String(str == null ? '' : str)))); }
+    catch (e) {
+      var out = '', i = 0; str = String(str == null ? '' : str);
+      while (i < str.length) { out += String.fromCharCode(str.charCodeAt(i++) & 0xff); }
+      return btoa(out);
+    }
   }
-  function wsApiBase() {
-    var h = location.hostname;
-    return (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1', 'app.clincoo.buzz', 'clincoo.buzz'].indexOf(h) === -1) ? 'https://clincoo-be2.pages.dev/api' : '/api';
-  }
-  function b64u(str) { return btoa(unescape(encodeURIComponent(String(str == null ? '' : str)))); }
-  function norm(p) {
-    var s = String(p || '').trim().replace(/^\/+/, '').replace(/\/+$/, '');
-    if (!s || s.toLowerCase() === 'root') return '';
-    if (s.toLowerCase().indexOf('root/') === 0) s = s.substring(5);
-    return s.replace(/\/{2,}/g, '/');
-  }
-  function encPath(p) { return encodeURIComponent(String(p)).replace(/%2F/g, '/'); }
-  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  async function gitBlobSha(content) {
-    try {
-      if (!window.crypto || !crypto.subtle) return null;
-      var bytes = new TextEncoder().encode(String(content == null ? '' : content));
-      var header = new TextEncoder().encode('blob ' + bytes.length + '\u0000');
-      var merged = new Uint8Array(header.length + bytes.length);
-      merged.set(header, 0); merged.set(bytes, header.length);
-      var dig = await crypto.subtle.digest('SHA-1', merged);
-      var arr = new Uint8Array(dig), hex = '';
-      for (var i = 0; i < arr.length; i++) hex += ('0' + arr[i].toString(16)).slice(-2);
-      return hex;
-    } catch (e) { return null; }
-  }
-  async function gh(method, path, body) {
-    var t = ghToken();
-    if (!t) return { ok: false, status: 401, data: { message: 'GitHub belum terhubung.' } };
-    try {
-      var res = await fetch('https://api.github.com' + path, {
-        method: method,
-        headers: Object.assign({ Authorization: 'Bearer ' + t, Accept: 'application/vnd.github+json', 'User-Agent': 'clincoo-ws-export' }, body ? { 'Content-Type': 'application/json' } : {}),
-        body: body ? JSON.stringify(body) : undefined
-      });
-      var data = null; try { data = await res.json(); } catch (e) {}
-      return { ok: res.ok, status: res.status, data: data || {} };
-    } catch (e) { return { ok: false, status: 0, data: { message: (e && e.message) || 'jaringan gagal' } }; }
-  }
-  function localTree() { return tryJson(localStorage.getItem('clincoo_workspace_files_' + (pid() || 'global')) || '', {}); }
 
-  // Kumpulkan SEMUA file workspace: localStorage + cloud D1 (isi file besar hidup di cloud).
-  // `missed` = file cloud-only yang isinya gagal diambil — JANGAN dieksport (isi kosong bisa
-  // menimpa file asli di repo).
-  async function collectFiles() {
-    var byPath = {}, cloudOnly = {}, missed = {};
-    var data = localTree();
-    Object.keys(data).forEach(function (fk) {
-      (data[fk] || []).forEach(function (it) {
-        if (it && it.type === 'file' && it.path) {
-          var p = norm(it.path); if (!p) return;
-          if (it.cloud && !it.content) { byPath[p] = ''; cloudOnly[p] = true; }
-          else byPath[p] = String(it.content == null ? '' : it.content);
-        }
-      });
+  window.openExportModal = function () {
+    $('export-modal').classList.remove('hidden');
+    egSetPlatform(platform);
+    renderEgGh(); renderEgGl();
+    collectEgFiles();
+  };
+  window.closeExportModal = function () { $('export-modal').classList.add('hidden'); egCloseBranch(); };
+
+  window.egSetPlatform = function (p) {
+    platform = p;
+    $('eg-tab-gh').classList.toggle('on', p === 'github');
+    $('eg-tab-gl').classList.toggle('on', p === 'gitlab');
+    $('eg-gh').classList.toggle('hidden', p !== 'github');
+    $('eg-gl').classList.toggle('hidden', p === 'github');
+  };
+
+  // ===== GitHub =====
+  function ghUser(cb) {
+    var cached = '';
+    try { cached = localStorage.getItem('clincoo_gh_user') || localStorage.getItem('clincoo_github_user') || ''; } catch (e) {}
+    if (cached) { try { cb(JSON.parse(cached)); } catch (e) { cb(null); } return; }
+    fetch('https://api.github.com/user', { headers: { Authorization: 'Bearer ' + ghToken(), Accept: 'application/vnd.github.v3+json' } })
+      .then(function (r) { if (!r.ok) { cb(null); return; } r.json().then(function (u) { try { localStorage.setItem('clincoo_gh_user', JSON.stringify(u)); } catch (e) {} cb(u); }); })
+      .catch(function () { cb(null); });
+  }
+
+  function renderEgGh() {
+    var box = $('eg-gh-accounts'), cfg = $('eg-gh-config');
+    if (!ghToken()) {
+      box.innerHTML = '<p class="text-[12.5px] text-gray-400">Belum ada koneksi tersedia</p><button onclick="egConnectGh()" class="px-4 py-2.5 bg-gray-900 text-white rounded-xl text-[12.5px] font-semibold hover:bg-gray-800 transition-all active:scale-[0.97]">Hubungkan GitHub</button>';
+      cfg.classList.add('hidden');
+      return;
+    }
+    box.innerHTML = '<div class="flex items-center gap-3 border border-gray-100 rounded-xl px-3.5 py-2.5"><img id="eg-gh-avatar" class="h-9 w-9 rounded-full bg-gray-100" alt=""><div class="min-w-0 flex-1"><p id="eg-gh-name" class="text-sm font-semibold truncate"></p><p id="eg-gh-meta" class="text-xs text-gray-400 truncate"></p></div><span class="text-[12px] font-semibold text-emerald-600">Terhubung</span></div>';
+    cfg.classList.remove('hidden');
+    ghUser(function (u) {
+      var n = $('eg-gh-name'), m = $('eg-gh-meta'), a = $('eg-gh-avatar');
+      if (!n) return;
+      if (!u) { n.textContent = 'Akun GitHub Clincoo'; m.textContent = 'terhubung via Clincoo'; return; }
+      n.textContent = u.name || u.login || 'GitHub';
+      m.textContent = '@' + (u.login || '') + ' · via Clincoo';
+      a.src = u.avatar_url || '';
     });
-    var P = pid();
-    if (P) {
-      var cloudOk = true;
-      try {
-        var res = await fetch(wsApiBase() + '/project-files?project_id=' + encodeURIComponent(P), { headers: authH() });
-        if (!res.ok) { cloudOk = false; }
-        else {
-          var d = await res.json().catch(function () { return {}; });
-          ((d && d.files) || []).forEach(function (f) {
-            if (f && f.path) {
-              var p = norm(f.path);
-              if (p && (!(p in byPath) || cloudOnly[p])) { byPath[p] = String(f.content == null ? '' : f.content); delete cloudOnly[p]; }
-            }
-          });
-        }
-      } catch (e) { cloudOk = false; }
-      if (!cloudOk) Object.keys(cloudOnly).forEach(function (p) { missed[p] = true; });
-    }
-    return { byPath: byPath, missed: missed };
   }
 
-  // ===== UI =====
-  function modalOpen() { return $('gitsync-modal') && !$('gitsync-modal').classList.contains('hidden'); }
-  function stShow(ok, msg) {
-    var el = $('gs-status'); if (!el) return;
-    el.className = 'rounded-xl border px-3.5 py-2.5 text-[12.5px] ' + (ok ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-700');
-    el.innerHTML = msg;
-    el.classList.remove('hidden');
+  // Belum terhubung -> alur kanonik via halaman Plugin (redirect_uri terdaftar),
+  // setelah sukses balik ke sini dan pop-up dibuka lagi (?egopen=1).
+  window.egConnectGh = function () {
+    var back = location.origin + location.pathname + (location.search ? location.search.replace(/([?&])gitsync=1(&|$)/, '$2').replace(/([?&])egopen=1(&|$)/, '$2') : '');
+    back += (back.indexOf('?') === -1 ? '?' : '&') + 'egopen=1';
+    location.href = location.origin + '/integrasi/?back=' + encodeURIComponent(back);
+  };
+
+  function gh(method, url, body) {
+    return fetch(url, {
+      method: method,
+      headers: Object.assign({ Authorization: 'Bearer ' + ghToken(), Accept: 'application/vnd.github.v3+json' }, body ? { 'Content-Type': 'application/json' } : {}),
+      body: body ? JSON.stringify(body) : undefined
+    });
   }
-  function stProgress(msg) {
-    var el = $('gs-status'); if (!el) return;
-    el.className = 'rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-[12.5px] text-gray-600';
-    el.textContent = msg;
-    el.classList.remove('hidden');
+  function ghUrl(repo, branch, path) {
+    return 'https://api.github.com/repos/' + repo + '/contents/' + encodeURIComponent(path).replace(/%2F/g, '/') + '?ref=' + encodeURIComponent(branch);
   }
-  function renderLast() {
-    var c = cfg(), el = $('gs-last');
-    if (!el) return;
-    el.textContent = c.last ? ('Eksport terakhir: ' + new Date(c.last).toLocaleString('id-ID')) : 'Belum pernah eksport.';
+  function ghPut(repo, branch, path, content, sha) {
+    var body = { message: 'Eksport Clincoo: ' + path, content: b64(content), branch: branch };
+    if (sha) body.sha = sha;
+    return gh('PUT', ghUrl(repo, branch, path), body).then(function (r) {
+      if (r.status === 422 && !sha) {
+        return gh('GET', ghUrl(repo, branch, path)).then(function (r2) {
+          return r2.ok ? r2.json().then(function (d) { return ghPut(repo, branch, path, content, d && d.sha); }) : { ok: false, error: 'HTTP ' + r.status };
+        }).catch(function () { return { ok: false, error: 'HTTP 422' }; });
+      }
+      return r.ok ? { ok: true } : r.json().then(function (d) { return { ok: false, error: (d && d.message) || ('HTTP ' + r.status) }; }).catch(function () { return { ok: false, error: 'HTTP ' + r.status }; });
+    });
   }
-  function renderConn() {
-    var off = $('gs-conn-off'), on = $('gs-conn-on'), cfgBox = $('gs-config');
-    var t = ghToken();
-    off.classList.toggle('hidden', !!t);
-    on.classList.toggle('hidden', !t);
-    cfgBox.classList.toggle('hidden', !t);
-    if (!t) return;
-    var u = tryJson(localStorage.getItem('clincoo_gh_user') || localStorage.getItem('clincoo_github_user') || '', null);
-    if ($('gs-gh-avatar')) {
-      $('gs-gh-avatar').src = (u && u.avatar_url) || '';
-      $('gs-gh-name').textContent = (u && (u.name || u.login)) || 'GitHub';
-      $('gs-gh-meta').textContent = '@' + ((u && u.login) || '') + ' · via Clincoo';
-    }
-    // [20 Okt 2026] Data nama akun kosong/kurang -> ambil dari api.github.com/user
-    // (self-heal, disimpan ke kedua kunci) lalu perbarui tampilan popup.
-    if (t && (!u || !u.login)) {
-      fetch('https://api.github.com/user', { headers: { 'Authorization': 'Bearer ' + t } })
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (p) {
-          if (!p || !p.login) return;
-          try {
-            localStorage.setItem('clincoo_gh_user', JSON.stringify(p));
-            localStorage.setItem('clincoo_github_user', JSON.stringify({ login: p.login, name: p.name || p.login, avatar_url: p.avatar_url }));
-          } catch (e) {}
-          if ($('gs-gh-avatar')) $('gs-gh-avatar').src = p.avatar_url || '';
-          if ($('gs-gh-name')) $('gs-gh-name').textContent = p.name || p.login;
-          if ($('gs-gh-meta')) $('gs-gh-meta').textContent = '@' + p.login + ' · via Clincoo';
-        }).catch(function () {});
-    }
-    var c = cfg();
-    if ($('gs-repo')) $('gs-repo').value = c.repo || '';
-    if ($('gs-branch-label')) $('gs-branch-label').textContent = c.branch || 'main';
-    renderLast();
-  }
-  // [20 Okt 2026] Branch jadi popover pilihan — muat daftar branch dari repo,
-  // lengkap dengan filter dan entri manual (untuk branch baru yang belum ada di remote).
-  var gsBranches = null, gsBranchesRepo = '';
-  function gsCurrentBranch() { return (cfg().branch || 'main'); }
-  function gsBranchPaint(items, q) {
-    var list = $('gs-branch-list'); if (!list) return;
-    var cur = gsCurrentBranch();
+
+  // ===== Popover pilihan branch (permintaan Boss: bukan input teks) =====
+  var egBranches = null, egBranchesRepo = '';
+  window.egToggleBranch = function (ev) {
+    if (ev && ev.stopPropagation) ev.stopPropagation();
+    var pop = $('eg-branch-pop'); if (!pop) return;
+    var wasHidden = pop.classList.contains('hidden');
+    egCloseBranch();
+    if (!wasHidden) return;
+    if ($('eg-branch-filter')) $('eg-branch-filter').value = '';
+    pop.classList.remove('hidden');
+    var repo = (($('eg-gh-repo') && $('eg-gh-repo').value) || '').trim();
+    if (!repo) { egPaintBranches([], ''); return; }
+    if (egBranches && egBranchesRepo === repo) { egPaintBranches(egBranches, ''); return; }
+    var list = $('eg-branch-list');
+    if (list) list.innerHTML = '<p class="px-3 py-3 text-[12px] text-gray-400">Memuat daftar branch…</p>';
+    gh('GET', 'https://api.github.com/repos/' + repo + '/branches?per_page=100').then(function (r) {
+      return r.ok ? r.json().then(function (arr) {
+        egBranches = (arr || []).map(function (b) { return b && b.name; }).filter(Boolean);
+        egBranchesRepo = repo;
+        egPaintBranches(egBranches, '');
+      }) : (list && (list.innerHTML = '<p class="px-3 py-3 text-[12px] text-gray-400">' + (r.status === 404 ? 'Repo tidak ditemukan / akses ditolak.' : 'Gagal memuat branch (HTTP ' + r.status + ').') + ' Ketik manual di atas bila perlu.</p>'));
+    }).catch(function () { if (list) list.innerHTML = '<p class="px-3 py-3 text-[12px] text-gray-400">Gagal memuat branch. Ketik manual di atas bila perlu.</p>'; });
+  };
+  window.egCloseBranch = function () { var p = $('eg-branch-pop'); if (p) p.classList.add('hidden'); };
+  function egPaintBranches(items, q) {
+    var list = $('eg-branch-list'); if (!list) return;
     var arr = (items || []).filter(function (b) { return !q || String(b).toLowerCase().indexOf(q.toLowerCase()) !== -1; });
     if (!arr.length) { list.innerHTML = '<p class="px-3 py-3 text-[12px] text-gray-400">Tidak ada branch' + (q ? ' yang cocok.' : ' di repo ini.') + ' Ketik manual di atas bila perlu.</p>'; return; }
     var html = '';
     for (var i = 0; i < arr.length; i++) {
       var nm = arr[i];
-      html += '<button type="button" onclick="gitSyncPickBranch(\'' + esc(nm) + '\')" class="w-full text-left px-3 py-2 text-[12.5px] hover:bg-gray-50 rounded-lg flex items-center justify-between gap-2">' +
-        '<span class="truncate">' + esc(nm) + '</span>' +
-        (nm === cur ? '<span class="text-[10px] font-semibold text-emerald-600 shrink-0">dipakai</span>' : '') +
-        '</button>';
+      html += '<button type="button" onclick="egPickBranch(\'' + escapeHtml(nm) + '\')" class="w-full text-left px-3 py-2 text-[12.5px] hover:bg-gray-50 rounded-lg flex items-center justify-between gap-2"><span class="truncate">' + escapeHtml(nm) + '</span>' + (nm === egBranch ? '<span class="text-[10px] font-semibold text-emerald-600 shrink-0">dipakai</span>' : '') + '</button>';
     }
     list.innerHTML = html;
   }
-  window.gitSyncToggleBranch = function (ev) {
-    if (ev && ev.stopPropagation) ev.stopPropagation();
-    var pop = $('gs-branch-pop'); if (!pop) return;
-    var wasHidden = pop.classList.contains('hidden');
-    gitSyncCloseBranch();
-    if (!wasHidden) return;
-    if ($('gs-branch-filter')) $('gs-branch-filter').value = '';
-    pop.classList.remove('hidden');
-    var repo = (($('gs-repo') && $('gs-repo').value) || '').trim();
-    if (!repo) { gsBranchPaint([], ''); return; }
-    if (gsBranches && gsBranchesRepo === repo) { gsBranchPaint(gsBranches, ''); return; }
-    var list = $('gs-branch-list');
-    if (list) list.innerHTML = '<p class="px-3 py-3 text-[12px] text-gray-400">Memuat daftar branch…</p>';
-    gh('GET', '/repos/' + repo + '/branches?per_page=100').then(function (r) {
-      var arr = (r.ok && Array.isArray(r.data)) ? r.data.map(function (b) { return b && b.name; }).filter(Boolean) : null;
-      if (arr) { gsBranches = arr; gsBranchesRepo = repo; gsBranchPaint(arr, ''); return; }
-      if (list) list.innerHTML = '<p class="px-3 py-3 text-[12px] text-gray-400">' + (r.status === 404 ? 'Repo tidak ditemukan / akses ditolak.' : 'Gagal memuat branch (HTTP ' + r.status + ').') + ' Ketik manual di atas bila perlu.</p>';
-    });
+  window.egFilterBranch = function () {
+    var q = (($('eg-branch-filter') && $('eg-branch-filter').value) || '').trim();
+    egPaintBranches(egBranches || [], q);
   };
-  window.gitSyncCloseBranch = function () { var p = $('gs-branch-pop'); if (p) p.classList.add('hidden'); };
-  window.gitSyncFilterBranch = function () {
-    var q = ($('gs-branch-filter') && $('gs-branch-filter').value) || '';
-    gsBranchPaint(gsBranches || [], q.trim());
+  window.egPickBranch = function (name) {
+    egBranch = String(name || 'main');
+    if ($('eg-branch-label')) $('eg-branch-label').textContent = egBranch;
+    egCloseBranch();
+    egPaintBranches(egBranches || [], '');
   };
-  window.gitSyncPickBranch = function (name) {
-    var c = cfg(); c.branch = String(name || 'main'); cfgSave(c);
-    if ($('gs-branch-label')) $('gs-branch-label').textContent = c.branch;
-    gitSyncCloseBranch();
-    gsBranchPaint(gsBranches || [], '');
-  };
-  window.gitSyncApplyManual = function () {
-    var q = (($('gs-branch-filter') && $('gs-branch-filter').value) || '').trim();
+  window.egApplyManualBranch = function () {
+    var q = (($('eg-branch-filter') && $('eg-branch-filter').value) || '').trim();
     if (!q) return;
-    gitSyncPickBranch(q.replace(/[^\w.\/-]/g, '-'));
+    egPickBranch(q.replace(/[^\w.\/-]/g, '-'));
   };
-  // Perubahan repo -> cache branch lama tidak berlaku lagi.
-  try {
-    var gsRepoEl = $('gs-repo');
-    if (gsRepoEl) gsRepoEl.addEventListener('change', function () { gsBranches = null; gsBranchesRepo = ''; gitSyncCloseBranch(); });
-  } catch (e) {}
   document.addEventListener('click', function (ev) {
-    var pop = $('gs-branch-pop');
+    var pop = $('eg-branch-pop');
     if (!pop || pop.classList.contains('hidden')) return;
     if (pop.contains(ev.target)) return;
-    var btn = $('gs-branch-btn');
+    var btn = $('eg-branch-btn');
     if (btn && btn.contains(ev.target)) return;
-    gitSyncCloseBranch();
+    egCloseBranch();
   });
 
-  window.gitSyncOpen = function () {
-    renderConn();
-    var st = $('gs-status'); if (st) st.classList.add('hidden');
-    $('gitsync-modal').classList.remove('hidden');
+  // ===== GitLab =====
+  function glApi(tok, url, opts) {
+    return fetch(url, Object.assign({ headers: { Authorization: 'Bearer ' + tok } }, opts || {}));
+  }
+  function glProjectId(base, tok, project) {
+    return glApi(tok, base + '/api/v4/projects/' + encodeURIComponent(project))
+      .then(function (r) { return r.ok ? r.json().then(function (d) { return d.id; }) : Promise.reject(new Error('Project GitLab tidak ditemukan (HTTP ' + r.status + '). Pastikan namespace/nama benar dan koneksi masih aktif.')); });
+  }
+  function glExistingPaths(base, tok, projectId, branch) {
+    var paths = {}, page = 1;
+    var walk = function () {
+      return glApi(tok, base + '/api/v4/projects/' + projectId + '/repository/tree?ref=' + encodeURIComponent(branch) + '&per_page=100&recursive=true&page=' + page)
+        .then(function (r) {
+          if (r.status === 404) return paths;
+          if (!r.ok) throw new Error('Gagal membaca isi repo GitLab (HTTP ' + r.status + ').');
+          return r.json().then(function (items) {
+            (items || []).forEach(function (it) { if (it.type === 'blob') paths[it.path] = true; });
+            if ((items || []).length < 100) return paths;
+            page++; return walk();
+          });
+        });
+    };
+    return walk();
+  }
+  function glAccessToken() {
+    var base = ls(GL.base) || 'https://gitlab.com';
+    var tok = ls(GL.tok), exp = parseInt(ls(GL.exp) || '0', 10), ref = ls(GL.ref);
+    if (tok && Date.now() < exp) return Promise.resolve(tok);
+    if (!ref) return Promise.reject(new Error('Koneksi GitLab sudah kedaluwarsa. Hubungkan ulang di halaman Plugin.'));
+    var params = { client_id: ls(GL.cid), refresh_token: ref, grant_type: 'refresh_token' };
+    var body = Object.keys(params).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }).join('&');
+    return fetch(base + '/oauth/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body })
+      .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error('Token GitLab gagal diperbarui (HTTP ' + r.status + '). Hubungkan ulang di halaman Plugin.'); return d; }); })
+      .then(function (d) {
+        ls(GL.tok, d.access_token);
+        if (d.refresh_token) ls(GL.ref, d.refresh_token);
+        ls(GL.exp, String(Date.now() + ((d.expires_in || 7200) * 1000) - 60000));
+        return d.access_token;
+      });
+  }
+  window.egGlDisconnect = function () {
+    [GL.tok, GL.ref, GL.exp, GL.user].forEach(lsDel);
+    renderEgGl();
   };
-  window.gitSyncClose = function () { $('gitsync-modal').classList.add('hidden'); };
-  window.gitSyncConnect = function () {
-    var back = window.location.origin + window.location.pathname + window.location.search;
-    if (back.indexOf('gitsync=1') === -1) back += (back.indexOf('?') === -1 ? '?' : '&') + 'gitsync=1';
-    // [20 Okt 2026] Belum terhubung -> halaman Plugin (Integrasi), bukan langsung ke
-    // GitHub: alur kanonik redirect_uri terdaftar, error ditangani UI Clincoo, dan
-    // setelah sukses balik otomatis ke sini (?back= + ?gitsync=1 membuka popup lagi).
-    var pluginUrl = window.location.origin + '/integrasi/?back=' + encodeURIComponent(back);
-    try {
-      if (window.top && window.top !== window.self) { window.top.location.href = pluginUrl; return; }
-    } catch (e) {}
-    window.location.href = pluginUrl;
-  };
-  window.gitSyncSaveCfg = function () {
-    var c = cfg();
-    c.repo = ($('gs-repo').value || '').trim().replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '');
-    var bl = ($('gs-branch-label') && $('gs-branch-label').textContent) || '';
-    c.branch = (bl || 'main').trim() || 'main';
-    if (c.repo && !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(c.repo)) { stShow(false, 'Format repo salah — pakai owner/nama-repo.'); return false; }
-    cfgSave(c);
-    stShow(true, 'Pengaturan tersimpan.');
-    renderLast();
-    return true;
-  };
-  window.gitSyncNow = function () { if (window.gitSyncSaveCfg()) gitSyncRun(); };
-
-  // ===== Inti eksport: kirim file workspace ke repo (satu arah) =====
-  var gsBusy = false;
-  window.gitSyncRun = async function () {
-    var c = cfg(), t = ghToken();
-    if (gsBusy) { stShow(false, 'Eksport sedang berjalan...'); return; }
-    if (!t) { stShow(false, 'Hubungkan GitHub dulu.'); return; }
-    if (!c.repo || !c.branch) { stShow(false, 'Isi repo & branch dulu, lalu klik Simpan.'); return; }
-    gsBusy = true;
-    var btn = $('gs-btn-sync'); var btnOld = btn ? btn.textContent : '';
-    if (btn) { btn.disabled = true; btn.textContent = 'Mengeksport...'; btn.classList.add('opacity-60'); }
-    try {
-      var repo = String(c.repo).replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '');
-      var branch = c.branch || 'main';
-      var tr = await gh('GET', '/repos/' + repo + '/git/trees/' + encodeURIComponent(branch) + '?recursive=1');
-      var repoFiles = {};
-      if (tr.ok && tr.data && Array.isArray(tr.data.tree)) {
-        tr.data.tree.forEach(function (e) { if (e && e.type === 'blob' && e.path) { var p = norm(e.path); if (p) repoFiles[p] = e.sha; } });
-      } else if (tr.status !== 404) {
-        throw new Error('Gagal membaca repo ' + repo + ' (HTTP ' + tr.status + '): ' + ((tr.data && tr.data.message) || ''));
-      }
-      // 404 = repo/branch kosong -> eksport pertama membuat commit awal.
-
-      var loc = await collectFiles();
-      var paths = Object.keys(loc.byPath);
-      if (!paths.length) { stShow(false, 'Tidak ada file di workspace untuk dieksport.'); return; }
-
-      var sent = 0, same = 0, failed = 0, skipped = 0, lastErr = '';
-      for (var i = 0; i < paths.length; i++) {
-        var p = paths[i];
-        if (loc.missed[p]) { skipped++; continue; }
-        var content = loc.byPath[p];
-        if (String(content).length > 5000000) { skipped++; continue; }
-        var bsha = await gitBlobSha(content);
-        if (bsha && repoFiles[p] && bsha === repoFiles[p]) { same++; continue; } // identik — jangan commit ulang
-        stProgress('Mengunggah ' + (i + 1) + '/' + paths.length + ' — ' + p);
-        var body = { message: 'Eksport Clincoo: ' + p, content: b64u(content), branch: branch };
-        if (repoFiles[p]) body.sha = repoFiles[p];
-        var r = await gh('PUT', '/repos/' + repo + '/contents/' + encPath(p), body);
-        if (!r.ok && (r.status === 409 || r.status === 422)) {
-          var g2 = await gh('GET', '/repos/' + repo + '/contents/' + encPath(p) + '?ref=' + encodeURIComponent(branch));
-          if (g2.ok && g2.data && g2.data.sha) { body.sha = g2.data.sha; r = await gh('PUT', '/repos/' + repo + '/contents/' + encPath(p), body); }
-        }
-        if (r.ok) {
-          sent++;
-          var ns = (r.data && r.data.content && r.data.content.sha) || null;
-          if (ns) repoFiles[p] = ns;
-        } else { failed++; lastErr = p + ': ' + ((r.data && r.data.message) || ('HTTP ' + r.status)); }
-      }
-
-      cfgSave(Object.assign(cfg(), { last: Date.now() }));
-      var parts = [];
-      if (sent) parts.push(sent + ' file terkirim');
-      if (same) parts.push(same + ' sudah sama (dilewati)');
-      if (skipped) parts.push(skipped + ' dilewati (terlalu besar / isi cloud tak terbaca)');
-      var okAll = failed === 0;
-      var msg = (parts.length ? parts.join(' · ') : 'Tidak ada yang perlu dikirim.') + (okAll ? '' : ' · ' + failed + ' gagal' + (lastErr ? '. Terakhir: ' + esc(lastErr) : ''));
-      stShow(okAll, (okAll ? '<span class="font-semibold">Berhasil.</span> ' : '') + msg);
-      renderLast();
-    } catch (e) {
-      stShow(false, esc((e && e.message) || String(e)));
-    } finally {
-      gsBusy = false;
-      if (btn) { btn.disabled = false; btn.textContent = btnOld || 'Eksport sekarang'; btn.classList.remove('opacity-60'); }
+  function renderEgGl() {
+    var connected = $('eg-gl-connected');
+    var has = !!ls(GL.tok);
+    if (ls(GL.base)) $('eg-gl-base').value = ls(GL.base);
+    connected.classList.toggle('hidden', !has);
+    $('eg-gl-connect-btn').classList.toggle('hidden', has);
+    $('eg-gl-none').classList.toggle('hidden', has);
+    $('eg-gl-disconnect').classList.toggle('hidden', !has);
+    $('eg-gl-config').classList.toggle('hidden', !has);
+    if (has) {
+      var u = {};
+      try { u = JSON.parse(ls(GL.user) || '{}'); } catch (e) {}
+      $('eg-gl-avatar').src = u.avatar_url || '';
+      $('eg-gl-name').textContent = u.name || u.username || 'GitLab';
+      $('eg-gl-meta').textContent = '@' + (u.username || 'gitlab') + ' · ' + (ls(GL.base) || '').replace(/^https?:\/\//, '');
     }
+  }
+
+  // ===== File workspace (localStorage + cloud D1) =====
+  function collectEgFiles() {
+    var pid = '';
+    try { pid = (window.activeProjectId && window.activeProjectId()) || sessionStorage.getItem('clincoo_tab_project_id') || localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) {}
+    var key = 'clincoo_workspace_files_' + (pid || 'global');
+    var byPath = {};
+    var raw = null;
+    try { raw = localStorage.getItem(key); } catch (e) {}
+    if (!raw) { try { var legacy = localStorage.getItem('clincoo_workspace_files'); if (legacy) { localStorage.setItem(key, legacy); raw = legacy; } } catch (e) {} }
+    try {
+      var d = JSON.parse(raw) || {};
+      Object.keys(d).forEach(function (k) {
+        (d[k] || []).forEach(function (it) {
+          if (it && it.path && it.type === 'file') byPath[it.path] = it.content || '';
+        });
+      });
+    } catch (e) {}
+    var WS_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1', 'app.clincoo.buzz', 'clincoo.buzz'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-files';
+    var tk = ''; try { tk = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
+    var headers = tk ? { Authorization: 'Bearer ' + tk } : {};
+    var finish = function () {
+      files = Object.keys(byPath).sort().map(function (p) { return { path: p, content: byPath[p] }; });
+      renderEgList();
+    };
+    if (!pid) { finish(); return; }
+    fetch(WS_API + '?project_id=' + encodeURIComponent(pid), { headers: headers })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function (resp) {
+        ((resp && resp.files) || []).forEach(function (f) {
+          if (f && f.path && !(f.path in byPath)) byPath[f.path] = f.content || '';
+        });
+        finish();
+      })
+      .catch(function () { finish(); });
+  }
+
+  function renderEgList() {
+    var count = $('eg-count'), list = $('eg-list'), empty = $('eg-empty');
+    count.textContent = files.length ? files.length + ' file' : '0 file';
+    empty.classList.toggle('hidden', files.length > 0);
+    var ico = '<svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path stroke-linecap="round" stroke-linejoin="round" d="M14 2v6h6"/></svg>';
+    list.innerHTML = files.map(function (f) {
+      return '<div class="flex items-center gap-2.5 rounded-lg border border-gray-100 px-3 py-2">' + ico + '<span class="truncate text-[12.5px]">' + escapeHtml(f.path) + '</span><span class="ml-auto text-[11px] text-gray-400 shrink-0">' + Math.max(1, Math.ceil((f.content || '').length / 1024)) + ' KB</span></div>';
+    }).join('');
+  }
+
+  // ===== Proses eksport =====
+  window.doExport = function () {
+    var btn = $('eg-btn-export'), progress = $('eg-progress'), result = $('eg-result');
+    var showResult = function (ok, msg) {
+      result.className = 'mt-3 rounded-xl border px-3.5 py-2.5 text-[12.5px] ' + (ok ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-700');
+      result.innerHTML = (ok ? '<span class="font-semibold">Berhasil.</span> ' : '') + msg;
+      result.classList.remove('hidden');
+    };
+    result.classList.add('hidden');
+    if (!files.length) { showResult(false, 'Tidak ada file di workspace untuk dieksport.'); return; }
+
+    if (platform === 'github') {
+      if (!ghToken()) { showResult(false, 'GitHub belum terhubung. Hubungkan dulu lewat halaman Plugin.'); return; }
+      var repo = ($('eg-gh-repo').value || '').trim().replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '');
+      var branch = egBranch || 'main';
+      if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) { showResult(false, 'Format repo salah. Pakai owner/nama-repo, contoh: muzawwied/nama-repo'); return; }
+      var blocked = BLOCKED[repo.toLowerCase()];
+      if (blocked) { showResult(false, blocked); return; }
+
+      busy = true; btn.disabled = true; btn.textContent = 'Mengeksport...'; progress.classList.remove('hidden');
+      var ensureRepo = gh('GET', 'https://api.github.com/repos/' + repo).then(function (r) {
+        if (r.ok) return { ok: true };
+        if (r.status === 404 && $('eg-gh-create').checked) {
+          return gh('GET', 'https://api.github.com/user').then(function (ru) {
+            if (!ru.ok) return { ok: false, error: 'Tidak bisa memverifikasi akun GitHub (HTTP ' + ru.status + ').' };
+            return ru.json().then(function (u) {
+              var name = repo.split('/')[1];
+              if (repo.split('/')[0].toLowerCase() !== (u.login || '').toLowerCase()) return { ok: false, error: 'Repo baru hanya bisa dibuat di akun sendiri (' + u.login + '). Perbaiki bagian owner-nya.' };
+              return gh('POST', 'https://api.github.com/user/repos', { name: name, private: true, description: 'Eksport workspace Clincoo' }).then(function (rr) {
+                return rr.ok ? { ok: true } : rr.json().then(function (d) { return { ok: false, error: 'Gagal membuat repo baru: ' + ((d && d.message) || ('HTTP ' + rr.status)) }; }).catch(function () { return { ok: false, error: 'Gagal membuat repo baru (HTTP ' + rr.status + ').' }; });
+              });
+            });
+          });
+        }
+        return { ok: false, error: 'Repo tidak ditemukan. Centang "buat repo baru" atau perbaiki nama repo.' };
+      });
+
+      ensureRepo.then(function (chk) {
+        if (!chk.ok) throw new Error(chk.error);
+        var done = 0, fail = 0, lastErr = '';
+        var chain = Promise.resolve();
+        files.forEach(function (f) {
+          chain = chain.then(function () {
+            return ghPut(repo, branch, f.path, f.content).then(function (r) {
+              done++;
+              progress.textContent = 'Mengunggah ' + done + '/' + files.length + ' — ' + f.path;
+              if (!r.ok) { fail++; lastErr = r.error; }
+            });
+          });
+        });
+        return chain.then(function () {
+          busy = false; btn.disabled = false; btn.textContent = 'Eksport sekarang'; progress.classList.add('hidden');
+          if (fail) showResult(false, done + '/' + files.length + ' file terkirim, ' + fail + ' gagal. Terakhir: ' + escapeHtml(String(lastErr)));
+          else showResult(true, files.length + ' file terkirim ke <span class="font-mono">' + escapeHtml(repo) + '</span> branch <span class="font-mono">' + escapeHtml(branch) + '</span>.');
+          collectEgFiles();
+        });
+      }).catch(function (e) {
+        busy = false; btn.disabled = false; btn.textContent = 'Eksport sekarang'; progress.classList.add('hidden');
+        showResult(false, escapeHtml(e.message || String(e)));
+      });
+      return;
+    }
+
+    // ===== GitLab =====
+    var base = ($('eg-gl-base').value || 'https://gitlab.com').trim().replace(/\/+$/, '');
+    var project = ($('eg-gl-project').value || '').trim();
+    var glBranch = ($('eg-gl-branch').value || 'main').trim() || 'main';
+    var savedBase = ls(GL.base) || '';
+    if (!/^https?:\/.+/.test(base)) { showResult(false, 'URL GitLab tidak valid.'); return; }
+    if (savedBase && base !== savedBase) { showResult(false, 'Koneksi GitLab tercatat untuk ' + escapeHtml(savedBase) + '. Ubah URL GitLab ke alamat itu, atau putuskan koneksi lalu hubungkan ulang.'); return; }
+    if (!/^[A-Za-z0-9_.\/-]+$/.test(project) || project.indexOf('/') === -1) { showResult(false, 'Format project salah. Pakai namespace/nama, contoh: username/nama-project'); return; }
+
+    busy = true; btn.disabled = true; btn.textContent = 'Mengeksport...'; progress.classList.remove('hidden');
+    progress.textContent = 'Menyiapkan token GitLab...';
+    glAccessToken().then(function (tok) {
+      return glProjectId(base, tok, project).then(function (projectId) {
+        return glExistingPaths(base, tok, projectId, glBranch).then(function (existing) {
+          var body = {
+            branch: glBranch,
+            commit_message: 'Eksport workspace Clincoo (' + files.length + ' file)',
+            actions: files.map(function (f) {
+              return { action: existing[f.path] ? 'update' : 'create', file_path: f.path, content: f.content || '' };
+            })
+          };
+          if (!Object.keys(existing).length && glBranch !== 'main') body.start_branch = 'main';
+          return glApi(tok, base + '/api/v4/projects/' + projectId + '/repository/commits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+            .then(function (r) {
+              return r.json().then(function (d) {
+                if (!r.ok) {
+                  var msg = (d && d.message) || ('HTTP ' + r.status);
+                  if (typeof msg === 'object') msg = JSON.stringify(msg);
+                  throw new Error('Gagal membuat commit: ' + msg);
+                }
+                return d;
+              });
+            });
+        });
+      });
+    }).then(function (c) {
+      busy = false; btn.disabled = false; btn.textContent = 'Eksport sekarang'; progress.classList.add('hidden');
+      showResult(true, files.length + ' file terkirim dalam satu commit ke <span class="font-mono">' + escapeHtml(project) + '</span>' + (c && c.short_id ? ' (commit <span class="font-mono">' + escapeHtml(c.short_id) + '</span>)' : '') + '.');
+    }).catch(function (e) {
+      busy = false; btn.disabled = false; btn.textContent = 'Eksport sekarang'; progress.classList.add('hidden');
+      showResult(false, escapeHtml(e.message || String(e)));
+    });
   };
 
-  // Buka otomatis setelah kembali dari OAuth (?gitsync=1).
+  // Balik dari halaman Plugin setelah hubungkan GitHub -> buka pop-up lagi.
   try {
-    var q = new URLSearchParams(window.location.search);
-    if (q.get('gitsync') === '1') {
-      try {
-        var u = new URL(window.location.href);
-        u.searchParams.delete('gitsync');
-        window.history.replaceState({}, document.title, u.pathname + (u.search || ''));
-      } catch (e) {}
-      setTimeout(function () { window.gitSyncOpen(); }, 400);
+    var q = new URLSearchParams(location.search);
+    if (q.get('egopen') === '1' || q.get('gitsync') === '1') {
+      q.delete('egopen'); q.delete('gitsync');
+      var clean = location.origin + location.pathname + (q.toString() ? '?' + q.toString() : '');
+      history.replaceState(null, '', clean);
+      window.addEventListener('load', function () { openExportModal(); });
     }
   } catch (e) {}
 })();
