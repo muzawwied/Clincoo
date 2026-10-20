@@ -207,7 +207,7 @@ function renderProjects() {
         const logo = _safeLogoUrl(projCardLogo(proj));
         const avatarHtml = logo ? '<img src="' + esc(logo) + '" class="w-6 h-6 rounded-full object-cover shrink-0 border border-gray-100" alt="Logo">' : '';
         return '<div class="w-56 sm:w-60 flex-shrink-0 border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group" onclick="openProject(\'' + esc(proj.id) + '\')">' +
-            '<div class="w-full h-28 bg-[#F9FAFB] rounded-xl mb-3.5 p-3 flex flex-col justify-between border border-gray-100 group-hover:border-gray-200 transition-colors">' +
+            '<div class="project-preview-surface w-full h-28 bg-[#F9FAFB] rounded-xl mb-3.5 p-3 flex flex-col justify-between border border-gray-100 group-hover:border-gray-200 transition-colors">' +
             '<div class="flex items-center justify-between"><div class="w-12 h-2 bg-gray-200 rounded-full"></div><div class="w-3 h-3 rounded-full bg-black/10"></div></div>' +
             '<div class="grid grid-cols-2 gap-2 my-auto"><div class="h-10 rounded-lg border border-gray-100 p-1.5 flex flex-col justify-between"><div class="w-6 h-1.5 bg-gray-200 rounded"></div><div class="w-10 h-2 bg-gray-900 rounded"></div></div><div class="h-10 rounded-lg border border-gray-100 p-1.5 flex flex-col justify-between"><div class="w-6 h-1.5 bg-gray-200 rounded"></div><div class="w-8 h-2 bg-gray-400 rounded"></div></div></div>' +
             '<div class="w-full h-1.5 bg-gray-200 rounded-full"></div></div>' +
@@ -223,7 +223,7 @@ function renderProjects() {
         const thumbInner = logo
             ? '<img src="' + esc(logo) + '" class="w-full h-full rounded-full object-cover" alt="Logo">'
             : '<div class="w-full h-1.5 bg-gray-200 rounded-full"></div><div class="w-full h-1.5 bg-gray-200 rounded-full"></div><div class="w-full h-1.5 bg-gray-200 rounded-full"></div>';
-        const thumbCls = 'w-20 h-20 shrink-0 bg-[#F9FAFB] p-2.5 flex flex-col justify-between items-center border border-gray-100 group-hover:border-gray-200 transition-colors overflow-hidden ' + (logo ? 'rounded-full' : 'rounded-xl');
+        const thumbCls = 'project-preview-surface w-20 h-20 shrink-0 bg-[#F9FAFB] p-2.5 flex flex-col justify-between items-center border border-gray-100 group-hover:border-gray-200 transition-colors overflow-hidden ' + (logo ? 'rounded-full' : 'rounded-xl');
         return '<div data-proj-id="' + esc(proj.id) + '" class="relative w-full bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group flex items-center gap-4" onclick="openProject(\'' + esc(proj.id) + '\')">' +
             '<div class="' + thumbCls + '">' + thumbInner + '</div>' +
             '<div class="flex-1 min-w-0"><h3 class="font-semibold text-gray-900 text-base group-hover:text-black truncate">' + title + '</h3>' +
