@@ -1155,9 +1155,12 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
     let wsInitialSync = true;
 
     // Ambil data workspace dari D1; kalau D1 kosong tapi lokal ada, unggah (migrasi sekali)
-    function wsCloudPull() {
-    // [11 Okt] Near-real-time: cek sidik jari revisi tiap 8 detik & saat fokus.
-    // Pull penuh HANYA bila revisi cloud berubah — cache selalu divalidasi, gak basi.
+    // [21 Okt] FIX KUOTA GATEWAY D1 (error 429 seluruh produksi): interval rev-check
+    // dan listener focus tadinya didaftarkan DI DALAM wsCloudPull — setiap panggilan
+    // (tiap ganti tab / revisi berubah) menambah interval BARU. Puluhan interval
+    // paralel jalan, tiap satu fetch ke gateway tiap 8 detik -> kuota harian gateway
+    // (100 ribu request) terbakar habis. Kini: didaftarkan SEKALI di luar fungsi,
+    // dengan backoff adaptif: aktif 8 dtk -> idle 15 dtk -> lama idle 30 dtk.
     let wsLastRev = null;
     function wsRevCheck() {
       const pid = wsProjectId();
@@ -1171,8 +1174,22 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         })
         .catch(function() {});
     }
-    setInterval(function() { if (!document.hidden) { try { wsRevCheck(); } catch (e) {} } }, 8000);
-    window.addEventListener('focus', function() { try { wsRevCheck(); } catch (e) {} });
+    let wsRevDelay = 8000, wsRevIdle = 0;
+    (function wsRevLoop() {
+      setTimeout(function () {
+        if (!document.hidden) {
+          try { wsRevCheck(); } catch (e) {}
+          wsRevIdle++;
+          wsRevDelay = wsRevIdle > 8 ? 30000 : (wsRevIdle > 4 ? 15000 : 8000);
+        }
+        wsRevLoop();
+      }, wsRevDelay);
+    })();
+    window.addEventListener('focus', function() { try { wsRevIdle = 0; wsRevDelay = 8000; wsRevCheck(); } catch (e) {} });
+    try { ['pointerdown', 'keydown'].forEach(function (ev) { window.addEventListener(ev, function () { wsRevIdle = 0; wsRevDelay = 8000; }, { passive: true }); }); } catch (e) {}
+
+    // [11 Okt] Pull penuh HANYA bila revisi cloud berubah — cache selalu divalidasi.
+    function wsCloudPull() {
       const pid = wsProjectId();
       if (!pid || wsCloudTimer) { // jangan menimpa saat ada push tertunda
         if (!pid) { wsInitialSync = false; renderFileList(); }
@@ -1362,11 +1379,10 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       if (document.visibilityState === 'hidden' && wsDirtyIs()) wsCloudPushNow(0, true);
       if (document.visibilityState === 'visible') wsCloudPull(); // refresh real-time lintas perangkat
     });
-    // AUTO-REFRESH WORKSPACE: tarik data cloud tiap 10 detik saat tab terlihat —
-    // file baru buatan AI (termasuk dari perangkat lain / sesi chat lain) langsung
-    // muncul di pohon file tanpa reload manual. Pull aman: batal otomatis bila ada
-    // push tertunda atau edit lokal belum terkirim (guard di dalam wsCloudPull).
-    setInterval(function () { if (document.visibilityState === 'visible') wsCloudPull(); }, 10000);
+    // [21 Okt] AUTO-REFRESH tanpa polling penuh: rev-check adaptif di atas sudah
+    // memicu wsCloudPull otomatis saat revisi cloud berubah (file AI/perangkat lain
+    // tetap langsung muncul). Interval pull penuh tiap 10 detik DIHAPUS — tiap
+    // pull = kueri berat ke gateway D1, pembakar kuota kedua setelah interval dobel.
 
     // [15 Okt] PENYELAMAT KUOTA: cache localStorage gagal ditulis (kuota ~5MB
     // origin habis — dipakai bersama riwayat chat, proyek lain, dll). Tanpa ini,
