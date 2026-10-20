@@ -845,7 +845,11 @@ const $ = id => document.getElementById(id);
         let t = 'Sistem (Default)';
         try { t = localStorage.getItem('clincoo_theme') || 'Sistem (Default)'; } catch (e) {}
         const dark = (t === 'Gelap') || ((t === 'Sistem (Default)' || !t) && mq.matches);
+        // class dipasang di html DAN body: CSS halaman ini memakai keduanya (body.dark-mode #chat-sheet, .dark-mode body, dst.)
         document.documentElement.classList.toggle('dark-mode', dark);
+        if (document.body) document.body.classList.toggle('dark-mode', dark);
+        document.documentElement.style.background = dark ? '#0a0a0a' : '#ffffff';
+        document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
         const mt = document.querySelector('meta[name=theme-color]');
         if (mt) mt.content = dark ? '#0a0a0a' : '#ffffff';
     };
