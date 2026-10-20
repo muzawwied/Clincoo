@@ -363,6 +363,13 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
               Tes koneksi
             </button>
           </div>
+          <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input id="mr-key-input" type="password" autocomplete="off" spellcheck="false" placeholder="Ganti key ModelRouter (sk-…)" class="flex-1 min-w-0 rounded-full border border-gray-300 bg-white px-4 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-black/10">
+            <button id="mr-save-btn" type="button" class="flex-shrink-0 inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white text-gray-800 text-[13px] font-semibold px-4 py-2 hover:bg-gray-50 transition-colors" onclick="runMrTest(true)">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+              <span>Simpan &amp; Tes</span>
+            </button>
+          </div>
           <div id="mr-test-result" class="hidden mt-3 text-[13px] rounded-xl px-4 py-3 leading-relaxed"></div>
         </div>
 
@@ -623,23 +630,42 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       } catch (e) {}
     })();
 
-    async function runMrTest() {
-      var btn = document.getElementById('mr-test-btn');
+    async function runMrTest(saveMode) {
+      var btn = document.getElementById(saveMode ? 'mr-save-btn' : 'mr-test-btn');
       var out = document.getElementById('mr-test-result');
       if (!btn || !out || btn.disabled) return;
+      var newKey = '';
+      if (saveMode) {
+        var inp = document.getElementById('mr-key-input');
+        newKey = (inp && inp.value || '').trim();
+        if (!newKey) {
+          out.classList.remove('hidden');
+          out.className = 'mt-3 text-[13px] rounded-xl px-4 py-3 leading-relaxed bg-red-50 text-red-800';
+          out.innerHTML = '<b>Gagal.</b> Tempel dulu key ModelRouter baru di kolom di atas.';
+          return;
+        }
+      }
       btn.disabled = true;
       btn.dataset.orig = btn.innerHTML;
       btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg><span>Menguji…</span>';
       out.classList.add('hidden');
       try {
-        var res = await fetch('/api/mr-test', { method: 'POST' });
+        var res = await fetch('/api/mr-test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: saveMode ? JSON.stringify({ action: 'save_key', key: newKey }) : '{}'
+        });
         var d = await res.json();
+        if (saveMode && d && d.saved) {
+          var inp2 = document.getElementById('mr-key-input');
+          if (inp2) { inp2.value = ''; inp2.placeholder = 'Key tersimpan ✓'; }
+        }
         out.classList.remove('hidden');
         if (d && d.ok) {
           out.className = 'mt-3 text-[13px] rounded-xl px-4 py-3 leading-relaxed bg-green-50 text-green-800';
           var secs = ((d.ms || 0) / 1000).toFixed(1);
           var keyInfo = (d && d.key_tail) ? (' (key ' + d.key_src + ', akhir ' + d.key_tail + ')') : '';
-          out.innerHTML = '<b>Berhasil terhubung.</b> ' + (d.model || 'glm-5.3-flash:mr') + ' menjawab dalam ' + secs + 's' + keyInfo + ': "' + String(d.reply || '').slice(0, 80) + '". Tes ini juga muncul di Usage Logs ModelRouter.';
+          out.innerHTML = (saveMode && d.saved ? '<b>Key baru tersimpan.</b> ' : '<b>Berhasil terhubung.</b> ') + (d.model || 'glm-5.3-flash:mr') + ' menjawab dalam ' + secs + 's' + keyInfo + ': "' + String(d.reply || '').slice(0, 80) + '". Tes ini juga muncul di Usage Logs ModelRouter.';
         } else {
           out.className = 'mt-3 text-[13px] rounded-xl px-4 py-3 leading-relaxed bg-red-50 text-red-800';
           var why = (d && (d.error || ('HTTP ' + d.status))) || 'penyebab tidak diketahui';

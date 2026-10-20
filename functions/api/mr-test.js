@@ -57,6 +57,29 @@ export async function onRequestGet({ request, env }) {
 export async function onRequestPost({ request, env }) {
   const a = await guardAdmin(env, request);
   if (a.deny) return a.deny;
+
+  // [21 Okt] Aksi simpan key baru: tulis ke env_vars di DB yang dipakai produksi
+  // (env.DB = gateway d1remote), lalu langsung dites dengan key tersebut.
+  let body = {};
+  try { body = await request.json() || {}; } catch (e) { body = {}; }
+  const newKey = String(body.key || '').trim();
+  let savedKey = false;
+  if (body.action === 'save_key') {
+    if (newKey.length < 20) return json({ ok: false, error: 'Key terlalu pendek — tempel key ModelRouter lengkap (sk-...).' }, 400);
+    try {
+      await env.DB.prepare("UPDATE env_vars SET value = ?, is_secret = 1, updated_at = datetime('now') WHERE key = 'MODELROUTER_API_KEY'").bind(newKey).run();
+      const chk = await env.DB.prepare("SELECT value FROM env_vars WHERE key = 'MODELROUTER_API_KEY'").all();
+      const vals = (chk.results || []).map(r => String(r.value || ''));
+      if (!vals.includes(newKey)) {
+        await env.DB.prepare("INSERT INTO env_vars (key, value, is_secret) VALUES ('MODELROUTER_API_KEY', ?, 1)").bind(newKey).run();
+      }
+      await env.DB.prepare("DELETE FROM env_vars WHERE key = 'MODELROUTER_API_KEY' AND value != ?").bind(newKey).run();
+      savedKey = true;
+    } catch (e) {
+      return json({ ok: false, error: 'Gagal menyimpan key ke DB produksi: ' + String((e && e.message) || e).slice(0, 200) }, 500);
+    }
+  }
+
   const keys = await pickKeys(env);
   if (!keys.length) return json({ ok: false, error: 'Key MODELROUTER_API_KEY belum diatur di backend ini (env Pages maupun tabel env_vars). Chat di domain ini TIDAK memakai ModelRouter — semua jawaban jalan lewat cadangan (Gemini/OpenRouter).' });
   const key = keys[0].value;
@@ -76,7 +99,7 @@ export async function onRequestPost({ request, env }) {
       body: JSON.stringify({
         model: 'glm-5.3-flash:mr',
         messages: [{ role: 'user', content: 'Tes koneksi. Balas dengan satu kata: OK' }],
-        max_tokens: 16
+        max_tokens: 1024
       }),
       signal: ctrl.signal
     });
@@ -85,7 +108,7 @@ export async function onRequestPost({ request, env }) {
     const ms = Date.now() - t0;
     if (!res.ok) {
       const msg = (data && data.error && (data.error.message || data.error)) || ('HTTP ' + res.status);
-      return json({ ok: false, status: res.status, ms, key_src: keySrc, key_tail: keyTail, error: String(msg).slice(0, 300) });
+      return json({ ok: false, status: res.status, ms, key_src: keySrc, key_tail: keyTail, saved: savedKey, error: String(msg).slice(0, 300) });
     }
     const text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
     return json({
@@ -95,7 +118,8 @@ export async function onRequestPost({ request, env }) {
       model: (data.model || 'glm-5.3-flash:mr'),
       reply: String(text).slice(0, 120),
       key_src: keySrc,
-      key_tail: keyTail
+      key_tail: keyTail,
+      saved: savedKey
     });
   } catch (e) {
     clearTimeout(timer);
