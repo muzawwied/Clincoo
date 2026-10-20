@@ -31,6 +31,24 @@ jobs:
               print('ENV', env_name, '| d1:', json.dumps(b), '| env_var keys:', sorted(ev.keys()))
           "
 
+      - name: Inventaris D1 + Pages projects
+        env:
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          curl -sS "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/d1/database" -H "Authorization: Bearer ${CF_TOKEN}" | python3 -c "
+          import sys, json
+          d = json.load(sys.stdin)
+          for x in d.get('result') or []:
+              print('D1:', x.get('uuid'), '|', x.get('name'), '|', x.get('created_at'))
+          "
+          curl -sS "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/pages/projects" -H "Authorization: Bearer ${CF_TOKEN}" | python3 -c "
+          import sys, json
+          d = json.load(sys.stdin)
+          for x in d.get('result') or []:
+              print('PAGES:', x.get('name'), '|', [dm for dm in x.get('domains', []) if '.buzz' in dm or '.pages.dev' in dm])
+          "
+
       - name: SELECT 15 log terakhir
         env:
           CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
