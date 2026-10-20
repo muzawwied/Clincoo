@@ -1600,7 +1600,26 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       });
       if (!bad.length) return;
       wsEmptyBigNotified = true;
-      try { addNotification('Workspace', '⚠ ' + bad.length + ' berkas tercatat di cloud TANPA isi (unggahan terputus: ' + bad.slice(0, 5).join(', ') + (bad.length > 5 ? ', …' : '') + '). Nama tersimpan, isinya tidak — silakan unggah ulang berkas tersebut.'); } catch (e) {}
+      // [21 Okt, arahan owner: "hapus aja"] sisa unggahan terputus (baris cloud
+      // TANPA isi) dibersihkan OTOMATIS: hapus barisnya di server + buang dari
+      // pohon lokal. Kalau unggahan lain masih berjalan, tunda biar tidak salah hapus.
+      if ((typeof wsUploadRunning === 'number' && wsUploadRunning > 0) || (typeof wsUploadQ !== 'undefined' && wsUploadQ.length > 0)) {
+        try { addNotification('Workspace', '⚠ ' + bad.length + ' berkas sisa unggahan terputus (' + bad.slice(0, 5).join(', ') + ') — akan dibersihkan otomatis setelah unggahan selesai.'); } catch (e) {}
+        setTimeout(function () { wsEmptyBigNotified = false; }, 30000);
+        return;
+      }
+      bad.forEach(function (p) {
+        fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(wsProjectId()) + '&path=' + encodeURIComponent(p), { method: 'DELETE', headers: wsAuthHeaders() })
+          .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); })
+          .catch(function () { wsEmptyBigNotified = false; }); // gagal: coba lagi di render berikutnya
+      });
+      Object.keys(projectFilesData || {}).forEach(function (fk) {
+        const arr = projectFilesData[fk] || [];
+        for (let i = arr.length - 1; i >= 0; i--) { const it = arr[i]; if (it && it.type === 'file' && it.emptyBig) arr.splice(i, 1); }
+      });
+      try { localStorage.setItem(wsFilesKey(), JSON.stringify(projectFilesData)); } catch (e) {}
+      setTimeout(function () { try { renderFileList(); } catch (e) {} }, 0);
+      try { addNotification('Workspace', bad.length + ' berkas sisa unggahan terputus (' + bad.slice(0, 5).join(', ') + ') otomatis dihapus dari cloud. Upload ulang bila masih diperlukan.'); } catch (e) {}
     }
     function renderFileList() {
       try { wsWarnEmptyBigOnce(); } catch (e) {}
