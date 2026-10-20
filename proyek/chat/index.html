@@ -831,7 +831,15 @@ html.embed-mode #chat-input-footer { padding-bottom: 12px; }
 // ===== [Clincoo 20 Okt] TRANSPORT BARU: backend Clincoo /api/chat mode 'asisten' =====
 // Kunci model & system prompt dipegang SERVER — klien tidak menyimpan rahasia apa pun.
 const API_URL = '/api/chat';
-const PROJECT_ID = new URLSearchParams(location.search).get('id') || '';
+// [Clincoo] id proyek: dari ?id= (mode standalone) atau storage yang di-set workspace
+// saat di-embed (?embed=1 tanpa id) — tanpa ini, sync project/patch ke D1 tidak jalan.
+const PROJECT_ID = (function () {
+    const q = new URLSearchParams(location.search).get('id');
+    if (q) return q;
+    try {
+        return (sessionStorage.getItem('clincoo_tab_project_id') || localStorage.getItem('clincoo_current_project_id')) || '';
+    } catch (e) { return ''; }
+})();
 const TOOL_API_BASE = (['clincoo-be2.pages.dev', 'app.clincoo.buzz', 'clincoo.biz.id', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : '';
 const MAX_OUT = 8192; // batas output per putaran (naikkan bila model/plan mengizinkan)
 // [Clincoo] SYSTEM_PROMPT tidak ada di klien: mode asisten menyuntiknya di server (chat.js).
@@ -2140,7 +2148,10 @@ async function wsSyncFromMessage(m) {
             const r = await fetch(TOOL_API_BASE + '/api/project-files?project_id=' + encodeURIComponent(PROJECT_ID) + '&path=' + encodeURIComponent(p), { method: 'DELETE' });
             if (r.ok) removed++;
         }
-        if (saved || removed) toast((saved ? saved + ' file tersimpan' : '') + (saved && removed ? ' · ' : '') + (removed ? removed + ' dihapus' : '') + ' di workspace proyek.');
+        if (saved || removed) {
+            toast((saved ? saved + ' file tersimpan' : '') + (saved && removed ? ' · ' : '') + (removed ? removed + ' dihapus' : '') + ' di workspace proyek.');
+            try { if (window.parent && window.parent !== window) window.parent.postMessage('clincoo:files-updated', '*'); } catch (e) {}
+        }
     } catch (e) { console.warn('sync workspace error:', e); }
 }
 

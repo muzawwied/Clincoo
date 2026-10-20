@@ -3507,7 +3507,10 @@ function crownAction(e){
         sh.classList.add('open');
     };
     window.agentSheetClose = function () { sh.classList.remove('open'); };
-    window.addEventListener('message', function (ev) { if (ev && ev.data === 'clincoo:chat-close') window.agentSheetClose(); });
+    window.addEventListener('message', function (ev) {
+        if (ev && ev.data === 'clincoo:chat-close') window.agentSheetClose();
+        if (ev && ev.data === 'clincoo:files-updated') { try { wsRevCheck(); } catch (e) {} } // chat menyimpan project/patch ke D1 → tarik segera
+    });
 })();
 </script>
 
