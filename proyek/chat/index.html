@@ -828,7 +828,7 @@ html.embed-mode #chat-input-footer { padding-bottom: 12px; }
 <div id="drop-ov" aria-hidden="true"><div>Lepas gambar atau file di sini</div></div>
 <div id="pl-ov" aria-hidden="true"><div id="pl-sheet" role="dialog" aria-modal="true"></div></div>
 
-<div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-black text-white px-4 py-2.5 rounded-full text-[13px] font-medium z-[99] opacity-0 pointer-events-none max-w-[86vw] text-center"></div>
+<!-- [20 Okt, minta owner] elemen toast dihapus dari halaman chat -->
 
 <script>
 // ===== [Clincoo 20 Okt] TRANSPORT BARU: backend Clincoo /api/chat mode 'asisten' =====
@@ -2406,7 +2406,7 @@ function copyToClipboard(text) {
         else reject(new Error('copy gagal'));
     });
 }
-window.copyText = (id, btn) => { const t = ($(id) || {}).textContent || ''; copyToClipboard(t.trim()).then(() => toast('Disalin.')).catch(() => toast('Gagal menyalin.')); };
+window.copyText = (id, btn) => { const t = ($(id) || {}).textContent || ''; const ic = btn && btn.querySelector('i'); copyToClipboard(t.trim()).then(() => { if (ic) { const c = ic.className; ic.className = 'ph ph-check'; setTimeout(() => { ic.className = c; }, 1500); } }).catch(() => {}); };
 const codeCardOf = btn => btn.closest('.md-codecard, .md-filecard');
 window.copyCode = btn => {
     const code = codeCardOf(btn).querySelector('code').textContent;
@@ -2515,7 +2515,7 @@ window.handleThumbs = (id, dir) => {
 };
 
 let toastT = null;
-function toast(t) { const d = $('toast'); d.textContent = t; d.style.opacity = '.96'; d.style.transform = 'translate(-50%, 0)'; clearTimeout(toastT); toastT = setTimeout(() => { d.style.opacity = '0'; }, 2400); }
+function toast(t) { /* [20 Okt, minta owner] tanpa toast di halaman chat */ }
 
 async function sendMessage(opts) {
     const hid = opts && typeof opts.model === 'string' ? opts : null; // pesan sistem: tampil singkat di chat, isi lengkap hanya dikirim ke AI
