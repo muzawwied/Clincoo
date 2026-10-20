@@ -1,0 +1,49 @@
+name: Set ModelRouter key (D1 env_vars)
+
+# [21 Okt] Pasang MODELROUTER_API_KEY ke tabel env_vars GLOBAL di D1 clincoo-db
+# (database_id dari wrangler.toml) supaya backend chat (project Pages "clincoo",
+# app.clincoo.buzz) memakai ModelRouter glm-5.3-flash:mr sebagai model UTAMA.
+# chat.js membaca tabel ini di SETIAP request -> tanpa redeploy, langsung aktif.
+#
+# Cara pakai: tab Actions -> workflow ini -> Run workflow (butuh secret
+# MR_API_KEY di repo secrets). Idempotent: INSERT OR REPLACE.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  set-key:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Insert MODELROUTER_API_KEY ke env_vars (D1)
+        env:
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          MR_KEY: ${{ secrets.MR_API_KEY }}
+          DB_ID: 49b6fed3-a237-46e3-ab2b-b0de31cc862b
+        run: |
+          set -e
+          if [ -z "$MR_KEY" ]; then echo "Secret MR_API_KEY belum di-set di repo."; exit 1; fi
+          SQL="INSERT OR REPLACE INTO env_vars (key, value, is_secret, updated_at) VALUES ('MODELROUTER_API_KEY', '${MR_KEY}', 1, datetime('now'))"
+          RESP=$(curl -sS -X POST \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/d1/database/${DB_ID}/query" \
+            -H "Authorization: Bearer ${CF_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data "{\"sql\": \"${SQL}\"}")
+          echo "INSERT result:" && echo "$RESP" | python3 -c "import sys,json; d=json.load(sys.stdin); print(json.dumps({'success': d.get('success'), 'errors': d.get('errors')}))"
+          echo "$RESP" | python3 -c "import sys,json; d=json.load(sys.stdin); sys.exit(0 if d.get('success') else 1)"
+
+      - name: Verifikasi (SELECT, key disembunyikan)
+        env:
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          DB_ID: 49b6fed3-a237-46e3-ab2b-b0de31cc862b
+        run: |
+          RESP=$(curl -sS -X POST \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/d1/database/${DB_ID}/query" \
+            -H "Authorization: Bearer ${CF_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"sql": "SELECT key, is_secret, length(value) AS len, updated_at FROM env_vars WHERE key = '\''MODELROUTER_API_KEY'\''"}')
+          echo "VERIFY:" && echo "$RESP" | python3 -c "import sys,json; d=json.load(sys.stdin); r=(d.get('result') or [{}])[0].get('results', []); print(json.dumps(r)); sys.exit(0 if d.get('success') and r else 1)"
