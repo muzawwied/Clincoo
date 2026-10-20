@@ -2089,6 +2089,23 @@
             handleNotionCancel();
             ghKeyBridge();
             rememberBackParam();
+            // [20 Okt 2026] Trampoline: connect GitHub dimulai dari workspace/editor
+            // (?back=...) -> jangan berhenti di halaman Plugin. Langsung lanjut ke
+            // GitHub authorize (alur redirect_uri terdaftar tetap aman); setelah
+            // sukses handleOAuthCallback otomatis memulangkan user ke halaman asal.
+            (function ghBackTrampoline() {
+                try {
+                    const q = new URLSearchParams(window.location.search);
+                    const b = q.get('back') || '';
+                    if (!b || b.indexOf(window.location.origin + '/') !== 0) return; // same-origin saja
+                    if (q.get('code') || q.get('gh_token') || q.get('error')) return; // sedang callback OAuth
+                    if (localStorage.getItem('clincoo_gh_token') || localStorage.getItem('clincoo_github_token')) {
+                        window.location.replace(b); // sudah terhubung -> langsung pulang
+                        return;
+                    }
+                    startOAuth(); // belum terhubung -> langsung ke GitHub, tanpa klik lagi
+                } catch (e) {}
+            })();
             handleOAuthCallback();
             syncGitHubFromDB();
             validateSavedGitHubConnection();
