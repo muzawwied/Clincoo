@@ -320,6 +320,309 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usage
   return lastErr ? (sawRateLimit ? { error: lastErr, quotaExhausted: true } : { error: lastErr }) : null;
 }
 
+// ===== Fallback Provider 1: Gemini (Google AI Studio) =====
+const GEMINI_MODELS = [gemini-2.5-flash, gemini-2.0-flash, gemini-1.5-flash, gemini-3.6-flash];
+
+async function getGeminiKeys(env) {
+  const keys = [];
+  const seen = new Set();
+  const add = v => { v = String(v || "").trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
+  add(env.GEMINI_API_KEY);
+  add(env.GEMINI_API_KEY_4); add(env.GEMINI_API_KEY_5); add(env.GEMINI_API_KEY_6);
+  if (!env.DB) return keys;
+  try {
+    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('GEMINI_API_KEY','GEMINI_API_KEY_2','GEMINI_API_KEY_3','GEMINI_API_KEY_4','GEMINI_API_KEY_5','GEMINI_API_KEY_6')").all();
+    for (const r of rows.results || []) add(r.value);
+  } catch {}
+  return keys;
+}
+
+function partsFromContent(content) {
+  if (typeof content === "string") return [{ text: content }];
+  if (Array.isArray(content)) {
+    const parts = [];
+    for (const block of content) {
+      if (!block) continue;
+      if (block.type === "text" && block.text) parts.push({ text: block.text });
+      else if (block.type === "image_url" && block.image_url?.url) {
+        const m = /^data:(.+?);base64,(.+)$/.exec(block.image_url.url || "");
+        if (m) parts.push({ inlineData: { mimeType: m[1], data: m[2] } });
+      } else if (block.type === "function_call" && block.name) {
+        const fcPart = { functionCall: { name: block.name, args: block.args || {} } };
+        if (block.thought_signature) fcPart.thoughtSignature = block.thought_signature;
+        parts.push(fcPart);
+      } else if (block.type === "function_response" && block.name) {
+        parts.push({ functionResponse: { name: block.name, response: { result: block.result } } });
+      }
+    }
+    return parts.length ? parts : [{ text: "." }];
+  }
+  return [{ text: "." }];
+}
+
+function toGeminiPayload(messages) {
+  let systemInstruction = null;
+  const contents = [];
+  for (const m of messages) {
+    if (!m) continue;
+    if (m.role === "system") {
+      const text = typeof m.content === "string" ? m.content : partsFromContent(m.content).map(p => p.text || "").join("\n");
+      systemInstruction = systemInstruction ? systemInstruction + "\n" + text : text;
+      continue;
+    }
+    contents.push({ role: m.role === "assistant" ? "model" : "user", parts: partsFromContent(m.content) });
+  }
+  if (contents.length > 30) contents.splice(0, contents.length - 30);
+  return { systemInstruction, contents };
+}
+
+async function fetchGeminiStream(apiKey, model, systemInstruction, contents, tools, onDelta) {
+  const payload = { contents };
+  if (tools) payload.tools = tools;
+  if (systemInstruction) payload.systemInstruction = { parts: [{ text: systemInstruction }] };
+  const res = await withTimeout(fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+    body: JSON.stringify(payload)
+  }), 35000, "GeminiStream");
+  if (!res.ok) {
+    await res.text().catch(() => {});
+    return { error: `Gemini ${model}: HTTP ${res.status}`, status: res.status };
+  }
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = "";
+  const parts = [];
+  let finishReason = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let nl;
+    while ((nl = buf.indexOf("\n")) !== -1) {
+      const line = buf.slice(0, nl).trim();
+      buf = buf.slice(nl + 1);
+      if (!line.startsWith("data:")) continue;
+      let j; try { j = JSON.parse(line.slice(5).trim()); } catch (e) { continue; }
+      if (j.candidates && j.candidates[0] && j.candidates[0].finishReason) finishReason = j.candidates[0].finishReason;
+      const cps = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
+      for (const pt of cps) {
+        parts.push(pt);
+        if (pt.text && onDelta) { try { onDelta(pt.text); } catch (eD) {} }
+      }
+    }
+  }
+  return { data: { candidates: [{ content: { parts }, finishReason }] } };
+}
+
+async function fetchGemini(apiKey, model, systemInstruction, contents, tools) {
+  const payload = { contents };
+  if (tools) payload.tools = tools;
+  if (systemInstruction) payload.systemInstruction = { parts: [{ text: systemInstruction }] };
+  const res = await withTimeout(fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+    body: JSON.stringify(payload)
+  }), 35000, "Gemini");
+  if (!res.ok) {
+    await res.text().catch(() => {});
+    return { error: `Gemini ${model}: HTTP ${res.status}`, status: res.status };
+  }
+  return { data: await res.json() };
+}
+
+async function tryGeminiText(apiKeys, messages, gDecls, onDelta) {
+  const keys = Array.isArray(apiKeys) ? apiKeys.filter(Boolean) : [apiKeys].filter(Boolean);
+  if (!keys.length) return null;
+  const { systemInstruction, contents } = toGeminiPayload(messages);
+  const tools = (gDecls && gDecls.length) ? [{ functionDeclarations: gDecls }] : null;
+  let lastErr = null;
+  for (const apiKey of keys) {
+    for (const model of GEMINI_MODELS) {
+      try {
+        const r = onDelta
+          ? await fetchGeminiStream(apiKey, model, systemInstruction, contents, tools, onDelta)
+          : await fetchGemini(apiKey, model, systemInstruction, contents, tools);
+        if (r.error) { lastErr = r.error; continue; }
+        const parts = r.data?.candidates?.[0]?.content?.parts || [];
+        const text = parts.map(p => p.text || "").join("");
+        const toolCalls = parts
+          .filter(p => p.functionCall)
+          .map(p => ({ name: p.functionCall.name, args: p.functionCall.args || {}, thought_signature: p.thoughtSignature || undefined }));
+        if (toolCalls.length > 0 || text) {
+          return toolCalls.length > 0
+            ? { tool_calls: toolCalls, text, model: `Gemini (${model})` }
+            : { text, model: `Gemini (${model})` };
+        }
+      } catch (err) {
+        lastErr = `Gemini ${model}: ${err && err.message}`;
+      }
+    }
+  }
+  return lastErr ? { error: lastErr } : null;
+}
+
+// ===== Fallback Provider 2: OpenRouter =====
+const OPENROUTER_MODELS = [
+  "google/gemma-4-26b-a4b-it:free",
+  "cohere/north-mini-code:free",
+  "anthropic/claude-haiku-5.5",
+  "z-ai/glm-5.3-flash"
+];
+
+async function getOpenRouterKeys(env) {
+  const keys = [];
+  const seen = new Set();
+  const add = v => { v = String(v || "").trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
+  add(env.OPENROUTER_API_KEY);
+  add(env.OPENROUTER_API_KEY_4); add(env.OPENROUTER_API_KEY_5); add(env.OPENROUTER_API_KEY_6);
+  if (!env.DB) return keys;
+  try {
+    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('OPENROUTER_API_KEY','OPENROUTER_API_KEY_2','OPENROUTER_API_KEY_3','OPENROUTER_API_KEY_4','OPENROUTER_API_KEY_5','OPENROUTER_API_KEY_6')").all();
+    for (const r of rows.results || []) add(r.value);
+  } catch {}
+  return keys;
+}
+
+async function tryOpenRouterText(keys, messages, gDecls, onDelta) {
+  const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
+  if (!keyList.length) return null;
+  const { system, chatMsgs } = toOAIChat(messages);
+  const oaiTools = oaiToolsOf(gDecls);
+  const baseMsgs = system ? [{ role: "system", content: system }, ...chatMsgs] : chatMsgs;
+  let lastErr = null;
+  for (const key of keyList) {
+    for (const model of OPENROUTER_MODELS) {
+      try {
+        const p = { model, messages: baseMsgs, max_tokens: 4096 };
+        if (onDelta) p.stream = true;
+        if (oaiTools) p.tools = oaiTools;
+        const res = await withTimeout(fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + key,
+            "HTTP-Referer": "https://clincoo.buzz",
+            "X-Title": "Clincoo"
+          },
+          body: JSON.stringify(p)
+        }), 45000, "OpenRouter");
+        if (!res.ok) {
+          lastErr = `OpenRouter ${model}: HTTP ${res.status}`;
+          continue;
+        }
+        if (onDelta && res.body) {
+          const st = await readOAICompatStream(res, onDelta);
+          if (st.text || st.tcs.length) {
+            if (st.tcs.length) {
+              const nt = normStreamToolCalls(st.tcs);
+              if (nt.length) return { tool_calls: nt, text: st.text, model: model.split("/").pop() + " (OpenRouter)" };
+            }
+            return { text: st.text, model: model.split("/").pop() + " (OpenRouter)" };
+          }
+        } else {
+          const data = await res.json().catch(() => ({}));
+          const msg = data && data.choices && data.choices[0] && data.choices[0].message;
+          const text = (msg && msg.content) || "";
+          const tcs = msg && Array.isArray(msg.tool_calls) ? msg.tool_calls : null;
+          if (tcs && tcs.length) {
+            const norm = [];
+            for (const c of tcs) {
+              let a = null;
+              if (c && c.function && typeof c.function.arguments === "string") {
+                try { a = JSON.parse(c.function.arguments); } catch {}
+              }
+              if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a || {} });
+            }
+            if (norm.length) return { tool_calls: norm, text, model: model.split("/").pop() + " (OpenRouter)" };
+          }
+          if (text) return { text, model: model.split("/").pop() + " (OpenRouter)" };
+        }
+      } catch (err) {
+        lastErr = `OpenRouter ${model}: ${err && err.message}`;
+      }
+    }
+  }
+  return lastErr ? { error: lastErr } : null;
+}
+
+// ===== Fallback Provider 3: Cloudflare Workers AI =====
+const WORKERS_AI_MODELS = [
+  "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+  "@cf/zai-org/glm-4.7-flash"
+];
+
+async function tryWorkersAIText(env, messages, onDelta) {
+  if (!env || !env.AI) return null;
+  const sys = messages.filter(m => m.role === "system").map(textOf).join("\n\n");
+  const chatMsgs = messages.filter(m => m.role !== "system").map(m => ({ role: m.role, content: textOf(m) }));
+  let lastErr = null;
+  for (const model of WORKERS_AI_MODELS) {
+    try {
+      const payload = { messages: chatMsgs };
+      if (sys) payload.system = sys;
+      const res = await env.AI.run(model, payload);
+      const raw = (res && (res.response || (typeof res === "string" ? res : ""))) || "";
+      const text = raw || ((res && Array.isArray(res.choices) && res.choices[0] && res.choices[0].message && res.choices[0].message.content) || "");
+      if (text) {
+        if (onDelta) { try { onDelta(text); } catch {} }
+        return { text, model: model.split("/").pop() + " (Workers AI)" };
+      }
+    } catch (e) {
+      lastErr = `Workers AI ${model}: ${e && e.message}`;
+    }
+  }
+  return lastErr ? { error: lastErr } : null;
+}
+
+// ===== Orkestrasi Unified Multi-Model Generation =====
+async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, toolDecls, onDelta, usageAcc }) {
+  let deltaSent = false;
+  const wrappedDelta = onDelta ? (tx) => { deltaSent = true; onDelta(tx); } : null;
+  let lastError = null;
+
+  // 1. ModelRouter (Utama)
+  if (mrKeys && mrKeys.length) {
+    try {
+      const r = await withTimeout(tryModelRouterText(mrKeys, messages, toolDecls, MODELROUTER_MODELS, wrappedDelta, usageAcc), MR_TIMEOUT_MS, "ModelRouter");
+      if (r && !r.error) return r;
+      if (r && r.error) lastError = r.error;
+    } catch (e) { lastError = e.message; }
+    if (deltaSent) return { error: lastError || "ModelRouter terputus saat streaming" };
+  }
+
+  // 2. Gemini (Fallback 1)
+  if (geminiKeys && geminiKeys.length) {
+    try {
+      const r = await tryGeminiText(geminiKeys, messages, toolDecls, wrappedDelta);
+      if (r && !r.error) return r;
+      if (r && r.error) lastError = r.error;
+    } catch (e) { lastError = e.message; }
+    if (deltaSent) return { error: lastError || "Gemini terputus saat streaming" };
+  }
+
+  // 3. OpenRouter (Fallback 2)
+  if (orKeys && orKeys.length) {
+    try {
+      const r = await tryOpenRouterText(orKeys, messages, toolDecls, wrappedDelta);
+      if (r && !r.error) return r;
+      if (r && r.error) lastError = r.error;
+    } catch (e) { lastError = e.message; }
+    if (deltaSent) return { error: lastError || "OpenRouter terputus saat streaming" };
+  }
+
+  // 4. Workers AI (Fallback 3)
+  if (env && env.AI) {
+    try {
+      const r = await tryWorkersAIText(env, messages, wrappedDelta);
+      if (r && !r.error) return r;
+      if (r && r.error) lastError = r.error;
+    } catch (e) { lastError = e.message; }
+  }
+
+  return { error: lastError || "Semua penyedia AI sedang gangguan" };
+}
+
 const QUOTA_MSG_DAILY = 'Kuota AI Clincoo hari ini sudah habis. Batas harian paket Anda tercapai — silakan coba lagi besok.';
 const QUOTA_MSG_MONTHLY = 'Kuota AI Clincoo bulan ini sudah habis. Reset otomatis awal bulan depan — atau upgrade paket / beli Paket Kredit AI di menu Profil > Kredit AI.';
 
@@ -1092,9 +1395,14 @@ export async function onRequestPost({ request, env, waitUntil }) {
       } catch (e) {}
     }
 
-    const mrKeys = await getModelRouterKeys(env);
-    if (!mrKeys.length) {
-      return new Response(JSON.stringify({ error: 'Kunci ModelRouter belum dikonfigurasi. Tambahkan MODELROUTER_API_KEY lewat Pengaturan → Environment (global).' }), {
+    const [mrKeys, geminiKeys, orKeys] = await Promise.all([
+      getModelRouterKeys(env),
+      getGeminiKeys(env),
+      getOpenRouterKeys(env)
+    ]);
+    const hasAnyProvider = mrKeys.length > 0 || geminiKeys.length > 0 || orKeys.length > 0 || !!(env && env.AI);
+    if (!hasAnyProvider) {
+      return new Response(JSON.stringify({ error: 'Belum ada provider AI yang dikonfigurasi. Tambahkan API key (ModelRouter, Gemini, atau OpenRouter) di Pengaturan → Environment.' }), {
         status: 500, headers: { 'Content-Type': 'application/json', ...CORS }
       });
     }
@@ -1142,7 +1450,16 @@ export async function onRequestPost({ request, env, waitUntil }) {
     let r = null;
     let planGapNudgeCount = 0;
     for (let sHop = 0; sHop <= (asistenMode ? 14 : 4); sHop++) {
-      r = await withTimeout(tryModelRouterText(mrKeys, workMessages, toolDecls, MODELROUTER_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null, mrUsageAcc), MR_TIMEOUT_MS, 'ModelRouter').catch(e => ({ error: e.message }));
+      r = await executeAiGeneration({
+        env,
+        mrKeys,
+        geminiKeys,
+        orKeys,
+        messages: workMessages,
+        toolDecls,
+        onDelta: streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null,
+        usageAcc: mrUsageAcc
+      });
       if (!r || r.error) break;
 
       const noToolsAtAll = !(r.tool_calls && r.tool_calls.length);
@@ -1193,7 +1510,16 @@ export async function onRequestPost({ request, env, waitUntil }) {
         ? 'Semua tool sudah selesai dieksekusi dan seluruh hasilnya tercatat di percakapan. Sekarang tulis RINGKASAN FINAL untuk user dalam Bahasa Indonesia: apa yang sudah dikerjakan, status/hasilnya, URL endpoint bila ada, dan contoh pemakaian singkat. Jangan memanggil tool apa pun — langsung tulis jawabannya sekarang.'
         : 'Kamu dipanggil sebagai AI teks murni dan TIDAK punya tool apa pun — dilarang memanggil atau menjanjikan tool/eksekusi apa pun. Jawab permintaan user secara LENGKAP dan BERISI dalam Bahasa Indonesia sebagai teks biasa: kalau diminta dibuatkan situs/kode, tulis kode lengkapnya sebagai blok kode di jawabanmu; kalau diminta penjelasan, jelaskan tuntas. Langsung tulis jawabannya sekarang.';
       const sumMsgs = workMessages.concat([{ role: 'user', content: sumPrompt }]);
-      const sm = await withTimeout(tryModelRouterText(mrKeys, sumMsgs, null, MODELROUTER_MODELS, null, mrUsageAcc), MR_TIMEOUT_MS, 'ModelRouter-ringkasan').catch(() => null);
+      const sm = await executeAiGeneration({
+        env,
+        mrKeys,
+        geminiKeys,
+        orKeys,
+        messages: sumMsgs,
+        toolDecls: null,
+        onDelta: null,
+        usageAcc: mrUsageAcc
+      }).catch(() => null);
       if (sm && !sm.error && String(sm.text || '').trim()) r = { text: sm.text, model: sm.model };
     }
     return r;
