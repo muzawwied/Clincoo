@@ -2163,8 +2163,16 @@ const attachMenuSet = open => { $('attach-menu').classList.toggle('open', open);
 $('attach-btn').onclick = e => { e.stopPropagation(); attachMenuSet(!$('attach-menu').classList.contains('open')); };
 $('menu-img').onclick = () => { attachMenuSet(false); $('img-file').click(); };
 $('menu-file').onclick = () => { attachMenuSet(false); $('doc-file').click(); };
-$('menu-plugin').onclick = () => { attachMenuSet(false); toast('Plug-in segera hadir.'); };
-$('menu-auto').onclick = () => { attachMenuSet(false); toast('Otomatisasi segera hadir.'); };
+// [Clincoo] Plug-in & Otomatisasi diaktifkan: buka halaman aslinya di jendela
+// utama (chat sering di-embed sebagai iframe di workspace, jadi harus navigasi top).
+const openInTop = href => { const tgt = (window.top && window.top !== window) ? window.top : window; tgt.location.href = href; };
+$('menu-plugin').onclick = () => {
+    attachMenuSet(false);
+    let back = '';
+    try { back = (window.top && window.top !== window) ? window.top.location.href : location.href; } catch (e) { back = location.href; }
+    openInTop('/integrasi/' + (back ? '?back=' + encodeURIComponent(back) : ''));
+};
+$('menu-auto').onclick = () => { attachMenuSet(false); openInTop('/akun/tugas-terjadwal/'); };
 document.addEventListener('pointerdown', e => { if ($('attach-menu').classList.contains('open') && !(e.target.closest && e.target.closest('#attach-menu, #attach-btn'))) attachMenuSet(false); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') attachMenuSet(false); });
 const fmtBytes = b => b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(b < 10240 ? 1 : 0) + ' KB' : (b / 1048576).toFixed(1) + ' MB';
