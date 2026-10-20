@@ -31,16 +31,17 @@ async function guardAdmin(env, request) {
 async function pickKeys(env) {
   const keys = [];
   const seen = new Set();
-  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
-  add(env.MODELROUTER_API_KEY);
+  const add = (v, src) => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push({ value: v, src }); } };
+  add(env.MODELROUTER_API_KEY, 'env Pages');
   try {
     if (env.DB) {
       const rows = await env.DB.prepare("SELECT value FROM env_vars WHERE key = 'MODELROUTER_API_KEY'").all();
-      for (const r of rows.results || []) add(r.value);
+      for (const r of rows.results || []) add(r.value, 'tabel env_vars');
     }
   } catch (e) {}
   return keys;
 }
+const tail4 = k => { k = String(k || ''); return k.length > 8 ? '…' + k.slice(-4) : '(pendek)'; };
 
 export async function onRequestOptions() {
   return new Response(null, { headers: CORS });
@@ -50,15 +51,16 @@ export async function onRequestGet({ request, env }) {
   const a = await guardAdmin(env, request);
   if (a.deny) return a.deny;
   const keys = await pickKeys(env);
-  return json({ configured: keys.length > 0, key_count: keys.length, model: 'glm-5.3-flash:mr' });
+  return json({ configured: keys.length > 0, key_count: keys.length, key_tail: keys.length ? tail4(keys[0].value) : '', model: 'glm-5.3-flash:mr' });
 }
 
 export async function onRequestPost({ request, env }) {
   const a = await guardAdmin(env, request);
   if (a.deny) return a.deny;
   const keys = await pickKeys(env);
-  if (!keys.length) return json({ ok: false, error: 'Key MODELROUTER_API_KEY belum diatur (env Pages atau tabel env_vars).' });
-  const key = keys[0];
+  if (!keys.length) return json({ ok: false, error: 'Key MODELROUTER_API_KEY belum diatur di backend ini (env Pages maupun tabel env_vars). Chat di domain ini TIDAK memakai ModelRouter — semua jawaban jalan lewat cadangan (Gemini/OpenRouter).' });
+  const key = keys[0].value;
+  const keySrc = keys[0].src, keyTail = tail4(key);
   const t0 = Date.now();
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 20000);
@@ -83,7 +85,7 @@ export async function onRequestPost({ request, env }) {
     const ms = Date.now() - t0;
     if (!res.ok) {
       const msg = (data && data.error && (data.error.message || data.error)) || ('HTTP ' + res.status);
-      return json({ ok: false, status: res.status, ms, error: String(msg).slice(0, 300) });
+      return json({ ok: false, status: res.status, ms, key_src: keySrc, key_tail: keyTail, error: String(msg).slice(0, 300) });
     }
     const text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
     return json({
@@ -91,7 +93,9 @@ export async function onRequestPost({ request, env }) {
       status: res.status,
       ms,
       model: (data.model || 'glm-5.3-flash:mr'),
-      reply: String(text).slice(0, 120)
+      reply: String(text).slice(0, 120),
+      key_src: keySrc,
+      key_tail: keyTail
     });
   } catch (e) {
     clearTimeout(timer);

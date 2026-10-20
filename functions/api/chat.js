@@ -656,11 +656,12 @@ async function tryGeminiText(apiKeys, messages, gDecls, onDelta) {
 }
 
 // ===== Fallback Provider 2: OpenRouter =====
+// [21 Okt, arahan pemilik] DILARANG model gratisan (north-mini, gemma, nemotron).
+// Urutan sesuai arahan 9 Okt: haiku 5.5 prioritas, lalu GLM, cadangan GPT.
 const OPENROUTER_MODELS = [
-  "google/gemma-4-26b-a4b-it:free",
-  "cohere/north-mini-code:free",
   "anthropic/claude-haiku-5.5",
-  "z-ai/glm-5.3-flash"
+  "z-ai/glm-5.3-flash",
+  "openai/gpt-6-luna-pro"
 ];
 
 async function getOpenRouterKeys(env) {

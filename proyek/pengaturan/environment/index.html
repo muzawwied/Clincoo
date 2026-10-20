@@ -356,7 +356,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
           <div class="flex items-center justify-between gap-4">
             <div class="min-w-0">
               <h3 class="text-[15px] font-semibold text-gray-800">Kesehatan AI (ModelRouter)</h3>
-              <p class="text-[13px] text-gray-500 mt-0.5 leading-relaxed">Tes koneksi model utama chat <code class="text-[12.5px] bg-gray-100 rounded px-1 py-0.5">glm-5.3-flash:mr</code> memakai key <code class="text-[12.5px] bg-gray-100 rounded px-1 py-0.5">MODELROUTER_API_KEY</code>. Hasil tes yang berhasil juga tercatat di Usage Logs ModelRouter.</p>
+              <p class="text-[13px] text-gray-500 mt-0.5 leading-relaxed">Tes koneksi model utama chat <code class="text-[12.5px] bg-gray-100 rounded px-1 py-0.5">glm-5.3-flash:mr</code> memakai key <code class="text-[12.5px] bg-gray-100 rounded px-1 py-0.5">MODELROUTER_API_KEY</code>. Tes dijalankan di <b>backend yang sama</b> dengan yang melayani chat (app.clincoo.buzz) — kalau tes ini gagal, chat otomatis jatuh ke cadangan (Gemini/OpenRouter). Hasil tes yang berhasil juga tercatat di Usage Logs ModelRouter.</p>
             </div>
             <button id="mr-test-btn" type="button" class="flex-shrink-0 inline-flex items-center gap-2 rounded-full bg-black text-white text-[13px] font-semibold px-4 py-2 hover:bg-gray-800 transition-colors" onclick="runMrTest()">
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
@@ -617,7 +617,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
     // [21 Okt] Tes koneksi ModelRouter — hanya admin; kartu disembunyikan bila bukan admin
     (function () {
       try {
-        fetch(apiBase() + '/api/mr-test', { cache: 'no-store' }).then(function (r) {
+        fetch('/api/mr-test', { cache: 'no-store' }).then(function (r) {
           if (r.ok) { var c = document.getElementById('mr-test-card'); if (c) c.classList.remove('hidden'); }
         }).catch(function (e) {});
       } catch (e) {}
@@ -632,13 +632,14 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg><span>Menguji…</span>';
       out.classList.add('hidden');
       try {
-        var res = await fetch(apiBase() + '/api/mr-test', { method: 'POST' });
+        var res = await fetch('/api/mr-test', { method: 'POST' });
         var d = await res.json();
         out.classList.remove('hidden');
         if (d && d.ok) {
           out.className = 'mt-3 text-[13px] rounded-xl px-4 py-3 leading-relaxed bg-green-50 text-green-800';
           var secs = ((d.ms || 0) / 1000).toFixed(1);
-          out.innerHTML = '<b>Berhasil terhubung.</b> ' + (d.model || 'glm-5.3-flash:mr') + ' menjawab dalam ' + secs + 's: "' + String(d.reply || '').slice(0, 80) + '". Tes ini juga muncul di Usage Logs ModelRouter.';
+          var keyInfo = (d && d.key_tail) ? (' (key ' + d.key_src + ', akhir ' + d.key_tail + ')') : '';
+          out.innerHTML = '<b>Berhasil terhubung.</b> ' + (d.model || 'glm-5.3-flash:mr') + ' menjawab dalam ' + secs + 's' + keyInfo + ': "' + String(d.reply || '').slice(0, 80) + '". Tes ini juga muncul di Usage Logs ModelRouter.';
         } else {
           out.className = 'mt-3 text-[13px] rounded-xl px-4 py-3 leading-relaxed bg-red-50 text-red-800';
           var why = (d && (d.error || ('HTTP ' + d.status))) || 'penyebab tidak diketahui';
