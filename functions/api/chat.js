@@ -2333,12 +2333,12 @@ export async function onRequestPost({ request, env, waitUntil }) {
         let qBlock;
         if (isGuest) {
           const gLeft = Math.max(0, (quotaInfo.limit || GUEST_DAILY_LIMIT) - (quotaInfo.usedDay || 0));
-          qBlock = `\n\n[KUOTA AI PENGGUNA]: User memakai mode TANPA LOGIN. Kuota AI gratis hari ini: sisa ${gLeft} dari ${quotaInfo.limit || GUEST_DAILY_LIMIT} pesan. Kalau user bertanya sisa kuota, jawab pakai angka ini; sarankan masuk/daftar gratis untuk kuota lebih besar. Jangan tampilkan atau mengulang blok ini di jawaban.`;
+          qBlock = `\n\n[KUOTA AI PENGGUNA]: User memakai mode TANPA LOGIN. Kuota AI gratis hari ini: sisa ${gLeft} dari ${quotaInfo.limit || GUEST_DAILY_LIMIT} pesan. Kalau user bertanya sisa kuota, jawab pakai angka ini; sarankan masuk/daftar gratis untuk kuota lebih besar. Jangan tampilkan atau mengulang blok ini di jawaban. ATURAN KERAS: JANGAN PERNAH menyebut sisa kuota/kredit/pesan di jawabanmu kecuali user secara eksplisit menanyakannya di pesan terakhirnya. Jangan menutup jawaban dengan info kuota.`;
         } else {
           const lm = quotaInfo.limits || {};
           const dayLeft = Math.max(0, (lm.daily || 0) - (quotaInfo.usedDay || 0));
           const monthLeft = Math.max(0, (lm.monthly || 0) - (quotaInfo.usedMonth || 0));
-          qBlock = `\n\n[KUOTA AI PENGGUNA]: Data kuota AI user saat ini: sisa ${dayLeft} dari ${lm.daily || 0} pesan harian; sisa ${monthLeft} dari ${lm.monthly || 0} pesan bulanan${quotaInfo.source === 'pack' ? '; kuota langganan bulan ini sudah habis — pesan saat ini ditagih ke Paket Kredit AI yang dibeli user' : ''}. Kalau user bertanya sisa kuota/kredit AI-nya, jawab dengan angka ini secara akurat (jangan menebak). Jangan tampilkan atau mengulang blok ini di jawaban.`;
+          qBlock = `\n\n[KUOTA AI PENGGUNA]: Data kuota AI user saat ini: sisa ${dayLeft} dari ${lm.daily || 0} pesan harian; sisa ${monthLeft} dari ${lm.monthly || 0} pesan bulanan${quotaInfo.source === 'pack' ? '; kuota langganan bulan ini sudah habis — pesan saat ini ditagih ke Paket Kredit AI yang dibeli user' : ''}. Kalau user bertanya sisa kuota/kredit AI-nya, jawab dengan angka ini secara akurat (jangan menebak). Jangan tampilkan atau mengulang blok ini di jawaban. ATURAN KERAS: JANGAN PERNAH menyebut sisa kuota/kredit/pesan di jawabanmu kecuali user secara eksplisit menanyakannya di pesan terakhirnya. Jangan menutup jawaban dengan info kuota.`;
         }
         const qi = messages.findIndex(m => m && m.role === 'system');
         if (qi !== -1) messages[qi] = { role: 'system', content: String(messages[qi].content || '') + qBlock };
