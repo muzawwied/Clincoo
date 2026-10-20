@@ -1059,6 +1059,36 @@ function findBlocks(txt) {
     if (open) out.push({ lang: open.lang, len: open.len, start: open.start, bodyStart: Math.min(open.bodyStart, txt.length), bodyEnd: txt.length, end: txt.length, closed: false });
     return out;
 }
+// [20 Okt, laporan owner] Model kadang menulis web sebagai fence html/css/js TERPISAH (bukan blok project):
+// kode bocor jadi teks/kartu "Kode css" dan TIDAK tersinkron ke workspace. Jaring pengaman: bila jawaban
+// punya >=2 fence web lepas (atau html lengkap) dan tidak ada blok project/patch, gabungkan jadi SATU blok project.
+function normalizeLooseWeb(txt) {
+    txt = String(txt || '');
+    const blocks = findBlocks(txt);
+    if (!blocks.length || blocks.some(b => b.lang === 'project' || b.lang === 'patch')) return txt;
+    const WEB = { html: 'html', htm: 'html', css: 'css', js: 'js', javascript: 'js' };
+    const web = blocks.filter(b => b.closed && WEB[b.lang]);
+    if (!web.length) return txt;
+    const hasHtmlDoc = web.some(b => WEB[b.lang] === 'html' && /<!doctype html|<html[\s>]/i.test(txt.slice(b.bodyStart, b.bodyEnd)));
+    if (!(hasHtmlDoc || web.length >= 2)) return txt;      // satu potongan kecil = contoh biasa, biarkan
+    const used = new Set(), files = [];
+    const pick = (kind, code) => {
+        const dflt = { html: 'index.html', css: 'css/style.css', js: 'js/main.js' }[kind];
+        let name = dflt, k = 2;
+        // komentar nama file di baris pertama: /* style.css */, // app.js, <!-- about.html -->
+        const hm = code.match(/^\s*(?:\/\*|\/\/|<!--)\s*([\w\-./]+\.(?:html?|css|js))\s*(?:\*\/|-->)?\s*\n/i);
+        if (hm) name = hm[1].replace(/^\/+/, '');
+        while (used.has(name)) name = dflt.replace(/(\.\w+)$/, '-' + (k++) + '$1');
+        used.add(name); return name;
+    };
+    web.forEach(b => { const code = txt.slice(b.bodyStart, b.bodyEnd).replace(/\n$/, ''); files.push({ path: pick(WEB[b.lang], code), code }); });
+    const entry = (files.find(f => /^index\.html?$/i.test(f.path)) || files.find(f => /\.html?$/i.test(f.path)) || files[0]).path;
+    const proj = '````project\nname: Proyek Web\nentry: ' + entry + '\n' + files.map(f => '=== FILE: ' + f.path + ' ===\n' + f.code).join('\n') + '\n````\n';
+    // sisipkan proyek di posisi fence pertama, buang fence web lainnya
+    let out = '', pos = 0, placed = false;
+    web.forEach(b => { out += txt.slice(pos, b.start); if (!placed) { out += proj; placed = true; } pos = b.end; });
+    return out + txt.slice(pos);
+}
 function parsePatch(raw) {
     const meta = {}, ops = []; let ctxType = null, ctxPath = '', op = null, sec = null, off = 0;
     const closeFile = () => {
@@ -2667,7 +2697,7 @@ async function sendMessage(opts) {
         pm.isProcessing = false;
         pm.ms = Date.now() - t0;
         if (userStopped) { pm.stopped = true; pm.text = answer.trim() ? answer : '_Jawaban dihentikan._'; }
-        else pm.text = answer || "Maaf, AI tidak mengembalikan jawaban. Coba kirim ulang pertanyaanmu.";
+        else pm.text = normalizeLooseWeb(answer) || "Maaf, AI tidak mengembalikan jawaban. Coba kirim ulang pertanyaanmu.";
 
     } catch (e) {
         pm.isProcessing = false;
