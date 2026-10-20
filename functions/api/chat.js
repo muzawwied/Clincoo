@@ -206,6 +206,10 @@ const SUB_MAX_AI = 24;
 function budgetNew() { return { used: 0, max: SUB_MAX_AI }; }
 function budgetTake(b) { if (!b) return true; if (b.used >= b.max) return false; b.used++; return true; }
 function budgetOut(b) { return !!(b && b.used >= b.max); }
+// [21 Okt] Semua identitas provider/model disembunyikan dari klien (jangan bocor di dev tools)
+const SCRUB_INT = /\b(modelrouter\.id|glm[\w.:\-]*|gemini[\w.:\-]*|openrouter(?:\.com)?|claude[\w.:\-]*|gpt[\w.:\-]*|groq[\w.:\-]*|llama[\w.:\-]*|nemotron[\w.:\-]*|orkestra[\w.:\-]*|deepseek[\w.:\-]*|mistral[\w.:\-]*|@cf\/[\w.\/-]+|workers\s+ai)\b/gi;
+const scrubInt = (s) => String(s || '').replace(SCRUB_INT, 'AI').replace(/\bAI\s+AI\b/gi, 'AI').replace(/\s{2,}/g, ' ').slice(0, 300);
+
 const cIsCut = (fin) => /^(length|max_tokens)$/i.test(String(fin || ''));
 
 // Semua blok berpagar (``` atau ````) di teks, termasuk yang belum ditutup
@@ -1687,7 +1691,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     if (!messages.some(m => m && m.role === 'user')) {
       return new Response(JSON.stringify({
         text: 'Sepertinya pesannya belum ikut terkirim. Coba tulis ulang pertanyaanmu ya — aku siap bantu. 😊',
-        model: 'assistant',
+        /* [21 Okt] tanpa field model */
         session_id: body.session_id || ('ls_' + Date.now())
       }), { headers: { 'Content-Type': 'application/json', ...CORS } });
     }
@@ -1758,7 +1762,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     ]);
     const hasAnyProvider = mrKeys.length > 0 || geminiKeys.length > 0 || orKeys.length > 0 || !!(env && env.AI);
     if (!hasAnyProvider) {
-      return new Response(JSON.stringify({ error: 'Belum ada provider AI yang dikonfigurasi. Tambahkan API key (ModelRouter, Gemini, atau OpenRouter) di Pengaturan → Environment.' }), {
+      return new Response(JSON.stringify({ error: 'AI belum dikonfigurasi. Tambahkan API key AI di Pengaturan → Environment.' }), {
         status: 500, headers: { 'Content-Type': 'application/json', ...CORS }
       });
     }
@@ -1928,12 +1932,11 @@ export async function onRequestPost({ request, env, waitUntil }) {
           ? 'Jawaban AI mencapai batas server dalam satu permintaan. Ketik "lanjutkan" — sistem akan meneruskan dari titik terakhir secara otomatis.'
           : (rawErr1 === 'Tidak ada provider AI tersedia' ? rawErr1
              : 'Maaf, AI sedang gangguan sebentar sehingga belum bisa menjawab. Coba kirim ulang pesanmu ya.');
-        streamSend({ t: 'error', error: errText, detail: (!busy && !subHit && rawErr1 && rawErr1 !== errText) ? String(rawErr1).slice(0, 300) : undefined, provider_busy: busy ? true : undefined, quota_exhausted: busy ? undefined : !!r.quotaExhausted, context_overflow: !!r.contextOverflow });
+        streamSend({ t: 'error', error: errText, detail: (!busy && !subHit && rawErr1 && rawErr1 !== errText) ? scrubInt(rawErr1) : undefined, provider_busy: busy ? true : undefined, quota_exhausted: busy ? undefined : !!r.quotaExhausted, context_overflow: !!r.contextOverflow });
       } else {
         const outS = {
           text: r.text || '',
-          model: r.model,
-          session_id: body.session_id || ('ls_' + Date.now())
+          session_id: body.session_id || ('ls_' + Date.now()) /* [21 Okt] tanpa field model: identitas AI disembunyikan dari klien */
         };
         if (r.tool_calls) outS.tool_calls = r.tool_calls;
         if (r.truncated) outS.truncated = true;
@@ -1970,7 +1973,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
       const friendly = r.error === 'Tidak ada provider AI tersedia' ? r.error
         : r.sublimit ? 'Jawaban AI mencapai batas server dalam satu permintaan. Ketik "lanjutkan" untuk meneruskan dari titik terakhir.'
         : 'Maaf, AI sedang gangguan sebentar sehingga belum bisa menjawab. Coba kirim ulang pesanmu ya.';
-      return new Response(JSON.stringify({ error: friendly, detail: (r.error !== friendly) ? String(r.error).slice(0, 300) : undefined }), {
+      return new Response(JSON.stringify({ error: friendly, detail: (r.error !== friendly) ? scrubInt(r.error) : undefined }), {
         status: 502, headers: { 'Content-Type': 'application/json', ...CORS }
       });
     }
@@ -1981,8 +1984,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     if (!isGuest && (_mrCost !== null || isFirstHop)) await chargeAiUsage(env, user, r.model, outChars, inputChars, true, _mrCost);
     const out = {
       text: r.text || '',
-      model: r.model,
-      session_id: body.session_id || ('ls_' + Date.now())
+      session_id: body.session_id || ('ls_' + Date.now()) /* [21 Okt] tanpa field model */
     };
     if (r.tool_calls) out.tool_calls = r.tool_calls;
     if (r.truncated) out.truncated = true;

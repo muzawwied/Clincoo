@@ -2189,7 +2189,7 @@ function saveChat() {
             if (m.think) o.think = m.think;
             if (m.thinkMs != null) o.thinkMs = m.thinkMs;
             if (m.ms != null) o.ms = m.ms;
-            if (m.model) o.model = m.model;
+            /* [21 Okt] model tidak disimpan lagi di histori lokal */
             if (m.wsSeed) o.wsSeed = true;
             if (m.stopped) o.stopped = true;
             if (m.error) o.error = true;
@@ -2738,7 +2738,7 @@ async function sendMessage(opts) {
                 if (ev.t === 'final') {
                     fin = 'stop';
                     if (ev.session_id) currentSessionId = ev.session_id;
-                    if (ev.model) pm.model = ev.model;
+                    /* [21 Okt] field model tidak dikirim server; identitas AI disembunyikan */
                     const full = typeof ev.text === 'string' ? ev.text : '';
                     if (full.length > base.length + add.length) add = full.slice(base.length);
                     return;
