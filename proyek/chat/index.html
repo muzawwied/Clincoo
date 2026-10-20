@@ -966,8 +966,8 @@ const CODE_COLLAPSE_LINES = 25; // kode di atas batas ini tampil sebagai kartu r
 
 function mdCodeCard(langRaw, code) {
     const lang = String(langRaw || '').trim().toLowerCase().replace(/[^a-z0-9+#.-]/g, '').slice(0, 20);
-    if (lang === 'project') return mdProjectCard(code);
-    if (lang === 'patch') return mdPatchCard(code, mdCtxId);
+    if (lang === 'project') return '<!--pcard-->' + mdProjectCard(code) + '<!--/pcard-->';
+    if (lang === 'patch') return '<!--pcard-->' + mdPatchCard(code, mdCtxId) + '<!--/pcard-->';
     if (lang === 'poll') return pollCard(code);
     if (lang === 'saran') return '';
     if (lang === 'diagram') { const d = dgCard(code); if (d) return d; } // tidak valid (terlalu besar): jatuh ke kartu kode biasa
@@ -1982,7 +1982,18 @@ function ckGroup(id, g, acts, live) {
 }
 function ckBody(m) {
     const parts = ckParts(m), live = busy && messages[messages.length - 1] === m;
-    return parts.map((p, i) => p.acts ? ckGroup(m.id, i, p.acts, live && !!p.live) : (p.text ? mdToHtml(p.text, m.id) : '')).join('');
+    let html = parts.map((p, i) => p.acts ? ckGroup(m.id, i, p.acts, live && !!p.live) : (p.text ? mdToHtml(p.text, m.id) : '')).join('');
+    // [20 Okt 2026, laporan owner] Satu jawaban yang menulis project lalu patch tampil 2 kartu "Buka"
+    // identik. Cukup satu: kartu TERAKHIR (mewakili status proyek paling baru); sisanya dibuang.
+    const cards = html.match(/<!--pcard-->[\s\S]*?<!--\/pcard-->/g) || [];
+    if (cards.length > 1) {
+        // pertahankan kartu yang mewakili file terbanyak; kalau seri, yang terakhir (paling baru)
+        const nOf = c => { const mm = c.match(/(\d+) file \u00b7/); return mm ? +mm[1] : 0; };
+        let keep = cards.length - 1;
+        cards.forEach((c, i) => { if (nOf(c) > nOf(cards[keep])) keep = i; });
+        cards.forEach((c, i) => { if (i !== keep) html = html.replace(c, ''); });
+    }
+    return html.replace(/<!--\/?pcard-->/g, '');
 }
 function ckRefresh(m) { const el = m && $('msg-text-' + m.id); if (el) el.innerHTML = ckBody(m); }
 window.ckToggle = key => { ckOpen.has(key) ? ckOpen.delete(key) : ckOpen.add(key); ckRefresh(messages.find(x => String(x.id) === key.split(':')[0])); };
