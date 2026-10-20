@@ -98,15 +98,27 @@ function withTimeout(promise, ms, label) {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
 }
 
-async function readOAICompatStream(res, onDelta) {
+async function readOAICompatStream(res, onDelta, stallMs = 40000) {
   const reader = res.body.getReader();
   const dec = new TextDecoder();
   let buf = '', text = '', fin = null;
   const tcMap = {};
   let streamEnd = false;
+  let gotByte = false;
   while (!streamEnd) {
-    const rd = await reader.read();
+    let rd;
+    if (gotByte) {
+      // Tidak ada byte masuk > stallMs setelah byte pertama: anggap terpotong, lanjutkan otomatis
+      let tm;
+      const stall = new Promise(r => { tm = setTimeout(() => r({ stalled: true }), stallMs); });
+      rd = await Promise.race([reader.read(), stall]);
+      clearTimeout(tm);
+      if (rd && rd.stalled) { try { reader.cancel().catch(() => {}); } catch (e) {} fin = 'length'; break; }
+    } else {
+      rd = await reader.read();
+    }
     if (rd.done) break;
+    gotByte = true;
     buf += dec.decode(rd.value, { stream: true });
     let nl;
     while ((nl = buf.indexOf('\n')) !== -1) {
@@ -165,7 +177,7 @@ async function getModelRouterKeys(env) {
 
 const MR_MODEL = 'glm-5.3-flash:mr';
 const MR_OUT_TOKENS = 8192;
-const MR_TIMEOUT_MS = 170000;
+const MR_TIMEOUT_MS = 240000;
 
 const MODELROUTER_MODELS = [MR_MODEL];
 
@@ -174,19 +186,130 @@ const MR_ENDPOINT = 'https://modelrouter.id/v1/chat/completions';
 
 const mrLabel = () => 'orkestra-1-pro';
 
-function mrContinueMsg(seg) {
-  const tailTxt = String(seg || '').slice(-80).replace(/\s+/g, ' ');
-  return 'Jawabanmu terpotong batas panjang. Ekor teks terakhirmu: "' + tailTxt + '". Sambung LANGSUNG dari karakter berikutnya setelah ekor itu (kalau terpotong di tengah kata, lengkapi kata itu dulu). DILARANG mengulang kalimat/kata yang sudah tertulis, DILARANG membuka kalimat baru seperti "Lanjut..." atau minta maaf, DILARANG bertanya. Keluarkan HANYA sambungannya.';
+// >>> AUTO-LANJUT
+// Port dari klien (clincoo_ai_assistant.html): bila jawaban terpotong batas token, sistem otomatis
+// mengirim "lanjutkan" + STATE TERAKHIR (di dalam blok apa, file yang sedang ditulis, daftar file
+// yang sudah selesai, ukuran sejauh ini, ujung teks) ke percakapan yang SAMA, lalu menyambung teks
+// tanpa putus. Bila proyek web sudah ditutup tetapi < 100 KB, AI diminta menambah file lewat blok patch.
+const MIN_PROJECT_BYTES = 100 * 1024; // web baru wajib > 100 KB
+const CONT_MAX_ROUNDS = 24;           // maks putaran lanjut per jawaban
+const CONT_MAX_EXPAND = 3;            // maks putaran "tambah file" bila proyek masih < 100 KB
+const MR_SOFT_BUDGET_MS = 190000;     // lewat batas ini tidak memulai putaran baru (MR_TIMEOUT_MS lebih besar)
+const cIsCut = (fin) => /^(length|max_tokens)$/i.test(String(fin || ''));
+
+// Semua blok berpagar (``` atau ````) di teks, termasuk yang belum ditutup
+function cBlocks(txt) {
+  const out = [];
+  let pos = 0, open = null;
+  for (const ln of String(txt).split('\n')) {
+    const f = ln.match(/^\s*(`{3,})(.*)$/);
+    if (f) {
+      if (!open) open = { len: f[1].length, lang: f[2].trim().toLowerCase(), start: pos, bodyStart: pos + ln.length + 1 };
+      else if (f[1].length >= open.len && !f[2].trim()) {
+        out.push({ lang: open.lang, len: open.len, start: open.start, bodyStart: open.bodyStart, bodyEnd: pos, end: pos + ln.length + 1, closed: true });
+        open = null;
+      }
+    }
+    pos += ln.length + 1;
+  }
+  if (open) out.push({ lang: open.lang, len: open.len, start: open.start, bodyStart: Math.min(open.bodyStart, String(txt).length), bodyEnd: String(txt).length, end: String(txt).length, closed: false });
+  return out;
 }
+
+// Pagar yang masih terbuka di ujung teks (null bila semua sudah tertutup)
+function cOpenFence(txt) {
+  let open = null;
+  for (const ln of String(txt).split('\n')) {
+    const f = ln.match(/^\s*(`{3,})(.*)$/);
+    if (!f) continue;
+    if (open) { if (f[1].length >= open.len && !f[2].trim()) open = null; }
+    else open = { len: f[1].length, lang: f[2].trim() };
+  }
+  return open;
+}
+
+// Path file terakhir yang diawali "=== FILE: path ===" (file yang sedang ditulis)
+function cLastOpenFile(txt) {
+  const re = /^===\s*FILE:\s*(.+?)\s*===\s*$/gm;
+  let m, last = null;
+  while ((m = re.exec(String(txt)))) last = m[1];
+  return last;
+}
+
+function cNormPath(p) {
+  return String(p).replace(/\\/g, '/').split('/').filter(s => s && s !== '.' && s !== '..').join('/');
+}
+
+// path -> ukuran byte, dari isi blok project atau patch
+function cFileSizes(body, isPatch) {
+  const enc = new TextEncoder(), map = new Map();
+  let cur = null, buf = [];
+  const flush = () => {
+    if (cur) map.set(cur, enc.encode(buf.join('\n').replace(/^\n+/, '').replace(/\s+$/, '')).length);
+    cur = null; buf = [];
+  };
+  for (const ln of String(body).replace(/\r\n/g, '\n').split('\n')) {
+    if (/^===\s*SAY\s*:/i.test(ln)) continue;
+    const m = ln.match(/^===\s*FILE:\s*(.+?)\s*===\s*$/);
+    if (m) { flush(); cur = cNormPath(m[1]) || null; continue; }
+    if (isPatch && /^===\s*(EDIT|DELETE)\s*:/i.test(ln)) { flush(); continue; }
+    if (cur) buf.push(ln);
+  }
+  flush();
+  return map;
+}
+
+// Keadaan proyek web di dalam jawaban ini: blok project + file baru dari blok patch sesudahnya
+function cProjState(txt) {
+  const s = String(txt);
+  const bl = cBlocks(s);
+  const pb = bl.find(b => b.lang === 'project');
+  if (!pb) return null;
+  const files = cFileSizes(s.slice(pb.bodyStart, pb.bodyEnd), false);
+  for (const b of bl) {
+    if (b.lang === 'patch' && b.start >= pb.end) cFileSizes(s.slice(b.bodyStart, b.bodyEnd), true).forEach((n, p) => files.set(p, n));
+  }
+  let bytes = 0;
+  files.forEach(n => { bytes += n; });
+  return { files: [...files.keys()], bytes, closed: pb.closed };
+}
+
+// Pesan "lanjutkan" + state terakhir. expand=true: proyek sudah ditutup tetapi belum mencapai 100 KB.
+function cBuildContinue(txt, expand) {
+  const fence = cOpenFence(txt), file = fence ? cLastOpenFile(txt) : null;
+  const pi = cProjState(txt), kb = (b) => Math.round(b / 1024);
+  let msg = 'lanjutkan\n\n[STATE OTOMATIS — ' + (expand ? 'proyekmu sudah ditutup tetapi belum mencapai ukuran minimum.' : 'responsemu sebelumnya terpotong karena batas token.') + ' Ini bukan permintaan baru.]';
+  if (pi) {
+    const done = pi.files.filter(p => !(fence && !expand && p === file));
+    msg += '\n- Ukuran proyek sejauh ini: ' + kb(pi.bytes) + ' KB dari target minimal ' + kb(MIN_PROJECT_BYTES) + ' KB (sisa sekitar ' + Math.max(0, kb(MIN_PROJECT_BYTES - pi.bytes)) + ' KB).' + (pi.closed ? '' : ' Jangan menutup pagar project sebelum target tercapai.');
+    if (done.length) msg += '\n- File yang sudah selesai (' + done.length + '): ' + done.slice(-80).join(', ') + (done.length > 80 ? ' (+' + (done.length - 80) + ' lainnya)' : '') + '.';
+  }
+  if (expand) {
+    msg += '\n- Blok project sudah ditutup dan tidak boleh dibuka lagi. Tambahkan file BARU lewat SATU blok patch (empat backtick berlabel patch, baris "summary: ..." lalu tiap file diawali "=== FILE: path ===" berisi isi lengkap). Jangan mengulang file yang sudah ada. Isi dengan yang nyata dan fungsional: halaman tambahan, modul JS, komponen, data seed, stylesheet, SVG, dokumentasi, bukan pengisi kosong. Bila perlu menautkan file baru dari halaman yang ada, pakai blok EDIT dengan SEARCH yang disalin persis dari isi file di atas.';
+    msg += '\n- Tulis HANYA blok patch itu: tanpa salam, tanpa ringkasan, tanpa blok saran. Tutup pagar patch lalu berhenti.';
+    return msg;
+  }
+  if (fence) msg += '\n- Kamu sedang berada DI DALAM blok kode' + (fence.lang ? ' berlabel "' + fence.lang + '"' : '') + ' (pagar belum ditutup).';
+  if (file) msg += '\n- File yang sedang ditulis: ' + file + ' (jangan tulis ulang baris "=== FILE: ... ===" untuk file ini).';
+  msg += '\n- Ujung teks terakhir yang sudah terkirim:\n<<<\n' + String(txt).slice(-400) + '\n>>>';
+  msg += '\nLanjutkan PERSIS dari karakter setelah ujung teks itu, seolah tidak pernah terputus. Jangan mengulang bagian yang sudah ada, jangan beri salam, pembuka, atau penjelasan, dan jangan membuka pagar kode baru bila masih di dalam blok. Bila terpotong di tengah baris atau kata, teruskan dari titik itu. Selesaikan file yang sedang ditulis, lalu file yang tersisa, tutup pagar kode, lalu beri ringkasan penutup seperti biasa.';
+  return msg;
+}
+
+// Sambung potongan. DI DALAM blok kode sambungan ditempel apa adanya (tanpa menambah spasi/titik
+// atau memotong kata, karena itu merusak kode); heuristik teks biasa hanya di luar blok kode.
 function mrJoinContinuation(prev, cont) {
-  let c = String(cont || '');
-  if (!c) return String(prev || '');
-  c = c.replace(/^\s*(lanjut(an)?(\s+dari[^.\n]{0,40})?[:,.\-–—]*\s*)/i, '');
   const p = String(prev || '');
-  const maxOv = Math.min(120, p.length, c.length);
-  for (let n = maxOv; n >= 6; n--) {
+  let c = String(cont || '');
+  if (!c) return p;
+  const inCode = !!cOpenFence(p);
+  if (!inCode) c = c.replace(/^\s*(lanjut(an)?(\s+dari[^.\n]{0,40})?[:,.\-–—]*\s*)/i, '');
+  const minOv = inCode ? 24 : 6;
+  const maxOv = Math.min(300, p.length, c.length);
+  for (let n = maxOv; n >= minOv; n--) {
     if (p.slice(-n) === c.slice(0, n)) { c = c.slice(n); break; }
   }
+  if (inCode) return p + c;
 
   const lastWord = (p.match(/([A-Za-zÀ-ÿ]+)$/) || [])[1] || '';
   const WHOLE = /^(dan|yang|di|ke|dari|untuk|ini|itu|ada|atau|juga|saya|aku|kamu|kita|anda|akan|bisa|mau|oke|ok|ya|tidak|bukan|the|and|for|with|web|app|css|js|api|seo)$/i;
@@ -194,15 +317,60 @@ function mrJoinContinuation(prev, cont) {
     const cut = p.slice(0, p.length - lastWord.length).replace(/\s+$/, '');
     return cut + (cut && !/[.!?:\n]$/.test(cut) ? '. ' : ' ') + c;
   }
-
   if (/[A-Za-zÀ-ÿ0-9]$/.test(p) && /^[A-Z][a-z]/.test(c)) return p + ' ' + c;
   return p + c;
 }
+
+// Penutup: tutup pagar yang lupa ditutup (bila AI selesai normal); beri catatan bila benar-benar terpotong
+function cFinalize(full, truncated, onDelta) {
+  const ob = cOpenFence(full);
+  let add = '';
+  if (!truncated && ob) add = '\n' + '`'.repeat(ob.len) + '\n';
+  else if (truncated && !ob) add = '\n\n_Jawaban terpotong sebelum selesai. Ketik "lanjutkan" untuk meneruskan dari titik terakhir._';
+  if (!add) return full;
+  if (onDelta) { try { onDelta(add); } catch (e) {} }
+  return (truncated ? full : String(full).replace(/\s+$/, '')) + add;
+}
+
+// Loop inti. callRound(msgs) -> { text, fin } | null. Dipakai semua provider (ModelRouter, Gemini, OpenRouter).
+async function mrAutoContinue({ baseMsgs, first, callRound, deadline, onDelta }) {
+  const sink = onDelta && onDelta.sink;
+  let full = String(first.text || ''), fin = first.fin, round = 0, expandRounds = 0, truncated = false;
+  if (sink) { sink.text = full; sink.cur = ''; }
+  while (true) {
+    const cut = !!(cIsCut(fin) && full.trim());
+    let expand = false;
+    if (!cut) {
+      const pi = cProjState(full);
+      if (!pi || pi.bytes >= MIN_PROJECT_BYTES || expandRounds >= CONT_MAX_EXPAND) break;
+      expand = pi.closed;
+      expandRounds++;
+    }
+    if (round >= CONT_MAX_ROUNDS || Date.now() > deadline) { truncated = cut; break; }
+    round++;
+    if (expand && onDelta) { try { onDelta('\n\n'); } catch (e) {} }
+    let r = null;
+    try {
+      r = await callRound(baseMsgs.concat([
+        { role: 'assistant', content: full },
+        { role: 'user', content: cBuildContinue(full, expand) }
+      ]));
+    } catch (e) { r = null; }
+    if (!r || !String(r.text || '').trim()) { truncated = cut; break; }
+    full = expand ? full.replace(/\s+$/, '') + '\n\n' + String(r.text).replace(/^\s+/, '') : mrJoinContinuation(full, r.text);
+    fin = r.fin;
+    if (sink) { sink.text = full; sink.cur = ''; }
+  }
+  full = cFinalize(full, truncated, onDelta);
+  return { text: full, truncated, rounds: round };
+}
+// <<< AUTO-LANJUT
 
 async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usageAcc) {
   const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
   if (!keyList.length) return null;
   const modelList = (Array.isArray(models) && models.length) ? models : MODELROUTER_MODELS;
+  const deadline = Date.now() + MR_SOFT_BUDGET_MS;
   const { system, chatMsgs } = toOAIChat(messages);
   const oaiTools = oaiToolsOf(gDecls);
   const callMr = (key, model, msgs, stream) => {
@@ -271,20 +439,16 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usage
               continue;
             }
 
-            let full = st.text, seg = st.text, fin2 = st.fin;
-            const contMsgs = baseMsgs.slice();
-            for (let sc = 0; sc < 5 && fin2 === 'length'; sc++) {
-              contMsgs.push({ role: 'assistant', content: seg });
-              contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
-              try {
-                const cr = await callMr(key, model, contMsgs, true);
-                if (!cr.ok || !cr.body) break;
-                const st2 = await readOAICompatStream(cr, onDelta);
-                if (!st2.text) break;
-                full = mrJoinContinuation(full, st2.text); seg = st2.text; fin2 = st2.fin;
-              } catch (e2) { break; }
-            }
-            { if (usageAcc) usageAcc[model] = (usageAcc[model] || 0) + tokensOfChars(full); return { text: full, model: mrLabel(model) }; }
+            const mrRes = await mrAutoContinue({
+              baseMsgs, first: { text: st.text, fin: st.fin }, deadline, onDelta,
+              callRound: async (msgs) => {
+                const cr = await callMr(key, model, msgs, true);
+                if (!cr.ok || !cr.body) return null;
+                const s2 = await readOAICompatStream(cr, onDelta);
+                return { text: s2.text, fin: s2.fin };
+              }
+            });
+            { if (usageAcc) usageAcc[model] = (usageAcc[model] || 0) + tokensOfChars(mrRes.text); return { text: mrRes.text, model: mrLabel(model), truncated: mrRes.truncated || undefined }; }
           }
           lastErr = 'ModelRouter ' + model + ': stream kosong';
         }
@@ -319,20 +483,16 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usage
     }
     if (text) {
 
-      let full = text, seg = text, fin = finish;
-      const contMsgs = baseMsgs.slice();
-      for (let ac = 0; ac < 3 && fin === 'length'; ac++) {
-        contMsgs.push({ role: 'assistant', content: seg });
-        contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
-        let dc = null;
-        try { const rc = await callMr(key, model, contMsgs, false); dc = await rc.json().catch(() => ({})); } catch (e2) { dc = null; }
-        const dm = dc && dc.choices && dc.choices[0] && dc.choices[0].message;
-        const dseg = (dm && dm.content) || '';
-        fin = dc && dc.choices && dc.choices[0] && dc.choices[0].finish_reason;
-        if (!dseg) break;
-        full = mrJoinContinuation(full, dseg); seg = dseg;
-      }
-      { if (usageAcc) usageAcc[model] = (usageAcc[model] || 0) + tokensOfChars(full); return { text: full, model: mrLabel(model) }; }
+      const mrRes2 = await mrAutoContinue({
+        baseMsgs, first: { text, fin: finish }, deadline, onDelta: null,
+        callRound: async (msgs) => {
+          const rc = await callMr(key, model, msgs, false);
+          const dc = await rc.json().catch(() => ({}));
+          const ch0 = dc && dc.choices && dc.choices[0];
+          return { text: (ch0 && ch0.message && ch0.message.content) || '', fin: ch0 && ch0.finish_reason };
+        }
+      });
+      { if (usageAcc) usageAcc[model] = (usageAcc[model] || 0) + tokensOfChars(mrRes2.text); return { text: mrRes2.text, model: mrLabel(model), truncated: mrRes2.truncated || undefined }; }
     }
     lastErr = 'ModelRouter ' + model + ': respons kosong';
   }
@@ -470,9 +630,22 @@ async function tryGeminiText(apiKeys, messages, gDecls, onDelta) {
           .filter(p => p.functionCall)
           .map(p => ({ name: p.functionCall.name, args: p.functionCall.args || {}, thought_signature: p.thoughtSignature || undefined }));
         if (toolCalls.length > 0 || text) {
-          return toolCalls.length > 0
-            ? { tool_calls: toolCalls, text, model: `Gemini (${model})` }
-            : { text, model: `Gemini (${model})` };
+          if (toolCalls.length > 0) return { tool_calls: toolCalls, text, model: `Gemini (${model})` };
+          const gFin = r.data && r.data.candidates && r.data.candidates[0] && r.data.candidates[0].finishReason;
+          const gRes = await mrAutoContinue({
+            baseMsgs: messages, first: { text, fin: gFin }, deadline: Date.now() + MR_SOFT_BUDGET_MS, onDelta,
+            callRound: async (msgs) => {
+              const pl = toGeminiPayload(msgs);
+              const rr = onDelta
+                ? await fetchGeminiStream(apiKey, model, pl.systemInstruction, pl.contents, null, onDelta)
+                : await fetchGemini(apiKey, model, pl.systemInstruction, pl.contents, null);
+              if (rr.error) return null;
+              const cand = (rr.data && rr.data.candidates && rr.data.candidates[0]) || {};
+              const pts = (cand.content && cand.content.parts) || [];
+              return { text: pts.map(x => x.text || '').join(''), fin: cand.finishReason };
+            }
+          });
+          return { text: gRes.text, model: `Gemini (${model})`, truncated: gRes.truncated || undefined };
         }
       } catch (err) {
         lastErr = `Gemini ${model}: ${err && err.message}`;
@@ -502,6 +675,22 @@ async function getOpenRouterKeys(env) {
     for (const r of rows.results || []) add(r.value);
   } catch {}
   return keys;
+}
+
+// Satu putaran OpenRouter untuk penyambungan (teks saja)
+async function orRound(key, model, msgs, onDelta) {
+  const p = { model, messages: msgs, max_tokens: 4096 };
+  if (onDelta) p.stream = true;
+  const res = await withTimeout(fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key, "HTTP-Referer": "https://clincoo.buzz", "X-Title": "Clincoo" },
+    body: JSON.stringify(p)
+  }), 45000, "OpenRouter");
+  if (!res.ok) return null;
+  if (onDelta && res.body) { const s = await readOAICompatStream(res, onDelta); return { text: s.text, fin: s.fin }; }
+  const d = await res.json().catch(() => ({}));
+  const c = d && d.choices && d.choices[0];
+  return { text: (c && c.message && c.message.content) || "", fin: c && c.finish_reason };
 }
 
 async function tryOpenRouterText(keys, messages, gDecls, onDelta) {
@@ -538,7 +727,11 @@ async function tryOpenRouterText(keys, messages, gDecls, onDelta) {
               const nt = normStreamToolCalls(st.tcs);
               if (nt.length) return { tool_calls: nt, text: st.text, model: model.split("/").pop() + " (OpenRouter)" };
             }
-            return { text: st.text, model: model.split("/").pop() + " (OpenRouter)" };
+            const oRes = await mrAutoContinue({
+              baseMsgs, first: { text: st.text, fin: st.fin }, deadline: Date.now() + MR_SOFT_BUDGET_MS, onDelta,
+              callRound: (msgs) => orRound(key, model, msgs, onDelta)
+            });
+            return { text: oRes.text, model: model.split("/").pop() + " (OpenRouter)", truncated: oRes.truncated || undefined };
           }
         } else {
           const data = await res.json().catch(() => ({}));
@@ -556,7 +749,14 @@ async function tryOpenRouterText(keys, messages, gDecls, onDelta) {
             }
             if (norm.length) return { tool_calls: norm, text, model: model.split("/").pop() + " (OpenRouter)" };
           }
-          if (text) return { text, model: model.split("/").pop() + " (OpenRouter)" };
+          if (text) {
+            const oFin = data && data.choices && data.choices[0] && data.choices[0].finish_reason;
+            const oRes2 = await mrAutoContinue({
+              baseMsgs, first: { text, fin: oFin }, deadline: Date.now() + MR_SOFT_BUDGET_MS, onDelta: null,
+              callRound: (msgs) => orRound(key, model, msgs, null)
+            });
+            return { text: oRes2.text, model: model.split("/").pop() + " (OpenRouter)", truncated: oRes2.truncated || undefined };
+          }
         }
       } catch (err) {
         lastErr = `OpenRouter ${model}: ${err && err.message}`;
@@ -597,8 +797,17 @@ async function tryWorkersAIText(env, messages, onDelta) {
 
 // ===== Orkestrasi Unified Multi-Model Generation =====
 async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, toolDecls, onDelta, usageAcc }) {
-  let deltaSent = false;
-  const wrappedDelta = onDelta ? (tx) => { deltaSent = true; onDelta(tx); } : null;
+  let deltaSent = false, closed = false;
+  const sink = { text: '', cur: '' };
+  const wrappedDelta = onDelta ? (tx) => { if (closed) return; deltaSent = true; sink.cur += tx; onDelta(tx); } : null;
+  if (wrappedDelta) wrappedDelta.sink = sink;
+  // Stream sudah sempat mengalir lalu putus/timeout: kembalikan teks yang sudah ada (ditandai terpotong),
+  // jangan dibuang jadi pesan "AI gangguan"; pengguna tinggal membalas "lanjutkan".
+  const partialOr = (label, err) => {
+    const t = sink.cur ? mrJoinContinuation(sink.text, sink.cur) : sink.text;
+    if (String(t || '').trim()) { closed = true; return { text: cFinalize(t, true, onDelta), model: label, truncated: true }; }
+    return { error: err };
+  };
   let lastError = null;
 
   // 1. ModelRouter (Utama)
@@ -608,7 +817,7 @@ async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, 
       if (r && !r.error) return r;
       if (r && r.error) lastError = r.error;
     } catch (e) { lastError = e.message; }
-    if (deltaSent) return { error: lastError || "ModelRouter terputus saat streaming" };
+    if (deltaSent) return partialOr(mrLabel(), lastError || "ModelRouter terputus saat streaming");
   }
 
   // 2. Gemini (Fallback 1)
@@ -618,7 +827,7 @@ async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, 
       if (r && !r.error) return r;
       if (r && r.error) lastError = r.error;
     } catch (e) { lastError = e.message; }
-    if (deltaSent) return { error: lastError || "Gemini terputus saat streaming" };
+    if (deltaSent) return partialOr("Gemini", lastError || "Gemini terputus saat streaming");
   }
 
   // 3. OpenRouter (Fallback 2)
@@ -628,7 +837,7 @@ async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, 
       if (r && !r.error) return r;
       if (r && r.error) lastError = r.error;
     } catch (e) { lastError = e.message; }
-    if (deltaSent) return { error: lastError || "OpenRouter terputus saat streaming" };
+    if (deltaSent) return partialOr("OpenRouter", lastError || "OpenRouter terputus saat streaming");
   }
 
   // 4. Workers AI (Fallback 3)
@@ -1625,7 +1834,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     }
 
     // Pemeriksaan konsistensi desain: satu putaran perbaikan otomatis via blok patch (opt-in)
-    if (env.DESIGN_LINT_FIX === '1' && !designFixDone && r && !r.error && !(r.tool_calls && r.tool_calls.length)) {
+    if (env.DESIGN_LINT_FIX === '1' && !designFixDone && r && !r.error && !r.truncated && !(r.tool_calls && r.tool_calls.length)) {
       const lintIssues = lintProjectText(String(r.text || ''));
       if (lintIssues.length) {
         designFixDone = true;
@@ -1694,6 +1903,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
           session_id: body.session_id || ('ls_' + Date.now())
         };
         if (r.tool_calls) outS.tool_calls = r.tool_calls;
+        if (r.truncated) outS.truncated = true;
         if (r.tool_calls && r.tool_calls.length) {
           try { outS.continue_token = isFirstHop ? await issueCont(env, contOwner) : contToken; } catch (eTok) {}
         }
@@ -1741,6 +1951,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
       session_id: body.session_id || ('ls_' + Date.now())
     };
     if (r.tool_calls) out.tool_calls = r.tool_calls;
+    if (r.truncated) out.truncated = true;
     if (r.tool_calls && r.tool_calls.length) {
       try { out.continue_token = isFirstHop ? await issueCont(env, contOwner) : contToken; } catch (eTok) {}
     }
