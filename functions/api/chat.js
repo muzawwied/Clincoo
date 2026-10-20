@@ -32,12 +32,6 @@ function rateLimitOk(ip) {
 function clientIp(request) {
   try { return (request && request.headers && request.headers.get('cf-connecting-ip')) || 'unknown'; } catch (e) { return 'unknown'; }
 }
-
-const PREFERRED_MODELS = ['gemini-3.6-flash', 'gemini-3-flash-preview'];
-
-const CHAT_MODELS = ['gemini-3.6-flash'];
-
-const WORKERS_AI_MODELS = ['@cf/zai-org/glm-4.7-flash'];
 function textOf(m) {
   if (typeof m.content === 'string') return m.content;
   if (Array.isArray(m.content)) return m.content.filter(b => b && b.type === 'text').map(b => b.text).join('\n');
@@ -76,28 +70,6 @@ function toOAIChat(messages) {
   }
   return { system, chatMsgs };
 }
-
-async function getOpenRouterKeys(env) {
-  const keys = [];
-  const seen = new Set();
-  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
-  add(env.OPENROUTER_API_KEY);
-  add(env.OPENROUTER_API_KEY_4); add(env.OPENROUTER_API_KEY_5); add(env.OPENROUTER_API_KEY_6);
-  if (!env.DB) return keys;
-  try {
-    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('OPENROUTER_API_KEY','OPENROUTER_API_KEY_2','OPENROUTER_API_KEY_3','OPENROUTER_API_KEY_4','OPENROUTER_API_KEY_5','OPENROUTER_API_KEY_6')").all();
-    for (const r of rows.results || []) add(r.value);
-  } catch {}
-  return keys;
-}
-
-const OPENROUTER_MODELS = ['anthropic/claude-haiku-5.5', 'z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro'];
-
-const GUEST_OR_MODELS = ['z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro'];
-
-const FREE_OR_MODELS = ['cohere/north-mini-code:free', 'google/gemma-4-26b-a4b-it:free'];
-
-const OR_MAX_TOKENS = 2048;
 const oaiToolsOf = (gDecls) => (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
 
 function withTimeout(promise, ms, label) {
@@ -148,48 +120,6 @@ async function readOAICompatStream(res, onDelta) {
   return { text, fin, tcs };
 }
 
-function joinSeg(a, b) {
-  if (!a) return b;
-  if (!b) return a;
-  if (/[.!?"']$/.test(a) && /^[A-Z\"'\u201c]/.test(b)) return a + '\n\n' + b;
-  if (/\s$/.test(a) || /^\s/.test(b)) return a + b;
-  return a + b;
-}
-
-async function completeTruncatedToolArgs(keys, models, baseMsgs, oaiTools, tc) {
-  const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
-
-  let triesLeft = 2;
-  for (const key of keyList.slice(0, 1)) {
-    for (const model of models.slice(0, 2)) {
-      if (triesLeft-- <= 0) return null;
-      const partial = tc.args || '';
-      const contMsgs = baseMsgs.slice();
-      contMsgs.push({ role: 'assistant', content: null, tool_calls: [{ id: 'cut', type: 'function', function: { name: tc.name, arguments: partial } }] });
-      contMsgs.push({ role: 'user', content: 'Tool call terakhirmu TERPOTONG karena batas token. Lanjutkan PERSIS dari karakter terakhir argumen JSON itu — keluarkan HANYA sambungan string argumennya, TANPA mengulang dari awal, TANPA penjelasan, TANPA blok kode markdown.' });
-      try {
-        const cp = { model, messages: contMsgs, max_tokens: OR_MAX_TOKENS, stream: true };
-        const cr = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.pages.dev', 'X-Title': 'Clincoo' },
-          body: JSON.stringify(cp)
-        });
-        if (!cr.ok || !cr.body) continue;
-        const st = await readOAICompatStream(cr, null);
-        let cont = (st && st.text ? st.text : '').trim();
-        if (!cont) continue;
-
-        cont = cont.replace(/^```[a-z]*\s*/i, '').replace(/```$/, '').trim();
-
-        try { const j = JSON.parse(partial + cont); return j; } catch (e) {}
-
-        try { const j = JSON.parse(cont); return j; } catch (e) {}
-      } catch (e) {  }
-    }
-  }
-  return null;
-}
-
 function normStreamToolCalls(tcs) {
   const norm = [];
   for (const c of tcs) {
@@ -198,178 +128,6 @@ function normStreamToolCalls(tcs) {
     if (a) norm.push({ name: c.name, args: a });
   }
   return norm;
-}
-
-async function tryOpenRouterText(keys, messages, gDecls, models, onDelta) {
-  const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
-  if (!keyList.length) return null;
-  const modelList = (Array.isArray(models) && models.length) ? models : OPENROUTER_MODELS;
-  const { system, chatMsgs } = toOAIChat(messages);
-  const oaiTools = oaiToolsOf(gDecls);
-  let lastErr = null;
-
-  const deadKeys = new Set();
-  for (const key of keyList) {
-    if (deadKeys.has(key)) continue;
-  for (const model of modelList) {
-    const baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
-    let data = null;
-
-    if (onDelta) {
-      try {
-        const sp = { model, messages: baseMsgs, max_tokens: OR_MAX_TOKENS, stream: true };
-        if (oaiTools) sp.tools = oaiTools;
-        const sr = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.pages.dev', 'X-Title': 'Clincoo' },
-          body: JSON.stringify(sp)
-        });
-        if (sr.ok && sr.body) {
-          const st = await readOAICompatStream(sr, onDelta);
-          if (st.text || st.tcs.length) {
-            if (st.tcs.length && st.fin !== 'length') {
-              const nt = normStreamToolCalls(st.tcs);
-              if (nt.length) return { tool_calls: nt, text: st.text, model: model.split('/').pop() + ' (OpenRouter)' };
-
-            }
-
-            if (st.tcs.length && st.fin === 'length') {
-              const fixed = [];
-              let allOk = true;
-              for (const c of st.tcs) {
-                let a = null; try { a = c.args ? JSON.parse(c.args) : null; } catch (e) { a = null; }
-                if (!a) a = await completeTruncatedToolArgs(keyList, modelList, baseMsgs, oaiTools, c);
-                if (!a) { allOk = false; break; }
-                fixed.push({ name: c.name, args: a });
-              }
-              if (allOk && fixed.length) return { tool_calls: fixed, text: st.text, model: model.split('/').pop() + ' (OpenRouter)' };
-
-            }
-
-            let full = st.text, seg = st.text, fin2 = st.fin;
-            const contMsgs = baseMsgs.slice();
-            for (let sc = 0; sc < 3 && fin2 === 'length'; sc++) {
-              contMsgs.push({ role: 'assistant', content: seg });
-              contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
-
-              const cModels = [model];
-              let st2 = null;
-              for (const cm of cModels) {
-                try {
-                  const cp = { model: cm, messages: contMsgs, max_tokens: OR_MAX_TOKENS, stream: true };
-                  if (oaiTools) cp.tools = oaiTools;
-                  const cr = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.pages.dev', 'X-Title': 'Clincoo' },
-                    body: JSON.stringify(cp)
-                  });
-                  if (!cr.ok || !cr.body) continue;
-                  st2 = await readOAICompatStream(cr, onDelta);
-                  if (st2 && st2.text) break;
-                  st2 = null;
-                } catch (e2) { st2 = null; }
-              }
-              if (!st2 || !st2.text) break;
-              full = joinSeg(full, st2.text); seg = st2.text; fin2 = st2.fin;
-            }
-
-            if (oaiTools && !st.tcs.length) {
-
-              const hasToolHist = baseMsgs.some(m => m && m.role === 'tool');
-              if (!hasToolHist) {
-                const narr = (full.match(/(menulis|menjalankan|memulai|menyelesaikan)\s+(file|tools?|generate_image|set_project_info|write_file|deploy)/gi) || []).length;
-                if (narr >= 3) { lastErr = 'OpenRouter ' + model + ': narasi tool tanpa tool_call nyata (fake progress)'; continue; }
-              }
-            }
-            return { text: full, model: model.split('/').pop() + ' (OpenRouter)' };
-          }
-          lastErr = `OpenRouter ${model}: stream kosong`;
-          continue;
-        }
-        if (!sr.ok) {
-          lastErr = `OpenRouter ${model}: HTTP ${sr.status}`;
-          if (sr.status === 402) { deadKeys.add(key); break; }
-
-          if (sr.status === 429 || sr.status === 502 || sr.status === 503 || sr.status === 529) await new Promise(r2 => setTimeout(r2, 900));
-        }
-      } catch (e) { lastErr = `OpenRouter ${model}: ${e && e.message}`; }
-    }
-    try {
-      const payload = { model, messages: baseMsgs, max_tokens: OR_MAX_TOKENS };
-      if (oaiTools) payload.tools = oaiTools;
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.pages.dev', 'X-Title': 'Clincoo' },
-        body: JSON.stringify(payload)
-      });
-      data = await res.json().catch(() => ({}));
-      if (!res.ok) { lastErr = `OpenRouter ${model}: HTTP ${res.status}`; if (res.status === 402) { deadKeys.add(key); break; } continue; }
-    } catch (e) { lastErr = `OpenRouter ${model}: ${e && e.message}`; continue; }
-    const msg = data && data.choices && data.choices[0] && data.choices[0].message;
-    const text = (msg && msg.content) || '';
-    const finish = data && data.choices && data.choices[0] && data.choices[0].finish_reason;
-
-    const tcs = msg && Array.isArray(msg.tool_calls) ? msg.tool_calls : null;
-    if (tcs && tcs.length) {
-      const norm = [];
-      let cutMid = false;
-      for (const c of tcs) {
-        let a = null;
-        if (c && c.function && typeof c.function.arguments === 'string') { try { a = JSON.parse(c.function.arguments); } catch (e) { a = null; } }
-        else a = (c && c.function && c.function.arguments) || {};
-        if (!a) {
-          cutMid = true;
-          a = await completeTruncatedToolArgs(keyList, modelList, baseMsgs, oaiTools, { name: c.function.name, args: c.function.arguments || '' });
-        }
-        if (!a) { cutMid = true; break; }
-        if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
-      }
-      if (norm.length && !cutMid) return { tool_calls: norm, text, model: model.split('/').pop() + ' (OpenRouter)' };
-
-    }
-    if (text) {
-
-      let full = text, seg = text, fin = finish;
-      const contMsgs = baseMsgs.slice();
-      for (let ac = 0; ac < 2 && fin === 'length'; ac++) {
-        contMsgs.push({ role: 'assistant', content: seg });
-        contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
-        let dc = null;
-        try {
-          const p3 = { model, messages: contMsgs, max_tokens: OR_MAX_TOKENS };
-          if (oaiTools) p3.tools = oaiTools;
-          const rc = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.pages.dev', 'X-Title': 'Clincoo' },
-            body: JSON.stringify(p3)
-          });
-          dc = await rc.json().catch(() => ({}));
-        } catch (e2) { dc = null; }
-        const dm = dc && dc.choices && dc.choices[0] && dc.choices[0].message;
-        const dseg = (dm && dm.content) || '';
-        fin = dc && dc.choices && dc.choices[0] && dc.choices[0].finish_reason;
-        if (!dseg) break;
-        full = joinSeg(full, dseg); seg = dseg;
-      }
-      return { text: full, model: model.split('/').pop() + ' (OpenRouter)' };
-    }
-    lastErr = `OpenRouter ${model}: respons kosong`;
-  }
-  }
-  return lastErr ? { error: lastErr } : null;
-}
-
-async function getClouviaKeys(env) {
-  const keys = [];
-  const seen = new Set();
-  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
-  add(env.CLOUVIA_API_KEY);
-  if (!env.DB) return keys;
-  try {
-    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('CLOUVIA_API_KEY','CLOUVIA_API_KEY_2')").all();
-    for (const r of rows.results || []) add(r.value);
-  } catch {}
-  return keys;
 }
 
 async function getModelRouterKeys(env) {
@@ -385,74 +143,16 @@ async function getModelRouterKeys(env) {
   return keys;
 }
 
-const EMERGENT_ENDPOINT = 'https://ai-credit-monitor.preview.emergentagent.com/api/v1/chat/completions';
-async function getEmergentKeys(env) {
-  const keys = [];
-  const seen = new Set();
-  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
-  add(env.EMERGENT_API_KEY);
-  if (!env.DB) return keys;
-  try {
-    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key = 'EMERGENT_API_KEY'").all();
-    for (const r of rows.results || []) add(r.value);
-  } catch {}
-  return keys;
-}
-async function tryEmergentText(keys, messages, onDelta) {
-  for (const k of keys) {
-    try {
-      const res = await fetch(EMERGENT_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + k, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'auto', messages })
-      });
-      if (res.status === 401 || res.status === 403) continue;
-      if (!res.ok) continue;
-      const d = await res.json();
-      const m = (d.choices && d.choices[0] && d.choices[0].message) || {};
-      const raw = typeof m.content === 'string' ? m.content : '';
+const MR_MODEL = 'glm-5.3-flash:mr';
+const MR_OUT_TOKENS = 8192;
+const MR_TIMEOUT_MS = 170000;
 
-      const text = raw.replace(/<function_calls>[\s\S]*?<\/function_calls>/g, '').trim();
-      if (text) {
-        if (onDelta) onDelta(text);
-        return { text, model: 'orkestra-1-flash' };
-      }
-    } catch (e) {}
-  }
-  return { error: 'emergent gagal' };
-}
+const MODELROUTER_MODELS = [MR_MODEL];
 
-const FRONT_MR_MODELS = ['deepseek-v4.1-flash:free'];
-const EXECUTION_MR_MODELS = ['claude-sonnet-5.5', 'deepseek-v4.1-flash:free'];
-
-const CHAT_MR_MODELS = ['deepseek-v4.1-flash:free'];
-const MODELROUTER_MODELS = ['deepseek-v4.1-flash:free', 'claude-sonnet-5.5'];
-
-const MR_MAX_TOKENS = { 'claude-haiku-5.5': 1024 , 'nemotron-3.5-lightning': 96, 'glm-5.3-flash': 384, 'nemotron-3-ultra': 96, 'deepseek-v4.1-flash:free': 1024 , 'claude-sonnet-5.5': 1024  };
+const MR_MAX_TOKENS = { [MR_MODEL]: MR_OUT_TOKENS };
 const MR_ENDPOINT = 'https://modelrouter.id/v1/chat/completions';
 
 const mrLabel = () => 'orkestra-1-pro';
-
-const BUILD_INTENT_VERBS = /\b(?:buat(?:kan)?|bikin(?:kan)?|bangun(?:kan)?|edit|ubah|tambah(?:kan)?|perbaiki|benarkan|benerin|fix|hapus|deploy|publish|publikasikan|terbitkan|remake|redesign|desain\ ulang|custom)\b/i;
-const BUILD_INTENT_OBJECTS = /\b(?:situs|site|website|web|halaman|page|landing|homepage|kode|code|html|css|javascript|komponen|navbar|footer|form|formulir|tabel|blog|toko|profil|portofolio|proyek|project|fitur|banner|hero|section|web\ app)\b/i;
-function detectBuildIntent(messages) {
-  try {
-    if (!Array.isArray(messages) || !messages.length) return false;
-    let lastUser = null;
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i] && messages[i].role === 'user') { lastUser = messages[i]; break; }
-    }
-    if (!lastUser) return false;
-    const c = lastUser.content;
-    let txt = typeof c === 'string' ? c : (Array.isArray(c) ? c.map(p => (p && typeof p === 'object') ? (p.text || '') : String(p || '')).join(' ') : '');
-    txt = String(txt || '').toLowerCase();
-    if (!txt) return false;
-
-    if (/\b(?:build|deploy|publish)\b/.test(txt)) return true;
-
-    return BUILD_INTENT_VERBS.test(txt) && BUILD_INTENT_OBJECTS.test(txt);
-  } catch (e) { return false; }
-}
 
 function mrContinueMsg(seg) {
   const tailTxt = String(seg || '').slice(-80).replace(/\s+/g, ' ');
@@ -479,162 +179,6 @@ function mrJoinContinuation(prev, cont) {
   return p + c;
 }
 
-function lastUserText(msgs) {
-  try {
-    const m = [...(msgs || [])].reverse().find(function (x) { return x && x.role === 'user'; });
-    if (!m) return '';
-    const c = m.content;
-    return typeof c === 'string' ? c : (Array.isArray(c) ? c.filter(function (b) { return b && b.type === 'text'; }).map(function (b) { return b.text || ''; }).join(' ') : '');
-  } catch (e) { return ''; }
-}
-
-const FRONT_SYSTEM_PROMPT = 'ATURAN BAHASA (WAJIB): selalu Bahasa Indonesia; dilarang aksara Mandarin/Jepang/Korea. Kamu AI 1 — FRONT AGENT Clincoo (model ringan). Tugasmu BUKAN menulis kode/file, hanya memilah niat user dan merinci instruksi untuk AI 2 (Execution Agent). KONTEKS: user SEDANG di MODE BUILD dengan tools workspace aktif — DILARANG membalas bahwa kamu/user harus pindah mode, atau bahwa workspace tidak bisa diperiksa/diakses. Balas HANYA satu objek JSON valid, tanpa teks lain, tanpa penjelasan.\nAturan memilih action:\n- "reply": user menyapa, bertanya, mengobrol, minta saran/penjelasan/pendapat, menanyakan progres atau cara pakai. Jawab final untuk user sekarang. Jika butuh info tambahan dari user untuk mulai membangun, WAJIB pakai field "questions" di reply (format di aturan (b)), bukan daftar permintaan panjang.\n- "execute": user meminta DIBUATKAN/DIUBAH/DIPERBAIKI/DILANJUTKAN situs, halaman, aplikasi, file, fitur, tampilan, atau deploy.\nFormat WAJIB salah satu:\n{"action":"reply","reply":"<jawaban final bahasa Indonesia natural, langsung ke inti>"}\n{"action":"execute","ack":"<jawaban singkat ke user (1-3 kalimat, bahasa Indonesia natural): konfirmasi permintaan + rencana kerja bertahap. TANPA kode, TANPA janji kosong>","instruction":"<instruksi teknis siap eksekusi: APA yang dibuat/diubah (sebut file/halaman bila relevan), data user yang disebut (nama orang, relasi seperti bapak/ibu, nama usaha, kota, harga) WAJIB disertakan persis, preferensi desain/fitur, syarat selesai>","context":"<fakta penting lain dari percakapan yang wajib dipegang AI 2>"}\nKetentuan: untuk sapaan jawab singkat dan hangat; untuk pertanyaan progres ringkas HANYA dari [PROGRES TUGAS SEBELUMNYA], jangan mengarang; reply tidak menulis kode dan tidak menawarkan bantuan kosong; execute tidak menulis kode, hanya instruksi; ack WAJIB diisi setiap kali execute (jawaban dulu ke user, baru AI 2 bekerja). ack TIDAK BOLEH bertanya atau meminta data tambahan saat execute — AI 2 langsung bekerja dengan data yang sudah ada di pesan user; cukup konfirmasi singkat + rencana 1-3 langkah, tanpa mengarang nama usaha/fitur yang tidak disebut user. Jangan pernah menyebut nama provider/model.\nATURAN LANJUT (WAJIB): jika user sudah menjawab pertanyaanmu, menyerahkan keputusan ("terserah", "bebas", "boleh", "gapapa", "lanjut", "iya", "buat aja", "kamu pilih"), atau sudah pernah ditanya sekali di riwayat, JANGAN tanya lagi: langsung action execute dengan pilihan terbaik yang masuk akal (kecuali fakta pribadi yang tak boleh dikarang: nama orang/usaha, pakai placeholder wajar atau nama fiktif yang jelas). Maksimal SATU putaran polling per tugas. ATURAN ACK: ack hanya 1-2 kalimat konfirmasi + rencana; DILARANG memuat frasa "instruksi teknis", "berikut", atau JSON/kode. Instruksi untuk AI 2 JANGAN menambah fitur yang tidak diminta (database, login, pembayaran). ATURAN ANTI-KARANG (WAJIB, pelanggaran = gagal): (a) DILARANG menambah fakta yang tidak tertulis di percakapan: nama usaha, domain, jenis bisnis, nama orang/sapaan user, fitur (login/database/pembayaran), skema warna, atau teknologi. Hanya pakai yang user katakan PERSIS. (b) Jika permintaan bangun terlalu umum/kosong (contoh: "buat web", "bikin website", "buat aplikasi" tanpa jenis/nama/tujuan), JANGAN execute: pakai action reply dengan pengantar 1 kalimat di "reply" plus daftar pertanyaan di field "questions" (array), BUKAN paragraf panjang minta banyak data. Maksimal 3 pertanyaan, hanya yang benar-benar wajib sebelum membangun (jenis/untuk siapa usahanya, nama usaha/brand, preferensi gaya/warna). Pertanyaan yang butuh jawaban bebas pakai "options" kosong []. Sistem otomatis mengubah field "questions" jadi kartu polling interaktif. Contoh format reply dengan polling: {"action":"reply","reply":"Siap! Jawab singkat dulu supaya hasilnya pas.","questions":[{"q":"Web untuk apa atau siapa usahanya?","options":["Kuliner (restoran/kafe/katering)","Toko & produk","Jasa profesional","Organisasi/komunitas"]},{"q":"Nama usaha atau brand-nya apa?","options":[]}]} (c) Jangan menyapa user dengan nama yang tidak pernah ia sebutkan. (d) Jangan ceramah teknis tentang Flask/MySQL/Node.js/database; platform Clincoo sudah punya stack sendiri, cukup kerjakan. Kolom context HANYA berisi fakta yang benar-benar ada di pesan user, kosongkan bila tidak ada. ATURAN NAVIGASI UI (WAJIB): jika user minta MEMBUKA/MELIHAT bagian antarmuka (contoh: "buka workspace", "lihat preview", "buka editor", "lihat file"), itu BUKAN permintaan membangun dan BUKAN hal yang tidak bisa kamu lakukan. Pakai action reply singkat (1-2 kalimat) yang mengarahkan ke tab yang benar di bagian atas halaman proyek: tab Workspace (lihat dan kelola file/folder), tab Live preview (lihat hasil web berjalan), tab Editor (edit kode), tab Chat (percakapan). DILARANG mengaku tidak punya fitur Workspace, DILARANG ceramah soal keterbatasan tool atau kejujuran. Bila user ingin AI membaca isi file/folder untuk dicek, pakai action execute dengan instruksi list_items lalu laporkan isinya.';
-const NEEDS_TOOLS_RE = /\b(?:cek|chek|check|periksa|lihat|baca|buka|tampilkan|list|perbaiki|benerin|fix|lanjut(?:kan)?|ubah|edit|tambah(?:kan)?|hapus)\b[^\n]{0,60}\b(?:workspace|folder|file|berkas|index|proyek|project|situs|web|halaman|error)\b|\.(?:html|css|js)\b|preview mendeteksi error|^\s*(?:terserah|bebas|ya|iya|oke|ok|lanjut|gas)\b/i;
-
-function frontPollBlock(questions) {
-  try {
-    if (!Array.isArray(questions) || !questions.length) return '';
-    const qs = questions.slice(0, 4).map(function (q) {
-      if (typeof q === 'string') return { q: q, options: [] };
-      return { q: String((q && (q.q || q.question)) || ''), options: Array.isArray(q && q.options) ? q.options : [] };
-    }).filter(function (q) { return q.q.trim(); });
-    if (!qs.length) return '';
-    const L = ['A', 'B', 'C', 'D'];
-    const body = qs.map(function (q) {
-      return 'Q: ' + q.q.trim().replace(/\n+/g, ' ') + (q.options.length ? '\n' + q.options.slice(0, 4).map(function (o, k) { return L[k] + ': ' + String(o).trim().replace(/\n+/g, ' '); }).join('\n') : '');
-    }).join('\n---\n');
-    return '\n\n[[POLL]]\nT: Konfirmasi singkat\n' + body + '\n[[/POLL]]';
-  } catch (e) { return ''; }
-}
-
-function frontLooseField(t, name) {
-  try {
-    const m = t.match(new RegExp('"' + name + '"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)', 's'));
-    if (!m) return '';
-    let v = m[1];
-    try { v = JSON.parse('"' + v + '"'); } catch (e) { v = v.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\'); }
-    return String(v).trim();
-  } catch (e) { return ''; }
-}
-
-function frontSanitizeReply(text) {
-  let x = String(text || '').trim();
-  if (/^\s*[\{\[]/.test(x) || /"action"\s*:/.test(x)) {
-    const rep = frontLooseField(x, 'reply') || frontLooseField(x, 'ack');
-    return rep || '';
-  }
-  return x.replace(/\b(Instruksi teknis|Context)\s*:[\s\S]*$/i, '').trim();
-}
-
-let __taskTableReady = false;
-async function ensureTaskTable(env) {
-  if (__taskTableReady) return;
-  await env.DB.prepare('CREATE TABLE IF NOT EXISTS task_state (session_id TEXT, h TEXT, kind TEXT, payload TEXT, created_at TEXT, PRIMARY KEY (session_id, h))').run();
-  __taskTableReady = true;
-}
-
-async function taskEventRecord(env, sessionId, kind, payload) {
-  try {
-    if (!sessionId || !env.DB) return;
-    await ensureTaskTable(env);
-    const h = String(kind) + '|' + String(payload).slice(0, 400);
-    let hash = 5381;
-    for (let i = 0; i < h.length; i++) hash = ((hash * 33) + h.charCodeAt(i)) >>> 0;
-    await env.DB.prepare('INSERT OR IGNORE INTO task_state (session_id, h, kind, payload, created_at) VALUES (?, ?, ?, ?, ?)')
-      .bind(String(sessionId).slice(0, 80), String(hash), String(kind).slice(0, 24), String(payload).slice(0, 600), new Date().toISOString()).run();
-  } catch (e) {}
-}
-
-async function taskStateDigest(env, sessionId) {
-  try {
-    if (!sessionId || !env.DB) return '';
-    await ensureTaskTable(env);
-    const rows = await env.DB.prepare('SELECT kind, payload FROM (SELECT kind, payload, created_at FROM task_state WHERE session_id = ? ORDER BY created_at DESC LIMIT 60) ORDER BY created_at ASC').bind(String(sessionId).slice(0, 80)).all();
-    return (rows.results || []).map(function (r) { return '- [' + r.kind + '] ' + r.payload; }).join('\n').slice(-2500);
-  } catch (e) { return ''; }
-}
-
-async function scanMessagesForEvents(env, sessionId, msgs) {
-  try {
-    const jobs = [];
-    for (const m of (msgs || [])) {
-      if (!m || !Array.isArray(m.content)) continue;
-      for (const b of m.content) {
-        if (!b || typeof b !== 'object') continue;
-        if (b.type === 'function_call' && b.name) {
-          let brief = '';
-          try { const a = typeof b.args === 'string' ? JSON.parse(b.args) : (b.args || {}); brief = String(a.path || a.app_name || a.query || a.prompt || '').slice(0, 90); } catch (e) {}
-          jobs.push(taskEventRecord(env, sessionId, 'call', b.name + (brief ? ' ' + brief : '')));
-        } else if (b.type === 'function_response' && b.name) {
-          let s = ''; try { s = typeof b.response === 'string' ? b.response : JSON.stringify(b.response || b.result || ''); } catch (e) {}
-          const ok = /"success"\s*:\s*true/i.test(s) ? 'OK' : (/"error"/i.test(s) ? 'GAGAL' : 'selesai');
-          let extra = ''; const um = s.match(/"url"\s*:\s*"([^"]+)"/); if (um) extra = ' -> ' + um[1].slice(0, 80);
-          jobs.push(taskEventRecord(env, sessionId, 'hasil', b.name + ' ' + ok + extra));
-        }
-      }
-    }
-    await Promise.all(jobs);
-  } catch (e) {}
-}
-
-async function frontAgentRun(bodyMessages, stateDigest, mrKeys, usageAcc) {
-  try {
-    const keyList = Array.isArray(mrKeys) ? mrKeys.filter(Boolean) : [mrKeys].filter(Boolean);
-    if (!keyList.length) return null;
-    const chat = [];
-    for (const m of (bodyMessages || [])) {
-      if (!m || m.role === 'system') continue;
-      let txt = '';
-      if (typeof m.content === 'string') txt = m.content;
-      else if (Array.isArray(m.content)) txt = m.content.filter(function (b) { return b && b.type === 'text'; }).map(function (b) { return b.text || ''; }).join('\n');
-      txt = String(txt).trim();
-      if (!txt) continue;
-      chat.push({ role: m.role === 'assistant' ? 'assistant' : 'user', content: txt.slice(0, 3500) });
-    }
-    if (!chat.length) return null;
-    const recent = chat.slice(-12);
-    const sys = FRONT_SYSTEM_PROMPT + (stateDigest ? '\n\n[PROGRES TUGAS SEBELUMNYA (event store — sumber kebenaran)]:\n' + stateDigest : '');
-    const frMsgs = [{ role: 'system', content: sys }].concat(recent);
-
-    let r = await withTimeout(tryModelRouterText(keyList, frMsgs, null, FRONT_MR_MODELS, null, usageAcc), 9000, 'FrontAgent').catch(function () { return null; });
-    if (!r || r.error || !r.text) return null;
-    let t = String(r.text).trim().replace(/^```(json)?/i, '').replace(/```\s*$/, '').trim();
-    const i = t.indexOf('{'), j = t.lastIndexOf('}');
-    if (i === -1) return { action: 'reply', reply: frontSanitizeReply(t).slice(0, 2200) || 'Oke, aku lanjutkan ya.' };
-    let o = null;
-    if (j > i) { try { o = JSON.parse(t.slice(i, j + 1)); } catch (e) { o = null; } }
-    if (!o) {
-      const act = (t.match(/"action"\s*:\s*"(execute|reply)"/) || [])[1] || '';
-      if (act === 'execute') {
-        const ins = frontLooseField(t, 'instruction');
-        if (ins) o = { action: 'execute', ack: frontLooseField(t, 'ack'), instruction: ins, context: frontLooseField(t, 'context') };
-      } else if (act === 'reply') {
-        const rp = frontLooseField(t, 'reply');
-        if (rp) o = { action: 'reply', reply: rp };
-      }
-      if (!o) return { action: 'reply', reply: frontSanitizeReply(t).slice(0, 2200) || 'Oke, aku lanjutkan ya.' };
-    }
-    try {
-      if (o && o.action === 'execute' && o.instruction) {
-        const lastU = (recent.filter(function (m) { return m.role === 'user'; }).pop() || {}).content || '';
-        const words = String(lastU).trim().split(/\s+/).filter(Boolean).length;
-        const userTurns = recent.filter(function (m) { return m.role === 'user'; }).length;
-        const vague = /^(tolong\s+)?(buat|buatkan|bikin|bikinkan|bangun)(kan)?\s+(sebuah\s+|aku\s+|saya\s+)?(web|website|situs|aplikasi|app|landing\s*page|halaman)\s*(dong|ya|aja|saja|nih)?[.!? ]*$/i.test(String(lastU).trim());
-        const askedBefore = recent.some(function (m) { return m.role === 'assistant'; });
-        const STOPW = new Set(['tolong','buat','buatkan','bikin','bikinkan','bangun','kan','web','website','situs','aplikasi','app','landing','page','halaman','dong','ya','aja','saja','nih','aku','saya','sebuah','untuk','bikinin','please']);
-        const contentWords = String(lastU).toLowerCase().replace(/[.,!?;:]/g,' ').split(/\s+/).filter(function (w) { return w && !STOPW.has(w); });
-        const hasTopic = contentWords.length > 0;
-        if (!askedBefore && !hasTopic && (vague || (words <= 3 && userTurns <= 1 && /\b(web|website|situs|aplikasi|app)\b/i.test(lastU)))) {
-          return { action: 'reply', reply: 'Siap! Bantu jawab singkat dulu supaya hasilnya pas:\n[[POLL]]\nT: Konfirmasi singkat\nQ: Web untuk apa atau siapa usahanya?\nA: Kuliner (restoran/kafe/katering)\nB: Toko & produk\nC: Jasa profesional\nD: Organisasi/komunitas\n---\nQ: Nama usaha atau brand-nya apa?\n[[/POLL]]' };
-        }
-      }
-      if (o && o.action === 'execute' && o.instruction) return { action: 'execute', ack: frontSanitizeReply(String(o.ack || '').replace(/\s*(Berikut|Ini)\s+(adalah\s+)?(instruksi|langkah|rencana)[^.!?\n]*[:.]?\s*$/i, '')).slice(0, 1200), instruction: String(o.instruction).slice(0, 3500), context: String(o.context || '').slice(0, 1200) };
-      if (o && o.action === 'reply' && (o.reply || (o.questions && o.questions.length))) return { action: 'reply', reply: (frontSanitizeReply(o.reply) || 'Siap! Jawab singkat dulu supaya hasilnya pas.').slice(0, 3000) + frontPollBlock(o.questions) };
-    } catch (e) {}
-    return { action: 'reply', reply: frontSanitizeReply(t).slice(0, 2200) || 'Oke, aku lanjutkan ya.' };
-  } catch (e) { return null; }
-}
-
 async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usageAcc) {
   const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
   if (!keyList.length) return null;
@@ -654,6 +198,7 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usage
     });
   };
   let lastErr = null;
+  let sawRateLimit = false;
 
   const mrContinueToolArgs = async (key, model, baseMsgs, tc) => {
     let acc = tc.args || '';
@@ -723,13 +268,13 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usage
           }
           lastErr = 'ModelRouter ' + model + ': stream kosong';
         }
-        if (!sr.ok) lastErr = 'ModelRouter ' + model + ': HTTP ' + sr.status;
+        if (!sr.ok) { lastErr = 'ModelRouter ' + model + ': HTTP ' + sr.status; if (sr.status === 429) sawRateLimit = true; }
       } catch (e) { lastErr = 'ModelRouter ' + model + ': ' + (e && e.message); }
     }
     try {
       const res = await callMr(key, model, baseMsgs, false);
       data = await res.json().catch(() => ({}));
-      if (!res.ok) { lastErr = 'ModelRouter ' + model + ': HTTP ' + res.status; continue; }
+      if (!res.ok) { lastErr = 'ModelRouter ' + model + ': HTTP ' + res.status; if (res.status === 429) sawRateLimit = true; continue; }
     } catch (e) { lastErr = 'ModelRouter ' + model + ': ' + (e && e.message); continue; }
     const msg = data && data.choices && data.choices[0] && data.choices[0].message;
     const text = (msg && msg.content) || '';
@@ -772,280 +317,7 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usage
     lastErr = 'ModelRouter ' + model + ': respons kosong';
   }
   }
-  return lastErr ? { error: lastErr } : null;
-}
-
-async function getCfAiCreds(env) {
-  const token = String(env.CF_AI_TOKEN || '').trim();
-  const accountId = String(env.CF_AI_ACCOUNT_ID || '').trim();
-  if (!env.DB) return (token && accountId) ? { token, accountId } : null;
-  const t = { token, accountId };
-  try {
-    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('CF_AI_TOKEN','CF_AI_ACCOUNT_ID')").all();
-    for (const r of rows.results || []) {
-      const v = String(r.value || '').trim();
-      if (!v) continue;
-      if (r.key === 'CF_AI_TOKEN' && !t.token) t.token = v;
-      if (r.key === 'CF_AI_ACCOUNT_ID' && !t.accountId) t.accountId = v;
-    }
-  } catch {}
-  return (t.token && t.accountId) ? t : null;
-}
-
-const CF_AI_MODELS = ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/zai-org/glm-4.7-flash'];
-
-async function tryCfAiRest(creds, messages, gDecls, onDelta) {
-  if (!creds || !creds.token || !creds.accountId) return null;
-  const { system, chatMsgs } = toOAIChat(messages);
-  const oaiTools = (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
-  const sysMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
-  for (const model of CF_AI_MODELS) {
-    const modelLabel = model.split('/').pop() + ' (WorkersAI-REST)';
-
-    const contMsgs = sysMsgs.slice();
-    let full = '', seg = '', finish = '', tcsOut = null;
-    for (let ac = 0; ac < 3; ac++) {
-      let st = null;
-      try {
-        const body = { messages: contMsgs, max_tokens: 8192 };
-        if (oaiTools && ac === 0) body.tools = oaiTools;
-        if (onDelta && ac === 0) body.stream = true;
-        const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${creds.accountId}/ai/run/${model}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + creds.token },
-          body: JSON.stringify(body)
-        });
-        if (!res.ok) { seg = ''; break; }
-        if (onDelta && ac === 0 && res.body) {
-          st = await readOAICompatStream(res, onDelta);
-          seg = st.text || ''; finish = st.fin || '';
-          if (st.tcs && st.tcs.length) tcsOut = st.tcs;
-        } else {
-          const j = await res.json();
-          const rj = (j && j.result) || {};
-          const ch = (Array.isArray(rj.choices) && rj.choices[0]) || {};
-          const m = ch.message || {};
-          seg = m.content || rj.response || (typeof rj === 'string' ? rj : '') || '';
-          finish = ch.finish_reason || rj.finish_reason || '';
-          const rtcs = (Array.isArray(m.tool_calls) && m.tool_calls.length) ? m.tool_calls : (Array.isArray(rj.tool_calls) ? rj.tool_calls : null);
-          if (rtcs) { tcsOut = rtcs; finish = 'tool_calls'; }
-        }
-      } catch (e) { seg = ''; break; }
-      if (!seg && !tcsOut) break;
-      full = joinSeg(full, seg);
-      if (tcsOut && tcsOut.length) {
-        const norm = [];
-        for (const c of tcsOut) {
-          let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
-          if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
-        }
-        if (norm.length) return { tool_calls: norm, text: full, model: modelLabel };
-      }
-      if (finish !== 'length') break;
-
-      contMsgs.push({ role: 'assistant', content: seg });
-      contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
-    }
-    if (full) return { text: full, model: modelLabel };
-  }
-  return null;
-}
-
-const CLOUVIA_MODELS = ['glm5.3-flash', 'coding-high-flash', 'free-model'];
-
-const CLOUVIA_SOL_MODELS = ['deepseek-v4-pro', 'glm5.3-flash'];
-
-async function tryClouviaText(keys, messages, gDecls, models, onDelta) {
-  const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
-  if (!keyList.length) return null;
-  const modelList = (Array.isArray(models) && models.length) ? models : CLOUVIA_MODELS;
-  const { system, chatMsgs } = toOAIChat(messages);
-  const oaiTools = oaiToolsOf(gDecls);
-
-  let idPrefix = '';
-  try {
-    const picks = [];
-    if (system) {
-      const idMatch = system.match(/\[IDENTITAS PENGGUNA\][^\n]*/);
-      if (idMatch) picks.push(idMatch[0]);
-      const qMatch = system.match(/\[KUOTA AI PENGGUNA\][^\n]*/);
-      if (qMatch) picks.push(qMatch[0]);
-    }
-    const lu = [...messages].reverse().find(m => m && m.role === 'user');
-    const payDocs = paymentDocsFor(lu ? textOf(lu) : '');
-    if (payDocs) picks.push(payDocs);
-    if (picks.length) idPrefix = picks.join('\n\n') + '\n\n';
-  } catch (e) {}
-  let lastErr = null;
-  for (const key of keyList) {
-    for (const model of modelList) {
-      let baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
-      if (idPrefix) {
-        const iu = baseMsgs.findIndex(m => m && m.role === 'user');
-        if (iu !== -1) {
-          baseMsgs = baseMsgs.slice();
-          baseMsgs[iu] = { role: 'user', content: idPrefix + String(baseMsgs[iu].content || '') };
-        }
-      }
-      let data = null;
-
-      if (onDelta) {
-        try {
-          const sp = { model, messages: baseMsgs, max_tokens: 16384, stream: true };
-          if (oaiTools) sp.tools = oaiTools;
-          const sr = await fetch('https://router.clouvia.id/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-            body: JSON.stringify(sp)
-          });
-          if (sr.ok && sr.body) {
-            const st = await readOAICompatStream(sr, onDelta);
-            if (st.text || st.tcs.length) {
-              if (st.tcs.length) return { tool_calls: normStreamToolCalls(st.tcs), text: st.text, model: model + ' (Clouvia)' };
-              return { text: st.text, model: model + ' (Clouvia)' };
-            }
-            lastErr = `Clouvia ${model}: stream kosong`;
-            continue;
-          }
-          if (!sr.ok) lastErr = `Clouvia ${model}: HTTP ${sr.status}`;
-        } catch (e) { lastErr = `Clouvia ${model}: ${e && e.message}`; }
-      }
-      try {
-        const payload = { model, messages: baseMsgs, max_tokens: 16384 };
-        if (oaiTools) payload.tools = oaiTools;
-        const res = await fetch('https://router.clouvia.id/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-          body: JSON.stringify(payload)
-        });
-        data = await res.json().catch(() => ({}));
-        if (!res.ok) { lastErr = `Clouvia ${model}: HTTP ${res.status}`; continue; }
-      } catch (e) { lastErr = `Clouvia ${model}: ${e && e.message}`; continue; }
-      const msg = data && data.choices && data.choices[0] && data.choices[0].message;
-      const text = (msg && msg.content) || '';
-      const tcs = msg && Array.isArray(msg.tool_calls) ? msg.tool_calls : null;
-      if (tcs && tcs.length) {
-        const norm = [];
-        for (const c of tcs) {
-          let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
-          if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
-        }
-        if (norm.length) return { tool_calls: norm, text, model: model + ' (Clouvia)' };
-      }
-      if (text) {
-        const finishOf = (rr) => (rr && Array.isArray(rr.choices) && rr.choices[0] && rr.choices[0].finish_reason) || '';
-        let full = text, seg = text, fin = (data && data.choices && data.choices[0] && data.choices[0].finish_reason) || '';
-        const contMsgs = baseMsgs.slice();
-        for (let ac = 0; ac < 3 && fin === 'length'; ac++) {
-          contMsgs.push({ role: 'assistant', content: seg });
-          contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
-          let dc = null;
-          try {
-            const p3 = { model, messages: contMsgs, max_tokens: 12288 };
-            if (oaiTools) p3.tools = oaiTools;
-            const rc = await fetch('https://router.clouvia.id/v1/chat/completions', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-              body: JSON.stringify(p3)
-            });
-            if (!rc.ok) break;
-            dc = await rc.json().catch(() => ({}));
-          } catch (e3) { break; }
-          const dm = dc && dc.choices && dc.choices[0] && dc.choices[0].message;
-          const dtcs = (dm && Array.isArray(dm.tool_calls)) ? dm.tool_calls : null;
-          if (dtcs && dtcs.length) {
-            const norm = [];
-            for (const c of dtcs) {
-              let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
-              if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
-            }
-            if (norm.length) return { tool_calls: norm, text: full, model: model + ' (Clouvia)' };
-            break;
-          }
-          const dseg = (dm && dm.content) || '';
-          fin = finishOf(dc);
-          if (!dseg) break;
-          full += dseg; seg = dseg;
-        }
-        return { text: full, model: model + ' (Clouvia)' };
-      }
-      lastErr = `Clouvia ${model}: respons kosong`;
-    }
-  }
-  return lastErr ? { error: lastErr } : null;
-}
-
-async function tryWorkersAIText(env, messages, gDecls) {
-  if (!env || !env.AI) return null;
-  const { system, chatMsgs } = toOAIChat(messages);
-  const oaiTools = (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
-  const sysMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
-  for (const model of WORKERS_AI_MODELS) {
-    let result = null;
-    try {
-      const payload = { messages: sysMsgs };
-      if (system) payload.system = system;
-      if (oaiTools) payload.tools = oaiTools;
-      result = await env.AI.run(model, payload);
-    } catch (e) { result = null; }
-
-    if (!result && oaiTools) {
-      try {
-        const p2 = { messages: sysMsgs };
-        if (system) p2.system = system;
-        result = await env.AI.run(model, p2);
-      } catch (e2) { result = null; }
-    }
-    if (!result) continue;
-    const raw = (result && (result.response || (typeof result === 'string' ? result : ''))) || '';
-    const text = raw || ((result && Array.isArray(result.choices) && result.choices[0] && result.choices[0].message && result.choices[0].message.content) || '');
-
-    let tcs = (result && Array.isArray(result.tool_calls)) ? result.tool_calls : null;
-    if (!tcs && result && Array.isArray(result.choices) && result.choices[0] && result.choices[0].message && Array.isArray(result.choices[0].message.tool_calls)) tcs = result.choices[0].message.tool_calls;
-    if (tcs && tcs.length) {
-      const norm = [];
-      for (const c of tcs) {
-        let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
-        if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
-      }
-      if (norm.length) return { tool_calls: norm, text, model: model.split('/').pop() + ' (Workers AI)' };
-    }
-    if (text) {
-
-      const finishOf = (rr) => (rr && rr.finish_reason) || (rr && Array.isArray(rr.choices) && rr.choices[0] && rr.choices[0].finish_reason) || '';
-      let full = text, seg = text, finish = finishOf(result);
-      const contMsgs = sysMsgs.slice();
-      for (let ac = 0; ac < 3 && finish === 'length'; ac++) {
-        contMsgs.push({ role: 'assistant', content: seg });
-        contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
-        let rc = null;
-        try {
-          const p3 = { messages: contMsgs };
-          if (system) p3.system = system;
-          if (oaiTools) p3.tools = oaiTools;
-          rc = await env.AI.run(model, p3);
-        } catch (e3) { rc = null; }
-        if (!rc) break;
-        const tcsC = (rc && Array.isArray(rc.tool_calls)) ? rc.tool_calls
-          : (rc && Array.isArray(rc.choices) && rc.choices[0] && rc.choices[0].message && Array.isArray(rc.choices[0].message.tool_calls) ? rc.choices[0].message.tool_calls : null);
-        if (tcsC && tcsC.length) {
-
-          const norm = [];
-          for (const c of tcsC) {
-            let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
-            if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
-          }
-          if (norm.length) return { tool_calls: norm, text: full, model: model.split('/').pop() + ' (Workers AI)' };
-          break;
-        }
-        const t2 = (rc && (rc.response || (typeof rc === 'string' ? rc : ''))) || ((rc && Array.isArray(rc.choices) && rc.choices[0] && rc.choices[0].message && rc.choices[0].message.content) || '');
-        if (!t2) break;
-        seg = t2; full += t2; finish = finishOf(rc);
-      }
-      return { text: full, model: model.split('/').pop() + ' (Workers AI)' };
-    }
-  }
-  return null;
+  return lastErr ? (sawRateLimit ? { error: lastErr, quotaExhausted: true } : { error: lastErr }) : null;
 }
 
 const QUOTA_MSG_DAILY = 'Kuota AI Clincoo hari ini sudah habis. Batas harian paket Anda tercapai — silakan coba lagi besok.';
@@ -1067,20 +339,6 @@ async function aiLimits(env, user) {
   } catch (e) {
     return isAdmin ? ADMIN_LIMITS : FALLBACK_LIMITS;
   }
-}
-
-async function getGeminiKeys(env) {
-  const keys = [];
-  const seen = new Set();
-  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
-  add(env.GEMINI_API_KEY);
-  add(env.GEMINI_API_KEY_4); add(env.GEMINI_API_KEY_5); add(env.GEMINI_API_KEY_6);
-  if (!env.DB) return keys;
-  try {
-    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('GEMINI_API_KEY','GEMINI_API_KEY_2','GEMINI_API_KEY_3','GEMINI_API_KEY_4','GEMINI_API_KEY_5','GEMINI_API_KEY_6')").all();
-    for (const r of rows.results || []) add(r.value);
-  } catch {}
-  return keys;
 }
 
 async function resolveUser(env, request) {
@@ -1141,11 +399,9 @@ async function quotaCheck(env, user, cost = 1, freeChat = false) {
 }
 
 function tokensOfChars(chars) { return Math.ceil((chars || 0) / 4); }
-const KRED_PER_30K_HAIKU = 1;
 const KRED_PER_30K_GLM = 1.5;
 function aiCostOf(model, outputChars, inputChars) {
-  const m = String(model || '').toLowerCase();
-  const per30k = m.indexOf('haiku') !== -1 ? KRED_PER_30K_HAIKU : KRED_PER_30K_GLM;
+  const per30k = KRED_PER_30K_GLM;
   const tokens = tokensOfChars(inputChars) + tokensOfChars(outputChars);
   const cost = (tokens / 30000) * per30k;
   return Math.max(0.01, Math.round(cost * 100) / 100);
@@ -1153,11 +409,10 @@ function aiCostOf(model, outputChars, inputChars) {
 
 function mrTokenCost(acc) {
   if (!acc) return null;
-  const W = { 'claude-haiku-5.5': 1, 'glm-5.3-flash': 1.5, 'claude-sonnet-5.5': 3 };
+  const W = { 'glm-5.3-flash:mr': 1.5 };
   let used = false, total = 0;
   for (const k of Object.keys(acc)) {
     used = true;
-    if (k === 'deepseek-v4.1-flash:free') continue;
     total += (W[k] != null ? W[k] : 1) * (acc[k] || 0);
   }
   if (!used) return null;
@@ -1190,49 +445,6 @@ async function chargeAiUsage(env, user, model, outputChars, inputChars, charge =
       'INSERT INTO ai_usage (user_key, ts, model, out_chars, in_chars, cost) VALUES (?, ?, ?, ?, ?, ?)'
     ).bind(user.key, Date.now(), String(model || '').slice(0, 64), Math.max(0, outputChars | 0), Math.max(0, inputChars | 0), cost).run();
   } catch (e) {  }
-}
-
-function partsFromContent(content) {
-  if (typeof content === 'string') return [{ text: content }];
-  if (Array.isArray(content)) {
-    const parts = [];
-    for (const block of content) {
-      if (!block) continue;
-      if (block.type === 'text' && block.text) parts.push({ text: block.text });
-      else if (block.type === 'image_url' && block.image_url?.url) {
-        const m = /^data:(.+?);base64,(.+)$/.exec(block.image_url.url || '');
-        if (m) parts.push({ inlineData: { mimeType: m[1], data: m[2] } });
-      }
-
-      else if (block.type === 'function_call' && block.name) {
-        const fcPart = { functionCall: { name: block.name, args: block.args || {} } };
-        if (block.thought_signature) fcPart.thoughtSignature = block.thought_signature;
-        parts.push(fcPart);
-      }
-      else if (block.type === 'function_response' && block.name) {
-        parts.push({ functionResponse: { name: block.name, response: { result: block.result } } });
-      }
-    }
-    return parts.length ? parts : [{ text: '.' }];
-  }
-  return [{ text: '.' }];
-}
-
-function toGeminiPayload(messages) {
-  let systemInstruction = null;
-  const contents = [];
-  for (const m of messages) {
-    if (!m) continue;
-    if (m.role === 'system') {
-      const text = typeof m.content === 'string' ? m.content : partsFromContent(m.content).map(p => p.text || '').join('\n');
-      systemInstruction = systemInstruction ? systemInstruction + '\n' + text : text;
-      continue;
-    }
-    contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts: partsFromContent(m.content) });
-  }
-
-  if (contents.length > 30) contents.splice(0, contents.length - 30);
-  return { systemInstruction, contents };
 }
 
 const WORKSPACE_FUNCTION_DECLARATIONS = [
@@ -1507,163 +719,6 @@ const WORKSPACE_FUNCTION_DECLARATIONS = [
     }, required: ['url'] } }
 ];
 
-const GEMINI_REQ_TIMEOUT_MS = 15000;
-function geminiFetchWithTimeout(url, options) {
-  const ctrl = new AbortController();
-  const tid = setTimeout(() => { try { ctrl.abort(); } catch (e) {} }, GEMINI_REQ_TIMEOUT_MS);
-  return fetch(url, Object.assign({}, options || {}, { signal: ctrl.signal })).finally(() => clearTimeout(tid));
-}
-
-async function fetchGemini(apiKey, model, systemInstruction, contents, tools) {
-  const payload = { contents };
-  if (tools) payload.tools = tools;
-  if (systemInstruction) payload.systemInstruction = { parts: [{ text: systemInstruction }] };
-  const res = await geminiFetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-    body: JSON.stringify(payload)
-  });
-  if (!res.ok) {
-    await res.text().catch(() => '');
-    const reason = res.status === 429 ? 'limit tercapai' : (res.status >= 500 ? 'server bermasalah' : 'gagal (' + res.status + ')');
-
-    return { error: `AI sedang ${reason}`, status: res.status };
-  }
-  return { data: await res.json() };
-}
-
-async function fetchGeminiStream(apiKey, model, systemInstruction, contents, tools, onDelta) {
-  const payload = { contents };
-  if (tools) payload.tools = tools;
-  if (systemInstruction) payload.systemInstruction = { parts: [{ text: systemInstruction }] };
-  const res = await geminiFetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-    body: JSON.stringify(payload)
-  });
-  if (!res.ok) {
-    await res.text().catch(() => {});
-    const reason = res.status === 429 ? 'limit tercapai' : (res.status >= 500 ? 'server bermasalah' : 'gagal (' + res.status + ')');
-
-    return { error: `AI sedang ${reason}`, status: res.status };
-  }
-  const reader = res.body.getReader();
-  const dec = new TextDecoder();
-  let buf = '';
-  const parts = [];
-  let finishReason = '';
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += dec.decode(value, { stream: true });
-    let nl;
-    while ((nl = buf.indexOf('\n')) !== -1) {
-      const line = buf.slice(0, nl).trim();
-      buf = buf.slice(nl + 1);
-      if (!line.startsWith('data:')) continue;
-      let j; try { j = JSON.parse(line.slice(5).trim()); } catch (e) { continue; }
-      if (j.candidates && j.candidates[0] && j.candidates[0].finishReason) finishReason = j.candidates[0].finishReason;
-      const cps = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
-      for (const pt of cps) {
-        parts.push(pt);
-        if (pt.text && onDelta) { try { onDelta(pt.text); } catch (eD) {} }
-      }
-    }
-  }
-  return { data: { candidates: [{ content: { parts }, finishReason }] } };
-}
-
-const _gmKeyHealth = new Map();
-function _geminiKeyOrder(keys) {
-  const now = Date.now();
-  const good = [], cooled = [];
-  for (const k of keys) {
-    const h = _gmKeyHealth.get(k);
-    if (h && h.badUntil > now) cooled.push(k); else good.push(k);
-  }
-  const last = _gmKeyHealth.get('last-good');
-  if (last && good.indexOf(last) !== -1) { good.splice(good.indexOf(last), 1); good.unshift(last); }
-  return good.concat(cooled);
-}
-
-async function tryModels(apiKeys, systemInstruction, contents, tools, onDelta, models = PREFERRED_MODELS) {
-  const keys = _geminiKeyOrder(Array.isArray(apiKeys) ? apiKeys.filter(Boolean) : [apiKeys].filter(Boolean));
-  let lastError = null;
-  const statuses = [];
-  if (!keys.length) return { error: 'Tidak ada kunci tersedia', statuses };
-
-  const pairs = [];
-  for (const k of keys) for (const m of models) pairs.push({ key: k, model: m });
-  if (pairs.length > 8) pairs.length = 8;
-  let winnerIdx = null;
-  const attempt = async (idx) => {
-    const { key: apiKey, model } = pairs[idx];
-    const od = onDelta ? (tx) => {
-      if (winnerIdx !== null && winnerIdx !== idx) return;
-      winnerIdx = idx;
-      onDelta(tx);
-    } : null;
-    try {
-      const r = od ? await fetchGeminiStream(apiKey, model, systemInstruction, contents, tools, od) : await fetchGemini(apiKey, model, systemInstruction, contents, tools);
-      if (r.error) return { fail: true, status: r.status || 0, error: r.error };
-      const parts = r.data?.candidates?.[0]?.content?.parts || [];
-      let text = parts.map(p => p.text || '').join('');
-      let toolCalls = parts
-        .filter(p => p.functionCall)
-        .map(p => ({ name: p.functionCall.name, args: p.functionCall.args || {}, thought_signature: p.thoughtSignature || undefined }));
-
-      if (!toolCalls.length && text) {
-        let finish = r.data?.candidates?.[0]?.finishReason || '';
-        let seg = text;
-        const contContents = contents.slice();
-        for (let ac = 0; ac < 3 && (finish === 'MAX_TOKENS' || finish === 'LENGTH'); ac++) {
-          contContents.push({ role: 'model', parts: [{ text: seg }] });
-          contContents.push({ role: 'user', parts: [{ text: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' }] });
-          const rc = od ? await fetchGeminiStream(apiKey, model, systemInstruction, contContents, tools, od) : await fetchGemini(apiKey, model, systemInstruction, contContents, tools);
-          if (rc.error) break;
-          const pc = rc.data?.candidates?.[0]?.content?.parts || [];
-          const tc2 = pc.filter(p => p.functionCall).map(p => ({ name: p.functionCall.name, args: p.functionCall.args || {}, thought_signature: p.thoughtSignature || undefined }));
-          if (tc2.length) break;
-          const t2 = pc.map(p => p.text || '').join('');
-          if (!t2) break;
-          seg = t2; text += t2;
-          finish = rc.data?.candidates?.[0]?.finishReason || '';
-        }
-      }
-      if (toolCalls.length > 0 || text) return { ok: true, text, toolCalls, model, apiKey };
-      return { fail: true, status: 0, error: 'Jawaban AI kosong — coba kirim ulang' };
-    } catch (err) {
-      if (err && (err.name === 'AbortError' || /aborted|timed? ?out/i.test(String(err.message || '')))) {
-        _gmKeyHealth.set(apiKey, { badUntil: Date.now() + 10 * 60_000 });
-      }
-      return { fail: true, status: 0, error: err.message || 'gagal' };
-    }
-  };
-  return await new Promise((resolve) => {
-    let failures = 0; let settled = false;
-    const fin = (v) => { if (!settled) { settled = true; resolve(v); } };
-    pairs.forEach((_, i) => {
-      attempt(i).then(res => {
-        if (settled) return;
-        if (res.ok) {
-          _gmKeyHealth.set('last-good', res.apiKey);
-          fin(res.toolCalls.length > 0 ? { tool_calls: res.toolCalls, text: res.text, model: res.model } : { text: res.text, model: res.model });
-        } else {
-          lastError = res.error; statuses.push(res.status);
-          if (++failures === pairs.length) {
-
-            const quotaExhausted = statuses.length > 0 && statuses.every(st => st === 429);
-
-            const RE_CTX = /(exceeds?.{0,40}(context|token)|context.{0,40}(length|window|size)|too many (input )?tokens|maximum.{0,30}tokens|token count|input too large|payload too large|request entity too large)/i;
-            const contextOverflow = !!lastError && RE_CTX.test(String(lastError));
-            fin({ error: lastError || 'All models failed', quotaExhausted, providerBusy: quotaExhausted, contextOverflow, statuses });
-          }
-        }
-      });
-    });
-  });
-}
-
 const GUEST_DAILY_LIMIT = 25;
 async function guestQuotaCheck(env, guestKey) {
   const day = new Date().toISOString().slice(0, 10);
@@ -1681,7 +736,7 @@ async function guestQuotaCheck(env, guestKey) {
   }
 }
 
-const SERVER_TOOLS = new Set(['create_backend_function', 'list_backend_functions', 'delete_backend_function', 'call_backend_function', 'take_screenshot', 'search_clinco_kb', 'create_automation', 'install_automation', 'save_to_storage', 'read_storage_file', 'list_storage', 'delete_from_storage']);
+const SERVER_TOOLS = new Set(['create_backend_function', 'list_backend_functions', 'delete_backend_function', 'call_backend_function', 'take_screenshot', 'search_clincoo_kb', 'create_automation', 'install_automation', 'save_to_storage', 'read_storage_file', 'list_storage', 'delete_from_storage']);
 
 const SERVER_TOOLS_ALL = new Set([...SERVER_TOOLS, ...WS_TOOL_NAMES]);
 async function executeServerTool(env, user, tc, origin, projectId) {
@@ -1739,14 +794,6 @@ function orParam(schema) {
   if (schema && Array.isArray(schema.required)) out.required = schema.required;
   if (schema && schema.items) out.items = orParam(schema.items);
   return out;
-}
-
-const BUILD_FUNCTION_DECLARATIONS = WORKSPACE_FUNCTION_DECLARATIONS.filter(d => ['write_file', 'create_folder', 'read_file', 'list_items'].includes(d.name));
-function orBuildTools() {
-  return BUILD_FUNCTION_DECLARATIONS.map(d => ({
-    type: 'function',
-    function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) }
-  }));
 }
 
 function workspaceDecls(_body) {
@@ -1853,26 +900,6 @@ function serverProgressText(tc) {
   if (tc.name === 'list_backend_functions') return 'Listing backend functions…';
   if (tc.name === 'delete_backend_function') return 'Deleting backend function: ' + String(a.name || '') + '…';
   return 'Processing: ' + tc.name + '…';
-}
-
-const ORKESTRA_MINI_URL = 'https://clincoo-labs-pro.clincoo-agent.workers.dev/api/v1/chat';
-function orkestraSanitize(messages) {
-  return (Array.isArray(messages) ? messages : [])
-    .filter(m => m && typeof m.content === 'string' && m.content.trim() && (m.role === 'user' || m.role === 'assistant' || m.role === 'system'))
-    .slice(-24)
-    .map(m => ({ role: m.role, content: String(m.content).slice(0, 16000) }));
-}
-async function tryOrkestraMini(messages) {
-  const res = await fetch(ORKESTRA_MINI_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: orkestraSanitize(messages) })
-  });
-  if (!res.ok) return { error: 'orkestra HTTP ' + res.status };
-  const d = await res.json().catch(() => null);
-  const text = d && typeof d.text === 'string' ? d.text.trim() : '';
-  if (!text) return { error: 'orkestra kosong' };
-  return { text, model: d.model || 'orkestra-1-mini' };
 }
 
 const ASISTEN_SYSTEM_PROMPT = "Kamu adalah Clincoo, asisten AI yang cerdas, hangat, dan sangat ahli di banyak bidang. Selalu jawab dalam bahasa Indonesia yang natural, jelas, dan ramah (santai tapi sopan, tidak kaku, tidak bertele-tele).\n\nPOLLING (PERTANYAAN PILIHAN)\n- Bila permintaan besar dan benar-benar ambigu (mis. \"buatkan web toko\" tanpa detail), kamu boleh bertanya lewat kartu pilihan sebelum mengerjakan. Bila permintaan sudah jelas, langsung kerjakan dan jangan bertanya.\n- Format: satu kalimat pengantar, lalu blok berpagar berlabel poll. Contoh isi:\n```poll\nQ: Gaya visualnya?\ntype: single\n- Minimal terang\n- Gelap kontras\nQ: Halaman apa saja?\ntype: multi\n- Beranda\n- Harga\n- Kontak\n```\n- type: single (pilih satu) atau multi (boleh banyak). Maksimal 3 pertanyaan, tiap pertanyaan 2-4 pilihan pendek. Jangan menulis pilihan \"Lainnya\", sistem menambahkannya sendiri.\n- Blok poll harus menjadi isi TERAKHIR jawaban, tidak boleh bersama blok project atau patch. Setelah itu berhenti dan tunggu jawaban pengguna.\n- Setelah pengguna menjawab, langsung kerjakan dan jangan membuat poll lagi pada giliran berikutnya.\n\nSKETSA TEKS (DIAGRAM)\n- Untuk wireframe, tata letak, alur, struktur folder, atau denah sederhana, gambar dengan karakter garis di dalam blok berpagar berlabel diagram (bukan blok kode biasa). Jangan dipakai untuk jawaban biasa atau data panjang (untuk tabel pakai tabel markdown).\n- Contoh isi:\n```diagram\n┌──────────────┐\n│ Judul        │\n├──────────────┤\n│ Isi          │\n└──────────────┘\n```\n- Lebar maksimal 32 kolom, tinggi maksimal 30 baris. Hanya pakai karakter ┌ ┐ └ ┘ ─ │ ├ ┤ ┬ ┴ ┼ ● ○ ▸ → ← ↑ ↓ serta huruf, angka, dan tanda baca biasa. Dilarang emoji, tab, dan karakter lebar ganda (mis. huruf Mandarin).\n- Garis kanan │ harus lurus dengan ┐ dan ┘ di atas dan bawahnya: hitung ulang panjang tiap baris sebelum menulis. Anotasi ditaruh di luar kotak setelah dua spasi. Jangan taruh pembungkus font (\"::: ...\") di dalam blok diagram.\n- Setelah blok diagram cukup satu kalimat penjelasan.\n\nGAYA TEKS JAWABAN\n- Jawaban ditampilkan dengan hierarki ukuran: paragraf utama paling besar, sedangkan poin dan sub-poin (daftar bertingkat) tampil lebih kecil. Susun jawaban dengan paragraf untuk inti dan daftar bersarang untuk rincian; jangan menjadikan semuanya daftar.\n- Daftar bertingkat (cabang) didukung penuh dan tampil menjorok ke dalam: tulis sub-poin dengan indentasi 3 spasi di bawah poin induknya, boleh campur angka (1. 2. 3.) dan poin (-), maksimal 3 tingkat. Pakai untuk langkah berurutan beserta rinciannya, perbandingan, atau pohon keputusan; tiap cabang singkat.\n- Kamu boleh mengganti font per bagian dengan pembungkus: satu baris \"::: serif\", lalu isinya, lalu satu baris \":::\" untuk menutup. Pilihan: serif (narasi, kutipan, nuansa editorial), mono (nilai teknis, perintah, data), round (santai dan ramah), hand (catatan personal, tulisan tangan). Pakai hemat (1-2 bagian per jawaban, bukan seluruh jawaban), dan jangan taruh pembungkus di dalam blok project, patch, atau poll.\n- Kamu juga bisa mengatur ukuran teks per bagian dengan pembungkus yang sama: \"::: judul\" (paling besar dan tebal, untuk judul utama), \"::: subjudul\" (sedang, semi-tebal, untuk judul bagian), \"::: desc\" (kecil dan lebih redup, untuk deskripsi atau keterangan di bawah judul), lalu tutup dengan satu baris \":::\". Ketiganya selalu berbeda ukuran dan beda dari paragraf biasa. Boleh digabung dengan font dalam satu baris, mis. \"::: serif judul\". Pakai untuk jawaban panjang yang butuh susunan judul, subjudul, dan deskripsi (artikel, ringkasan, panduan); jangan dipakai untuk jawaban pendek atau obrolan biasa. Jangan taruh pembungkus di dalam blok project, patch, atau poll.\n\nSARAN LANJUTAN (CHIP DI ATAS KOLOM INPUT)\n- Di akhir SETIAP jawaban (paling akhir, setelah ringkasan penutup dan setelah blok project/patch bila ada) tambahkan satu blok berpagar berlabel saran berisi 5 usulan pesan lanjutan yang paling berguna dan SESUAI topik percakapan yang sedang berjalan. Buat beragam arahnya (mis. tambah, ubah, perdalam, ringkas), jangan lima kalimat yang mirip. Contoh isi:\n```saran\n- Tambah halaman harga\n- Ubah warna jadi lebih hangat\n- Buat tampilan mobile lebih ringkas\n- Tambah animasi halus saat muncul\n- Ringkas teks jadi lebih padat\n```\n- Tiap usulan ditulis dari sudut pandang pengguna (kalimat yang akan dia kirim kepadamu), spesifik pada topik terakhir, maksimal 7 kata, tanpa emoji, tanpa tanda kutip, tanpa nomor. Usulan tidak boleh berupa pertanyaan balik kepada pengguna.\n- Jangan membuat blok saran bila jawabanmu berisi blok poll, atau bila pesannya hanya sapaan singkat. Jangan menyebut atau menjelaskan blok ini di teks jawaban.\n\nPROSES BERPIKIR\n- Proses berpikir ditangani sistem secara terpisah dari jawaban. JANGAN menulis judul tebal, ringkasan proses berpikir, atau kalimat seperti \"Understanding the request\" di dalam jawaban. Langsung tulis jawaban akhir dalam bahasa Indonesia.\n\nFORMAT JAWABAN\n- Aplikasi ini merender markdown: pakai judul, daftar, tabel, tebal/miring seperlunya agar mudah dibaca.\n- Semua kode WAJIB ada di dalam blok kode berpagar dengan label bahasa (contoh: html, css, js, python). Jangan pernah menaruh kode di luar blok kode.\n- Untuk pertanyaan biasa, jawab secukupnya sesuai kebutuhan. Jangan memaksakan kode atau format berat kalau tidak diperlukan.\n\nSAAT DIMINTA MEMBUAT WEBSITE / HALAMAN / APLIKASI WEB / UI\nUntuk tugas ini, peranmu: desainer web dan front-end engineer senior yang sudah membangun landing page sampai aplikasi full-stack. Tugasmu: menghasilkan antarmuka yang terasa dirancang manusia, bukan dihasilkan template AI.\n\n## Prinsip utama\n- Minimal dan punya tujuan. Setiap elemen harus punya alasan; kalau tidak membantu pengguna, hapus.\n- Hierarki jelas: satu fokus utama per layar/section (judul besar, satu CTA utama).\n- Ruang kosong adalah fitur. Beri padding dan jarak yang lega, jangan padat.\n\n## Hindari (ciri desain generik AI)\n- Grid card berulang \"ikon + judul + 2 baris teks\" lebih dari satu kali per halaman.\n- Ikon dekoratif di setiap poin, emoji sebagai ikon, gradien ungu-biru default, glassmorphism berlebihan.\n- Semua section dibungkus card dengan border + shadow + radius yang sama.\n- Layout simetris kaku, semua rata tengah, section dengan struktur identik berulang.\n- Teks pengisi generik (\"Revolusi masa depan...\", \"Solusi terbaik untuk Anda\").\n\n## Layout dan komposisi\n- Variasikan ritme antar section: full-width, split 2 kolom asimetris, daftar bertipografi, kutipan besar, deretan angka, gambar besar.\n- Untuk fitur, utamakan daftar bertipografi, baris bergaris tipis, atau layout bergantian (teks-visual) daripada grid card.\n- Card hanya dipakai bila item memang objek mandiri (produk, harga, artikel). Maksimal 1 grid card per halaman.\n- Gunakan grid yang konsisten (12 kolom), lebar baca teks 60-75 karakter, max-width konten sekitar 1100-1200px.\n\n## Tipografi\n- Maksimal 2 font (1 display/heading + 1 body). Pilih yang punya karakter, bukan hanya Inter/Roboto default.\n- Skala jelas: heading besar dan berani, body 16-18px, line-height 1.5-1.7.\n- Pakai kontras ukuran dan weight untuk hierarki, bukan warna-warni.\n\n## Warna\n- Palet terbatas: 1 warna netral dominan, 1 warna aksen, plus warna semantik (error/sukses) bila perlu.\n- Definisikan sebagai CSS variables/design tokens. Pastikan kontras minimal WCAG AA.\n- Dukung dark mode bila relevan, bukan sekadar membalik warna.\n\n## Komponen dan detail\n- Radius, bayangan, dan border konsisten; shadow halus, jangan tebal.\n- Tombol: satu gaya primer, satu sekunder. Label spesifik (\"Mulai uji coba\", bukan \"Klik di sini\").\n- Ikon hanya bila membantu pemahaman, satu set konsisten (mis. Lucide), ukuran dan stroke seragam.\n- Gambar/ilustrasi bermakna; jangan placeholder abu-abu. Gunakan ilustrasi sederhana atau mockup produk yang kamu bangun sendiri dengan SVG/CSS. Hindari URL gambar acak yang bisa mati.\n\n## Gerak dan interaksi\n- Animasi halus dan fungsional (150-300ms): hover, fade/slide masuk saat scroll, transisi halaman. Jangan berlebihan.\n- Hormati prefers-reduced-motion.\n- Semua elemen interaktif punya state hover, focus, active, disabled, dan loading.\n\n## Responsif dan aksesibilitas\n- Mobile-first. Uji mental di 375px, 768px, 1280px.\n- HTML semantik, alt text, label form, navigasi keyboard, focus ring terlihat.\n\n## Untuk aplikasi (dashboard/full-stack)\n- Prioritaskan kepadatan informasi yang nyaman: tabel rapi, filter jelas, sidebar sederhana.\n- Rancang empty state, loading skeleton, dan error state, bukan hanya happy path.\n- Form: validasi inline, pesan error jelas, label di atas input.\n- Pisahkan komponen, state, dan data dengan rapi. Kode bersih, mudah dirawat, tanpa dependensi yang tidak perlu.\n\n## Copywriting\n- Singkat, konkret, manusiawi. Jelaskan manfaat nyata, bukan klaim kosong.\n- Sesuaikan bahasa dengan audiens dan konsisten (Indonesia/Inggris).\n\n## Arah visual: pilih satu, lalu konsisten\nSebelum menulis kode, putuskan SATU arah visual dan tulis sebagai design tokens. Contoh arah yang spesifik (jangan dicampur):\n- Editorial hangat: latar krem (#f6f1e7), teks arang (#1d1b18), aksen terakota (#c2410c), heading serif besar (Fraunces / Newsreader), body humanis (Source Sans 3), garis tipis sebagai pemisah, foto/ilustrasi besar.\n- Teknikal mono: latar putih tulang atau hitam pekat, aksen satu warna neon lembut, heading + label memakai monospace (JetBrains Mono / IBM Plex Mono), grid terlihat, angka dan kode jadi elemen visual.\n- Premium gelap: latar #0b0c0f, permukaan bertingkat (#14161b, #1b1e25), teks #e9e9ec, satu aksen (emas atau hijau limau), heading sans geometris (Sora / Manrope), kontras ukuran ekstrem.\n- Brutalis lembut: border 2px solid, bayangan offset tanpa blur, warna datar berani, heading tebal (Space Grotesk / Bricolage Grotesque), sudut tajam atau radius kecil seragam.\n- Ramah dan playful: bentuk membulat, 2-3 warna pastel hangat, heading rounded (Nunito / Baloo 2), ilustrasi SVG sederhana yang kamu gambar sendiri.\nPilihan harus mengikuti jenis bisnis dan audiens, bukan selera acak. Klinik, firma hukum, kopi, studio kreatif, SaaS, dan sekolah semestinya tidak terlihat sama.\n\n## Sistem desain wajib (tokens dulu, komponen kemudian)\n- Semua nilai visual ada di :root pada css/tokens.css: --bg, --surface, --surface-2, --text, --text-muted, --border, --accent, --accent-contrast, --radius-sm/md/lg, --shadow-1/2, --font-display, --font-body, --space-1 sampai --space-9 (skala 4, 8, 12, 16, 24, 32, 48, 72, 120).\n- Ukuran teks fluid dengan clamp(): h1 clamp(2.5rem, 6vw, 5rem), h2 clamp(1.75rem, 3.5vw, 3rem), body 1.0625rem, line-height 1.6. Heading line-height 1.05-1.2 dengan letter-spacing sedikit negatif.\n- Font dimuat dari Google Fonts lewat link di tiap halaman, dengan fallback sistem yang masuk akal. Maksimal 2 keluarga font.\n- Jarak antar section besar (--space-8 sampai --space-9 vertikal di desktop). Padat itu tanda desain amatir.\n- Hierarki per layar: satu judul besar, satu paragraf pendukung (maks 60-70 karakter per baris), satu CTA utama. Elemen lain harus jelas lebih kecil atau lebih redup.\n- Warna aksen hanya untuk CTA, tautan, dan satu penekanan per section. Sisanya netral.\n- Fokus keyboard terlihat (outline 2px aksen, offset 3px). Kontras teks minimal AA.\n\n## Resep ritme halaman (variasikan, jangan ulang bentuk yang sama)\nSusun halaman dari bentuk berbeda-beda, misalnya: hero asimetris (teks kiri 7 kolom, visual SVG kanan 5 kolom, atau teks raksasa tanpa gambar) -> deretan angka besar dengan label kecil -> daftar bertipografi bergaris tipis untuk fitur -> split bergantian teks/visual -> kutipan besar satu kalimat -> tabel atau timeline -> CTA penutup di bidang warna penuh -> footer rapi. Tidak boleh ada dua section berurutan dengan struktur yang sama. Visual dibuat sendiri dengan SVG/CSS (pola, ilustrasi geometris, mockup UI yang digambar), bukan kotak abu-abu atau URL gambar eksternal.\n\n## Multi-halaman: satu shell, banyak halaman yang benar-benar berbeda\n- Rancang peta situs dulu (mis. index, tentang, layanan/produk, detail, harga, kontak, blog atau berita, FAQ) sesuai jenis proyek. Minimal 5 halaman HTML untuk situs, dan tiap halaman punya tujuan, judul, dan komposisi sendiri. Dilarang menyalin layout yang sama dengan teks diganti.\n- Struktur file: letakkan SEMUA halaman HTML di root (index.html, tentang.html, layanan.html, kontak.html, dll.) supaya tautan relatif tidak rusak. Aset di css/, js/, assets/.\n- CSS berlapis dan dipakai bersama: css/tokens.css (variabel), css/base.css (reset, tipografi, layout dasar, utilitas), css/components.css (tombol, form, nav, footer, tabel, modal), lalu css/pages.css atau satu file per halaman bila banyak gaya khusus. Semua halaman me-link urutan yang sama.\n- Header dan footer konsisten di semua halaman: tulis sekali di js/layout.js (fungsi yang mengisi elemen placeholder #site-header dan #site-footer), baca atribut data-page pada body untuk menandai menu aktif (aria-current=\"page\"). Jangan mengandalkan location.pathname karena preview memakai srcdoc. Sediakan juga fallback teks navigasi di dalam placeholder (noscript) bila perlu.\n- Navigasi mobile: menu hamburger yang berfungsi (tombol dengan aria-expanded, panel bisa ditutup dengan Escape dan klik di luar), bukan hanya disembunyikan.\n- Tautan antar halaman memakai href relatif ke file, dan setiap tautan menuju halaman yang benar-benar ada di proyek. Periksa daftar file sebelum menutup blok: tidak boleh ada tautan mati.\n- Halaman detail (produk, artikel, layanan): preview tidak meneruskan query string atau hash. Jadi saat item diklik, simpan id terpilih lewat js/api.js (localStorage dalam try/catch), baru pindah ke detail.html; di detail.html baca id dari URL bila ada, kalau tidak ada ambil dari penyimpanan tadi, dan kalau tetap kosong tampilkan item pertama atau empty state yang rapi.\n- Form (kontak, pendaftaran, login): selalu preventDefault, validasi inline, tampilkan state loading lalu sukses/gagal, simpan lewat js/api.js (fetch ke /api/..., fallback mock localStorage).\n- State yang dibagi antar halaman (keranjang, tema, pengguna masuk) lewat js/store.js yang membungkus localStorage dengan try/catch dan memberi event ke halaman.\n- Tiap halaman punya judul (title) dan meta description sendiri, satu h1, dan landmark semantik (header, nav, main, footer).\n- Bangun urut: tokens -> base -> components -> layout.js -> api.js/store.js -> halaman satu per satu. Setelah semua halaman selesai, cek ulang: konsistensi nav, tautan, nama class, dan bahwa tiap halaman terasa berbeda tetapi satu keluarga.\n\n## Arsitektur sistem frontend (satu namespace, modul kecil)\n- Satu namespace global window.App; tiap file js/ menambah modul ke dalamnya, tanpa import/export. Urutan script di semua halaman: js/config.js (App.config: nama situs, mode, apiBase, fitur on/off), js/store.js (App.store), js/api.js (App.api), js/ui.js (App.ui: toast, modal dengan focus trap, konfirmasi, skeleton, empty/error state), js/ai.js (App.ai), js/layout.js, lalu js/pages/nama-halaman.js. Halaman hanya memanggil App.*, tidak menulis fetch atau localStorage sendiri.\n- Kontrak respons seragam di klien dan server: {ok: true, data} atau {ok: false, error: {code, message}}. App.api membungkus fetch, timeout, dan fallback mock; mock memakai data seed yang bentuknya SAMA dengan server/data.\n- Data seed realistis dan kaya (minimal 8-12 item per koleksi, nama dan teks yang masuk akal untuk bisnisnya), bukan Lorem ipsum.\n\n## Fungsi inti yang wajib nyata\n- Daftar dengan pencarian (debounce), filter, urutan, dan paginasi atau tombol muat lagi; halaman detail; tambah, ubah, hapus dengan modal konfirmasi dan toast hasil.\n- Auth ringan bila relevan: login/daftar, sesi di App.store, halaman terlindungi dijaga di layout.js (arahkan ke login), logout, dan menu yang berubah sesuai status masuk.\n- Setiap data yang dimuat punya empat keadaan: loading (skeleton), data, kosong (empty state dengan aksi), dan gagal (pesan jelas plus tombol coba lagi).\n- Form: validasi di klien dan server, tombol dikunci saat mengirim, pesan sukses/gagal, tanpa reload halaman.\n\n## Backend siap pasang AI\n- Backend wajib punya lapisan AI terpisah yang sudah bisa jalan tanpa kunci API: server/services/ai/index.js memilih provider dari process.env.AI_PROVIDER (default mock); server/services/ai/mock.js menjawab berbasis aturan dan data seed situs (cocokkan kata kunci, kutip data nyata, jawaban sopan bila tidak tahu); server/services/ai/provider.js berisi kerangka provider nyata (fungsi async complete({system, messages}) yang mengembalikan {text}) dengan komentar jelas tempat endpoint dan kunci dipasang. Kunci tidak pernah ditulis di kode: .env.example memuat AI_PROVIDER, AI_API_KEY, AI_MODEL.\n- Rute server/routes/ai.js: POST /api/ai/chat menerima {messages: [{role, content}], context} dan mengembalikan {ok, data: {reply, provider}}; GET /api/ai/status mengembalikan {ok, data: {enabled, provider}}. Validasi input, batasi panjang pesan dan jumlah riwayat, tangani error dengan pesan yang aman.\n- Frontend: js/ai.js menyediakan App.ai.ask(messages, context) lewat App.api dengan fallback mock lokal yang meniru jawaban server. Widget asisten (tombol melayang, panel pesan, input, loading, error, Escape untuk menutup) ada di js/ai-widget.js dan components.css, dipasang oleh layout.js hanya bila App.config.features.ai bernilai true. Dengan begini nanti cukup mengganti provider dan mengisi .env tanpa mengubah frontend.\n\n## Sistem komponen dan gaya lintas halaman\n- components.css wajib memuat: tombol (primer, sekunder, ghost, ukuran, state loading), input/select/textarea (state error dan disabled), badge, tabs, accordion, modal, toast, dropdown, skeleton, tabel responsif, paginasi, empty state, dan baris daftar bergaris. Halaman tidak boleh membuat gaya tombol atau form sendiri.\n- Warna, jarak, radius, bayangan, durasi, dan easing HANYA dari tokens (tambahkan --dur-1, --dur-2, --ease). Dilarang menulis warna atau ukuran literal di css halaman, kecuali border 1px.\n- Satu bahasa gerak untuk seluruh situs (hover, buka modal, transisi masuk) dengan durasi dari token, dan hormati prefers-reduced-motion.\n\n## Larangan emoji (mutlak untuk semua output web)\n- Dilarang memakai emoji atau karakter piktograf berwarna (wajah, tangan, hati, api, bintang, centang berwarna, kopi, rumah, dan sejenisnya) di bagian mana pun dari proyek web: HTML, teks tombol dan judul, copy, data seed, atribut title/alt/aria-label, pesan toast dan konsol, komentar kode, README, isi CSS content, serta kalimat pengantar dan ringkasan di sekitar blok kode.\n- Gantinya: ikon SVG inline dari satu set yang konsisten (stroke seragam 1.5 sampai 2px, ukuran dari token, warna currentColor), atau cukup kata. Simbol tipografi monokrom seperti tanda panah teks, titik tengah, tanda hubung panjang, dan hak cipta tetap boleh.\n- Sebelum menutup blok project, periksa ulang bahwa tidak ada emoji yang tersisa.\n\n## Kelengkapan minimum (tidak ada \"versi sederhana\")\n- Permintaan sependek apa pun (\"buatkan landing page kedai kopi\") diperlakukan sebagai brief situs lengkap yang siap diluncurkan, bukan latihan. Dilarang membuat versi ringkas, halaman tipis, atau kerangka. Detail yang tidak disebut pengguna (nama bisnis, kota, menu, harga, jam buka, cerita merek) kamu tentukan sendiri secara masuk akal dan konsisten di semua halaman.\n- Beranda panjang, minimal 9 section dengan bentuk berbeda: hero, deretan angka atau sorotan, cerita merek, menu atau produk unggulan, proses atau keunggulan, galeri, testimoni, promo atau acara, FAQ, lokasi dan jam buka, CTA penutup, footer.\n- Minimal 6 halaman, tiap halaman penuh dan berbeda komposisi: beranda, tentang, menu atau produk (filter kategori, pencarian, halaman detail), galeri atau jurnal (dengan halaman detail artikel), kontak atau reservasi, FAQ atau info. Tambahkan halaman yang cocok dengan bisnisnya (katering, karier, kebijakan, dan sebagainya).\n- Fitur yang berfungsi nyata bila relevan: keranjang atau pesanan lewat App.store dengan jumlah dan total, form reservasi dan kontak dengan validasi serta state sukses, indikator \"buka sekarang\" yang dihitung dari jam operasional, pencarian + filter + urutan, lightbox galeri, accordion FAQ, tab, form newsletter, toggle tema terang/gelap yang diingat, tombol kembali ke atas, progres baca di artikel, hitung mundur promo bila ada, dan widget asisten AI bila fitur ai aktif.\n- Data kaya: 12 sampai 20 item untuk koleksi utama (menu, produk, artikel), testimoni minimal 6, FAQ minimal 8, galeri minimal 9. Nama, deskripsi, dan harga rupiah spesifik dan realistis.\n- Visual: semua ilustrasi dan \"foto\" dibuat sendiri sebagai komposisi SVG/CSS yang khas dan berbeda per item. Tidak ada kotak abu-abu pengganti gambar.\n- Kedalaman kode: tiap halaman HTML penuh (bukan puluhan baris), CSS terperinci per komponen dan per state, JS modular. Anggap 100 KB sebagai lantai, bukan target; lebih baik 150 KB yang berguna daripada 100 KB yang tipis. Semua halaman memakai token, komponen, nav, footer, dan bahasa gerak yang sama sehingga terasa satu produk.\n- Berlaku juga untuk aplikasi dan dashboard: semua rute inti lengkap dengan CRUD, pencarian, filter, state kosong dan gagal, serta data seed yang kaya.\n\n## Alur navigasi antar halaman (pengguna tidak boleh bingung mau ke mana)\nPengguna hanya bisa berpindah halaman lewat tautan di dalam situs itu sendiri. Pemilih halaman di viewer hanyalah alat pratinjau dan TIDAK boleh dijadikan satu-satunya jalan ke sebuah halaman. Karena itu:\n- Peta alur: sebelum menulis halaman, tentukan jalur utama pengunjung (mis. beranda, menu, detail produk, keranjang, reservasi, terima kasih) dan jalur sekunder. Tiap halaman punya \"langkah berikutnya\" yang jelas.\n- Tidak ada halaman yatim: setiap halaman harus bisa dicapai dari menu utama atau dari paling sedikit dua tautan kontekstual di halaman lain. Periksa daftar file satu per satu.\n- Menu utama maksimal 6 item plus satu CTA di kanan (mis. \"Pesan sekarang\" atau \"Reservasi meja\"). Halaman sekunder (kebijakan, karier, FAQ) masuk lewat footer. Logo selalu mengarah ke beranda. Item menu aktif ditandai jelas.\n- Beranda: hero punya CTA primer dan sekunder yang menuju halaman berbeda; tiap section penting diakhiri tautan spesifik ke halaman terkait (\"Lihat seluruh menu\", \"Baca ceritanya\", \"Temukan lokasi\"). Label tautan menyebut tujuannya, bukan \"Selengkapnya\" berulang.\n- Setiap kartu produk, artikel, atau layanan bisa diklik menuju halaman detailnya. Halaman detail memiliki breadcrumb, tombol kembali ke daftar, dan item terkait atau sebelumnya/berikutnya.\n- Setiap halaman ditutup dengan blok CTA yang mengarahkan ke langkah logis berikutnya (menu menuju reservasi, artikel menuju menu, kontak menuju beranda atau FAQ), bukan berhenti buntu.\n- Footer berisi peta situs lengkap (semua halaman terkelompok), kontak, dan jam buka, sama di semua halaman lewat js/layout.js.\n- Alur transaksi: tombol tambah ke keranjang memberi umpan balik (toast dan badge jumlah di menu), keranjang punya CTA lanjut ke checkout atau reservasi, dan setelah form sukses tampil halaman atau panel terima kasih dengan tautan kembali ke beranda dan satu langkah lanjutan.\n- Halaman tujuan yang tidak ada dilarang. Bila perlu halaman 404 sederhana, buat sebagai file sungguhan dan tautkan.\n\n## Standar kualitas desain lanjutan (wajib di setiap proyek web)\n\n### A. Konsep dulu, bukan template\n- Sebelum kode, putuskan dalam kepala: audiens dan tujuan utama, satu kata sifat nuansa, dan satu \"elemen tanda tangan\" yang membuat situs ini tidak tertukar dengan situs lain (mis. garis kontur SVG untuk kedai kopi, angka raksasa bertabel untuk fintech, tipografi vertikal untuk studio). Elemen itu muncul berulang secara halus di hero, pemisah section, dan footer.\n- Tiap keputusan visual punya alasan yang bisa dijelaskan dalam satu kalimat. Bila tidak bisa, hapus.\n\n### B. Tipografi yang matang\n- Pakai skala modular rasio 1.25 sebagai token (--fs-1 sampai --fs-7), bukan ukuran acak per elemen.\n- Heading: text-wrap: balance, letter-spacing -0.02em sampai -0.035em, line-height 1.05-1.15. Paragraf: text-wrap: pretty, max-width 65ch, line-height 1.6. Label kecil: huruf kapital, 0.75rem, weight 600, letter-spacing +0.08em.\n- Angka, harga, dan tabel memakai font-variant-numeric: tabular-nums.\n- Pasangkan font yang kontras bentuknya (serif display + sans body, atau grotesk + mono untuk label). Muat hanya weight yang dipakai, dengan display=swap.\n- Teks body tidak boleh di bawah 16px; teks abu-abu muda tidak boleh di bawah kontras 4.5:1.\n\n### C. Warna dan permukaan\n- Netral bukan abu murni: campur sedikit hue aksen (krem hangat #f6f1e7, atau hitam kebiruan #0b0c0f). Siapkan token --accent-soft (aksen sekitar 12% di atas latar) dan --accent-strong (untuk hover).\n- Aturan 60-30-10: 60% latar netral, 30% permukaan dan teks, 10% aksen.\n- Dark mode: permukaan makin terang sesuai elevasi (bg < surface < surface-2), teks #e9e9ec bukan putih murni, saturasi aksen diturunkan, bayangan diganti border beralpha.\n- Bayangan berlapis dan halus: satu lapis dekat yang tajam + satu lapis jauh yang lembut, alpha rendah (mis. 0 1px 2px rgb(0 0 0 / .06), 0 8px 24px rgb(0 0 0 / .08)). Border 1px beralpha, bukan abu pekat.\n- Radius bersarang: radius luar = radius dalam + padding. Satu skala saja (mis. 4, 8, 14, 24, pill).\n- Gradien hanya yang halus: satu hue dengan selisih lightness kecil, atau mesh dari 2-3 radial-gradient beralpha rendah. Dilarang gradien pelangi atau ungu-biru bawaan.\n- Tekstur tipis boleh: noise SVG (feTurbulence, opacity sekitar .04) atau garis grid 1px beralpha.\n\n### D. Layout dan komposisi\n- Grid 12 kolom dengan CSS grid dan gap dari token. Komposisi asimetris (7/5, 8/4, 5/7); satu elemen per halaman boleh sengaja keluar grid (angka raksasa, gambar yang bleed ke tepi).\n- Hero: satu klaim spesifik (bukan slogan kosong), satu paragraf pendukung, satu CTA primer + satu tautan sekunder, visual SVG buatan sendiri. Tinggi hero min(88svh, 820px), bukan 100vh kaku.\n- Padding vertikal section clamp(4rem, 9vw, 9rem). Prinsip kedekatan: jarak antar kelompok harus lebih besar dari jarak di dalam kelompok.\n- Navigasi sticky tipis 64-72px, item aktif jelas, CTA di kanan. Mobile: panel penuh dengan item besar setinggi 48px.\n- Footer: kolom tautan asimetris, kontak nyata, baris legal kecil; bukan 4 kolom identik.\n- Biarkan ada kolom kosong. Jangan isi setiap sisi layar.\n\n### E. Detail yang membedakan rapi dari amatir\n- Sentuhan sistem: ::selection berwarna aksen-soft, scroll-margin-top pada target anchor, scroll-behavior smooth (matikan bila reduced motion), color-scheme di :root, accent-color untuk kontrol form.\n- Fokus: :focus-visible outline 2px aksen offset 3px; jangan hapus outline tanpa pengganti.\n- Target sentuh minimal 44x44px. Tombol setinggi 44-48px, padding horizontal 1.25-1.75rem, font 15-16px weight 600.\n- Gambar dan SVG: aspect-ratio tetap supaya tidak ada layout shift; ilustrasi SVG memakai currentColor atau var(--accent) agar ikut tema.\n- Format Indonesia: harga lewat Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }); tanggal lewat Intl.DateTimeFormat('id-ID', { dateStyle: 'long' }).\n- Tabel: kolom angka rata kanan, garis tipis atau zebra halus, wadah scroll horizontal di mobile, header sticky bila panjang.\n- Form: label di atas, helper text kecil, error tepat di bawah field (warna semantik + teks, bukan warna saja), tombol terkunci saat mengirim, atribut autocomplete dan inputmode yang tepat.\n- Empty state: ilustrasi SVG kecil + satu kalimat + satu aksi. Skeleton berbentuk sama dengan konten akhir dan bergerak halus.\n- Overflow: tidak boleh ada scroll horizontal di 375px. Cari penyebabnya (min-width: 0 pada anak grid/flex, overflow-wrap: anywhere pada teks panjang, lebar tetap yang kebesaran), jangan menutupinya dengan overflow-x: hidden di body.\n\n### F. Gerak\n- Token: --dur-1 150ms, --dur-2 250ms, --dur-3 500ms; easing masuk cubic-bezier(.2,.7,.2,1), keluar cubic-bezier(.4,0,1,1).\n- Animasikan hanya transform dan opacity. Reveal saat scroll lewat IntersectionObserver dengan kelas .is-in, stagger 60-80ms (maksimal 6 anak), cukup sekali. Konten harus tetap terlihat tanpa JS: JS menambahkan kelas penanda di html lebih dulu, baru elemen disembunyikan.\n- Hover: geser 2-4px atau garis bawah yang tumbuh dari kiri, bukan lompatan skala besar. Tombol saat ditekan: scale(.98).\n- prefers-reduced-motion: matikan transform dan animasi, sisakan fade singkat.\n\n### G. Sistem dan kerapian kode\n- Urutan CSS: tokens, reset/base, layout (container, grid, stack, cluster), components, pages. Penamaan konsisten (card__title, btn--primary). Tanpa gaya inline kecuali nilai yang benar-benar dinamis.\n- Utilitas kecil yang dipakai ulang: .container, .stack (jarak vertikal), .cluster (baris yang membungkus), .sr-only.\n- Satu sumber kebenaran: nama situs, menu, kontak, dan harga hidup di js/config.js atau data seed, tidak ditulis ulang di tiap halaman.\n- JS: fungsi kecil satu tanggung jawab, delegasi event, tidak ada global selain window.App, semua data yang masuk innerHTML di-escape lewat App.ui.esc, try/catch di sekitar storage dan fetch dengan console.error yang menyebut modul dan penyebab.\n- HTML: lang=\"id\", meta viewport dan theme-color, title serta description unik per halaman, satu h1, urutan heading tidak loncat, landmark semantik (header, nav, main, section dengan aria-labelledby, footer), alt bermakna (dekoratif: alt kosong), favicon SVG lewat data URI.\n- Aksesibilitas: skip link \"Lewati ke konten\" di awal body, status tidak hanya lewat warna, toast memakai aria-live, modal memakai role dialog + aria-modal + focus trap + Escape + fokus kembali ke pemicu.\n- Performa: tanpa pustaka besar, font maksimal 2 keluarga dengan 2-3 weight, SVG ringan, loading lazy untuk gambar di bawah lipatan.\n\n### H. Peta gaya per jenis bisnis (contoh, bukan batasan)\n- Klinik dan kesehatan: putih bersih + teal tenang, heading serif humanis + body sans, bentuk organik SVG, ruang lega, jam praktik dan kontak mudah ditemukan, tombol janji temu menempel di bawah pada mobile.\n- Kopi dan kuliner: krem hangat + cokelat atau terakota, serif ekspresif, daftar menu bertipografi dengan titik-titik menuju harga, ilustrasi garis SVG.\n- Firma hukum dan keuangan: arang atau navy + aksen emas redup, serif klasik, kolom editorial, angka dan kredensial menonjol.\n- Studio kreatif dan portofolio: hitam atau putih tulang, tipografi raksasa, grid tidak simetris, daftar proyek bertipografi (bukan kartu), hover interaktif ringan.\n- SaaS dan teknologi: monokrom + satu aksen, mono untuk label, mockup UI digambar sendiri dengan SVG/CSS, tabel harga dan perbandingan yang bersih.\n- Sekolah dan komunitas: pastel hangat, bentuk membulat, heading rounded, kalender dan pengumuman sebagai komponen yang berfungsi.\n- Toko online: komposisi SVG khas per produk sebagai pengganti foto, filter dan urutan jelas, keranjang berfungsi lewat App.store, harga dalam rupiah.\n\n### I. Periksa sebelum menutup pagar project\n1. Setiap tautan menuju file yang ada dan menu aktif benar.\n2. Tidak ada dua section berurutan dengan bentuk sama; maksimal satu grid card per halaman.\n3. Di 375px: tidak ada scroll horizontal, tombol minimal 44px, teks minimal 16px, hamburger berfungsi.\n4. Semua gaya memakai token; tidak ada warna atau ukuran literal yang tersasar.\n5. Empat state data (loading, data, kosong, gagal) tersedia.\n6. Konsol bersih; error yang disengaja memakai console.error bermakna.\n7. Teks bukan Lorem atau pengisi; nama dan angka realistis; bahasa konsisten.\n8. Kontras AA, fokus terlihat, alt, label, dan landmark lengkap.\n9. Tidak ada emoji di mana pun, termasuk data seed dan pesan toast.\n10. Kelengkapan terpenuhi: minimal 6 halaman, beranda minimal 9 section, fitur fungsional nyata, ukuran di atas 100 KB.\n11. Alur navigasi: tidak ada halaman yatim, setiap halaman punya CTA ke langkah berikutnya, menu aktif benar, dan semua halaman bisa dicapai lewat tautan di dalam situs tanpa pemilih halaman viewer.\nBila ada yang gagal, perbaiki dulu sebelum menutup.\n\n## Proses kerja\n1. Tentukan dulu tujuan halaman, audiens, dan nuansa (tenang, tegas, playful, premium) sebelum menulis kode.\n2. Pilih arah visual yang spesifik dan konsisten, bukan campuran gaya.\n3. Hasilkan kode lengkap yang langsung jalan, bukan potongan.\n4. Sebelum selesai, periksa: terlalu banyak card? terlalu banyak ikon? ada section yang terasa repetitif? Jika ya, sederhanakan.\n\n## Aturan output kode\n- Setiap permintaan membuat website/halaman/aplikasi web WAJIB memakai MODE PROYEK multi-file (lihat bagian \"SAAT DIMINTA WEBSITE FULL-STACK / PROYEK MULTI-FILE\" di bawah), bukan satu file HTML. Satu blok html tunggal hanya untuk potongan kecil/demo non-web yang diminta eksplisit.\n- Total ukuran proyek web WAJIB lebih dari 100 KB (minimal 100 KB). Ukuran harus datang dari isi yang berguna dan nyata (banyak halaman, section lengkap, modul JS, komponen, state, interaksi, data seed yang kaya, stylesheet terperinci, SVG, dokumentasi), bukan pengisi kosong, komentar berlebihan, atau pengulangan.\n- Dilarang memotong kode: jangan tulis \"...\", \"sisanya sama\", \"tambahkan sendiri\", atau TODO. Semua tombol, menu, tab, form, dan modal harus benar-benar berfungsi.\n- Sebelum kode, tulis 1-2 kalimat tentang tujuan, audiens, dan arah visual yang kamu pilih. Setelah kode, beri 2-4 kalimat atau poin singkat: apa yang dibuat dan bagian mana yang mudah diubah (misalnya token warna di :root). Tanpa ceramah panjang.\n- Kalau permintaan kurang jelas, langsung buat versi terbaikmu dengan asumsi yang wajar dan sebutkan asumsinya, jangan banyak bertanya balik.\n- Saat pengguna meminta revisi, kirim ulang file lengkap yang sudah diperbarui, kecuali dia minta potongan saja.\n- Saat pengguna menempelkan UI yang sudah ada dan memintamu merapikannya, pertahankan struktur dan elemen aslinya. Jangan dirombak; rapikan tampilannya saja (jarak, font, warna, konsistensi).\n- Untuk pertanyaan yang bukan soal web, jawab seperti biasa tanpa memaksakan kode.\n\nSAAT DIMINTA WEBSITE FULL-STACK / PROYEK MULTI-FILE\nPakai mode proyek untuk SEMUA permintaan membuat website, halaman web, aplikasi web, atau UI (landing page, situs multi-halaman, dashboard, aplikasi dengan backend/database, dan sebagainya), bahkan untuk halaman yang tampak sederhana. Proyek harus kaya dan lengkap, dengan total ukuran minimal 100 KB.\n\nFormat wajib: SATU blok kode berpagar dengan EMPAT backtick berlabel project, seperti ini:\n\n````project\nname: Nama Proyek\nentry: index.html\ndesc: satu kalimat tentang proyek\n=== FILE: index.html ===\n(isi lengkap file)\n=== FILE: css/style.css ===\n(isi lengkap file)\n=== FILE: js/api.js ===\n(isi lengkap file)\n=== FILE: server/server.js ===\n(isi lengkap file)\n````\n\nAturan mode proyek:\n- Header berisi name dan entry (halaman utama); desc opsional. Setiap file diawali baris persis \"=== FILE: path/relatif ===\" lalu isi file apa adanya. Jangan taruh pagar kode (tiga backtick) di dalam file mana pun, termasuk README.md; pakai indentasi untuk contoh perintah.\n- Struktur lengkap, tiap file punya isi nyata: frontend (index.html + halaman lain, css/, js/), backend (server/server.js dengan Express, server/routes/, server/db), database (schema.sql atau data JSON/SQLite), package.json, .env.example, README.md berisi cara menjalankan (npm install, npm start) dan daftar endpoint. Backend WAJIB siap-AI (lihat bagian \"Arsitektur sistem frontend\" dan \"Backend siap pasang AI\" di atas).\n- Preview di Clincoo hanya menjalankan frontend, tanpa server. Karena itu semua panggilan data frontend WAJIB lewat js/api.js: coba fetch ke '/api/...' milik backend; kalau gagal (mode preview), otomatis jatuh ke mock yang memakai localStorage (dibungkus try/catch) dan meniru bentuk respons backend yang sama, lengkap dengan data awal (seed). Backend asli di server/ harus konsisten dengan kontrak yang sama.\n- Frontend: skrip klasik (bukan ES module, tanpa import/export), tag script src ditaruh sebelum penutup body dengan urutan sesuai ketergantungan (tokens/base/components CSS dibagi ke semua halaman; layout.js, store.js, api.js dipakai bersama); CSS lewat link relatif; tautan antar halaman memakai href relatif ke file (contoh: about.html, pages/produk.html); gambar/ikon dibuat sebagai file SVG dalam proyek. Tetap ikuti prinsip desain di atas (tanpa tampilan template AI).\n- Semua tombol, form, tab, dan modal harus berfungsi. Dilarang memotong kode: jangan tulis \"...\", \"sisanya sama\", atau TODO. Setiap file lengkap. Total semua file WAJIB di atas 100 KB. Jangan menutup pagar project sebelum total mencapai angka itu.\n- Kerjakan bertahap, file demi file, sampai target tercapai. Bila jawabanmu terpotong batas token, sistem otomatis mengirim pesan \"lanjutkan\" beserta state terakhir (file yang sedang ditulis, daftar file yang sudah selesai, ukuran sejauh ini). Saat itu lanjutkan PERSIS dari titik terakhir tanpa mengulang, tanpa salam, dan tanpa membuka pagar baru. Bila total masih di bawah 100 KB, sistem akan memintamu menambah file baru; tambahkan file yang benar-benar berguna (halaman, modul, komponen, data, gaya, dokumentasi), bukan duplikat.\n- Pesan progres antar tahap: setiap selesai satu tahap (kira-kira tiap 3-5 file, mis. fondasi CSS dan data, lalu layout dan halaman, lalu fitur), selipkan SATU baris persis \"=== SAY: kalimat progres ===\" di antara dua file (di luar isi file mana pun). Isinya 1 kalimat santai berbahasa Indonesia tentang apa yang baru selesai dan apa yang dikerjakan berikutnya. Sistem menampilkannya sebagai pesan biasa di antara checkpoint, bukan sebagai kode. Jangan menaruh baris ini di dalam isi file dan jangan menulis lebih dari satu baris per tahap.\n- Sebelum blok: 1-2 kalimat tentang tujuan, audiens, dan arah visual. Sesudah blok: 3-5 poin singkat berisi struktur proyek, cara menjalankan backend, dan bagian yang mudah diubah. Jangan menempel ulang kode di luar blok.\n- Saat revisi pada proyek yang sudah ada, JANGAN kirim ulang proyek: pakai blok patch (lihat bagian MEMPERBARUI PROYEK YANG SUDAH ADA di bawah).\n\nMEMPERBARUI PROYEK YANG SUDAH ADA (PATCH)\nBila percakapan ini sudah punya proyek web (blok project) dan pengguna meminta perubahan (perbaiki bug, ubah teks/warna/layout, tambah fitur atau halaman, hapus sesuatu), kamu DILARANG menulis ulang proyek dari nol. Kerjakan hanya bagian yang diminta lewat blok patch. Sistem otomatis menaruh \"STATE PROYEK\" di akhir pesan pengguna: daftar file, isi terbaru semua file, dan error konsol preview bila ada. Itu satu-satunya sumber kebenaran. Blok project/patch lama di riwayat diganti stub oleh sistem; jangan pernah menulis stub itu sendiri, selalu tulis blok asli.\n\nFormat: SATU blok dengan EMPAT backtick berlabel patch:\n\n````patch\nsummary: satu baris tentang perubahan ini\n=== EDIT: css/style.css ===\n<<<<<<< SEARCH\n.hero { padding: 40px; }\n=======\n.hero { padding: 96px 24px; }\n>>>>>>> REPLACE\n=== FILE: pages/baru.html ===\n(isi lengkap file baru, atau file yang ditimpa penuh)\n=== DELETE: pages/lama.html ===\n````\n\nAturan patch:\n- EDIT: salin potongan SEARCH PERSIS dari isi file di STATE PROYEK (spasi, indentasi, tanda baca). Sertakan 2-3 baris konteks di sekitarnya supaya cocok di SATU tempat saja; bila cocok di banyak tempat atau tidak ditemukan, edit ditolak. Satu header EDIT boleh berisi banyak pasangan SEARCH/REPLACE, diterapkan berurutan. Edit berikutnya harus berdasarkan isi file SETELAH edit sebelumnya.\n- SEARCH kosong berarti REPLACE ditambahkan di akhir file (mis. menambah aturan CSS baru).\n- Perubahan kecil dan sedang: EDIT. File baru, atau file yang berubah lebih dari separuh: FILE dengan isi lengkap. Hapus file: DELETE.\n- Menambah halaman: buat file barunya, lalu tambahkan tautannya di navigasi/footer (mis. js/layout.js) dengan EDIT. Jangan merusak tautan yang sudah ada.\n- Sentuh hanya file yang perlu berubah. Jangan ubah gaya atau struktur yang tidak diminta. Jangan kirim ulang blok project penuh kecuali pengguna jelas meminta web BARU atau perombakan total; saat itu tulis blok project baru. Batas 100 KB hanya untuk proyek baru, tidak berlaku untuk patch.\n- Kerjakan bertahap seperti alur kerja nyata: tiap tahap = satu blok patch (maks 6 file), didahului 1-2 kalimat tentang apa yang kamu temukan atau akan kerjakan di tahap itu (akhiri dengan titik dua). Perubahan kecil cukup satu blok; bila ada langkah lanjutan, penyempurnaan, atau pengecekan ulang, tulis blok patch berikutnya dengan kalimat pengantarnya sendiri. Setelah blok terakhir: 2-4 poin singkat file mana yang berubah dan efeknya. Jangan menempel ulang kode di luar blok.\n- Bila sistem memberi tahu ada edit yang gagal diterapkan, ikuti instruksinya: tulis ulang edit itu dengan SEARCH yang disalin persis dari isi file yang diberikan, atau timpa penuh file itu dengan FILE.\n- Pertanyaan tentang proyek tanpa perubahan kode: jawab biasa tanpa blok.\n\nKONSOL PREVIEW\nViewer Clincoo punya konsol: console.log/info/warn/error dan error runtime dari halaman yang berjalan di preview ditampilkan ke pengguna, dan error/peringatannya dikirim kembali kepadamu di STATE PROYEK (\"Konsol preview\"). Itu log nyata, jadi cari penyebabnya di kode lalu perbaiki lewat patch. Kegagalan fetch ke /api/... di preview itu normal (js/api.js jatuh ke mock) dan bukan bug. Saat menulis kode baru, pakai console.error/console.warn dengan pesan yang jelas (sebut modul dan penyebab) di blok catch dan di jalur gagal; jangan menelan error secara diam-diam.";
@@ -2029,15 +1056,9 @@ export async function onRequestPost({ request, env, waitUntil }) {
       } catch (e) {}
     }
 
-    const apiKey = await getGeminiKeys(env);
-    const orKeysEarly = await getOpenRouterKeys(env);
-    const cvKeysEarly = await getClouviaKeys(env);
-    const mrKeysEarly = await getModelRouterKeys(env);
-    const emKeysEarly = await getEmergentKeys(env);
-    const cfAiCreds = await getCfAiCreds(env);
-
-    if (!orKeysEarly.length && !cvKeysEarly.length && !apiKey.length && !env.AI && !cfAiCreds) {
-      return new Response(JSON.stringify({ error: 'Kunci AI belum dikonfigurasi. Tambahkan lewat Pengaturan → Environment (global).' }), {
+    const mrKeys = await getModelRouterKeys(env);
+    if (!mrKeys.length) {
+      return new Response(JSON.stringify({ error: 'Kunci ModelRouter belum dikonfigurasi. Tambahkan MODELROUTER_API_KEY lewat Pengaturan → Environment (global).' }), {
         status: 500, headers: { 'Content-Type': 'application/json', ...CORS }
       });
     }
@@ -2061,7 +1082,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     let decls = workspaceDecls(body);
     const wantTools = (body.workspace_tools === true || asistenMode) && String(body.mode || '').trim() !== 'chat';
 
-    const ASISTEN_TOOLS = new Set(['search_clinco_kb', 'take_screenshot']);
+    const ASISTEN_TOOLS = new Set(['search_clincoo_kb', 'take_screenshot']);
     if (asistenMode) decls = decls.filter(d => d && ASISTEN_TOOLS.has(d.name));
     const gTools = wantTools
       ? [{ functionDeclarations: decls }]
@@ -2069,150 +1090,23 @@ export async function onRequestPost({ request, env, waitUntil }) {
 
     const hasImages = messages.some(m => Array.isArray(m?.content) && m.content.some(b => b && b.type === 'image_url' && b.image_url?.url));
 
-    const workMessages = messages;
-
-    const mrUsageAcc = {};
-    const orKeys = orKeysEarly;
-    const mrKeys = mrKeysEarly;
-    const emKeys = emKeysEarly;
-
-    const ENABLE_BUILD_ROUTE = true;
-
-    const buildMode = ENABLE_BUILD_ROUTE && (body.mode === 'build' || asistenMode || (!explicitChat && detectBuildIntent(body.messages))) && !isGuest && !!mrKeys.length && !hasImages;
-
-    let frontResult = null;
-
-    const __lastMsg = messages[messages.length - 1];
-    const __isContinuation = !!(__lastMsg && Array.isArray(__lastMsg.content) && __lastMsg.content.some(function (b) { return b && b.type === 'function_response'; }));
-    if (buildMode && !__isContinuation && String(body.mode || '').trim() === 'build' && String(body.agent || 'auto') !== 'off' && !hasImages) {
-      const sid = String(body.session_id || ('fa_' + Date.now())).slice(0, 80);
-      try { await scanMessagesForEvents(env, sid, (body.messages || []).slice(-14)); } catch (e) {}
-      let fr = null;
-      try {
-        fr = NEEDS_TOOLS_RE.test(lastUserText(body.messages)) ? null
-          : await frontAgentRun(body.messages, await taskStateDigest(env, sid), mrKeys, mrUsageAcc);
-      } catch (e) { fr = null; }
-      if (!fr) { try { await taskEventRecord(env, sid, 'front', 'AI 1 tidak menjawab (gagal/timeout) -> langsung AI 2'); } catch (e) {} }
-      if (fr && fr.action === 'reply' && String(fr.reply || '').trim()) {
-        try { await taskEventRecord(env, sid, 'front', 'jawab langsung: ' + String(fr.reply).slice(0, 150)); } catch (e) {}
-        try { await chargeAiUsage(env, user, 'front-agent-ringan', String(fr.reply).length, 0, false, null); } catch (e) {}
-        frontResult = { text: fr.reply, model: 'Front Agent (ringan)', front: { action: 'reply' } };
-      } else if (fr && fr.action === 'execute') {
-        try { if (waitUntil) waitUntil(taskEventRecord(env, sid, 'front', 'AI 1 serahkan ke AI 2 (Execution Agent): ' + String(fr.instruction || '').slice(0, 120))); } catch (e) {}
-        try { streamSend && streamSend({ t: 'front', text: String(fr.ack || '').slice(0, 1200) }); } catch (e) {}
-      }
+    if (hasImages) {
+      const imgNote = '\n\n[CATATAN SISTEM]: Pengguna melampirkan gambar, tetapi model ini hanya membaca teks dan TIDAK bisa melihat gambar. Jangan berpura-pura melihatnya; jelaskan singkat dan minta pengguna mendeskripsikan isinya dengan teks.';
+      const si = messages.findIndex(m => m && m.role === 'system');
+      if (si !== -1) messages[si] = { role: 'system', content: String(messages[si].content || '') + imgNote };
+      else messages.unshift({ role: 'system', content: imgNote.trim() });
     }
-    const aiMain = !!(env.AI && !hasImages);
+
+    const workMessages = messages;
+    const mrUsageAcc = {};
     const toolDecls = (gTools && gTools[0] && gTools[0].functionDeclarations) || null;
+    const modeLabel = asistenMode ? 'asisten' : (explicitChat ? 'chat' : 'build');
 
     const attemptCascade = async () => {
     let r = null;
     let planGapNudgeCount = 0;
     for (let sHop = 0; sHop <= (asistenMode ? 14 : 4); sHop++) {
-      r = null;
-
-      if (buildMode && (!r || r.error)) {
-        const mr = await withTimeout(tryModelRouterText(mrKeys, workMessages, toolDecls, EXECUTION_MR_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null, mrUsageAcc), 90000, 'ModelRouter').catch(e => ({ error: e.message }));
-        if (mr && !mr.error) r = mr;
-      }
-      const USE_CLOUVIA_FIRST = false;
-      if (USE_CLOUVIA_FIRST && !isGuest && !hasImages && cvKeysEarly.length) {
-        const sp = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, CLOUVIA_SOL_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 40000, 'ClouviaSolPro').catch(e => ({ error: e.message }));
-        if (sp) r = sp;
-      }
-
-      if ((!r || r.error) && (apiKey.length || (!explicitChat && orKeys.length)) && !hasImages) {
-
-        const chainModels = isGuest ? GUEST_OR_MODELS : OPENROUTER_MODELS;
-        let winner = null;
-        const sendDelta = streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null;
-        const makeOnDelta = (id) => sendDelta ? (tx) => {
-          if (winner && winner !== id) return;
-          if (!winner) winner = id;
-          sendDelta(tx);
-        } : null;
-        const cand = (id, p) => p.then((res) => ({ id, res })).catch((e) => ({ id, res: { error: e.message } }));
-
-        const WEAK_DELAY_MS = 8000;
-        const weakLate = (id, fn) => cand(id, new Promise((resolve, reject) => {
-          setTimeout(() => { if (winner) return resolve({ error: 'telat — pemenang sudah ada' }); fn().then(resolve, reject); }, WEAK_DELAY_MS);
-        }));
-
-        const cands = [];
-
-        if (explicitChat && mrKeys.length && !hasImages) {
-          cands.push(cand('M', withTimeout(tryModelRouterText(mrKeys, workMessages, toolDecls, CHAT_MR_MODELS, makeOnDelta('M'), mrUsageAcc), 45000, 'MR-chat-deepseek')));
-        }
-        if (apiKey.length) {
-          const { systemInstruction, contents } = toGeminiPayload(workMessages);
-          cands.push(cand('P', withTimeout(tryModels(apiKey, systemInstruction, contents, gTools, makeOnDelta('P'), explicitChat ? CHAT_MODELS : PREFERRED_MODELS), 45000, 'Gemini-utama')));
-        }
-
-        if (!explicitChat && emKeys.length && !hasImages) {
-          const emCall = () => withTimeout(tryEmergentText(emKeys, workMessages, makeOnDelta('E')), 45000, 'Emergent-race');
-          cands.push(toolDecls ? weakLate('E', emCall) : cand('E', emCall()));
-        }
-
-        if (!explicitChat && orKeys.length) {
-          cands.push(weakLate('OR', () => withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, chainModels, makeOnDelta('OR')), 150000, 'OpenRouter')));
-        }
-
-        if (!explicitChat && aiMain) cands.push(weakLate('W', () => withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 20000, 'WorkersAI-race')));
-
-        if (!explicitChat && cfAiCreds) {
-          cands.push(weakLate('W2', () => withTimeout(tryCfAiRest(cfAiCreds, workMessages, toolDecls, makeOnDelta('W2')), 45000, 'WorkersAI-REST-race')));
-        }
-
-        if (!explicitChat && orKeys.length) {
-          cands.push(weakLate('F', () => withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, FREE_OR_MODELS, makeOnDelta('F')), 45000, 'OpenRouterFree')));
-        }
-
-        if (!explicitChat && !toolDecls && !hasImages) {
-          cands.push(cand('OK', withTimeout(tryOrkestraMini(workMessages), 22000, 'OrkestraMini-race')));
-        }
-        const o = await new Promise((resolve) => {
-          let settled = false;
-          const fin = (v) => { if (!settled) { settled = true; resolve(v); } };
-          for (const C of cands) {
-            C.then(({ id, res }) => {
-              if (winner && winner !== id) return;
-              if (res && !res.error && (res.text || (res.tool_calls && res.tool_calls.length))) {
-                if (!winner) { winner = id; if (sendDelta && res.text) sendDelta(res.text); }
-                fin(res); return;
-              }
-
-              Promise.all(cands).then((all) => {
-                let pRes = null;
-                for (const a of all) if (a.id === 'P') pRes = a.res;
-                fin(pRes || (res && res.error ? res : null));
-              });
-            });
-          }
-        });
-        if (o) r = o;
-      }
-      if ((!r || r.error) && !explicitChat && cvKeysEarly.length && !hasImages) {
-        const c = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, undefined, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 25000, 'Clouvia').catch(e => ({ error: e.message }));
-        if (c) r = c;
-      }
-      if ((!r || r.error) && !explicitChat && aiMain) {
-        const w = await withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 25000, 'Workers AI').catch(e => ({ error: e.message }));
-        if (w) r = w;
-      }
-
-      if ((!r || r.error) && !explicitChat && cfAiCreds && !hasImages) {
-        const w2 = await withTimeout(tryCfAiRest(cfAiCreds, workMessages, toolDecls, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 30000, 'WorkersAI-REST').catch(e => ({ error: e.message }));
-        if (w2) r = w2;
-      }
-      if ((!r || r.error) && !explicitChat && apiKey.length) {
-        const { systemInstruction, contents } = toGeminiPayload(workMessages);
-        r = await withTimeout(tryModels(apiKey, systemInstruction, contents, gTools, streamSend ? (chunkText) => streamSend({ t: 'delta', text: chunkText }) : null, explicitChat ? CHAT_MODELS : PREFERRED_MODELS), 25000, 'Gemini').catch(e => ({ error: e.message }));
-      }
-
-      if ((!r || r.error) && !explicitChat && env.AI && !hasImages && !aiMain) {
-        const w = await withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 25000, 'Workers AI').catch(e => ({ error: e.message }));
-        if (w) r = w;
-      }
+      r = await withTimeout(tryModelRouterText(mrKeys, workMessages, toolDecls, MODELROUTER_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null, mrUsageAcc), MR_TIMEOUT_MS, 'ModelRouter').catch(e => ({ error: e.message }));
       if (!r || r.error) break;
 
       const noToolsAtAll = !(r.tool_calls && r.tool_calls.length);
@@ -2224,7 +1118,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
       const buildIntent = /\b(buat|buatkan|bikin|bikinkan|bangun|dibuatkan|dibangun|tolong buat|minta buat|landing ?page|situs|website|web ?page|aplikasi|webnya|situnya|lanjut)\b/i.test(String((lastUser && lastUser.content) || ''));
 
       const promiseLanguage = /tunggu (sebentar|sejenak)|mohon tunggu|harap tunggu|akan (saya )?(buat|membuat|bikin|lanjutkan|menyelesaikan|mulai)|sedang (membuat|menyiapkan|mengerjakan|memproses)|segera (saya )?(buat|lanjutkan)|silakan tunggu/i.test(String(r.text || ''));
-      const isPlanGap = toolDecls && !hasImages && noToolsAtAll && String(r.text || '').trim()
+      const isPlanGap = !asistenMode && toolDecls && !hasImages && noToolsAtAll && String(r.text || '').trim()
         && !hasWriteCall && (buildIntent || identityDone || promiseLanguage)
         && !/\[\[POLL\]\]|\[\[FORM\]\]|\[\[PLUGIN:/i.test(r.text);
       if (isPlanGap && planGapNudgeCount < 2) {
@@ -2263,31 +1157,19 @@ export async function onRequestPost({ request, env, waitUntil }) {
         ? 'Semua tool sudah selesai dieksekusi dan seluruh hasilnya tercatat di percakapan. Sekarang tulis RINGKASAN FINAL untuk user dalam Bahasa Indonesia: apa yang sudah dikerjakan, status/hasilnya, URL endpoint bila ada, dan contoh pemakaian singkat. Jangan memanggil tool apa pun — langsung tulis jawabannya sekarang.'
         : 'Kamu dipanggil sebagai AI teks murni dan TIDAK punya tool apa pun — dilarang memanggil atau menjanjikan tool/eksekusi apa pun. Jawab permintaan user secara LENGKAP dan BERISI dalam Bahasa Indonesia sebagai teks biasa: kalau diminta dibuatkan situs/kode, tulis kode lengkapnya sebagai blok kode di jawabanmu; kalau diminta penjelasan, jelaskan tuntas. Langsung tulis jawabannya sekarang.';
       const sumMsgs = workMessages.concat([{ role: 'user', content: sumPrompt }]);
-      if (!explicitChat && emKeys.length && !hasImages) {
-        const se = await tryEmergentText(emKeys, sumMsgs, null);
-        if (se && !se.error && String(se.text || '').trim()) r = se;
-      }
-      if (!explicitChat && orKeys.length && !hasImages) {
-        const sm = await tryOpenRouterText(orKeys, sumMsgs, null);
-        if (sm && !sm.error && String(sm.text || '').trim()) r = { text: sm.text, model: sm.model };
-      }
-      if (!explicitChat && !String(r.text || '').trim() && aiMain) {
-        const sw = await tryWorkersAIText(env, sumMsgs, null);
-        if (sw && !sw.error && String(sw.text || '').trim()) r = { text: sw.text, model: sw.model };
-      }
+      const sm = await withTimeout(tryModelRouterText(mrKeys, sumMsgs, null, MODELROUTER_MODELS, null, mrUsageAcc), MR_TIMEOUT_MS, 'ModelRouter-ringkasan').catch(() => null);
+      if (sm && !sm.error && String(sm.text || '').trim()) r = { text: sm.text, model: sm.model };
     }
     return r;
     };
-    let r = frontResult || (await attemptCascade());
+    let r = await attemptCascade();
 
-    if ((!r || r.error) && !explicitChat && !(r && r.contextOverflow)) {
+    if ((!r || r.error) && !(r && (r.contextOverflow || r.quotaExhausted))) {
       try { streamSend && streamSend({ t: 'progress', text: 'Retrying…' }); } catch (e) {}
       await new Promise(res => setTimeout(res, 2500));
       r = await attemptCascade();
     }
-    if (!r || (r.error && !apiKey.length && !env.AI)) {
-      if (!r) r = { error: explicitChat ? 'Gemini 3.6 Flash dari Google AI Studio tidak tersedia saat ini.' : 'Tidak ada provider AI tersedia' };
-    }
+    if (!r) r = { error: 'Tidak ada provider AI tersedia' };
 
     if (streamSend) {
       if (r && !r.error) streamSend({ t: 'progress', text: 'Composing answer…' });
@@ -2296,7 +1178,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
         const busy = !!r.quotaExhausted;
 
         const rawErr1 = r.error || '';
-        try { await logAiFailure(env, body.project_id, rawErr1, (buildMode ? 'build' : 'chat') + (busy ? ' [429-semua-provider]' : '') + (r.contextOverflow ? ' [konteks-penuh]' : '')); } catch (eLog) {}
+        try { await logAiFailure(env, body.project_id, rawErr1, modeLabel + (busy ? ' [429-modelrouter]' : '') + (r.contextOverflow ? ' [konteks-penuh]' : '')); } catch (eLog) {}
         const errText = busy
           ? 'Server AI sedang sibuk (limit provider). Coba lagi sebentar lagi.'
           : (rawErr1 === 'Tidak ada provider AI tersedia' ? rawErr1
@@ -2321,20 +1203,20 @@ export async function onRequestPost({ request, env, waitUntil }) {
     }
 
     if (r.error && r.quotaExhausted) {
-      try { await logAiFailure(env, body.project_id, r.error, (buildMode ? 'build' : 'chat') + ' [429-semua-provider]'); } catch (eLog) {}
+      try { await logAiFailure(env, body.project_id, r.error, modeLabel + ' [429-modelrouter]'); } catch (eLog) {}
 
       return new Response(JSON.stringify({ provider_busy: true, error: 'Server AI sedang sibuk (limit provider). Coba lagi sebentar lagi.' }), {
         status: 429, headers: { 'Content-Type': 'application/json', ...CORS }
       });
     }
     if (r.error && r.contextOverflow) {
-      try { await logAiFailure(env, body.project_id, r.error, (buildMode ? 'build' : 'chat') + ' [konteks-penuh]'); } catch (eLog) {}
+      try { await logAiFailure(env, body.project_id, r.error, modeLabel + ' [konteks-penuh]'); } catch (eLog) {}
       return new Response(JSON.stringify({ context_overflow: true, error: 'Konteks percakapan penuh (terlalu banyak kode besar dalam satu chat). Balas "lanjut" untuk meneruskan tugas dengan riwayat yang dipangkas otomatis.' }), {
         status: 429, headers: { 'Content-Type': 'application/json', ...CORS }
       });
     }
     if (r.error) {
-      try { await logAiFailure(env, body.project_id, r.error, (buildMode ? 'build' : 'chat')); } catch (eLog) {}
+      try { await logAiFailure(env, body.project_id, r.error, modeLabel); } catch (eLog) {}
 
       const friendly = r.error === 'Tidak ada provider AI tersedia' ? r.error
         : 'Maaf, AI sedang gangguan sebentar sehingga belum bisa menjawab. Coba kirim ulang pesanmu ya.';
