@@ -774,18 +774,18 @@
             </h1>
             <p id="motivation-text" class="text-gray-500 mt-2 text-sm sm:text-base max-w-lg mx-auto leading-relaxed"></p>
         </div>
-        <div class="w-full bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] p-5 transition-all text-left border border-gray-100">
+        <div class="w-full bg-white rounded-[26px] shadow-[0_8px_36px_rgba(0,0,0,0.10)] p-4 sm:p-5 transition-all text-left border border-gray-200/80">
             <div id="file-preview-container" class="hidden flex-nowrap overflow-x-auto hide-scrollbar gap-2 mb-3 pb-1 w-full"></div>
             <textarea
                 id="main-prompt-input"
-                rows="3"
+                rows="1"
                 placeholder="Tanya apa saja..."
-                class="w-full resize-none border-0 bg-transparent p-0 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 text-base md:text-lg leading-relaxed"
+                class="w-full resize-none border-0 bg-transparent p-0 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 text-[17px] leading-relaxed max-h-[140px] overflow-hidden"
             ></textarea>
             <div class="flex items-center justify-between pt-2">
                 <div class="relative">
-                    <button id="add-btn" class="p-2 text-gray-400 hover:text-black rounded-full transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20" aria-expanded="false" title="Lampirkan File">
-                        <svg id="add-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+                    <button id="add-btn" class="w-9 h-9 rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-500 hover:text-black flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20" aria-expanded="false" title="Lampirkan File">
+                        <svg id="add-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                         </svg>
                     </button>
@@ -812,7 +812,7 @@
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
                     <!-- [20 Okt 2026, arahan pemilik] Popover mode Chat/Build dihapus dari dashboard -->
-<button id="submit-prompt-btn" class="w-10 h-10 bg-accent text-white rounded-full hover:bg-accent-hover transition-all duration-200 active:scale-90 flex items-center justify-center cursor-pointer shadow-sm hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20">
+<button id="submit-prompt-btn" class="w-10 h-10 bg-black text-white rounded-full hover:bg-gray-800 transition-all duration-200 active:scale-90 flex items-center justify-center cursor-pointer shadow-sm hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
                     </svg>
@@ -1557,6 +1557,7 @@
             const textarea = document.getElementById('main-prompt-input');
             if (textarea) {
                 textarea.value = promptText;
+                textarea.dispatchEvent(new Event('input'));
                 textarea.focus();
                 navigateTo('page-home');
                 window.scrollTo(0, 0);
@@ -1670,6 +1671,8 @@
             });
         }
         if(mainPromptInput) {
+            // [20 Okt 2026, arahan pemilik] Samakan dengan halaman chat: tinggi ikut isi, maks 140px
+            mainPromptInput.addEventListener('input', function () { this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 140) + 'px'; });
             mainPromptInput.addEventListener('keydown', (e) => {
                 if(e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
