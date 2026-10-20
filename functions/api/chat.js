@@ -184,7 +184,7 @@ const MODELROUTER_MODELS = [MR_MODEL];
 const MR_MAX_TOKENS = { [MR_MODEL]: MR_OUT_TOKENS };
 const MR_ENDPOINT = 'https://modelrouter.id/v1/chat/completions';
 
-const mrLabel = () => 'orkestra-1-pro';
+const mrLabel = () => 'glm-5.3-flash'; // [21 Okt] label 'orkestra-1-pro' dihapus atas permintaan owner
 
 // >>> AUTO-LANJUT
 // Port dari klien (clincoo_ai_assistant.html): bila jawaban terpotong batas token, sistem otomatis

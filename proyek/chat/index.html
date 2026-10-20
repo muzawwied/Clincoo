@@ -2068,7 +2068,7 @@ function renderMessages() {
                     <button onclick="handleThumbs(${msg.id}, 'up')" data-fb="up" class="${msg.fb === 'up' ? 'text-gray-900' : 'text-gray-400'} hover:text-black transition p-1" title="Suka"><i class="${msg.fb === 'up' ? 'ph-fill' : 'ph'} ph-thumbs-up text-lg"></i></button>
                     <button onclick="handleThumbs(${msg.id}, 'down')" data-fb="down" class="${msg.fb === 'down' ? 'text-gray-900' : 'text-gray-400'} hover:text-black transition p-1" title="Tidak Suka"><i class="${msg.fb === 'down' ? 'ph-fill' : 'ph'} ph-thumbs-down text-lg"></i></button>
                     ${(index === visible.length - 1 && !busy) ? `<button onclick="regenerate(${msg.id})" class="text-gray-400 hover:text-black transition p-1" title="Ulangi jawaban"><i class="ph ph-arrow-clockwise text-lg"></i></button>` : ''}
-                    <span class="ml-auto text-[11px] text-gray-400 font-medium select-none whitespace-nowrap">${msg.model ? esc(String(msg.model)) + ' \u00b7 ' : ''}${msg.stopped ? 'Dihentikan \u00b7 ' : ''}${fmtMs(msg.ms)}</span>
+                    <span class="ml-auto text-[11px] text-gray-400 font-medium select-none whitespace-nowrap">${msg.stopped ? 'Dihentikan \u00b7 ' : ''}${fmtMs(msg.ms)}</span>
                     ` : '';
             let contentHTML = '';
             if (msg.isProcessing) {
@@ -2717,7 +2717,7 @@ async function sendMessage(opts) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    mode: 'build', workspace_tools: ((typeof window.selectedAiMode === 'function' && window.selectedAiMode()) === 'build'), /* CHAT_BUILD_MODE_FIX */ stream: true,
+                    mode: 'build', workspace_tools: true, /* [21 Okt] guard selectedAiMode sudah tidak ada; tanpa ini SEMUA tool (run_command, deploy, backend, DNS, dll) tidak pernah dikirim ke model */ stream: true,
                     messages: toGroqMessages(reqContents),
                     project_id: PROJECT_ID || undefined,
                     session_id: currentSessionId || undefined
