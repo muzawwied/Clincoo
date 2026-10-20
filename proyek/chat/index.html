@@ -2011,7 +2011,7 @@ function renderMessages() {
         if (msg.role === 'ai') {
             row.classList.add('justify-start');
             
-            const actionBtns = (index === visible.length - 1) ? `<span class="ml-auto text-[11px] text-gray-400 font-medium select-none whitespace-nowrap">${msg.stopped ? 'Dihentikan \u00b7 ' : ''}${fmtMs(msg.ms)}</span><button onclick="copyText('msg-text-${msg.id}', this)" class="relative text-gray-400 hover:text-black transition p-1" title="Salin"><i class="ph ph-copy text-lg"></i></button>
+            const actionBtns = (index === visible.length - 1) ? `<span class="text-[11px] text-gray-400 font-medium select-none whitespace-nowrap">${msg.stopped ? 'Dihentikan \u00b7 ' : ''}${fmtMs(msg.ms)}</span><button onclick="copyText('msg-text-${msg.id}', this)" class="relative text-gray-400 hover:text-black transition p-1" title="Salin"><i class="ph ph-copy text-lg"></i></button>
                     <button onclick="shareText('msg-text-${msg.id}')" class="text-gray-400 hover:text-black transition p-1" title="Bagikan"><i class="ph ph-arrow-bend-up-right text-lg"></i></button>
                     <button onclick="handleThumbs(${msg.id}, 'up')" data-fb="up" class="${msg.fb === 'up' ? 'text-gray-900' : 'text-gray-400'} hover:text-black transition p-1" title="Suka"><i class="${msg.fb === 'up' ? 'ph-fill' : 'ph'} ph-thumbs-up text-lg"></i></button>
                     <button onclick="handleThumbs(${msg.id}, 'down')" data-fb="down" class="${msg.fb === 'down' ? 'text-gray-900' : 'text-gray-400'} hover:text-black transition p-1" title="Tidak Suka"><i class="${msg.fb === 'down' ? 'ph-fill' : 'ph'} ph-thumbs-down text-lg"></i></button>
@@ -2276,8 +2276,8 @@ async function wsSyncFromMessage(m) {
         }
         saved += (wsInc.msgId === m.id) ? 0 : 0;
         if (skipped && !saved) saved = skipped; // semua sudah terkirim bertahap -> tetap umumkan jumlahnya
+        // [20 Okt, minta owner] tanpa toast: penyegaran file tree tetap lewat postMessage ke parent
         if (saved || removed) {
-            toast((saved ? saved + ' file tersimpan' : '') + (saved && removed ? ' · ' : '') + (removed ? removed + ' dihapus' : '') + ' di workspace proyek.');
             try { if (window.parent && window.parent !== window) window.parent.postMessage('clincoo:files-updated', '*'); } catch (e) {}
         }
     } catch (e) { console.warn('sync workspace error:', e); }
