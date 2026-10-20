@@ -1466,6 +1466,8 @@
                     if (r.status === 401) {
                         localStorage.removeItem('clincoo_gh_token');
                         localStorage.removeItem('clincoo_gh_user');
+                        localStorage.removeItem('clincoo_github_token');
+                        localStorage.removeItem('clincoo_github_user');
                     }
                     if (btn) btn.classList.remove('hidden');
                     setGitHubBadge(false);
@@ -1473,6 +1475,8 @@
                 }
                 const user = await r.json();
                 localStorage.setItem('clincoo_gh_user', JSON.stringify(user));
+                // [20 Okt 2026] sinkron ke kunci editor agar nama akun muncul di workspace juga
+                localStorage.setItem('clincoo_github_user', JSON.stringify({ login: user.login, name: user.name || user.login, avatar_url: user.avatar_url }));
                 if (btn) btn.classList.add('hidden');
                 setGitHubBadge(true);
                 return true;

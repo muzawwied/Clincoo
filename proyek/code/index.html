@@ -1725,6 +1725,18 @@
       showInputModal();
     }
 
+    function renderGithubAccount() {
+      try {
+        const savedUser = JSON.parse(localStorage.getItem(GITHUB_USER_KEY) || localStorage.getItem('clincoo_gh_user') || 'null');
+        if (savedUser && savedUser.login) {
+          const avatarImg = document.getElementById('github-avatar-img');
+          const usernameEl = document.getElementById('github-username');
+          if (avatarImg && savedUser.avatar_url) avatarImg.src = savedUser.avatar_url;
+          if (usernameEl) usernameEl.textContent = savedUser.name || savedUser.login;
+        }
+      } catch (e) {}
+    }
+
     function updateGithubModalUI() {
       const stepConnect = document.getElementById('github-step-connect');
       const stepLoading = document.getElementById('github-step-loading');
@@ -1750,15 +1762,8 @@
         btnSubmit.classList.add('hidden');
         footer.classList.add('hidden');
 
-        try {
-          const savedUser = JSON.parse(localStorage.getItem(GITHUB_USER_KEY) || 'null');
-          if (savedUser) {
-            const avatarImg = document.getElementById('github-avatar-img');
-            const usernameEl = document.getElementById('github-username');
-            if (avatarImg && savedUser.avatar_url) avatarImg.src = savedUser.avatar_url;
-            if (usernameEl && savedUser.login) usernameEl.textContent = savedUser.login;
-          }
-        } catch(e) {}
+        renderGithubAccount();
+        ensureGithubProfile().then(function () { renderGithubAccount(); });
 
         loadGithubRepoList();
       }
@@ -1887,6 +1892,26 @@
 
     function getGitHubToken() {
       return localStorage.getItem(GITHUB_TOKEN_KEY) || localStorage.getItem('clincoo_gh_token');
+    }
+
+    // [20 Okt 2026] Pastikan data profil akun (nama/login/avatar) selalu tersedia.
+    // Jika token ada tapi data user kosong/kurang, ambil dari api.github.com/user
+    // lalu simpan ke KEDUA kunci (editor & plugin/chat) — jembatan hanya mengisi
+    // kunci kosong, ini menyembuhkan data yang lama/tidak lengkap.
+    async function ensureGithubProfile() {
+      const token = getGitHubToken();
+      if (!token) return null;
+      let u = null;
+      try { u = JSON.parse(localStorage.getItem(GITHUB_USER_KEY) || localStorage.getItem('clincoo_gh_user') || 'null'); } catch (e) {}
+      if (u && u.login) return u;
+      try {
+        const r = await fetch('https://api.github.com/user', { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!r.ok) return u;
+        u = await r.json();
+        localStorage.setItem(GITHUB_USER_KEY, JSON.stringify({ login: u.login, name: u.name || u.login, avatar_url: u.avatar_url }));
+        try { localStorage.setItem('clincoo_gh_user', JSON.stringify(u)); } catch (e) {}
+      } catch (e) {}
+      return u;
     }
 
     // Pakai token GitHub dari sesi login Clincoo (masuk via GitHub OAuth) tanpa auth ulang

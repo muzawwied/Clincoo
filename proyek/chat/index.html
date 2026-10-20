@@ -8848,11 +8848,27 @@ function crownAction(e){
     on.classList.toggle('hidden', !t);
     cfgBox.classList.toggle('hidden', !t);
     if (!t) return;
-    var u = tryJson(localStorage.getItem('clincoo_gh_user') || '', null);
+    var u = tryJson(localStorage.getItem('clincoo_gh_user') || localStorage.getItem('clincoo_github_user') || '', null);
     if ($('gs-gh-avatar')) {
       $('gs-gh-avatar').src = (u && u.avatar_url) || '';
       $('gs-gh-name').textContent = (u && (u.name || u.login)) || 'GitHub';
       $('gs-gh-meta').textContent = '@' + ((u && u.login) || '') + ' · via Clincoo';
+    }
+    // [20 Okt 2026] Data nama akun kosong/kurang -> ambil dari api.github.com/user
+    // (self-heal, disimpan ke kedua kunci) lalu perbarui tampilan popup.
+    if (t && (!u || !u.login)) {
+      fetch('https://api.github.com/user', { headers: { 'Authorization': 'Bearer ' + t } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (p) {
+          if (!p || !p.login) return;
+          try {
+            localStorage.setItem('clincoo_gh_user', JSON.stringify(p));
+            localStorage.setItem('clincoo_github_user', JSON.stringify({ login: p.login, name: p.name || p.login, avatar_url: p.avatar_url }));
+          } catch (e) {}
+          if ($('gs-gh-avatar')) $('gs-gh-avatar').src = p.avatar_url || '';
+          if ($('gs-gh-name')) $('gs-gh-name').textContent = p.name || p.login;
+          if ($('gs-gh-meta')) $('gs-gh-meta').textContent = '@' + p.login + ' · via Clincoo';
+        }).catch(function () {});
     }
     var c = cfg();
     if ($('gs-repo')) $('gs-repo').value = c.repo || '';
