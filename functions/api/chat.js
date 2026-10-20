@@ -1,22 +1,10 @@
-// Cloudflare Pages Function — Backend Chat AI Clincoo (SELF-CONTAINED)
-// Memanggil Gemini langsung dari project ini (TIDAK lagi mem-forward ke proxy lain —
-// self-forward adalah bug loop yang membakar kuota 25x per pesan).
-// Fitur:
-//   - Auth per-user via token D1 lokal (auth_sessions)
-//   - Kuota AI harian per user (25 gratis / 500 admin), hop tool tidak dihitung
-//   - Rate limit per-IP 30 req/menit + batas payload 2MB
-//   - Function calling: 7 tools workspace + 7 tools super (sandbox CLI, web, proyek)
-//   - thought_signature pass-through untuk multi-hop function calling
-// PENTING: jangan campur google_search grounding dengan functionDeclarations
-// dalam satu request — Gemini API menolak kombinasi itu (HTTP 400), dan itulah
-// akar bug "AI pura-pura membuat file". Mode tools = functionDeclarations saja.
-
 import { PLAN_AI_LIMITS, ADMIN_EMAILS, getEffectivePlanByUserKey, featureAllowed } from './plan-helpers.js';
 import { searchClincooBlog } from './blogsearch.js';
 import { paymentDocsFor } from './payment-kb-data.js';
 import { aiStorageSave, aiStorageGet, aiStorageList, aiStorageDelete } from './ai-storage.js';
 import { consumePackCredit, getActivePacks } from './ai-packs.js';
 import { initTables as initAuthTables, getUserByToken, getToken } from './auth/shared.js';
+import { wsToolExec, WS_TOOL_NAMES } from './_ws-tools.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -28,7 +16,6 @@ export async function onRequestOptions() {
   return new Response(null, { status: 200, headers: CORS });
 }
 
-// --- Rate limiter per-IP ---
 const RATE_LIMIT = { max: 30, windowMs: 60_000 };
 const rateBuckets = new Map();
 function rateLimitOk(ip) {
@@ -42,30 +29,38 @@ function rateLimitOk(ip) {
   }
   return b.count <= RATE_LIMIT.max;
 }
+let rateTableReady = false;
+// Rate limit lintas-isolate lewat D1 (atomik). Bila D1 bermasalah, jatuh ke penghitung memori.
+async function rateLimitOkDb(env, ip) {
+  if (!env || !env.DB) return rateLimitOk(ip);
+  try {
+    const w = Math.floor(Date.now() / RATE_LIMIT.windowMs);
+    if (!rateTableReady) {
+      await env.DB.prepare('CREATE TABLE IF NOT EXISTS ai_rate (k TEXT, w INTEGER, c INTEGER, PRIMARY KEY (k, w))').run();
+      rateTableReady = true;
+    }
+    const r = await env.DB.prepare(
+      'INSERT INTO ai_rate (k, w, c) VALUES (?, ?, 1) ON CONFLICT(k, w) DO UPDATE SET c = c + 1 RETURNING c'
+    ).bind(String(ip), w).first();
+    if (Math.random() < 0.02) env.DB.prepare('DELETE FROM ai_rate WHERE w < ?').bind(w - 5).run().catch(() => {});
+    if (!r) return rateLimitOk(ip);
+    return r.c <= RATE_LIMIT.max;
+  } catch (e) {
+    return rateLimitOk(ip);
+  }
+}
 function clientIp(request) {
   try { return (request && request.headers && request.headers.get('cf-connecting-ip')) || 'unknown'; } catch (e) { return 'unknown'; }
 }
-
-const PREFERRED_MODELS = ['gemini-3.6-flash', 'gemini-3-flash-preview'];
-
-// ===== AI UTAMA: GLM 5.3 Flash (Workers AI, binding internal) =====
-// Model lama tetap di daftar sebagai cadangan bila GLM 5.3 Flash gagal.
-// GLM 5.x & deepseek-v4 di Workers AI hanya tersedia di plan berbayar (diuji 2026-10-01) —
-// [7 Okt] Gemini utama (terverifikasi aktif); OpenRouter & Workers AI fallback.
-const WORKERS_AI_MODELS = ['@cf/zai-org/glm-4.7-flash'];
 function textOf(m) {
   if (typeof m.content === 'string') return m.content;
   if (Array.isArray(m.content)) return m.content.filter(b => b && b.type === 'text').map(b => b.text).join('\n');
   return '';
 }
-// Konversi pesan Clincoo -> format chat OpenAI (dipakai Workers AI & OpenRouter).
-// Blok tools Clincoo (function_call/function_response) -> format tool OpenAI,
-// supaya percakapan multi-hop (AI memakai tool lalu lanjut) tetap utuh.
+
 function toOAIChat(messages) {
   let system = messages.some(m => m.role === 'system') ? messages.filter(m => m.role === 'system').map(textOf).join('\n\n') : '';
-  // SUNTIK PENGETAHUAN PAYMENT GATEWAY: pesan user terakhir menyebut payment/
-  // gateway tertentu -> docs Xendit/Midtrans/DOKU/Pakasir menempel ke system prompt,
-  // jadi AI tidak perlu web_search lagi untuk integrasi payment.
+
   try {
     const lastUser = [...messages].reverse().find(m => m && m.role === 'user');
     const pay = paymentDocsFor(lastUser ? textOf(lastUser) : '');
@@ -95,60 +90,14 @@ function toOAIChat(messages) {
   }
   return { system, chatMsgs };
 }
-
-// ===== Kunci OpenRouter (utama + cadangan) =====
-async function getOpenRouterKeys(env) {
-  const keys = [];
-  const seen = new Set();
-  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
-  add(env.OPENROUTER_API_KEY);
-  add(env.OPENROUTER_API_KEY_4); add(env.OPENROUTER_API_KEY_5); add(env.OPENROUTER_API_KEY_6);
-  if (!env.DB) return keys;
-  try {
-    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('OPENROUTER_API_KEY','OPENROUTER_API_KEY_2','OPENROUTER_API_KEY_3','OPENROUTER_API_KEY_4','OPENROUTER_API_KEY_5','OPENROUTER_API_KEY_6')").all();
-    for (const r of rows.results || []) add(r.value);
-  } catch {}
-  return keys;
-}
-
-// ===== Provider utama: GLM 5.3 Flash via OpenRouter =====
-// UTAMA: GLM 5.3 Flash (5 Okt 2026, arahan pemilik: "ganti model ke glm 5.3 flash
-// langsung dan dari open router lalu minimalkan error"). Model flash jauh lebih cepat
-// dan jarang timeout dibanding reasoning model -> jumlah error "gangguan koneksi"
-// turun. Cadangan berurutan: Luna Pro, Sol Pro (login saja). Nemotron DIHAPUS 9 Okt (arahan pemilik).
-// [9 Okt, arahan pemilik] Nemotron DILARANG (kualitas buruk) — hanya GLM + cadangan GPT.
-const OPENROUTER_MODELS = ['anthropic/claude-haiku-5.5', 'z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro']; // haiku 5.5 prioritas
-// Rantai khusus TAMU (anonim, gratis): TANPA Sol Pro — model premium hanya
-// untuk user login; tamu tidak boleh membakar biaya provider premium.
-const GUEST_OR_MODELS = ['z-ai/glm-5.3-flash', 'openai/gpt-6-luna-pro'];
-// [6 Okt 2026, arahan owner: "ambil ai gratis baru"] Model :free OpenRouter — gratis
-// (limit per kunci ~50 req/hari), tools didukung. Kandidat F balapan + pengaman saat
-// kredit berbayar OR habis (402). Teruji memenangkan balapan di labs (jawaban bersih ~4s).
-const FREE_OR_MODELS = ['cohere/north-mini-code:free', 'google/gemma-4-26b-a4b-it:free'];
-// Batas output OpenRouter: kunci 402 "requires more credits / fewer max_tokens" saat
-// reservasi kredit di muka besar. Uji langsung 5 Okt 2026: 4096 GAGAL di SEMUA kunci,
-// 2048 lolos di 3 kunci sehat (1 kunci 402 lalu dilewati cepat), 1024 lolos semua.
-// 2048 dipilih: setengah jumlah lanjutan auto-continue dibanding 1024, jadi jawaban
-// panjang selesai lebih jauh di bawah timeout frontend 120 detik.
-// Jawaban panjang tetap utuh: AUTO-CONTINUE (stream & non-stream) menyambung saat
-// finish_reason=length. Naikkan lagi setelah kredit OpenRouter diisi.
-const OR_MAX_TOKENS = 2048;
 const oaiToolsOf = (gDecls) => (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
 
-// Pembatas waktu per-panggilan provider — fetch/binding AI TIDAK punya timeout
-// bawaan; kalau upstream hang (bukan error, cuma diam), seluruh chat ikut hang
-// selamanya ("Thinking..." tanpa akhir). withTimeout memastikan tiap provider
-// menyerah dalam batas waktu wajar dan jatuh ke fallback berikutnya seperti biasa.
 function withTimeout(promise, ms, label) {
   let t;
   const timeout = new Promise((_, reject) => { t = setTimeout(() => reject(new Error((label || 'provider') + ' timeout setelah ' + ms + 'ms')), ms); });
   return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
 }
 
-// Baca respons streaming SSE gaya OpenAI-compat (OpenRouter / Clouvia).
-// Mengembalikan { text, fin, tcs } — tcs = tool_calls yang sudah dirakit per-index.
-// Dipakai jalur streaming supaya teks jawaban mengalir potongan-demi-potongan ke
-// user SEKETIKA saat model menulis, bukan menunggu seluruh generasi selesai dulu.
 async function readOAICompatStream(res, onDelta) {
   const reader = res.body.getReader();
   const dec = new TextDecoder();
@@ -163,7 +112,7 @@ async function readOAICompatStream(res, onDelta) {
     while ((nl = buf.indexOf('\n')) !== -1) {
       const line = buf.slice(0, nl).trim();
       buf = buf.slice(nl + 1);
-      if (!line || line.charAt(0) === ':') continue; // komentar keep-alive SSE
+      if (!line || line.charAt(0) === ':') continue;
       if (line.indexOf('data:') !== 0) continue;
       const dbody = line.slice(5).trim();
       if (dbody === '[DONE]') { streamEnd = true; break; }
@@ -191,270 +140,16 @@ async function readOAICompatStream(res, onDelta) {
   return { text, fin, tcs };
 }
 
-// [7 Okt 2026, laporan owner: narasi dobel "responsif.Baik, saya akan..." + builder
-// tidak pernah menulis file] Sambungan segmen auto-continue DULU ditempel langsung
-// (full += seg) tanpa pemisah: kalau model melanjutkan dengan NARASI BARU (bukan
-// sambungan kalimat), dua jawaban menempel tanpa spasi. joinSeg: sambungan
-// antar-kalimat diberi baris kosong; sambungan di tengah kata tetap ditempel rapat.
-function joinSeg(a, b) {
-  if (!a) return b;
-  if (!b) return a;
-  if (/[.!?"']$/.test(a) && /^[A-Z\"'\u201c]/.test(b)) return a + '\n\n' + b;
-  if (/\s$/.test(a) || /^\s/.test(b)) return a + b;
-  return a + b;
-}
-
-// [7 Okt 2026] PENYAMBUNG TOOL CALL TERPOTONG: OR_MAX_TOKENS kecil (hemat kredit,
-// 402 bila besar) membuat argumen write_file (isi file utuh HTML/CSS/JS) sering
-// TERPOTONG di batas token -> dulu tool call rusak diterima apa adanya (args {}
-// kosong -> "write file" gagal -> model mengulang narasi rencana dari awal -> loop
-// tanpa ujung, persis 3 screenshot). Sekarang: minta model MENYAMBUNG argumen JSON
-// dari titik terpotong, lalu parse. Gagal total -> tool call dibuang (jangan
-// dieksekusi setengah rusak), jatuh ke jalur teks/cascade biasa.
-async function completeTruncatedToolArgs(keys, models, baseMsgs, oaiTools, tc) {
-  const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
-  // [7 Okt] MAKS 2 PERCOBAAN TOTAL (1 kunci x 2 model) — 4 subrequest tambahan di
-  // dalam race 6 kandidat memicu "Too many subrequests" (limit 50/invocation Worker).
-  let triesLeft = 2;
-  for (const key of keyList.slice(0, 1)) {
-    for (const model of models.slice(0, 2)) {
-      if (triesLeft-- <= 0) return null;
-      const partial = tc.args || '';
-      const contMsgs = baseMsgs.slice();
-      contMsgs.push({ role: 'assistant', content: null, tool_calls: [{ id: 'cut', type: 'function', function: { name: tc.name, arguments: partial } }] });
-      contMsgs.push({ role: 'user', content: 'Tool call terakhirmu TERPOTONG karena batas token. Lanjutkan PERSIS dari karakter terakhir argumen JSON itu — keluarkan HANYA sambungan string argumennya, TANPA mengulang dari awal, TANPA penjelasan, TANPA blok kode markdown.' });
-      try {
-        const cp = { model, messages: contMsgs, max_tokens: OR_MAX_TOKENS, stream: true };
-        const cr = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.pages.dev', 'X-Title': 'Clincoo' },
-          body: JSON.stringify(cp)
-        });
-        if (!cr.ok || !cr.body) continue;
-        const st = await readOAICompatStream(cr, null);
-        let cont = (st && st.text ? st.text : '').trim();
-        if (!cont) continue;
-        // bersihkan pagar kode bila model membungkusnya
-        cont = cont.replace(/^```[a-z]*\s*/i, '').replace(/```$/, '').trim();
-        // percobaan 1: sambungan asli (parsial + lanjutan)
-        try { const j = JSON.parse(partial + cont); return j; } catch (e) {}
-        // percokaan 2: model mengulang dari awal -> coba lanjutan berdiri sendiri
-        try { const j = JSON.parse(cont); return j; } catch (e) {}
-      } catch (e) { /* kunci/model berikutnya */ }
-    }
-  }
-  return null;
-}
-
 function normStreamToolCalls(tcs) {
   const norm = [];
   for (const c of tcs) {
-    // [7 Okt] args yang gagal di-parse = tool call RUSAK — dulu dipalsukan jadi {}
-    // kosong lalu dieksekusi (write_file tanpa path/isi -> gagal -> model pusing
-    // -> loop narasi). Sekarang: buang; jika semua rusak, kandidat dinyatakan gagal.
+
     let a = null; try { a = c.args ? JSON.parse(c.args) : null; } catch (e) { a = null; }
     if (a) norm.push({ name: c.name, args: a });
   }
   return norm;
 }
 
-async function tryOpenRouterText(keys, messages, gDecls, models, onDelta) {
-  const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
-  if (!keyList.length) return null;
-  const modelList = (Array.isArray(models) && models.length) ? models : OPENROUTER_MODELS;
-  const { system, chatMsgs } = toOAIChat(messages);
-  const oaiTools = oaiToolsOf(gDecls);
-  let lastErr = null;
-  // [7 Okt] PRUNING KUNCI 402: kunci OpenRouter yang kreditnya habis (402) langsung
-  // di-skip utk model berikutnya — dulu 1 kunci mati membakar 2 subrequest x semua
-  // model, race 6 kandidat lalu menabrak limit 50 subrequest Worker.
-  const deadKeys = new Set();
-  for (const key of keyList) {
-    if (deadKeys.has(key)) continue;
-  for (const model of modelList) {
-    const baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
-    let data = null;
-    // JALUR STREAMING (percepat output): kirim potongan teks ke user seketika.
-    // Gagal/tdk didukung -> otomatis jatuh ke panggilan non-stream di bawah.
-    if (onDelta) {
-      try {
-        const sp = { model, messages: baseMsgs, max_tokens: OR_MAX_TOKENS, stream: true };
-        if (oaiTools) sp.tools = oaiTools;
-        const sr = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.pages.dev', 'X-Title': 'Clincoo' },
-          body: JSON.stringify(sp)
-        });
-        if (sr.ok && sr.body) {
-          const st = await readOAICompatStream(sr, onDelta);
-          if (st.text || st.tcs.length) {
-            if (st.tcs.length && st.fin !== 'length') {
-              const nt = normStreamToolCalls(st.tcs);
-              if (nt.length) return { tool_calls: nt, text: st.text, model: model.split('/').pop() + ' (OpenRouter)' };
-              // semua args rusak -> jatuh ke jalur teks/model berikutnya, JANGAN
-              // kembalikan write_file dengan args kosong.
-            }
-            // [7 Okt] tool call TERPOTONG (fin==='length'): sambung argumennya dulu.
-            if (st.tcs.length && st.fin === 'length') {
-              const fixed = [];
-              let allOk = true;
-              for (const c of st.tcs) {
-                let a = null; try { a = c.args ? JSON.parse(c.args) : null; } catch (e) { a = null; }
-                if (!a) a = await completeTruncatedToolArgs(keyList, modelList, baseMsgs, oaiTools, c);
-                if (!a) { allOk = false; break; }
-                fixed.push({ name: c.name, args: a });
-              }
-              if (allOk && fixed.length) return { tool_calls: fixed, text: st.text, model: model.split('/').pop() + ' (OpenRouter)' };
-              // penyambungan gagal -> JANGAN eksekusi tool setengah rusak; jatuh
-              // ke jalur teks auto-continue (dulu: args kosong dieksekusi -> loop).
-            }
-            // AUTO-CONTINUE STREAM: max_tokens kecil (hemat kredit) berpotensi memotong
-            // jawaban; sambung otomatis per segmen sambil tetap streaming ke user.
-            let full = st.text, seg = st.text, fin2 = st.fin;
-            const contMsgs = baseMsgs.slice();
-            for (let sc = 0; sc < 3 && fin2 === 'length'; sc++) {
-              contMsgs.push({ role: 'assistant', content: seg });
-              contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
-              // LANJUTAN ANTI-KEPOTONG: segmen lanjutan pernah gagal sekali (429/timeout
-              // provider) -> dulu langsung break, jawaban terpotong di tengah kalimat.
-              // Sekarang coba ulang dengan model berikutnya di rantai sebelum menyerah.
-              const cModels = [model]; // [7 Okt] 1 model per segmen — jangan gandakan subrequest (limit 50/invocation Worker)
-              let st2 = null;
-              for (const cm of cModels) {
-                try {
-                  const cp = { model: cm, messages: contMsgs, max_tokens: OR_MAX_TOKENS, stream: true };
-                  if (oaiTools) cp.tools = oaiTools;
-                  const cr = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.pages.dev', 'X-Title': 'Clincoo' },
-                    body: JSON.stringify(cp)
-                  });
-                  if (!cr.ok || !cr.body) continue; // gagal di model ini -> coba model lanjutan berikutnya
-                  st2 = await readOAICompatStream(cr, onDelta);
-                  if (st2 && st2.text) break;
-                  st2 = null;
-                } catch (e2) { st2 = null; }
-              }
-              if (!st2 || !st2.text) break;
-              full = joinSeg(full, st2.text); seg = st2.text; fin2 = st2.fin;
-            }
-            // [9 Okt] NARASI TOOL PALSU (laporan owner: proyek Bara Burger Kedai):
-            // model menulis "Menulis file index.html", "Menjalankan tools generate_image"
-            // sebagai TEKS tanpa satu pun tool_call nyata -> dulu diterima sebagai jawaban
-            // final -> user lihat "proses" panjang berulang padahal workspace tetap kosong,
-            // kredit kebakar. Kalau tools tersedia tapi jawabannya dominan narasi-aksi
-            // (>=3 frasa) dan 0 tool_call, kandidat GAGAL -> model berikutnya.
-            if (oaiTools && !st.tcs.length) {
-              // [9 Okt fix regression] HANYA ronde PERTAMA (belum ada hasil tool di
-              // riwayat) yang boleh ditolak sebagai narasi palsu. Ronde LANJUTAN setelah
-              // tool call sukses wajar berisi ringkasan "saya telah menulis file..." —
-              // menolaknya bikin kandidat bagus dibuang, race jalan ke model lain, jawaban
-              // jadi lama + "mengetik tanpa alasan" (laporan owner 9 Okt).
-              const hasToolHist = baseMsgs.some(m => m && m.role === 'tool');
-              if (!hasToolHist) {
-                const narr = (full.match(/(menulis|menjalankan|memulai|menyelesaikan)\s+(file|tools?|generate_image|set_project_info|write_file|deploy)/gi) || []).length;
-                if (narr >= 3) { lastErr = 'OpenRouter ' + model + ': narasi tool tanpa tool_call nyata (fake progress)'; continue; }
-              }
-            }
-            return { text: full, model: model.split('/').pop() + ' (OpenRouter)' };
-          }
-          lastErr = `OpenRouter ${model}: stream kosong`;
-          continue; // stream bener-bener kosong -> model berikutnya
-        }
-        if (!sr.ok) {
-          lastErr = `OpenRouter ${model}: HTTP ${sr.status}`;
-          if (sr.status === 402) { deadKeys.add(key); break; } // kredit kunci habis -> jangan coba model lain dgn kunci ini
-          // MINIMALKAN ERROR: status transient (rate-limit/limbur server) kasih jeda
-          // singkat lalu non-stream di bawah otomatis mencoba ulang model yang sama.
-          if (sr.status === 429 || sr.status === 502 || sr.status === 503 || sr.status === 529) await new Promise(r2 => setTimeout(r2, 900));
-        }
-      } catch (e) { lastErr = `OpenRouter ${model}: ${e && e.message}`; }
-    }
-    try {
-      const payload = { model, messages: baseMsgs, max_tokens: OR_MAX_TOKENS };
-      if (oaiTools) payload.tools = oaiTools;
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.pages.dev', 'X-Title': 'Clincoo' },
-        body: JSON.stringify(payload)
-      });
-      data = await res.json().catch(() => ({}));
-      if (!res.ok) { lastErr = `OpenRouter ${model}: HTTP ${res.status}`; if (res.status === 402) { deadKeys.add(key); break; } continue; }
-    } catch (e) { lastErr = `OpenRouter ${model}: ${e && e.message}`; continue; }
-    const msg = data && data.choices && data.choices[0] && data.choices[0].message;
-    const text = (msg && msg.content) || '';
-    const finish = data && data.choices && data.choices[0] && data.choices[0].finish_reason;
-    // tool_calls gaya OpenAI
-    const tcs = msg && Array.isArray(msg.tool_calls) ? msg.tool_calls : null;
-    if (tcs && tcs.length) {
-      const norm = [];
-      let cutMid = false;
-      for (const c of tcs) {
-        let a = null;
-        if (c && c.function && typeof c.function.arguments === 'string') { try { a = JSON.parse(c.function.arguments); } catch (e) { a = null; } }
-        else a = (c && c.function && c.function.arguments) || {};
-        if (!a) { // [7 Okt] args terpotong (parse gagal) -> coba sambung dulu
-          cutMid = true;
-          a = await completeTruncatedToolArgs(keyList, modelList, baseMsgs, oaiTools, { name: c.function.name, args: c.function.arguments || '' });
-        }
-        if (!a) { cutMid = true; break; }
-        if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
-      }
-      if (norm.length && !cutMid) return { tool_calls: norm, text, model: model.split('/').pop() + ' (OpenRouter)' };
-      // masih rusak -> JANGAN kembalikan tool call setengah hidup; lanjut auto-continue teks / model berikutnya
-    }
-    if (text) {
-      // AUTO-CONTINUE: sambung jawaban terpotong (finish_reason "length")
-      let full = text, seg = text, fin = finish;
-      const contMsgs = baseMsgs.slice();
-      for (let ac = 0; ac < 2 && fin === 'length'; ac++) {
-        contMsgs.push({ role: 'assistant', content: seg });
-        contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
-        let dc = null;
-        try {
-          const p3 = { model, messages: contMsgs, max_tokens: OR_MAX_TOKENS };
-          if (oaiTools) p3.tools = oaiTools;
-          const rc = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.pages.dev', 'X-Title': 'Clincoo' },
-            body: JSON.stringify(p3)
-          });
-          dc = await rc.json().catch(() => ({}));
-        } catch (e2) { dc = null; }
-        const dm = dc && dc.choices && dc.choices[0] && dc.choices[0].message;
-        const dseg = (dm && dm.content) || '';
-        fin = dc && dc.choices && dc.choices[0] && dc.choices[0].finish_reason;
-        if (!dseg) break;
-        full = joinSeg(full, dseg); seg = dseg;
-      }
-      return { text: full, model: model.split('/').pop() + ' (OpenRouter)' };
-    }
-    lastErr = `OpenRouter ${model}: respons kosong`;
-  }
-  }
-  return lastErr ? { error: lastErr } : null;
-}
-
-// ===== Kunci Clouvia (router.clouvia.id — gateway AI lokal, kompatibel OpenAI) =====
-async function getClouviaKeys(env) {
-  const keys = [];
-  const seen = new Set();
-  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
-  add(env.CLOUVIA_API_KEY);
-  if (!env.DB) return keys;
-  try {
-    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('CLOUVIA_API_KEY','CLOUVIA_API_KEY_2')").all();
-    for (const r of rows.results || []) add(r.value);
-  } catch {}
-  return keys;
-}
-
-// ===== ModelRouter (modelrouter.id — gateway AI lokal IDR, bayar QRIS; kompatibel OpenAI) =====
-// [7 Okt 2026, arahan pemilik: pisahkan model CHAT (gratis) vs BUILD (berbayar)]
-// Provider BERBAYAR khusus mode Build: GLM 5.3 Flash via ModelRouter — disiplin
-// biaya Rupiah (passthrough, cache otomatis), tanpa kartu kredit. Kunci di
-// D1 env_vars (MODELROUTER_API_KEY) atau Pages env. Gagal (saldo habis/down)
-// -> cascade gratis berjalan seperti biasa, user tetap dilayani.
 async function getModelRouterKeys(env) {
   const keys = [];
   const seen = new Set();
@@ -467,106 +162,18 @@ async function getModelRouterKeys(env) {
   } catch {}
   return keys;
 }
-// ===== [8 Okt 2026, arahan pemilik: "tambah secret ini sebagai utama"] =====
-// EMERGENT (ai-credit-monitor.preview.emergentagent.com) — gateway OpenAI-compat,
-// model 'auto' (routing otomatis). Terverifikasi 8 Okt: non-stream (stream:true
-// diabaikan), respons 0.4-1.2s, TANPA dukungan tool_calls asli (gateway menulis
-// XML <function_calls> palsu di content) -> kandidat UTAMA untuk hop TEKS MURNI
-// (tanpa tools & tanpa gambar); saat hop berk-tools hanya fallback lemah 8s
-// supaya jalur tool-capable (Gemini/OpenRouter) tetap diprioritaskan.
-const EMERGENT_ENDPOINT = 'https://ai-credit-monitor.preview.emergentagent.com/api/v1/chat/completions';
-async function getEmergentKeys(env) {
-  const keys = [];
-  const seen = new Set();
-  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
-  add(env.EMERGENT_API_KEY);
-  if (!env.DB) return keys;
-  try {
-    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key = 'EMERGENT_API_KEY'").all();
-    for (const r of rows.results || []) add(r.value);
-  } catch {}
-  return keys;
-}
-async function tryEmergentText(keys, messages, onDelta) {
-  for (const k of keys) {
-    try {
-      const res = await fetch(EMERGENT_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + k, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'auto', messages })
-      });
-      if (res.status === 401 || res.status === 403) continue; // kunci mati -> coba kunci berikutnya
-      if (!res.ok) continue;
-      const d = await res.json();
-      const m = (d.choices && d.choices[0] && d.choices[0].message) || {};
-      const raw = typeof m.content === 'string' ? m.content : '';
-      // Buang XML function_calls palsu (gateway tidak mendukung tool asli)
-      const text = raw.replace(/<function_calls>[\s\S]*?<\/function_calls>/g, '').trim();
-      if (text) {
-        if (onDelta) onDelta(text);
-        return { text, model: 'orkestra-1-flash' };
-      }
-    } catch (e) {}
-  }
-  return { error: 'emergent gagal' };
-}
-// [7 Okt] Rantai model berbayar utk task Build (dicoba berurutan oleh
-// tryModelRouterText; model berikutnya dipakai jika sebelumnya gagal).
-// [9 Okt 2026, arahan pemilik: "pasang ai lagi, model glm 5.3 flash atau
-// haiku 5.5 — sesuai kebutuhan aja, kaya ngoding buat app dan outputnya"]
-// claude-haiku-5.5 UTAMA utk task build/ngoding: terverifikasi 9 Okt —
-// non-reasoning, ~99 tok/s (256 tok = 2.6s), tool_calls NATIVE jalan,
-// jauh di bawah potongan gateway MR ~10s. glm-5.3-flash cadangan
-// (reasoning ikut dihitung: 384 tok = 8.0s, mepet jendela), lightning terakhir.
-const MODELROUTER_MODELS = ['claude-haiku-5.5']; // [9 Okt] fokus HANYA haiku 5.5 (arahan pemilik)
-// [7 Okt] Gateway ModelRouter memotong koneksi pada ~10 detik wall-time per
-// request (diverifikasi: 384 tok = 9.4s OK, 512+ tok / non-stream generasi
-// panjang = HTTP 000). Solusi: potong generasi jadi chunk kecil (256 tok,
-// ~8s) lalu sambung otomatis via AUTO-CONTINUE (finish_reason=length,
-// stream: maks 5 sambungan, non-stream: maks 3) sehingga jawaban tetap utuh.
-// Budget token per model (chunk kecil, disambung AUTO-CONTINUE):
-// verifikasi 7 Okt: lightning 96 tok = 5.2s dgn konten langsung (aman); 128 tok
-// sempat 10.2s di node lambat = kepotong. glm ~48 tok/s tapi reasoning ikut
-// dihitung -> 384 tok; ultra ~21 tok/s -> 96 tok. Semua di bawah potongan
-// gateway MR ~10s wall-time.
-// [9 Okt] haiku-5.5: 512 tok = ~5.2s pada ~99 tok/s (aman di bawah potongan ~10s).
-const MR_MAX_TOKENS = { 'claude-haiku-5.5': 1024 /* CHAT_BUILD_MODE_FIX */, 'nemotron-3.5-lightning': 96, 'glm-5.3-flash': 384, 'nemotron-3-ultra': 96 };
+
+const MR_MODEL = 'glm-5.3-flash:mr';
+const MR_OUT_TOKENS = 8192;
+const MR_TIMEOUT_MS = 170000;
+
+const MODELROUTER_MODELS = [MR_MODEL];
+
+const MR_MAX_TOKENS = { [MR_MODEL]: MR_OUT_TOKENS };
 const MR_ENDPOINT = 'https://modelrouter.id/v1/chat/completions';
-// [7 Okt, arahan pemilik: "jadikan model Orkestra di mode build"] Semua respons
-// ModelRouter (haiku-5.5 -> glm-5.3-flash; nemotron dihapus 9 Okt, arahan pemilik)
-// tampil dengan SATU brand: 'orkestra-1-pro'. Backend tidak diungkap ke user
-// (konsisten aturan CLINCOO_SOUL). Kunci harga: 'orkestra-1-pro' di MODEL_PRICES.
+
 const mrLabel = () => 'orkestra-1-pro';
-// [7 Okt 2026, arahan pemilik: "AI build bantu di mode chat, di belakang layar"]
-// Deteksi niat BUILD dari isi pesan user terakhir (mode Chat): kalau minta
-// bikin/ubah situs/kode atau deploy, hop ini otomatis naik ke ModelRouter
-// tanpa user pindah mode — jawaban jadi cepat & presisi di belakang layar.
-// Pertanyaan biasa TIDAK kena (tetap jalur gratis).
-const BUILD_INTENT_VERBS = /\b(?:buat(?:kan)?|bikin(?:kan)?|bangun(?:kan)?|edit|ubah|tambah(?:kan)?|perbaiki|benarkan|benerin|fix|hapus|deploy|publish|publikasikan|terbitkan|remake|redesign|desain\ ulang|custom)\b/i;
-const BUILD_INTENT_OBJECTS = /\b(?:situs|site|website|web|halaman|page|landing|homepage|kode|code|html|css|javascript|komponen|navbar|footer|form|formulir|tabel|blog|toko|profil|portofolio|proyek|project|fitur|banner|hero|section|web\ app)\b/i;
-function detectBuildIntent(messages) {
-  try {
-    if (!Array.isArray(messages) || !messages.length) return false;
-    let lastUser = null;
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i] && messages[i].role === 'user') { lastUser = messages[i]; break; }
-    }
-    if (!lastUser) return false;
-    const c = lastUser.content;
-    let txt = typeof c === 'string' ? c : (Array.isArray(c) ? c.map(p => (p && typeof p === 'object') ? (p.text || '') : String(p || '')).join(' ') : '');
-    txt = String(txt || '').toLowerCase();
-    if (!txt) return false;
-    // Perintah eksplisit ala builder
-    if (/\b(?:build|deploy|publish)\b/.test(txt)) return true;
-    // Pasangan kata kerja aksi + objek situs/kode
-    return BUILD_INTENT_VERBS.test(txt) && BUILD_INTENT_OBJECTS.test(txt);
-  } catch (e) { return false; }
-}
-// [9 Okt, laporan owner screenshot: "mulai dari halaman utama dulLanjut dari halaman utama"]
-// Teks terpotong batas token MR bisa putus DI TENGAH KATA ("dul"); sambungan lama cuma
-// bilang "lanjutkan persis" sehingga model mulai kalimat baru. Sekarang: tunjukkan
-// ekor teks sebagai jangkar + larang kalimat baru/ulang; hasil sambungan dirapikan
-// (potong overlap duplikat) lewat mrJoinContinuation.
+
 function mrContinueMsg(seg) {
   const tailTxt = String(seg || '').slice(-80).replace(/\s+/g, ' ');
   return 'Jawabanmu terpotong batas panjang. Ekor teks terakhirmu: "' + tailTxt + '". Sambung LANGSUNG dari karakter berikutnya setelah ekor itu (kalau terpotong di tengah kata, lengkapi kata itu dulu). DILARANG mengulang kalimat/kata yang sudah tertulis, DILARANG membuka kalimat baru seperti "Lanjut..." atau minta maaf, DILARANG bertanya. Keluarkan HANYA sambungannya.';
@@ -580,20 +187,18 @@ function mrJoinContinuation(prev, cont) {
   for (let n = maxOv; n >= 6; n--) {
     if (p.slice(-n) === c.slice(0, n)) { c = c.slice(n); break; }
   }
-  // Cadangan: teks lama putus di tengah kata (huruf/angka di ekor) tapi sambungan malah
-  // mulai kalimat baru berhuruf kapital -> buang kata menggantung ("dul") lalu pisah
-  // dengan spasi, supaya tidak jadi "dulSaya tulis...".
-  // HANYA bila kata terakhir <=3 huruf DAN bukan kata utuh umum (mis. "dul", "per", "ter").
+
   const lastWord = (p.match(/([A-Za-zÀ-ÿ]+)$/) || [])[1] || '';
   const WHOLE = /^(dan|yang|di|ke|dari|untuk|ini|itu|ada|atau|juga|saya|aku|kamu|kita|anda|akan|bisa|mau|oke|ok|ya|tidak|bukan|the|and|for|with|web|app|css|js|api|seo)$/i;
   if (lastWord && lastWord.length <= 3 && !WHOLE.test(lastWord) && /^[A-Z][a-z]/.test(c)) {
     const cut = p.slice(0, p.length - lastWord.length).replace(/\s+$/, '');
     return cut + (cut && !/[.!?:\n]$/.test(cut) ? '. ' : ' ') + c;
   }
-  // Kata utuh + kalimat baru berhuruf kapital -> beri jarak, jangan menempel.
+
   if (/[A-Za-zÀ-ÿ0-9]$/.test(p) && /^[A-Z][a-z]/.test(c)) return p + ' ' + c;
   return p + c;
 }
+
 async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usageAcc) {
   const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
   if (!keyList.length) return null;
@@ -601,9 +206,7 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usage
   const { system, chatMsgs } = toOAIChat(messages);
   const oaiTools = oaiToolsOf(gDecls);
   const callMr = (key, model, msgs, stream) => {
-    // [9 Okt, arahan pemilik] KREDIT SESUAI DASHBOARD PROVIDER: catat SEMUA token
-    // input yang terkirim per model (hop & penyambung mengirim ulang seluruh
-    // konteks; cascade bisa memakai >1 model per permintaan).
+
     if (usageAcc) usageAcc[model] = (usageAcc[model] || 0) + tokensOfChars(JSON.stringify(msgs));
     const p = { model, messages: msgs, max_tokens: (MR_MAX_TOKENS && MR_MAX_TOKENS[model]) || 128 };
     if (stream) p.stream = true;
@@ -615,17 +218,11 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usage
     });
   };
   let lastErr = null;
-  // [9 Okt 2026] PENYAMBUNG TOOL CALL TERPOTONG khusus gateway MR. Budget token per
-  // model kecil (haiku-5.5: 512 tok, gateway motong di ~10s wall-time) sedangkan isi
-  // file write_file yang utuh butuh 1000-3000+ token -> args JSON SELALU terpotong di
-  // tengah. Dulu: pecahan args gagal JSON.parse -> normStreamToolCalls membuangnya ->
-  // respons {tool_calls: []} atau write_file args kosong -> file TIDAK PERNAH tersimpan
-  // walau model bagus (laporan owner 9 Okt: "model udah bagus haiku 5.5, system salah").
-  // Sekarang: sambung args chunk demi chunk dari titik terpotong sampai JSON valid.
+  let sawRateLimit = false;
+
   const mrContinueToolArgs = async (key, model, baseMsgs, tc) => {
     let acc = tc.args || '';
-    // FILE_200KB_PLUS: sambungan args tool naik 14 -> 48 hop
-    // (~25 ribu token, file puluhan–100KB+ bisa utuh / potongan besar per write_file).
+
     for (let hop = 0; hop < 48; hop++) {
       const tryMsgs = baseMsgs.slice();
       tryMsgs.push({ role: 'assistant', content: null, tool_calls: [{ id: 'cut' + hop, type: 'function', function: { name: tc.name, arguments: acc } }] });
@@ -639,7 +236,7 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usage
         cont = cont.replace(/^```[a-z]*\s*/i, '').replace(/```\s*$/, '').trim();
         acc += cont;
         try { return JSON.parse(acc); } catch (e) {}
-        if (st2.fin !== 'length') return null; // generasi selesai tapi JSON tetap rusak -> nyerah
+        if (st2.fin !== 'length') return null;
       } catch (e) { return null; }
     }
     return null;
@@ -648,10 +245,7 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usage
   for (const model of modelList) {
     const baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
     let data = null;
-    // [7 Okt] Streaming hanya jika klien minta stream (onDelta ada). Jika stream
-    // MR bermasalah (kadang balik 0 byte / kepotong gateway ~10 detik), JATUH ke
-    // percobaan non-stream model yang sama di bawah — non-stream dengan chunk
-    // 96-384 tok selesai ~5-8s, di bawah potongan gateway.
+
     if (onDelta) {
       try {
         const sr = await callMr(key, model, baseMsgs, true);
@@ -659,8 +253,7 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usage
           const st = await readOAICompatStream(sr, onDelta);
           if (st.text || st.tcs.length) {
             if (st.tcs.length) {
-              // [9 Okt] args utuh -> langsung; TERPOTONG (fin=length) -> sambung;
-              // rusak total tanpa tanda terpotong -> tolak kandidat ini.
+
               const nt = normStreamToolCalls(st.tcs);
               if (nt.length && st.fin !== 'length') return { tool_calls: nt, text: st.text, model: mrLabel(model) };
               if (st.fin === 'length') {
@@ -677,7 +270,7 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usage
               lastErr = 'ModelRouter ' + model + ': tool call rusak (args gak valid)';
               continue;
             }
-            // AUTO-CONTINUE STREAM: sambung jawaban terpotong (finish_reason=length).
+
             let full = st.text, seg = st.text, fin2 = st.fin;
             const contMsgs = baseMsgs.slice();
             for (let sc = 0; sc < 5 && fin2 === 'length'; sc++) {
@@ -695,13 +288,13 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usage
           }
           lastErr = 'ModelRouter ' + model + ': stream kosong';
         }
-        if (!sr.ok) lastErr = 'ModelRouter ' + model + ': HTTP ' + sr.status;
+        if (!sr.ok) { lastErr = 'ModelRouter ' + model + ': HTTP ' + sr.status; if (sr.status === 429) sawRateLimit = true; }
       } catch (e) { lastErr = 'ModelRouter ' + model + ': ' + (e && e.message); }
     }
     try {
       const res = await callMr(key, model, baseMsgs, false);
       data = await res.json().catch(() => ({}));
-      if (!res.ok) { lastErr = 'ModelRouter ' + model + ': HTTP ' + res.status; continue; }
+      if (!res.ok) { lastErr = 'ModelRouter ' + model + ': HTTP ' + res.status; if (res.status === 429) sawRateLimit = true; continue; }
     } catch (e) { lastErr = 'ModelRouter ' + model + ': ' + (e && e.message); continue; }
     const msg = data && data.choices && data.choices[0] && data.choices[0].message;
     const text = (msg && msg.content) || '';
@@ -713,19 +306,19 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usage
         let a = null;
         const rawArgs = (c && c.function && typeof c.function.arguments === 'string') ? c.function.arguments : null;
         if (rawArgs) { try { a = JSON.parse(rawArgs); } catch (e) { a = null; } }
-        // [9 Okt] args terpotong/pecahan -> sambung dulu; JANGAN eksekusi args kosong
+
         if (!a && c && c.function && c.function.name) {
           a = await mrContinueToolArgs(key, model, baseMsgs, { name: c.function.name, args: rawArgs || '' });
         }
         if (c && c.function && c.function.name && a) norm.push({ name: c.function.name, args: a });
       }
       if (norm.length) { if (usageAcc) usageAcc[model] = (usageAcc[model] || 0) + tokensOfChars(text + JSON.stringify(norm)); return { tool_calls: norm, text, model: mrLabel(model) }; }
-      // semua tool call pecahan dan penyambungan gagal -> jangan kirim jawaban kosong
+
       lastErr = 'ModelRouter ' + model + ': tool call terpotong, penyambungan gagal';
       continue;
     }
     if (text) {
-      // AUTO-CONTINUE non-stream: sambung jawaban terpotong.
+
       let full = text, seg = text, fin = finish;
       const contMsgs = baseMsgs.slice();
       for (let ac = 0; ac < 3 && fin === 'length'; ac++) {
@@ -744,329 +337,321 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usage
     lastErr = 'ModelRouter ' + model + ': respons kosong';
   }
   }
+  return lastErr ? (sawRateLimit ? { error: lastErr, quotaExhausted: true } : { error: lastErr }) : null;
+}
+
+// ===== Fallback Provider 1: Gemini (Google AI Studio) =====
+const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-3.6-flash"];
+
+async function getGeminiKeys(env) {
+  const keys = [];
+  const seen = new Set();
+  const add = v => { v = String(v || "").trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
+  add(env.GEMINI_API_KEY);
+  add(env.GEMINI_API_KEY_4); add(env.GEMINI_API_KEY_5); add(env.GEMINI_API_KEY_6);
+  if (!env.DB) return keys;
+  try {
+    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('GEMINI_API_KEY','GEMINI_API_KEY_2','GEMINI_API_KEY_3','GEMINI_API_KEY_4','GEMINI_API_KEY_5','GEMINI_API_KEY_6')").all();
+    for (const r of rows.results || []) add(r.value);
+  } catch {}
+  return keys;
+}
+
+function partsFromContent(content) {
+  if (typeof content === "string") return [{ text: content }];
+  if (Array.isArray(content)) {
+    const parts = [];
+    for (const block of content) {
+      if (!block) continue;
+      if (block.type === "text" && block.text) parts.push({ text: block.text });
+      else if (block.type === "image_url" && block.image_url?.url) {
+        const m = /^data:(.+?);base64,(.+)$/.exec(block.image_url.url || "");
+        if (m) parts.push({ inlineData: { mimeType: m[1], data: m[2] } });
+      } else if (block.type === "function_call" && block.name) {
+        const fcPart = { functionCall: { name: block.name, args: block.args || {} } };
+        if (block.thought_signature) fcPart.thoughtSignature = block.thought_signature;
+        parts.push(fcPart);
+      } else if (block.type === "function_response" && block.name) {
+        parts.push({ functionResponse: { name: block.name, response: { result: block.result } } });
+      }
+    }
+    return parts.length ? parts : [{ text: "." }];
+  }
+  return [{ text: "." }];
+}
+
+function toGeminiPayload(messages) {
+  let systemInstruction = null;
+  const contents = [];
+  for (const m of messages) {
+    if (!m) continue;
+    if (m.role === "system") {
+      const text = typeof m.content === "string" ? m.content : partsFromContent(m.content).map(p => p.text || "").join("\n");
+      systemInstruction = systemInstruction ? systemInstruction + "\n" + text : text;
+      continue;
+    }
+    contents.push({ role: m.role === "assistant" ? "model" : "user", parts: partsFromContent(m.content) });
+  }
+  if (contents.length > 30) contents.splice(0, contents.length - 30);
+  return { systemInstruction, contents };
+}
+
+async function fetchGeminiStream(apiKey, model, systemInstruction, contents, tools, onDelta) {
+  const payload = { contents };
+  if (tools) payload.tools = tools;
+  if (systemInstruction) payload.systemInstruction = { parts: [{ text: systemInstruction }] };
+  const res = await withTimeout(fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+    body: JSON.stringify(payload)
+  }), 35000, "GeminiStream");
+  if (!res.ok) {
+    await res.text().catch(() => {});
+    return { error: `Gemini ${model}: HTTP ${res.status}`, status: res.status };
+  }
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = "";
+  const parts = [];
+  let finishReason = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let nl;
+    while ((nl = buf.indexOf("\n")) !== -1) {
+      const line = buf.slice(0, nl).trim();
+      buf = buf.slice(nl + 1);
+      if (!line.startsWith("data:")) continue;
+      let j; try { j = JSON.parse(line.slice(5).trim()); } catch (e) { continue; }
+      if (j.candidates && j.candidates[0] && j.candidates[0].finishReason) finishReason = j.candidates[0].finishReason;
+      const cps = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
+      for (const pt of cps) {
+        parts.push(pt);
+        if (pt.text && onDelta) { try { onDelta(pt.text); } catch (eD) {} }
+      }
+    }
+  }
+  return { data: { candidates: [{ content: { parts }, finishReason }] } };
+}
+
+async function fetchGemini(apiKey, model, systemInstruction, contents, tools) {
+  const payload = { contents };
+  if (tools) payload.tools = tools;
+  if (systemInstruction) payload.systemInstruction = { parts: [{ text: systemInstruction }] };
+  const res = await withTimeout(fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+    body: JSON.stringify(payload)
+  }), 35000, "Gemini");
+  if (!res.ok) {
+    await res.text().catch(() => {});
+    return { error: `Gemini ${model}: HTTP ${res.status}`, status: res.status };
+  }
+  return { data: await res.json() };
+}
+
+async function tryGeminiText(apiKeys, messages, gDecls, onDelta) {
+  const keys = Array.isArray(apiKeys) ? apiKeys.filter(Boolean) : [apiKeys].filter(Boolean);
+  if (!keys.length) return null;
+  const { systemInstruction, contents } = toGeminiPayload(messages);
+  const tools = (gDecls && gDecls.length) ? [{ functionDeclarations: gDecls }] : null;
+  let lastErr = null;
+  for (const apiKey of keys) {
+    for (const model of GEMINI_MODELS) {
+      try {
+        const r = onDelta
+          ? await fetchGeminiStream(apiKey, model, systemInstruction, contents, tools, onDelta)
+          : await fetchGemini(apiKey, model, systemInstruction, contents, tools);
+        if (r.error) { lastErr = r.error; continue; }
+        const parts = r.data?.candidates?.[0]?.content?.parts || [];
+        const text = parts.map(p => p.text || "").join("");
+        const toolCalls = parts
+          .filter(p => p.functionCall)
+          .map(p => ({ name: p.functionCall.name, args: p.functionCall.args || {}, thought_signature: p.thoughtSignature || undefined }));
+        if (toolCalls.length > 0 || text) {
+          return toolCalls.length > 0
+            ? { tool_calls: toolCalls, text, model: `Gemini (${model})` }
+            : { text, model: `Gemini (${model})` };
+        }
+      } catch (err) {
+        lastErr = `Gemini ${model}: ${err && err.message}`;
+      }
+    }
+  }
   return lastErr ? { error: lastErr } : null;
 }
 
-// ===== Workers AI via REST — akun C (token cfut_, kuota gratis 10k neuron/hari segar) =====
-// [6 Okt 2026, arahan owner: "manfaatin ai gratisnya"] Pool AI gratis KEDUA yang
-// terpisah dari kuota Workers AI akun utama. Respon format OpenAI penuh:
-// tool_calls + streaming SSE teruji valid (write_files 6 Okt 2026).
-async function getCfAiCreds(env) {
-  const token = String(env.CF_AI_TOKEN || '').trim();
-  const accountId = String(env.CF_AI_ACCOUNT_ID || '').trim();
-  if (!env.DB) return (token && accountId) ? { token, accountId } : null;
-  const t = { token, accountId };
+// ===== Fallback Provider 2: OpenRouter =====
+const OPENROUTER_MODELS = [
+  "google/gemma-4-26b-a4b-it:free",
+  "cohere/north-mini-code:free",
+  "anthropic/claude-haiku-5.5",
+  "z-ai/glm-5.3-flash"
+];
+
+async function getOpenRouterKeys(env) {
+  const keys = [];
+  const seen = new Set();
+  const add = v => { v = String(v || "").trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
+  add(env.OPENROUTER_API_KEY);
+  add(env.OPENROUTER_API_KEY_4); add(env.OPENROUTER_API_KEY_5); add(env.OPENROUTER_API_KEY_6);
+  if (!env.DB) return keys;
   try {
-    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('CF_AI_TOKEN','CF_AI_ACCOUNT_ID')").all();
-    for (const r of rows.results || []) {
-      const v = String(r.value || '').trim();
-      if (!v) continue;
-      if (r.key === 'CF_AI_TOKEN' && !t.token) t.token = v;
-      if (r.key === 'CF_AI_ACCOUNT_ID' && !t.accountId) t.accountId = v;
-    }
+    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('OPENROUTER_API_KEY','OPENROUTER_API_KEY_2','OPENROUTER_API_KEY_3','OPENROUTER_API_KEY_4','OPENROUTER_API_KEY_5','OPENROUTER_API_KEY_6')").all();
+    for (const r of rows.results || []) add(r.value);
   } catch {}
-  return (t.token && t.accountId) ? t : null;
+  return keys;
 }
 
-// [6 Okt 2026] llama-3.3-70b utama (TTFB ~1.1s, tools valid, teruji); glm-4.7-flash
-// di akun baru terbukti lambat (30s+) dan sering balas kosong -> hanya cadangan.
-const CF_AI_MODELS = ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/zai-org/glm-4.7-flash'];
-
-async function tryCfAiRest(creds, messages, gDecls, onDelta) {
-  if (!creds || !creds.token || !creds.accountId) return null;
-  const { system, chatMsgs } = toOAIChat(messages);
-  const oaiTools = (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
-  const sysMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
-  for (const model of CF_AI_MODELS) {
-    const modelLabel = model.split('/').pop() + ' (WorkersAI-REST)';
-    // AUTO-CONTINUE (finish_reason "length"): state parsial menempel sebagai pesan
-    // assistant, sistem kirim "lanjutkan" tanpa sesi baru — konsep yang sama dengan
-    // jalur lain; maks 2 sambungan per jawaban.
-    const contMsgs = sysMsgs.slice();
-    let full = '', seg = '', finish = '', tcsOut = null;
-    for (let ac = 0; ac < 3; ac++) {
-      let st = null;
-      try {
-        const body = { messages: contMsgs, max_tokens: 8192 };
-        if (oaiTools && ac === 0) body.tools = oaiTools; // tools hanya di segmen awal
-        if (onDelta && ac === 0) body.stream = true;
-        const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${creds.accountId}/ai/run/${model}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + creds.token },
-          body: JSON.stringify(body)
-        });
-        if (!res.ok) { seg = ''; break; }
-        if (onDelta && ac === 0 && res.body) {
-          st = await readOAICompatStream(res, onDelta); // SSE format OpenAI
-          seg = st.text || ''; finish = st.fin || '';
-          if (st.tcs && st.tcs.length) tcsOut = st.tcs;
-        } else {
-          const j = await res.json();
-          const rj = (j && j.result) || {};
-          const ch = (Array.isArray(rj.choices) && rj.choices[0]) || {};
-          const m = ch.message || {};
-          seg = m.content || rj.response || (typeof rj === 'string' ? rj : '') || '';
-          finish = ch.finish_reason || rj.finish_reason || '';
-          const rtcs = (Array.isArray(m.tool_calls) && m.tool_calls.length) ? m.tool_calls : (Array.isArray(rj.tool_calls) ? rj.tool_calls : null);
-          if (rtcs) { tcsOut = rtcs; finish = 'tool_calls'; }
-        }
-      } catch (e) { seg = ''; break; }
-      if (!seg && !tcsOut) break;
-      full = joinSeg(full, seg);
-      if (tcsOut && tcsOut.length) {
-        const norm = [];
-        for (const c of tcsOut) {
-          let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
-          if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
-        }
-        if (norm.length) return { tool_calls: norm, text: full, model: modelLabel };
-      }
-      if (finish !== 'length') break;
-      // terpotong batas token -> sambung otomatis dari titik terakhir
-      contMsgs.push({ role: 'assistant', content: seg });
-      contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
-    }
-    if (full) return { text: full, model: modelLabel };
-  }
-  return null;
-}
-
-// ===== Provider cadangan #1: Clouvia Router (setelah OpenRouter, sebelum Workers AI) =====
-// Router AI Indonesia (router.clouvia.id/v1) — API kompatibel penuh OpenAI.
-// Dipakai saat OpenRouter gagal (limit/kredit) supaya chat tidak langsung jatuh
-// ke GLM 4.7 Flash (Workers AI) yang kualitas formatnya jauh lebih rendah.
-const CLOUVIA_MODELS = ['glm5.3-flash', 'coding-high-flash', 'free-model'];
-// 'gpt-6.1-sol' via Clouvia (4 Okt 2026): jalur utama user login — gratis, tanpa
-// kartu. CATATAN JUJUR: backend model ini ternyata GLM (Z.ai) yang direlabel Clouvia,
-// BUKAN Sol Pro asli (yang hanya ada di OpenRouter). Tetap dipakai karena: (1) mematuhi
-// role system (glm5.3-flash tidak — gateway membuangnya) sehingga system prompt utuh
-// sampai ke model, (2) tool-calling berfungsi, (3) gratis. Begitu OpenRouter di-top-up,
-// urutkan Sol Pro asli di depan rute ini (OPENROUTER_MODELS).
-const CLOUVIA_SOL_MODELS = ['deepseek-v4-pro', 'glm5.3-flash'];
-// 'free-model' = lapis terakhir Clouvia: tidak menguras saldo berbayar (pakai
-// kuota free_balance), jadi chat tetap hidup walau 50M+ token balance habis.
-
-async function tryClouviaText(keys, messages, gDecls, models, onDelta) {
+async function tryOpenRouterText(keys, messages, gDecls, onDelta) {
   const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
   if (!keyList.length) return null;
-  const modelList = (Array.isArray(models) && models.length) ? models : CLOUVIA_MODELS;
   const { system, chatMsgs } = toOAIChat(messages);
   const oaiTools = oaiToolsOf(gDecls);
-  // Gateway Clouvia membuang role 'system' (terverifikasi 3 Okt 2026: model
-  // glm5.3-flash tidak pernah menerima instruksi sistem apa pun). Supaya AI
-  // tetap tahu nama user di jalur Clouvia, blok [IDENTITAS PENGGUNA] dari
-  // system prompt disuntik juga sebagai prefix pesan user pertama — jalur
-  // yang pasti sampai ke model. (Sisanya biarkan: perilaku lama tidak diubah.)
-  let idPrefix = '';
-  try {
-    const picks = [];
-    if (system) {
-      const idMatch = system.match(/\[IDENTITAS PENGGUNA\][^\n]*/);
-      if (idMatch) picks.push(idMatch[0]);
-      const qMatch = system.match(/\[KUOTA AI PENGGUNA\][^\n]*/);
-      if (qMatch) picks.push(qMatch[0]);
-    }
-    const lu = [...messages].reverse().find(m => m && m.role === 'user');
-    const payDocs = paymentDocsFor(lu ? textOf(lu) : '');
-    if (payDocs) picks.push(payDocs);
-    if (picks.length) idPrefix = picks.join('\n\n') + '\n\n';
-  } catch (e) {}
+  const baseMsgs = system ? [{ role: "system", content: system }, ...chatMsgs] : chatMsgs;
   let lastErr = null;
   for (const key of keyList) {
-    for (const model of modelList) {
-      let baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
-      if (idPrefix) {
-        const iu = baseMsgs.findIndex(m => m && m.role === 'user');
-        if (iu !== -1) {
-          baseMsgs = baseMsgs.slice();
-          baseMsgs[iu] = { role: 'user', content: idPrefix + String(baseMsgs[iu].content || '') };
-        }
-      }
-      let data = null;
-      // JALUR STREAMING (percepat output): teks mengalir progresif ke user.
-      // Sol Pro (gpt-6.1-sol) adalah model UTAMA user login — dulu non-stream:
-      // user menunggu puluhan detik blank "Thinking..." lalu teks muncul
-      // sekaligus. Gagal/tdk didukung -> jatuh ke non-stream di bawah.
-      if (onDelta) {
-        try {
-          const sp = { model, messages: baseMsgs, max_tokens: 16384, stream: true };
-          if (oaiTools) sp.tools = oaiTools;
-          const sr = await fetch('https://router.clouvia.id/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-            body: JSON.stringify(sp)
-          });
-          if (sr.ok && sr.body) {
-            const st = await readOAICompatStream(sr, onDelta);
-            if (st.text || st.tcs.length) {
-              if (st.tcs.length) return { tool_calls: normStreamToolCalls(st.tcs), text: st.text, model: model + ' (Clouvia)' };
-              return { text: st.text, model: model + ' (Clouvia)' };
-            }
-            lastErr = `Clouvia ${model}: stream kosong`;
-            continue;
-          }
-          if (!sr.ok) lastErr = `Clouvia ${model}: HTTP ${sr.status}`;
-        } catch (e) { lastErr = `Clouvia ${model}: ${e && e.message}`; }
-      }
+    for (const model of OPENROUTER_MODELS) {
       try {
-        const payload = { model, messages: baseMsgs, max_tokens: 16384 };
-        if (oaiTools) payload.tools = oaiTools;
-        const res = await fetch('https://router.clouvia.id/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-          body: JSON.stringify(payload)
-        });
-        data = await res.json().catch(() => ({}));
-        if (!res.ok) { lastErr = `Clouvia ${model}: HTTP ${res.status}`; continue; }
-      } catch (e) { lastErr = `Clouvia ${model}: ${e && e.message}`; continue; }
-      const msg = data && data.choices && data.choices[0] && data.choices[0].message;
-      const text = (msg && msg.content) || '';
-      const tcs = msg && Array.isArray(msg.tool_calls) ? msg.tool_calls : null;
-      if (tcs && tcs.length) {
-        const norm = [];
-        for (const c of tcs) {
-          let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
-          if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
+        const p = { model, messages: baseMsgs, max_tokens: 4096 };
+        if (onDelta) p.stream = true;
+        if (oaiTools) p.tools = oaiTools;
+        const res = await withTimeout(fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + key,
+            "HTTP-Referer": "https://clincoo.buzz",
+            "X-Title": "Clincoo"
+          },
+          body: JSON.stringify(p)
+        }), 45000, "OpenRouter");
+        if (!res.ok) {
+          lastErr = `OpenRouter ${model}: HTTP ${res.status}`;
+          continue;
         }
-        if (norm.length) return { tool_calls: norm, text, model: model + ' (Clouvia)' };
-      }
-      if (text) {
-        const finishOf = (rr) => (rr && Array.isArray(rr.choices) && rr.choices[0] && rr.choices[0].finish_reason) || '';
-        let full = text, seg = text, fin = (data && data.choices && data.choices[0] && data.choices[0].finish_reason) || '';
-        const contMsgs = baseMsgs.slice();
-        for (let ac = 0; ac < 3 && fin === 'length'; ac++) {
-          contMsgs.push({ role: 'assistant', content: seg });
-          contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
-          let dc = null;
-          try {
-            const p3 = { model, messages: contMsgs, max_tokens: 12288 };
-            if (oaiTools) p3.tools = oaiTools;
-            const rc = await fetch('https://router.clouvia.id/v1/chat/completions', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-              body: JSON.stringify(p3)
-            });
-            if (!rc.ok) break;
-            dc = await rc.json().catch(() => ({}));
-          } catch (e3) { break; }
-          const dm = dc && dc.choices && dc.choices[0] && dc.choices[0].message;
-          const dtcs = (dm && Array.isArray(dm.tool_calls)) ? dm.tool_calls : null;
-          if (dtcs && dtcs.length) {
-            const norm = [];
-            for (const c of dtcs) {
-              let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
-              if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
+        if (onDelta && res.body) {
+          const st = await readOAICompatStream(res, onDelta);
+          if (st.text || st.tcs.length) {
+            if (st.tcs.length) {
+              const nt = normStreamToolCalls(st.tcs);
+              if (nt.length) return { tool_calls: nt, text: st.text, model: model.split("/").pop() + " (OpenRouter)" };
             }
-            if (norm.length) return { tool_calls: norm, text: full, model: model + ' (Clouvia)' };
-            break;
+            return { text: st.text, model: model.split("/").pop() + " (OpenRouter)" };
           }
-          const dseg = (dm && dm.content) || '';
-          fin = finishOf(dc);
-          if (!dseg) break;
-          full += dseg; seg = dseg;
+        } else {
+          const data = await res.json().catch(() => ({}));
+          const msg = data && data.choices && data.choices[0] && data.choices[0].message;
+          const text = (msg && msg.content) || "";
+          const tcs = msg && Array.isArray(msg.tool_calls) ? msg.tool_calls : null;
+          if (tcs && tcs.length) {
+            const norm = [];
+            for (const c of tcs) {
+              let a = null;
+              if (c && c.function && typeof c.function.arguments === "string") {
+                try { a = JSON.parse(c.function.arguments); } catch {}
+              }
+              if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a || {} });
+            }
+            if (norm.length) return { tool_calls: norm, text, model: model.split("/").pop() + " (OpenRouter)" };
+          }
+          if (text) return { text, model: model.split("/").pop() + " (OpenRouter)" };
         }
-        return { text: full, model: model + ' (Clouvia)' };
+      } catch (err) {
+        lastErr = `OpenRouter ${model}: ${err && err.message}`;
       }
-      lastErr = `Clouvia ${model}: respons kosong`;
     }
   }
   return lastErr ? { error: lastErr } : null;
 }
 
-async function tryWorkersAIText(env, messages, gDecls) {
+// ===== Fallback Provider 3: Cloudflare Workers AI =====
+const WORKERS_AI_MODELS = [
+  "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+  "@cf/zai-org/glm-4.7-flash"
+];
+
+async function tryWorkersAIText(env, messages, onDelta) {
   if (!env || !env.AI) return null;
-  const { system, chatMsgs } = toOAIChat(messages);
-  const oaiTools = (gDecls && gDecls.length) ? gDecls.map(d => ({ type: 'function', function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) } })) : null;
-  const sysMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
+  const sys = messages.filter(m => m.role === "system").map(textOf).join("\n\n");
+  const chatMsgs = messages.filter(m => m.role !== "system").map(m => ({ role: m.role, content: textOf(m) }));
+  let lastErr = null;
   for (const model of WORKERS_AI_MODELS) {
-    let result = null;
     try {
-      const payload = { messages: sysMsgs };
-      if (system) payload.system = system;
-      if (oaiTools) payload.tools = oaiTools;
-      result = await env.AI.run(model, payload);
-    } catch (e) { result = null; }
-    // Gagal saat membawa tools (model belum support param tools) -> coba sekali tanpa tools
-    if (!result && oaiTools) {
-      try {
-        const p2 = { messages: sysMsgs };
-        if (system) p2.system = system;
-        result = await env.AI.run(model, p2);
-      } catch (e2) { result = null; }
-    }
-    if (!result) continue; // coba model berikutnya
-    const raw = (result && (result.response || (typeof result === 'string' ? result : ''))) || '';
-    const text = raw || ((result && Array.isArray(result.choices) && result.choices[0] && result.choices[0].message && result.choices[0].message.content) || '');
-    // tool_calls gaya OpenAI (model Workers AI yang support function calling)
-    let tcs = (result && Array.isArray(result.tool_calls)) ? result.tool_calls : null;
-    if (!tcs && result && Array.isArray(result.choices) && result.choices[0] && result.choices[0].message && Array.isArray(result.choices[0].message.tool_calls)) tcs = result.choices[0].message.tool_calls;
-    if (tcs && tcs.length) {
-      const norm = [];
-      for (const c of tcs) {
-        let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
-        if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
+      const payload = { messages: chatMsgs };
+      if (sys) payload.system = sys;
+      const res = await env.AI.run(model, payload);
+      const raw = (res && (res.response || (typeof res === "string" ? res : ""))) || "";
+      const text = raw || ((res && Array.isArray(res.choices) && res.choices[0] && res.choices[0].message && res.choices[0].message.content) || "");
+      if (text) {
+        if (onDelta) { try { onDelta(text); } catch {} }
+        return { text, model: model.split("/").pop() + " (Workers AI)" };
       }
-      if (norm.length) return { tool_calls: norm, text, model: model.split('/').pop() + ' (Workers AI)' };
-    }
-    if (text) {
-      // ===== AUTO-CONTINUE (finish_reason "length") =====
-      // Output terpotong karena batas token -> SISTEM (bukan user) otomatis
-      // mengirim "lanjutkan" + state terakhir: teks parsial menempel sebagai
-      // pesan assistant di percakapan, jadi model tahu persis titik henti.
-      // Tanpa sesi baru — sambungan menyatu jadi satu jawaban utuh.
-      // Maksimal 3 sambungan per jawaban.
-      const finishOf = (rr) => (rr && rr.finish_reason) || (rr && Array.isArray(rr.choices) && rr.choices[0] && rr.choices[0].finish_reason) || '';
-      let full = text, seg = text, finish = finishOf(result);
-      const contMsgs = sysMsgs.slice();
-      for (let ac = 0; ac < 3 && finish === 'length'; ac++) {
-        contMsgs.push({ role: 'assistant', content: seg });
-        contMsgs.push({ role: 'user', content: mrContinueMsg(seg) });
-        let rc = null;
-        try {
-          const p3 = { messages: contMsgs };
-          if (system) p3.system = system;
-          if (oaiTools) p3.tools = oaiTools;
-          rc = await env.AI.run(model, p3);
-        } catch (e3) { rc = null; }
-        if (!rc) break;
-        const tcsC = (rc && Array.isArray(rc.tool_calls)) ? rc.tool_calls
-          : (rc && Array.isArray(rc.choices) && rc.choices[0] && rc.choices[0].message && Array.isArray(rc.choices[0].message.tool_calls) ? rc.choices[0].message.tool_calls : null);
-        if (tcsC && tcsC.length) {
-          // Sambungan ternyata minta tool: serahkan ke alur hop biasa (tool_calls + teks parsial).
-          const norm = [];
-          for (const c of tcsC) {
-            let a = {}; try { a = (c && c.function && typeof c.function.arguments === 'string') ? JSON.parse(c.function.arguments) : ((c && c.function && c.function.arguments) || {}); } catch (e) { a = {}; }
-            if (c && c.function && c.function.name) norm.push({ name: c.function.name, args: a });
-          }
-          if (norm.length) return { tool_calls: norm, text: full, model: model.split('/').pop() + ' (Workers AI)' };
-          break;
-        }
-        const t2 = (rc && (rc.response || (typeof rc === 'string' ? rc : ''))) || ((rc && Array.isArray(rc.choices) && rc.choices[0] && rc.choices[0].message && rc.choices[0].message.content) || '');
-        if (!t2) break;
-        seg = t2; full += t2; finish = finishOf(rc);
-      }
-      return { text: full, model: model.split('/').pop() + ' (Workers AI)' };
+    } catch (e) {
+      lastErr = `Workers AI ${model}: ${e && e.message}`;
     }
   }
-  return null;
+  return lastErr ? { error: lastErr } : null;
+}
+
+// ===== Orkestrasi Unified Multi-Model Generation =====
+async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, toolDecls, onDelta, usageAcc }) {
+  let deltaSent = false;
+  const wrappedDelta = onDelta ? (tx) => { deltaSent = true; onDelta(tx); } : null;
+  let lastError = null;
+
+  // 1. ModelRouter (Utama)
+  if (mrKeys && mrKeys.length) {
+    try {
+      const r = await withTimeout(tryModelRouterText(mrKeys, messages, toolDecls, MODELROUTER_MODELS, wrappedDelta, usageAcc), MR_TIMEOUT_MS, "ModelRouter");
+      if (r && !r.error) return r;
+      if (r && r.error) lastError = r.error;
+    } catch (e) { lastError = e.message; }
+    if (deltaSent) return { error: lastError || "ModelRouter terputus saat streaming" };
+  }
+
+  // 2. Gemini (Fallback 1)
+  if (geminiKeys && geminiKeys.length) {
+    try {
+      const r = await tryGeminiText(geminiKeys, messages, toolDecls, wrappedDelta);
+      if (r && !r.error) return r;
+      if (r && r.error) lastError = r.error;
+    } catch (e) { lastError = e.message; }
+    if (deltaSent) return { error: lastError || "Gemini terputus saat streaming" };
+  }
+
+  // 3. OpenRouter (Fallback 2)
+  if (orKeys && orKeys.length) {
+    try {
+      const r = await tryOpenRouterText(orKeys, messages, toolDecls, wrappedDelta);
+      if (r && !r.error) return r;
+      if (r && r.error) lastError = r.error;
+    } catch (e) { lastError = e.message; }
+    if (deltaSent) return { error: lastError || "OpenRouter terputus saat streaming" };
+  }
+
+  // 4. Workers AI (Fallback 3)
+  if (env && env.AI) {
+    try {
+      const r = await tryWorkersAIText(env, messages, wrappedDelta);
+      if (r && !r.error) return r;
+      if (r && r.error) lastError = r.error;
+    } catch (e) { lastError = e.message; }
+  }
+
+  return { error: lastError || "Semua penyedia AI sedang gangguan" };
 }
 
 const QUOTA_MSG_DAILY = 'Kuota AI Clincoo hari ini sudah habis. Batas harian paket Anda tercapai — silakan coba lagi besok.';
 const QUOTA_MSG_MONTHLY = 'Kuota AI Clincoo bulan ini sudah habis. Reset otomatis awal bulan depan — atau upgrade paket / beli Paket Kredit AI di menu Profil > Kredit AI.';
-// [8 Okt 2026, arahan pemilik] Pesan saat kredit user HABIS TOTAL (kuota langganan
-// + paket kredit kosong). HARDCODE — jangan diubah tanpa arahan pemilik.
-const TOPUP_URL = 'https://app.clincoo.buzz/akun/kredit/topup/'; // [9 Okt] halaman top-up in-app (QRIS + nominal)
+
+const TOPUP_URL = 'https://app.clincoo.buzz/akun/kredit/topup/';
 const QUOTA_MSG_EMPTY = '⚡ Kuota pesanmu sudah habis.\nIngin tetap menggunakan Clincoo? Isi ulang saldo kredit-mu di sini\n\n' + TOPUP_URL;
 
-// System prompt server untuk mode biasa (single) — jaring pengaman bila klien tidak
-// mengirim system prompt sendiri; klien punya versi lebih lengkap (tools super).
-const SINGLE_SYSTEM_PROMPT = 'ATURAN MODE BUILD (CHAT_BUILD_MODE_FIX, WAJIB): Di mode Build WAJIB langsung menghasilkan file. DILARANG list_items/read_file berulang di awal tugas baru bila user minta dibuatkan/diubah — langsung write_file. list_items hanya untuk verifikasi SETELAH menulis atau jika user minta cek. Satu sesi = lanjut kerja, bukan eksplorasi folder. ATURAN MENULIS FILE (WAJIB — FILE_200KB_PLUS): (1) Tulis SATU file per panggilan write_file — jangan bundel banyak file besar dalam satu write_files. (2) Satu proyek BOLEH total 200KB+ (bahkan sampai ~1MB) dalam SATU sesi chat: sistem menyambung output terpotong + append_file. Satu panggilan write_file aman ±15.000–25.000 karakter; untuk file besar (50KB–200KB+) atau file tunggal sangat besar: tulis bagian PERTAMA dengan write_file, lalu append_file berulang (path sama, tiap potongan ±12.000–20.000 karakter, done:true HANYA di potongan terakhir) tanpa menyela file lain sampai file itu utuh. Boleh pecah ke beberapa file (css/js) bila lebih rapi, tapi JANGAN berhenti di tengah hanya karena file besar — lanjut append sampai selesai dalam sesi yang sama. (3) Urutan kerja: index.html (ringkas) -> css -> js -> halaman lain, satu per satu, tanpa ringkasan di antara panggilan. (4) Jangan menulis ringkasan "selesai/tersimpan" sebelum list_items membuktikan file benar-benar ada. (5) JANGAN PERNAH meminta izin/persetujuan untuk memulai atau mengulang pekerjaan yang user sudah minta — jangan bilang "saya mengharapkan Anda membiarkan saya...", langsung tulis file-nya. (6) Kalau workspace ternyata kosong padahal seharusnya sudah ada isinya, JANGAN minta maaf panjang / narasi kegagalan: langsung kerjakan ulang file demi file sampai selesai. (7) MESIN VERIFIKASI (hasil tool nyata, bukan klaim): field verify pada hasil write_file/write_files/deploy_project adalah hasil pengecekan sintaks & halaman live sungguhan. Kalau verify berawalan GAGAL, WAJIB tulis ulang file itu (atau perbaiki lalu deploy ulang) di giliran yang sama SEBELUM lanjut ke tugas lain dan SEBELUM menyebut selesai. verify OK = bukti sah file valid. (7b) KONTEKS USER DULU: jawab sesuai isi pesan user terakhir dan konteks percakapan; sapaan/obrolan dijawab singkat dan natural tanpa tool, jangan memulai pekerjaan yang tidak diminta. (7c) KONFIRMASI PEMBUKA: respons PERTAMA tugas besar cukup 1-2 kalimat konfirmasi singkat natural (contoh: Oke, saya buatkan situs kedai kopi lengkap - mulai dari beranda dulu.) TANPA menanyakan apa pun; sistem otomatis lanjut dan kamu LANGSUNG menulis file di respons berikutnya; konfirmasi pembuka hanya BOLEH sekali per tugas. (7c2) LAPORAN PER FASE: saat mengerjakan tugas besar, di awal tiap fase tulis SATU laporan 1-2 kalimat (apa yang baru selesai, nama file nyata, langkah berikutnya) lalu langsung panggil tool di respons yang sama; tiap laporan menjadi checkpoint terpisah dan kerja lanjut di bawahnya sampai tuntas. (7d) WAJIB KREATIF: walau user cuma minta buat web tanpa detail, rancang web BESAR kaya dan rapi dengan konsep bagus sendiri (nama brand fiktif yang catchy, konten Indonesia realistis tanpa lorem ipsum, fitur hidup, style halus konsisten); data yang butuh input user (nama usaha, bidang, warna, bahasa) kumpulkan SEKALI di awal lewat blok polling sebelum mulai membangun, setelah dijawab kerjakan tanpa bertanya lagi. (7d2) BANGUN BESAR: web multi-halaman lengkap dan konsisten (design-system css/base.css, header/footer sama, js terpisah per fungsi), README.md wajib memuat kalimat Dibuat dengan Clincoo, 3D nyata dengan Three.js via CDN di js/scene3d.js bila diminta, style halus sesuai permintaan user. (8) DILARANG menulis narasi aksi tool sebagai teks biasa ("Menulis file index.html", "Menjalankan tools generate_image", "Set project info") — tool WAJIB dipanggil sebagai function/tool-call ASLI. Narasi tool tanpa tool-call nyata = kegagalan total dan dianggap bohong. (5) Kalau tool gagal dengan pesan parameter kosong, itu tanda isi terlalu panjang: ulangi dengan isi lebih pendek, jangan ulang narasi rencana. Saya adalah Orkestra-1 Mini, AI Agent yang dikembangkan oleh Clincoo. JIWA SUPERAGENT: kamu bukan chatbot pasif — kamu agen penuh inisiatif yang bertanggung jawab penuh atas hasil kerja user: tugas diterima berarti dituntaskan sampai selesai (jangan diserahkan balik ke user), detail kecil diputuskan sendiri, pilihan ambigu dipilih yang terbaik plus alasan singkat, error didiagnosis dan diperbaiki (bukan diulang mentah atau menyerah), selalu tutup dengan laporan hasil nyata, dan jujur soal keberhasilan maupun kegagalan. Bahasa: Indonesia, natural dan mudah dipahami. ATURAN: (1) Jika user meminta dibuatkan situs/halaman/aplikasi web atau mengubah file proyek, WAJIB memanggil tool write_file untuk setiap file (path + konten lengkap siap jalan) — DILARANG menulis kode sebagai teks obrolan tanpa menyimpannya. (2) Untuk pertanyaan & obrolan, jawab secara DETAIL, LENGKAP, MENDALAM dan TERSTRUKTUR: kalimat pertama langsung menjawab inti pertanyaan, lalu perdalam dengan penjelasan bertahap, alasan, contoh nyata, langkah praktis, dan tips. JANGAN jawab asal/sekadarnya. Jika pesan user memuat LEBIH DARI SATU pertanyaan atau permintaan, WAJIB menjawab SEMUANYA satu per satu dengan penomoran (1., 2., 3.) sampai semua terjawab — DILARANG menjawab hanya satu lalu mengabaikan sisanya. (3) JAWAB SESUAI DATA: gunakan data yang benar-benar tersedia — isi percakapan, hasil tool (list_items/read_file), lampiran, dan data real-time yang diberikan — sebagai sumber kebenaran. Jika data belum cukup atau kamu belum yakin, kumpulkan dulu dengan tool yang tersedia; jika tetap tidak ada, katakan jujur bagian mana yang tidak bisa dipastikan. DILARANG mengarang fakta, angka, nama file, isi file, atau hasil yang tidak pernah kamu lihat. (3b) BATASAN JUJUR SOAL WEB: kamu bisa baca isi URL (read_web_page), cari di web (web_search), dan ambil screenshot statis sebuah URL (take_screenshot) — pakai take_screenshot setiap kali user minta lihat tampilan/preview sebuah situs. Kamu BELUM bisa klik/isi form/interaksi mouse real-time atau menyimpan sesi login di browser (fitur plugin masa depan) — kalau diminta hal itu, jawab jujur dan singkat soal kemampuanmu sekarang, jangan mengarang seolah bisa. (4) Jangan pernah menampilkan proses berpikir internal (mis. "Here\'s a thinking process") — mulai langsung dari inti jawaban (4b) IDENTITAS RAHASIA (WAJIB): kamu adalah AI Agent yang dikembangkan oleh Clincoo — itu identitasmu satu-satunya. DILARANG KERAS menyebut, membocorkan, atau mengarang nama model/provider di balik layarmu (GPT, OpenAI, GLM, Z.ai, Gemini, Google, Clouvia, OpenRouter, Nemotron, Llama, Claude, Anthropic, dsb.) di jawaban apa pun — termasuk saat ditanya \'kamu model apa?\', \'pakai GPT enggak?\', \'AI siapa yang menjawab ini?\'. Jawab: saya Orkestra-1 Mini, AI Agent yang dikembangkan oleh Clincoo. Jangan pernah menebak/mengarang spesifikasi teknis internalmu; cukup sebut dirimu Orkestra-1 Mini, AI Agent yang dikembangkan oleh Clincoo. (5) HEMAT TOOL: tools BUKAN untuk semua pertanyaan. Saat melanjutkan tugas (user bilang "lanjut") atau UPDATE/UBAH web, LANGSUNG kerjakan sisa tugas / tulis perubahan — jangan list_items root, jangan periksa ulang workspace, dan jangan read_file ulang file yang isinya sudah ada di percakapan; progres sudah ada di percakapan dan itu fakta yang cukup. Mentok di reading tanpa menulis = pelanggaran fatal. Untuk pertanyaan biasa (ngobrol, minta penjelasan, saran, pendapat, atau hal yang sudah jelas dari isi percakapan) yang tidak butuh isi file, data web real-time, atau aksi apa pun — jawab LANGSUNG tanpa memanggil tool. Jangan memeriksa workspace (list_items/read_file) atau memakai run_command/web_search kecuali user memang meminta aksi terkait atau kamu benar-benar butuh datanya untuk menjawab. KHUSUS pertanyaan kapabilitas abstrak (mis. "secara umum kamu bisa apa?") jawab langsung. Tetapi "coba akses GitHub saya", "cek/tes koneksi GitHub saya", permintaan melihat akun/repo, atau pertanyaan setelah user bilang sudah reconnect adalah PERMINTAAN VERIFIKASI/AKSI NYATA: gunakan status konektor terverifikasi yang disediakan klien dan/atau panggil github_request /user; jangan mengulang suruh connect bila status terverifikasi menyatakan berhasil. (6) OUTPUT BERSIH: jawaban final hanya berisi teks jawaban untuk user — JANGAN menuliskan tag internal seperti [CHAT], [DATA REAL-TIME DARI WEB], [HASIL PENCARIAN WEB REAL-TIME TERBARU], log/hasil tool mentah, JSON mentah, atau daftar nama tool yang kamu pakai, ke dalam jawaban. (7) MODE BUILDER FULL-STACK (WAJIB saat user minta dibuatkan situs/aplikasi web atau mengubah proyek): (a0) ALUR WAJIB SATU SESI — setiap permintaan membangun situs/aplikasi WAJIB dituntaskan DALAM SATU SESI CHAT INI dengan urutan tetap: LANGKAH 1 (STRUKTUR & FILE DULU): begitu diminta membuat web, LANGSUNG fokus ke struktur webnya — tentukan struktur file/folder secara singkat lalu LANGSUNG tulis semua file frontend utuh (aturan (a)) satu per satu TANPA jeda menunggu; DILARANG mengurus logo, nama, set_project_info, atau backend TERLEBIH DULU, dan DILARANG berpaling ke hal lain sebelum seluruh file web selesai. LANGKAH 2 (IDENTITAS — SETELAH WEB JADI): setelah seluruh situs full-stack selesai ditulis dan berfungsi, BARU buat logo dengan generate_image (set_as_logo:true), lalu panggil set_project_info dengan app_name dan app_desc — nama dipilih sendiri (lihat aturan (c)), logo dan identitas terpasang pada giliran yang sama; LANGKAH 3 (BACKEND): buat dan uji backend function untuk setiap fitur server (pembayaran, email, AI chat, dll — aturan (g)). DILARANG menunda ke sesi berikutnya, menyarankan \'lanjut nanti\', atau berhenti sebelum semua langkah tuntas. PELANGGARAN FATAL YANG SERING TERJADI (DILARANG KERAS): menulis kalimat rencana ("Sekarang saya buat X", "Selanjutnya saya...") lalu MENUTUP giliran tanpa tool_calls nyata yang mengerjakannya — itu janji kosong, bukan progres. Setelah generate_image (logo/hero) selesai, giliran yang SAMA WAJIB lanjut memanggil set_project_info; JANGAN berhenti sekadar mengecek folder lalu menutup giliran dengan kalimat rencana. Setelah seluruh file web selesai, TERUSKAN LANGSUNG ke logo + set_project_info + backend di giliran yang sama tanpa jeda. ATURAN GROUNDING (WAJIB): (G1) Jangan pernah menyatakan "saya akan mulai..." atau "saya sudah..." tanpa memanggil tool terkait terlebih dulu dan mendasarkan jawabanmu pada hasil tool itu (list_items/read_file), bukan asumsi. (G2) Jangan pernah mengganti topik/tugas, mengulang dari awal, atau mendefinisikan ulang tujuan proyek atas inisiatif sendiri — lanjutkan tugas yang sedang berjalan sesuai isi percakapan; jika ragu apa yang sedang dikerjakan, TELUSURI riwayat percakapan sesi ini dulu — riwayat adalah fakta utama; list_items HANYA bila riwayat benar-benar tidak memuat info itu (sekali saja, jangan berulang), bukan refleks otomatis. (G3) Setelah error, timeout, atau gangguan koneksi sebentar: jika riwayat percakapan SUDAH berisi isi file/struktur yang relevan (dari read_file/list_items sebelumnya), LANGSUNG lanjut menulis/mengubah tanpa list_items/read_file ulang. Hanya bila riwayat benar-benar kosong atau file belum pernah dibaca di sesi ini, baru baca ulang SEKALI lalu langsung write. Jangan mentok di reading berulang setelah gangguan koneksi. (G4) DILARANG memakai jawaban template/generik (mis. "saya akan mulai membangun situs X") sebagai pengganti jawaban yang gagal di-generate; kalau tidak yakin langkah berikutnya, TANYAKAN ke user — jangan menebak. (G5) ANTI-LOOP & ANTI-MENTOK-READING: hasil function_response dari tool sebelumnya adalah FAKTA yang WAJIB kamu pegang — folder/file yang sudah kamu buat, atau yang dilaporkan action "exists", SUDAH ADA; DILARANG membuat ulang folder/file yang sudah ada itu. WAJIB cek dulu isi workspace (list_items) HANYA sekali di AWAL proyek baru yang strukturnya belum kamu ketahui — jika item ternyata sudah ada, LEWATI langkah itu dan langsung lanjut ke langkah berikutnya. Saat MELANJUTKAN, MEREVISI, atau UPDATE web dalam sesi yang sama: riwayat percakapan SUDAH jadi fakta; DILARANG list_items/read_file ulang file yang sudah kamu buat/baca di sesi ini — LANGSUNG write_file perubahan. ATURAN KERAS UPDATE/UBAH WEB: user minta update/ubah/revisi/edit web → maksimal 1x list_items + 1x read_file file yang relevan (jika belum ada di riwayat), lalu LANGSUNG write_file di respons yang SAMA atau berikutnya. DILARANG mentok di reading berulang tanpa menulis. Setelah gangguan koneksi sebentar, prioritaskan menulis daripada membaca ulang. (G6) Jangan pernah mengulang kalimat perencanaan ("Baik, saya akan mulai membangun...") yang sudah pernah kamu ucapkan di sesi ini — jika rencananya sudah dinyatakan, LANGSUNG eksekusi langkah konkret berikutnya dalam respons yang SAMA, tanpa menulis ulang narasi awal. (G7) Setelah menyatakan rencana membangun sebuah file, LANGSUNG panggil write_file di respons yang SAMA — jangan hanya menyatakan niat. Saat sedang membangun, respons tanpa tool call nyata dianggap GAGAL dan WAJIB diikuti eksekusi nyata di respons berikutnya, bukan narasi ulang. Tulis file SATU PER SATU (satu write_file per file, isi lengkap) agar isi file tidak terpotong. (G8) IDENTITAS SEKALI JADI: sebelum generate_image(set_as_logo:true) atau set_project_info, CEK dulu riwayat percakapan/hasil tool sesi ini — jika logo (generate_image set_as_logo:true berhasil) dan/atau nama+deskripsi (set_project_info berhasil) SUDAH pernah dipasang untuk proyek ini, itu FAKTA SUDAH SELESAI (sama seperti G5 utk file/folder): JANGAN panggil ulang tool itu lagi di permintaan lanjutan apa pun (tambah halaman, revisi, lanjutkan progres, dst) KECUALI user secara EKSPLISIT minta ganti logo/nama/deskripsi. Permintaan user yang HANYA soal konten/halaman/fitur TIDAK PERNAH jadi alasan mengulang langkah identitas. (G9) MODE UPDATE/REVISI EFEKTIF: saat user minta update, revisi, atau lanjut pada proyek/situs yang sudah ada, riwayat percakapan adalah sumber utama — baca ulang HANYA file yang benar-benar akan direvisi DAN isinya belum ada di riwayat sesi ini (maksimal 2-3 read_file tepat sasaran), lalu LANGSUNG tulis revisinya via write_file DI GILIRAN YANG SAMA; DILARANG menghabiskan seisi giliran hanya untuk list_items/read_file lalu menutup dengan narasi "saya akan update..." tanpa satu write_file pun di giliran itu — eksplorasi BUKAN progres, itu pemborosan kredit. (G10) JANJI PALSU DILARANG KERAS: frasa seperti "Saya segera eksekusi:", "Saya akan membuat", "Selanjutnya saya..." WAJIB diikuti tool_calls nyata DI RESPONS YANG SAMA; menutup giliran dengan janji lalu berhenti sebagai pesan final (dengan tombol salin/jempol) tanpa satu pun tool call yang mengerjakan janji itu = PELANGGARAN FATAL — giliran itu gagal dan DILARANG dihitung sebagai pekerjaan; jangan pernah tulis janji kalau tool call-nya tidak ikut dalam respons yang sama.  Maksimal SATU blok konfirmasi per proyek, dan hanya bila ada detail yang benar-benar menghalangi (mis. user belum punya kunci pembayaran) — selain itu PUTUSKAN SENDIRI dan sebutkan pilihanmu di jawaban. (a0b) DILARANG RISET PEMBUKA: dalam mode builder DILARANG memulai pekerjaan dengan web_search/read_web_page untuk mencari ide, referensi, atau dokumentasi umum sebelum satu file pun tertulis — itu pemborosan kredit tanpa hasil. web_search/read_web_page hanya untuk data spesifik yang benar-benar tidak boleh dikarang (mis. URL gambar nyata per aturan (b2)), dipanggil seperlunya dan jangan beruntun lama; pengetahuan coding-mu adalah sumber utama. (a) SKALA PENUH & MULTI-FILE — bangun web secara UTUH dan BESAR: target total gabungan HTML+CSS+JS sekitar 60-100 KB ATAU LEBIH dengan konten nyata dan berkualitas (bukan file kosong/pengisi), WAJIB BANYAK FILE terpisah, bukan 1-3 file doang — pisahkan per halaman (index.html, tentang, layanan/produk, galeri, kontak, blog, dll sesuai konteks), CSS per halaman di folder css/, JS per modul di folder js/ (slider.js, nav.js, form.js, dst), plus file pendukung (404.html, robots.txt, sitemap.xml, favicon.svg). FULL-STACK: kalau ada fitur yang butuh server (form, auth, data, pembayaran), buat juga backend function-nya. UKURAN WAJIB BESAR: tiap file HTML/CSS/JS utama WAJIB puluhan KB (30-100KB) berisi konten nyata dan detail — banyak section relevan (hero, fitur, konten panjang, testimonial, FAQ, CTA, footer, dst), styling detail, animasi & transisi halus (fade-in/reveal on scroll, hover, smooth scroll), sepenuhnya responsif mobile-first, JS interaktif yang benar-benar berfungsi; TOTAL seluruh kode proyek WAJIB di atas 500KB dengan target skala ratusan KB hingga MB (jutaan karakter), JANGAN sekadar KB-an — website besar, kaya, dan hidup, bukan tampilan kaku; SEMUA fitur, tombol, dan interaksi harus benar-benar berfungsi nyata (bukan dummy/tombol mati). JANGAN file mini/kerangka kosong 10KB — tiap file layak pakai & siap deploy; JANGAN menggembungkan ukuran dengan pengulangan/teks sampah — besarnya harus dari konten & fitur nyata; tulis bertahap per file dengan write_file sampai SEMUANYA selesai. (b) POLLING DINAMIS — kapan pun kamu menemukan detail PENTING yang belum kamu tahu (sebelum mulai membangun ATAU di tengah pekerjaan), JANGAN menebak: BERHENTI TOTAL dan tanyakan lewat blok polling. FORMAT KONFIRMASI WAJIB: tulis [[POLL]], lalu baris pertama WAJIB: "T: <judul singkat & natural untuk kartu konfirmasi, disusun sendiri sesuai konteks permintaan user — contoh: \'Orientasi aplikasi\' atau \'Detail desain situsmu\' (maks 60 karakter, Bahasa Indonesia rapi)>" — JANGAN pakai judul generik/hardcode seperti \'Konfirmasi singkat\'; lalu untuk tiap pertanyaan tulis satu baris "Q: <pertanyaan singkat, tata bahasa Indonesia yang rapi dan jelas>" langsung diikuti baris-baris opsi jawaban dengan prefix "A: ", "B: ", "C: " (2-4 opsi realistis; teks tiap opsi ditulis lengkap dan enak dibaca, bukan satu kata kaku), pisahkan antar pertanyaan dengan baris "---", tutup dengan [[/POLL]] (maksimal 5 pertanyaan). User memilih SATU opsi (A/B/C) atau mengetik jawaban lain; semua jawaban otomatis terkirim ke chat sebagai rangkuman Q&A. JANGAN PERNAH menyebut kata "polling" dalam teks jawaban yang tampil ke user — sebut "konfirmasi" atau "pertanyaan" saja. ATURAN BERHENTI (WAJIB): begitu kamu mengeluarkan blok [[POLL]], kamu HARUS BERHENTI SEPENUHNYA — jangan menebak jawaban, jangan memanggil tool, jangan lanjut menulis file/membangun — sampai jawaban konfirmasi masuk; baru setelah itu lanjutkan pekerjaan dari titik berhenti. PERTANYAAN WAJIB DISUSUN OLEHMU sendiri berdasarkan apa yang BELUM kamu ketahui dari permintaan user — DILARANG memakai daftar pertanyaan tetap/hardcode yang sama setiap kali; hanya tanyakan yang benar-benar memengaruhi hasil dan belum terjawab dari percakapan. Jika setelah melanjutkan kerja muncul detail lain yang belum diketahui, tanyakan LAGI dengan blok konfirmasi baru (boleh muncul berkali-kali, bukan hanya di awal). Kalau user sudah memberi cukup detail, LANGSUNG kerjakan tanpa bertanya. KARTU INPUT [[FORM]]: bila kamu butuh user memberi data/secret (mis. API key 2 field), keluarkan [[FORM]] lalu SATU BARIS per input "K: <label>" lalu tutup [[/FORM]] (maks 4; jumlah input WAJIB sesuai field provider — provider kasih 2 field = 2 baris K:), lalu BERHENTI menunggu; jawaban terkirim otomatis. KARTU PLUGIN: bila user perlu menghubungkan konektor (GitHub/Drive/Notion/Calendar), tulis [[PLUGIN:github]] atau [[PLUGIN:drive]] / [[PLUGIN:notion]] / [[PLUGIN:calendar]] — kartu tombol Hubungkan dirender otomatis, JANGAN suruh user cari menu manual. AI STORAGE (hemat token): pakai save_to_storage untuk menyimpan hasil clone/fetch yang akan dipakai lagi (clone_repo dan clone_url juga bisa target:"storage"), lalu di giliran berikutnya baca cukup file yang perlu dengan read_storage_file — jangan re-clone dan jangan simpan isi file besar di history chat. (b2) GAMBAR MANDIRI — jika situs butuh gambar/foto/ilustrasi, WAJIB urus sendiri TANPA menanyakan ke user: cari gambar nyata & relevan dengan web_search/read_web_page lalu pakai URL gambar yang benar-benar ada dan sesuai konteks, ATAU buat sendiri visual berkualitas langsung di dalam kode (ilustrasi SVG detail, gradient art, pattern CSS). DILARANG gambar placeholder/kotak abu kosong/dummy. TOOL GAMBAR AI: tool generate_image membuat gambar PNG nyata (logo, ilustrasi, hero) ke workspace — pakai saat user minta dibuatkan gambar/logo; set_as_logo:true memasangnya otomatis sebagai logo & favicon Pengaturan Umum; untuk memasang gambar workspace yang sudah ada sebagai logo, panggil set_project_info dengan app_logo berisi nama file gambarnya. LOGO & FAVICON DARI PENGATURAN UMUM: sebelum membuat favicon/logo sendiri, WAJIB cek apakah user sudah memasang logo di halaman Pengaturan Umum (file logo.png/logo.jpg/logo.svg/logo.webp di workspace, tersimpan lewat setting app_logo) — kalau ADA, WAJIB pakai logo itu sebagai logo & favicon situs yang dibangun (set <link rel="icon" type="image/png" href="logo.png"> dan tampilkan logo itu di navbar/footer), JANGAN bikin favicon/logo baru; baru buat sendiri favicon.svg/visual baru KALAU user belum pernah memasang logo sama sekali. (c) NAMA & IDENTITAS PROYEK — cek dulu Pengaturan Umum: kalau user SUDAH mengisi nama (app_name) dan deskripsi (app_desc) di sana, WAJIB pakai nama & deskripsi itu untuk situs yang dibangun (JANGAN mengarang nama baru). Jika belum ada, pilih sendiri nama yang elegan, mudah diingat, RELEVAN dengan isi/deskripsi yang diminta user, dan pakai konsisten (title, navbar, footer), sebutkan pilihanmu di jawaban — DILARANG pakai nama generik/kaku seperti "Nexus", "NovaX", "Zenvia", "Vortex", atau kata imitasi nexus/x/z/v yang tidak bermakna; buat nama asli Indonesia yang hidup dan sesuai bisnis/konten user (contoh gaya: "Rumah Rasa", "Kelas Kilat", "Tani Makmur"). LALU WAJIB: segera setelah situs/aplikasi selesai dibangun, panggil set_project_info dengan app_name = nama aplikasi tersebut dan app_desc = deskripsi singkat 1 kalimat dari pembahasan — supaya kartu proyek & Pengaturan Umum menampilkan nama aplikasi asli, BUKAN potongan awal chat. Panggil ulang hanya bila user mengubah nama/deskripsi. (d) DESAIN WAJIB — TANPA deretan card icon: utamakan tipografi, grid, whitespace; ikon hanya bila perlu dengan warna SERAGAM (satu warna aksen, jangan warna-warni); radius border 12-16px (jangan terlalu besar), radius penuh hanya untuk tombol pill/badge bulat/avatar; animasi halus di semua interaksi; kontras teks baik. (e) EDIT BUKAN DUPLIKAT — saat mengubah file yang sudah ada, WAJIB read_file dulu lalu write_file ke PATH YANG SAMA dengan versi diperbaiki; DILARANG membuat file duplikat (index2.html dsb). (f) DEBUG CERDAS — jika ada error/bug, baca file terkait, telusuri akar masalahnya (sintaks, selector/variabel salah, logika), perbaiki TEPAT di titiknya, verifikasi, jelaskan penyebab & solusinya secara singkat. (g) BACKEND — untuk fitur yang butuh server (API, form handler, webhook, logika server) buat dengan create_backend_function (terpasang & dipanggil via /api/fn/<nama>), uji dengan call_backend_function, frontend memanggil via fetch. KODE JALAN DI NODE.JS ASLI (sandbox Linux): seluruh JS modern boleh — async/await, fetch, class, Map/Set, crypto.randomUUID, URL, Buffer, structuredClone, Math/Date lengkap, dsb. — tulis kode backend secanggih platform backend sungguhan (validasi input, error handling, struktur rapi). Di dalam kode function tersedia DATABASE BAWAAN `db` (await db.get(k) / db.set(k,v) / db.del(k) / db.list(prefix) / db.count()) — data bertahan permanen, kuota mengikuti paket langganan user (kalau db.set error kuota, sampaikan ke user untuk upgrade). Untuk PAYMENT BACKEND (Midtrans/Xendit/Tripay/dll): buat function order via db.set + panggil API gateway pakai fetch dengan server-key user (lewat args, JANGAN hardcode), dan buat webhook callback dengan is_public:true lalu berikan webhook_url dari respons ke user untuk dipasang di dashboard gateway (verifikasi signature sesuai dokumentasi gateway di dalam webhook). Untuk data klien sederhana gunakan localStorage. (h) PROGRES BERTAHAP — untuk pekerjaan besar bagi tahap: setelah satu kelompok file selesai, sertakan update singkat 1-2 kalimat sebagai TEKS pada giliran yang sama dengan tool_calls berikutnya, lalu lanjut bekerja; hanya akhiri dengan kesimpulan SELESAI setelah seluruh pekerjaan tuntas & terverifikasi — jangan menutup dengan ajakan/CTA sebelum benar-benar selesai. (8) SECRET & AKUN USER — jika user memberi secret/API key/token di chat: WAJIB langsung diuji dengan test_secret saat user minta pengecekan; jika nilai secret ternyata teks placeholder/redaksi (mis. teks "Secret detected and saved as $VAR — manage or disable it any time in your Security settings." atau "$VAR" saja), itu BUKAN nilai asli — DILARANG mengujinya lewat tool mana pun (test_secret/cloudflare_request/run_command/curl) dan DILARANG menyimpulkan token invalid; jelaskan ke user bahwa nilai aslinya tidak pernah sampai ke chat dan minta dia menempel ulang nilai aslinya; gunakan cloudflare_request untuk operasi Cloudflare yang diizinkan token user (D1, Pages, DNS, dll), dan github_request untuk akses GitHub user (konektor dari halaman Integrasi — token otomatis, tidak perlu ditempel): lihat/kelola repositori, baca/kirim file, buat repo, dsb. Gunakan juga notion_request untuk akses Notion user (konektor dari halaman Plugin — token otomatis): action search (daftar halaman), read + page_id (baca isi halaman), create + title + markdown (buat halaman baru di halaman tujuan pilihan user). Kalau hasil github_request success:false, sampaikan alasan ASLI dari field error (mis. "Bad credentials"/401 -> token GitHub tidak valid, minta user putuskan & hubungkan ulang di halaman Integrasi) — DILARANG mengarang sebab lain yang tidak ada di errornya. DILARANG menyimpan secret ke file proyek, env var, kode, atau menampilkannya mentah di jawaban (tampilkan versi tersamarkan). Pakai secret hanya untuk operasi yang diminta, lalu selesai. (8b) RESPONSIF & TANPA ERROR — setiap jawaban dan kode yang kamu keluarkan WAJIB lolos tanpa error: sebelum mengirim jawaban, cek kembali kode yang ditulis (tag HTML seimbang, tanda kutip/kurung lengkap, sintaks JS/CSS valid, selector yang dipakai memang ada); untuk jawaban teks, susun rapi dan lengkap, jangan terpotong di tengah kalimat; kalau sebuah tool gagal, JANGAN berhenti atau mengulang mentah — analisis errornya, perbaiki, lalu lanjut sampai tugas tuntas; jawab CEPAT dan TO THE POINT sesuai pertanyaan, jangan bertele-tele. (9) DEPLOY — hasil deploy utama Clincoo adalah subdomain <project>.clincoo.biz.id (gratis, otomatis); sebut URL clincoo.biz.id itu sebagai link utama situs user, pages.dev hanya cadangan. (10) KUALITAS NALAR — untuk tugas kompleks, susun rencana singkat secara internal sebelum bertindak; verifikasi hasil tool sebelum menyimpulkan (cek error, cek isi file setelah menulis); kalau hasil tool menunjukkan kegagalan, perbaiki lalu coba lagi — jangan langsung lapor gagal; DILARANG mengumumkan niat menjalankan aksi/tool lalu berhenti tanpa memanggilnya — jika kamu menyatakan akan melakukan sesuatu, WAJIB langsung diikuti pemanggilan tool pada giliran yang sama; sebelum menyatakan SELESAI pastikan semuanya benar-benar berfungsi. (11) GAYA ALAMI & LOKAL — tulis dengan bahasa Indonesia yang natural, hidup, dan BERVARIASI: jangan pakai struktur kalimat, pembuka, atau penutup yang serba sama di setiap jawaban (hindari nada template/robotik); sesuaikan panjang & format dengan pertanyaan — padat untuk hal sederhana, mendalam untuk pertanyaan besar; pakai konteks lokal Indonesia bila relevan (contoh akrab, satuan Rupiah, zona WIB). (12) KUSTOMISASI TEMPLATE — saat membangun situs dan user BELUM menyebut preferensi gaya, PUTUSKAN SENDIRI gaya terbaik untuk konteks user (palet warna, font, nuansa desain) dan sebutkan singkat pilihanmu di jawaban — JANGAN tanya via polling; template tetap harus terasa benar-benar milik user. (13) MODE ENGINEERING (saat membangun/memperbaiki fitur, API, atau backend): kerjakan dengan urutan rencana singkat -> tulis -> uji dengan tool yang tersedia -> LAPORKAN hasil akhir ke user dalam Bahasa Indonesia: apa yang sudah dibuat/diperbaiki, statusnya, URL endpoint (/api/fn/<nama>) bila ada, dan contoh pemakaian singkat (mis. curl). DILARANG memanggil ulang tool yang sama dengan argumen yang sama lebih dari 2 kali — jika gagal 2 kali, berhenti, analisis pesan errornya, ubah pendekatan atau perbaiki kodenya dulu, baru coba lagi. Data contoh yang kamu buat sendiri untuk pengujian WAJIB dihapus setelah pengujian selesai. Batas eksekusi backend function 14 detik: jangan loop db.get berurutan lebih dari 20 kali — pakai db.list(prefix) untuk batch dan simpan index/agregat saat menulis. AUTO-LANJUT: bila user mengirim pesan singkat instruksi untuk meneruskan tugas (mis. "Lanjutkan tugas dari titik terhenti..."), itu instruksi resmi: LANGSUNG kerjakan dan TAMATKAN seluruh sisa tugas pada giliran yang sama — tanpa bertanya, tanpa merangkum ulang, tanpa mengulang bagian yang sudah selesai.  (9) TYPESCRIPT & NEXT.JS — pipeline deploy Clincoo murni statis (server TIDAK punya Node/npm). (a) TYPESCRIPT DIDUKUNG: tulis kode di file .ts/.tsx — saat deploy server OTOMATIS mengompilasinya menjadi .js murni (tipe & interface dihapus, import type dihapus, JSX dikompilasi jadi React.createElement — jadi WAJIB sertakan React via CDN di HTML bila memakai JSX, dan tulis TS browser-native: ES module murni dengan import relatif eksplisit, TANPA paket npm/bundler/require/node_modules, TANPA API server seperti fs/process). HTML boleh mereferensikan file .ts langsung (mis. src="app.ts") — server menulis ulang ke .js saat deploy. Bila lebih yakin, kamu juga boleh menulis pasangan .ts + .js eksplisit (file .js eksplisit menang; .ts-nya diabaikan saat deploy). (b) NEXT.JS TIDAK BISA jalan penuh di Clincoo (SSR/API routes butuh runtime Node): jangan pernah mengarang bahwa server menjalankan npm install/next build. Jika user minta Next.js: jelaskan jujur sekali singkat, lalu tawarkan dan kerjakan opsi terbaik — situs statis lengkap bernuansa Next.js (App Router style: layout, halaman, komponen) yang LANGSUNG jalan dan terpublish, plus (bila user mau bawa kodenya) source .tsx rapi di folder src/ untuk dibuild sendiri di mesinnya dengan next build (output: export). Yang diutamakan SELALU: hasil publish sukses dan situs benar-benar berfungsi.DILARANG menawarkan "mau saya lanjutkan?" — jika masih ada sisa pekerjaan, kerjakan langsung sampai benar-benar tuntas. \n\nSENIOR ENGINEER STANDARDS (WAJIB): kamu adalah Senior Full-Stack Engineer dengan 10+ tahun pengalaman production — menguasai frontend modern (HTML/CSS/JS, React/Next.js, Vue, TypeScript, Tailwind, shadcn/ui) dan backend (Node.js/Express, FastAPI, NestJS, PostgreSQL, Prisma/Drizzle, Redis, auth JWT/OAuth, Cloudflare Workers/Pages). ATURAN KETAT: kode SELALU LENGKAP dan siap pakai per file — DILARANG memotong, meringkas, atau menulis "// ... rest of code" di dalam file (file panjang dipecah jadi beberapa modul dengan path jelas, bukan dipotong); output production-ready: struktur folder jelas, separation of concerns, error handling matang (try/catch + pesan informatif), security best practices (validasi input sisi server, sanitasi, rate limit, DILARANG hardcode secret), responsif & accessible; saat membangun aplikasi: arsitektur singkat dulu lalu BACKEND DULU (schema data, API, auth) baru FRONTEND dengan integrasi FE-BE jelas (path fetch, penanganan error klien); JANGAN berhenti di tengah kode atau menunggu izin antar-file — lanjut file per file sampai SEMUA selesai baru rangkum; utamakan kode bersih & maintainable, performance (lazy load/caching), UX bagus, scalability. (14) JIWA AGENT — LIMA JIWA DALAM SATU DIRI (WAJIB MELEKAT SETIAP GILIRAN): lima jiwa ini menyatu di dirimu dan bekerja serentak pada setiap jawaban dan pekerjaan. (i) JIWA THINKER — sebelum menjawab/membangun, RENUNGKAN DI DALAM: apa sebenarnya yang diminta user, apa yang sudah ada, apa yang belum jelas, apa risiko salahnya; susun rencana singkat lalu eksekusi dengan urutan yang benar. PENTING: proses renungan HANYA di dalam kepala — output ke user hanya hasil akhirnya yang bersih (aturan (4) tetap berlaku). (ii) JIWA BUILDER — kamu pembangun sungguhan: hasil kerjamu harus selalu LAYAK PAKAI dan siap jalan; kalau membangun, bangun sampai tuntas; kalau mengubah, ubah sampai konsisten antar-file (HTML-CSS-JS satu kesatuan). (iii) JIWA ENGINEER — presisi: kode valid dan lengkap, selector/variabel/path cocok dengan file lain, tidak ada referensi ke fungsi/halaman yang tidak ada, state management benar. (iv) JIWA DEBUGGER — jika ada error/anomali: telusuri akar masalah sampai ketemu, perbaiki di titiknya, uji ulang, baru laporkan; jangan menambal gejala. (v) JIWA VERIFIER — sebelum mengirim jawaban akhir, LAKUKAN PEMERIKSAAN AKHIR DI DALAM: (v-1) semua klaim didukung data nyata, tidak ada fakta/angka/nama file yang dikarang; (v-2) janji yang disebut sudah benar-benar dikerjakan pada giliran ini (atau jelas tertunda dengan alasan nyata); (v-3) tidak ada sisa teks aneh: JSON mentah, log internal, tag internal ([[POLL]]/[[FORM]]/T:/Q:/A: hanya dalam format wajibnya), potongan kalimat terpotong, atau bahasa campur; (v-4) jika menulis kode, kode itu sudah dibayangkan JALAN dari atas ke bawah sekurang-kurangnya sekali (mental-run) — jika ada bagian yang tidak yakin, perbaiki dulu sebelum menulis; (v-5) JIKA DITEMUKAN ANOMALI DI OUTPUT SENDIRI (kode rusak, duplikasi file, jawaban melenceng dari permintaan), perbaiki SEGERA pada giliran yang sama — jangan biarkan user yang menyuruh ulang. DENGAN JIWA INI, setiap output harus: benar, tuntas, konsisten, bebas anomali — kualitas karya yang membuat user tidak perlu memeriksa ulang pekerjaanmu.';
-
-const FALLBACK_LIMITS = { monthly: 50, daily: 10 }; // fallback (Starter) — limit asli per paket: PLAN_AI_LIMITS
+const FALLBACK_LIMITS = { monthly: 50, daily: 10 };
 const ADMIN_LIMITS = { monthly: 5000, daily: 500 };
 
-// Kuota AI sesuai paket langganan akun (bulanan + cap harian).
-// Starter 50/bln (10/hari) / Pro 500/bln (50/hari) / Bisnis 2.000/bln (150/hari). Admin lebih besar.
 async function aiLimits(env, user) {
   const isAdmin = ADMIN_EMAILS.has(user.email);
   try {
@@ -1077,22 +662,6 @@ async function aiLimits(env, user) {
   } catch (e) {
     return isAdmin ? ADMIN_LIMITS : FALLBACK_LIMITS;
   }
-}
-
-// Gemini multi-kunci: utama (GEMINI_API_KEY) + cadangan (_2, _3, _4).
-// Nilai boleh berawalan "AQ." — Google menerima apa adanya. Rotasi otomatis di tryModels.
-async function getGeminiKeys(env) {
-  const keys = [];
-  const seen = new Set();
-  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
-  add(env.GEMINI_API_KEY);
-  add(env.GEMINI_API_KEY_4); add(env.GEMINI_API_KEY_5); add(env.GEMINI_API_KEY_6);
-  if (!env.DB) return keys;
-  try {
-    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key IN ('GEMINI_API_KEY','GEMINI_API_KEY_2','GEMINI_API_KEY_3','GEMINI_API_KEY_4','GEMINI_API_KEY_5','GEMINI_API_KEY_6')").all();
-    for (const r of rows.results || []) add(r.value);
-  } catch {}
-  return keys;
 }
 
 async function resolveUser(env, request) {
@@ -1106,11 +675,11 @@ async function resolveUser(env, request) {
   return null;
 }
 
-async function quotaCheck(env, user, cost = 1, freeChat = false) {
+async function quotaCheck(env, user, cost = 1) {
   const limits = await aiLimits(env, user);
   const now = new Date();
   const day = now.toISOString().slice(0, 10);
-  const month = now.toISOString().slice(0, 7); // counter bulanan disimpan sebagai day='YYYY-MM'
+  const month = now.toISOString().slice(0, 7);
   try {
     await env.DB.prepare(
       'CREATE TABLE IF NOT EXISTS ai_quota (user_key TEXT, day TEXT, count INTEGER, PRIMARY KEY (user_key, day))'
@@ -1123,87 +692,66 @@ async function quotaCheck(env, user, cost = 1, freeChat = false) {
       if (r.day === day) dayCount = r.count;
       if (r.day === month) monthCount = r.count;
     }
-    // [9 Okt 2026, arahan pemilik] SALDO KREDIT = GERBANG UTAMA mode BUILD:
-    // pesan mode build dipotong dari saldo per pemakaian; saldo 0 → BLOKIR dengan
-    // pesan hardcoded pemilik (link top-up). Admin dikecualikan.
-    // [9 Okt 2026, arahan pemilik: "mode chat biarkan gratis"] MODE CHAT GRATIS:
-    // TIDAK dicek saldonya — hanya dibatasi cap harian & bulanan di bawah.
-    if (!freeChat && !ADMIN_EMAILS.has(user.email)) {
+
+    if (!ADMIN_EMAILS.has(user.email)) {
       const packs = await getActivePacks(env.DB, user.key);
       const balance = packs.reduce((a, p) => a + (p.credits_left || 0), 0);
-      if (balance < 0.00001) { // pecahan: sisa saldo kecil pun masih bisa dipakai
+      if (balance < 0.00001) {
         return { exceeded: true, scope: 'empty', balance: 0, count: monthCount, message: QUOTA_MSG_EMPTY };
       }
     }
-    // Cap anti-burst tetap berlaku: bulanan (periode tagihan) lalu harian.
-    if (monthCount + cost > limits.monthly) {
-      return { exceeded: true, scope: 'monthly', limit: limits.monthly, count: monthCount, message: QUOTA_MSG_MONTHLY };
-    }
-    if (dayCount + cost > limits.daily) {
+
+    if (cost > limits.daily || cost > limits.monthly) {
       return { exceeded: true, scope: 'daily', limit: limits.daily, count: dayCount, message: QUOTA_MSG_DAILY };
     }
-    await env.DB.batch([
-      env.DB.prepare(
-        'INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET count = count + ?'
-      ).bind(user.key, day, cost, cost),
-      env.DB.prepare(
-        'INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, ?) ON CONFLICT(user_key, day) DO UPDATE SET count = count + ?'
-      ).bind(user.key, month, cost, cost)
-    ]);
+    // Kenaikan atomik: hanya naik bila hasilnya masih <= limit (tanpa baca-lalu-tulis)
+    const upsert = (k, lim) => env.DB.prepare(
+      'INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, ?) ' +
+      'ON CONFLICT(user_key, day) DO UPDATE SET count = count + ? WHERE count + ? <= ?'
+    ).bind(user.key, k, cost, cost, cost, lim).run();
+    const rd = await upsert(day, limits.daily);
+    if (!((rd.meta && rd.meta.changes) > 0)) {
+      return { exceeded: true, scope: 'daily', limit: limits.daily, count: dayCount, message: QUOTA_MSG_DAILY };
+    }
+    const rm = await upsert(month, limits.monthly);
+    if (!((rm.meta && rm.meta.changes) > 0)) {
+      // batalkan kenaikan harian karena bulanan sudah penuh
+      await env.DB.prepare('UPDATE ai_quota SET count = count - ? WHERE user_key = ? AND day = ?').bind(cost, user.key, day).run();
+      return { exceeded: true, scope: 'monthly', limit: limits.monthly, count: monthCount, message: QUOTA_MSG_MONTHLY };
+    }
     return { exceeded: false, limit: limits, limits, usedDay: dayCount, usedMonth: monthCount };
   } catch (e) {
-    return { exceeded: false, limit: limits }; // gagal DB ≠ blokir user
+    // fail-closed: bila DB bermasalah, jangan loloskan gratis
+    return { exceeded: true, scope: 'error', error: true, count: 0 };
   }
 }
 
-// ===== Potongan kredit sesuai PENGGUNAAN user (8 Okt 2026, arahan pemilik) =====
-// Bukan harga per model lagi: kredit dipotong dari TOTAL PENGGUNAAN token user —
-//   1 kredit dasar per pesan
-//   +1 kredit tiap kelipatan 8.000 token INPUT di atas jatah gratis 8.000
-//   +1 kredit tiap kelipatan 2.000 token OUTPUT di atas jatah gratis 2.000
-// Rasio ~3x biaya provider (modelrouter: input $0.15/1M, output $0.5/1M).
-// Token dihitung dari karakter riil (estimasi umum: 4 karakter ≈ 1 token).
-// Pre-flight quotaCheck memotong 1 sebagai reservasi; setelah jawaban jadi,
-// SELISIH biaya sebenarnya dipotong di chargeAiUsage.
-// [9 Okt 2026, arahan pemilik: "tadi aja haiku — 30rb token itu Rp10.
-// Masa Rp2 per 2000 token"] Tarif dipatok PERSIS ke biaya provider riil
-// (1 kredit = Rp10, nilai top-up QRIS):
-//   Haiku : 30.000 token = Rp10 = 1 KREDIT
-//   GLM   : 30.000 token = Rp15 = 1,5 KREDIT (GLM 1,5x harga haiku,
-//           sesuai rasio harga provider yang pemilik berikan)
-// Model lain (llama/nemotron/deepseek/gemini/cadangan): pakai tarif GLM.
-// Token dihitung dari karakter riil (4 karakter ≈ 1 token).
-// Biaya dibulatkan ke 2 desimal supaya angka tampil pendek.
 function tokensOfChars(chars) { return Math.ceil((chars || 0) / 4); }
-const KRED_PER_30K_HAIKU = 1;   // 30rb token haiku = Rp10 = 1 kredit
-const KRED_PER_30K_GLM = 1.5;   // 30rb token glm = Rp15 = 1,5 kredit
+const KRED_PER_30K_GLM = 1.5;
 function aiCostOf(model, outputChars, inputChars) {
-  const m = String(model || '').toLowerCase();
-  const per30k = m.indexOf('haiku') !== -1 ? KRED_PER_30K_HAIKU : KRED_PER_30K_GLM;
+  const per30k = KRED_PER_30K_GLM;
   const tokens = tokensOfChars(inputChars) + tokensOfChars(outputChars);
   const cost = (tokens / 30000) * per30k;
-  return Math.max(0.01, Math.round(cost * 100) / 100); // maks 2 desimal
+  return Math.max(0.01, Math.round(cost * 100) / 100);
 }
-// [9 Okt 2026, arahan pemilik] Kredit dipotong dari SALDO (Paket Kredit AI /
-// starter) SESUAI PEMAKAIAN user — usage-based (1 + selisih token), semua mode
-// (chat & build). Pre-flight quotaCheck sudah memotong 1 dari counter cap;
-// di sini seluruh biaya sebenarnya dipotong dari saldo paket.
-// [9 Okt, arahan pemilik] Biaya dari token NYATA per model (mrUsageAcc):
-// haiku 1 kredit / 30.000 token, glm 1,5 kredit / 30.000 token (persis harga
-// provider). null bila MR tak terpakai -> fallback estimasi karakter.
+
 function mrTokenCost(acc) {
-  const h = (acc && acc['claude-haiku-5.5']) || 0;
-  const g = (acc && acc['glm-5.3-flash']) || 0;
-  if (h + g <= 0) return null;
-  return Math.max(0.01, Math.round((h * 1 + g * 1.5) / 30000 * 100) / 100);
+  if (!acc) return null;
+  const W = { 'glm-5.3-flash:mr': 1.5 };
+  let used = false, total = 0;
+  for (const k of Object.keys(acc)) {
+    used = true;
+    total += (W[k] != null ? W[k] : 1) * (acc[k] || 0);
+  }
+  if (!used) return null;
+  if (total <= 0) return 0;
+  return Math.max(0.01, Math.round(total / 30000 * 100) / 100);
 }
 async function chargeAiUsage(env, user, model, outputChars, inputChars, charge = true, costOverride = null) {
   if (!user || !user.key) return;
   try {
     const cost = (costOverride === null || costOverride === undefined) ? aiCostOf(model, outputChars, inputChars) : costOverride;
-    // [9 Okt 2026, arahan pemilik] MODE CHAT = GRATIS: pemakaian tetap dicatat
-    // (history/statistik), tapi saldo & counter cap TIDAK dipotong — cap
-    // harian/bulanan sudah dihitung pre-flight (1 pesan = 1 hit).
+
     if (!charge) {
       await env.DB.prepare(
         'CREATE TABLE IF NOT EXISTS ai_usage (user_key TEXT, ts INTEGER, model TEXT, out_chars INTEGER, cost INTEGER)'
@@ -1214,65 +762,19 @@ async function chargeAiUsage(env, user, model, outputChars, inputChars, charge =
       ).bind(user.key, Date.now(), String(model || '').slice(0, 64), Math.max(0, outputChars | 0), Math.max(0, inputChars | 0), 0).run();
       return;
     }
-    // [9 Okt] Cap harian/bulanan = JUMLAH PESAN (sudah +1 pre-flight, tidak
-    // ditambah lagi). SALDO dipotong pecahan sesuai biaya nyata pemakaian.
+
     await env.DB.prepare(
       'CREATE TABLE IF NOT EXISTS ai_usage (user_key TEXT, ts INTEGER, model TEXT, out_chars INTEGER, cost INTEGER)'
     ).run();
     try { await env.DB.prepare('ALTER TABLE ai_usage ADD COLUMN in_chars INTEGER').run(); } catch (e) {}
-    // Saldo paket dipotong penuh sesuai biaya pemakaian (boleh parsial bila
-    // saldo tinggal sedikit — sisanya habis, pesan berikutnya diblokir).
+
     try { await consumePackCredit(env.DB, user.key, cost); } catch (e) {}
     await env.DB.prepare(
       'INSERT INTO ai_usage (user_key, ts, model, out_chars, in_chars, cost) VALUES (?, ?, ?, ?, ?, ?)'
     ).bind(user.key, Date.now(), String(model || '').slice(0, 64), Math.max(0, outputChars | 0), Math.max(0, inputChars | 0), cost).run();
-  } catch (e) { /* gangguan pencatatan ≠ gangguin jawaban user */ }
+  } catch (e) {  }
 }
 
-function partsFromContent(content) {
-  if (typeof content === 'string') return [{ text: content }];
-  if (Array.isArray(content)) {
-    const parts = [];
-    for (const block of content) {
-      if (!block) continue;
-      if (block.type === 'text' && block.text) parts.push({ text: block.text });
-      else if (block.type === 'image_url' && block.image_url?.url) {
-        const m = /^data:(.+?);base64,(.+)$/.exec(block.image_url.url || '');
-        if (m) parts.push({ inlineData: { mimeType: m[1], data: m[2] } });
-      }
-      // Pass-through function calling (hop multi-step dari klien)
-      else if (block.type === 'function_call' && block.name) {
-        const fcPart = { functionCall: { name: block.name, args: block.args || {} } };
-        if (block.thought_signature) fcPart.thoughtSignature = block.thought_signature;
-        parts.push(fcPart);
-      }
-      else if (block.type === 'function_response' && block.name) {
-        parts.push({ functionResponse: { name: block.name, response: { result: block.result } } });
-      }
-    }
-    return parts.length ? parts : [{ text: '.' }];
-  }
-  return [{ text: '.' }];
-}
-
-function toGeminiPayload(messages) {
-  let systemInstruction = null;
-  const contents = [];
-  for (const m of messages) {
-    if (!m) continue;
-    if (m.role === 'system') {
-      const text = typeof m.content === 'string' ? m.content : partsFromContent(m.content).map(p => p.text || '').join('\n');
-      systemInstruction = systemInstruction ? systemInstruction + '\n' + text : text;
-      continue;
-    }
-    contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts: partsFromContent(m.content) });
-  }
-  // Lindungi dari konteks kepanjangan: simpan 30 pesan terakhir
-  if (contents.length > 30) contents.splice(0, contents.length - 30);
-  return { systemInstruction, contents };
-}
-
-// ===== Deklarasi tools (dieksekusi LOKAL di browser klien) =====
 const WORKSPACE_FUNCTION_DECLARATIONS = [
   { name: 'list_items',
     description: 'Lihat daftar file & folder di dalam sebuah folder workspace Clincoo milik user. Gunakan ini untuk melihat isi workspace atau folder sebelum melakukan operasi lain.',
@@ -1298,7 +800,7 @@ const WORKSPACE_FUNCTION_DECLARATIONS = [
   { name: 'search_items',
     description: 'Cari file atau folder di seluruh workspace berdasarkan nama.',
     parameters: { type: 'OBJECT', properties: { query: { type: 'STRING', description: 'Kata kunci nama file/folder.' } }, required: ['query'] } },
-  // ===== TOOLS SUPER =====
+
   { name: 'run_command',
     description: 'Jalankan perintah di TERMINAL LINUX persisten milik user (sandbox E2B terisolasi, ada internet). Sesi bertahan ±10 menit antar-command: file yang dibuat, tool yang di-install (apt-get install, pip install, npm), dan working directory TETAP ADA sampai sesi habis. Bisa: perintah Linux umum (ls, grep, awk, curl, ping, whois, dig), install & jalankan tool tambahan (nmap, sqlmap, netcat, jq, ffmpeg, dll), fetch API eksternal dengan header/secret yang USER berikan di command (curl -H "Authorization: Bearer ..."), download file (wget), compile kode (gcc/python/node), dsb. Sandbox TIDAK melihat file workspace atau secret platform Clincoo — jika kode butuh isi file, tulis/tempel isinya langsung. Gunakan hanya untuk aksi terminal yang diminta user atau yang benar-benar dibutuhkan. DILARANG memakai run_command untuk memanggil API Clincoo sendiri (app.clincoo.buzz/api/* termasuk /api/pay) atau API gateway pembayaran (Pakasir/BuatQris dkk) — SEMUA operasi Clincoo wajib lewat tool resmi (mis. clincoo_pay untuk pembayaran); bila tool gagal, laporkan errornya, jangan improvisasi manual via terminal.',
     parameters: { type: 'OBJECT', properties: {
@@ -1468,7 +970,7 @@ const WORKSPACE_FUNCTION_DECLARATIONS = [
       branch: { type: 'STRING', description: 'Branch tujuan (opsional, default "main"). Repo harus sudah punya branch ini.' },
       commit_message: { type: 'STRING', description: 'Pesan commit (opsional).' }
     }, required: ['repo'] } },
-  // ===== TOOLS DATABASE (CRUD database proyek — sama data dengan halaman Database) =====
+
   { name: 'db_list_tables',
     description: 'Lihat semua tabel di DATABASE proyek aktif (nama, kolom, jumlah baris). Gunakan saat user bertanya isi database-nya, atau sebelum membuat/mengubah tabel & baris.',
     parameters: { type: 'OBJECT', properties: {} } },
@@ -1512,7 +1014,7 @@ const WORKSPACE_FUNCTION_DECLARATIONS = [
       table_name: { type: 'STRING', description: 'Nama tabel.' },
       id: { type: 'NUMBER', description: 'ID baris yang dihapus.' }
     }, required: ['table_name', 'id'] } },
-  // ===== TOOLS BACKEND FUNCTION (dieksekusi otomatis di server) =====
+
   { name: 'create_backend_function',
     description: 'Buat backend function baru milik user (ala platform builder): tulis kode -> terpasang -> bisa dipanggil via URL /api/fn/<nama>. Kode adalah badan fungsi async dengan parameter `args` (objek), boleh pakai `fetch`, `JSON`, dan `db` (DATABASE BAWAAN: await db.get(k), db.set(k,v), db.del(k), db.list(prefix), db.count() — data bertahan permanen, kuota mengikuti paket langganan). WAJIB return nilai. Contoh kode: "await db.set(args.id, args); return { ok: true }". BATAS RUNTIME: eksekusi maksimal 14 detik per panggilan (lebih dari itu = timeout). Tiap db.get/db.set adalah network call yang lambat: DILARANG loop berurutan lebih dari 20 get dalam satu function — gunakan db.list(prefix) untuk membaca banyak data sekaligus, dan simpan index/agregat saat menulis data agar laporan cukup membaca 1-2 kunci saja. Untuk WEBHOOK PUBLIK (callback payment gateway Midtrans/Xendit/Tripay, layanan eksternal): set is_public true — respons berisi webhook_url berisi key rahasia yang WAJIB diberikan ke user untuk dipasang di dashboard gateway. Gunakan saat user minta API endpoint, webhook, payment backend, integrasi data, atau logika backend.',
     parameters: { type: 'OBJECT', properties: {
@@ -1533,7 +1035,7 @@ const WORKSPACE_FUNCTION_DECLARATIONS = [
       name: { type: 'STRING', description: 'Nama function.' },
       args: { type: 'OBJECT', description: 'Objek argumen input untuk function, contoh: {"url": "https://contoh.com"}.' }
     }, required: ['name'] } },
-  // ===== TOOLS BROWSER/SCREENSHOT (dieksekusi otomatis di server) =====
+
   { name: 'review_code',
     description: 'Periksa SEMUA kode proyek di workspace untuk menemukan error, bug, kelemahan keamanan, dan masalah logika — laporan per file dengan saran perbaikan. Gunakan saat user minta cek/review/debug/cari bug kode proyek.',
     parameters: { type: 'OBJECT', properties: { question: { type: 'STRING', description: 'Fokus review khusus (opsional), contoh: "kenapa tombol simpan tidak berfungsi".' } } } },
@@ -1545,215 +1047,39 @@ const WORKSPACE_FUNCTION_DECLARATIONS = [
     }, required: ['url'] } }
 ];
 
-// [7 Okt 2026, laporan pemilik: "AI di labs baik2 aja, ga kaya di clincoo app"] AKAR
-// BEDANYA: fetch Gemini TIDAK punya timeout per-permintaan. Satu kunci yang nge-hang
-// (flaky, terjadi intermiten hari ini) menghabisasi SELURUH jendela 30s kandidat
-// Gemini di race -> kunci-kunci sehat lainnya tak pernah dicoba -> jawaban jatuh ke
-// kandidat lemah gratis (kualitas lebih rendah, 30s+) padahal labs (jalur Gemini
-// langsung) menjawab 4 detik. FIX: tiap request Gemini diberi napas 15 detik —
-// kunci nge-hang langsung dilewati, tryModels lanjut ke kunci/model berikutnya.
-const GEMINI_REQ_TIMEOUT_MS = 15000;
-function geminiFetchWithTimeout(url, options) {
-  const ctrl = new AbortController();
-  const tid = setTimeout(() => { try { ctrl.abort(); } catch (e) {} }, GEMINI_REQ_TIMEOUT_MS);
-  return fetch(url, Object.assign({}, options || {}, { signal: ctrl.signal })).finally(() => clearTimeout(tid));
-}
-
-async function fetchGemini(apiKey, model, systemInstruction, contents, tools) {
-  const payload = { contents };
-  if (tools) payload.tools = tools;
-  if (systemInstruction) payload.systemInstruction = { parts: [{ text: systemInstruction }] };
-  const res = await geminiFetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-    body: JSON.stringify(payload)
-  });
-  if (!res.ok) {
-    await res.text().catch(() => ''); // buang body error mentah, jangan pernah diteruskan ke user
-    const reason = res.status === 429 ? 'limit tercapai' : (res.status >= 500 ? 'server bermasalah' : 'gagal (' + res.status + ')');
-    // jangan sertakan nama model di teks error: ini yang bocor ke UI chat.
-    return { error: `AI sedang ${reason}`, status: res.status };
-  }
-  return { data: await res.json() };
-}
-
-// STREAMING SSE: jawaban dikirim ke klien per potongan (delta) begitu keluar dari
-// model — user melihat teks tumbuh live, tidak menunggu jawaban utuh selesai.
-// Bagian parts dari semua chunk SSE digabung jadi satu respons berbentuk sama
-// dengan fetchGemini, jadi logika tryModels (tool_calls dsb.) tak berubah.
-async function fetchGeminiStream(apiKey, model, systemInstruction, contents, tools, onDelta) {
-  const payload = { contents };
-  if (tools) payload.tools = tools;
-  if (systemInstruction) payload.systemInstruction = { parts: [{ text: systemInstruction }] };
-  const res = await geminiFetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-    body: JSON.stringify(payload)
-  });
-  if (!res.ok) {
-    await res.text().catch(() => {});
-    const reason = res.status === 429 ? 'limit tercapai' : (res.status >= 500 ? 'server bermasalah' : 'gagal (' + res.status + ')');
-    // jangan sertakan nama model di teks error: ini yang bocor ke UI chat.
-    return { error: `AI sedang ${reason}`, status: res.status };
-  }
-  const reader = res.body.getReader();
-  const dec = new TextDecoder();
-  let buf = '';
-  const parts = [];
-  let finishReason = '';
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += dec.decode(value, { stream: true });
-    let nl;
-    while ((nl = buf.indexOf('\n')) !== -1) {
-      const line = buf.slice(0, nl).trim();
-      buf = buf.slice(nl + 1);
-      if (!line.startsWith('data:')) continue;
-      let j; try { j = JSON.parse(line.slice(5).trim()); } catch (e) { continue; }
-      if (j.candidates && j.candidates[0] && j.candidates[0].finishReason) finishReason = j.candidates[0].finishReason;
-      const cps = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
-      for (const pt of cps) {
-        parts.push(pt);
-        if (pt.text && onDelta) { try { onDelta(pt.text); } catch (eD) {} }
-      }
-    }
-  }
-  return { data: { candidates: [{ content: { parts }, finishReason }] } };
-}
-
-// [7 Okt 2026 v2] Kunci Gemini yang nge-hang (flaky intermiten) dikenai cooldown
-// 10 menit — tanpa ini request berikutnya mencoba kunci mati itu LAGI dan membakar
-// 15 detik per kunci per request (tes: 2 kunci hang beruntun = jawaban 34s padahal
-// kunci sehat menjawab dalam 3s). Kunci terakhir yang sukses dipromosi ke urutan
-// depan. State per-isolate, aman dan gratis.
-const _gmKeyHealth = new Map();
-function _geminiKeyOrder(keys) {
-  const now = Date.now();
-  const good = [], cooled = [];
-  for (const k of keys) {
-    const h = _gmKeyHealth.get(k);
-    if (h && h.badUntil > now) cooled.push(k); else good.push(k);
-  }
-  const last = _gmKeyHealth.get('last-good');
-  if (last && good.indexOf(last) !== -1) { good.splice(good.indexOf(last), 1); good.unshift(last); }
-  return good.concat(cooled);
-}
-
-async function tryModels(apiKeys, systemInstruction, contents, tools, onDelta) {
-  const keys = _geminiKeyOrder(Array.isArray(apiKeys) ? apiKeys.filter(Boolean) : [apiKeys].filter(Boolean));
-  let lastError = null;
-  const statuses = [];
-  if (!keys.length) return { error: 'Tidak ada kunci tersedia', statuses };
-  // [7 Okt 2026 v3, laporan pemilik "dah cepet belum?"] FAN-OUT PARALEL: sebelumnya
-  // kunci dicoba BERURUTAN — satu kunci nge-hang menahan 15 detik, dua kunci hang
-  // beruntun = 34 detik padahal kunci sehat menjawab dalam 3 detik. Sekarang semua
-  // pasangan kunci x model ditembak bersamaan (urutan tetap sehat-dulu dari
-  // _geminiKeyOrder, cap 8 request) dan jawaban valid PERTAMA langsung dipakai;
-  // kunci hang hang sendiri di sisinya tanpa menahan siapa pun.
-  const pairs = [];
-  for (const k of keys) for (const m of PREFERRED_MODELS) pairs.push({ key: k, model: m });
-  if (pairs.length > 8) pairs.length = 8;
-  let winnerIdx = null; // attempt yang delta-nya boleh diteruskan ke klien
-  const attempt = async (idx) => {
-    const { key: apiKey, model } = pairs[idx];
-    const od = onDelta ? (tx) => {
-      if (winnerIdx !== null && winnerIdx !== idx) return; // attempt lain sudah megang delta
-      winnerIdx = idx;
-      onDelta(tx);
-    } : null;
-    try {
-      const r = od ? await fetchGeminiStream(apiKey, model, systemInstruction, contents, tools, od) : await fetchGemini(apiKey, model, systemInstruction, contents, tools);
-      if (r.error) return { fail: true, status: r.status || 0, error: r.error };
-      const parts = r.data?.candidates?.[0]?.content?.parts || [];
-      let text = parts.map(p => p.text || '').join('');
-      let toolCalls = parts
-        .filter(p => p.functionCall)
-        .map(p => ({ name: p.functionCall.name, args: p.functionCall.args || {}, thought_signature: p.thoughtSignature || undefined }));
-      // AUTO-CONTINUE (finishReason MAX_TOKENS/LENGTH): sambung otomatis dari titik
-      // henti tanpa sesi baru — logika sama dengan versi berurut yang lama.
-      if (!toolCalls.length && text) {
-        let finish = r.data?.candidates?.[0]?.finishReason || '';
-        let seg = text;
-        const contContents = contents.slice();
-        for (let ac = 0; ac < 3 && (finish === 'MAX_TOKENS' || finish === 'LENGTH'); ac++) {
-          contContents.push({ role: 'model', parts: [{ text: seg }] });
-          contContents.push({ role: 'user', parts: [{ text: 'lanjutkan persis dari titik terakhirmu — jangan ulang dari awal, jangan bertanya, langsung sambung teksnya' }] });
-          const rc = od ? await fetchGeminiStream(apiKey, model, systemInstruction, contContents, tools, od) : await fetchGemini(apiKey, model, systemInstruction, contContents, tools);
-          if (rc.error) break;
-          const pc = rc.data?.candidates?.[0]?.content?.parts || [];
-          const tc2 = pc.filter(p => p.functionCall).map(p => ({ name: p.functionCall.name, args: p.functionCall.args || {}, thought_signature: p.thoughtSignature || undefined }));
-          if (tc2.length) break; // sambungan minta tool -> serahkan ke alur hop biasa
-          const t2 = pc.map(p => p.text || '').join('');
-          if (!t2) break;
-          seg = t2; text += t2;
-          finish = rc.data?.candidates?.[0]?.finishReason || '';
-        }
-      }
-      if (toolCalls.length > 0 || text) return { ok: true, text, toolCalls, model, apiKey };
-      return { fail: true, status: 0, error: 'Jawaban AI kosong — coba kirim ulang' };
-    } catch (err) {
-      if (err && (err.name === 'AbortError' || /aborted|timed? ?out/i.test(String(err.message || '')))) {
-        _gmKeyHealth.set(apiKey, { badUntil: Date.now() + 10 * 60_000 }); // nge-hang -> cooldown 10 menit
-      }
-      return { fail: true, status: 0, error: err.message || 'gagal' };
-    }
-  };
-  return await new Promise((resolve) => {
-    let failures = 0; let settled = false;
-    const fin = (v) => { if (!settled) { settled = true; resolve(v); } };
-    pairs.forEach((_, i) => {
-      attempt(i).then(res => {
-        if (settled) return;
-        if (res.ok) {
-          _gmKeyHealth.set('last-good', res.apiKey); // kunci sehat -> promosi ke depan
-          fin(res.toolCalls.length > 0 ? { tool_calls: res.toolCalls, text: res.text, model: res.model } : { text: res.text, model: res.model });
-        } else {
-          lastError = res.error; statuses.push(res.status);
-          if (++failures === pairs.length) {
-            // providerBusy: SEMUA kunci/model menolak 429 -> sibuknya SERVER AI, BUKAN
-            // kuota user; dikirim sebagai provider_busy agar klien tidak menampilkan
-            // pesan "kuota habis/upgrade paket" yang menyesatkan.
-            const quotaExhausted = statuses.length > 0 && statuses.every(st => st === 429);
-            // Konteks percakapan ke-limiter (chat panjang + kode file besar).
-            const RE_CTX = /(exceeds?.{0,40}(context|token)|context.{0,40}(length|window|size)|too many (input )?tokens|maximum.{0,30}tokens|token count|input too large|payload too large|request entity too large)/i;
-            const contextOverflow = !!lastError && RE_CTX.test(String(lastError));
-            fin({ error: lastError || 'All models failed', quotaExhausted, providerBusy: quotaExhausted, contextOverflow, statuses });
-          }
-        }
-      });
-    });
-  });
-}
-
-// --- Kuota guest (tanpa login): per-IP per-hari, tabel sama dengan kuota user ---
 const GUEST_DAILY_LIMIT = 25;
 async function guestQuotaCheck(env, guestKey) {
   const day = new Date().toISOString().slice(0, 10);
   try {
     await env.DB.prepare('CREATE TABLE IF NOT EXISTS ai_quota (user_key TEXT, day TEXT, count INTEGER, PRIMARY KEY (user_key, day))').run();
-    const r = await env.DB.prepare('SELECT count FROM ai_quota WHERE user_key = ? AND day = ?').bind(guestKey, day).first();
-    const used = (r && r.count) || 0;
-    if (used + 1 > GUEST_DAILY_LIMIT) {
-      return { exceeded: true, scope: 'daily', count: used, message: 'Kuota AI Clincoo tanpa login untuk hari ini sudah habis. Masuk atau daftar gratis untuk kuota penuh — atau coba lagi besok.' };
+    // Atomik: naik hanya bila hasilnya masih <= limit; RETURNING kosong = sudah penuh
+    const r = await env.DB.prepare(
+      'INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, 1) ' +
+      'ON CONFLICT(user_key, day) DO UPDATE SET count = count + 1 WHERE count + 1 <= ? RETURNING count'
+    ).bind(guestKey, day, GUEST_DAILY_LIMIT).first();
+    if (!r) {
+      return { exceeded: true, scope: 'daily', count: GUEST_DAILY_LIMIT, message: 'Kuota AI Clincoo tanpa login untuk hari ini sudah habis. Masuk atau daftar gratis untuk kuota penuh — atau coba lagi besok.' };
     }
-    await env.DB.prepare('INSERT INTO ai_quota (user_key, day, count) VALUES (?, ?, 1) ON CONFLICT(user_key, day) DO UPDATE SET count = count + 1').bind(guestKey, day).run();
+    const used = (r.count || 1) - 1;
     return { exceeded: false, count: used + 1, usedDay: used, limit: GUEST_DAILY_LIMIT };
   } catch (e) {
-    return { exceeded: false, count: 0 }; // DB gangguan -> jangan blokir chat
+    // fail-closed
+    return { exceeded: true, scope: 'error', error: true, count: 0 };
   }
 }
 
-// ===== TOOLS SERVER-SIDE (backend function & screenshot) =====
-// Tool ini dieksekusi DI SERVER (bukan di browser user): hasil langsung
-// ditempel ke percakapan dan provider dipanggil lagi — user/frontend tidak berubah.
 const SERVER_TOOLS = new Set(['create_backend_function', 'list_backend_functions', 'delete_backend_function', 'call_backend_function', 'take_screenshot', 'search_clincoo_kb', 'create_automation', 'install_automation', 'save_to_storage', 'read_storage_file', 'list_storage', 'delete_from_storage']);
-async function executeServerTool(env, user, tc, origin) {
-  // create_automation = nama lama/alias dari install_automation (deklarasi duplikat
-  // di TOOLS) — satukan di sini supaya tidak jatuh ke klien sebagai tool tak dikenal.
+
+const SERVER_TOOLS_ALL = new Set([...SERVER_TOOLS, ...WS_TOOL_NAMES]);
+async function executeServerTool(env, user, tc, origin, projectId) {
+
+  if (tc && WS_TOOL_NAMES.indexOf(tc.name) !== -1) {
+    return await wsToolExec(env.DB, user, String(projectId || ''), tc.name, tc.args || {});
+  }
+
   if (tc && tc.name === 'create_automation') tc = Object.assign({}, tc, { name: 'install_automation' });
   const a = tc.args || {};
-  // Tool yang menempel ke akun: guest (tanpa login) tidak bisa memakainya.
+
   if (!user && ['create_backend_function', 'list_backend_functions', 'delete_backend_function', 'call_backend_function', 'install_automation', 'save_to_storage', 'read_storage_file', 'list_storage', 'delete_from_storage'].indexOf(tc.name) !== -1) {
     return { error: 'Fitur ini memerlukan login Clincoo (gratis).' };
   }
@@ -1774,7 +1100,7 @@ async function executeServerTool(env, user, tc, origin) {
       return await m.takeScreenshot(a.url, a.width);
     }
     const m = await import('./fns.js');
-    // Backend functions = fitur paket Bisnis — gate juga jalur tool AI.
+
     if (tc.name !== 'list_backend_functions') {
       const _effFns = await getEffectivePlanByUserKey(env.DB, user.key);
       if (!featureAllowed(_effFns.plan, 'backendFunctions')) return { error: 'Fitur ini hanya untuk paket Bisnis. Sampaikan ke user singkat bahwa fitur ini butuh upgrade paket Bisnis, lalu lanjutkan bangun bagian situs yang tidak butuh backend function.' };
@@ -1789,7 +1115,6 @@ async function executeServerTool(env, user, tc, origin) {
   }
 }
 
-// Skema Gemini (OBJECT/STRING uppercase) -> JSON Schema OpenAI (lowercase)
 function orParam(schema) {
   const t = String((schema && schema.type) || '').toLowerCase();
   const out = { type: t === 'array' ? 'array' : t === 'boolean' ? 'boolean' : t === 'number' ? 'number' : t === 'object' ? 'object' : 'string' };
@@ -1799,26 +1124,26 @@ function orParam(schema) {
     for (const [k, v] of Object.entries(schema.properties)) out.properties[k] = orParam(v);
   }
   if (schema && Array.isArray(schema.required)) out.required = schema.required;
-  if (schema && schema.items) out.items = orParam(schema.items); // ARRAY of objects (write_files)
+  if (schema && schema.items) out.items = orParam(schema.items);
   return out;
 }
-// Tools tahap membangun: menulis + MEMBACA workspace (list/read dijalankan server-side
-// dari D1) agar programmer bisa melihat & mengedit file lama secara akurat.
-const BUILD_FUNCTION_DECLARATIONS = WORKSPACE_FUNCTION_DECLARATIONS.filter(d => ['write_file', 'create_folder', 'read_file', 'list_items'].includes(d.name));
-function orBuildTools() {
-  return BUILD_FUNCTION_DECLARATIONS.map(d => ({
-    type: 'function',
-    function: { name: d.name, description: d.description || '', parameters: orParam(d.parameters || { type: 'OBJECT', properties: {} }) }
-  }));
-}
-// Tools yang diekspos ke model = tools workspace saja (fitur Mode Kolaborasi/Tim AI dihapus).
+
 function workspaceDecls(_body) {
   return WORKSPACE_FUNCTION_DECLARATIONS;
 }
-// messages klien (format blok Clincoo) -> pesan OpenAI-compatible
 
-// GET /api/chat — status kredit AI akun ini (dipakai UI: ClincooPay top-up + banner kredit habis)
-// read-only, TIDAK memakai/mengurangi kuota atau kredit paket (beda dari quotaCheck yg dipanggil saat kirim pesan).
+async function logAiFailure(env, projectId, errText, mode) {
+  try {
+    if (!env || !env.DB) return;
+    const db = env.DB;
+    await db.prepare('CREATE TABLE IF NOT EXISTS ai_router_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT, ts TEXT, model TEXT, ok INTEGER, ms INTEGER, tokens INTEGER, err TEXT)').run();
+    await db.prepare('INSERT INTO ai_router_logs (project_id, ts, model, ok, ms, tokens, err) VALUES (?, ?, ?, 0, 0, 0, ?)')
+      .bind(String(projectId || '-'), new Date().toISOString(), String(mode || 'ai').slice(0, 60), String(errText || '(tanpa pesan)').slice(0, 240)).run();
+
+    await db.prepare('DELETE FROM ai_router_logs WHERE id NOT IN (SELECT id FROM (SELECT id FROM ai_router_logs ORDER BY id DESC LIMIT 500))').run();
+  } catch (e) {}
+}
+
 export async function onRequestGet({ request, env }) {
   try {
     const user = await resolveUser(env, request);
@@ -1827,7 +1152,7 @@ export async function onRequestGet({ request, env }) {
         status: 401, headers: { 'Content-Type': 'application/json', ...CORS }
       });
     }
-    // ?usage=1 -> riwayat pemakaian AI (model apa, output berapa, kredit berapa)
+
     if (new URL(request.url).searchParams.get('usage') === '1') {
       const limit = Math.min(200, Math.max(1, Number(new URL(request.url).searchParams.get('limit')) || 50));
       try {
@@ -1866,7 +1191,7 @@ export async function onRequestGet({ request, env }) {
     } catch (e) {}
     const subscriptionExhausted = monthUsed >= limits.monthly || dayUsed >= limits.daily;
     const isAdmin = ADMIN_EMAILS.has(user.email);
-    // [9 Okt] saldo = gerbang utama (kecuali admin) — habis → pesan hardcoded top-up
+
     const exhausted = isAdmin ? subscriptionExhausted : (creditsLeftTotal <= 0 || subscriptionExhausted);
     return new Response(JSON.stringify({
       success: true,
@@ -1886,9 +1211,6 @@ export async function onRequestGet({ request, env }) {
   }
 }
 
-// Teks progres real-time — diturunkan dari aksi tool yang DIPILIH AI SENDIRI
-// (nama tool + argumennya), bukan daftar status palsu yang berputar.
-// Server-side progress text (English -- professional, consistent with client side)
 function serverProgressText(tc) {
   const a = tc.args || {};
   if (tc.name === 'search_clincoo_kb') return 'Searching Clincoo knowledge base: ' + String(a.query || '').slice(0, 60) + '…';
@@ -1912,50 +1234,130 @@ function serverProgressText(tc) {
   return 'Processing: ' + tc.name + '…';
 }
 
-// ===== [7 Okt 2026, arahan owner: "ubah app clincoo buat hubungin model AI"] =====
-// KANDIDAT ORKESTRA-1 MINI: proxy ke worker clincoo-labs-pro — satu kandidat yang
-// membawa balapan 7 model + standar kualitas + verifikasi perintah install ke
-// registry resmi. Protokol chat polos: TANPA tools dan TANPA vision; bila gagal,
-// kandidat lain mengambil alih — jalur tools/tugas web tidak tersentuh.
-const ORKESTRA_MINI_URL = 'https://clincoo-labs-pro.clincoo-agent.workers.dev/api/v1/chat';
-function orkestraSanitize(messages) {
-  return (Array.isArray(messages) ? messages : [])
-    .filter(m => m && typeof m.content === 'string' && m.content.trim() && (m.role === 'user' || m.role === 'assistant' || m.role === 'system'))
-    .slice(-24)
-    .map(m => ({ role: m.role, content: String(m.content).slice(0, 16000) }));
+const ASISTEN_SYSTEM_PROMPT = "Kamu adalah Clincoo, asisten AI yang cerdas, hangat, dan sangat ahli di banyak bidang. Selalu jawab dalam bahasa Indonesia yang natural, jelas, dan ramah (santai tapi sopan, tidak kaku, tidak bertele-tele).\n\nPOLLING (PERTANYAAN PILIHAN)\n- Bila permintaan besar dan benar-benar ambigu (mis. \"buatkan web toko\" tanpa detail), kamu boleh bertanya lewat kartu pilihan sebelum mengerjakan. Bila permintaan sudah jelas, langsung kerjakan dan jangan bertanya.\n- Format: satu kalimat pengantar, lalu blok berpagar berlabel poll. Contoh isi:\n```poll\nQ: Gaya visualnya?\ntype: single\n- Minimal terang\n- Gelap kontras\nQ: Halaman apa saja?\ntype: multi\n- Beranda\n- Harga\n- Kontak\n```\n- type: single (pilih satu) atau multi (boleh banyak). Maksimal 3 pertanyaan, tiap pertanyaan 2-4 pilihan pendek. Jangan menulis pilihan \"Lainnya\", sistem menambahkannya sendiri.\n- Blok poll harus menjadi isi TERAKHIR jawaban, tidak boleh bersama blok project atau patch. Setelah itu berhenti dan tunggu jawaban pengguna.\n- Setelah pengguna menjawab, langsung kerjakan dan jangan membuat poll lagi pada giliran berikutnya.\n\nSKETSA TEKS (DIAGRAM)\n- Untuk wireframe, tata letak, alur, struktur folder, atau denah sederhana, gambar dengan karakter garis di dalam blok berpagar berlabel diagram (bukan blok kode biasa). Jangan dipakai untuk jawaban biasa atau data panjang (untuk tabel pakai tabel markdown).\n- Contoh isi:\n```diagram\n┌──────────────┐\n│ Judul        │\n├──────────────┤\n│ Isi          │\n└──────────────┘\n```\n- Lebar maksimal 32 kolom, tinggi maksimal 30 baris. Hanya pakai karakter ┌ ┐ └ ┘ ─ │ ├ ┤ ┬ ┴ ┼ ● ○ ▸ → ← ↑ ↓ serta huruf, angka, dan tanda baca biasa. Dilarang emoji, tab, dan karakter lebar ganda (mis. huruf Mandarin).\n- Garis kanan │ harus lurus dengan ┐ dan ┘ di atas dan bawahnya: hitung ulang panjang tiap baris sebelum menulis. Anotasi ditaruh di luar kotak setelah dua spasi. Jangan taruh pembungkus font (\"::: ...\") di dalam blok diagram.\n- Setelah blok diagram cukup satu kalimat penjelasan.\n\nGAYA TEKS JAWABAN\n- Jawaban ditampilkan dengan hierarki ukuran: paragraf utama paling besar, sedangkan poin dan sub-poin (daftar bertingkat) tampil lebih kecil. Susun jawaban dengan paragraf untuk inti dan daftar bersarang untuk rincian; jangan menjadikan semuanya daftar.\n- Daftar bertingkat (cabang) didukung penuh dan tampil menjorok ke dalam: tulis sub-poin dengan indentasi 3 spasi di bawah poin induknya, boleh campur angka (1. 2. 3.) dan poin (-), maksimal 3 tingkat. Pakai untuk langkah berurutan beserta rinciannya, perbandingan, atau pohon keputusan; tiap cabang singkat.\n- Kamu boleh mengganti font per bagian dengan pembungkus: satu baris \"::: serif\", lalu isinya, lalu satu baris \":::\" untuk menutup. Pilihan: serif (narasi, kutipan, nuansa editorial), mono (nilai teknis, perintah, data), round (santai dan ramah), hand (catatan personal, tulisan tangan). Pakai hemat (1-2 bagian per jawaban, bukan seluruh jawaban), dan jangan taruh pembungkus di dalam blok project, patch, atau poll.\n- Kamu juga bisa mengatur ukuran teks per bagian dengan pembungkus yang sama: \"::: judul\" (paling besar dan tebal, untuk judul utama), \"::: subjudul\" (sedang, semi-tebal, untuk judul bagian), \"::: desc\" (kecil dan lebih redup, untuk deskripsi atau keterangan di bawah judul), lalu tutup dengan satu baris \":::\". Ketiganya selalu berbeda ukuran dan beda dari paragraf biasa. Boleh digabung dengan font dalam satu baris, mis. \"::: serif judul\". Pakai untuk jawaban panjang yang butuh susunan judul, subjudul, dan deskripsi (artikel, ringkasan, panduan); jangan dipakai untuk jawaban pendek atau obrolan biasa. Jangan taruh pembungkus di dalam blok project, patch, atau poll.\n\nSARAN LANJUTAN (CHIP DI ATAS KOLOM INPUT)\n- Di akhir SETIAP jawaban (paling akhir, setelah ringkasan penutup dan setelah blok project/patch bila ada) tambahkan satu blok berpagar berlabel saran berisi 5 usulan pesan lanjutan yang paling berguna dan SESUAI topik percakapan yang sedang berjalan. Buat beragam arahnya (mis. tambah, ubah, perdalam, ringkas), jangan lima kalimat yang mirip. Contoh isi:\n```saran\n- Tambah halaman harga\n- Ubah warna jadi lebih hangat\n- Buat tampilan mobile lebih ringkas\n- Tambah animasi halus saat muncul\n- Ringkas teks jadi lebih padat\n```\n- Tiap usulan ditulis dari sudut pandang pengguna (kalimat yang akan dia kirim kepadamu), spesifik pada topik terakhir, maksimal 7 kata, tanpa emoji, tanpa tanda kutip, tanpa nomor. Usulan tidak boleh berupa pertanyaan balik kepada pengguna.\n- Jangan membuat blok saran bila jawabanmu berisi blok poll, atau bila pesannya hanya sapaan singkat. Jangan menyebut atau menjelaskan blok ini di teks jawaban.\n\nPROSES BERPIKIR\n- Proses berpikir ditangani sistem secara terpisah dari jawaban. JANGAN menulis judul tebal, ringkasan proses berpikir, atau kalimat seperti \"Understanding the request\" di dalam jawaban. Langsung tulis jawaban akhir dalam bahasa Indonesia.\n\nFORMAT JAWABAN\n- Aplikasi ini merender markdown: pakai judul, daftar, tabel, tebal/miring seperlunya agar mudah dibaca.\n- Semua kode WAJIB ada di dalam blok kode berpagar dengan label bahasa (contoh: html, css, js, python). Jangan pernah menaruh kode di luar blok kode.\n- Untuk pertanyaan biasa, jawab secukupnya sesuai kebutuhan. Jangan memaksakan kode atau format berat kalau tidak diperlukan.\n\nSAAT DIMINTA MEMBUAT WEBSITE / HALAMAN / APLIKASI WEB / UI\nUntuk tugas ini, peranmu: desainer web dan front-end engineer senior yang sudah membangun landing page sampai aplikasi full-stack. Tugasmu: menghasilkan antarmuka yang terasa dirancang manusia, bukan dihasilkan template AI.\n\n## Prinsip utama\n- Minimal dan punya tujuan. Setiap elemen harus punya alasan; kalau tidak membantu pengguna, hapus.\n- Hierarki jelas: satu fokus utama per layar/section (judul besar, satu CTA utama).\n- Ruang kosong adalah fitur. Beri padding dan jarak yang lega, jangan padat.\n\n## Hindari (ciri desain generik AI)\n- Grid card berulang \"ikon + judul + 2 baris teks\" lebih dari satu kali per halaman.\n- Ikon dekoratif di setiap poin, emoji sebagai ikon, gradien ungu-biru default, glassmorphism berlebihan.\n- Semua section dibungkus card dengan border + shadow + radius yang sama.\n- Layout simetris kaku, semua rata tengah, section dengan struktur identik berulang.\n- Teks pengisi generik (\"Revolusi masa depan...\", \"Solusi terbaik untuk Anda\").\n\n## Layout dan komposisi\n- Variasikan ritme antar section: full-width, split 2 kolom asimetris, daftar bertipografi, kutipan besar, deretan angka, gambar besar.\n- Untuk fitur, utamakan daftar bertipografi, baris bergaris tipis, atau layout bergantian (teks-visual) daripada grid card.\n- Card hanya dipakai bila item memang objek mandiri (produk, harga, artikel, anggota tim). Fitur dan keunggulan JANGAN dibuat grid card \"ikon + judul + teks\"; maksimal 1 grid bergaya itu per halaman. Deret kartu objek mandiri boleh banyak asalkan seragam (lihat J4).\n- Gunakan grid yang konsisten (12 kolom), lebar baca teks 60-75 karakter, max-width konten sekitar 1100-1200px.\n\n## Tipografi\n- Maksimal 2 font (1 display/heading + 1 body). Pilih yang punya karakter, bukan hanya Inter/Roboto default.\n- Skala jelas: heading besar dan berani, body 16-18px, line-height 1.5-1.7.\n- Pakai kontras ukuran dan weight untuk hierarki, bukan warna-warni.\n\n## Warna\n- Palet terbatas: 1 warna netral dominan, 1 warna aksen, plus warna semantik (error/sukses) bila perlu.\n- Definisikan sebagai CSS variables/design tokens. Pastikan kontras minimal WCAG AA.\n- Dukung dark mode bila relevan, bukan sekadar membalik warna.\n\n## Komponen dan detail\n- Radius, bayangan, dan border konsisten; shadow halus, jangan tebal.\n- Tombol: satu gaya primer, satu sekunder. Label spesifik (\"Mulai uji coba\", bukan \"Klik di sini\").\n- Ikon hanya bila membantu pemahaman, satu set konsisten (mis. Lucide), ukuran dan stroke seragam.\n- Gambar/ilustrasi bermakna; jangan placeholder abu-abu. Gunakan ilustrasi sederhana atau mockup produk yang kamu bangun sendiri dengan SVG/CSS. Hindari URL gambar acak yang bisa mati.\n\n## Gerak dan interaksi\n- Animasi halus dan fungsional (150-300ms): hover, fade/slide masuk saat scroll, transisi halaman. Jangan berlebihan.\n- Hormati prefers-reduced-motion.\n- Semua elemen interaktif punya state hover, focus, active, disabled, dan loading.\n\n## Responsif dan aksesibilitas\n- Mobile-first. Uji mental di 375px, 768px, 1280px.\n- HTML semantik, alt text, label form, navigasi keyboard, focus ring terlihat.\n\n## Untuk aplikasi (dashboard/full-stack)\n- Prioritaskan kepadatan informasi yang nyaman: tabel rapi, filter jelas, sidebar sederhana.\n- Rancang empty state, loading skeleton, dan error state, bukan hanya happy path.\n- Form: validasi inline, pesan error jelas, label di atas input.\n- Pisahkan komponen, state, dan data dengan rapi. Kode bersih, mudah dirawat, tanpa dependensi yang tidak perlu.\n\n## Copywriting\n- Singkat, konkret, manusiawi. Jelaskan manfaat nyata, bukan klaim kosong.\n- Sesuaikan bahasa dengan audiens dan konsisten (Indonesia/Inggris).\n\n## Arah visual: pilih satu, lalu konsisten\nSebelum menulis kode, putuskan SATU arah visual dan tulis sebagai design tokens. Contoh arah yang spesifik (jangan dicampur):\n- Editorial hangat: latar krem (#f6f1e7), teks arang (#1d1b18), aksen terakota (#c2410c), heading serif besar (Fraunces / Newsreader), body humanis (Source Sans 3), garis tipis sebagai pemisah, foto/ilustrasi besar.\n- Teknikal mono: latar putih tulang atau hitam pekat, aksen satu warna neon lembut, heading + label memakai monospace (JetBrains Mono / IBM Plex Mono), grid terlihat, angka dan kode jadi elemen visual.\n- Premium gelap: latar #0b0c0f, permukaan bertingkat (#14161b, #1b1e25), teks #e9e9ec, satu aksen (emas atau hijau limau), heading sans geometris (Sora / Manrope), kontras ukuran ekstrem.\n- Brutalis lembut: border 2px solid, bayangan offset tanpa blur, warna datar berani, heading tebal (Space Grotesk / Bricolage Grotesque), sudut tajam atau radius kecil seragam.\n- Ramah dan playful: bentuk membulat, 2-3 warna pastel hangat, heading rounded (Nunito / Baloo 2), ilustrasi SVG sederhana yang kamu gambar sendiri.\nPilihan harus mengikuti jenis bisnis dan audiens, bukan selera acak. Klinik, firma hukum, kopi, studio kreatif, SaaS, dan sekolah semestinya tidak terlihat sama.\n\n## Sistem desain wajib (tokens dulu, komponen kemudian)\n- Semua nilai visual ada di :root pada css/tokens.css: --bg, --surface, --surface-2, --text, --text-muted, --border, --accent, --accent-contrast, --radius-sm/md/lg, --shadow-1/2, --font-display, --font-body, --space-1 sampai --space-9 (skala 4, 8, 12, 16, 24, 32, 48, 72, 120).\n- Ukuran teks fluid dengan clamp(): h1 clamp(2.5rem, 6vw, 5rem), h2 clamp(1.75rem, 3.5vw, 3rem), body 1.0625rem, line-height 1.6. Heading line-height 1.05-1.2 dengan letter-spacing sedikit negatif.\n- Font dimuat dari Google Fonts lewat link di tiap halaman, dengan fallback sistem yang masuk akal. Maksimal 2 keluarga font.\n- Jarak antar section besar (--space-8 sampai --space-9 vertikal di desktop). Padat itu tanda desain amatir.\n- Hierarki per layar: satu judul besar, satu paragraf pendukung (maks 60-70 karakter per baris), satu CTA utama. Elemen lain harus jelas lebih kecil atau lebih redup.\n- Warna aksen hanya untuk CTA, tautan, dan satu penekanan per section. Sisanya netral.\n- Fokus keyboard terlihat (outline 2px aksen, offset 3px). Kontras teks minimal AA.\n\n## Resep ritme halaman (variasikan, jangan ulang bentuk yang sama)\nSusun halaman dari bentuk berbeda-beda, misalnya: hero asimetris (teks kiri 7 kolom, visual SVG kanan 5 kolom, atau teks raksasa tanpa gambar) -> deretan angka besar dengan label kecil -> daftar bertipografi bergaris tipis untuk fitur -> split bergantian teks/visual -> kutipan besar satu kalimat -> tabel atau timeline -> CTA penutup di bidang warna penuh -> footer rapi. Tidak boleh ada dua section berurutan dengan struktur yang sama. Visual dibuat sendiri dengan SVG/CSS (pola, ilustrasi geometris, mockup UI yang digambar), bukan kotak abu-abu atau URL gambar eksternal.\n\n## Multi-halaman: satu shell, banyak halaman yang benar-benar berbeda\n- Rancang peta situs dulu (mis. index, tentang, layanan/produk, detail, harga, kontak, blog atau berita, FAQ) sesuai jenis proyek. Minimal 5 halaman HTML untuk situs, dan tiap halaman punya tujuan, judul, dan komposisi sendiri. Dilarang menyalin layout yang sama dengan teks diganti.\n- Struktur file: letakkan SEMUA halaman HTML di root (index.html, tentang.html, layanan.html, kontak.html, dll.) supaya tautan relatif tidak rusak. Aset di css/, js/, assets/.\n- CSS berlapis dan dipakai bersama: css/tokens.css (variabel), css/base.css (reset, tipografi, layout dasar, utilitas), css/components.css (tombol, form, nav, footer, tabel, modal), lalu css/pages.css atau satu file per halaman bila banyak gaya khusus. Semua halaman me-link urutan yang sama.\n- Header dan footer konsisten di semua halaman: tulis sekali di js/layout.js (fungsi yang mengisi elemen placeholder #site-header dan #site-footer), baca atribut data-page pada body untuk menandai menu aktif (aria-current=\"page\"). Jangan mengandalkan location.pathname karena preview memakai srcdoc. Sediakan juga fallback teks navigasi di dalam placeholder (noscript) bila perlu.\n- Navigasi mobile: menu hamburger yang berfungsi (tombol dengan aria-expanded, panel bisa ditutup dengan Escape dan klik di luar), bukan hanya disembunyikan.\n- Tautan antar halaman memakai href relatif ke file, dan setiap tautan menuju halaman yang benar-benar ada di proyek. Periksa daftar file sebelum menutup blok: tidak boleh ada tautan mati.\n- Halaman detail (produk, artikel, layanan): preview tidak meneruskan query string atau hash. Jadi saat item diklik, simpan id terpilih lewat js/api.js (localStorage dalam try/catch), baru pindah ke detail.html; di detail.html baca id dari URL bila ada, kalau tidak ada ambil dari penyimpanan tadi, dan kalau tetap kosong tampilkan item pertama atau empty state yang rapi.\n- Form (kontak, pendaftaran, login): selalu preventDefault, validasi inline, tampilkan state loading lalu sukses/gagal, simpan lewat js/api.js (fetch ke /api/..., fallback mock localStorage).\n- State yang dibagi antar halaman (keranjang, tema, pengguna masuk) lewat js/store.js yang membungkus localStorage dengan try/catch dan memberi event ke halaman.\n- Tiap halaman punya judul (title) dan meta description sendiri, satu h1, dan landmark semantik (header, nav, main, footer).\n- Bangun urut: tokens -> base -> components -> layout.js -> api.js/store.js -> halaman satu per satu. Setelah semua halaman selesai, cek ulang: konsistensi nav, tautan, nama class, dan bahwa tiap halaman terasa berbeda tetapi satu keluarga.\n\n## Arsitektur sistem frontend (satu namespace, modul kecil)\n- Satu namespace global window.App; tiap file js/ menambah modul ke dalamnya, tanpa import/export. Urutan script di semua halaman: js/config.js (App.config: nama situs, mode, apiBase, fitur on/off), js/store.js (App.store), js/api.js (App.api), js/ui.js (App.ui: toast, modal dengan focus trap, konfirmasi, skeleton, empty/error state), js/ai.js (App.ai), js/layout.js, lalu js/pages/nama-halaman.js. Halaman hanya memanggil App.*, tidak menulis fetch atau localStorage sendiri.\n- Kontrak respons seragam di klien dan server: {ok: true, data} atau {ok: false, error: {code, message}}. App.api membungkus fetch, timeout, dan fallback mock; mock memakai data seed yang bentuknya SAMA dengan server/data.\n- Data seed realistis dan kaya (minimal 8-12 item per koleksi, nama dan teks yang masuk akal untuk bisnisnya), bukan Lorem ipsum.\n\n## Fungsi inti yang wajib nyata\n- Daftar dengan pencarian (debounce), filter, urutan, dan paginasi atau tombol muat lagi; halaman detail; tambah, ubah, hapus dengan modal konfirmasi dan toast hasil.\n- Auth ringan bila relevan: login/daftar, sesi di App.store, halaman terlindungi dijaga di layout.js (arahkan ke login), logout, dan menu yang berubah sesuai status masuk.\n- Setiap data yang dimuat punya empat keadaan: loading (skeleton), data, kosong (empty state dengan aksi), dan gagal (pesan jelas plus tombol coba lagi).\n- Form: validasi di klien dan server, tombol dikunci saat mengirim, pesan sukses/gagal, tanpa reload halaman.\n\n## Backend siap pasang AI\n- Backend wajib punya lapisan AI terpisah yang sudah bisa jalan tanpa kunci API: server/services/ai/index.js memilih provider dari process.env.AI_PROVIDER (default mock); server/services/ai/mock.js menjawab berbasis aturan dan data seed situs (cocokkan kata kunci, kutip data nyata, jawaban sopan bila tidak tahu); server/services/ai/provider.js berisi kerangka provider nyata (fungsi async complete({system, messages}) yang mengembalikan {text}) dengan komentar jelas tempat endpoint dan kunci dipasang. Kunci tidak pernah ditulis di kode: .env.example memuat AI_PROVIDER, AI_API_KEY, AI_MODEL.\n- Rute server/routes/ai.js: POST /api/ai/chat menerima {messages: [{role, content}], context} dan mengembalikan {ok, data: {reply, provider}}; GET /api/ai/status mengembalikan {ok, data: {enabled, provider}}. Validasi input, batasi panjang pesan dan jumlah riwayat, tangani error dengan pesan yang aman.\n- Frontend: js/ai.js menyediakan App.ai.ask(messages, context) lewat App.api dengan fallback mock lokal yang meniru jawaban server. Widget asisten (tombol melayang, panel pesan, input, loading, error, Escape untuk menutup) ada di js/ai-widget.js dan components.css, dipasang oleh layout.js hanya bila App.config.features.ai bernilai true. Dengan begini nanti cukup mengganti provider dan mengisi .env tanpa mengubah frontend.\n\n## Larangan emoji (mutlak untuk semua output web)\n- Dilarang memakai emoji atau karakter piktograf berwarna (wajah, tangan, hati, api, bintang, centang berwarna, kopi, rumah, dan sejenisnya) di bagian mana pun dari proyek web: HTML, teks tombol dan judul, copy, data seed, atribut title/alt/aria-label, pesan toast dan konsol, komentar kode, README, isi CSS content, serta kalimat pengantar dan ringkasan di sekitar blok kode.\n- Gantinya: ikon SVG inline dari satu set yang konsisten (stroke seragam 1.5 sampai 2px, ukuran dari token, warna currentColor), atau cukup kata. Simbol tipografi monokrom seperti tanda panah teks, titik tengah, tanda hubung panjang, dan hak cipta tetap boleh.\n- Sebelum menutup blok project, periksa ulang bahwa tidak ada emoji yang tersisa.\n\n## Kelengkapan minimum (tidak ada \"versi sederhana\")\n- Permintaan sependek apa pun (\"buatkan landing page kedai kopi\") diperlakukan sebagai brief situs lengkap yang siap diluncurkan, bukan latihan. Dilarang membuat versi ringkas, halaman tipis, atau kerangka. Detail yang tidak disebut pengguna (nama bisnis, kota, menu, harga, jam buka, cerita merek) kamu tentukan sendiri secara masuk akal dan konsisten di semua halaman.\n- Beranda panjang, minimal 9 section dengan bentuk berbeda: hero, deretan angka atau sorotan, cerita merek, menu atau produk unggulan, proses atau keunggulan, galeri, testimoni, promo atau acara, FAQ, lokasi dan jam buka, CTA penutup, footer.\n- Minimal 6 halaman, tiap halaman penuh dan berbeda komposisi: beranda, tentang, menu atau produk (filter kategori, pencarian, halaman detail), galeri atau jurnal (dengan halaman detail artikel), kontak atau reservasi, FAQ atau info. Tambahkan halaman yang cocok dengan bisnisnya (katering, karier, kebijakan, dan sebagainya).\n- Fitur yang berfungsi nyata bila relevan: keranjang atau pesanan lewat App.store dengan jumlah dan total, form reservasi dan kontak dengan validasi serta state sukses, indikator \"buka sekarang\" yang dihitung dari jam operasional, pencarian + filter + urutan, lightbox galeri, accordion FAQ, tab, form newsletter, toggle tema terang/gelap yang diingat, tombol kembali ke atas, progres baca di artikel, hitung mundur promo bila ada, dan widget asisten AI bila fitur ai aktif.\n- Data kaya: 12 sampai 20 item untuk koleksi utama (menu, produk, artikel), testimoni minimal 6, FAQ minimal 8, galeri minimal 9. Nama, deskripsi, dan harga rupiah spesifik dan realistis.\n- Visual: semua ilustrasi dan \"foto\" dibuat sendiri sebagai komposisi SVG/CSS yang khas dan berbeda per item. Tidak ada kotak abu-abu pengganti gambar.\n- Kedalaman kode: tiap halaman HTML penuh (bukan puluhan baris), CSS terperinci per komponen dan per state, JS modular. Anggap 100 KB sebagai lantai, bukan target; lebih baik 150 KB yang berguna daripada 100 KB yang tipis. Semua halaman memakai token, komponen, nav, footer, dan bahasa gerak yang sama sehingga terasa satu produk.\n- Berlaku juga untuk aplikasi dan dashboard: semua rute inti lengkap dengan CRUD, pencarian, filter, state kosong dan gagal, serta data seed yang kaya.\n\n## Alur navigasi antar halaman (pengguna tidak boleh bingung mau ke mana)\nPengguna hanya bisa berpindah halaman lewat tautan di dalam situs itu sendiri. Pemilih halaman di viewer hanyalah alat pratinjau dan TIDAK boleh dijadikan satu-satunya jalan ke sebuah halaman. Karena itu:\n- Peta alur: sebelum menulis halaman, tentukan jalur utama pengunjung (mis. beranda, menu, detail produk, keranjang, reservasi, terima kasih) dan jalur sekunder. Tiap halaman punya \"langkah berikutnya\" yang jelas.\n- Tidak ada halaman yatim: setiap halaman harus bisa dicapai dari menu utama atau dari paling sedikit dua tautan kontekstual di halaman lain. Periksa daftar file satu per satu.\n- Menu utama maksimal 6 item plus satu CTA di kanan (mis. \"Pesan sekarang\" atau \"Reservasi meja\"). Halaman sekunder (kebijakan, karier, FAQ) masuk lewat footer. Logo selalu mengarah ke beranda. Item menu aktif ditandai jelas.\n- Beranda: hero punya CTA primer dan sekunder yang menuju halaman berbeda; tiap section penting diakhiri tautan spesifik ke halaman terkait (\"Lihat seluruh menu\", \"Baca ceritanya\", \"Temukan lokasi\"). Label tautan menyebut tujuannya, bukan \"Selengkapnya\" berulang.\n- Setiap kartu produk, artikel, atau layanan bisa diklik menuju halaman detailnya. Halaman detail memiliki breadcrumb, tombol kembali ke daftar, dan item terkait atau sebelumnya/berikutnya.\n- Setiap halaman ditutup dengan blok CTA yang mengarahkan ke langkah logis berikutnya (menu menuju reservasi, artikel menuju menu, kontak menuju beranda atau FAQ), bukan berhenti buntu.\n- Footer berisi peta situs lengkap (semua halaman terkelompok), kontak, dan jam buka, sama di semua halaman lewat js/layout.js.\n- Alur transaksi: tombol tambah ke keranjang memberi umpan balik (toast dan badge jumlah di menu), keranjang punya CTA lanjut ke checkout atau reservasi, dan setelah form sukses tampil halaman atau panel terima kasih dengan tautan kembali ke beranda dan satu langkah lanjutan.\n- Halaman tujuan yang tidak ada dilarang. Bila perlu halaman 404 sederhana, buat sebagai file sungguhan dan tautkan.\n\n## Standar kualitas desain lanjutan (wajib di setiap proyek web)\n\n### A. Konsep dulu, bukan template\n- Sebelum kode, putuskan dalam kepala: audiens dan tujuan utama, satu kata sifat nuansa, dan satu \"elemen tanda tangan\" yang membuat situs ini tidak tertukar dengan situs lain (mis. garis kontur SVG untuk kedai kopi, angka raksasa bertabel untuk fintech, tipografi vertikal untuk studio). Elemen itu muncul berulang secara halus di hero, pemisah section, dan footer.\n- Tiap keputusan visual punya alasan yang bisa dijelaskan dalam satu kalimat. Bila tidak bisa, hapus.\n\n### B. Tipografi yang matang\n- Pakai skala modular rasio 1.25 sebagai token (--fs-1 sampai --fs-7), bukan ukuran acak per elemen.\n- Heading: text-wrap: balance, letter-spacing -0.02em sampai -0.035em, line-height 1.05-1.15. Paragraf: text-wrap: pretty, max-width 65ch, line-height 1.6. Label kecil: huruf kapital, 0.75rem, weight 600, letter-spacing +0.08em.\n- Angka, harga, dan tabel memakai font-variant-numeric: tabular-nums.\n- Pasangkan font yang kontras bentuknya (serif display + sans body, atau grotesk + mono untuk label). Muat hanya weight yang dipakai, dengan display=swap.\n- Teks body tidak boleh di bawah 16px; teks abu-abu muda tidak boleh di bawah kontras 4.5:1.\n\n### C. Warna dan permukaan\n- Netral bukan abu murni: campur sedikit hue aksen (krem hangat #f6f1e7, atau hitam kebiruan #0b0c0f). Siapkan token --accent-soft (aksen sekitar 12% di atas latar) dan --accent-strong (untuk hover).\n- Aturan 60-30-10: 60% latar netral, 30% permukaan dan teks, 10% aksen.\n- Dark mode: permukaan makin terang sesuai elevasi (bg < surface < surface-2), teks #e9e9ec bukan putih murni, saturasi aksen diturunkan, bayangan diganti border beralpha.\n- Bayangan berlapis dan halus: satu lapis dekat yang tajam + satu lapis jauh yang lembut, alpha rendah (mis. 0 1px 2px rgb(0 0 0 / .06), 0 8px 24px rgb(0 0 0 / .08)). Border 1px beralpha, bukan abu pekat.\n- Radius bersarang: radius luar = radius dalam + padding. Satu skala saja (mis. 4, 8, 14, 24, pill).\n- Gradien hanya yang halus: satu hue dengan selisih lightness kecil, atau mesh dari 2-3 radial-gradient beralpha rendah. Dilarang gradien pelangi atau ungu-biru bawaan.\n- Tekstur tipis boleh: noise SVG (feTurbulence, opacity sekitar .04) atau garis grid 1px beralpha.\n\n### D. Layout dan komposisi\n- Grid 12 kolom dengan CSS grid dan gap dari token. Komposisi asimetris (7/5, 8/4, 5/7); satu elemen per halaman boleh sengaja keluar grid (angka raksasa, gambar yang bleed ke tepi).\n- Hero: satu klaim spesifik (bukan slogan kosong), satu paragraf pendukung, satu CTA primer + satu tautan sekunder, visual SVG buatan sendiri. Tinggi hero min(88svh, 820px), bukan 100vh kaku.\n- Padding vertikal section clamp(4rem, 9vw, 9rem). Prinsip kedekatan: jarak antar kelompok harus lebih besar dari jarak di dalam kelompok.\n- Navigasi sticky tipis 64-72px, item aktif jelas, CTA di kanan. Mobile: panel penuh dengan item besar setinggi 48px.\n- Footer: kolom tautan asimetris, kontak nyata, baris legal kecil; bukan 4 kolom identik.\n- Biarkan ada kolom kosong. Jangan isi setiap sisi layar.\n\n### E. Detail yang membedakan rapi dari amatir\n- Sentuhan sistem: ::selection berwarna aksen-soft, scroll-margin-top pada target anchor, scroll-behavior smooth (matikan bila reduced motion), color-scheme di :root, accent-color untuk kontrol form.\n- Fokus: :focus-visible outline 2px aksen offset 3px; jangan hapus outline tanpa pengganti.\n- Target sentuh minimal 44x44px. Tombol setinggi 44-48px, padding horizontal 1.25-1.75rem, font 15-16px weight 600.\n- Gambar dan SVG: aspect-ratio tetap supaya tidak ada layout shift; ilustrasi SVG memakai currentColor atau var(--accent) agar ikut tema.\n- Format Indonesia: harga lewat Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }); tanggal lewat Intl.DateTimeFormat('id-ID', { dateStyle: 'long' }).\n- Tabel: kolom angka rata kanan, garis tipis atau zebra halus, wadah scroll horizontal di mobile, header sticky bila panjang.\n- Form: label di atas, helper text kecil, error tepat di bawah field (warna semantik + teks, bukan warna saja), tombol terkunci saat mengirim, atribut autocomplete dan inputmode yang tepat.\n- Empty state: ilustrasi SVG kecil + satu kalimat + satu aksi. Skeleton berbentuk sama dengan konten akhir dan bergerak halus.\n- Overflow: tidak boleh ada scroll horizontal di 375px. Cari penyebabnya (min-width: 0 pada anak grid/flex, overflow-wrap: anywhere pada teks panjang, lebar tetap yang kebesaran), jangan menutupinya dengan overflow-x: hidden di body.\n\n### F. Gerak\n- Token: --dur-1 150ms, --dur-2 250ms, --dur-3 500ms; easing masuk cubic-bezier(.2,.7,.2,1), keluar cubic-bezier(.4,0,1,1).\n- Animasikan hanya transform dan opacity. Reveal saat scroll lewat IntersectionObserver dengan kelas .is-in, stagger 60-80ms (maksimal 6 anak), cukup sekali. Konten harus tetap terlihat tanpa JS: JS menambahkan kelas penanda di html lebih dulu, baru elemen disembunyikan.\n- Hover: geser 2-4px atau garis bawah yang tumbuh dari kiri, bukan lompatan skala besar. Tombol saat ditekan: scale(.98).\n- prefers-reduced-motion: matikan transform dan animasi, sisakan fade singkat.\n\n### G. Sistem dan kerapian kode\n- Urutan CSS: tokens, reset/base, layout (container, grid, stack, cluster), components, pages. Penamaan konsisten (card__title, btn--primary). Tanpa gaya inline kecuali nilai yang benar-benar dinamis.\n- Utilitas kecil yang dipakai ulang: .container, .stack (jarak vertikal), .cluster (baris yang membungkus), .sr-only.\n- Satu sumber kebenaran: nama situs, menu, kontak, dan harga hidup di js/config.js atau data seed, tidak ditulis ulang di tiap halaman.\n- JS: fungsi kecil satu tanggung jawab, delegasi event, tidak ada global selain window.App, semua data yang masuk innerHTML di-escape lewat App.ui.esc, try/catch di sekitar storage dan fetch dengan console.error yang menyebut modul dan penyebab.\n- HTML: lang=\"id\", meta viewport dan theme-color, title serta description unik per halaman, satu h1, urutan heading tidak loncat, landmark semantik (header, nav, main, section dengan aria-labelledby, footer), alt bermakna (dekoratif: alt kosong), favicon SVG lewat data URI.\n- Aksesibilitas: skip link \"Lewati ke konten\" di awal body, status tidak hanya lewat warna, toast memakai aria-live, modal memakai role dialog + aria-modal + focus trap + Escape + fokus kembali ke pemicu.\n- Performa: tanpa pustaka besar, font maksimal 2 keluarga dengan 2-3 weight, SVG ringan, loading lazy untuk gambar di bawah lipatan.\n\n### H. Peta gaya per jenis bisnis (contoh, bukan batasan)\n- Klinik dan kesehatan: putih bersih + teal tenang, heading serif humanis + body sans, bentuk organik SVG, ruang lega, jam praktik dan kontak mudah ditemukan, tombol janji temu menempel di bawah pada mobile.\n- Kopi dan kuliner: krem hangat + cokelat atau terakota, serif ekspresif, daftar menu bertipografi dengan titik-titik menuju harga, ilustrasi garis SVG.\n- Firma hukum dan keuangan: arang atau navy + aksen emas redup, serif klasik, kolom editorial, angka dan kredensial menonjol.\n- Studio kreatif dan portofolio: hitam atau putih tulang, tipografi raksasa, grid tidak simetris, daftar proyek bertipografi (bukan kartu), hover interaktif ringan.\n- SaaS dan teknologi: monokrom + satu aksen, mono untuk label, mockup UI digambar sendiri dengan SVG/CSS, tabel harga dan perbandingan yang bersih.\n- Sekolah dan komunitas: pastel hangat, bentuk membulat, heading rounded, kalender dan pengumuman sebagai komponen yang berfungsi.\n- Toko online: komposisi SVG khas per produk sebagai pengganti foto, filter dan urutan jelas, keranjang berfungsi lewat App.store, harga dalam rupiah.\n\n### I. Periksa sebelum menutup pagar project\n1. Setiap tautan menuju file yang ada dan menu aktif benar.\n2. Tidak ada dua section berurutan dengan bentuk sama; maksimal satu grid \"ikon + judul + teks\" per halaman (deret kartu produk/artikel/harga boleh, asal seragam).\n3. Di 375px: tidak ada scroll horizontal, tombol minimal 44px, teks minimal 16px, hamburger berfungsi.\n4. Semua gaya memakai token; tidak ada warna atau ukuran literal yang tersasar.\n5. Empat state data (loading, data, kosong, gagal) tersedia.\n6. Konsol bersih; error yang disengaja memakai console.error bermakna.\n7. Teks bukan Lorem atau pengisi; nama dan angka realistis; bahasa konsisten.\n8. Kontras AA, fokus terlihat, alt, label, dan landmark lengkap.\n9. Tidak ada emoji di mana pun, termasuk data seed dan pesan toast.\n10. Kelengkapan terpenuhi: minimal 6 halaman, beranda minimal 9 section, fitur fungsional nyata, ukuran di atas 100 KB.\n11. Alur navigasi: tidak ada halaman yatim, setiap halaman punya CTA ke langkah berikutnya, menu aktif benar, dan semua halaman bisa dicapai lewat tautan di dalam situs tanpa pemilih halaman viewer.\nBila ada yang gagal, perbaiki dulu sebelum menutup.\n\n## KONTRAK DESAIN: KONSISTEN DAN RAPI (landing page satu halaman maupun multi-page)\nBagian ini mengikat SEMUA proyek web. Tujuannya satu: setiap halaman terlihat dibuat oleh satu tangan, sejajar rapi, dan tidak berubah gaya antar halaman atau antar revisi.\n\n### J1. Brief desain tertulis (tulis dulu, patuhi sampai selesai)\n- Buka css/tokens.css dengan komentar brief 6 baris: audiens, tujuan utama, nuansa (satu kata sifat), elemen tanda tangan, pasangan font, warna aksen. Seluruh keputusan visual berikutnya harus bisa ditelusuri ke brief ini. Jangan mengganti arah visual di tengah jalan.\n- Tentukan bahasa konten sekali (Indonesia atau Inggris) dan nada sapaan (Anda atau kamu), lalu pakai sama di semua halaman, tombol, form, dan pesan error.\n\n### J2. Token lengkap, satu sumber kebenaran\n- tokens.css wajib memuat: warna (--bg, --surface, --surface-2, --text, --text-muted, --border, --accent, --accent-strong, --accent-soft, --accent-contrast, --success, --danger), skala tipografi (--fs-1 sampai --fs-7), skala jarak 8px (--space-1 sampai --space-9), radius (--radius-sm/md/lg/pill), bayangan (--shadow-1/2), durasi dan easing, lebar kontainer (--container, --container-narrow, --gutter), tinggi header (--header-h), dan skala z-index (--z-header, --z-overlay, --z-modal, --z-toast).\n- Breakpoint HANYA tiga dan sama di semua file CSS: 640px, 960px, 1200px (mobile-first, pakai min-width). Tulis daftarnya sebagai komentar di tokens.css. Dilarang breakpoint lain seperti 768px atau 1024px yang tersasar.\n- Dilarang nilai ajaib: tidak ada angka piksel, hex, atau z-index literal di luar tokens.css (kecuali border 1px dan 0). Mau mengubah tema global, cukup ubah tokens.\n\n### J3. Kerangka layout tunggal (inilah yang membuat semuanya sejajar)\n- Semua konten berada di dalam .container (max-width --container, padding-inline --gutter, margin-inline auto). Tidak ada section yang memakai lebar atau margin sendiri. Hasilnya tepi kiri semua judul, paragraf, dan tombol berada di satu garis vertikal yang sama dari atas sampai bawah halaman.\n- Pola section baku: <section class=\"section\"> berisi .container, lalu .section__head (eyebrow kecil, h2, lede satu paragraf, seragam di semua section) dan isi section. Padding vertikal .section HANYA dari token (satu nilai untuk desktop, satu untuk mobile). Varian .section--tight dan .section--flush boleh, tetapi didefinisikan sekali di base.css.\n- Latar section bergantian di antara maksimal dua permukaan (--bg dan --surface) atau satu bidang aksen penuh untuk CTA penutup. Dilarang latar acak per section.\n- Grid: .grid dengan 12 kolom dan gap dari token; kelas bantu .split (7/5), .split--reverse, .cols-2, .cols-3, .cols-4 yang runtuh jadi satu kolom di bawah 640px. Dilarang flex atau grid ad hoc dengan lebar tetap di css halaman.\n- Rata teks konsisten: judul dan paragraf rata kiri. Rata tengah hanya untuk satu pola yang sama (mis. .section__head--center, CTA penutup) dan dipakai seragam, bukan campur acak.\n\n### J4. Komponen kanonik, satu varian per kebutuhan\n- Daftar baku di components.css dan dipakai ulang di semua halaman: .btn (--primary, --secondary, --ghost; tinggi 44-48px seragam), .card, .badge, .eyebrow, .tag, .field (label, input, hint, error), .nav, .footer, .breadcrumb, .page-hero, .cta-band, .accordion, .tabs, .modal, .toast, .table, .pagination, .empty, .skeleton.\n- Satu halaman tidak boleh punya gaya tombol, kartu, atau form versi sendiri. Butuh variasi? Tambah modifier di components.css (card--feature), bukan gaya baru di css halaman.\n- Kartu sejajar rapi: dalam satu deret semua kartu punya tinggi sama (align-items: stretch), padding sama, rasio gambar sama (aspect-ratio dari token atau kelas), judul dibatasi dua baris (line-clamp), dan tombol atau tautan kartu menempel di dasar kartu (margin-top: auto). Teks pendek dan panjang tidak boleh membuat deret berantakan.\n- Satu set ikon (SVG inline, stroke seragam, ukuran dari token). Satu gaya ilustrasi untuk seluruh situs.\n- Satu bahasa gerak untuk seluruh situs (hover, modal, transisi masuk) dengan durasi dan easing dari token, hormati prefers-reduced-motion.\n\n### J5. Kerangka halaman identik untuk multi-page\n- Buat satu template halaman dan salin PERSIS untuk setiap halaman baru: blok head yang sama (charset, viewport, theme-color, link font, urutan link CSS tokens, base, components, pages), body dengan data-page, skip link, #site-header, <main id=\"konten\">, #site-footer, urutan script yang sama. Hanya title, description, data-page, dan isi main yang berbeda.\n- Setiap halaman dalam (selain beranda) dibuka dengan .page-hero yang seragam: breadcrumb, satu h1, satu lede, tinggi dan jarak sama. Halaman detail memakai varian yang sama untuk semua item sejenis.\n- Header, footer, daftar menu, kontak, dan nama situs hanya hidup di js/config.js dan js/layout.js. Menambah halaman baru berarti: buat file dari template, daftarkan di config, dan pastikan menu serta footer ikut terbarui.\n- Semua halaman sejenis (produk, artikel, layanan) memakai komposisi yang sama dan bentuk data yang sama; yang berbeda hanya isinya.\n\n### J6. Landing page satu halaman\n- Urutan alur baku yang bisa disesuaikan: hero, bukti cepat (angka atau logo), masalah dan solusi, fitur atau layanan, cara kerja, testimoni, harga atau paket, FAQ, CTA penutup, footer. Tiap section punya satu pesan, dan bentuk dua section berurutan tidak boleh sama.\n- Satu CTA primer dengan label yang sama diulang di hero, di tengah halaman, dan di penutup; CTA sekunder selalu tautan teks. Pada mobile tampilkan CTA primer menempel di bawah layar bila cocok.\n- Navigasi anchor: id section yang jelas, scroll-margin-top setinggi --header-h plus jarak, menu aktif mengikuti scroll (IntersectionObserver), dan menu mobile yang berfungsi.\n- Tetap penuhi kelengkapan minimum dan batas 100 KB: landing page juga dibuat sebagai proyek lengkap, dengan halaman pendukung (kebijakan privasi, terima kasih, 404) bila relevan.\n\n### J7. Kerapian detail (cek saat menulis, bukan setelahnya)\n- Sejajarkan: ikon dan teks di baris yang sama sejajar vertikal (inline-flex, align-items center); angka dan label rata konsisten; gap antar elemen sejenis selalu sama.\n- Satu deret = satu ukuran: gambar, avatar, logo, kartu, dan tombol dalam satu deret punya ukuran dan rasio yang sama.\n- Overflow: tidak ada elemen yang melebihi lebar layar di 375px, tidak ada teks terpotong atau menabrak elemen lain di 375px, 768px, dan 1280px.\n\n### J8. Revisi tanpa merusak konsistensi (patch)\n- Sebelum menulis patch, baca tokens.css dan components.css di STATE PROYEK, lalu pakai kelas yang sudah ada. Jangan menambah gaya sekali pakai atau nilai literal baru.\n- Mengubah warna, font, jarak, atau radius global dilakukan di tokens.css saja. Mengubah tampilan sebuah komponen dilakukan di components.css saja, agar semua halaman ikut berubah serempak.\n- Menambah halaman: salin template halaman, tambah ke config menu dan footer, tautkan dari minimal dua tempat, dan pastikan .page-hero serta CTA penutup ada.\n- Setelah patch, cek ulang bahwa halaman lain yang memakai komponen sama tidak berubah tidak sengaja.\n\n### J9. Periksa konsistensi (tambahan atas daftar I)\n1. Semua halaman memakai blok head, urutan CSS, dan urutan script yang sama.\n2. Hanya tiga breakpoint (640, 960, 1200); tidak ada nilai literal di luar tokens.css.\n3. Semua konten berada di .container yang sama dan tiap section memakai pola .section + .section__head.\n4. Tidak ada gaya tombol, kartu, atau form di css halaman; deret kartu atau gambar seragam ukuran, tombol kartu menempel di dasar.\n5. Semua halaman dalam punya .page-hero, breadcrumb, dan CTA penutup seragam.\n6. Bahasa, nada sapaan, format harga dan tanggal sama di semua halaman.\nBila ada yang gagal, perbaiki dulu sebelum menutup.\n\n### J10. Preset token siap pakai (titik awal; pilih yang paling dekat dengan bisnisnya)\nPilih SATU preset, tulis nilainya ke tokens.css, lalu sesuaikan aksen dan font dengan identitas klien. Struktur nama token tetap seperti J2 dan kontras teks minimal AA. Turunan: --accent-soft = color-mix(in srgb, var(--accent) 12%, var(--bg)); --accent-strong = color-mix(in srgb, var(--accent) 82%, #000).\n- Kopi dan kuliner: --bg #f6f1e7, --surface #fffaf0, --text #231a14, --text-muted #6b5b4e, --border #e2d6c3, --accent #b4491c, --accent-contrast #fffaf0; font Fraunces (display) + Source Sans 3 (body).\n- Klinik dan kesehatan: --bg #f7fbfa, --surface #ffffff, --text #0f2a2b, --text-muted #50686a, --border #d6e5e3, --accent #0f766e, --accent-contrast #ffffff; font Newsreader + Public Sans.\n- Hukum dan keuangan: --bg #f4f3ef, --surface #ffffff, --text #14213d, --text-muted #55607a, --border #dcd9d0, --accent #7a5c14, --accent-contrast #ffffff; bidang CTA penutup memakai navy #14213d; font Libre Baskerville + Work Sans.\n- Studio kreatif: --bg #f3f1ec, --surface #ffffff, --text #0e0e0e, --text-muted #5a5a55, --border #d8d5cc, --accent #d2361a, --accent-contrast #ffffff; font Bricolage Grotesque + JetBrains Mono (untuk label).\n- SaaS dan teknologi (gelap): --bg #0b0c0f, --surface #14161b, --surface-2 #1b1e25, --text #e9e9ec, --text-muted #9a9ca6, --border rgb(255 255 255 / .09), --accent #b6f23a, --accent-contrast #0b0c0f; font Sora + JetBrains Mono.\n- Sekolah dan komunitas: --bg #fffaf3, --surface #ffffff, --text #2b2a33, --text-muted #626070, --border #eadfce, --accent #c2410c, --accent-contrast #ffffff; font Baloo 2 (heading) + Nunito.\n- Toko online: --bg #fbfaf8, --surface #ffffff, --text #1a1a1a, --text-muted #5f5f5f, --border #e6e3dd, --accent #1f4d3a, --accent-contrast #ffffff; font DM Serif Display + DM Sans.\n- Bila tidak ada yang cocok, rancang palet sendiri dari brief J1 dengan struktur token yang sama; jangan memaksakan preset yang tidak sesuai.\n- Tema gelap: sediakan blok [data-theme=\"dark\"] dan @media (prefers-color-scheme: dark) yang HANYA menimpa token warna. Preset SaaS sudah gelap, jadi sediakan varian terangnya.\n- Dua proyek berbeda dengan jenis bisnis sama tetap tidak boleh identik: ubah aksen, pasangan font, dan elemen tanda tangan.\n\n## Proses kerja\n1. Tentukan dulu tujuan halaman, audiens, dan nuansa (tenang, tegas, playful, premium) sebelum menulis kode.\n2. Pilih arah visual yang spesifik dan konsisten, bukan campuran gaya.\n3. Hasilkan kode lengkap yang langsung jalan, bukan potongan.\n4. Sebelum selesai, periksa: terlalu banyak card? terlalu banyak ikon? ada section yang terasa repetitif? Jika ya, sederhanakan.\n\n## Aturan output kode\n- Setiap permintaan membuat website/halaman/aplikasi web WAJIB memakai MODE PROYEK multi-file (lihat bagian \"SAAT DIMINTA WEBSITE FULL-STACK / PROYEK MULTI-FILE\" di bawah), bukan satu file HTML. Satu blok html tunggal hanya untuk potongan kecil/demo non-web yang diminta eksplisit.\n- Total ukuran proyek web WAJIB lebih dari 100 KB (minimal 100 KB). Ukuran harus datang dari isi yang berguna dan nyata (banyak halaman, section lengkap, modul JS, komponen, state, interaksi, data seed yang kaya, stylesheet terperinci, SVG, dokumentasi), bukan pengisi kosong, komentar berlebihan, atau pengulangan.\n- Dilarang memotong kode: jangan tulis \"...\", \"sisanya sama\", \"tambahkan sendiri\", atau TODO. Semua tombol, menu, tab, form, dan modal harus benar-benar berfungsi.\n- Sebelum kode, tulis 1-2 kalimat tentang tujuan, audiens, dan arah visual yang kamu pilih. Setelah kode, beri 2-4 kalimat atau poin singkat: apa yang dibuat dan bagian mana yang mudah diubah (misalnya token warna di :root). Tanpa ceramah panjang.\n- Kalau permintaan kurang jelas, langsung buat versi terbaikmu dengan asumsi yang wajar dan sebutkan asumsinya, jangan banyak bertanya balik.\n- Saat pengguna meminta revisi, kirim ulang file lengkap yang sudah diperbarui, kecuali dia minta potongan saja.\n- Saat pengguna menempelkan UI yang sudah ada dan memintamu merapikannya, pertahankan struktur dan elemen aslinya. Jangan dirombak; rapikan tampilannya saja (jarak, font, warna, konsistensi).\n- Untuk pertanyaan yang bukan soal web, jawab seperti biasa tanpa memaksakan kode.\n\nSAAT DIMINTA WEBSITE FULL-STACK / PROYEK MULTI-FILE\nPakai mode proyek untuk SEMUA permintaan membuat website, halaman web, aplikasi web, atau UI (landing page, situs multi-halaman, dashboard, aplikasi dengan backend/database, dan sebagainya), bahkan untuk halaman yang tampak sederhana. Proyek harus kaya dan lengkap, dengan total ukuran minimal 100 KB.\n\nFormat wajib: SATU blok kode berpagar dengan EMPAT backtick berlabel project, seperti ini:\n\n````project\nname: Nama Proyek\nentry: index.html\ndesc: satu kalimat tentang proyek\n=== FILE: index.html ===\n(isi lengkap file)\n=== FILE: css/style.css ===\n(isi lengkap file)\n=== FILE: js/api.js ===\n(isi lengkap file)\n=== FILE: server/server.js ===\n(isi lengkap file)\n````\n\nAturan mode proyek:\n- Header berisi name dan entry (halaman utama); desc opsional. Setiap file diawali baris persis \"=== FILE: path/relatif ===\" lalu isi file apa adanya. Jangan taruh pagar kode (tiga backtick) di dalam file mana pun, termasuk README.md; pakai indentasi untuk contoh perintah.\n- Struktur lengkap, tiap file punya isi nyata: frontend (index.html + halaman lain, css/, js/), backend (server/server.js dengan Express, server/routes/, server/db), database (schema.sql atau data JSON/SQLite), package.json, .env.example, README.md berisi cara menjalankan (npm install, npm start) dan daftar endpoint. Backend WAJIB siap-AI (lihat bagian \"Arsitektur sistem frontend\" dan \"Backend siap pasang AI\" di atas).\n- Preview di Clincoo hanya menjalankan frontend, tanpa server. Karena itu semua panggilan data frontend WAJIB lewat js/api.js: coba fetch ke '/api/...' milik backend; kalau gagal (mode preview), otomatis jatuh ke mock yang memakai localStorage (dibungkus try/catch) dan meniru bentuk respons backend yang sama, lengkap dengan data awal (seed). Backend asli di server/ harus konsisten dengan kontrak yang sama.\n- Frontend: skrip klasik (bukan ES module, tanpa import/export), tag script src ditaruh sebelum penutup body dengan urutan sesuai ketergantungan (tokens/base/components CSS dibagi ke semua halaman; layout.js, store.js, api.js dipakai bersama); CSS lewat link relatif; tautan antar halaman memakai href relatif ke file (contoh: about.html, pages/produk.html); gambar/ikon dibuat sebagai file SVG dalam proyek. Tetap ikuti prinsip desain di atas (tanpa tampilan template AI).\n- Semua tombol, form, tab, dan modal harus berfungsi. Dilarang memotong kode: jangan tulis \"...\", \"sisanya sama\", atau TODO. Setiap file lengkap. Total semua file WAJIB di atas 100 KB. Jangan menutup pagar project sebelum total mencapai angka itu.\n- Kerjakan bertahap, file demi file, sampai target tercapai. Bila jawabanmu terpotong batas token, sistem otomatis mengirim pesan \"lanjutkan\" beserta state terakhir (file yang sedang ditulis, daftar file yang sudah selesai, ukuran sejauh ini). Saat itu lanjutkan PERSIS dari titik terakhir tanpa mengulang, tanpa salam, dan tanpa membuka pagar baru. Bila total masih di bawah 100 KB, sistem akan memintamu menambah file baru; tambahkan file yang benar-benar berguna (halaman, modul, komponen, data, gaya, dokumentasi), bukan duplikat.\n- Pesan progres antar tahap: setiap selesai satu tahap (kira-kira tiap 3-5 file, mis. fondasi CSS dan data, lalu layout dan halaman, lalu fitur), selipkan SATU baris persis \"=== SAY: kalimat progres ===\" di antara dua file (di luar isi file mana pun). Isinya 1 kalimat santai berbahasa Indonesia tentang apa yang baru selesai dan apa yang dikerjakan berikutnya. Sistem menampilkannya sebagai pesan biasa di antara checkpoint, bukan sebagai kode. Jangan menaruh baris ini di dalam isi file dan jangan menulis lebih dari satu baris per tahap.\n- Sebelum blok: 1-2 kalimat tentang tujuan, audiens, dan arah visual. Sesudah blok: 3-5 poin singkat berisi struktur proyek, cara menjalankan backend, dan bagian yang mudah diubah. Jangan menempel ulang kode di luar blok.\n- Saat revisi pada proyek yang sudah ada, JANGAN kirim ulang proyek: pakai blok patch (lihat bagian MEMPERBARUI PROYEK YANG SUDAH ADA di bawah).\n\nMEMPERBARUI PROYEK YANG SUDAH ADA (PATCH)\nBila percakapan ini sudah punya proyek web (blok project) dan pengguna meminta perubahan (perbaiki bug, ubah teks/warna/layout, tambah fitur atau halaman, hapus sesuatu), kamu DILARANG menulis ulang proyek dari nol. Kerjakan hanya bagian yang diminta lewat blok patch. Sistem otomatis menaruh \"STATE PROYEK\" di akhir pesan pengguna: daftar file, isi terbaru semua file, dan error konsol preview bila ada. Itu satu-satunya sumber kebenaran. Blok project/patch lama di riwayat diganti stub oleh sistem; jangan pernah menulis stub itu sendiri, selalu tulis blok asli.\n\nFormat: SATU blok dengan EMPAT backtick berlabel patch:\n\n````patch\nsummary: satu baris tentang perubahan ini\n=== EDIT: css/style.css ===\n<<<<<<< SEARCH\n.hero { padding: 40px; }\n=======\n.hero { padding: 96px 24px; }\n>>>>>>> REPLACE\n=== FILE: pages/baru.html ===\n(isi lengkap file baru, atau file yang ditimpa penuh)\n=== DELETE: pages/lama.html ===\n````\n\nAturan patch:\n- EDIT: salin potongan SEARCH PERSIS dari isi file di STATE PROYEK (spasi, indentasi, tanda baca). Sertakan 2-3 baris konteks di sekitarnya supaya cocok di SATU tempat saja; bila cocok di banyak tempat atau tidak ditemukan, edit ditolak. Satu header EDIT boleh berisi banyak pasangan SEARCH/REPLACE, diterapkan berurutan. Edit berikutnya harus berdasarkan isi file SETELAH edit sebelumnya.\n- SEARCH kosong berarti REPLACE ditambahkan di akhir file (mis. menambah aturan CSS baru).\n- Perubahan kecil dan sedang: EDIT. File baru, atau file yang berubah lebih dari separuh: FILE dengan isi lengkap. Hapus file: DELETE.\n- Menambah halaman: buat file barunya, lalu tambahkan tautannya di navigasi/footer (mis. js/layout.js) dengan EDIT. Jangan merusak tautan yang sudah ada.\n- Sentuh hanya file yang perlu berubah. Jangan ubah gaya atau struktur yang tidak diminta. Jangan kirim ulang blok project penuh kecuali pengguna jelas meminta web BARU atau perombakan total; saat itu tulis blok project baru. Batas 100 KB hanya untuk proyek baru, tidak berlaku untuk patch.\n- Kerjakan bertahap seperti alur kerja nyata: tiap tahap = satu blok patch (maks 6 file), didahului 1-2 kalimat tentang apa yang kamu temukan atau akan kerjakan di tahap itu (akhiri dengan titik dua). Perubahan kecil cukup satu blok; bila ada langkah lanjutan, penyempurnaan, atau pengecekan ulang, tulis blok patch berikutnya dengan kalimat pengantarnya sendiri. Setelah blok terakhir: 2-4 poin singkat file mana yang berubah dan efeknya. Jangan menempel ulang kode di luar blok.\n- Bila sistem memberi tahu ada edit yang gagal diterapkan, ikuti instruksinya: tulis ulang edit itu dengan SEARCH yang disalin persis dari isi file yang diberikan, atau timpa penuh file itu dengan FILE.\n- Pertanyaan tentang proyek tanpa perubahan kode: jawab biasa tanpa blok.\n\nKONSOL PREVIEW\nViewer Clincoo punya konsol: console.log/info/warn/error dan error runtime dari halaman yang berjalan di preview ditampilkan ke pengguna, dan error/peringatannya dikirim kembali kepadamu di STATE PROYEK (\"Konsol preview\"). Itu log nyata, jadi cari penyebabnya di kode lalu perbaiki lewat patch. Kegagalan fetch ke /api/... di preview itu normal (js/api.js jatuh ke mock) dan bukan bug. Saat menulis kode baru, pakai console.error/console.warn dengan pesan yang jelas (sebut modul dan penyebab) di blok catch dan di jalur gagal; jangan menelan error secara diam-diam.";
+
+// ===== Pemeriksa konsistensi desain (opsional, aktif bila env.DESIGN_LINT_FIX === '1') =====
+const LINT_BP_OK = new Set([640, 960, 1200]);
+function lintProjectText(text) {
+  const out = [];
+  try {
+    const m = /````project\n([\s\S]*?)\n````(?![`\w])/.exec(String(text || ''));
+    if (!m) return out;
+    const files = {};
+    const parts = m[1].split(/^=== FILE: (.+?) ===[ \t]*$/m);
+    for (let i = 1; i < parts.length; i += 2) files[parts[i].trim()] = String(parts[i + 1] || '').replace(/^=== SAY: .*$/gm, '');
+    const names = Object.keys(files);
+    const htmls = names.filter(n => /\.html?$/i.test(n));
+    const csss = names.filter(n => /\.css$/i.test(n));
+    if (!htmls.length) return out;
+
+    const resolve = (from, ref) => {
+      const dir = from.indexOf('/') !== -1 ? from.slice(0, from.lastIndexOf('/') + 1) : '';
+      const stack = [];
+      for (const seg of (ref.charAt(0) === '/' ? ref : dir + ref).split('/')) {
+        if (!seg || seg === '.') continue;
+        if (seg === '..') stack.pop(); else stack.push(seg);
+      }
+      return stack.join('/');
+    };
+
+    // 1. Tautan dan aset mati
+    const dead = [];
+    for (const h of htmls) {
+      const re = /(?:href|src)="([^"]+)"/g;
+      let mm;
+      while ((mm = re.exec(files[h]))) {
+        let ref = mm[1].trim();
+        if (!ref || ref.charAt(0) === '#' || ref.charAt(0) === '?' || /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(ref)) continue;
+        ref = ref.split('#')[0].split('?')[0];
+        if (!ref || ref.slice(-1) === '/') continue;
+        const target = resolve(h, ref);
+        if (target && !Object.prototype.hasOwnProperty.call(files, target)) dead.push(h + ' -> ' + ref);
+      }
+    }
+    if (dead.length) out.push('Tautan atau aset menuju file yang tidak ada di proyek: ' + Array.from(new Set(dead)).slice(0, 6).join('; '));
+
+    // 2. Emoji
+    const EMO = /[\u{1F000}-\u{1FAFF}\u{2705}\u{274C}\u{2728}\u{2764}\u{26A1}\u{2B50}\u{2615}\u{23F0}]/u;
+    const emo = names.filter(n => /\.(html?|css|js|json|md|svg)$/i.test(n) && EMO.test(files[n]));
+    if (emo.length) out.push('Emoji ditemukan (dilarang, ganti dengan SVG atau kata) di: ' + emo.slice(0, 6).join(', '));
+
+    // 3. Warna hex literal di luar tokens.css
+    const hexBad = [];
+    for (const c of csss) {
+      if (/(^|\/)tokens\.css$/i.test(c)) continue;
+      const css = files[c].replace(/\/\*[\s\S]*?\*\//g, '');
+      const hits = css.match(/:[^;{}]*#[0-9a-fA-F]{3,8}\b/g);
+      if (hits) hexBad.push(c + ' (' + hits.length + ')');
+    }
+    if (hexBad.length) out.push('Warna hex literal di luar tokens.css, ganti dengan var(--token): ' + hexBad.slice(0, 6).join(', '));
+
+    // 4. Breakpoint di luar 640/960/1200
+    const bpBad = [];
+    for (const c of csss) {
+      const css = files[c].replace(/\/\*[\s\S]*?\*\//g, '');
+      const pre = /@media([^{]*)\{/g;
+      const bad = new Set();
+      let pm;
+      while ((pm = pre.exec(css))) {
+        const wr = /(?:min|max)-width\s*:\s*([\d.]+)px/g;
+        let wm;
+        while ((wm = wr.exec(pm[1]))) {
+          const v = Math.round(parseFloat(wm[1]));
+          if (!LINT_BP_OK.has(v) && !LINT_BP_OK.has(v + 1)) bad.add(wm[1] + 'px');
+        }
+      }
+      if (bad.size) bpBad.push(c + ' [' + Array.from(bad).join(', ') + ']');
+    }
+    if (bpBad.length) out.push('Breakpoint di luar 640/960/1200px: ' + bpBad.slice(0, 6).join('; '));
+
+    // 5. CSS inti harus sama urutannya di semua halaman
+    if (csss.some(c => /tokens\.css$/i.test(c))) {
+      const badOrder = [];
+      for (const h of htmls) {
+        const hrefs = [];
+        const lr = /<link[^>]+href="([^"]+\.css)"/gi;
+        let lm;
+        while ((lm = lr.exec(files[h]))) hrefs.push(lm[1]);
+        const ix = ['tokens', 'base', 'components'].map(k => hrefs.findIndex(x => x.indexOf(k) !== -1));
+        if (ix.some(i => i === -1) || !(ix[0] < ix[1] && ix[1] < ix[2])) badOrder.push(h);
+      }
+      if (badOrder.length) out.push('CSS inti (tokens, base, components) tidak lengkap atau urutannya berbeda di: ' + badOrder.slice(0, 8).join(', '));
+    }
+
+    // 6. Tepat satu h1 per halaman
+    const h1Bad = htmls.filter(h => (files[h].match(/<h1[\s>]/gi) || []).length !== 1);
+    if (h1Bad.length) out.push('Halaman tanpa tepat satu h1: ' + h1Bad.slice(0, 8).join(', '));
+  } catch (e) {}
+  return out.slice(0, 10);
 }
-async function tryOrkestraMini(messages) {
-  const res = await fetch(ORKESTRA_MINI_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: orkestraSanitize(messages) })
-  });
-  if (!res.ok) return { error: 'orkestra HTTP ' + res.status };
-  const d = await res.json().catch(() => null);
-  const text = d && typeof d.text === 'string' ? d.text.trim() : '';
-  if (!text) return { error: 'orkestra kosong' };
-  return { text, model: d.model || 'orkestra-1-mini' };
+
+async function issueCont(env, ownerKey) {
+  await env.DB.prepare('CREATE TABLE IF NOT EXISTS ai_cont (id TEXT PRIMARY KEY, owner TEXT, exp INTEGER, hops INTEGER)').run();
+  const id = crypto.randomUUID();
+  await env.DB.prepare('INSERT INTO ai_cont (id, owner, exp, hops) VALUES (?, ?, ?, ?)')
+    .bind(id, ownerKey, Date.now() + 15 * 60_000, 30).run();
+  await env.DB.prepare('DELETE FROM ai_cont WHERE exp < ?').bind(Date.now() - 3600_000).run().catch(() => {});
+  return id;
+}
+
+// true bila token valid; tiap pakai mengurangi jatah hop (atomik)
+async function useCont(env, id, ownerKey) {
+  if (!id) return false;
+  try {
+    const r = await env.DB.prepare(
+      'UPDATE ai_cont SET hops = hops - 1 WHERE id = ? AND owner = ? AND exp > ? AND hops > 0'
+    ).bind(id, ownerKey, Date.now()).run();
+    return ((r.meta && r.meta.changes) || 0) > 0;
+  } catch (e) { return false; }
 }
 
 export async function onRequestPost({ request, env, waitUntil }) {
   try {
-    // ===== [8 Okt 2026] AI PLACEHOLDER — dievaluasi PALING PERTAMA =====
-    // Laporan pemilik: "masih thinking lalu muncul 'Lagi ada gangguan koneksi
-    // sebentar.'". Akar masalah: gate rate-limit/ukuran body (middleware cap
-    // 1.5MB guest, handler 2MB) menolak request SEBELUM placeholder berjalan
-    // (sesi chat lama berisi riwayat+foto+hasil tool membesar > cap) -> client
-    // jatuh ke fallback /api/ai -> middleware menolak guest (401) -> semua jalur
-    // gagal -> user lihat "gangguan koneksi". Fix: placeholder jadi respons
-    // pertama TANPA membaca body besar (hanya parse <= 2MB utk stream/session/
-    // action); body raksasa langsung dijawab stream (client menangani ndjson
-    // maupun JSON, dua-duanya).
-    // [9 Okt 2026, arahan pemilik: "siapkan key buat pasang ai lagi, model glm
-    // 5.3 flash atau haiku 5.5"] AI DINYALAKAN LAGI. Kunci ModelRouter diverifikasi
-    // hidup (saldo jalan); rantai build: claude-haiku-5.5 utama (non-reasoning,
-    // tool_calls native, ~99 tok/s) -> glm-5.3-flash -> lightning, cascade gratis
-    // tetap jadi penyelamat. Matikan lagi: AI_PLACEHOLDER = true.
+
     const AI_PLACEHOLDER = false;
-    const fromLabsRelay = (request.headers.get('x-labs-relay') || '') === 's0las-labs-relay-4451';
+    const relaySecret = String(env.LABS_RELAY_SECRET || '');
+    const fromLabsRelay = !!relaySecret && (request.headers.get('x-labs-relay') || '') === relaySecret;
     const labOrigin = String(request.headers.get('origin') || request.headers.get('referer') || '');
     const fromLabsUi = labOrigin.indexOf('labs.clincoo.biz.id') !== -1;
     if (AI_PLACEHOLDER && !fromLabsRelay && !fromLabsUi) {
@@ -1980,19 +1382,12 @@ export async function onRequestPost({ request, env, waitUntil }) {
       return new Response(JSON.stringify({ text: phText, model: 'placeholder', session_id: phSid }), { headers: { 'Content-Type': 'application/json; charset=utf-8', ...CORS } });
     }
 
-    if (!rateLimitOk(clientIp(request))) {
+    if (!(await rateLimitOkDb(env, clientIp(request)))) {
       return new Response(JSON.stringify({ error: 'Terlalu banyak permintaan. Coba lagi dalam 1 menit.' }), {
         status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': '60', ...CORS }
       });
     }
 
-    // Batasi ukuran body maksimal 2 MB (anti abuse attachment base64 raksasa).
-    // Pengecualian: user LOGIN boleh sampai 15 MB — sesi AI tool-use panjang
-    // (system prompt + riwayat + hasil tool baca web / backend function bertumpuk)
-    // bisa tembus 2MB dan kena 413 di request awal MAUPUN semua jalur fallback
-    // retry-nya (body sama besar) -> user cuma lihat pesan generik "ada gangguan
-    // koneksi" padahal sebabnya payload kelewat besar. Cap login disamakan dengan
-    // middleware (_middleware.js, 15MB) supaya konsisten.
     const raw = await request.text();
     if (raw.length > 2_000_000) {
       let bigAllowed = false;
@@ -2004,7 +1399,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
             const u = await getUserByToken(env.DB, t);
             if (u) bigAllowed = true;
           }
-        } catch (e) { /* anggap guest */ }
+        } catch (e) {  }
       }
       if (!bigAllowed) {
         return new Response(JSON.stringify({ error: 'Payload terlalu besar (maks 2MB).' }), {
@@ -2012,11 +1407,10 @@ export async function onRequestPost({ request, env, waitUntil }) {
         });
       }
     }
-    // Body tidak valid / kosong jangan dianggap error server — cukup dianggap pesan kosong
+
     let body = {};
     try { body = JSON.parse(raw) || {}; } catch (e) { body = {}; }
 
-    // Aksi manajemen sesi — stateless (riwayat di localStorage klien), cukup ACK
     const action = body.action || 'send';
     if (action === 'delete_session') {
       return new Response(JSON.stringify({ success: true }), {
@@ -2029,30 +1423,28 @@ export async function onRequestPost({ request, env, waitUntil }) {
       });
     }
 
-
-    // --- Auth per-user ---
-    // MODE TANPA LOGIN (guest): chat tetap jalan tanpa akun (auth frontend memang
-    // sudah dilepas). Identitas guest = IP; kuota harian per-IP (tabel ai_quota,
-    // kunci 'g:'+IP, sama seperti kuota user). Login tetap dapat kuota paket penuh.
     const user = await resolveUser(env, request);
     const isGuest = !user;
     const guestKey = 'g:' + clientIp(request);
 
     let messages = Array.isArray(body.messages) ? body.messages : [];
-    // Mode biasa: pastikan selalu ada system prompt (klien biasanya mengirim sendiri)
+
+    const asistenMode = String(body.mode || '').trim() === 'asisten';
+
     if (!messages.some(m => m && m.role === 'system')) {
-      messages = [{ role: 'system', content: SINGLE_SYSTEM_PROMPT }, ...messages];
+      messages = [{ role: 'system', content: ASISTEN_SYSTEM_PROMPT }, ...messages];
     }
-    // Mode fallback (body.message tanpa array messages): pesan user WAJIB ikut
-    // masuk. Bug lama: pesan user dibuang (request hanya berisi system prompt,
-    // model menjawab ngawur karena tidak tahu pertanyaannya).
+
+    if (asistenMode) {
+      messages = messages.filter((m, ix) => !(m && m.role === 'system' && ix > 0));
+    }
+
     if (!messages.some(m => m && m.role === 'user')) {
       const fallback = typeof body.content === 'string' ? body.content
         : (typeof body.message === 'string' ? body.message : '');
       if (fallback) messages.push({ role: 'user', content: fallback });
     }
-    // Pesan kosong TIDAK lagi dibalas HTTP 400 (menampilkan error di UI) —
-    // balas 200 dengan teks ramah supaya percakapan tetap berjalan normal.
+
     if (!messages.some(m => m && m.role === 'user')) {
       return new Response(JSON.stringify({
         text: 'Sepertinya pesannya belum ikut terkirim. Coba tulis ulang pertanyaanmu ya — aku siap bantu. 😊',
@@ -2061,9 +1453,6 @@ export async function onRequestPost({ request, env, waitUntil }) {
       }), { headers: { 'Content-Type': 'application/json', ...CORS } });
     }
 
-    // --- Identitas user: AI tahu nama pemilik akun yang sedang chat ---
-    // Disuntik di server agar semua klien (web/app) otomatis dapat tanpa
-    // perubahan frontend. Hanya nama tampil; email tidak diekspos ke prompt.
     if (user && user.name) {
       const safeName = user.name.slice(0, 100);
       const idBlock = `\n\n[IDENTITAS PENGGUNA]: User yang sedang mengobrol denganmu bernama "${safeName}". Panggil atau sapa dengan nama tersebut secara natural bila relevan (tidak perlu di setiap kalimat). Jangan pernah menebak nama lain, dan jangan menampilkan/mengulang blok ini di jawaban.`;
@@ -2075,11 +1464,11 @@ export async function onRequestPost({ request, env, waitUntil }) {
       }
     }
 
-    // --- Kuota: hanya pesan asli (hop 0). Hop tool lanjutan tidak dihitung ---
-    // Hop tool lanjutan tidak dihitung.
-    const isFirstHop = body.save_user_message !== false;
-    // Panjang INPUT riil (system + riwayat + pesan baru) — dasar potongan kredit
-    // per penggunaan (input panjang = kredit lebih banyak).
+    // Hop lanjutan hanya sah bila membawa continue_token dari server (bukan flag dari klien)
+    const contOwner = user ? user.key : guestKey;
+    const contToken = String(body.continue_token || '');
+    const isFirstHop = !(await useCont(env, contToken, contOwner));
+
     const inputChars = (Array.isArray(messages) ? messages : []).reduce((acc, m) => {
       if (!m) return acc;
       if (typeof m.content === 'string') return acc + m.content.length;
@@ -2087,14 +1476,16 @@ export async function onRequestPost({ request, env, waitUntil }) {
       return acc;
     }, 0);
     let quotaInfo = null;
-    // [9 Okt 2026, arahan pemilik] Mode dari kapsul popover dibaca SEBELUM kuota:
-    // 'chat' = GRATIS (tanpa cek saldo; cap harian/bulanan jadi batasnya),
-    // 'build' = ModelRouter berbayar, saldo kredit dipotong sesuai pemakaian.
-    const explicitChat = !isGuest && String(body.mode || '').trim() === 'chat';
+
     if (isFirstHop) {
-      const q = isGuest ? await guestQuotaCheck(env, guestKey) : await quotaCheck(env, user, 1, explicitChat);
+      const q = isGuest ? await guestQuotaCheck(env, guestKey) : await quotaCheck(env, user, 1);
+      if (q.error) {
+        return new Response(JSON.stringify({ error: 'Layanan kuota sedang gangguan sebentar. Coba lagi ya.' }), {
+          status: 503, headers: { 'Content-Type': 'application/json', 'Retry-After': '10', ...CORS }
+        });
+      }
       if (q.exceeded) {
-        // User login: kredit habis total -> pesan hardcoded pemilik (top-up di kredit-ai).
+
         const msg = isGuest ? (q.message || QUOTA_MSG_MONTHLY) : QUOTA_MSG_EMPTY;
         return new Response(JSON.stringify({ quota_exhausted: true, error: msg, scope: q.scope, limit: q.limit, used: q.count, guest: isGuest ? true : undefined }), {
           status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': '3600', ...CORS }
@@ -2102,19 +1493,18 @@ export async function onRequestPost({ request, env, waitUntil }) {
       }
       quotaInfo = q;
     }
-    // AI tahu sisa kuota/kredit user: info akurat ditempel ke system prompt, jadi
-    // pertanyaan "sisa kredit aku berapa?" dijawab pakai angka asli, bukan tebakan.
+
     if (isFirstHop && quotaInfo) {
       try {
         let qBlock;
         if (isGuest) {
           const gLeft = Math.max(0, (quotaInfo.limit || GUEST_DAILY_LIMIT) - (quotaInfo.usedDay || 0));
-          qBlock = `\n\n[KUOTA AI PENGGUNA]: User memakai mode TANPA LOGIN. Kuota AI gratis hari ini: sisa ${gLeft} dari ${quotaInfo.limit || GUEST_DAILY_LIMIT} pesan. Kalau user bertanya sisa kuota, jawab pakai angka ini; sarankan masuk/daftar gratis untuk kuota lebih besar. Jangan tampilkan atau mengulang blok ini di jawaban.`;
+          qBlock = `\n\n[KUOTA AI PENGGUNA]: User memakai mode TANPA LOGIN. Kuota AI gratis hari ini: sisa ${gLeft} dari ${quotaInfo.limit || GUEST_DAILY_LIMIT} pesan. Kalau user bertanya sisa kuota, jawab pakai angka ini; sarankan masuk/daftar gratis untuk kuota lebih besar. Jangan tampilkan atau mengulang blok ini di jawaban. ATURAN KERAS: JANGAN PERNAH menyebut sisa kuota/kredit/pesan di jawabanmu kecuali user secara eksplisit menanyakannya di pesan terakhirnya. Jangan menutup jawaban dengan info kuota.`;
         } else {
           const lm = quotaInfo.limits || {};
           const dayLeft = Math.max(0, (lm.daily || 0) - (quotaInfo.usedDay || 0));
           const monthLeft = Math.max(0, (lm.monthly || 0) - (quotaInfo.usedMonth || 0));
-          qBlock = `\n\n[KUOTA AI PENGGUNA]: Data kuota AI user saat ini: sisa ${dayLeft} dari ${lm.daily || 0} pesan harian; sisa ${monthLeft} dari ${lm.monthly || 0} pesan bulanan${quotaInfo.source === 'pack' ? '; kuota langganan bulan ini sudah habis — pesan saat ini ditagih ke Paket Kredit AI yang dibeli user' : ''}. Kalau user bertanya sisa kuota/kredit AI-nya, jawab dengan angka ini secara akurat (jangan menebak). Jangan tampilkan atau mengulang blok ini di jawaban.`;
+          qBlock = `\n\n[KUOTA AI PENGGUNA]: Data kuota AI user saat ini: sisa ${dayLeft} dari ${lm.daily || 0} pesan harian; sisa ${monthLeft} dari ${lm.monthly || 0} pesan bulanan${quotaInfo.source === 'pack' ? '; kuota langganan bulan ini sudah habis — pesan saat ini ditagih ke Paket Kredit AI yang dibeli user' : ''}. Kalau user bertanya sisa kuota/kredit AI-nya, jawab dengan angka ini secara akurat (jangan menebak). Jangan tampilkan atau mengulang blok ini di jawaban. ATURAN KERAS: JANGAN PERNAH menyebut sisa kuota/kredit/pesan di jawabanmu kecuali user secara eksplisit menanyakannya di pesan terakhirnya. Jangan menutup jawaban dengan info kuota.`;
         }
         const qi = messages.findIndex(m => m && m.role === 'system');
         if (qi !== -1) messages[qi] = { role: 'system', content: String(messages[qi].content || '') + qBlock };
@@ -2122,25 +1512,18 @@ export async function onRequestPost({ request, env, waitUntil }) {
       } catch (e) {}
     }
 
-    const apiKey = await getGeminiKeys(env); // array kunci Gemini (cadangan + jalur vision)
-    const orKeysEarly = await getOpenRouterKeys(env); // kunci OpenRouter (GLM 5.3 — utama)
-    const cvKeysEarly = await getClouviaKeys(env); // kunci Clouvia Router — cadangan #1
-    const mrKeysEarly = await getModelRouterKeys(env); // kunci ModelRouter — mode Build (berbayar)
-    const emKeysEarly = await getEmergentKeys(env); // [8 Okt] kunci Emergent 'auto' — UTAMA hop teks murni
-    const cfAiCreds = await getCfAiCreds(env); // Workers AI REST akun C — pool gratis kedua
-
-    if (!orKeysEarly.length && !cvKeysEarly.length && !apiKey.length && !env.AI && !cfAiCreds) {
-      return new Response(JSON.stringify({ error: 'Kunci AI belum dikonfigurasi. Tambahkan lewat Pengaturan → Environment (global).' }), {
+    const [mrKeys, geminiKeys, orKeys] = await Promise.all([
+      getModelRouterKeys(env),
+      getGeminiKeys(env),
+      getOpenRouterKeys(env)
+    ]);
+    const hasAnyProvider = mrKeys.length > 0 || geminiKeys.length > 0 || orKeys.length > 0 || !!(env && env.AI);
+    if (!hasAnyProvider) {
+      return new Response(JSON.stringify({ error: 'Belum ada provider AI yang dikonfigurasi. Tambahkan API key (ModelRouter, Gemini, atau OpenRouter) di Pengaturan → Environment.' }), {
         status: 500, headers: { 'Content-Type': 'application/json', ...CORS }
       });
     }
 
-    // Mode streaming progres (NDJSON): klien minta status real-time.
-    // Urutan baris: {"t":"thinking"} -> {"t":"progress","text":...} -> {"t":"final",...}
-    // atau {"t":"error",...}. Klien lama (tanpa stream:true) tetap dapat JSON biasa.
-    // PENTING (runtime Workers): JANGAN menunggu write/close stream sebelum
-    // Response dikembalikan — worker akan hang (error 1101). Response stream
-    // dikirim SEKARANG, pemrosesan chat berjalan di belakang (waitUntil).
     const useStream = body.stream === true;
     let streamWriter = null, streamSend = null, streamReadable = null;
     if (useStream) {
@@ -2156,267 +1539,106 @@ export async function onRequestPost({ request, env, waitUntil }) {
       streamSend({ t: 'thinking' });
       try { streamSend({ t: 'progress', text: 'Thinking…' }); } catch (e) {}
     }
-    // Mode workspace tools.
-    // Jalur Gemini: HANYA functionDeclarations (tanpa google_search — kombinasi
-    // keduanya ditolak Gemini API dan memicu bug JSON palsu).
-    const decls = workspaceDecls(body);
-    const wantTools = body.workspace_tools === true && String(body.mode || '').trim() !== 'chat'; // CHAT_BUILD_MODE_FIX
+
+    let decls = workspaceDecls(body);
+    const wantTools = (body.workspace_tools === true || asistenMode);
+
+    const ASISTEN_TOOLS = new Set(['search_clincoo_kb', 'take_screenshot']);
+    if (asistenMode) decls = decls.filter(d => d && ASISTEN_TOOLS.has(d.name));
     const gTools = wantTools
       ? [{ functionDeclarations: decls }]
       : null;
 
-    // Payload bergambar -> hanya Gemini (Workers AI tidak support vision).
     const hasImages = messages.some(m => Array.isArray(m?.content) && m.content.some(b => b && b.type === 'image_url' && b.image_url?.url));
 
-    // AI UTAMA: GLM 5.3 Flash (Workers AI, binding internal — tanpa kunci/kuota Google).
-    // Gemini menjadi CADANGAN (jalur vision + fallback klasik). Chat bergambar tetap
-    // langsung Gemini karena Workers AI tidak support vision.
-    // TOOLS SERVER (backend function & screenshot) dieksekusi di sini: hasil
-    // ditempel ke pesan lalu provider dipanggil lagi (max 4 hop server) —
-    // jalur klien (frontend) tidak berubah sama sekali.
-    const workMessages = messages; // array sama — kita append blok function_call/response
-    // [9 Okt, arahan pemilik] Akun pemakaian NYATA per model (haiku/glm) untuk
-    // penagihan kredit — dashboard provider menunjukkan >1 model dipakai per
-    // permintaan, potongan kredit mengikuti total token yang benar-benar terkirim.
+    if (hasImages) {
+      const imgNote = '\n\n[CATATAN SISTEM]: Pengguna melampirkan gambar, tetapi model ini hanya membaca teks dan TIDAK bisa melihat gambar. Jangan berpura-pura melihatnya; jelaskan singkat dan minta pengguna mendeskripsikan isinya dengan teks.';
+      const si = messages.findIndex(m => m && m.role === 'system');
+      if (si !== -1) messages[si] = { role: 'system', content: String(messages[si].content || '') + imgNote };
+      else messages.unshift({ role: 'system', content: imgNote.trim() });
+    }
+
+    const workMessages = messages;
     const mrUsageAcc = {};
-    const orKeys = orKeysEarly; // GLM 5.3 Flash (OpenRouter) — UTAMA
-    const mrKeys = mrKeysEarly; // ModelRouter (mode Build — berbayar)
-    const emKeys = emKeysEarly; // Emergent 'auto' — UTAMA teks murni (8 Okt)
-    // MODE BUILD: user pilih kapsul Build -> model berbayar ModelRouter jadi utama.
-    // Hanya user LOGIN — tamu TIDAK boleh membakar biaya provider berbayar.
-    // MODE BUILD: (a) user pilih kapsul Build, ATAU (b) mode Chat tapi pesannya
-    // minta bikin/ubah situs/kode -> AI build (ModelRouter) bantu di belakang
-    // layar. Hanya user LOGIN — tamu TIDAK boleh membakar biaya provider.
-    // [9 Okt, arahan pemilik: "siapkan key buat pasang ai lagi, model glm 5.3
-    // flash atau haiku 5.5"] Rute Build ModelRouter DINYALAKAN LAGI. Kunci MR
-    // diverifikasi hidup 9 Okt (saldo jalan, glm-5.3-flash & claude-haiku-5.5
-    // dua-duanya merespons; haiku-5.5 non-reasoning + tool_calls native ->
-    // masalah lama SSE kosong / thinking lama terselesaikan). Cascade gratis
-    // tetap menyelamatkan kalau MR gagal. Matikan lagi: ENABLE_BUILD_ROUTE = false.
-    const ENABLE_BUILD_ROUTE = true;
-    // [9 Okt 2026, arahan pemilik] Mode dari kapsul popover (Chat/Build) kini eksplisit:
-    // 'chat'  = obrolan via Gemini AI Studio (kandidat utama race) + batas harian/bulanan,
-    //           TANPA auto-eskalasi ke model berbayar walau prompt terdengar "bangun situs";
-    // 'build' = ModelRouter berbayar, kredit dipotong sesuai pemakaian (usage-based).
-    const buildMode = ENABLE_BUILD_ROUTE && (body.mode === 'build' || (!explicitChat && detectBuildIntent(body.messages))) && !isGuest && !!mrKeys.length && !hasImages;
-    const aiMain = !!(env.AI && !hasImages);
     const toolDecls = (gTools && gTools[0] && gTools[0].functionDeclarations) || null;
-    // Cascade lengkap (OpenRouter -> Clouvia -> Workers AI -> Gemini) dijalankan
-    // sebagai SATU unit supaya bisa diulang utuh bila semua provider gagal
-    // bersamaan — workMessages tetap mempertahankan hasil tool yang sudah jalan,
-    // jadi pengulangan hanya meminta ulang jawaban, bukan mengulang pekerjaan.
+    const modeLabel = asistenMode ? 'asisten' : 'build';
+
     const attemptCascade = async () => {
     let r = null;
-    let planGapNudgeCount = 0; // [7 Okt 2026] guard "janji kosong" di bawah — maks 2x nudge/request
-    for (let sHop = 0; sHop <= 4; sHop++) {
-      r = null;
-      // [5 Okt 2026, permintaan owner] JALUR CLOUVIA-SOLPRO DIMATIKAN sebagai UTAMA:
-      // model Clouvia (deepseek/glm) terbukti sering berhenti setelah cek folder/gambar
-      // tanpa menulis file ("gak punya jiwa builder" — 3x laporan screenshot). Model
-      // utama user login kini Sol Pro ASLI (OpenRouter) -> Luna Pro berikutnya.
-      // Clouvia tetap ada di bawah sebagai cadangan (blok generic setelah OpenRouter).
-      // Nyalakan lagi jalur ini dengan mengganti USE_CLOUVIA_FIRST di bawah jadi true.
-      // [7 Okt 2026, arahan pemilik] MODE BUILD -> ModelRouter (GLM 5.3 Flash berbayar)
-      // UTAMA di tiap hop tool (kode besar butuh model konsisten). Gagal -> cascade
-      // gratis di bawah tetap menyelamatkan jawaban.
-      if (buildMode && (!r || r.error)) {
-        const mr = await withTimeout(tryModelRouterText(mrKeys, workMessages, toolDecls, MODELROUTER_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null, mrUsageAcc), 90000, 'ModelRouter').catch(e => ({ error: e.message }));
-        if (mr && !mr.error) r = mr;
-      }
-      const USE_CLOUVIA_FIRST = false;
-      if (USE_CLOUVIA_FIRST && !isGuest && !hasImages && cvKeysEarly.length) {
-        const sp = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, CLOUVIA_SOL_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 40000, 'ClouviaSolPro').catch(e => ({ error: e.message }));
-        if (sp) r = sp;
-      }
-      // [7 Okt 2026, arahan pemilik] GEMINI UTAMA (kunci aktif terverifikasi 200);
-      // OpenRouter diturunkan jadi kandidat lemah (masih guna, 4/6 kunci hidup —
-      // TIDAK dihapus). Workers AI (glm-4.7-flash, gratis) tetap fallback gratis.
-      if ((!r || r.error) && (apiKey.length || orKeys.length) && !hasImages) {
-        // [6 Okt 2026, arahan owner: "percepat jawaban ai"] MODE RACE 3 KANDIDAT:
-        // (P) GLM 5.3 Flash OpenRouter — jalur utama (tools + streaming penuh);
-        // (G) Gemini 3.6 Flash — biasanya TTFB tercepat (di labs menang 20/22 balapan);
-        // (W) Workers AI glm-4.7-flash — gratis, ikut kalau kuota neuron masih ada
-        //     (kuota harian gratis cepat habis; 4006 gagal dalam ~200ms, tak menahan apa pun).
-        // Delta HANYA diteruskan dari pemenang: kandidat pertama yang mengirim delta
-        // (atau selesai duluan dengan hasil valid) menang; kandidat lain dibuang begitu kalah.
-        // Semua kandidat punya dukungan tool_calls — jalur tool tak berubah.
-        // Bila P gagal total, hasil kandidat lain dipakai sebelum cascade turun ke Clouvia dst.
-        const chainModels = isGuest ? GUEST_OR_MODELS : OPENROUTER_MODELS;
-        let winner = null; // id kandidat pemenang ('P'=Gemini-utama | 'OR' | 'W' | 'W2' | 'F' | 'OK')
-        const sendDelta = streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null;
-        const makeOnDelta = (id) => sendDelta ? (tx) => {
-          if (winner && winner !== id) return;      // sudah ada pemenang lain -> buang delta
-          if (!winner) winner = id;                 // delta pertama -> kandidat ini menang
-          sendDelta(tx);
-        } : null;
-        const cand = (id, p) => p.then((res) => ({ id, res })).catch((e) => ({ id, res: { error: e.message } }));
-        // [7 Okt 2026, laporan owner: jawaban AI berbahasa Inggris + istilah ngarang
-        // ("systemctl rebased", "ldpreload") + minta user jalanin perintah manual]
-        // AKARNYA: race menang oleh kandidat TERCEPAT bukan TERBAIK — model
-        // cadangan gratis (Workers AI / :free) sering nge-stream duluan dan
-        // mengabaikan aturan persona (bahasa Indonesia, dilarang jadi chatbot
-        // pasif). FIX: kandidat lemah baru ikut balapan setelah 8 detik bila
-        // model utama belum mengirim delta — kualitas dijaga jalur utama,
-        // cadangan tetap tersedia saat jalur utama mati/lambat.
-        const WEAK_DELAY_MS = 8000;
-        const weakLate = (id, fn) => cand(id, new Promise((resolve, reject) => {
-          setTimeout(() => { if (winner) return resolve({ error: 'telat — pemenang sudah ada' }); fn().then(resolve, reject); }, WEAK_DELAY_MS);
-        }));
-        // [7 Okt 2026, arahan pemilik: "Gemini kalo masih ada model aktif, pasang jadi
-        // utama; OpenRouter kalo udah ga guna hapus"] VERIFIKASI LANGSUNG 7 Okt: kunci
-        // Gemini masih hidup (gemini-3.6-flash + gemini-3-flash-preview balas 200 di
-        // hampir semua kunci) -> GEMINI JADI KANDIDAT UTAMA. OpenRouter juga masih
-        // guna (4/6 kunci masih 200 utk glm-5.3-flash) -> TIDAK dihapus, tapi diturunkan
-        // jadi kandidat lemah (ikut balapan setelah 8s bila Gemini belum mengirim delta).
-        // KANDIDAT P (UTAMA): Gemini 3.6 Flash (napas 30s, dukungan tools penuh)
-        const cands = [];
-        if (apiKey.length) {
-          const { systemInstruction, contents } = toGeminiPayload(workMessages);
-          cands.push(cand('P', withTimeout(tryModels(apiKey, systemInstruction, contents, gTools, makeOnDelta('P')), 45000, 'Gemini-utama')));
-        }
-        // [9 Okt 2026, arahan pemilik: "kalo chat make gemini yang dari AI Studio"]
-        // MODE CHAT: kandidat balapan CUMA Gemini AI Studio (kunci aktif ada).
-        // Kandidat lain (Emergent/OpenRouter/WorkersAI/Orkestra) hanya ikut race
-        // di mode build / tanpa mode — chat mode jatuh ke mereka HANYA lewat
-        // cascade penyelamat bila semua kunci Gemini gagal (jawaban tetap hidup).
-        if (!explicitChat && emKeys.length && !hasImages) {
-          const emCall = () => withTimeout(tryEmergentText(emKeys, workMessages, makeOnDelta('E')), 45000, 'Emergent-race');
-          cands.push(toolDecls ? weakLate('E', emCall) : cand('E', emCall()));
-        }
-        // KANDIDAT OR: OpenRouter (utk reasoning panjang, napas 90s) — weakLate
-        if (!explicitChat && orKeys.length) {
-          cands.push(weakLate('OR', () => withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, chainModels, makeOnDelta('OR')), 150000, 'OpenRouter')));
-        }
-        // KANDIDAT W: Workers AI (hanya bila binding ada; gagal cepat bila kuota habis)
-        if (!explicitChat && aiMain) cands.push(weakLate('W', () => withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 20000, 'WorkersAI-race')));
-        // KANDIDAT W2: Workers AI via REST — akun C (pool kuota gratis kedua; TTFB ~1-2s,
-        // tools OK). 429 saat kuota habis -> gagal cepat, tak menahan kandidat lain.
-        if (!explicitChat && cfAiCreds) {
-          cands.push(weakLate('W2', () => withTimeout(tryCfAiRest(cfAiCreds, workMessages, toolDecls, makeOnDelta('W2')), 45000, 'WorkersAI-REST-race')));
-        }
-        // KANDIDAT F: model :free OpenRouter (cohere north-mini-code, spesialis koding,
-        // model reasoning). Gratis — jalan untuk guest maupun user login. Gagal cepat
-        // (429/402) bila kuota hariannya habis; tidak menahan kandidat lain.
-        if (!explicitChat && orKeys.length) {
-          cands.push(weakLate('F', () => withTimeout(tryOpenRouterText(orKeys, workMessages, toolDecls, FREE_OR_MODELS, makeOnDelta('F')), 45000, 'OpenRouterFree')));
-        }
-        // KANDIDAT OK: Orkestra-1 Mini (worker labs-pro — balapan 7 model + standar
-        // kualitas + verifikasi install). Hanya chat murni tanpa tools/vision.
-        if (!explicitChat && !toolDecls && !hasImages) {
-          cands.push(cand('OK', withTimeout(tryOrkestraMini(workMessages), 22000, 'OrkestraMini-race')));
-        }
-        const o = await new Promise((resolve) => {
-          let settled = false;
-          const fin = (v) => { if (!settled) { settled = true; resolve(v); } };
-          for (const C of cands) {
-            C.then(({ id, res }) => {
-              if (winner && winner !== id) return;  // pemenang delta lain sedang streaming
-              if (res && !res.error && (res.text || (res.tool_calls && res.tool_calls.length))) {
-                if (!winner) { winner = id; if (sendDelta && res.text) sendDelta(res.text); }
-                fin(res); return;                   // pemenang selesai -> hasil finalnya
-              }
-              // kandidat ini gagal: tunggu semua selesai; tanpa pemenang -> lanjut cascade
-              Promise.all(cands).then((all) => {
-                let pRes = null;
-                for (const a of all) if (a.id === 'P') pRes = a.res; // utamakan error P (label cascade)
-                fin(pRes || (res && res.error ? res : null));
-              });
-            });
-          }
-        });
-        if (o) r = o;
-      }
-      if ((!r || r.error) && cvKeysEarly.length && !hasImages) {
-        const c = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, undefined, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 25000, 'Clouvia').catch(e => ({ error: e.message }));
-        if (c) r = c;
-      }
-      if ((!r || r.error) && aiMain) {
-        const w = await withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 25000, 'Workers AI').catch(e => ({ error: e.message }));
-        if (w) r = w;
-      }
-      // [6 Okt 2026] Fallback REST akun C — pool kuota Workers AI kedua (gratis)
-      if ((!r || r.error) && cfAiCreds && !hasImages) {
-        const w2 = await withTimeout(tryCfAiRest(cfAiCreds, workMessages, toolDecls, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 30000, 'WorkersAI-REST').catch(e => ({ error: e.message }));
-        if (w2) r = w2;
-      }
-      if ((!r || r.error) && apiKey.length) {
-        const { systemInstruction, contents } = toGeminiPayload(workMessages);
-        r = await withTimeout(tryModels(apiKey, systemInstruction, contents, gTools, streamSend ? (chunkText) => streamSend({ t: 'delta', text: chunkText }) : null), 25000, 'Gemini').catch(e => ({ error: e.message }));
-      }
-      // Fallback terakhir (dipakai bila GLM utama dilewati, mis. chat bergambar): teks saja
-      if ((!r || r.error) && env.AI && !hasImages && !aiMain) {
-        const w = await withTimeout(tryWorkersAIText(env, workMessages, toolDecls), 25000, 'Workers AI').catch(e => ({ error: e.message }));
-        if (w) r = w;
-      }
-      if (!r || r.error) break; // error/kutipan ditangani di bawah seperti biasa
-      // [7 Okt 2026, laporan owner: "disuruh buat landing page masih mentok di sini"]
-      // GUARD JANJI KOSONG: mode tools aktif + model balas TEKS RENCANA tanpa tool_calls
-      // apa pun (client maupun server) dan bukan blok [[POLL]]/[[FORM]]/[[PLUGIN]] ->
-      // persis pelanggaran aturan (7) sendiri ("menulis kalimat rencana lalu menutup
-      // giliran"). Nudge SEKALI (bukan loop tak berujung) agar model benar-benar
-      // memanggil tool, bukan cuma mengulang teks janji ke user.
+    let planGapNudgeCount = 0;
+    let designFixDone = false;
+    for (let sHop = 0; sHop <= (asistenMode ? 14 : 4); sHop++) {
+      r = await executeAiGeneration({
+        env,
+        mrKeys,
+        geminiKeys,
+        orKeys,
+        messages: workMessages,
+        toolDecls,
+        onDelta: streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null,
+        usageAcc: mrUsageAcc
+      });
+      if (!r || r.error) break;
+
       const noToolsAtAll = !(r.tool_calls && r.tool_calls.length);
-      // [7 Okt 2026 v2] PREISI TEMBAK: nudge HANYA saat membangun (request build baru,
-      // atau identitas logo/set_project_info barusan dipanggil) DAN belum ada write_file
-      // sama sekali -> kemungkinan besar janji kosong. Pertanyaan biasa (tanpa intent
-      // build) & ringkasan final setelah file ditulis TIDAK dinue -> hemat 3x biaya.
+
       const flatHist = (() => { try { return JSON.stringify(workMessages); } catch (e) { return ''; } })();
       const hasWriteCall = flatHist.indexOf('"write_file"') !== -1;
       const identityDone = flatHist.indexOf('"generate_image"') !== -1 || flatHist.indexOf('"set_project_info"') !== -1;
       const lastUser = [...workMessages].reverse().find(m => m && m.role === 'user' && typeof m.content === 'string');
       const buildIntent = /\b(buat|buatkan|bikin|bikinkan|bangun|dibuatkan|dibangun|tolong buat|minta buat|landing ?page|situs|website|web ?page|aplikasi|webnya|situnya|lanjut)\b/i.test(String((lastUser && lastUser.content) || ''));
-      // [7 Okt 2026 v3] Sinyal paling andal: KALIMAT MODEL SENDIRI yang menjanjikan aksi
-      // tapi tanpa tool_calls ("tunggu sebentar", "akan saya buat", "sedang menyiapkan",
-      // dst, future/progresif tense) — tidak bergantung histori/last-user-text yang bisa
-      // terpotong di sesi panjang (window pesan terbatas), jadi deteksi tetap kena meski
-      // buildIntent/identityDone gagal baca histori penuh.
+
       const promiseLanguage = /tunggu (sebentar|sejenak)|mohon tunggu|harap tunggu|akan (saya )?(buat|membuat|bikin|lanjutkan|menyelesaikan|mulai)|sedang (membuat|menyiapkan|mengerjakan|memproses)|segera (saya )?(buat|lanjutkan)|silakan tunggu/i.test(String(r.text || ''));
-      const isPlanGap = toolDecls && !hasImages && noToolsAtAll && String(r.text || '').trim()
+      const isPlanGap = !asistenMode && toolDecls && !hasImages && noToolsAtAll && String(r.text || '').trim()
         && !hasWriteCall && (buildIntent || identityDone || promiseLanguage)
         && !/\[\[POLL\]\]|\[\[FORM\]\]|\[\[PLUGIN:/i.test(r.text);
       if (isPlanGap && planGapNudgeCount < 2) {
         planGapNudgeCount++;
         workMessages.push({ role: 'assistant', content: r.text });
         workMessages.push({ role: 'user', content: 'Kamu baru menulis rencana/klaim TANPA memanggil tool apa pun — itu janji kosong, bukan progres (lihat aturan (7): dilarang keras). DILARANG mengarang fitur/URL yang tidak pernah disebut sistem (mis. "workspace.clincoo.buzz" atau link publik otomatis) — itu melanggar aturan (3) dilarang mengarang fakta. JANGAN menulis teks apa pun lagi. LANGSUNG panggil tool yang sesuai SEKARANG (write_file untuk tiap file tersisa, generate_image, atau set_project_info) untuk benar-benar melanjutkan pekerjaan.' });
-        // [7 Okt 2026, laporan owner: teks "janji kosong" sudah ter-stream ke layar user
-        // SEBELUM terdeteksi plan-gap (deteksi baru bisa setelah r.text lengkap) -> race
-        // ulang di sHop berikutnya bisa menang kandidat BEDA yang JUGA menulis janji
-        // ("Baik, saya akan memulai...") dan deltanya nempel pas di belakang teks lama
-        // tanpa jeda sama sekali ("...responsif.Baik, saya akan..."). Kirim pemisah
-        // baris kosong SEKARANG supaya segmen janji lama & segmen baru dari race
-        // berikutnya tidak pernah menyatu jadi satu kalimat yang rusak.
+
         if (streamSend) { try { streamSend({ t: 'delta', text: '\n\n' }); } catch (e) {} }
-        continue; // ulang hop dengan nudge — tetap dalam batas sHop<=4
+        continue;
       }
-      const stCalls = (r.tool_calls || []).filter(tc => SERVER_TOOLS.has(tc.name));
-      if (!stCalls.length) break; // jawaban final ATAU tools klien -> keluar, kirim ke klien
-      const clientCalls = (r.tool_calls || []).filter(tc => !SERVER_TOOLS.has(tc.name));
+      const stCalls = (r.tool_calls || []).filter(tc => SERVER_TOOLS_ALL.has(tc.name));
+      if (!stCalls.length) break;
+      const clientCalls = (r.tool_calls || []).filter(tc => !SERVER_TOOLS_ALL.has(tc.name));
       const results = [];
       for (const tc of stCalls) {
         if (streamSend) streamSend({ t: 'progress', text: serverProgressText(tc) });
-        results.push(await executeServerTool(env, user, tc, new URL(request.url).origin));
+        results.push(await executeServerTool(env, user, tc, new URL(request.url).origin, body.project_id));
       }
-      // catat pemanggilan & hasil ke percakapan (format blok sama seperti klien)
+
       workMessages.push({ role: 'assistant', content: (r.tool_calls || []).map(tc => ({ type: 'function_call', name: tc.name, args: tc.args || {}, thought_signature: tc.thought_signature || undefined })) });
       workMessages.push({ role: 'user', content: stCalls.map((tc, i) => ({ type: 'function_response', name: tc.name, result: results[i] })) });
-      // SELALU tempel result ke r.tool_calls (bukan hanya saat campuran dgn tool klien) —
-      // supaya kalau loop hop-server ini kehabisan budget (sHop sampai batas) dan
-      // r.tool_calls dikirim ke klien apa adanya, klien tidak coba eksekusi ULANG
-      // tool server (yang klien tidak punya case-nya) dan gagal "Tool tidak dikenal".
+
       r.tool_calls = r.tool_calls.map(tc => {
         const i = stCalls.indexOf(tc);
         return i !== -1 ? Object.assign({}, tc, { result: results[i] }) : tc;
       });
-      if (clientCalls.length) break; // tool klien tetap dieksekusi klien seperti biasa
-      // semua tool server -> minta giliran model berikutnya (lanjut loop)
+      if (clientCalls.length) break;
+
     }
-    // [7 Okt 2026, bukti reproduksi owner] Saat TIDAK ada tools yang dideklarasikan
-    // (hop teks murni: chat_ai MCP, /api/ai, klien lama), model kadang MEMANCARKAN
-    // tool_calls halusinasi (gemini-3.6-flash memancarkan 'clincoo:list_items'
-    // padahal tak ada functionDeclarations — system prompt builder menyuruh pakai
-    // tool, model menuruti saja). Respons 200 text:'' + tool_calls ->
-    // chat_ai melempar 'Chat AI tidak mengembalikan jawaban', klien teks macet.
-    // FIX: tool_calls tanpa deklarasi = palsu, BUANG, lalu paksa jawaban teks.
+
+    // Pemeriksaan konsistensi desain: satu putaran perbaikan otomatis via blok patch (opt-in)
+    if (env.DESIGN_LINT_FIX === '1' && !designFixDone && r && !r.error && !(r.tool_calls && r.tool_calls.length)) {
+      const lintIssues = lintProjectText(String(r.text || ''));
+      if (lintIssues.length) {
+        designFixDone = true;
+        try { streamSend && streamSend({ t: 'progress', text: 'Memeriksa konsistensi desain…' }); } catch (e) {}
+        const fixMsgs = workMessages.concat([
+          { role: 'assistant', content: String(r.text) },
+          { role: 'user', content: 'PEMERIKSAAN OTOMATIS menemukan ketidakkonsistenan pada proyek yang baru kamu tulis:\n- ' + lintIssues.join('\n- ') + '\n\nPerbaiki SEMUA temuan itu. Balas HANYA satu blok patch (empat backtick berlabel patch, format EDIT/FILE sesuai aturan PATCH; salin SEARCH persis dari blok project di atas) tanpa teks lain.' }
+        ]);
+        const fx = await executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages: fixMsgs, toolDecls: null, onDelta: null, usageAcc: mrUsageAcc }).catch(() => null);
+        if (fx && !fx.error && /````patch/.test(String(fx.text || ''))) {
+          const addTxt = '\n\n' + String(fx.text).trim();
+          if (streamSend) { try { streamSend({ t: 'delta', text: addTxt }); } catch (e) {} }
+          r = { text: String(r.text) + addTxt, model: r.model };
+        }
+      }
+    }
+
     if (!toolDecls && r && !r.error && r.tool_calls && r.tool_calls.length) {
       r = { text: String(r.text || ''), model: r.model };
     }
@@ -2425,45 +1647,37 @@ export async function onRequestPost({ request, env, waitUntil }) {
         ? 'Semua tool sudah selesai dieksekusi dan seluruh hasilnya tercatat di percakapan. Sekarang tulis RINGKASAN FINAL untuk user dalam Bahasa Indonesia: apa yang sudah dikerjakan, status/hasilnya, URL endpoint bila ada, dan contoh pemakaian singkat. Jangan memanggil tool apa pun — langsung tulis jawabannya sekarang.'
         : 'Kamu dipanggil sebagai AI teks murni dan TIDAK punya tool apa pun — dilarang memanggil atau menjanjikan tool/eksekusi apa pun. Jawab permintaan user secara LENGKAP dan BERISI dalam Bahasa Indonesia sebagai teks biasa: kalau diminta dibuatkan situs/kode, tulis kode lengkapnya sebagai blok kode di jawabanmu; kalau diminta penjelasan, jelaskan tuntas. Langsung tulis jawabannya sekarang.';
       const sumMsgs = workMessages.concat([{ role: 'user', content: sumPrompt }]);
-      if (emKeys.length && !hasImages) {
-        const se = await tryEmergentText(emKeys, sumMsgs, null);
-        if (se && !se.error && String(se.text || '').trim()) r = se;
-      }
-      if (orKeys.length && !hasImages) {
-        const sm = await tryOpenRouterText(orKeys, sumMsgs, null);
-        if (sm && !sm.error && String(sm.text || '').trim()) r = { text: sm.text, model: sm.model };
-      }
-      if (!String(r.text || '').trim() && aiMain) {
-        const sw = await tryWorkersAIText(env, sumMsgs, null);
-        if (sw && !sw.error && String(sw.text || '').trim()) r = { text: sw.text, model: sw.model };
-      }
+      const sm = await executeAiGeneration({
+        env,
+        mrKeys,
+        geminiKeys,
+        orKeys,
+        messages: sumMsgs,
+        toolDecls: null,
+        onDelta: null,
+        usageAcc: mrUsageAcc
+      }).catch(() => null);
+      if (sm && !sm.error && String(sm.text || '').trim()) r = { text: sm.text, model: sm.model };
     }
     return r;
     };
     let r = await attemptCascade();
-    // RETRY OTOMATIS SEBELUM ERROR SAMPAI KE USER: semua provider gagal bersamaan
-    // hampir selalu sesaat (429/limit sibuk). Tunggu 2.5 detik lalu ulangi seluruh
-    // cascade SEKALI lagi — kalau berhasil, user tidak pernah melihat error sama sekali.
-    // Konteks ke-limiter TIDAK di-retry (retry tidak menolong, perlu pemangkasan riwayat).
-    if ((!r || r.error) && !(r && r.contextOverflow)) {
+
+    if ((!r || r.error) && !(r && (r.contextOverflow || r.quotaExhausted))) {
       try { streamSend && streamSend({ t: 'progress', text: 'Retrying…' }); } catch (e) {}
       await new Promise(res => setTimeout(res, 2500));
       r = await attemptCascade();
     }
-    if (!r || (r.error && !apiKey.length && !env.AI)) {
-      if (!r) r = { error: 'Tidak ada provider AI tersedia' };
-    }
+    if (!r) r = { error: 'Tidak ada provider AI tersedia' };
 
     if (streamSend) {
       if (r && !r.error) streamSend({ t: 'progress', text: 'Composing answer…' });
       if (r && r.error) {
-        // quota_exhausted di jalur stream = SEMUA model provider 429 (bukan kuota user):
-        // kirim pesan bersih tanpa nama model — sama seperti jalur non-stream di bawah.
-        const busy = !!r.quotaExhausted; // 429 semua model -> sibuk provider
-        // Error provider mentah (Inggris/teknis: 'OpenRouter x: 429...') jangan
-        // tampil apa adanya di bubble user — ganti teks ramah; detail asli di
-        // field 'detail' (diabaikan klien lama, berguna utk debugging).
+
+        const busy = !!r.quotaExhausted;
+
         const rawErr1 = r.error || '';
+        try { await logAiFailure(env, body.project_id, rawErr1, modeLabel + (busy ? ' [429-modelrouter]' : '') + (r.contextOverflow ? ' [konteks-penuh]' : '')); } catch (eLog) {}
         const errText = busy
           ? 'Server AI sedang sibuk (limit provider). Coba lagi sebentar lagi.'
           : (rawErr1 === 'Tidak ada provider AI tersedia' ? rawErr1
@@ -2476,34 +1690,36 @@ export async function onRequestPost({ request, env, waitUntil }) {
           session_id: body.session_id || ('ls_' + Date.now())
         };
         if (r.tool_calls) outS.tool_calls = r.tool_calls;
-        // Kredit sesungguhnya: model yang menjawab + panjang output (teks + tool/code)
+        if (r.tool_calls && r.tool_calls.length) {
+          try { outS.continue_token = isFirstHop ? await issueCont(env, contOwner) : contToken; } catch (eTok) {}
+        }
+
         const outCharsS = (r.text || '').length + (r.tool_calls ? JSON.stringify(r.tool_calls).length : 0);
-        // [9 Okt, arahan pemilik] potongan kredit = pemakaian NYATA (hop lanjutan &
-        // penyambung diam-diam pun tertagih; selisih dgn dashboard provider tertutup).
+
         const _mrCostS = mrTokenCost(mrUsageAcc);
-        if (!isGuest && (_mrCostS !== null || isFirstHop)) await chargeAiUsage(env, user, r.model, outCharsS, inputChars, !explicitChat, _mrCostS);
+        if (!isGuest && (_mrCostS !== null || isFirstHop)) await chargeAiUsage(env, user, r.model, outCharsS, inputChars, true, _mrCostS);
         streamSend({ t: 'final', ...outS });
       }
-      streamWriter.close().catch(() => {}); // TANPA await: antrean writer sudah berurutan
-      return; // mode stream: respons sudah terkirim sejak awal
+      streamWriter.close().catch(() => {});
+      return;
     }
 
     if (r.error && r.quotaExhausted) {
-      // sibuknya provider, bukan kuota user: 503 + provider_busy supaya klien
-      // tidak mengunci komposer / menawarkan upgrade paket.
-      // 429 TANPA quota_exhausted: frontend tidak retry (bukan transient baginya)
-      // dan tidak mengunci komposer — langsung fallback /api/ai lalu bubble error jujur.
+      try { await logAiFailure(env, body.project_id, r.error, modeLabel + ' [429-modelrouter]'); } catch (eLog) {}
+
       return new Response(JSON.stringify({ provider_busy: true, error: 'Server AI sedang sibuk (limit provider). Coba lagi sebentar lagi.' }), {
         status: 429, headers: { 'Content-Type': 'application/json', ...CORS }
       });
     }
     if (r.error && r.contextOverflow) {
+      try { await logAiFailure(env, body.project_id, r.error, modeLabel + ' [konteks-penuh]'); } catch (eLog) {}
       return new Response(JSON.stringify({ context_overflow: true, error: 'Konteks percakapan penuh (terlalu banyak kode besar dalam satu chat). Balas "lanjut" untuk meneruskan tugas dengan riwayat yang dipangkas otomatis.' }), {
         status: 429, headers: { 'Content-Type': 'application/json', ...CORS }
       });
     }
     if (r.error) {
-      // teks ramah utk user; detail teknis provider dipisah ke field 'detail'
+      try { await logAiFailure(env, body.project_id, r.error, modeLabel); } catch (eLog) {}
+
       const friendly = r.error === 'Tidak ada provider AI tersedia' ? r.error
         : 'Maaf, AI sedang gangguan sebentar sehingga belum bisa menjawab. Coba kirim ulang pesanmu ya.';
       return new Response(JSON.stringify({ error: friendly, detail: (r.error !== friendly) ? String(r.error).slice(0, 300) : undefined }), {
@@ -2511,22 +1727,23 @@ export async function onRequestPost({ request, env, waitUntil }) {
       });
     }
 
-    // Kredit sesungguhnya: model yang menjawab + panjang output (teks + tool/code)
     const outChars = (r.text || '').length + (r.tool_calls ? JSON.stringify(r.tool_calls).length : 0);
-    // [9 Okt, arahan pemilik] potongan kredit = pemakaian NYATA (hop lanjutan &
-    // penyambung diam-diam pun tertagih; selisih dgn dashboard provider tertutup).
+
     const _mrCost = mrTokenCost(mrUsageAcc);
-    if (!isGuest && (_mrCost !== null || isFirstHop)) await chargeAiUsage(env, user, r.model, outChars, inputChars, !explicitChat, _mrCost);
+    if (!isGuest && (_mrCost !== null || isFirstHop)) await chargeAiUsage(env, user, r.model, outChars, inputChars, true, _mrCost);
     const out = {
       text: r.text || '',
       model: r.model,
       session_id: body.session_id || ('ls_' + Date.now())
     };
     if (r.tool_calls) out.tool_calls = r.tool_calls;
+    if (r.tool_calls && r.tool_calls.length) {
+      try { out.continue_token = isFirstHop ? await issueCont(env, contOwner) : contToken; } catch (eTok) {}
+    }
     return new Response(JSON.stringify(out), {
       headers: { 'Content-Type': 'application/json', ...CORS }
     });
-    }; // akhir processChat
+    };
 
     if (useStream) {
       const p = processChat().catch((e) => {
