@@ -241,7 +241,6 @@
         }
         body.dark-mode .option-popup, 
         body.dark-mode #notif-menu, 
-        body.dark-mode #upload-menu, 
         body.dark-mode #theme-dropdown-menu, 
         body.dark-mode #accent-dropdown-menu {
             background-color: #0a0a0a !important;
@@ -249,6 +248,22 @@
             color: #ffffff !important;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5) !important;
         }
+        #home-prompt-card { position: relative; left: 50%; width: min(calc(100vw - 32px), 56rem); transform: translateX(-50%); background: #ffffff; border: 1px solid #e5e7eb; box-shadow: 0 12px 36px rgba(0,0,0,.14); }
+        body.dark-mode #home-prompt-card { background: #1b1b1f !important; border-color: #2e2e34 !important; box-shadow: 0 12px 36px rgba(0,0,0,.55) !important; }
+        body.dark-mode #main-prompt-input { color: #f0f0f2 !important; }
+        body.dark-mode #main-prompt-input::placeholder { color: #71717a !important; }
+        #add-btn, #add-btn:hover, #add-btn.open, #add-btn.open:hover { background: #000000; border-color: #000000; color: #ffffff; transition: none !important; }
+        body.dark-mode #add-btn, body.dark-mode #add-btn:hover, body.dark-mode #add-btn.open, body.dark-mode #add-btn.open:hover { background: #1c1c21; border-color: #2e2e34; color: #ffffff; }
+        #add-icon { transition: transform .28s cubic-bezier(.3,.7,.3,1) !important; }
+        #upload-menu { position: absolute; left: 0; bottom: calc(100% + 10px); min-width: 232px; padding: 8px; border-radius: 20px; background: #ffffff; border: 1px solid #e5e7eb; box-shadow: 0 12px 36px rgba(0,0,0,.14); z-index: 30; opacity: 0; transform: translateY(6px) scale(.97); transform-origin: bottom left; pointer-events: none; transition: opacity .16s, transform .16s; }
+        #upload-menu.open { opacity: 1; transform: none; pointer-events: auto; }
+        .upload-menu-item { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 52px; padding: 0 16px; border: 0; border-radius: 14px; background: transparent; font: inherit; font-size: 16px; line-height: 1.2; font-weight: 500; white-space: nowrap; color: #1f2937; text-align: left; text-decoration: none; cursor: pointer; transition: background-color .15s; }
+        .upload-menu-item:hover { background: #f3f4f6; }
+        .upload-menu-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 26px; height: 26px; color: #4b5563; }
+        body.dark-mode #upload-menu { background: #1b1b1f; border-color: #2e2e34; box-shadow: 0 12px 36px rgba(0,0,0,.55); }
+        body.dark-mode .upload-menu-item { color: #e6e6e9; }
+        body.dark-mode .upload-menu-item:hover { background: #26262c; }
+        body.dark-mode .upload-menu-icon { color: #a8a8b0; }
         body.dark-mode .group:hover .group-hover\:text-black {
             color: #ffffff !important;
         }
@@ -774,7 +789,7 @@
             </h1>
             <p id="motivation-text" class="text-gray-500 mt-2 text-sm sm:text-base max-w-lg mx-auto leading-relaxed"></p>
         </div>
-        <div class="w-full bg-white rounded-[26px] shadow-[0_8px_36px_rgba(0,0,0,0.10)] p-4 sm:p-5 transition-all text-left border border-gray-200/80">
+        <div id="home-prompt-card" class="w-full bg-white rounded-[26px] shadow-[0_12px_36px_rgba(0,0,0,0.14)] p-4 sm:p-5 transition-all duration-200 text-left border border-gray-200">
             <div id="file-preview-container" class="hidden flex-nowrap overflow-x-auto hide-scrollbar gap-2 mb-3 pb-1 w-full"></div>
             <textarea
                 id="main-prompt-input"
@@ -783,28 +798,29 @@
                 class="w-full resize-none border-0 bg-transparent p-0 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 text-[17px] leading-relaxed max-h-[140px] overflow-hidden"
             ></textarea>
             <div class="flex items-center justify-between pt-2">
-                <div class="relative">
-                    <button id="add-btn" class="w-9 h-9 rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-500 hover:text-black flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20" aria-expanded="false" title="Lampirkan File">
-                        <svg id="add-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                <div class="flex items-center gap-2">
+                    <div class="relative">
+                    <button id="add-btn" type="button" aria-haspopup="true" aria-expanded="false" class="w-9 h-9 rounded-full bg-black border border-black text-white flex items-center justify-center" title="Tambah file atau gambar">
+                        <svg id="add-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14M5 12h14"></path>
                         </svg>
                     </button>
-                    <div id="upload-menu" class="absolute bottom-full left-0 mb-2 w-56 bg-white text-gray-800 border border-gray-100 rounded-xl shadow-xl p-1.5 flex flex-col gap-1 opacity-0 invisible translate-y-2 pointer-events-none transition-all duration-300 z-50">
-                        <button id="upload-file-btn" class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 dark:focus-visible:ring-white/20">
-                            <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                            Upload file
-                        </button>
-                        <button id="upload-image-btn" class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 dark:focus-visible:ring-white/20">
-                            <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <div id="upload-menu" role="menu">
+                        <button id="upload-image-btn" type="button" class="upload-menu-item" role="menuitem">
+                            <svg class="upload-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg>
                             Upload gambar
                         </button>
-                        <a href="integrasi/" class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 dark:focus-visible:ring-white/20">
-                            <svg class="w-4 h-4 text-gray-500 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M15 8V2"/><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z"/><path d="M9 8V2"/></svg>
+                        <button id="upload-file-btn" type="button" class="upload-menu-item" role="menuitem">
+                            <svg class="upload-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M8 13h8M8 17h8"></path></svg>
+                            Upload file
+                        </button>
+                        <a href="integrasi/" class="upload-menu-item" role="menuitem">
+                            <svg class="upload-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"></path><path d="M15 8V2"></path><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z"></path><path d="M9 8V2"></path></svg>
                             Plug-in
                         </a>
-                        <button id="upload-automation-btn" type="button" onclick="location.href='akun/otomatisasi-ai/'" class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 dark:focus-visible:ring-white/20">
-                            <i data-lucide="calendar-clock" class="w-4 h-4 text-gray-500 shrink-0"></i>
-                            Otomatisasi AI
+                        <button id="upload-automation-btn" type="button" onclick="location.href='akun/otomatisasi-ai/'" class="upload-menu-item" role="menuitem">
+                            <svg class="upload-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+                            Otomatisasi
                         </button>
                     </div>
                     <input type="file" id="real-file-input" class="hidden" multiple>
@@ -812,7 +828,7 @@
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
                     <!-- Semua prompt dashboard menggunakan mode Build -->
-<button id="submit-prompt-btn" class="w-10 h-10 bg-black text-white rounded-full hover:bg-gray-800 transition-all duration-200 active:scale-90 flex items-center justify-center cursor-pointer shadow-sm hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20">
+                <button id="submit-prompt-btn" class="w-10 h-10 bg-black text-white rounded-full hover:bg-gray-800 transition-all duration-200 active:scale-90 flex items-center justify-center cursor-pointer shadow-sm hover:shadow-md shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
                     </svg>
@@ -1173,22 +1189,19 @@
                 const isExpanded = addBtn.getAttribute('aria-expanded') === 'true';
                 if (!isExpanded) {
                     addBtn.setAttribute('aria-expanded', 'true');
-                    addIcon.style.transform = 'rotate(45deg)';
-                    uploadMenu.classList.remove('opacity-0', 'invisible', 'translate-y-2', 'pointer-events-none');
-                    uploadMenu.classList.add('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto');
+                    addIcon.style.transform = 'rotate(135deg)';
+                    uploadMenu.classList.add('open');
                 } else {
                     addBtn.setAttribute('aria-expanded', 'false');
                     addIcon.style.transform = 'rotate(0deg)';
-                    uploadMenu.classList.remove('opacity-100', 'visible', 'translate-y-0', 'pointer-events-none');
-                    uploadMenu.classList.add('opacity-0', 'invisible', 'translate-y-2', 'pointer-events-auto');
+                    uploadMenu.classList.remove('open');
                 }
             });
             document.addEventListener('click', (e) => {
                 if (!addBtn.contains(e.target) && !uploadMenu.contains(e.target)) {
                     addBtn.setAttribute('aria-expanded', 'false');
                     addIcon.style.transform = 'rotate(0deg)';
-                    uploadMenu.classList.remove('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto');
-                    uploadMenu.classList.add('opacity-0', 'invisible', 'translate-y-2', 'pointer-events-none');
+                    uploadMenu.classList.remove('open');
                 }
             });
         }
@@ -1204,8 +1217,7 @@
                 if (addBtn && uploadMenu) {
                     addBtn.setAttribute('aria-expanded', 'false');
                     if (addIcon) addIcon.style.transform = 'rotate(0deg)';
-                    uploadMenu.classList.remove('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto');
-                    uploadMenu.classList.add('opacity-0', 'invisible', 'translate-y-2', 'pointer-events-none');
+                    uploadMenu.classList.remove('open');
                 }
                 realFileInput.click();
             });
@@ -1293,8 +1305,7 @@
                 if (addBtn && uploadMenu) {
                     addBtn.setAttribute('aria-expanded', 'false');
                     if (addIcon) addIcon.style.transform = 'rotate(0deg)';
-                    uploadMenu.classList.remove('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto');
-                    uploadMenu.classList.add('opacity-0', 'invisible', 'translate-y-2', 'pointer-events-none');
+                    uploadMenu.classList.remove('open');
                 }
             };
             const realImageInput = document.getElementById('real-image-input');
@@ -1305,8 +1316,7 @@
                     if (addBtn && uploadMenu) {
                         addBtn.setAttribute('aria-expanded', 'false');
                         if (addIcon) addIcon.style.transform = 'rotate(0deg)';
-                        uploadMenu.classList.remove('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto');
-                        uploadMenu.classList.add('opacity-0', 'invisible', 'translate-y-2', 'pointer-events-none');
+                        uploadMenu.classList.remove('open');
                     }
                     realImageInput.click();
                 });
