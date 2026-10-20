@@ -1846,11 +1846,7 @@ function ckParts(m) {
     const t = m.text || '', parts = []; let pos = 0;
     // Checkpoint pembuka: selalu di paling atas jawaban (membaca proyek + proses berpikir)
     const lead = [];
-    // [20 Okt 2026, permintaan owner] Kartu "Reading N project files" hanya relevan
-    // bila jawaban mengubah kode (ada blok project/patch). Membaca file untuk
-    // menjawab pertanyaan biasa tidak perlu ditampilkan sebagai kartu.
-    const _hasCodeBlocks = findBlocks(t).some(b => b.lang === 'project' || b.lang === 'patch');
-    if (m.reads && m.reads.length && _hasCodeBlocks) lead.push({ type: 'read', label: 'Reading ' + m.reads.length + ' project files', en: 'Reading ' + m.reads.length + ' project files', done: 'Read ' + m.reads.length + ' project files', body: m.reads.join('\n') });
+    if (m.reads && m.reads.length) lead.push({ type: 'read', label: 'Reading ' + m.reads.length + ' project files', en: 'Reading ' + m.reads.length + ' project files', done: 'Read ' + m.reads.length + ' project files', body: m.reads.join('\n') });
     if (m.think) lead.push({ type: 'think', label: 'Thinking', en: 'Thinking', done: m.thinkMs != null ? 'Thought for ' + Math.max(1, Math.round(m.thinkMs / 1000)) + 's' : 'Thought', body: m.think });
     if (lead.length) parts.push({ acts: lead });
     findBlocks(t).filter(b => b.lang === 'project' || b.lang === 'patch').forEach(b => {
