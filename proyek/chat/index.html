@@ -8705,9 +8705,21 @@ function crownAction(e){
           <label class="block text-[12px] font-medium text-gray-600 mb-1.5">Repo GitHub <span class="text-gray-400">(owner/nama-repo)</span></label>
           <input id="gs-repo" type="text" placeholder="contoh: muzawwied/nama-situs" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-[13px] focus:outline-none focus:border-gray-400">
         </div>
-        <div>
+        <div class="relative">
           <label class="block text-[12px] font-medium text-gray-600 mb-1.5">Branch</label>
-          <input id="gs-branch" type="text" placeholder="main" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-[13px] focus:outline-none focus:border-gray-400">
+          <button id="gs-branch-btn" type="button" onclick="gitSyncToggleBranch(event)" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-[13px] flex items-center justify-between gap-2 hover:border-gray-300 transition bg-white">
+            <span id="gs-branch-label" class="truncate">main</span>
+            <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"></path></svg>
+          </button>
+          <div id="gs-branch-pop" class="hidden absolute left-0 right-0 mt-1.5 z-20 rounded-xl border border-gray-200 bg-white shadow-xl">
+            <div class="p-2 border-b border-gray-100">
+              <input id="gs-branch-filter" type="text" placeholder="Cari / ketik nama branch baru…" oninput="gitSyncFilterBranch()" onclick="event.stopPropagation()" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-[12.5px] focus:outline-none focus:border-gray-400">
+            </div>
+            <div id="gs-branch-list" class="max-h-44 overflow-y-auto py-1"></div>
+            <div class="p-2 border-t border-gray-100">
+              <button type="button" onclick="gitSyncApplyManual()" class="w-full py-1.5 rounded-lg bg-gray-900 text-white text-[12px] font-semibold hover:bg-gray-800 transition">Gunakan teks di atas</button>
+            </div>
+          </div>
         </div>
         <div class="flex gap-2">
           <button id="gs-btn-sync" type="button" onclick="gitSyncNow()" class="flex-1 py-2.5 rounded-xl bg-gray-900 text-white text-[13px] font-semibold hover:bg-gray-800 transition active:scale-[0.98]">Eksport sekarang</button>
@@ -8872,9 +8884,77 @@ function crownAction(e){
     }
     var c = cfg();
     if ($('gs-repo')) $('gs-repo').value = c.repo || '';
-    if ($('gs-branch')) $('gs-branch').value = c.branch || 'main';
+    if ($('gs-branch-label')) $('gs-branch-label').textContent = c.branch || 'main';
     renderLast();
   }
+  // [20 Okt 2026] Branch jadi popover pilihan — muat daftar branch dari repo,
+  // lengkap dengan filter dan entri manual (untuk branch baru yang belum ada di remote).
+  var gsBranches = null, gsBranchesRepo = '';
+  function gsCurrentBranch() { return (cfg().branch || 'main'); }
+  function gsBranchPaint(items, q) {
+    var list = $('gs-branch-list'); if (!list) return;
+    var cur = gsCurrentBranch();
+    var arr = (items || []).filter(function (b) { return !q || String(b).toLowerCase().indexOf(q.toLowerCase()) !== -1; });
+    if (!arr.length) { list.innerHTML = '<p class="px-3 py-3 text-[12px] text-gray-400">Tidak ada branch' + (q ? ' yang cocok.' : ' di repo ini.') + ' Ketik manual di atas bila perlu.</p>'; return; }
+    var html = '';
+    for (var i = 0; i < arr.length; i++) {
+      var nm = arr[i];
+      html += '<button type="button" onclick="gitSyncPickBranch(\'' + esc(nm) + '\')" class="w-full text-left px-3 py-2 text-[12.5px] hover:bg-gray-50 rounded-lg flex items-center justify-between gap-2">' +
+        '<span class="truncate">' + esc(nm) + '</span>' +
+        (nm === cur ? '<span class="text-[10px] font-semibold text-emerald-600 shrink-0">dipakai</span>' : '') +
+        '</button>';
+    }
+    list.innerHTML = html;
+  }
+  window.gitSyncToggleBranch = function (ev) {
+    if (ev && ev.stopPropagation) ev.stopPropagation();
+    var pop = $('gs-branch-pop'); if (!pop) return;
+    var wasHidden = pop.classList.contains('hidden');
+    gitSyncCloseBranch();
+    if (!wasHidden) return;
+    if ($('gs-branch-filter')) $('gs-branch-filter').value = '';
+    pop.classList.remove('hidden');
+    var repo = (($('gs-repo') && $('gs-repo').value) || '').trim();
+    if (!repo) { gsBranchPaint([], ''); return; }
+    if (gsBranches && gsBranchesRepo === repo) { gsBranchPaint(gsBranches, ''); return; }
+    var list = $('gs-branch-list');
+    if (list) list.innerHTML = '<p class="px-3 py-3 text-[12px] text-gray-400">Memuat daftar branch…</p>';
+    gh('GET', '/repos/' + repo + '/branches?per_page=100').then(function (r) {
+      var arr = (r.ok && Array.isArray(r.data)) ? r.data.map(function (b) { return b && b.name; }).filter(Boolean) : null;
+      if (arr) { gsBranches = arr; gsBranchesRepo = repo; gsBranchPaint(arr, ''); return; }
+      if (list) list.innerHTML = '<p class="px-3 py-3 text-[12px] text-gray-400">' + (r.status === 404 ? 'Repo tidak ditemukan / akses ditolak.' : 'Gagal memuat branch (HTTP ' + r.status + ').') + ' Ketik manual di atas bila perlu.</p>';
+    });
+  };
+  window.gitSyncCloseBranch = function () { var p = $('gs-branch-pop'); if (p) p.classList.add('hidden'); };
+  window.gitSyncFilterBranch = function () {
+    var q = ($('gs-branch-filter') && $('gs-branch-filter').value) || '';
+    gsBranchPaint(gsBranches || [], q.trim());
+  };
+  window.gitSyncPickBranch = function (name) {
+    var c = cfg(); c.branch = String(name || 'main'); cfgSave(c);
+    if ($('gs-branch-label')) $('gs-branch-label').textContent = c.branch;
+    gitSyncCloseBranch();
+    gsBranchPaint(gsBranches || [], '');
+  };
+  window.gitSyncApplyManual = function () {
+    var q = (($('gs-branch-filter') && $('gs-branch-filter').value) || '').trim();
+    if (!q) return;
+    gitSyncPickBranch(q.replace(/[^\w.\/-]/g, '-'));
+  };
+  // Perubahan repo -> cache branch lama tidak berlaku lagi.
+  try {
+    var gsRepoEl = $('gs-repo');
+    if (gsRepoEl) gsRepoEl.addEventListener('change', function () { gsBranches = null; gsBranchesRepo = ''; gitSyncCloseBranch(); });
+  } catch (e) {}
+  document.addEventListener('click', function (ev) {
+    var pop = $('gs-branch-pop');
+    if (!pop || pop.classList.contains('hidden')) return;
+    if (pop.contains(ev.target)) return;
+    var btn = $('gs-branch-btn');
+    if (btn && btn.contains(ev.target)) return;
+    gitSyncCloseBranch();
+  });
+
   window.gitSyncOpen = function () {
     renderConn();
     var st = $('gs-status'); if (st) st.classList.add('hidden');
@@ -8896,7 +8976,8 @@ function crownAction(e){
   window.gitSyncSaveCfg = function () {
     var c = cfg();
     c.repo = ($('gs-repo').value || '').trim().replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '');
-    c.branch = ($('gs-branch').value || 'main').trim() || 'main';
+    var bl = ($('gs-branch-label') && $('gs-branch-label').textContent) || '';
+    c.branch = (bl || 'main').trim() || 'main';
     if (c.repo && !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(c.repo)) { stShow(false, 'Format repo salah — pakai owner/nama-repo.'); return false; }
     cfgSave(c);
     stShow(true, 'Pengaturan tersimpan.');
