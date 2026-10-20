@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+<!-- Asisten AI Clincoo — UI baru (header halaman chat tetap seperti sebelumnya, sistem chat baru di bawahnya) -->
 <html lang="id"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
@@ -15,6 +17,7 @@
   <script src="../../js/accent-init.js"></script>
 <script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){sessionStorage.setItem('clincoo_tab_project_id',__p);localStorage.setItem('clincoo_current_project_id',__p);}}catch(e){}})();</script>
 <script>(function(){try{var __t=new URLSearchParams(location.search).get('id');if(!__t){__t=sessionStorage.getItem('clincoo_tab_project_id')||'';}if(__t){try{localStorage.setItem('clincoo_current_project_id',__t);}catch(e){}}}catch(e){}})();</script>
+<script>/* embed=1: chat dalam overlay sheet di halaman lain (tanpa header) */(function(){try{if(/(^|[?&])embed=1(&|$)/.test(location.search)){document.documentElement.classList.add('embed-mode');}}catch(e){}})();</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=JetBrains+Mono:wght@400;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,700;1,6..72,400&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
@@ -46,8 +49,92 @@
 #clq-topbar .clq-spacer { flex: 1; }
 #clq-projname { max-width: 46vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+
+/* ===== [Clincoo] Header halaman chat — persis seperti sebelumnya; sistem chat baru di bawahnya ===== */
+#chat-header-capsule { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+@media (max-width: 330px) { #sidebar-toggle, #header-more-btn { width: 34px; height: 34px; } .chat-nav-link { padding-left: 0.5rem; padding-right: 0.5rem; } }
+#chat-nav-pill { display: none; }
+.chat-nav-link.is-active { color: #111111; background: #e9e9ec; view-transition-name: chat-nav-pill; }
+/* Tab Live preview di kapsul cuma relevan saat split (desktop) — di mobile 4 tab bikin kapsul kepanjangan/rusak */
+        .chat-nav-link[data-nav="live"] { display: none; }
+#header-more-menu.open { display: flex; opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto; }
+.header-menu-item { -webkit-tap-highlight-color: transparent; }
+.header-menu-item:focus, .header-menu-item:focus-visible { outline: none; box-shadow: none; }
+button.header-menu-item { -webkit-appearance: none; appearance: none; background: transparent; border: none; margin: 0; font: inherit; color: inherit; }
+button.header-menu-item:active { background: rgba(0,0,0,0.04); }
+body.dark-mode button.header-menu-item:active { background: rgba(255,255,255,0.08); }
+.header-menu-item { cursor: pointer; }
+body.dark-mode #chat-header-capsule { background-color: #0a0a0a; border-color: rgba(255,255,255,0.15); box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
+.chat-hdr-pill { pointer-events: auto; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border-radius: 9999px; background: #ffffff; border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.08); color: #222222; font-size: 13px; font-weight: 600; white-space: nowrap; transition: all .15s ease; }
+.chat-hdr-pill:hover { background: #f5f5f5; }
+.chat-hdr-label { display: none; }
+#chat-hdr-tools { display: none; }
+body.dark-mode .chat-hdr-pill { background-color: #0a0a0a; border-color: rgba(255,255,255,0.15); color: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+body.dark-mode .chat-hdr-pill:hover { background-color: #1a1a1a; }
+body.dark-mode #sidebar-toggle, body.dark-mode #header-more-btn { background-color: #000000; border: 1.5px solid rgba(255,255,255,0.4); color: #ffffff; }
+body.dark-mode #sidebar-toggle:hover, body.dark-mode #header-more-btn:hover { background-color: #1a1a1a; border-color: rgba(255,255,255,0.7); }
+body.dark-mode #sidebar-toggle svg, body.dark-mode #header-more-btn svg { color: #ffffff; stroke: #ffffff; }
+body.dark-mode #chat-nav-pill { background: #ffffff !important; }
+body.dark-mode .chat-nav-link { color: #9ca3af !important; }
+body.dark-mode .chat-nav-link.is-active { color: #0a0a0a !important; background: #ffffff !important; }
+body.dark-mode #header-more-menu { background-color: #0a0a0a; border-color: rgba(255,255,255,0.15); }
+body.dark-mode .header-menu-item { color: #e5e7eb; }
+body.dark-mode .header-menu-item:hover { background-color: #1a1a1a; color: #ffffff; }
+body.dark-mode .header-menu-item svg { color: #9ca3af; }
+body.dark-mode #sidebar-toggle,
+        body.dark-mode button[onclick="toggleSidebar()"],
+        body.dark-mode button[onclick="history.back()"],
+        body.dark-mode button[onclick="navigateTo(\'page-home\')"],
+        body.dark-mode .header-glass button[onclick],
+        body.dark-mode header button[onclick]:not(.header-menu-item) {
+            background-color: #000000 !important;
+            border: 1.5px solid rgba(255,255,255,0.4) !important;
+            color: #ffffff !important;
+        }
+body.dark-mode #sidebar-toggle svg,
+        body.dark-mode button[onclick="toggleSidebar()"] svg,
+        body.dark-mode button[onclick="history.back()"] svg,
+        body.dark-mode button[onclick="navigateTo(\'page-home\')"] svg,
+        body.dark-mode .header-glass button[onclick] svg,
+        body.dark-mode header button[onclick]:not(.header-menu-item) svg {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+        }
+body.dark-mode #sidebar-toggle:hover,
+        body.dark-mode button[onclick="toggleSidebar()"]:hover,
+        body.dark-mode button[onclick="history.back()"]:hover,
+        body.dark-mode button[onclick="navigateTo(\'page-home\')"]:hover,
+        body.dark-mode .header-glass button[onclick]:hover,
+        body.dark-mode header button[onclick]:not(.header-menu-item):hover {
+            background-color: #1a1a1a !important;
+            border-color: rgba(255,255,255,0.7) !important;
+        }
+@media (min-width: 900px) {
+            #chat-ws-panel { display: block; }
+            #chat-container { position: fixed; left: 0; right: 66.6667%; top: 0; bottom: 0; width: auto; border-right: 1px solid rgb(243 244 246 / 1); }
+            #chat-input-footer { left: 0; right: 66.6667%; width: auto; }
+            /* Konsistensi produksi: desktop 4 menu (Agent|Live preview|Workspace|Dashboard) di semua halaman */
+            .chat-nav-link[data-nav="live"] { display: inline-flex; }
+            /* Bar aksi split (refresh, buka tab baru, riwayat deploy) hanya relevan saat split aktif */
+            #chat-split-actions { display: flex; }
+            /* Di desktop: Editor & Live preview tampil sebagai pil header, keluar dari popup */
+            #chat-hdr-tools { display: flex; }
+            .chat-hdr-label { display: inline; }
+            .header-mobile-only { display: none !important; }
+            /* Titik-3 di split view: seragam dengan ikon aksi panel — 40px, transparan, jarak rapat sama */
+            #header-more-wrap { margin-left: -8px; }
+            #header-more-btn { width: 40px; height: 40px; background: transparent; border: none; box-shadow: none; color: #6b7280; }
+            #header-more-btn:hover { background: transparent; color: #000000; }
+            body.dark-mode #header-more-btn { background: transparent; border: none; box-shadow: none; color: #9ca3af; }
+            body.dark-mode #header-more-btn:hover { background: transparent; color: #ffffff; }
+        }
+body.dark-mode #chat-split-actions button { color: #9ca3af; }
+body.dark-mode #chat-split-actions button:hover { color: #ffffff; }
+body.dark-mode #chat-split-actions button svg { color: currentColor; stroke: currentColor; }
+/* embed=1: sembunyikan seluruh header; sistem chat mengisi layar */
+html.embed-mode header { display: none !important; }
+
 /* ===== [Clincoo] embed=1: chat sebagai overlay sheet di halaman lain ===== */
-html.embed-mode #clq-topbar { display: none !important; }
 html.embed-mode #chat-container { padding-top: 12px !important; }
 html.embed-mode #chat-input-footer { padding-bottom: 12px; }
 /* ===== [Clincoo] popover menu lainnya (kapsul, standar popover) ===== */
@@ -477,6 +564,7 @@ html.embed-mode #chat-input-footer { padding-bottom: 12px; }
 <div id="train-drawer" class="fixed inset-0 bg-white z-50 overflow-y-auto"><div class="max-w-xl mx-auto px-4 pt-5 pb-24">
     <div class="px-4 pt-5 pb-2 flex items-center justify-between">
         <h2 class="font-bold text-[15px] text-gray-900" style="font-family:'Montserrat',sans-serif;">Dashboard Dataset &amp; Model</h2>
+        <p id="clq-projname" class="text-[11.5px] text-gray-400 px-0.5"></p>
         <button id="drawer-close" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-black flex items-center justify-center transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg></button>
     </div>
     <div class="px-4 pb-8 space-y-5">
@@ -560,20 +648,64 @@ html.embed-mode #chat-input-footer { padding-bottom: 12px; }
 
 <!-- Kolom chat -->
 <div id="chat-sheet" class="flex flex-col h-full">
-    <header id="clq-topbar">
-        <div class="clq-row">
-            <a id="clq-back" href="/proyek/" class="clq-pill" title="Kembali ke workspace"><i class="ph-bold ph-arrow-left text-base"></i><span class="hidden sm:inline">Workspace</span></a>
-            <div id="clq-projname" class="clq-pill">Clincoo</div>
-            <div class="clq-spacer"></div>
-            <button id="clq-theme" type="button" onclick="__toggleTheme()" class="clq-pill-btn" title="Tema terang/gelap" aria-label="Ganti tema"><i class="ph-bold ph-moon text-base"></i></button>
-            <button id="clq-drawer-open" type="button" class="clq-pill-btn" title="Panel model" aria-label="Panel model"><i class="ph-bold ph-sliders-horizontal text-base"></i></button>
-            <div id="clq-more-wrap">
-                <button id="clq-more" type="button" onclick="__toggleMoreMenu(event)" class="clq-pill-btn" title="Menu lainnya" aria-label="Menu lainnya" aria-haspopup="true"><i class="ph-bold ph-dots-three-bold text-base"></i></button>
-                <div id="clq-more-menu" role="menu">
-                    <a id="clq-mi-editor" class="clq-mi" href="/proyek/workspace/editor/"><i class="ph ph-code"></i>Editor</a>
-                    <button type="button" class="clq-mi" onclick="chatExportZip()"><i class="ph ph-download-simple"></i>Eksport zip</button>
-                    <button type="button" class="clq-mi" onclick="openExportModal()"><i class="ph ph-github-logo"></i>Eksport Git</button>
-                    <a class="clq-mi" href="https://blog.clincoo.buzz/panduan/" target="_blank" rel="noopener"><i class="ph ph-lifebuoy"></i>Pusat bantuan</a>
+    <header class="fixed top-0 left-0 right-0 z-30 px-3 pt-3 pointer-events-none flex justify-between items-center">
+        <button id="sidebar-toggle" type="button" class="pointer-events-auto flex-shrink-0 flex items-center justify-center text-[#222222] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:text-black hover:bg-gray-100 transition-all rounded-full w-11 h-11" aria-label="Kembali ke Beranda">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        <div id="chat-header-group" class="flex items-center gap-4 flex-shrink-0">
+        <div class="pointer-events-auto inline-flex items-center gap-1 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-gray-100/80 rounded-full pl-1.5 pr-1.5 h-11" id="chat-header-capsule">
+            <nav id="chat-top-nav" class="relative inline-flex items-center h-full">
+                <div id="chat-nav-pill" class="absolute bg-gray-100 rounded-full pointer-events-none" style="top:0;left:0;width:0;height:0"></div>
+                <a href="/proyek/code/" data-nav="code" class="chat-nav-link relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold text-gray-500 whitespace-nowrap transition-colors">Workspace</a>
+                <a href="/proyek/dashboard/" data-nav="dashboard" class="chat-nav-link relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold text-gray-500 whitespace-nowrap transition-colors">Dashboard</a>
+            </nav>
+        </div>
+        <div id="chat-hdr-tools" class="flex items-center gap-1.5 flex-shrink-0">
+                <button id="chat-hdr-editor" type="button" onclick="chatOpenEditor()" class="chat-hdr-pill" title="Editor kode" aria-label="Editor kode">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 18l6-6-6-6" /><path stroke-linecap="round" stroke-linejoin="round" d="M8 6l-6 6 6 6" /></svg>
+                    <span class="chat-hdr-label">Editor</span>
+                </button>
+        </div>
+        <div id="chat-split-actions" class="flex-shrink-0 pointer-events-auto hidden items-center gap-2">
+                <button id="chat-split-refresh" type="button" onclick="chatSplitRefresh()" title="Muat ulang panel" aria-label="Muat ulang panel" class="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-black transition-colors" style="background:transparent;border:none;outline:none;appearance:none;padding:0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5" /><path stroke-linecap="round" stroke-linejoin="round" d="M20 9A8 8 0 0 0 5.6 5.6L4 9M4 15a8 8 0 0 0 14.4 3.4L20 15" /></svg>
+                </button>
+                <button id="chat-split-opentab" type="button" onclick="chatSplitOpenTab()" title="Buka panel di tab baru" aria-label="Buka panel di tab baru" class="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-black transition-colors" style="background:transparent;border:none;outline:none;appearance:none;padding:0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 3h6v6" /><path stroke-linecap="round" stroke-linejoin="round" d="M10 14L21 3" /></svg>
+                </button>
+                <button id="chat-split-history" type="button" onclick="chatSplitHistory()" title="Riwayat deployment" aria-label="Riwayat deployment" class="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-black transition-colors" style="background:transparent;border:none;outline:none;appearance:none;padding:0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3" /><path stroke-linecap="round" stroke-linejoin="round" d="M3.05 11a9 9 0 1 1 .5 4" /><path stroke-linecap="round" stroke-linejoin="round" d="M3 15v4h4" /></svg>
+                </button>
+        </div>
+        <div id="clq-hdr-sys" class="flex items-center gap-1.5 flex-shrink-0 pointer-events-auto">
+                <button id="clq-theme" type="button" onclick="__toggleTheme()" class="chat-hdr-pill" style="width:40px;padding:0;justify-content:center" title="Tema terang/gelap" aria-label="Ganti tema"><i class="ph-bold ph-moon"></i></button>
+                <button id="clq-drawer-open" type="button" class="chat-hdr-pill" style="width:40px;padding:0;justify-content:center" title="Panel model" aria-label="Panel model"><i class="ph-bold ph-sliders-horizontal"></i></button>
+            </div>
+        <div id="header-more-wrap" class="relative flex-shrink-0 pointer-events-auto">
+                <button id="header-more-btn" type="button" onclick="toggleHeaderMenu(event)" class="w-11 h-11 rounded-full flex items-center justify-center text-[#222222] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:bg-gray-100 hover:text-black transition-all" aria-label="Menu lainnya">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle>
+                    </svg>
+                </button>
+                <div id="header-more-menu" class="absolute top-full right-0 mt-1 w-56 bg-white rounded-xl shadow-xl p-1.5 flex-col gap-0.5 opacity-0 invisible translate-y-1 pointer-events-none transition-all duration-200 z-50 hidden">
+                    <a id="header-editor" href="/proyek/workspace/editor/" onclick="var __pid='';try{__pid=sessionStorage.getItem('clincoo_tab_project_id')||localStorage.getItem('clincoo_current_project_id')||''}catch(e){}if(__pid){this.href='/proyek/workspace/editor/?id='+encodeURIComponent(__pid)}" class="header-menu-item header-mobile-only w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                        <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 18l6-6-6-6M8 6l-6 6 6 6" /></svg>
+<span class="flex items-center gap-1.5">Editor <svg class="clincoo-premium-crown w-3.5 h-3.5 text-amber-500 shrink-0" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#f59e0b" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"></path></svg></span>                        <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10" /></svg>
+                    </a>
+                <button id="header-export-zip" type="button" onclick="chatExportZip()" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                        <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>
+                        Eksport zip
+                    </button>
+                    <button id="header-git-sync" type="button" onclick="openExportModal()" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                        <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path><path stroke-linecap="round" stroke-linejoin="round" d="M9 18c-4.51 2-5-2-7-2"></path></svg>
+                        Eksport Git
+                    </button>
+                    <a href="https://blog.clincoo.buzz/panduan/" target="_blank" rel="noopener" class="header-menu-item flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                        <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"></path></svg>
+                        Pusat bantuan
+                    </a>
                 </div>
             </div>
         </div>
@@ -2594,25 +2726,52 @@ renderMessages();
 
 <script>
 // ===== [Clincoo] Popover menu lainnya + Eksport zip/Git (diport dari halaman chat lama) =====
-window.__toggleMoreMenu = function (e) {
-    e && e.stopPropagation();
-    var m = document.getElementById('clq-more-menu');
-    if (m) m.classList.toggle('open');
+// ===== [Clincoo] Perilaku header lama (dipertahankan) =====
+(function () {
+    var st = document.getElementById('sidebar-toggle');
+    if (st) st.addEventListener('click', function () { window.location.href = '/'; });
+    var pid = '';
+    try { pid = new URLSearchParams(location.search).get('id') || sessionStorage.getItem('clincoo_tab_project_id') || localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) {}
+    document.querySelectorAll('#chat-top-nav a').forEach(function (a) {
+        if (pid) a.href = a.getAttribute('href') + '?id=' + encodeURIComponent(pid);
+    });
+    var mi = document.getElementById('header-editor');
+    if (mi && pid) mi.href = '/proyek/workspace/editor/?id=' + encodeURIComponent(pid);
+})();
+window.toggleHeaderMenu = function (e) {
+    e.stopPropagation();
+    var m = document.getElementById('header-more-menu');
+    if (m) m.classList.contains('open') ? window.closeHeaderMenu() : m.classList.add('open');
 };
 window.closeHeaderMenu = function () {
-    var m = document.getElementById('clq-more-menu');
+    var m = document.getElementById('header-more-menu');
     if (m) m.classList.remove('open');
 };
 document.addEventListener('click', function (e) {
-    var w = document.getElementById('clq-more-wrap');
-    if (w && !w.contains(e.target)) window.closeHeaderMenu();
+    var m = document.getElementById('header-more-menu');
+    if (m && m.classList.contains('open') && !m.contains(e.target) && e.target !== document.getElementById('header-more-btn')) window.closeHeaderMenu();
 });
-(function () {
-    var mi = document.getElementById('clq-mi-editor');
-    var pid = '';
-    try { pid = new URLSearchParams(location.search).get('id') || sessionStorage.getItem('clincoo_tab_project_id') || localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) {}
-    if (mi && pid) mi.href = '/proyek/workspace/editor/?id=' + encodeURIComponent(pid);
-})();
+window.chatOpenEditor = function () {
+    var pid = ''; try { pid = new URLSearchParams(location.search).get('id') || sessionStorage.getItem('clincoo_tab_project_id') || localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) {}
+    window.open('/proyek/workspace/editor/' + (pid ? '?id=' + encodeURIComponent(pid) : ''), '_blank');
+};
+window.chatSplitHistory = function () {
+    var pid = ''; try { pid = new URLSearchParams(location.search).get('id') || sessionStorage.getItem('clincoo_tab_project_id') || localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) {}
+    window.open('/proyek/build-deployment/' + (pid ? '?id=' + encodeURIComponent(pid) : ''), '_blank');
+};
+window.chatSplitRefresh = function () {
+    var fr = document.getElementById('cv-frame');
+    if (!fr || typeof cvState !== 'object' || !cvState) return;
+    if (cvProj && typeof buildPreviewDoc === 'function' && typeof P !== 'undefined') fr.srcdoc = buildPreviewDoc(P.current);
+    else if (cvState.code && /\.html?$/i.test(cvState.name || '')) fr.srcdoc = withConsole(cvState.code);
+};
+window.chatSplitOpenTab = function () {
+    var fr = document.getElementById('cv-frame');
+    if (!fr || !fr.srcdoc) return;
+    var u = URL.createObjectURL(new Blob([fr.srcdoc], { type: 'text/html' }));
+    window.open(u, '_blank');
+    setTimeout(function () { URL.revokeObjectURL(u); }, 30000);
+};
 window.chatExportZip = function () {
     window.closeHeaderMenu && window.closeHeaderMenu();
     var pid = window.activeProjectId ? window.activeProjectId() : ''; try { if (!pid) { pid = localStorage.getItem('clincoo_current_project_id') || ''; } } catch (e) {}
