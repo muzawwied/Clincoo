@@ -1,6 +1,9 @@
 /* Clincoo Bug — card bulat geser + console polos + laporkan ke WA */
 (() => {
-  if (window.__clincooBugInstalled) return;
+  // Guard dua arah: cek juga flag bug-beetle — dua salinan widget tidak boleh
+  // terpasang bersamaan (bug: tombol bug dobel di /proyek/chat/).
+  if (window.__clincooBugInstalled || window.__clincooBugBeetleLoaded) return;
+  if (document.getElementById('cc-bug-root') || document.getElementById('cc-bug-fab')) return;
   window.__clincooBugInstalled = true;
   window.__clincooBugBeetleLoaded = true;
 
@@ -119,6 +122,8 @@
   `;
   document.head.appendChild(style);
 
+  const stale = document.getElementById('clincoo-bug-root');
+  if (stale && stale.parentNode) stale.parentNode.removeChild(stale);
   const root = document.createElement('div');
   root.id = 'clincoo-bug-root';
   root.innerHTML =

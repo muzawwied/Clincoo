@@ -1,7 +1,10 @@
 /* Clincoo Bug Beetle — draggable round card + console popover + WA report */
 (function () {
   'use strict';
-  if (window.__clincooBugBeetleLoaded) return;
+  // Guard dua arah: bug-beetle vs clincoo-bug (injek middleware) —
+  // mana pun yang jalan duluan, yang satunya tidak boleh memasang widget kedua.
+  if (window.__clincooBugBeetleLoaded || window.__clincooBugInstalled) return;
+  if (document.getElementById('clincoo-bug-root') || document.getElementById('clincoo-bug-fab')) return;
   window.__clincooBugBeetleLoaded = true;
 
   var MAX_LOGS = 100;
@@ -123,6 +126,8 @@
   ].join('');
   (document.head || document.documentElement).appendChild(style);
 
+  var stale = document.getElementById('cc-bug-root');
+  if (stale && stale.parentNode) stale.parentNode.removeChild(stale);
   var root = document.createElement('div');
   root.id = 'cc-bug-root';
   root.innerHTML =
