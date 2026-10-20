@@ -2250,28 +2250,44 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
 
       const items = projectFilesData[currentFolderPath] || [];
       const itemIndex = items.findIndex(i => i.name === activeItemName);
-      const item = itemIndex !== -1 ? items[itemIndex] : null;
-      
+      let item = null, delPaths = [];
       if(itemIndex !== -1) {
+        item = items[itemIndex];
         if(item.type === 'folder') {
           const prefix = item.path;
           Object.keys(projectFilesData).forEach(key => {
             if (key === prefix || key.startsWith(prefix + '/')) {
+              (projectFilesData[key] || []).forEach(function (it) { if (it && it.type === 'file' && it.path) delPaths.push(String(it.path)); });
               delete projectFilesData[key];
             }
           });
+        } else if (item.path) {
+          delPaths.push(String(item.path));
         }
         items.splice(itemIndex, 1);
       }
-      // [11 Okt, laporan owner: "hapus file/folder muncul lagi"] hapus langsung di
-      // server saat tombol Hapus dikonfirmasi — jangan bergantung pada push penuh
-      // yang debounced/bisa gagal senyap. Gagal -> toast, terlihat jelas.
+      // [21 Okt, laporan owner: "muncul lagi pas udah dihapus"] dua akar masalah:
+      // (1) `item` dulu const di dalam blok if -> di try ini selalu ReferenceError
+      //     yang ditelan catch kosong -> DELETE langsung ke server TIDAK PERNAH
+      //     terkirim sejak refactor 11 Okt. (2) merge cloud (pull 8 detik /
+      //     reconcile sebelum push) menghidupkan ulang path yang baru dihapus.
+      //     Sekarang: item diangkat keluar, dan path yang dihapus ditandai
+      //     tombstone LOKAL (wsKnownDeleted) supaya merge tidak mengembalikannya.
+      //     Membuat ulang file di path yang sama tetap diizinkan (saveData
+      //     membaliknya ke restore_paths).
+      try {
+        delPaths.forEach(function (p) { wsKnownDeleted[String(p)] = true; delete wsRestorePaths[String(p)]; });
+      } catch (e) {}
       try {
         const __p = item && item.path ? String(item.path) : '';
         if (__p) {
           const __q = '?project_id=' + encodeURIComponent(wsProjectId()) + '&path=' + encodeURIComponent(__p) + (item.type === 'folder' ? '&prefix=1' : '');
           fetch(WS_CLOUD_API + __q, { method: 'DELETE', headers: wsAuthHeaders() })
-            .then(function(r) { if (!r.ok) addNotification('Workspace', 'Hapus belum sampai ke server (HTTP ' + r.status + ') — file bisa muncul lagi. Ulangi saat koneksi stabil.'); })
+            .then(function(r) {
+              if (!r.ok) { addNotification('Workspace', 'Hapus belum sampai ke server (HTTP ' + r.status + ') — file bisa muncul lagi. Ulangi saat koneksi stabil.'); return null; }
+              return r.json().catch(function () { return null; });
+            })
+            .then(function(d) { try { wsTrackKnownDeleted(d && d.deleted_paths); } catch (e) {} })
             .catch(function() { addNotification('Workspace', 'Hapus belum terkirim ke server — periksa koneksi, file bisa muncul lagi.'); });
         }
       } catch (e) {}
