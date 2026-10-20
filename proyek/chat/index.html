@@ -1686,7 +1686,7 @@ let lastAnchoredId = null;
 function toGroqMessages(cs) {
     const out = [];
     cs.forEach(c => {
-        let t = c.parts.map(p => p.text || '').join('');
+        let t = stripLooseSay(c.parts.map(p => p.text || '').join(''));
         const blocks = [];
         if (t) blocks.push({ type: 'text', text: t });
         for (const p of c.parts) {
@@ -1839,6 +1839,9 @@ function projectTimeline(body) {
     }
     return tl;
 }
+// Baris "=== SAY: ... ===" yang KEPENCET keluar dari blok project/patch
+// (model kadang menulisnya di teks biasa) tidak boleh tampil mentah ke user.
+const stripLooseSay = t => String(t == null ? '' : t).replace(/^[ \t]*===[ \t]*SAY[ \t]*:[^\n]*$/gim, '');
 function ckParts(m) {
     const t = m.text || '', parts = []; let pos = 0;
     // Checkpoint pembuka: selalu di paling atas jawaban (membaca proyek + proses berpikir)
@@ -1848,7 +1851,7 @@ function ckParts(m) {
     if (lead.length) parts.push({ acts: lead });
     findBlocks(t).filter(b => b.lang === 'project' || b.lang === 'patch').forEach(b => {
         const body = t.slice(b.bodyStart, b.bodyEnd), acts = blockActions(b.lang, body);
-        parts.push({ text: t.slice(pos, b.start) });
+        parts.push({ text: stripLooseSay(t.slice(pos, b.start)) });
         if (b.lang === 'project') {
             // pecah per tahap: file-file dikelompokkan, tiap baris SAY jadi pesan biasa, lalu checkpoint baru
             const byPath = new Map(acts.filter(a => a.path).map(a => [a.path, a]));
@@ -1866,7 +1869,7 @@ function ckParts(m) {
         }
         pos = b.start;
     });
-    parts.push({ text: t.slice(pos) });
+    parts.push({ text: stripLooseSay(t.slice(pos)) });
     const ex = m.extraActions || [];
     for (let i = 0; i < ex.length; i += CK_MAX) parts.push({ acts: ex.slice(i, i + CK_MAX) });
     return parts;
