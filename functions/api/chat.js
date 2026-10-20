@@ -1784,7 +1784,10 @@ export async function onRequestPost({ request, env, waitUntil }) {
     }
 
     let decls = workspaceDecls(body);
-    const wantTools = (body.workspace_tools === true || asistenMode);
+    // [21 Okt FIX PERMANEN] Keputusan tools kini di SERVER: mode 'build' SELALU membawa semua tool,
+    // 'asisten' hanya tool ringan. Flag workspace_tools dari klien TIDAK dipakai lagi — flag ini sudah
+    // 3x dipakai bot untuk mematikan semua tool AI di klien (guard selectedAiMode yang tidak ada fungsinya).
+    const wantTools = asistenMode || String(body.mode || '').trim() === 'build';
 
     const ASISTEN_TOOLS = new Set(['search_clincoo_kb', 'take_screenshot']);
     if (asistenMode) decls = decls.filter(d => d && ASISTEN_TOOLS.has(d.name));
