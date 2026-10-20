@@ -253,7 +253,7 @@
         body.dark-mode #main-prompt-input { color: #f0f0f2 !important; }
         body.dark-mode #main-prompt-input::placeholder { color: #71717a !important; }
         #add-btn, #add-btn:hover, #add-btn.open, #add-btn.open:hover { background: #000000; border-color: #000000; color: #ffffff; transition: none !important; }
-        body.dark-mode #add-btn, body.dark-mode #add-btn:hover, body.dark-mode #add-btn.open, body.dark-mode #add-btn.open:hover { background: #1c1c21; border-color: #2e2e34; color: #ffffff; }
+        body.dark-mode #add-btn, body.dark-mode #add-btn:hover, body.dark-mode #add-btn.open, body.dark-mode #add-btn.open:hover { background: #1c1c21 !important; border-color: #2e2e34 !important; color: #ffffff !important; }
         #add-icon { transition: transform .28s cubic-bezier(.3,.7,.3,1) !important; }
         #upload-menu { position: absolute; left: 0; bottom: calc(100% + 10px); min-width: 232px; padding: 8px; border-radius: 20px; background: #ffffff; border: 1px solid #e5e7eb; box-shadow: 0 12px 36px rgba(0,0,0,.14); z-index: 30; opacity: 0; transform: translateY(6px) scale(.97); transform-origin: bottom left; pointer-events: none; transition: opacity .16s, transform .16s; }
         #upload-menu.open { opacity: 1; transform: none; pointer-events: auto; }
@@ -800,7 +800,7 @@
             <div class="flex items-center justify-between pt-2">
                 <div class="flex items-center gap-2">
                     <div class="relative">
-                    <button id="add-btn" type="button" aria-haspopup="true" aria-expanded="false" class="w-9 h-9 rounded-full bg-black border border-black text-white flex items-center justify-center" title="Tambah file atau gambar">
+                    <button id="add-btn" type="button" aria-haspopup="true" aria-expanded="false" class="w-9 h-9 rounded-full border flex items-center justify-center" title="Tambah file atau gambar">
                         <svg id="add-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14M5 12h14"></path>
                         </svg>
@@ -825,6 +825,7 @@
                     </div>
                     <input type="file" id="real-file-input" class="hidden" multiple>
                     <input type="file" id="real-image-input" class="hidden" accept="image/*" multiple>
+                </div>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
                     <!-- Semua prompt dashboard menggunakan mode Build -->
