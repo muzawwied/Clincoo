@@ -2694,7 +2694,7 @@ async function sendMessage(opts) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    mode: 'build', workspace_tools: true, stream: true,
+                    mode: 'build', workspace_tools: ((typeof window.selectedAiMode === 'function' && window.selectedAiMode()) === 'build'), /* CHAT_BUILD_MODE_FIX */ stream: true,
                     messages: toGroqMessages(reqContents),
                     project_id: PROJECT_ID || undefined,
                     session_id: currentSessionId || undefined
