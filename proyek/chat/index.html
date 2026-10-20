@@ -2686,7 +2686,7 @@ async function sendMessage(opts) {
             document.addEventListener('visibilitychange', onVis);
             wdStop = () => { clearInterval(wd); document.removeEventListener('visibilitychange', onVis); };
             stalled = false;
-            // [Clincoo] Backend /api/chat mode 'asisten': streaming ndjson per baris
+            // [Clincoo] Semua pesan memakai mode Build: streaming ndjson per baris
             // ({t:'thinking'|'progress'|'delta'|'final'|'error', ...}).
             // [Clincoo] watchdog & AbortController versi transport baru ada di bawah
             const response = await fetch(API_URL, {
@@ -2694,7 +2694,7 @@ async function sendMessage(opts) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    mode: 'asisten', stream: true,
+                    mode: 'build', workspace_tools: true, stream: true,
                     messages: toGroqMessages(reqContents),
                     project_id: PROJECT_ID || undefined,
                     session_id: currentSessionId || undefined

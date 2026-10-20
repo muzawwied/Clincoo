@@ -811,7 +811,7 @@
                     <input type="file" id="real-image-input" class="hidden" accept="image/*" multiple>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
-                    <!-- [20 Okt 2026, arahan pemilik] Popover mode Chat/Build dihapus dari dashboard -->
+                    <!-- Semua prompt dashboard menggunakan mode Build -->
 <button id="submit-prompt-btn" class="w-10 h-10 bg-black text-white rounded-full hover:bg-gray-800 transition-all duration-200 active:scale-90 flex items-center justify-center cursor-pointer shadow-sm hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
@@ -1587,21 +1587,7 @@
                 }).catch(function () {});
             } catch (e) {}
         })();
-        // [18 Okt 2026, arahan pemilik] Mode Build ditutup sementara — pesan
-        // pengganti yang rapi saat user mencoba memilih Mode Build.
-        window.aiBuildDevNotice = function (msg) {
-          var el = document.getElementById('ai-build-dev-notice');
-          if (el) el.remove();
-          el = document.createElement('div');
-          el.id = 'ai-build-dev-notice';
-          var dark = document.body.classList.contains('dark-mode');
-          el.style.cssText = 'position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:9999;display:flex;align-items:center;gap:8px;max-width:92vw;padding:10px 16px;border-radius:14px;background:' + (dark ? '#1c1c1e' : '#111827') + ';color:' + (dark ? '#f3f4f6' : '#ffffff') + ';font-size:13px;font-weight:600;line-height:1.4;box-shadow:0 10px 30px rgba(0,0,0,.3);opacity:0;transition:opacity .25s ease;font-family:inherit;text-align:center;';
-          el.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.3 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0z"/></svg><span>' + (msg || 'Mode Build sedang dalam pengembangan. Sementara ini gunakan Mode Chat ya.') + '</span>';
-          document.body.appendChild(el);
-          requestAnimationFrame(function () { el.style.opacity = '1'; });
-          setTimeout(function () { el.style.opacity = '0'; setTimeout(function () { if (el.parentNode) el.remove(); }, 300); }, 3400);
-        };
-        // [20 Okt 2026, arahan pemilik] Popover mode Chat/Build (kapsul) dihapus dari halaman utama.
+        // Semua prompt beranda diteruskan ke chat dengan mode Build.
         function processPromptSubmission(customTitle) {
             if(!mainPromptInput) return;
             const prompt = mainPromptInput.value.trim();

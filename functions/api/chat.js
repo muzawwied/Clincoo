@@ -1312,14 +1312,8 @@ export async function onRequestPost({ request, env, waitUntil }) {
 
     let messages = Array.isArray(body.messages) ? body.messages : [];
 
-    const asistenMode = String(body.mode || '').trim() === 'asisten';
-
     if (!messages.some(m => m && m.role === 'system')) {
       messages = [{ role: 'system', content: ASISTEN_SYSTEM_PROMPT }, ...messages];
-    }
-
-    if (asistenMode) {
-      messages = messages.filter((m, ix) => !(m && m.role === 'system' && ix > 0));
     }
 
     if (!messages.some(m => m && m.role === 'user')) {
@@ -1424,13 +1418,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     }
 
     let decls = workspaceDecls(body);
-    const wantTools = (body.workspace_tools === true || asistenMode);
-
-    const ASISTEN_TOOLS = new Set(['search_clincoo_kb', 'take_screenshot']);
-    if (asistenMode) decls = decls.filter(d => d && ASISTEN_TOOLS.has(d.name));
-    const gTools = wantTools
-      ? [{ functionDeclarations: decls }]
-      : null;
+    const gTools = [{ functionDeclarations: decls }];
 
     const hasImages = messages.some(m => Array.isArray(m?.content) && m.content.some(b => b && b.type === 'image_url' && b.image_url?.url));
 
@@ -1444,12 +1432,12 @@ export async function onRequestPost({ request, env, waitUntil }) {
     const workMessages = messages;
     const mrUsageAcc = {};
     const toolDecls = (gTools && gTools[0] && gTools[0].functionDeclarations) || null;
-    const modeLabel = asistenMode ? 'asisten' : 'build';
+    const modeLabel = 'build';
 
     const attemptCascade = async () => {
     let r = null;
     let planGapNudgeCount = 0;
-    for (let sHop = 0; sHop <= (asistenMode ? 14 : 4); sHop++) {
+    for (let sHop = 0; sHop <= 4; sHop++) {
       r = await executeAiGeneration({
         env,
         mrKeys,
@@ -1471,7 +1459,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
       const buildIntent = /\b(buat|buatkan|bikin|bikinkan|bangun|dibuatkan|dibangun|tolong buat|minta buat|landing ?page|situs|website|web ?page|aplikasi|webnya|situnya|lanjut)\b/i.test(String((lastUser && lastUser.content) || ''));
 
       const promiseLanguage = /tunggu (sebentar|sejenak)|mohon tunggu|harap tunggu|akan (saya )?(buat|membuat|bikin|lanjutkan|menyelesaikan|mulai)|sedang (membuat|menyiapkan|mengerjakan|memproses)|segera (saya )?(buat|lanjutkan)|silakan tunggu/i.test(String(r.text || ''));
-      const isPlanGap = !asistenMode && toolDecls && !hasImages && noToolsAtAll && String(r.text || '').trim()
+      const isPlanGap = toolDecls && !hasImages && noToolsAtAll && String(r.text || '').trim()
         && !hasWriteCall && (buildIntent || identityDone || promiseLanguage)
         && !/\[\[POLL\]\]|\[\[FORM\]\]|\[\[PLUGIN:/i.test(r.text);
       if (isPlanGap && planGapNudgeCount < 2) {
