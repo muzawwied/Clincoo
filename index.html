@@ -470,12 +470,11 @@
                 <i data-lucide="globe" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
                 <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Domain</span>
             </a>
-            <!-- [18 Okt 2026, arahan pemilik] Menu Kredit/Top Up sementara jadi placeholder (tidak bisa diklik) -->
-            <div class="sb-item w-full flex items-center px-6 py-2 opacity-50" aria-disabled="true" title="Sedang dalam pengembangan" data-search="kredit saldo ai top up">
+            <!-- [20 Okt 2026, arahan pemilik] Menu Kredit dibuka kembali -> halaman Kredit AI -->
+            <a href="akun/langganan/kredit/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="kredit saldo ai top up">
                 <svg class="w-5 h-5 text-gray-500 mr-4 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12.5 7 7.5 13h4.5l-1 4 4.5-6h-4.5z"/></svg>
-                <span class="text-[15px] font-medium text-gray-500">Kredit</span>
-                <span class="ml-auto text-[10px] font-semibold text-gray-400">Segera</span>
-            </div>
+                <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Kredit</span>
+            </a>
             <a id="ob-sb-proyek" href="proyek/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="proyek project daftar">
                 <i data-lucide="folder" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
                 <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Proyek</span>
@@ -643,8 +642,8 @@
                 { group: 'Menu', items: [
                     { label: 'Home', icon: 'home', act: function () { toggleSidebar(false); navigateTo('page-home'); } },
                     { label: 'Domain', icon: 'globe', act: function () { location.href = 'domain/'; } },
-                    // [18 Okt 2026, arahan pemilik] Kredit/Top Up sementara placeholder non-aktif
-                    { label: 'Kredit', icon: 'coin-bolt', act: function () { if (window.aiBuildDevNotice) { window.aiBuildDevNotice('Top Up Kredit sedang dalam pengembangan — segera hadir'); } else { alert('Top Up Kredit sedang dalam pengembangan.'); } } },
+                    // [20 Okt 2026, arahan pemilik] Kredit dibuka kembali -> halaman Kredit AI
+                    { label: 'Kredit', icon: 'coin-bolt', act: function () { window.location.href = 'akun/langganan/kredit/'; } },
                     { label: 'Template', icon: 'layout-template', act: function () { location.href = 'templates/'; } },
                     { label: 'Notifikasi', icon: 'bell', act: function () { location.href = 'notifikasi/'; } },
                     { label: 'Upgrade', icon: 'crown', act: function () { location.href = 'upgrade/'; } },
