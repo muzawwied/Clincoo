@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../js/auth-client.js?v=6"></script>
+    <script src="../../js/accent-init.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../assets/favicon.png">
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.png">
+  <title>Langganan — Clincoo</title>
+    <meta name="description" content="Langganan — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clincoo">
+    <meta property="og:title" content="Langganan — Clincoo">
+    <meta property="og:description" content="Langganan — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Langganan — Clincoo">
+    <meta name="twitter:description" content="Langganan — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+  <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <script src="https://unpkg.com/lucide@1.41.0"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+    body { font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { display: none; width: 0; height: 0; background: transparent; }
+    * { -ms-overflow-style: none; scrollbar-width: none; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    body.dark-mode { background-color: #000000; color: #e0e0e0; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800 { color: #f0f0f0; }
+    body.dark-mode .text-gray-700 { color: #b0b0b0; }
+    body.dark-mode .text-gray-500, body.dark-mode .text-gray-600 { color: #888888; }
+    body.dark-mode .text-gray-400 { color: #666666; }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    
+    body.dark-mode header button[onclick="history.back()"] { 
+        background-color: #000000 !important; 
+        border: 1.5px solid rgba(255,255,255,0.4) !important; 
+        color: #ffffff !important; 
+    }
+    body.dark-mode header button[onclick="history.back()"] svg { 
+        color: #ffffff !important; 
+        stroke: #ffffff !important; 
+    }
+    body.dark-mode header button[onclick="history.back()"]:hover { 
+        background-color: #1a1a1a !important; 
+        border-color: rgba(255,255,255,0.7) !important; 
+    }
+    
+    body.dark-mode .bg-gray-50 { background-color: #222222 !important; }
+    body.dark-mode .bg-gray-100 { background-color: #222222 !important; }
+    body.dark-mode .border-gray-200, body.dark-mode .border-gray-100 { border-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-200:hover { background-color: #222222 !important; }
+    body.dark-mode input, body.dark-mode select, body.dark-mode textarea { background-color: #0a0a0a; color: #ffffff; border-color: #222222; }
+    body.dark-mode input:focus, body.dark-mode select:focus, body.dark-mode textarea:focus { border-color: #222222; outline: none; }
+    body.dark-mode header { background-color: #000000 !important; }
+  /* auto-dark-fix v1 */
+    body.dark-mode .bg-gray-50\/80 { background-color: #141414 !important; }
+    body.dark-mode .bg-gray-200 { background-color: #262626 !important; }
+    body.dark-mode .bg-gray-300 { background-color: #333333 !important; }
+    body.dark-mode .bg-gray-400 { background-color: #444444 !important; }
+    body.dark-mode .border-gray-50 { border-color: #0a0a0a !important; }
+    body.dark-mode .border-gray-200\/50,
+    body.dark-mode .border-gray-200\/60,
+    body.dark-mode .border-gray-200\/70 { border-color: #222222 !important; }
+    body.dark-mode .border-gray-300 { border-color: #333333 !important; }
+    body.dark-mode .border-gray-400 { border-color: #444444 !important; }
+    body.dark-mode .bg-blue-50,
+    body.dark-mode .bg-blue-50\/50 { background-color: #0d1a26 !important; }
+    body.dark-mode .border-blue-100,
+    body.dark-mode .border-blue-200 { border-color: #1e3a52 !important; }
+    body.dark-mode .bg-red-50,
+    body.dark-mode .bg-red-50\/50 { background-color: #2a1414 !important; }
+    body.dark-mode .bg-red-100 { background-color: #3a1a1a !important; }
+    body.dark-mode .border-red-100,
+    body.dark-mode .border-red-200 { border-color: #4a2020 !important; }
+    body.dark-mode .bg-green-100 { background-color: #14301c !important; }
+    body.dark-mode .bg-white\/95 { background-color: rgba(10,10,10,0.95) !important; }
+    body.dark-mode .hover\:bg-gray-50:hover,
+    body.dark-mode .hover\:bg-gray-50\/50:hover,
+    body.dark-mode .hover\:bg-gray-50\/80:hover { background-color: #1a1a1a !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #262626 !important; }
+    body.dark-mode .hover\:bg-gray-200:hover,
+    body.dark-mode .hover\:bg-gray-200\/50:hover { background-color: #333333 !important; }
+    body.dark-mode .hover\:bg-blue-50:hover,
+    body.dark-mode .hover\:bg-blue-100:hover { background-color: #163247 !important; }
+    body.dark-mode .hover\:bg-red-50:hover,
+    body.dark-mode .hover\:bg-red-100:hover { background-color: #3a1a1a !important; }
+    body.dark-mode .hover\:border-gray-300:hover,
+    body.dark-mode .hover\:border-gray-400:hover,
+    body.dark-mode .hover\:border-gray-900:hover { border-color: #555555 !important; }
+    body.dark-mode .focus\:border-gray-400:focus,
+    body.dark-mode .focus\:border-gray-900:focus { border-color: #666666 !important; }
+    body.dark-mode input::placeholder, body.dark-mode textarea::placeholder { color: #666666 !important; }
+</style>
+  <script>
+    (function(){
+      var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';
+      var isDark=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);
+      if(isDark) document.documentElement.classList.add('dark-mode');
+    })();
+  </script>
+<!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+<style>
+.clincoo-shimmer{position:relative;overflow:hidden;display:inline-block;min-width:4.5rem;min-height:1.4em;color:transparent!important;background:#e5e7eb;border-radius:8px;-webkit-user-select:none;user-select:none;vertical-align:middle}
+.clincoo-shimmer::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);animation:clincoo-shimmer 1.3s infinite}
+@keyframes clincoo-shimmer{100%{transform:translateX(100%)}}
+.dark-mode .clincoo-shimmer{background:#1e293b}
+.dark-mode .clincoo-shimmer::after{background:linear-gradient(90deg,transparent,rgba(148,163,184,.3),transparent)}
+
+/* [19 Okt, arahan pemilik] Label nama paket: teks saja tanpa card —
+   hitam di bg terang, putih di bg gelap, teks saja, tanpa animasi (arahan pemilik 19 Okt). */
+.plan-label{position:relative;display:inline-block;font-size:1.45rem;line-height:1.15;font-weight:800;letter-spacing:.01em;color:#111827;-webkit-user-select:none;user-select:none;transition:color .3s ease}
+.dark-mode .plan-label{color:#f9fafb}
+/* Mahkota miring nyangkol di ujung huruf terakhir (khusus Bisnis) */
+.plan-crown{position:absolute;right:-.34em;top:-.6em;width:.6em;height:.6em;color:#f5b301;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.28));transform-origin:bottom left;transform:rotate(21deg)}
+</style>
+
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
+(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<2;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
+    </script>
+<!-- Google tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+<!-- End Google tag -->
+<script src="../../js/i18n-dict.js" defer></script>
+<script src="../../js/i18n.js" defer></script>
+</head>
+<body class="text-gray-900 antialiased h-screen w-full overflow-hidden relative bg-white">
+  <script>
+    if(document.documentElement.classList.contains('dark-mode')) {
+        document.body.classList.add("dark-mode");
+    }
+  </script>
+  
+  <header class="bg-white flex justify-between items-center px-3 py-2 fixed top-0 w-full z-40 transition-colors">
+        <button onclick="history.back()" class="top-2 left-5 w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-100 hover:bg-gray-100 transition-all cursor-pointer text-gray-700 hover:text-black">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </button>
+        <h1 class="font-extrabold text-lg text-gray-900 tracking-tight">Langganan</h1>
+        <div class="w-10"></div>
+    </header>
+  <div class="w-full h-full overflow-y-auto hide-scrollbar flex flex-col items-center pt-16">
+    
+    <div class="w-full max-w-5xl px-4 sm:px-6 pt-2">
+      <p class="text-xs text-gray-500 dark:text-gray-400">Kelola paket dan tagihan langganan Anda</p>
+    </div>
+
+    <main class="w-full max-w-5xl px-4 sm:px-6 py-2 pb-24">
+      <div class="w-full flex flex-col divide-y divide-gray-200 dark:divide-slate-700/60">
+        <div class="py-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h4 class="text-base font-semibold text-gray-900 dark:text-white">Paket Saat Ini</h4>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Paket langganan yang aktif</p>
+            </div>
+            <span id="plan-badge" class="clincoo-shimmer plan-label">—</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3 mt-4">
+            <div class="p-3 rounded-xl border border-gray-200 dark:border-slate-700">
+              <p class="text-xs text-gray-500 dark:text-gray-400">Proyek Aktif</p>
+              <p id="stat-proyek" class="clincoo-shimmer text-lg font-bold text-gray-900 dark:text-white">—</p>
+            </div>
+            <div class="p-3 rounded-xl border border-gray-200 dark:border-slate-700">
+              <p class="text-xs text-gray-500 dark:text-gray-400">Storage</p>
+              <p id="stat-storage" class="clincoo-shimmer text-lg font-bold text-gray-900 dark:text-white">—</p>
+            </div>
+            <div class="p-3 rounded-xl border border-gray-200 dark:border-slate-700">
+              <p class="text-xs text-gray-500 dark:text-gray-400">Deploy Bulan Ini</p>
+              <p id="stat-bandwidth" class="clincoo-shimmer text-lg font-bold text-gray-900 dark:text-white">—</p>
+            </div>
+            <div class="p-3 rounded-xl border border-gray-200 dark:border-slate-700">
+              <p class="text-xs text-gray-500 dark:text-gray-400">Kolaborator</p>
+              <p id="stat-kolaborator" class="clincoo-shimmer text-lg font-bold text-gray-900 dark:text-white">—</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <h4 class="text-base font-semibold text-gray-900 dark:text-white">Siklus Tagihan</h4>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Periode pembayaran langganan</p>
+          </div>
+          <div class="w-full sm:w-80 relative">
+            <button id="billing-btn" type="button" onclick="toggleBillingPopover(event)" class="w-full flex items-center justify-between px-3.5 py-2 text-sm rounded-lg border border-gray-300 dark:border-slate-600 focus:outline-none cursor-pointer bg-transparent hover:bg-gray-200/50 dark:hover:bg-slate-800 text-gray-900 dark:text-white transition-colors">
+              <span id="billing-text" class="clincoo-shimmer">Bulanan</span>
+              <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500"></i>
+            </button>
+            
+            <div id="billing-popover" class="hidden absolute right-0 left-0 top-full mt-1.5 z-50 bg-white border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden">
+                <div id="billing-options" class="py-1 flex flex-col"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <h4 class="text-base font-semibold text-gray-900 dark:text-white">Metode Pembayaran</h4>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Bayar langganan via QRIS</p>
+          </div>
+          <div class="w-full sm:w-80 flex items-center gap-2">
+            <span id="payment-method" class="clincoo-shimmer text-sm font-mono text-gray-600 dark:text-gray-400">••••</span>
+          </div>
+        </div>
+        
+        <div class="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <h4 class="text-base font-semibold text-gray-900 dark:text-white">Periode Berikutnya</h4>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Tanggal perpanjangan otomatis</p>
+          </div>
+          <div class="w-full sm:w-80">
+            <span id="next-billing" class="clincoo-shimmer text-sm text-gray-600 dark:text-gray-400">Memuat...</span>
+          </div>
+        </div>
+        
+        <div class="py-5">
+          <button onclick="window.location.href='../langganan/upgrade/'" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer">Ubah Paket</button>
+        </div>
+        <div class="py-5">
+          <h4 class="text-base font-semibold text-gray-900 dark:text-white">Histori Transaksi &amp; Langganan</h4>
+          <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5 mb-4">Riwayat transaksi dan pembayaran langganan Anda</p>
+          <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700/60">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-gray-50 dark:bg-slate-800/60 text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  <th class="px-3 py-2.5 font-medium">Tanggal</th>
+                  <th class="px-3 py-2.5 font-medium">ID Pesanan</th>
+                  <th class="px-3 py-2.5 font-medium">Kategori</th>
+                  <th class="px-3 py-2.5 font-medium">Metode</th>
+                  <th class="px-3 py-2.5 font-medium">Status</th>
+                  <th class="px-3 py-2.5 font-medium text-right">Jumlah</th>
+                </tr>
+              </thead>
+              <tbody id="history-body" class="divide-y divide-gray-100 dark:divide-slate-700/40 text-gray-900 dark:text-white">
+                <tr><td colspan="6" class="px-3 py-3"><span class="clincoo-shimmer">Memuat…</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    try { lucide.createIcons(); } catch (e) {} // Menginisiasi icon
+
+    let isEdited=false;
+    function showActionButtons(){
+        if(!isEdited){
+            isEdited=true;
+            const c=document.getElementById('action-buttons');
+            if (c) {
+                c.classList.remove('hidden');
+                c.classList.add('flex');
+                void c.offsetWidth;
+                c.classList.remove('opacity-0');
+                c.classList.add('opacity-100');
+            }
+        }
+    }
+    
+    function cancelChanges(){window.location.reload();}
+    
+    function saveChanges(){
+        const btn=document.querySelector('#action-buttons button.bg-blue-600');
+        if(!btn)return;
+        btn.innerText='Menyimpan...';
+        btn.disabled=true;
+        btn.classList.add('opacity-80','cursor-not-allowed');
+        setTimeout(()=>{
+            btn.innerText='Tersimpan!';
+            btn.classList.replace('bg-blue-600','bg-emerald-500');
+            btn.classList.replace('hover:bg-blue-700','hover:bg-emerald-600');
+            setTimeout(()=>window.location.reload(),800);
+        },800);
+    }
+    
+    document.addEventListener('DOMContentLoaded',()=>{
+        document.querySelectorAll('input,textarea,select').forEach(input=>{
+            input.addEventListener('input',showActionButtons);
+            input.addEventListener('change',showActionButtons);
+        });
+    });
+    
+    function toggleBillingPopover(e){
+        if(e) e.stopPropagation();
+        const popover = document.getElementById('billing-popover');
+        popover.classList.toggle('hidden');
+    }
+    
+    function selectBilling(text){
+        document.getElementById('billing-text').innerText = text;
+        document.getElementById('billing-text').classList.remove('clincoo-shimmer');
+        document.getElementById('billing-popover').classList.add('hidden');
+        const cycle = text.indexOf('Tahunan') === 0 ? 'Tahunan' : 'Bulanan';
+        fetch(SUB_API, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()), body: JSON.stringify({ billingCycle: cycle }) }).catch(function(){});
+    }
+    
+    // === Data langganan dari D1 (nyambung sama halaman upgrade) ===
+    const SUB_API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/subscription';
+    let subData = null;
+    const fmtID = function(n){ return Number(n).toLocaleString('id-ID'); };
+
+    // [19 Okt, arahan pemilik] label paket: cukup TEKS polos tanpa card —
+    // hitam/putih sesuai lawan bg. Tanpa animasi/kilau pada label paket (dihapus 19 Okt)
+    // Bisnis: mahkota statis nyangkol di
+    // ujung huruf terakhir. Starter: teks polos tenang.
+    function planCrownSvg(){
+        return '<svg class="plan-crown" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.22 8.34l5.318-1.43a.5.5 0 0 1 .596.656l-2.836 9.146A2 2 0 0 1 16.4 18.5H7.6a2 2 0 0 1-1.898-1.388L2.866 7.566a.5.5 0 0 1 .596-.656l5.318 1.43 2.382-5.074z"/></svg>';
+    }
+
+    function setVal(id, text){
+        const el = document.getElementById(id);
+        if(!el) return;
+        el.textContent = text;
+        el.classList.remove('clincoo-shimmer');
+    }
+
+    function fillSubscription(d){
+        const plan = d.plan || 'Starter';
+        const badge = document.getElementById('plan-badge');
+        if(badge){
+            badge.classList.remove('clincoo-shimmer');
+            const fancy = (plan === 'Pro' || plan === 'Bisnis') ? ' plan-fancy' : '';
+            badge.className = 'plan-label' + fancy;
+            badge.setAttribute('data-text', plan);
+            badge.innerHTML = plan + (plan === 'Bisnis' ? planCrownSvg() : '');
+        }
+        setVal('stat-proyek', (d.projectCount || 0) + ' / ' + (d.projectLimit || 0));
+        const fmtSize = function(b){ if(!b) return '0 B'; if(b >= 1073741824) return (b/1073741824).toFixed(2) + ' GB'; if(b >= 1048576) return (b/1048576).toFixed(1) + ' MB'; if(b >= 1024) return Math.round(b/1024) + ' KB'; return b + ' B'; };
+        setVal('stat-storage', fmtSize(d.storageBytes || 0) + ' / ' + fmtID(d.storageLimit || 0) + ' GB');
+        setVal('stat-bandwidth', (d.deployUsed || 0) + ' / ' + (d.deployLimit === null || d.deployLimit === undefined ? 'Tak terbatas' : (d.deployLimit || 0)));
+        setVal('stat-kolaborator', (d.collaboratorCount || 0) + ' / ' + (d.collaboratorLimit || 0));
+
+        const price = d.price || 0;
+        const bulanan = price > 0 ? 'Bulanan - ' + fmtID(price) + '/bulan' : 'Bulanan - Gratis';
+        const tahunan = price > 0 ? 'Tahunan - ' + fmtID(price * 10) + '/tahun (hemat 2 bulan)' : 'Tahunan - Gratis';
+        const opts = document.getElementById('billing-options');
+        if(opts){
+            opts.innerHTML =
+                '<button type="button" onclick="selectBilling(\'' + bulanan + '\')" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">' + bulanan + '</button>' +
+                '<button type="button" onclick="selectBilling(\'' + tahunan + '\')" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-t border-gray-100 dark:border-slate-700/60">' + tahunan + '</button>';
+        }
+        setVal('billing-text', (d.billingCycle === 'Tahunan') ? tahunan : bulanan);
+        setVal('payment-method', d.paymentMethod || 'QRIS');
+        let nbText = '-';
+        try { nbText = new Date(d.nextBillingDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }); } catch(e){}
+        setVal('next-billing', nbText);
+    }
+
+    function authHeaders() {
+        const hdr = {};
+        const tok = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || '';
+        if (tok) hdr['Authorization'] = 'Bearer ' + tok;
+        return hdr;
+    }
+    async function loadSubscription(){
+        try {
+            const res = await fetch(SUB_API, { headers: authHeaders(), cache: 'no-store' });
+            subData = await res.json();
+            if(!subData || subData.error) throw new Error(subData ? subData.error : 'no data');
+            fillSubscription(subData);
+            // Simpan cache plan — halaman Upgrade bisa tampil instan dgn data yang sama
+            try { localStorage.setItem('clincoo_subscription_cache', JSON.stringify({ plan: subData.plan || 'Starter', billingCycle: subData.billingCycle || 'Bulanan', ts: Date.now() })); } catch(e) {}
+        } catch(e) {
+            console.error('Gagal memuat langganan:', e);
+            fillSubscription({ plan: 'Starter', projectCount: 0, projectLimit: 3, storageUsed: 0, storageLimit: 5, bandwidthUsed: 0, bandwidthLimit: 10, collaboratorCount: 0, collaboratorLimit: 1, price: 0, billingCycle: 'Bulanan', nextBillingDate: new Date(Date.now() + 30 * 86400000).toISOString(), paymentMethod: 'QRIS' });
+        }
+    }
+    loadSubscription();
+
+    const WALLET_API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/wallet';
+    const QRIS_ORDER_API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/topup-qris';
+    async function loadHistory(){
+        const tbody = document.getElementById('history-body');
+        if(!tbody) return;
+        try {
+            const res = await fetch(QRIS_ORDER_API + '?action=history', { headers: authHeaders(), cache: 'no-store' });
+            const data = await res.json();
+            if (data && data.need_login) { tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400">Masuk untuk melihat riwayat transaksi</td></tr>'; return; }
+            const orders = (data && data.orders) || [];
+            if(!orders.length){
+                tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400">Belum ada transaksi</td></tr>';
+                return;
+            }
+            tbody.innerHTML = orders.map(function(o){
+                const plan = (o.amount == 49000) ? 'Pro' : (o.amount == 129000) ? 'Bisnis' : '';
+                const ket = plan ? ('Pembayaran langganan ' + plan) : 'Pembayaran langganan';
+                const idTxt = o.order_id || '-';
+                let tglTxt = o.created_at || '-';
+                try { tglTxt = new Date(String(o.created_at || '').replace(' ', 'T')).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch(e){}
+                let status = String(o.status || '').toLowerCase();
+                if (status === 'pending' && o.expires_at && !isNaN(new Date(o.expires_at).getTime()) && new Date(o.expires_at).getTime() < Date.now()) status = 'expired';
+                let stTxt = 'Menunggu', stCls = 'text-amber-600 dark:text-amber-400';
+                if (status === 'paid') { stTxt = 'Berhasil'; stCls = 'text-emerald-600 dark:text-emerald-400'; }
+                else if (status === 'expired' || status === 'expire') { stTxt = 'Kedaluwarsa'; stCls = 'text-gray-400'; }
+                else if (status === 'failed' || status === 'cancel' || status === 'cancelled') { stTxt = 'Dibatalkan'; stCls = 'text-gray-400'; }
+                const payLink = (status === 'pending') ? '<a href="/akun/langganan/checkout/qris/' + encodeURIComponent(idTxt) + '" class="block mt-0.5 text-[11px] font-medium text-gray-900 dark:text-white underline underline-offset-2 hover:text-gray-600 dark:hover:text-gray-300">Lanjutkan Pembayaran</a>' : '';
+                return '<tr>' +
+                    '<td class="px-3 py-2.5 whitespace-nowrap text-gray-500 dark:text-gray-400">' + tglTxt + '</td>' +
+                    '<td class="px-3 py-2.5 whitespace-nowrap"><span class="block font-mono text-[11px] text-gray-500 dark:text-gray-400">' + idTxt + '</span></td>' +
+                    '<td class="px-3 py-2.5"><span class="block">' + ket + '</span></td>' +
+                    '<td class="px-3 py-2.5 text-gray-500 dark:text-gray-400">QRIS</td>' +
+                    '<td class="px-3 py-2.5 whitespace-nowrap ' + stCls + '">' + stTxt + payLink + '</td>' +
+                    '<td class="px-3 py-2.5 text-right whitespace-nowrap text-gray-900 dark:text-white">Rp' + fmtID(o.total || o.amount || 0) + '</td>' +
+                '</tr>';
+            }).join('');
+        } catch(e) {
+            tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400">Gagal memuat riwayat transaksi</td></tr>';
+        }
+    }
+    loadHistory();
+
+    // Menutup popover ketika area di luar popover diklik
+    document.addEventListener('click', (e) => {
+        const popover = document.getElementById('billing-popover');
+        const btn = document.getElementById('billing-btn');
+        if (popover && !popover.classList.contains('hidden') && !btn.contains(e.target) && !popover.contains(e.target)) {
+            popover.classList.add('hidden');
+        }
+    });
+    
+    function toggleSwitch(idPrefix){
+        showActionButtons();
+        const bg=document.getElementById(idPrefix+'-bg');
+        const knob=document.getElementById(idPrefix+'-knob');
+        if(bg && knob) {
+            if(bg.classList.contains('bg-blue-500')){
+                bg.classList.replace('bg-blue-500','bg-gray-200');
+                bg.classList.add('dark:bg-slate-700');
+                knob.classList.remove('translate-x-5');
+            }else{
+                bg.classList.remove('bg-gray-200','dark:bg-slate-700');
+                bg.classList.add('bg-blue-500');
+                knob.classList.add('translate-x-5');
+            }
+        }
+    }
+  </script>
+
+    <script>/* clincoo-sw-register */
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../sw.js').catch(function () {}); }); }
+    </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

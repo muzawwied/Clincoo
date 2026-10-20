@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../js/auth-client.js?v=6"></script>
+  <script src="../../js/accent-init.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../assets/favicon.png">
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.png">
+    <title>Profil — Clincoo</title>
+    <meta name="description" content="Profil — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clincoo">
+    <meta property="og:title" content="Profil — Clincoo">
+    <meta property="og:description" content="Profil — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Profil — Clincoo">
+    <meta name="twitter:description" content="Profil — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+    <script src="https://unpkg.com/lucide@1.41.0"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+        @keyframes menuPop { from { opacity: 0; transform: translateY(-6px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        #theme-dropdown-menu, #accent-dropdown-menu { animation: menuPop .18s cubic-bezier(.2,.7,.3,1); transform-origin: top center; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        :root {
+            --accent-color: #000000;
+            --accent-hover: #1f2937;
+            --accent-text: #ffffff;
+        }
+        .bg-accent { background-color: var(--accent-color) !important; }
+        .text-accent { color: var(--accent-color) !important; }
+        .border-accent { border-color: var(--accent-color) !important; }
+        .hover\:bg-accent-hover:hover { background-color: var(--accent-hover) !important; }
+        body.dark-mode {
+            background-color: #000000;
+            color: #ffffff;
+        }
+        body.dark-mode header#main-header, body.dark-mode .header-bar {
+            background-color: #000000;
+            border-color: #0a0a0a;
+        }
+        body.dark-mode .bg-white {
+            background-color: #0a0a0a !important;
+        }
+        body.dark-mode .text-\[\#222222\] { color: #ffffff !important; }
+        body.dark-mode #sidebar-toggle,
+        body.dark-mode button[onclick="toggleSidebar()"],
+        body.dark-mode button[onclick="history.back()"],
+        body.dark-mode button[onclick="navigateTo(\'page-home\')"],
+        body.dark-mode .header-glass button[onclick],
+        body.dark-mode header button[onclick] {
+            background-color: #000000 !important;
+            border: 1.5px solid rgba(255,255,255,0.4) !important;
+            color: #ffffff !important;
+        }
+        body.dark-mode #sidebar-toggle svg,
+        body.dark-mode button[onclick="toggleSidebar()"] svg,
+        body.dark-mode button[onclick="history.back()"] svg,
+        body.dark-mode button[onclick="navigateTo(\'page-home\')"] svg,
+        body.dark-mode .header-glass button[onclick] svg,
+        body.dark-mode header button[onclick] svg {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+        }
+        body.dark-mode #sidebar-toggle:hover,
+        body.dark-mode button[onclick="toggleSidebar()"]:hover,
+        body.dark-mode button[onclick="history.back()"]:hover,
+        body.dark-mode button[onclick="navigateTo(\'page-home\')"]:hover,
+        body.dark-mode .header-glass button[onclick]:hover,
+        body.dark-mode header button[onclick]:hover {
+            background-color: #1a1a1a !important;
+            border-color: rgba(255,255,255,0.7) !important;
+        }
+        body.dark-mode .bg-\[\#F9FAFB\] {
+            background-color: #0a0a0a !important;
+        }
+        body.dark-mode .border-gray-100, body.dark-mode .border-gray-200 {
+            border-color: #222222 !important;
+        }
+        body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black {
+            color: #ffffff !important;
+        }
+        body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 {
+            color: #888888 !important;
+        }
+        body.dark-mode .text-gray-400 {
+            color: #666666 !important;
+        }
+        body.dark-mode svg.text-black {
+            color: #ffffff !important;
+        }
+        body.dark-mode .bg-gray-200, body.dark-mode .bg-gray-300 {
+            background-color: #222222 !important;
+        }
+        body.dark-mode .bg-gray-100, body.dark-mode .bg-gray-50 {
+            background-color: #0a0a0a !important;
+            border-color: #222222 !important;
+            color: #e0e0e0 !important;
+        }
+        body.dark-mode .hover\:bg-gray-50:hover, body.dark-mode .hover\:bg-gray-100:hover {
+            background-color: #0a0a0a !important;
+            color: #ffffff !important;
+        }
+        body.dark-mode .typing {
+            border-right-color: #ffffff;
+        }
+        body.dark-mode textarea {
+            color: #ffffff !important;
+        }
+        body.dark-mode textarea::placeholder {
+            color: #666666 !important;
+        }
+        body.dark-mode .option-popup, 
+        body.dark-mode #notif-menu, 
+        body.dark-mode #upload-menu, 
+        body.dark-mode #theme-dropdown-menu, 
+        body.dark-mode #accent-dropdown-menu {
+            background-color: #0a0a0a !important;
+            border-color: #222222 !important;
+            color: #ffffff !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5) !important;
+        }
+        body.dark-mode .group:hover .group-hover\:text-black {
+            color: #ffffff !important;
+        }
+        body.dark-mode .group:hover .group-hover\:text-gray-900 {
+            color: #ffffff !important;
+        }
+        body.dark-mode .group:hover .group-hover\:border-gray-200 {
+            border-color: #333333 !important;
+        }
+        body.dark-mode .bg-white.shadow-sm, body.dark-mode .bg-white.shadow-\[0_8px_30px_rgb\(0\,0\,0\,0\.08\)\] {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.3) !important;
+        }
+        body.dark-mode #file-preview-container > div {
+            background-color: #0a0a0a !important;
+            border-color: #222222 !important;
+            color: #e0e0e0 !important;
+        }
+        body.dark-mode .bg-black { background-color: #ffffff !important; color: #000000 !important; }
+        body.dark-mode .bg-black.text-white { color: #000000 !important; }
+        body.dark-mode .hover\:bg-gray-800:hover { background-color: #333333 !important; }
+        body.dark-mode .bg-accent { background-color: #ffffff !important; color: #000000 !important; }
+        body.dark-mode .bg-accent.text-white { color: #000000 !important; }
+        body.dark-mode .text-accent { color: #ffffff !important; }
+        body.dark-mode .border-accent { border-color: #ffffff !important; }
+        body.dark-mode header { background-color: #000000 !important; }
+       .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+       .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        textarea:focus {
+            outline: none!important;
+            box-shadow: none!important;
+        }
+       .typing {
+            display: inline-block;
+            border-right: 2px solid black;
+            white-space: nowrap;
+            overflow: hidden;
+            animation: blink 0.7s step-end infinite;
+        }
+        @keyframes blink {
+            50% { border-color: transparent; }
+        }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    /* auto-dark-fix v1 */
+    body.dark-mode .bg-gray-50\/80 { background-color: #141414 !important; }
+    body.dark-mode .bg-gray-200 { background-color: #262626 !important; }
+    body.dark-mode .bg-gray-300 { background-color: #333333 !important; }
+    body.dark-mode .bg-gray-400 { background-color: #444444 !important; }
+    body.dark-mode .border-gray-50 { border-color: #0a0a0a !important; }
+    body.dark-mode .border-gray-200\/50,
+    body.dark-mode .border-gray-200\/60,
+    body.dark-mode .border-gray-200\/70 { border-color: #222222 !important; }
+    body.dark-mode .border-gray-300 { border-color: #333333 !important; }
+    body.dark-mode .border-gray-400 { border-color: #444444 !important; }
+    body.dark-mode .bg-blue-50,
+    body.dark-mode .bg-blue-50\/50 { background-color: #0d1a26 !important; }
+    body.dark-mode .border-blue-100,
+    body.dark-mode .border-blue-200 { border-color: #1e3a52 !important; }
+    body.dark-mode .bg-red-50,
+    body.dark-mode .bg-red-50\/50 { background-color: #2a1414 !important; }
+    body.dark-mode .bg-red-100 { background-color: #3a1a1a !important; }
+    body.dark-mode .border-red-100,
+    body.dark-mode .border-red-200 { border-color: #4a2020 !important; }
+    body.dark-mode .bg-green-100 { background-color: #14301c !important; }
+    body.dark-mode .bg-white\/95 { background-color: rgba(10,10,10,0.95) !important; }
+    body.dark-mode .hover\:bg-gray-50:hover,
+    body.dark-mode .hover\:bg-gray-50\/50:hover,
+    body.dark-mode .hover\:bg-gray-50\/80:hover { background-color: #1a1a1a !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #262626 !important; }
+    body.dark-mode .hover\:bg-gray-200:hover,
+    body.dark-mode .hover\:bg-gray-200\/50:hover { background-color: #333333 !important; }
+    body.dark-mode .hover\:bg-blue-50:hover,
+    body.dark-mode .hover\:bg-blue-100:hover { background-color: #163247 !important; }
+    body.dark-mode .hover\:bg-red-50:hover,
+    body.dark-mode .hover\:bg-red-100:hover { background-color: #3a1a1a !important; }
+    body.dark-mode .hover\:border-gray-300:hover,
+    body.dark-mode .hover\:border-gray-400:hover,
+    body.dark-mode .hover\:border-gray-900:hover { border-color: #555555 !important; }
+    body.dark-mode .focus\:border-gray-400:focus,
+    body.dark-mode .focus\:border-gray-900:focus { border-color: #666666 !important; }
+    body.dark-mode input::placeholder, body.dark-mode textarea::placeholder { color: #666666 !important; }
+
+    </style>
+    <script>
+        // Tampilkan section profile (satu-satunya section di halaman ini)
+        (function() {
+            var pageId = 'page-profile';
+            document.addEventListener('DOMContentLoaded', function() {
+                var pages = document.querySelectorAll('.page-view');
+                pages.forEach(function(p) {
+                    if (p.id === pageId) {
+                        p.classList.remove('hidden');
+                        p.classList.add('flex');
+                    } else {
+                        p.classList.add('hidden');
+                        p.classList.remove('flex');
+                    }
+                });
+            });
+        })();
+    </script>
+<!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
+(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<2;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
+    </script>
+<!-- Google tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+<!-- End Google tag -->
+<script src="../../js/i18n-dict.js" defer></script>
+<script src="../../js/i18n.js" defer></script>
+</head>
+<body class="min-h-screen flex flex-col text-gray-900 pt-20">
+    <script>try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.body.classList.add('dark-mode');var a=localStorage.getItem('clincoo_accent')||'Hitam (Default)';var am={'Hitam (Default)':{m:'#000000',h:'#1f2937'},'Biru':{m:'#2563eb',h:'#1d4ed8'},'Hijau':{m:'#059669',h:'#047857'},'Ungu':{m:'#9333ea',h:'#7e22ce'},'Merah':{m:'#dc2626',h:'#b91c1c'}};var c=am[a]||am['Hitam (Default)'];document.documentElement.style.setProperty('--accent-color',c.m);document.documentElement.style.setProperty('--accent-hover',c.h);}catch(e){}</script>
+    <main id="page-profile" class="page-view hidden flex-1 w-full max-w-2xl md:max-w-5xl mx-auto pb-12 flex-col justify-start relative">
+        <button onclick="window.location.href='../../'" class="fixed top-3 left-3 w-10 h-10 flex items-center justify-center rounded-full bg-white backdrop-blur border border-gray-100 shadow-sm hover:bg-gray-50 transition-all cursor-pointer text-gray-700 hover:text-black z-50" aria-label="Kembali">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </button>
+        <div class="flex items-center justify-between px-7 pb-8 gap-5 relative">
+            <div class="flex flex-col">
+                <h2 id="profile-display-name" class="text-[24px] font-extrabold text-gray-900 tracking-tight">Muzawwied</h2>
+                <p id="profile-display-email" class="text-[14px] text-gray-500 font-medium mt-0.5">email pengguna</p>
+            </div>
+            <div class="relative z-10 shrink-0 group cursor-pointer" onclick="document.getElementById('profile-pic-input').click()">
+                <div id="profile-pic-display" class="w-24 h-24 bg-accent rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg transition-transform duration-300 group-hover:scale-105 bg-cover bg-center bg-no-repeat overflow-hidden">
+                    MZ
+                </div>
+                <div class="absolute bottom-0 right-0 bg-white p-2 rounded-full shadow-md border border-gray-100 transition-transform group-hover:scale-110">
+                    <i data-lucide="pencil" class="w-4 h-4 text-gray-900"></i>
+                </div>
+            </div>
+            <input type="file" id="profile-pic-input" class="hidden" accept="image/*">
+        </div>
+                <div class="w-full grid grid-cols-1 md:grid-cols-2 md:gap-6 items-start">
+            <div class="flex flex-col">
+                <h3 class="px-6 text-[12px] font-bold text-gray-400 mb-1.5 uppercase tracking-wider">Akun</h3>
+                <div class="flex flex-col w-full">
+                    <a href="../aktivitas/" class="w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group">
+                        <i data-lucide="rotate-ccw-clock" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                        <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Aktivitas</span>
+                    </a>                    <a href="../profile/personal/" class="w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group">
+                        <i data-lucide="user" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                        <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Personal</span>
+                    </a>                                        <a href="../favorit/" class="w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group">
+                        <i data-lucide="heart" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                        <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Favorit</span>
+                    </a>                </div>
+                <h3 class="px-6 pt-4 text-[12px] font-bold text-gray-400 mb-1.5 uppercase tracking-wider">Pengaturan</h3>
+                <div class="flex flex-col w-full">
+                    <a href="../langganan/upgrade/" class="w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group">
+                        <i data-lucide="crown" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                        <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Upgrade plan</span>
+                    </a>                    <a href="../langganan/" class="w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group">
+                        <i data-lucide="gem" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                                                <div class="flex flex-col items-start">
+                            <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Langganan</span>
+                            <span id="menu-plan-sub" class="text-[12px] text-gray-500 mt-0.5">Starter</span>
+                        </div>
+                    </a>                                    </div>
+            </div>
+            <div class="flex flex-col">
+                <h3 class="px-6 pt-6 md:pt-0 text-[12px] font-bold text-gray-400 mb-1.5 uppercase tracking-wider">Tampilan</h3>
+                <div class="flex flex-col w-full relative">
+                    <div class="relative w-full">
+                        <button id="theme-dropdown-btn" class="w-full flex items-center justify-between px-6 py-2 hover:bg-gray-50 transition-colors group cursor-pointer">
+                            <div class="flex items-center">
+                                <i data-lucide="sun" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                                <div class="flex flex-col items-start">
+                                    <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Penampilan</span>
+                                    <span id="theme-status-text" class="text-[12px] text-gray-500 mt-0.5"></span>
+                                </div>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+                        </button>
+                        <div id="theme-dropdown-menu" class="hidden absolute left-6 right-6 top-full mt-1 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-30">
+                            <button onclick="setTheme('Sistem (Default)')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 font-medium flex items-center justify-between cursor-pointer">
+                                <span>Sistem (Default)</span>
+                            </button>
+                            <button onclick="setTheme('Terang')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 font-medium flex items-center justify-between cursor-pointer">
+                                <span>Terang</span>
+                            </button>
+                            <button onclick="setTheme('Gelap')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 font-medium flex items-center justify-between cursor-pointer">
+                                <span>Gelap</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                    <div class="relative w-full">
+                        <button id="language-dropdown-btn" class="w-full flex items-center justify-between px-6 py-2 hover:bg-gray-50 transition-colors group cursor-pointer">
+                            <div class="flex items-center">
+                                <i data-lucide="globe" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                                <div class="flex flex-col items-start">
+                                    <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Bahasa</span>
+                                    <span id="language-status-text" class="text-[12px] text-gray-500 mt-0.5">Bahasa Indonesia</span>
+                                </div>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+                        </button>
+                        <div id="language-dropdown-menu" class="hidden absolute left-6 right-6 top-full mt-1 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-30">
+                            <button onclick="setLanguage('id')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 font-medium flex items-center justify-between cursor-pointer">
+                                <span>Bahasa Indonesia</span><i data-lucide="check" class="w-4 h-4 text-gray-900 lang-check hidden"></i>
+                            </button>
+                            <button onclick="setLanguage('en')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 font-medium flex items-center justify-between cursor-pointer">
+                                <span>English</span><i data-lucide="check" class="w-4 h-4 text-gray-900 lang-check hidden"></i>
+                            </button>
+                            <button onclick="setLanguage('es')" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 font-medium flex items-center justify-between cursor-pointer">
+                                <span>Español</span><i data-lucide="check" class="w-4 h-4 text-gray-900 lang-check hidden"></i>
+                            </button>
+                        </div>
+                    </div>
+                <h3 class="px-6 pt-4 text-[12px] font-bold text-gray-400 mb-1.5 uppercase tracking-wider">Lainnya</h3>
+                <div class="flex flex-col w-full">
+                    <a href="../kolaborasi/" class="w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group">
+                        <i data-lucide="user-plus" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                        <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Kolaborasi</span>
+                    </a>                    <a href="../profile/kontrol-data/" class="w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group">
+                        <i data-lucide="sliders-horizontal" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                        <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Kontrol data</span>
+                    </a>                    <a href="../laporkan-bug/" class="w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group">
+                        <i data-lucide="bug" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                        <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Laporkan bug</span>
+                    </a>                    <a href="../tentang/" class="w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group">
+                        <i data-lucide="info" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                        <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Tentang</span>
+                    </a>
+                    <a href="admin/" id="menu-panel-admin" style="display:none;" class="w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group">
+                        <i data-lucide="shield" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                        <div class="flex flex-col items-start">
+                            <span class="text-[15px] font-medium text-gray-800 group-hover:text-gray-900">Panel Admin</span>
+                            <span class="text-[12px] text-gray-500 mt-0.5">Data user & kontrol sistem</span>
+                        </div>
+                    </a>                </div>
+                <div class="flex flex-col w-full mt-3">
+                    <a href="javascript:void(0)" onclick="if(window.ClincooAuth) ClincooAuth.logout(event)" class="w-full flex items-center px-6 py-2.5 hover:bg-red-50 transition-colors active:bg-red-100 group">
+                        <i data-lucide="log-out" class="w-5 h-5 text-red-500 mr-4 group-hover:text-red-600 transition-colors"></i>
+                        <span class="text-[15px] font-medium text-red-500 group-hover:text-red-600">Keluar</span>
+                    </a>                </div>
+            </div>
+        </div>
+    </main>    <script>
+        try { lucide.createIcons(); } catch (e) {}
+        let currentThemeMode = 'Sistem (Default)';
+        let currentAccentName = 'Hitam (Default)';
+        try {
+            currentThemeMode = localStorage.getItem('clincoo_theme') || 'Sistem (Default)';
+            currentAccentName = localStorage.getItem('clincoo_accent') || 'Hitam (Default)';
+        } catch(e) {}
+        function applyTheme() {
+            const isDark = (currentThemeMode === 'Gelap') || 
+                           (currentThemeMode === 'Sistem (Default)' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            
+            if (isDark) {
+                document.body.classList.add('dark-mode');
+                document.documentElement.style.background='#0a0a0a';
+                document.documentElement.style.colorScheme='dark';
+            } else {
+                document.body.classList.remove('dark-mode');
+                document.documentElement.style.background='';
+                document.documentElement.style.colorScheme='light';
+            }
+        }
+        function setTheme(themeName) {
+            currentThemeMode = themeName;
+            try { localStorage.setItem('clincoo_theme', themeName); } catch(e) {}
+            const themeStatusText = document.getElementById('theme-status-text');
+            const themeMenu = document.getElementById('theme-dropdown-menu');
+            if (themeStatusText) {
+                themeStatusText.textContent = themeName;
+            }
+            applyTheme();
+            if (themeMenu) themeMenu.classList.add('hidden');
+        }
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+                if (currentThemeMode === 'Sistem (Default)') {
+                    applyTheme();
+                }
+            });
+        }
+        const profileInput = document.getElementById('profile-pic-input');
+        const profileDisplay = document.getElementById('profile-pic-display');
+        try {
+            const savedPic = localStorage.getItem('clincoo_profile_pic');
+            if(savedPic && profileDisplay) {
+                profileDisplay.style.backgroundImage = `url(${savedPic})`;
+                profileDisplay.textContent = '';
+            }
+        } catch(e) {}
+
+        // Sync name and email from localStorage (shared with ../profile/personal/)
+        try {
+            const savedName = localStorage.getItem('clincoo_fullname');
+            const savedEmail = localStorage.getItem('clincoo_email');
+            const nameEl = document.getElementById('profile-display-name');
+            const emailEl = document.getElementById('profile-display-email');
+            if (savedName && nameEl) nameEl.textContent = savedName;
+            if (savedEmail && emailEl) emailEl.textContent = savedEmail;
+            // Update avatar initial if name exists
+            if (savedName && profileDisplay && !profileDisplay.style.backgroundImage) {
+                profileDisplay.textContent = savedName.charAt(0).toUpperCase();
+            }
+        } catch(e) {}
+
+        // ===== SINKRONISASI D1: Profile = sumber utama; data selalu real-time dari D1 =====
+        var profileD1Seeded = false;
+        function applyProfileData(d) {
+            const nameEl = document.getElementById('profile-display-name');
+            const emailEl = document.getElementById('profile-display-email');
+            if (d.name) {
+                try { localStorage.setItem('clincoo_fullname', d.name); } catch(e) {}
+                if (nameEl && nameEl.textContent !== d.name) nameEl.textContent = d.name;
+            }
+            if (d.email) {
+                try { localStorage.setItem('clincoo_email', d.email); } catch(e) {}
+                if (emailEl && emailEl.textContent !== d.email) emailEl.textContent = d.email;
+            }
+            if (d.avatar) {
+                try { localStorage.setItem('clincoo_profile_pic', d.avatar); } catch(e) {}
+                if (profileDisplay) {
+                    profileDisplay.style.backgroundImage = 'url(' + d.avatar + ')';
+                    profileDisplay.textContent = '';
+                }
+            } else {
+                const nm = d.name || (nameEl ? nameEl.textContent : '');
+                if (nm && profileDisplay && !profileDisplay.style.backgroundImage) {
+                    profileDisplay.textContent = nm.charAt(0).toUpperCase();
+                }
+            }
+        }
+        // Subtext menu Langganan = nama paket aktif (bukan teks statis).
+        // 1) Tampilkan instan dari cache lokal (diisi halaman langganan/upgrade) — jangan tampilkan default 'Starter' palsu.
+        // 2) Baru fetch ulang PAKAI token (tanpa token, API balikin paket global default 'Starter').
+        // 3) Berhasil fetch = perbarui cache biar halaman lain ikut benar.
+        (function () {
+            var el = document.getElementById('menu-plan-sub');
+            function readCachedPlan() {
+                try {
+                    var keys = ['TM_SUB_CACHE_KEY', 'clincoo_subscription_cache'];
+                    var best = null;
+                    keys.forEach(function (k) {
+                        var c = JSON.parse(localStorage.getItem(k) || 'null');
+                        if (c && c.plan && (!best || (c.ts || 0) > (best.ts || 0))) best = c;
+                    });
+                    return best;
+                } catch (e) { return null; }
+            }
+            function setLabel(plan) { if (el && plan) el.textContent = plan; }
+            var _c = readCachedPlan(); setLabel(_c ? _c.plan : null);
+            async function refreshMenuPlanSub() {
+                try {
+                    var hdr = {};
+                    var tok = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || '';
+                    if (tok) hdr['Authorization'] = 'Bearer ' + tok;
+                    var d = await fetch('https://clincoo-be2.pages.dev/api/subscription', { headers: hdr }).then(function (r) { return r.json(); });
+                    if (d && d.plan) {
+                        setLabel(d.plan);
+                        try { localStorage.setItem('TM_SUB_CACHE_KEY', JSON.stringify({ plan: d.plan, billingCycle: d.billingCycle || 'Bulanan', ts: Date.now() })); localStorage.setItem('clincoo_subscription_cache', JSON.stringify({ plan: d.plan, billingCycle: d.billingCycle || 'Bulanan', ts: Date.now() })); } catch (e) {}
+                    }
+                } catch (e) {}
+            }
+            refreshMenuPlanSub();
+            window.addEventListener('storage', function (e) {
+                if (e.key === 'TM_SUB_CACHE_KEY' || e.key === 'clincoo_subscription_cache') {
+                    var c = readCachedPlan(); if (c) setLabel(c.plan);
+                }
+            });
+        })();
+
+        async function refreshProfileFromD1() {
+            try {
+                const d = await fetch('https://clincoo-be2.pages.dev/api/account-profile').then(function(r){ return r.json(); });
+                if (!d || d.error) return;
+                if (Object.keys(d).length > 0) {
+                    applyProfileData(d);
+                } else if (!profileD1Seeded) {
+                    // D1 masih kosong: jadikan data Profile saat ini sebagai acuan (seed sekali)
+                    profileD1Seeded = true;
+                    const payload = {};
+                    const nameEl = document.getElementById('profile-display-name');
+                    const emailEl = document.getElementById('profile-display-email');
+                    const nm = localStorage.getItem('clincoo_fullname') || (nameEl ? nameEl.textContent : '');
+                    const em = localStorage.getItem('clincoo_email') || (emailEl ? emailEl.textContent : '');
+                    const pc = localStorage.getItem('clincoo_profile_pic');
+                    if (nm) payload.name = nm.trim();
+                    if (em) payload.email = em.trim();
+                    if (pc && pc.length < 700000) payload.avatar = pc;
+                    if (Object.keys(payload).length > 0) {
+                        fetch('https://clincoo-be2.pages.dev/api/account-profile', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        }).catch(function(){});
+                    }
+                }
+            } catch(e) {}
+        }
+        refreshProfileFromD1();
+        setInterval(refreshProfileFromD1, 10000);
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) refreshProfileFromD1();
+        });
+
+        // Kompres avatar (maks 512px, JPEG) — sebelumnya foto >700KB diam2 tidak tersimpan ke D1
+        // lalu polling 10 detik menimpanya kembali dengan avatar lama (foto "kembali sendiri")
+        function compressAvatar(file) {
+            return new Promise(function(resolve) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var img = new Image();
+                    img.onload = function() {
+                        try {
+                            var maxDim = 512;
+                            var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+                            var canvas = document.createElement('canvas');
+                            canvas.width = Math.max(1, Math.round(img.width * scale));
+                            canvas.height = Math.max(1, Math.round(img.height * scale));
+                            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                            resolve(canvas.toDataURL('image/jpeg', 0.85));
+                        } catch (err) { resolve(e.target.result); }
+                    };
+                    img.onerror = function() { resolve(null); };
+                    img.src = e.target.result;
+                };
+                reader.onerror = function() { resolve(null); };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        if (profileInput) {
+            profileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                compressAvatar(file).then(function(base64) {
+                    if (!base64) return;
+                    try { localStorage.setItem('clincoo_profile_pic', base64); } catch(err) {}
+                    if (profileDisplay) {
+                        profileDisplay.style.backgroundImage = 'url(' + base64 + ')';
+                        profileDisplay.textContent = '';
+                    }
+                    fetch('https://clincoo-be2.pages.dev/api/account-profile', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ avatar: base64 })
+                    }).catch(function(){});
+                });
+            });
+        }
+        // Bahasa (i18n)
+        const LANG_NAMES = { id: 'Bahasa Indonesia', en: 'English', es: 'Español' };
+        function currentLanguage() {
+            try { const v = localStorage.getItem('clincoo_language'); if (v === 'en' || v === 'es' || v === 'id') return v; } catch (e) {}
+            return 'id';
+        }
+        function setLanguage(code) {
+            try { localStorage.setItem('clincoo_language', code === 'en' || code === 'es' ? code : 'id'); } catch (e) {}
+            location.reload(); // re-render seluruh UI dalam bahasa baru
+        }
+        (function initLanguageUI() {
+            const st = document.getElementById('language-status-text');
+            if (st) st.textContent = LANG_NAMES[currentLanguage()] || LANG_NAMES.id;
+            const menu = document.getElementById('language-dropdown-menu');
+            if (menu) {
+                const btns = menu.querySelectorAll('button');
+                btns.forEach(function (b, i) {
+                    const code = ['id', 'en', 'es'][i];
+                    const chk = b.querySelector('.lang-check');
+                    if (chk && code === currentLanguage()) chk.classList.remove('hidden');
+                });
+            }
+        })();
+        const themeBtn = document.getElementById('theme-dropdown-btn');
+        const themeMenu = document.getElementById('theme-dropdown-menu');
+        if (themeBtn && themeMenu) {
+            themeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                themeMenu.classList.toggle('hidden');
+            });
+        }
+        document.addEventListener('click', (e) => {
+            if (themeMenu && !themeMenu.contains(e.target) && themeBtn && !themeBtn.contains(e.target)) {
+                themeMenu.classList.add('hidden');
+            }
+        });
+        const langBtn = document.getElementById('language-dropdown-btn');
+        const langMenu = document.getElementById('language-dropdown-menu');
+        if (langBtn && langMenu) {
+            langBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                langMenu.classList.toggle('hidden');
+            });
+        }
+        document.addEventListener('click', (e) => {
+            if (langMenu && !langMenu.contains(e.target) && langBtn && !langBtn.contains(e.target)) {
+                langMenu.classList.add('hidden');
+            }
+        });
+    </script>
+
+    <script>/* clincoo-sw-register */
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../sw.js').catch(function () {}); }); }
+    </script>
+
+<script>
+(function(){
+  function showAdminMenu(){
+    var el = document.getElementById('menu-panel-admin');
+    if (el) el.style.display = '';
+  }
+  function check(){
+    try {
+      var base = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : '';
+      var token = window.ClincooAuth && ClincooAuth.getToken ? ClincooAuth.getToken() : null;
+      fetch(base + '/api/admin/ping', { headers: token ? { 'Authorization': 'Bearer ' + token } : {} })
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(d){ if (d && d.success && d.is_admin) showAdminMenu(); })
+        .catch(function(){});
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', check); else check();
+})();
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

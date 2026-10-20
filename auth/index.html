@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../js/accent-init.js"></script>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" sizes="64x64" href="../assets/favicon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="../manifest.json">
+    <link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+    <title>Masuk ke Clincoo</title>
+    <meta name="description" content="Masuk ke Clincoo — Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clincoo">
+    <meta property="og:title" content="Masuk ke Clincoo">
+    <meta property="og:description" content="Masuk ke Clincoo — Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/auth/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Masuk ke Clincoo">
+    <meta name="twitter:description" content="Masuk ke Clincoo — Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+
+    <!-- Tailwind & Icons -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+    <script src="https://unpkg.com/lucide@1.41.0"></script>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #ffffff; 
+            transition: background-color 0.3s ease, color 0.3s ease; 
+        }
+        
+        /* Tema Gelap Dasar */
+        body.dark-mode { 
+            background-color: #050505; 
+            color: #e0e0e0; 
+        }
+        
+        /* Menghilangkan panah pada input number & auto-fill styling */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus, 
+        input:-webkit-autofill:active{
+            -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+        body.dark-mode input:-webkit-autofill {
+            -webkit-text-fill-color: #fff !important;
+        }
+
+        /* Animasi */
+        .animate-fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(8px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        /* Loader */
+        .loader {
+            border: 2.5px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 2.5px solid #fff;
+            width: 18px;
+            height: 18px;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+        body.dark-mode .loader {
+            border: 2.5px solid rgba(0,0,0,0.2);
+            border-top: 2.5px solid #000;
+        }
+        .loader-lg {
+            border: 3px solid rgba(0,0,0,0.15);
+            border-radius: 50%;
+            border-top: 3px solid #000;
+            width: 40px;
+            height: 40px;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+        body.dark-mode .loader-lg {
+            border: 3px solid rgba(255,255,255,0.25);
+            border-top: 3px solid #fff;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* ==== Panel Hero 3D (split-screen login ala Cloudflare) ==== */
+        .hero-grid {
+            background-image: linear-gradient(to right, rgba(0,0,0,0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.045) 1px, transparent 1px);
+            background-size: 48px 48px;
+            -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+            mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+        }
+        body.dark-mode .hero-grid {
+            background-image: linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+        }
+        .hero-glow { background: radial-gradient(circle, rgba(120,120,120,0.14), transparent 65%); }
+        .hero-glow2 { background: radial-gradient(circle, rgba(120,120,120,0.10), transparent 65%); }
+        body.dark-mode .hero-glow { background: radial-gradient(circle, rgba(255,255,255,0.07), transparent 65%); }
+        body.dark-mode .hero-glow2 { background: radial-gradient(circle, rgba(255,255,255,0.05), transparent 65%); }
+        .scene { perspective: 900px; }
+        .cube { width: 130px; height: 130px; position: relative; transform-style: preserve-3d;  }
+        /* Muka kubus HARUS opaque supaya cincin sisi belakang beneran ketutup (ilusi Saturnus) */
+        .cube .face { position: absolute; inset: 0; border: 1.5px solid rgba(0,0,0,0.30); border-radius: 18px; background: #f2f2f2; }
+        .cube .f-top { background: #ffffff; }
+        .cube .f-front { background: #f7f7f7; }
+        .cube .f-back { background: #e8e8e8; }
+        .cube .f-left, .cube .f-right { background: #ededed; }
+        .cube .f-bottom { background: #e0e0e0; }
+        body.dark-mode .cube .face { border-color: rgba(255,255,255,0.22); background: #151515; }
+        body.dark-mode .cube .f-top { background: #1d1d1d; }
+        body.dark-mode .cube .f-front { background: #171717; }
+        body.dark-mode .cube .f-back { background: #101010; }
+        body.dark-mode .cube .f-left, body.dark-mode .cube .f-right { background: #121212; }
+        body.dark-mode .cube .f-bottom { background: #0c0c0c; }
+        .cube .f-front  { transform: rotateY(0deg) translateZ(65px); }
+        .cube .f-back   { transform: rotateY(180deg) translateZ(65px); }
+        .cube .f-left   { transform: rotateY(-90deg) translateZ(65px); }
+        .cube .f-right  { transform: rotateY(90deg) translateZ(65px); }
+        .cube .f-top    { transform: rotateX(90deg) translateZ(65px); }
+        .cube .f-bottom { transform: rotateX(-90deg) translateZ(65px); }
+        @media (prefers-reduced-motion: reduce) { .cube, .cube-sm, .ring, .hero-dot { animation: none; } }
+
+        /* Kubus utama: bungkus agar bisa mengambang naik-turun */
+        .cube-wrap { position: relative; transform-style: preserve-3d;  }
+        /* Putaran kubus lebih hidup: kemiringan berganti-ganti halus */
+        /* Bayangan elips di bawah kubus yang "bernapas" mengikuti float */
+        .cube-shadow { position: absolute; bottom: -52px; left: 50%; width: 130px; height: 28px; margin-left: -65px; border-radius: 9999px; background: radial-gradient(ellipse, rgba(0,0,0,0.22), transparent 70%); filter: blur(3px);  }
+        body.dark-mode .cube-shadow { background: radial-gradient(ellipse, rgba(0,0,0,0.9), transparent 70%); }
+        /* Kubus kecil pendamping: 2 buah, melayang + berputar berlawanan */
+        .cube-sm { width: 56px; height: 56px; position: absolute; transform-style: preserve-3d; }
+        .cube-sm .face { border-width: 1px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.30); background: #f2f2f2; }
+        body.dark-mode .cube-sm .face { border-color: rgba(255,255,255,0.22); background: #151515; }
+        .cube-sm .f-front  { transform: rotateY(0deg) translateZ(28px); }
+        .cube-sm .f-back   { transform: rotateY(180deg) translateZ(28px); }
+        .cube-sm .f-left   { transform: rotateY(-90deg) translateZ(28px); }
+        .cube-sm .f-right  { transform: rotateY(90deg) translateZ(28px); }
+        .cube-sm .f-top    { transform: rotateX(90deg) translateZ(28px); }
+        .cube-sm .f-bottom { transform: rotateX(-90deg) translateZ(28px); }
+        .cs-a { right: -108px; bottom: -70px;  }
+        .cube-xs { width: 40px; height: 40px; position: absolute; transform-style: preserve-3d; }
+        .cube-xs .face { border-width: 1px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.30); background: #f2f2f2; }
+        body.dark-mode .cube-xs .face { border-color: rgba(255,255,255,0.22); background: #151515; }
+        .cube-xs .f-front  { transform: rotateY(0deg) translateZ(20px); }
+        .cube-xs .f-back   { transform: rotateY(180deg) translateZ(20px); }
+        .cube-xs .f-left   { transform: rotateY(-90deg) translateZ(20px); }
+        .cube-xs .f-right  { transform: rotateY(90deg) translateZ(20px); }
+        .cube-xs .f-top    { transform: rotateX(90deg) translateZ(20px); }
+        .cube-xs .f-bottom { transform: rotateX(-90deg) translateZ(20px); }
+        .cs-b { left: -96px; top: -34px;  }
+        /* Cincin orbit ala Saturnus: dibagi 2 setengah supaya keliatan MENGELILINGI kubus,
+           bukan menembusnya. Setengah "back" (sisi jauh) digambar sebelum kubus,
+           setengah "front" (sisi dekat) digambar setelah kubus. */
+        .orbit-ring { position: absolute; top: 50%; left: 50%; border-radius: 9999px; }
+        .orbit-ring.back  { clip-path: inset(0 0 50% 0); }
+        .orbit-ring.front { clip-path: inset(50% 0 0 0); }
+        .ring-a { width: 230px; height: 230px; margin: -115px 0 0 -115px; border: 1.5px dashed rgba(0,0,0,0.30);  }
+        body.dark-mode .ring-a { border-color: rgba(255,255,255,0.30); }
+        .ring-b { width: 172px; height: 172px; margin: -86px 0 0 -86px; border: 1px solid rgba(0,0,0,0.14);  }
+        body.dark-mode .ring-b { border-color: rgba(255,255,255,0.14); }
+        /* Kartu mini melayang (ala Vercel marketing) */
+        .float-card { position: absolute; display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 10px; background: rgba(255,255,255,0.78); border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 10px 28px rgba(0,0,0,0.10); font-size: 11px; font-weight: 600; color: rgba(0,0,0,0.70); backdrop-filter: blur(4px); white-space: nowrap; }
+        body.dark-mode .float-card { background: rgba(22,22,22,0.78); border-color: rgba(255,255,255,0.10); color: rgba(255,255,255,0.72); box-shadow: 0 10px 28px rgba(0,0,0,0.55); }
+        .float-card svg { width: 13px; height: 13px; }
+        .fc-1 { top: -38px; left: -128px;  }
+        .fc-2 { top: 34px; right: -142px;  }
+        .fc-3 { bottom: -44px; left: -72px;  }
+        /* Titik-titik mengambang */
+        .hero-dot { position: absolute; border-radius: 9999px; background: rgba(0,0,0,0.30); }
+        body.dark-mode .hero-dot { background: rgba(255,255,255,0.32); }
+        .dot-1 { width: 8px; height: 8px; top: 18%; left: 16%;  }
+        .dot-2 { width: 5px; height: 5px; top: 30%; right: 20%;  }
+        .dot-3 { width: 6px; height: 6px; bottom: 24%; left: 24%;  }
+        .dot-4 { width: 4px; height: 4px; bottom: 32%; right: 26%;  }
+        .dot-5 { width: 5px; height: 5px; top: 55%; left: 10%;  }
+        /* Chip fitur */
+        .chip { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; padding: 6px 14px; border-radius: 9999px; border: 1px solid rgba(0,0,0,0.14); color: rgba(0,0,0,0.65); background: rgba(255,255,255,0.45); }
+        body.dark-mode .chip { border-color: rgba(255,255,255,0.14); color: rgba(255,255,255,0.60); background: rgba(255,255,255,0.03); }
+    </style>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+</head>
+<body class="min-h-screen flex flex-col md:flex-row selection:bg-gray-900 selection:text-white dark:selection:bg-white dark:selection:text-black">
+    <!-- Script Deteksi Tema (Langsung dieksekusi agar tidak flash) -->
+    <script>(function(){var t=localStorage.getItem("clincoo_theme");var isDark=(t==="Gelap")||((t==="Sistem (Default)"||!t)&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+
+    <!-- Layar loading proses OAuth: halaman polos + icon loading, agar tidak flash ke form login -->
+    <div id="oauth-loading" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-white dark:bg-black">
+        <span class="loader-lg"></span>
+    </div>
+
+    <!-- Dekorasi latar mobile: grid halus + glow + titik mengambang. -->
+    <div class="md:hidden fixed inset-x-0 top-0 h-[380px] overflow-hidden pointer-events-none -z-10">
+        <div class="relative w-full h-full">
+            <div class="hero-grid absolute inset-0 opacity-60"></div>
+            <div class="hero-glow absolute -top-20 -right-16 w-64 h-64 rounded-full blur-3xl"></div>
+            <div class="hero-glow2 absolute -top-6 -left-20 w-56 h-56 rounded-full blur-3xl"></div>
+            <div class="hero-dot dot-1"></div>
+            <div class="hero-dot dot-2"></div>
+            <div class="hero-dot dot-3"></div>
+        </div>
+    </div>
+
+    <!-- Logo pojok kiri atas -->
+    <a href="../" class="absolute top-5 left-5 sm:top-7 sm:left-7 z-20 group" aria-label="Beranda Clincoo">
+        <img src="../assets/logo-clincoo.png?v=20261007" alt="Clincoo" class="w-9 h-9 rounded-full group-hover:scale-105 transition-transform">
+    </a>
+
+    <div class="w-full md:w-1/2 flex flex-col justify-center min-h-screen relative z-10 animate-fade-in px-2 sm:px-8 xl:px-16">
+        <div class="w-full max-w-[480px] mx-auto">
+
+        <!-- Header Section -->
+        <div class="px-2 sm:px-8 pt-10 pb-6 text-center">
+            <h1 id="page-title" class="font-extrabold text-3xl text-gray-900 dark:text-white tracking-tight font-['Space_Grotesk']">Masuk ke Clincoo</h1>
+            <p id="page-desc" class="text-sm text-gray-500 dark:text-gray-400 mt-2.5">Masuk untuk mengakses akun Anda</p>
+        </div>
+
+        <div class="px-2 sm:px-8 pb-10 relative">
+
+            <div id="view-login" class="w-full animate-fade-in block">
+                <div class="grid gap-3.5">
+                    <button type="button" class="flex items-center justify-center gap-2.5 py-4 px-5 bg-gray-50/80 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-full font-semibold text-sm shadow-sm shadow-black/[0.02] dark:shadow-none transition-all active:scale-[0.98] dark:bg-white/[0.02] dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/[0.06]" onclick="startOAuth('google')">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                        </svg>
+                        Lanjutkan dengan Google
+                    </button>
+                    <button type="button" class="flex items-center justify-center gap-2.5 py-4 px-5 bg-gray-50/80 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-full font-semibold text-sm shadow-sm shadow-black/[0.02] dark:shadow-none transition-all active:scale-[0.98] dark:bg-white/[0.02] dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/[0.06]" onclick="startOAuth('github')">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                            <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
+                        </svg>
+                        Lanjutkan dengan GitHub
+                    </button>
+                </div>
+
+                                <!-- Info persetujuan -->
+                <p class="text-center text-xs text-gray-400 dark:text-gray-500 mt-4 leading-relaxed">Dengan melanjutkan, kamu menyetujui <a href="https://blog.clincoo.buzz/legal/syarat-ketentuan/" target="_blank" rel="noopener" class="underline hover:text-gray-600 dark:hover:text-gray-400">Syarat &amp; Ketentuan</a> dan <a href="https://blog.clincoo.buzz/legal/kebijakan-privasi/" target="_blank" rel="noopener" class="underline hover:text-gray-600 dark:hover:text-gray-400">Kebijakan Privasi</a> Clincoo.</p>
+
+</div>
+        </div>
+
+        </div>
+    </div>
+
+    <!-- Panel Kanan: Visual 3D ala Cloudflare (hanya tampil di layar lebar) -->
+    <div id="hero-panel" class="hidden md:flex w-1/2 relative items-center justify-center overflow-hidden bg-gray-50/60 dark:bg-[#0a0a0a] border-l border-gray-200/80 dark:border-white/10">
+        <div class="hero-grid absolute inset-0 opacity-70"></div>
+        <div class="hero-glow absolute -top-32 -right-32 w-[480px] h-[480px] rounded-full blur-3xl"></div>
+        <div class="hero-glow2 absolute -bottom-40 -left-24 w-[420px] h-[420px] rounded-full blur-3xl"></div>
+        <div class="hero-dot dot-1"></div>
+        <div class="hero-dot dot-2"></div>
+        <div class="hero-dot dot-3"></div>
+        <div class="hero-dot dot-4"></div>
+        <div class="hero-dot dot-5"></div>
+        <div class="relative z-10 flex flex-col items-center text-center px-12">
+            <div class="scene mb-12 relative">
+                <div class="orbit-ring ring-a back"></div>
+                <div class="orbit-ring ring-b back"></div>
+                <div class="cube-wrap">
+                    <div class="cube">
+                        <div class="face f-front"></div>
+                        <div class="face f-back"></div>
+                        <div class="face f-left"></div>
+                        <div class="face f-right"></div>
+                        <div class="face f-top"></div>
+                        <div class="face f-bottom"></div>
+                    </div>
+                    <div class="cube-shadow"></div>
+                </div>
+                <div class="orbit-ring ring-a front"></div>
+                <div class="orbit-ring ring-b front"></div>
+                <div class="cube-sm cs-a">
+                    <div class="face f-front"></div>
+                    <div class="face f-back"></div>
+                    <div class="face f-left"></div>
+                    <div class="face f-right"></div>
+                    <div class="face f-top"></div>
+                    <div class="face f-bottom"></div>
+                </div>
+                <div class="cube-xs cs-b">
+                    <div class="face f-front"></div>
+                    <div class="face f-back"></div>
+                    <div class="face f-left"></div>
+                    <div class="face f-right"></div>
+                    <div class="face f-top"></div>
+                    <div class="face f-bottom"></div>
+                </div>
+                <div class="float-card fc-1"><i data-lucide="rocket"></i><span>Deploy sukses</span></div>
+                <div class="float-card fc-2"><i data-lucide="git-branch"></i><span>main</span></div>
+                <div class="float-card fc-3"><i data-lucide="zap"></i><span>Build 2s</span></div>
+            </div>
+            <h2 class="font-['Space_Grotesk'] font-extrabold text-4xl text-gray-900 dark:text-white tracking-tight">Clincoo</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-3 max-w-xs leading-relaxed">Ruang kerja untuk membangun, mendeploy, dan berkolaborasi — semuanya dalam satu tempat.</p>
+            <div class="flex items-center justify-center gap-2 mt-6">
+                <span class="chip">Build</span>
+                <span class="chip">Deploy</span>
+                <span class="chip">Kolaborasi</span>
+            </div>
+        </div>
+    </div>
+
+            <!-- Sistem Modal -->
+    <div id="system-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
+        <div class="absolute inset-0 bg-black/40 dark:bg-black/70 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="bg-white dark:bg-[#111111] rounded-2xl p-6 w-full max-w-sm relative z-10 shadow-2xl border border-gray-100 dark:border-white/10 animate-fade-in text-center">
+            <div id="modal-icon-wrap" class="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4 mx-auto">
+                <i data-lucide="check-circle" class="w-6 h-6"></i>
+            </div>
+            <h3 id="modal-title" class="text-lg font-bold text-gray-900 dark:text-white mb-2"></h3>
+            <p id="modal-message" class="text-sm text-gray-500 dark:text-gray-400 mb-7 leading-relaxed"></p>
+            <button onclick="closeModal()" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl font-bold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-all shadow-sm active:scale-[0.98]">Tutup</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            try { lucide.createIcons(); } catch (e) {}
+        });
+
+
+        
+        // ==== KONFIG AUTH ====
+        const API_BASE = 'https://clincoo-be2.pages.dev/api/auth';
+        const TOKEN_KEY = 'clincoo_auth_token';
+        // ?next= ditangkap sekali di awal (sebelum replaceState menghapus query).
+        // Hanya path same-origin diterima (mulai '/', bukan '//' dan tanpa '://').
+        const CLINCOO_NEXT = (function () {
+            try {
+                var n = new URLSearchParams(window.location.search).get('next');
+                if (n && n.charAt(0) === '/' && n.charAt(1) !== '/' && n.indexOf('://') === -1) return n;
+            } catch (e) {}
+            return '';
+        })();
+        function clincooNextTarget(def) { return CLINCOO_NEXT || def || '../'; }
+        const GITHUB_CLIENT_ID = 'Ov23ctIBGjQBolR5PS2C';
+
+        function saveSession(data) {
+            try {
+                localStorage.setItem(TOKEN_KEY, data.token);
+                // simpan user lebih dulu -> data profil di bawah otomatis masuk namespace akun
+                localStorage.setItem('clincoo_auth_user', JSON.stringify(data.user || {}));
+                localStorage.setItem('clincoo_fullname', data.user.name || '');
+                localStorage.setItem('clincoo_email', data.user.email || '');
+                if (data.user.avatar_url) localStorage.setItem('clincoo_profile_pic', data.user.avatar_url);
+            } catch (e) {}
+        }
+
+
+        // Helper cookie untuk state OAuth (lebih tahan redirect lintas-domain daripada
+        // localStorage/sessionStorage di beberapa browser dengan anti bounce-tracking).
+        function setOauthStateCookie(val, provider) {
+            const payload = encodeURIComponent(JSON.stringify({ v: val, t: Date.now(), p: provider }));
+            document.cookie = 'clincoo_oauth_state=' + payload + '; Max-Age=900; Path=' + window.location.pathname + '; SameSite=Lax; Secure';
+        }
+        function getOauthStateCookie() {
+            const m = document.cookie.match(/(?:^|;\s*)clincoo_oauth_state=([^;]+)/);
+            return m ? decodeURIComponent(m[1]) : null;
+        }
+        function clearOauthStateCookie() {
+            document.cookie = 'clincoo_oauth_state=; Max-Age=0; Path=' + window.location.pathname + '; SameSite=Lax; Secure';
+        }
+
+        // ==== LOGIN SOSIAL (OAuth) ====
+        // redirect_uri WAJIB persis alamat terdaftar di GitHub OAuth App & Google Console.
+        // Halaman auth kini dilayani bersih di /auth/ (auth/index/), tapi callback
+        // OAuth tetap diarahkan ke alamat lama yang terdaftar (akun/auth.html), yang
+        // kini cuma pengalih ke sini — jadi tidak perlu daftar ulang di Google/GitHub.
+        function oauthRedirectUri() {
+            if (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+                return window.location.origin + window.location.pathname;
+            if (location.hostname === 'muzawwied.github.io')
+                return 'https://muzawwied.github.io/Clincoo./akun/auth.html';
+            // Dinamis ikut domain aktif (app.clincoo.buzz, clincoo.pages.dev, dst) —
+            // WAJIB semua domain yang dipakai didaftarkan di Google Console & GitHub OAuth App.
+            return location.origin + '/auth/';
+        }
+        // ==== ANTI-BOT Cloudflare Turnstile ====
+        // Dormant sampai admin mengisi TURNSTILE_SITEKEY + TURNSTILE_SECRET di env_vars.
+        // Begitu diisi: widget muncul otomatis & login wajib lolos verifikasi bot.
+        let _tsSiteKey = null, _tsWidgetId = null, _tsToken = null;
+        function setupTurnstile(siteKey) {
+            return new Promise((resolve) => {
+                _tsSiteKey = siteKey;
+                if (!siteKey) { resolve(null); return; }
+                const ensureBox = () => {
+                    let box = document.getElementById('ts-widget');
+                    if (!box) {
+                        box = document.createElement('div');
+                        box.id = 'ts-widget';
+                        box.className = 'mt-5 flex justify-center';
+                        const anchor = document.querySelector('[onclick^="startOAuth"]');
+                        (anchor && anchor.parentElement ? anchor.parentElement : document.body).appendChild(box);
+                    }
+                    return box;
+                };
+                const render = () => {
+                    try {
+                        if (_tsWidgetId !== null && window.turnstile) { try { window.turnstile.remove(_tsWidgetId); } catch (e2) {} _tsWidgetId = null; }
+                        _tsToken = null;
+                        _tsWidgetId = window.turnstile.render(ensureBox(), {
+                            sitekey: siteKey,
+                            callback: (t) => { _tsToken = t; resolve(t); },
+                            'expired-callback': () => { _tsToken = null; },
+                            'error-callback': () => resolve(null)
+                        });
+                    } catch (e) { resolve(null); }
+                };
+                if (window.turnstile) { render(); return; }
+                window.__tsReady = render;
+                const s = document.createElement('script');
+                s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=__tsReady';
+                s.onerror = () => resolve(null);
+                document.head.appendChild(s);
+            });
+        }
+
+        function startOAuth(provider) {
+            const redirectUri = oauthRedirectUri();
+            // State acak per sesi — cegah serangan login-CSRF (callback jahat memaksa
+            // korban login ke akun penyerang). Callback harus mengembalikan state ini.
+            const st = (crypto.randomUUID ? crypto.randomUUID() : ('s' + Date.now() + Math.random())).replace(/-/g, '');
+            // Cookie (bukan localStorage/sessionStorage) — beberapa browser (Samsung
+            // Internet, Firefox, Brave) punya fitur anti "bounce tracking" yang otomatis
+            // MENGHAPUS localStorage yang baru ditulis persis sebelum redirect ke domain
+            // lain (github.com/accounts.google.com), jadi state selalu hilang saat kembali.
+            // Cookie SameSite=Lax dikecualikan dari itu karena memang untuk alur ini.
+            // Payload menyimpan provider (p) juga -> deteksi provider saat callback,
+            // karena state sekarang acak, bukan literal 'github'/'google'.
+            setOauthStateCookie(st, provider);
+            if (provider === 'github') {
+                window.location.href = 'https://github.com/login/oauth/authorize?client_id=' + GITHUB_CLIENT_ID +
+                    '&scope=read:user%20user:email%20repo&state=' + st + '&redirect_uri=' + encodeURIComponent(redirectUri);
+            } else {
+                fetch(API_BASE + '/google')
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data.client_id) throw new Error(data.error || 'Client ID Google tidak tersedia.');
+                        window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + data.client_id +
+                            '&redirect_uri=' + encodeURIComponent(redirectUri) +
+                            '&response_type=code&scope=openid%20email%20profile&state=' + st + '&prompt=select_account';
+                    })
+                    .catch(err => {
+                        // [11 Okt] server deployment sedang ditingkatkan (config OAuth tidak terbaca):
+                        // arahkan SEKALI ke halaman tunggu + game offline; halaman itu otomatis kembali
+                        // ke Clincoo begitu sistem normal. Jangan loop: pakai penanda sesi.
+                        var _isDown = /belum dikonfigurasi|tidak tersedia|gangguan/i.test(String(err.message || ''));
+                        if (_isDown && !sessionStorage.getItem('clincoo_maint_bounce')) {
+                            sessionStorage.setItem('clincoo_maint_bounce', '1');
+                            window.location.href = '/maintenance.html';
+                            return;
+                        }
+                        showModal('Gagal Memulai Login Google', err.message, 'error');
+                    });
+            }
+        }
+
+        async function handleOAuthCallback(code, provider) {
+            const redirectUri = oauthRedirectUri();
+            window.history.replaceState({}, document.title, window.location.pathname);
+            try {
+                const send = (tok) => fetch(API_BASE + '/' + provider, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(Object.assign({ code: code, redirect_uri: redirectUri }, tok ? { turnstile_token: tok } : {}))
+                });
+                let res = await send(_tsToken);
+                let data = await res.json();
+                // Token Turnstile bisa kedaluwarsa saat user lama di halaman Google/GitHub -> minta baru & ulang
+                if (res.status === 403 && data && data.need_turnstile && _tsSiteKey) {
+                    const t = await setupTurnstile(_tsSiteKey);
+                    if (t) { res = await send(t); data = await res.json(); }
+                }
+                if (!res.ok || !data.token) throw new Error(data.error || 'Login ' + provider + ' gagal.');
+                saveSession(data);
+
+                setTimeout(() => { window.location.href = clincooNextTarget(); }, 400);
+            } catch (err) {
+                document.getElementById('oauth-loading').classList.add('hidden');
+                showModal('Login ' + (provider === 'github' ? 'GitHub' : 'Google') + ' Gagal', err.message, 'error');
+            }
+        }
+
+        // Handle callback OAuth & sesi aktif saat halaman dibuka
+        document.addEventListener('DOMContentLoaded', () => {
+            // Anti-bot: pramuat pengaturan Turnstile (diam bila belum dikonfigurasi)
+            fetch(API_BASE + '/google').then(r => r.json())
+                .then(d => { if (d && d.turnstile_sitekey) setupTurnstile(d.turnstile_sitekey); })
+                .catch(() => {});
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            const oauthError = params.get('error');
+
+            // ==== KONEKTOR GOOGLE DRIVE (halaman Plugin) ====
+            // OAuth Drive memakai redirect_uri /auth/ yang SUDAH terdaftar di Google
+            // Console. Cookie state khusus (Path=/) menandai callback ini sebagai alur
+            // KONEKTOR, bukan login Clincoo -> kirim code balik ke halaman Plugin.
+            // Konektor Google (Drive / Calendar) — cookie state khusus menandai alur KONEKTOR.
+            const connCookie = (function (names) {
+                for (const nm of names) {
+                    const m = document.cookie.match(new RegExp('(?:^|;\\s*)' + nm + '=([^;]+)'));
+                    if (m) return { name: nm, raw: decodeURIComponent(m[1]) };
+                }
+                return null;
+            })(['clincoo_drive_state', 'clincoo_calendar_state']);
+            if ((code || oauthError) && connCookie) {
+                let dc = null; try { dc = JSON.parse(connCookie.raw); } catch (e) {}
+                document.cookie = connCookie.name + '=; Max-Age=0; Path=/; SameSite=Lax; Secure';
+                window.history.replaceState({}, document.title, window.location.pathname);
+                const back = (dc && dc.back) || '/integrasi/';
+                const sep = back.indexOf('?') === -1 ? '?' : '&';
+                const pfx = connCookie.name.indexOf('calendar') !== -1 ? 'calendar' : 'drive';
+                window.location.replace(back + sep + (code ? pfx + '_code=' + encodeURIComponent(code) : pfx + '_error=' + encodeURIComponent(oauthError || 'dibatalkan')));
+                return;
+            }
+
+            if (code) {
+                // Deteksi provider dari state tersimpan (cookie). Tanpa validasi blokir:
+                // selalu lanjut login, tanpa popup pemblokir.
+                const savedRaw = getOauthStateCookie();
+                let savedProvider = 'github';
+                try {
+                    const parsed = JSON.parse(savedRaw || 'null');
+                    if (parsed && parsed.p === 'google') savedProvider = 'google';
+                } catch (e) {}
+                clearOauthStateCookie();
+                document.getElementById('oauth-loading').classList.remove('hidden');
+                handleOAuthCallback(code, savedProvider);
+            } else if (oauthError) {
+                showModal('Login Dibatalkan', 'Proses login dibatalkan atau gagal. Silakan coba lagi.', 'error');
+            }
+
+            // Kalau sesi masih aktif, langsung ke beranda
+            (async () => {
+                try {
+                    const token = localStorage.getItem(TOKEN_KEY);
+                    if (!token) return;
+                    const res = await fetch(API_BASE + '/me', { headers: { 'Authorization': 'Bearer ' + token } });
+                    if (res.ok) {
+                        const d = await res.json();
+                        if (d.authenticated) window.location.replace(clincooNextTarget());
+                    } else {
+                        localStorage.removeItem(TOKEN_KEY);
+                    }
+                } catch (e) {}
+            })();
+        });
+
+                // Fungsi Modal
+        function showModal(title, message, type = 'success') {
+            var modal = document.getElementById('system-modal');
+            if (!modal) return;
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').textContent = message;
+            var iconWrap = document.getElementById('modal-icon-wrap');
+            var icons = { success: 'check-circle', error: 'alert-circle', info: 'info' };
+            var colors = {
+                success: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+                error: 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400',
+                info: 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'
+            };
+            var t = colors[type] ? type : 'success';
+            iconWrap.className = 'w-12 h-12 rounded-full flex items-center justify-center mb-4 mx-auto ' + colors[t];
+            iconWrap.innerHTML = '<i data-lucide="' + icons[t] + '" class="w-6 h-6"></i>';
+            try { lucide.createIcons(); } catch (e) {}
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            var modal = document.getElementById('system-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    </script>
+
+    <script>/* clincoo-sw-register */
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../sw.js').catch(function () {}); }); }
+    </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
+
+<script>/* Clincoo Bug Beetle */(function(){var s=document.createElement("script");s.src=(location.hostname.indexOf("github.io")!==-1?"/Clincoo.":"")+"/js/bug-beetle.js?v=1";document.body.appendChild(s);}());</script>
+</body>
+</html>

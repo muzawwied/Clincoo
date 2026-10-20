@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../../js/auth-client.js?v=6"></script>
+    <script src="../../../js/accent-init.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
+    <link rel="manifest" href="../../../manifest.json">
+    <link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
+    <title>Billing — Clincoo</title>
+    <meta name="description" content="Billing — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clincoo">
+    <meta property="og:title" content="Billing — Clincoo">
+    <meta property="og:description" content="Billing — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Billing — Clincoo">
+    <meta name="twitter:description" content="Billing — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+    <script src="https://unpkg.com/lucide@1.41.0"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+        body { font-family: 'Inter', sans-serif; background-color: #ffffff; transition: background-color 0.3s ease, color 0.3s ease; }
+        :root { --accent-color: #000000; --accent-hover: #1f2937; --accent-text: #ffffff; }
+        .bg-accent { background-color: var(--accent-color) !important; }
+        .text-accent { color: var(--accent-color) !important; }
+        .border-accent { border-color: var(--accent-color) !important; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        body.dark-mode { background-color: #000000; color: #e0e0e0; }
+        body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #f0f0f0 !important; }
+        body.dark-mode .text-gray-700 { color: #b0b0b0 !important; }
+        body.dark-mode .text-gray-500, body.dark-mode .text-gray-600 { color: #888888 !important; }
+        body.dark-mode .text-gray-400 { color: #666666 !important; }
+        body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+        body.dark-mode .payment-logo-badge { background-color: #ffffff !important; }
+        body.dark-mode .bg-gray-50, body.dark-mode .bg-gray-100 { background-color: #222222 !important; }
+        body.dark-mode .border-gray-200, body.dark-mode .border-gray-100, body.dark-mode .border-gray-50 { border-color: #222222 !important; }
+        body.dark-mode .hover\:bg-gray-50:hover, body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
+        body.dark-mode input { background-color: #0a0a0a; color: #f0f0f0; border-color: #222222; }
+        body.dark-mode header, body.dark-mode .bg-\[\#ffffff\] { background-color: #000000 !important; border-color: #222222 !important; }
+        
+        body.dark-mode button[onclick="PathRouter.goBack()"] {
+            background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important;
+        }
+        body.dark-mode button[onclick="PathRouter.goBack()"]:hover {
+            background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important;
+        }
+        
+        .pay-method-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        .pay-method-card:active { transform: scale(0.98); }
+        
+        .pay-method-card input[type="radio"] { display: none; }
+        .pay-method-card .radio-indicator { 
+            width: 20px; height: 20px; border-radius: 50%; border: 2px solid #e5e7eb; 
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; 
+        }
+        body.dark-mode .pay-method-card .radio-indicator { border-color: #374151; }
+        .pay-method-card.selected .radio-indicator { border-color: #111827; background-color: #111827; }
+        .pay-method-card.selected .radio-indicator::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: white; }
+        body.dark-mode .pay-method-card.selected .radio-indicator { border-color: #ffffff; background-color: #ffffff; }
+        body.dark-mode .pay-method-card.selected .radio-indicator::after { background: #000000; }
+
+        .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        .shimmer-bar {
+        display: inline-block;
+        height: 1em;
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 6px;
+        width: 60px;
+        vertical-align: middle;
+    }
+    .shimmer-bar-sm { height: 0.75em; width: 40px; }
+    .shimmer-bar-md { height: 0.875em; width: 120px; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    body.dark-mode .shimmer-bar {
+        background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+        background-size: 200% 100%;
+    }
+    body.dark-mode .skel-dot { background-color: #141414 !important; border-color: #222222 !important; }
+    </style>
+    <script src="/js/path-router.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #ffffff; transition: background-color 0.3s ease, color 0.3s ease; }
+        :root { --accent-color: #000000; --accent-hover: #1f2937; --accent-text: #ffffff; }
+        .bg-accent { background-color: var(--accent-color) !important; }
+        .text-accent { color: var(--accent-color) !important; }
+        .border-accent { border-color: var(--accent-color) !important; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        body.dark-mode { background-color: #000000; color: #e0e0e0; }
+        body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #f0f0f0 !important; }
+        body.dark-mode .text-gray-700 { color: #b0b0b0 !important; }
+        body.dark-mode .text-gray-500, body.dark-mode .text-gray-600 { color: #888888 !important; }
+        body.dark-mode .text-gray-400 { color: #666666 !important; }
+        body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+        body.dark-mode .payment-logo-badge { background-color: #ffffff !important; }
+        body.dark-mode .bg-gray-50, body.dark-mode .bg-gray-100 { background-color: #222222 !important; }
+        body.dark-mode .border-gray-200, body.dark-mode .border-gray-100, body.dark-mode .border-gray-50 { border-color: #222222 !important; }
+        body.dark-mode .hover\:bg-gray-50:hover, body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
+        body.dark-mode input { background-color: #0a0a0a; color: #f0f0f0; border-color: #222222; }
+        body.dark-mode header, body.dark-mode .bg-\[\#ffffff\] { background-color: #000000 !important; border-color: #222222 !important; }
+        
+        body.dark-mode button[onclick="PathRouter.goBack()"] {
+            background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important;
+        }
+        body.dark-mode button[onclick="PathRouter.goBack()"]:hover {
+            background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important;
+        }
+        
+        .pay-method-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        .pay-method-card:active { transform: scale(0.98); }
+        
+        .pay-method-card input[type="radio"] { display: none; }
+        .pay-method-card .radio-indicator { 
+            width: 20px; height: 20px; border-radius: 50%; border: 2px solid #e5e7eb; 
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; 
+        }
+        body.dark-mode .pay-method-card .radio-indicator { border-color: #374151; }
+        .pay-method-card.selected .radio-indicator { border-color: #111827; background-color: #111827; }
+        .pay-method-card.selected .radio-indicator::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: white; }
+        body.dark-mode .pay-method-card.selected .radio-indicator { border-color: #ffffff; background-color: #ffffff; }
+        body.dark-mode .pay-method-card.selected .radio-indicator::after { background: #000000; }
+
+        .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        .shimmer-bar {
+        display: inline-block;
+        height: 1em;
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 6px;
+        width: 60px;
+        vertical-align: middle;
+    }
+    .shimmer-bar-sm { height: 0.75em; width: 40px; }
+    .shimmer-bar-md { height: 0.875em; width: 120px; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    body.dark-mode .shimmer-bar {
+        background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+        background-size: 200% 100%;
+    }
+    body.dark-mode .skel-dot { background-color: #141414 !important; border-color: #222222 !important; }
+    </style>
+<!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
+(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<3;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
+    </script>
+<!-- Google tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+<!-- End Google tag -->
+<script src="../../../js/i18n-dict.js" defer></script>
+<script src="../../../js/i18n.js" defer></script>
+</head>
+<body class="min-h-screen flex flex-col text-gray-900 bg-white">
+    <script>(function(){var t=localStorage.getItem("clincoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+
+    <div id="page-dompet" class="flex flex-col min-h-screen w-full">
+        <header class="bg-white flex justify-between items-center px-3 py-2 fixed top-0 w-full z-40 transition-colors">
+        <button onclick="history.back()" class="top-2 left-5 w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-100 hover:bg-gray-100 transition-all cursor-pointer text-gray-700 hover:text-black">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </button>
+        <h1 class="font-extrabold text-lg text-gray-900 tracking-tight">Billing</h1>
+        <div class="w-10"></div>
+    </header>
+        <main class="flex-1 w-full flex flex-col space-y-8 pt-20 pb-8">
+            <section class="flex flex-col items-center justify-center space-y-4 pt-6 pb-2 px-4 w-full">
+                <span class="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Saldo Clincoo</span>
+                <div class="py-1 flex flex-col items-center w-full">
+                    <div class="flex items-center justify-center gap-1.5">
+                        <span id="balance-skeleton" class="shimmer-bar" style="height:2rem; width:170px;"></span>
+                        <span class="text-5xl sm:text-6xl font-extrabold tracking-tight text-gray-900 font-['Space_Grotesk'] hidden" id="display-balance">0</span>
+
+                    </div>
+                    <p class="text-xs text-gray-500 mt-5 text-center max-w-sm leading-relaxed px-4">Dapat digunakan untuk semua pembayaran instan layanan Clincoo tanpa biaya admin.</p>
+                </div>
+            </section>
+
+            <section class="space-y-4 pt-4 w-full">
+                <div class="px-5"><h2 class="text-base font-bold text-gray-900 tracking-tight">Riwayat Transaksi</h2></div>
+                <div id="transaction-list" class="flex flex-col w-full border-t border-gray-100"></div>
+                <div id="empty-history" class="hidden flex-col items-center justify-center py-12 text-center w-full">
+                    <div class="mb-4">
+                        <i data-lucide="history" class="w-16 h-16 text-gray-300 dark:text-gray-600 stroke-[1.5]"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-gray-900 dark:text-white">Belum ada transaksi</h3>
+                    <p class="text-xs text-gray-500 mt-1 max-w-[220px]">Riwayat pengisian dan penggunaan saldo akan muncul di sini.</p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- // [18 Okt 2026, arahan pemilik] pop-up -> popover -->
+    <div id="system-modal" class="hidden fixed z-50 w-[min(20rem,calc(100vw-1.5rem))] bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] rounded-2xl shadow-2xl p-5 md:p-6 text-center relative" style="top:84px;left:50%;transform:translateX(-50%);">
+        <button type="button" onclick="closeModal()" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 dark:bg-[#1a1a1a] hover:bg-gray-100 dark:hover:bg-[#222] text-gray-500 dark:text-gray-400 transition-all">
+            <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+        <div id="modal-icon-wrap" class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 mx-auto">
+            <i data-lucide="check-circle" class="w-6 h-6"></i>
+        </div>
+        <h3 id="modal-title" class="text-base md:text-lg font-bold text-gray-900 dark:text-white mb-2"></h3>
+        <p id="modal-message" class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed"></p>
+        <button onclick="closeModal()" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-lg font-semibold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors shadow-sm active:scale-95">Tutup</button>
+    </div>
+
+    <script>
+        // Backend API — hosted on Cloudflare Pages
+        const API_BASE = ['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev' : '';
+        const WALLET_API_URL = API_BASE + '/api/wallet';
+        // Tanpa token, backend mengira user belum login -> saldo ClincooPay (mirroring) tidak pernah diambil.
+        function walletAuthHeaders(extra) {
+            const hdr = Object.assign({}, extra || {});
+            const tok = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || '';
+            if (tok) hdr['Authorization'] = 'Bearer ' + tok;
+            return hdr;
+        }
+        var TOPUP_API = API_BASE + '/api/topup';
+        let currentBalance = 0;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try { lucide.createIcons(); } catch (e) {}
+            showWalletSkeleton();
+            await initWalletFromD1();
+            renderBalance();
+            renderTransactions();
+        });
+
+        function showWalletSkeleton() {
+            const list = document.getElementById('transaction-list');
+            list.innerHTML = '';
+            const skel = document.createElement('div');
+            skel.id = 'wallet-skeleton';
+            for (let i = 0; i < 6; i++) {
+                skel.innerHTML += `
+                  <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+                    <div class="flex items-center gap-3">
+                      <div class="skel-dot w-10 h-10 rounded-full bg-gray-50 border border-gray-100 shrink-0"></div>
+                      <div class="space-y-2">
+                        <span class="shimmer-bar shimmer-bar-md"></span>
+                        <span class="shimmer-bar shimmer-bar-sm" style="width:150px;"></span>
+                      </div>
+                    </div>
+                    <span class="shimmer-bar shimmer-bar-sm shrink-0"></span>
+                  </div>`;
+            }
+            list.appendChild(skel);
+        }
+        function clearWalletSkeleton() {
+            const skel = document.getElementById('wallet-skeleton');
+            if (skel) skel.remove();
+        }
+
+        async function initWalletFromD1() {
+            try {
+                const res = await fetch(WALLET_API_URL, { headers: walletAuthHeaders() }).then(r => r.json());
+                currentBalance = res.balance || 0;
+            } catch(e) {}
+        }
+
+        function formatNumberOnly(num) { return Number(num).toLocaleString('id-ID'); }
+
+        function getMethodLogo(method) {
+            var m = (method || '').toLowerCase();
+            if (m.includes('qris')) return '<div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white border border-gray-100 dark:border-gray-700"><img src="../../assets/qris-wikimedia.svg" alt="QRIS" class="w-full h-full object-contain"></div>';
+            if (m.includes('bca')) return '<div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white border border-gray-200"><img src="../../assets/bank-logos/bca-wikimedia.svg" alt="BCA" class="w-full h-full object-contain"></div>';
+            if (m.includes('mandiri')) return '<div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white border border-gray-200"><img src="../../assets/bank-logos/mandiri-wikimedia.svg" alt="Mandiri" class="w-full h-full object-contain"></div>';
+            if (m.includes('bri')) return '<div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white border border-gray-200"><img src="../../assets/bank-logos/bri-logo.png" alt="BRI" class="w-full h-full object-contain"></div>';
+            if (m.includes('bni')) return '<div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white border border-gray-200"><img src="../../assets/bank-logos/bni-wikimedia.svg" alt="BNI" class="w-full h-full object-contain"></div>';
+            if (m.includes('gopay')) return '<div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white border border-gray-100 dark:border-gray-700"><img src="../../assets/ewallet-logos/gopay.svg" alt="GoPay" class="w-full h-full object-contain"></div>';
+            if (m.includes('dana')) return '<div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white border border-gray-100 dark:border-gray-700"><img src="../../assets/ewallet-logos/dana.png" alt="DANA" class="w-full h-full object-contain"></div>';
+            if (m.includes('ovo')) return '<div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white border border-gray-100 dark:border-gray-700"><img src="../../assets/ewallet-logos/ovo.svg" alt="OVO" class="w-full h-full object-contain"></div>';
+            if (m.includes('shopee')) return '<div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white border border-gray-100 dark:border-gray-700"><img src="../../assets/shopeepay-logo.svg" alt="ShopeePay" class="w-full h-full object-contain"></div>';
+            if (m.includes('linkaja')) return '<div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white border border-gray-100 dark:border-gray-700"><img src="../../assets/ewallet-logos/linkaja.svg" alt="LinkAja" class="w-full h-full object-contain"></div>';
+            if (m.includes('dompet')) return '<div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-gray-900 dark:bg-white"><i data-lucide="wallet" class="w-5 h-5 text-white dark:text-black"></i></div>';
+            if (m.includes('sub')) return '<div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-gray-900 dark:bg-white"><i data-lucide="crown" class="w-5 h-5 text-white dark:text-black"></i></div>';
+            
+            return '<div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-gray-100 dark:bg-gray-800"><i data-lucide="credit-card" class="w-5 h-5 text-gray-500"></i></div>';
+        }
+
+        async function renderBalance() {
+            try {
+                const res = await fetch(WALLET_API_URL, { headers: walletAuthHeaders() }).then(r => r.json());
+                currentBalance = res.balance || 0;
+            } catch(e) {}
+            const balSkeleton = document.getElementById('balance-skeleton');
+            if (balSkeleton) balSkeleton.remove();
+            const balEl = document.getElementById('display-balance');
+            balEl.classList.remove('hidden');
+            balEl.textContent = formatNumberOnly(currentBalance);
+        }
+
+        async function getTransactions() {
+            try {
+                const res = await fetch(WALLET_API_URL + '?action=transactions', { headers: walletAuthHeaders() }).then(r => r.json());
+                return res.transactions || [];
+            } catch(e) { return []; }
+        }
+
+        async function renderTransactions() {
+            const container = document.getElementById('transaction-list');
+            const emptyState = document.getElementById('empty-history');
+            const allTxs = await getTransactions();
+            clearWalletSkeleton();
+            if (allTxs.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                emptyState.style.display = '';
+                try { lucide.createIcons(); } catch (e) {}
+                return;
+            }
+            emptyState.classList.add('hidden');
+            emptyState.classList.remove('flex');
+            emptyState.style.display = 'none';
+            
+            var methodDisplayMap = {
+                'qris': 'QRIS', 'gopay': 'GoPay', 'ovo': 'OVO', 'dana': 'DANA', 'shopeepay': 'ShopeePay', 'linkaja': 'LinkAja',
+                'bca': 'BCA VA', 'mandiri': 'Mandiri VA', 'bri': 'BRI VA', 'bni': 'BNI VA'
+            };
+
+            container.innerHTML = allTxs.map(function(tx) {
+                var isIn = tx.type === 'in';
+                var logo = getMethodLogo(tx.method);
+                var txMethodRaw = (tx.method || '').toLowerCase();
+                var displayMethodName = methodDisplayMap[txMethodRaw] || tx.method || '';
+                var amountColor = isIn ? 'text-emerald-600' : 'text-gray-900 dark:text-white';
+                var sign = isIn ? '+' : '-';
+                var dateStr = '';
+                if (tx.created_at) {
+                    try {
+                        dateStr = new Date(tx.created_at.replace(' ', 'T') + 'Z').toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+                    } catch(e) { dateStr = tx.created_at; }
+                }
+                return '<div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">' +
+                    '<div class="flex items-center gap-3">' + logo +
+                    '<div><p class="text-sm font-semibold text-gray-900 dark:text-white">' + (tx.title || 'Transaksi') + '</p>' +
+                    '<p class="text-xs text-gray-500 mt-0.5">' + displayMethodName + (dateStr ? ' - ' + dateStr : '') + '</p></div></div>' +
+                    '<span class="text-sm font-bold ' + amountColor + '">' + sign + ' ' + formatNumberOnly(tx.amount) + '</span></div>';
+            }).join('');
+            try { lucide.createIcons(); } catch (e) {}
+        }
+
+        var _lastTxSnapshot = '';
+        async function refreshWalletLive() {
+            renderBalance();
+            try {
+                const txs = await getTransactions();
+                const snapshot = JSON.stringify(txs.map(function(t) { return t.id + '|' + t.amount + '|' + t.type + '|' + t.created_at; }));
+                if (snapshot !== _lastTxSnapshot) {
+                    _lastTxSnapshot = snapshot;
+                    await renderTransactions();
+                }
+            } catch(e) {}
+        }
+        var _walletLiveTimer = setInterval(refreshWalletLive, 5000);
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) { refreshWalletLive(); }
+        });
+
+
+        // [18 Okt 2026, arahan pemilik] pop-up -> popover
+        function positionPopover(pop, anchor) {
+          pop.classList.remove('hidden');
+          const r = anchor.getBoundingClientRect();
+          const pw = pop.offsetWidth, ph = pop.offsetHeight;
+          const vw = window.innerWidth, vh = window.innerHeight, m = 8;
+          let top = r.bottom + m;
+          if (top + ph > vh - m) top = Math.max(m, r.top - ph - m);
+          let left = r.left + (r.width / 2) - (pw / 2);
+          left = Math.min(Math.max(m, left), Math.max(m, vw - pw - m));
+          pop.style.top = top + 'px';
+          pop.style.left = left + 'px';
+          pop.style.transform = 'none';
+        }
+
+        function showModal(title, message, isError, anchor) {
+            var iconWrap = document.getElementById('modal-icon-wrap');
+            if (iconWrap) {
+                var icon = isError ? 'alert-circle' : 'check-circle';
+                var cls = isError ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600';
+                iconWrap.className = 'w-12 h-12 rounded-full ' + cls + ' flex items-center justify-center mb-4 mx-auto';
+                iconWrap.innerHTML = '<i data-lucide="' + icon + '" class="w-6 h-6"></i>';
+            }
+            document.getElementById('modal-title').textContent = title || '';
+            document.getElementById('modal-message').textContent = message || '';
+            var modal = document.getElementById('system-modal');
+            var btn = (anchor && anchor.nodeType === 1) ? anchor : (anchor && anchor.currentTarget ? anchor.currentTarget : null);
+            if (btn) {
+                positionPopover(modal, btn);
+            } else {
+                modal.classList.remove('hidden');
+                modal.style.top = '84px';
+                modal.style.left = '50%';
+                modal.style.transform = 'translateX(-50%)';
+            }
+            try { lucide.createIcons(); } catch (e) {}
+        }
+
+        function closeModal() {
+            var modal = document.getElementById('system-modal');
+            modal.classList.add('hidden');
+        }
+    </script>
+
+    <!-- // [18 Okt 2026, arahan pemilik] pop-up -> popover -->
+    <div id="modal-kirim" class="hidden fixed z-50 w-[min(24rem,calc(100vw-1.5rem))] bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] rounded-2xl shadow-2xl p-6 dark:text-white" style="top:0;left:0;">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="text-base font-bold text-gray-900 dark:text-white">Kirim Saldo</h3>
+            <button type="button" onclick="closeKirimModal()" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-50 dark:bg-[#111] border border-gray-100 dark:border-[#222] hover:bg-gray-100 dark:hover:bg-[#1a1a1a] transition-all text-gray-700 dark:text-gray-300">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <label class="text-xs font-semibold text-gray-500 mb-1.5 block">Email penerima (akun Clincoo)</label>
+                <input id="kirim-email" type="email" inputmode="email" placeholder="nama@email.com" class="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#222] text-sm text-gray-900 dark:text-white focus:outline-none focus:border-gray-400 dark:focus:border-gray-500">
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-gray-500 mb-1.5 block">Nominal (min 1.000)</label>
+                <input id="kirim-amount" type="number" inputmode="numeric" min="1000" placeholder="10000" class="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#222] text-sm text-gray-900 dark:text-white focus:outline-none focus:border-gray-400 dark:focus:border-gray-500">
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-gray-500 mb-1.5 block">Catatan (opsional)</label>
+                <input id="kirim-note" type="text" maxlength="140" placeholder="Untuk apa saldo ini" class="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#222] text-sm text-gray-900 dark:text-white focus:outline-none focus:border-gray-400 dark:focus:border-gray-500">
+            </div>
+            <p id="kirim-balance-info" class="text-xs text-gray-400"></p>
+            <button type="button" onclick="submitKirim()" id="kirim-submit" class="w-full py-3.5 rounded-full bg-gray-900 text-white dark:bg-white dark:text-black text-sm font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-all">
+                Kirim Sekarang
+            </button>
+        </div>
+    </div>
+
+    <!-- // [18 Okt 2026, arahan pemilik] pop-up -> popover -->
+    <div id="modal-terima" class="hidden fixed z-50 w-[min(24rem,calc(100vw-1.5rem))] bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] rounded-2xl shadow-2xl p-6 dark:text-white" style="top:0;left:0;">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="text-base font-bold text-gray-900 dark:text-white">Terima Saldo</h3>
+            <button type="button" onclick="closeTerimaModal()" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-50 dark:bg-[#111] border border-gray-100 dark:border-[#222] hover:bg-gray-100 dark:hover:bg-[#1a1a1a] transition-all text-gray-700 dark:text-gray-300">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-4">Bagikan email akun Clincoo Anda untuk menerima saldo dari pengguna lain, atau isi saldo langsung lewat ClincooPay.</p>
+        <div class="flex items-center gap-2 p-3.5 rounded-2xl bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#222] mb-4">
+            <div id="terima-email" class="flex-1 text-sm font-semibold text-gray-900 dark:text-white truncate">...</div>
+            <button type="button" onclick="copyOwnEmail()" class="px-3.5 py-2 rounded-full bg-gray-900 text-white dark:bg-white dark:text-black text-xs font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-all shrink-0">Salin</button>
+        </div>
+        <button type="button" onclick="closeTerimaModal()" class="w-full py-3.5 rounded-full bg-gray-900 text-white dark:bg-white dark:text-black text-sm font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-all">
+            Tutup
+        </button>
+    </div>
+
+    <script>
+    // [18 Okt 2026, arahan pemilik] pop-up -> popover
+    function openKirimModal(anchor) {
+        document.getElementById('kirim-email').value = '';
+        document.getElementById('kirim-amount').value = '';
+        document.getElementById('kirim-note').value = '';
+        document.getElementById('kirim-balance-info').textContent = 'Saldo Anda: ' + formatNumberOnly(currentBalance);
+        var m = document.getElementById('modal-kirim');
+        var btn = (anchor && anchor.nodeType === 1) ? anchor : (anchor && anchor.currentTarget ? anchor.currentTarget : null);
+        if (btn) {
+            positionPopover(m, btn);
+        } else {
+            m.classList.remove('hidden');
+            m.style.top = '84px';
+            m.style.left = '50%';
+            m.style.transform = 'translateX(-50%)';
+        }
+        try { lucide.createIcons(); } catch (e) {}
+    }
+    function closeKirimModal() {
+        var m = document.getElementById('modal-kirim');
+        m.classList.add('hidden');
+    }
+    function openTerimaModal(anchor) {
+        var myEmail = '';
+        try { myEmail = localStorage.getItem('clincoo_email') || ''; } catch (e) {}
+        document.getElementById('terima-email').textContent = myEmail || 'Email tidak ditemukan — login ulang.';
+        var m = document.getElementById('modal-terima');
+        var btn = (anchor && anchor.nodeType === 1) ? anchor : (anchor && anchor.currentTarget ? anchor.currentTarget : null);
+        if (btn) {
+            positionPopover(m, btn);
+        } else {
+            m.classList.remove('hidden');
+            m.style.top = '84px';
+            m.style.left = '50%';
+            m.style.transform = 'translateX(-50%)';
+        }
+        try { lucide.createIcons(); } catch (e) {}
+    }
+    function closeTerimaModal() {
+        var m = document.getElementById('modal-terima');
+        m.classList.add('hidden');
+    }
+
+    // [18 Okt 2026, arahan pemilik] pop-up -> popover
+    document.addEventListener('click', function(e) {
+        ['system-modal', 'modal-kirim', 'modal-terima'].forEach(function(id) {
+            var pop = document.getElementById(id);
+            if (pop && !pop.classList.contains('hidden')) {
+                if (!pop.contains(e.target) && !e.target.closest('[onclick*="Modal"]') && !e.target.closest('[onclick*="showModal"]')) {
+                    pop.classList.add('hidden');
+                }
+            }
+        });
+    }, true);
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            ['system-modal', 'modal-kirim', 'modal-terima'].forEach(function(id) {
+                var pop = document.getElementById(id);
+                if (pop) pop.classList.add('hidden');
+            });
+        }
+    });
+    function copyOwnEmail() {
+        var text = document.getElementById('terima-email').textContent.trim();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).catch(function() { window.prompt('Salin email Anda:', text); });
+        } else { window.prompt('Salin email Anda:', text); }
+    }
+    async function submitKirim() {
+        var email = document.getElementById('kirim-email').value.trim();
+        var amount = parseInt(document.getElementById('kirim-amount').value, 10);
+        var note = document.getElementById('kirim-note').value.trim();
+        var token = ''; try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
+        var btn = document.getElementById('kirim-submit');
+        if (!email || email.indexOf('@') < 1) { showModal('Kirim Gagal', 'Masukkan email penerima yang valid.'); return; }
+        if (!amount || amount < 1000) { showModal('Kirim Gagal', 'Minimal kirim saldo 1.000.'); return; }
+        if (amount > currentBalance) { showModal('Kirim Gagal', 'Saldo tidak cukup. Saldo Anda ' + formatNumberOnly(currentBalance) + '.'); return; }
+        btn.disabled = true; btn.textContent = 'Mengirim...';
+        try {
+            var res = await fetch(WALLET_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ action: 'transfer', to_email: email, amount: amount, note: note })
+            }).then(function(r) { return r.json(); });
+            if (res.success) {
+                currentBalance = res.balance;
+                closeKirimModal();
+                showModal('Kirim Berhasil', 'Saldo ' + formatNumberOnly(amount) + ' berhasil dikirim ke ' + (res.to || email) + '.');
+                renderBalance(); renderTransactions();
+            } else {
+                showModal('Kirim Gagal', res.error || 'Transaksi gagal. Coba lagi.');
+            }
+        } catch (e) {
+            showModal('Kirim Gagal', 'Tidak dapat terhubung ke server.');
+        } finally {
+            btn.disabled = false; btn.textContent = 'Kirim Sekarang';
+        }
+    }
+    </script>
+
+    <script>/* clincoo-sw-register */
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../sw.js').catch(function () {}); }); }
+    </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

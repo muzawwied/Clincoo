@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../js/auth-client.js?v=6"></script>
+    <script src="../../js/accent-init.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../assets/favicon.png">
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.png">
+    <title>Template Favorit — Clincoo</title>
+    <meta name="description" content="Template Favorit — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clincoo">
+    <meta property="og:title" content="Template Favorit — Clincoo">
+    <meta property="og:description" content="Template Favorit — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Template Favorit — Clincoo">
+    <meta name="twitter:description" content="Template Favorit — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+    <script src="https://unpkg.com/lucide@1.41.0"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        :root {
+            --accent-color: #000000;
+            --accent-hover: #1f2937;
+            --accent-text: #ffffff;
+        }
+
+        .bg-accent { background-color: var(--accent-color) !important; }
+        .text-accent { color: var(--accent-color) !important; }
+        .border-accent { border-color: var(--accent-color) !important; }
+        
+        body.dark-mode {
+            background-color: #000000;
+            color: #ffffff;
+        }
+        body.dark-mode .bg-white {
+            background-color: #0a0a0a !important;
+        }
+        body.dark-mode .text-\[\#222222\] { color: #ffffff !important; }
+        body.dark-mode #sidebar-toggle,
+        body.dark-mode button[onclick="toggleSidebar()"],
+        body.dark-mode button[onclick="history.back()"],
+        body.dark-mode button[onclick="navigateTo(\'page-home\')"],
+        body.dark-mode .header-glass button[onclick],
+        body.dark-mode header button[onclick] {
+            background-color: #000000 !important;
+            border: 1.5px solid rgba(255,255,255,0.4) !important;
+            color: #ffffff !important;
+        }
+        body.dark-mode #sidebar-toggle svg,
+        body.dark-mode button[onclick="toggleSidebar()"] svg,
+        body.dark-mode button[onclick="history.back()"] svg,
+        body.dark-mode button[onclick="navigateTo(\'page-home\')"] svg,
+        body.dark-mode .header-glass button[onclick] svg,
+        body.dark-mode header button[onclick] svg {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+        }
+        body.dark-mode #sidebar-toggle:hover,
+        body.dark-mode button[onclick="toggleSidebar()"]:hover,
+        body.dark-mode button[onclick="history.back()"]:hover,
+        body.dark-mode button[onclick="navigateTo(\'page-home\')"]:hover,
+        body.dark-mode .header-glass button[onclick]:hover,
+        body.dark-mode header button[onclick]:hover {
+            background-color: #1a1a1a !important;
+            border-color: rgba(255,255,255,0.7) !important;
+        }
+        body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black {
+            color: #ffffff !important;
+        }
+        body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 {
+            color: #888888 !important;
+        }
+        body.dark-mode .border-gray-100, body.dark-mode .border-gray-200 {
+            border-color: #222222 !important;
+        }
+        body.dark-mode .hover\:bg-gray-50:hover {
+            background-color: #0a0a0a !important;
+        }
+        body.dark-mode .bg-gray-50 {
+            background-color: #0a0a0a !important;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        body.dark-mode #system-modal .bg-white { background-color: #0a0a0a !important; }
+        body.dark-mode #system-modal .border-gray-100 { border-color: #222222 !important; }
+        body.dark-mode header { background-color: #000000 !important; border-color: #222222 !important; }
+        body.dark-mode .divide-gray-100 > * { border-color: #222222 !important; }
+        body.dark-mode .bg-gray-50 { background-color: #0a0a0a !important; }
+        body.dark-mode .text-gray-400 { color: #666666 !important; }
+        body.dark-mode ::-webkit-scrollbar-thumb { background: #222222; }
+
+        body.dark-mode .bg-black { background-color: #ffffff !important; color: #000000 !important; }
+        body.dark-mode .bg-black.text-white { color: #000000 !important; }
+        body.dark-mode .hover\:bg-gray-800:hover { background-color: #333333 !important; }
+        body.dark-mode .bg-accent { background-color: #ffffff !important; color: #000000 !important; }
+        body.dark-mode .bg-accent.text-white { color: #000000 !important; }
+        body.dark-mode .text-accent { color: #ffffff !important; }
+        body.dark-mode .border-accent { border-color: #ffffff !important; }
+    /* auto-dark-fix v1 */
+    body.dark-mode .bg-gray-50\/80 { background-color: #141414 !important; }
+    body.dark-mode .bg-gray-200 { background-color: #262626 !important; }
+    body.dark-mode .bg-gray-300 { background-color: #333333 !important; }
+    body.dark-mode .bg-gray-400 { background-color: #444444 !important; }
+    body.dark-mode .border-gray-50 { border-color: #0a0a0a !important; }
+    body.dark-mode .border-gray-200\/50,
+    body.dark-mode .border-gray-200\/60,
+    body.dark-mode .border-gray-200\/70 { border-color: #222222 !important; }
+    body.dark-mode .border-gray-300 { border-color: #333333 !important; }
+    body.dark-mode .border-gray-400 { border-color: #444444 !important; }
+    body.dark-mode .bg-blue-50,
+    body.dark-mode .bg-blue-50\/50 { background-color: #0d1a26 !important; }
+    body.dark-mode .border-blue-100,
+    body.dark-mode .border-blue-200 { border-color: #1e3a52 !important; }
+    body.dark-mode .bg-red-50,
+    body.dark-mode .bg-red-50\/50 { background-color: #2a1414 !important; }
+    body.dark-mode .bg-red-100 { background-color: #3a1a1a !important; }
+    body.dark-mode .border-red-100,
+    body.dark-mode .border-red-200 { border-color: #4a2020 !important; }
+    body.dark-mode .bg-green-100 { background-color: #14301c !important; }
+    body.dark-mode .bg-white\/95 { background-color: rgba(10,10,10,0.95) !important; }
+    body.dark-mode .hover\:bg-gray-50:hover,
+    body.dark-mode .hover\:bg-gray-50\/50:hover,
+    body.dark-mode .hover\:bg-gray-50\/80:hover { background-color: #1a1a1a !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #262626 !important; }
+    body.dark-mode .hover\:bg-gray-200:hover,
+    body.dark-mode .hover\:bg-gray-200\/50:hover { background-color: #333333 !important; }
+    body.dark-mode .hover\:bg-blue-50:hover,
+    body.dark-mode .hover\:bg-blue-100:hover { background-color: #163247 !important; }
+    body.dark-mode .hover\:bg-red-50:hover,
+    body.dark-mode .hover\:bg-red-100:hover { background-color: #3a1a1a !important; }
+    body.dark-mode .hover\:border-gray-300:hover,
+    body.dark-mode .hover\:border-gray-400:hover,
+    body.dark-mode .hover\:border-gray-900:hover { border-color: #555555 !important; }
+    body.dark-mode .focus\:border-gray-400:focus,
+    body.dark-mode .focus\:border-gray-900:focus { border-color: #666666 !important; }
+    body.dark-mode input::placeholder, body.dark-mode textarea::placeholder { color: #666666 !important; }
+    body.dark-mode .option-popup {
+        background-color: #0a0a0a !important;
+        border-color: #222222 !important;
+        color: #ffffff !important;
+    }
+    body.dark-mode .option-popup button:hover {
+        background-color: #1a1a1a !important;
+    }
+    </style>
+    
+<!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
+(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<2;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
+    </script>
+<!-- Google tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+<!-- End Google tag -->
+<script src="../../js/i18n-dict.js" defer></script>
+<script src="../../js/i18n.js" defer></script>
+</head>
+<body class="min-h-screen flex flex-col text-gray-900 pt-16">
+    <script>(function(){var t=localStorage.getItem("clincoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+    <header class="bg-white flex justify-between items-center px-3 py-2 fixed top-0 w-full z-40 transition-colors">
+        <button onclick="history.back()" class="top-2 left-5 w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-100 hover:bg-gray-100 transition-all cursor-pointer text-gray-700 hover:text-black">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </button>
+        <h1 class="font-extrabold text-lg text-gray-900 tracking-tight">Favorit</h1>
+        <div class="w-10"></div>
+    </header>
+    <main class="flex-1 w-full px-4 pt-4 pb-8 flex flex-col">
+        <div id="favorit-list" class="flex flex-col gap-5 w-full"></div>
+        <div id="empty-state" class="flex flex-col items-center justify-center py-16 text-center" style="display:none">
+            <div class="w-16 h-16 rounded-full flex items-center justify-center mb-4">
+                <i data-lucide="heart" class="w-10 h-10 text-gray-400"></i>
+            </div>
+            <h3 class="text-sm font-bold text-gray-900">Belum ada template favorit</h3>
+            <p class="text-xs text-gray-500 mt-1 max-w-[250px]">Simpan template dari beranda lewat menu titik tiga pada kartu template, lalu template favoritmu akan tampil <a href="../../" class="text-blue-600 hover:underline">di sini</a>.</p>
+        </div>
+    </main><script src="../../js/templates-data.js?v=20261017"></script>
+    
+    <script>
+        function toggleOption(btn, event) {
+            event.preventDefault();
+            event.stopPropagation();
+            document.querySelectorAll('.option-popup').forEach(popup => {
+                if (popup !== btn.nextElementSibling) {
+                    popup.classList.remove('opacity-100', 'visible', 'translate-y-0');
+                    popup.classList.add('opacity-0', 'invisible', 'translate-y-2');
+                }
+            });
+            const popup = btn.nextElementSibling;
+            if (popup.classList.contains('opacity-100')) {
+                popup.classList.remove('opacity-100', 'visible', 'translate-y-0');
+                popup.classList.add('opacity-0', 'invisible', 'translate-y-2');
+            } else {
+                popup.classList.remove('opacity-0', 'invisible', 'translate-y-2');
+                popup.classList.add('opacity-100', 'visible', 'translate-y-0');
+            }
+        }
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('.option-popup') && !e.target.closest('button[onclick^="toggleOption"]')) {
+                document.querySelectorAll('.option-popup').forEach(popup => {
+                    popup.classList.remove('opacity-100', 'visible', 'translate-y-0');
+                    popup.classList.add('opacity-0', 'invisible', 'translate-y-2');
+                });
+            }
+        });
+
+        function refreshFavoriteList() {
+            const list = document.getElementById('favorit-list');
+            const emptyState = document.getElementById('empty-state');
+            if (!list) return;
+            const favs = ClincooTemplates.getFavorites();
+            list.innerHTML = '';
+            favs.forEach(key => {
+                const t = ClincooTemplates.list[key];
+                if (!t) return;
+                const card = document.createElement('div');
+                card.className = 'w-full border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group flex flex-col gap-4 relative opacity-0 translate-y-2 transition-all';
+                card.innerHTML = `
+                    <div class="w-full aspect-video bg-[#F9FAFB] rounded-xl border border-gray-100 group-hover:border-gray-200 transition-colors overflow-hidden p-4">
+                        <img src="../../assets/templates/${key}.webp?v=2" alt="Pratinjau ${t.name}" class="w-full h-full object-cover rounded-lg group-hover:scale-[1.02] transition-transform duration-300">
+                    </div>
+                    <div class="flex justify-between items-end gap-3 w-full">
+                        <div class="flex flex-col flex-1 overflow-hidden">
+                            <h3 class="font-semibold text-gray-900 text-base group-hover:text-black truncate">${t.name}</h3>
+                            <p class="text-sm text-gray-500 mt-1 leading-relaxed line-clamp-2">${t.desc}</p>
+                        </div>
+                        <div class="relative shrink-0">
+                            <button class="p-1.5 text-gray-400 hover:text-black hover:bg-gray-50 rounded-lg transition-colors" onclick="toggleOption(this, event)" aria-label="Opsi template">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+                            </button>
+                            <div class="option-popup absolute bottom-full right-0 mb-2 w-44 bg-white border border-gray-100 rounded-xl shadow-[0_4px_20px_rgb(0,0,0,0.08)] py-2 opacity-0 invisible translate-y-2 transition-all duration-200 z-20 origin-bottom-right">
+                                <button onclick="useTemplate('${key}', event)" class="w-full text-left px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Gunakan Template</button>
+                                <button onclick="previewTemplate('${key}', event)" class="w-full text-left px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Lihat Preview</button>
+                                <button onclick="ClincooTemplates.unfavorite('${key}', event)" class="w-full text-left px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">Hapus dari Favorit</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(card);
+                setTimeout(() => card.classList.remove('opacity-0', 'translate-y-2'), 50);
+            });
+            if (emptyState) emptyState.style.display = favs.length ? 'none' : 'flex';
+            try { lucide.createIcons(); } catch (e) {}
+        }
+        document.addEventListener('DOMContentLoaded', refreshFavoriteList);
+        window.addEventListener('storage', function (ev) { if (ev.key === 'clincoo_template_favorites') refreshFavoriteList(); });
+        window.addEventListener('pageshow', function () { refreshFavoriteList(); });
+    </script>
+<script>
+(function(){
+  var seg=window.location.pathname.split('/').filter(Boolean);var path=(seg.pop()||'').replace(/\.html$/,'');
+  var links=document.querySelectorAll('.sidebar-nav-link');
+  links.forEach(function(link){
+    var href=link.getAttribute('href')||'';var hrefSeg=(href.split('?')[0].split('/').filter(Boolean).pop()||'').replace(/\.html$/,'');
+    if(hrefSeg===path){
+      link.classList.add('bg-gray-50','text-gray-900');
+      link.classList.remove('hover:bg-gray-50','text-gray-700');
+      var icon=link.querySelector('i');
+      if(icon){
+        icon.className=icon.className.replace('ph ph-','ph-fill ph-');
+        icon.classList.remove('text-gray-500');
+        icon.classList.add('text-gray-900');
+      }
+      var svg=link.querySelector('svg');
+      if(svg){
+        svg.classList.remove('text-gray-500');
+        svg.classList.add('text-gray-900');
+      }
+    }
+  });
+})();
+</script>
+
+    <script>/* clincoo-sw-register */
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../sw.js').catch(function () {}); }); }
+    </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

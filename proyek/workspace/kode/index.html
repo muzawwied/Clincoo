@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+
+  <script src="../../../js/auth-client.js?v=6"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clincoo - Lihat Kode</title>
+    <meta property="og:title" content="Clincoo - Lihat Kode">
+    <meta property="og:description" content="Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/proyek/workspace/kode/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Clincoo - Lihat Kode">
+    <meta name="twitter:description" content="Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
+    <link rel="manifest" href="../../../manifest.json">
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#141416';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+<script>/* embed=1: kode page di dalam split view chat */(function(){try{if(/(^|[?&])embed=1(&|$)/.test(location.search)){document.documentElement.classList.add('embed-mode');}}catch(e){}})();</script>
+<style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;font-size:13px;
+  background:#f4f4f6;color:#24242a;display:flex;flex-direction:column;
+}
+body.dark-mode{background:#141416;color:#d6d6dc}
+
+/* ===== Header ramping ===== */
+.kd-header{
+  position:sticky;top:0;z-index:20;flex-shrink:0;
+  display:flex;align-items:center;gap:10px;
+  height:52px;padding:0 12px;
+  background:#ececef;border-bottom:1px solid #d8d8de;
+}
+body.dark-mode .kd-header{background:#1a1a1d;border-bottom-color:#2c2c33}
+.kd-back{
+  flex-shrink:0;width:38px;height:38px;border-radius:999px;
+  display:flex;align-items:center;justify-content:center;
+  background:#fff;border:1px solid #d8d8de;color:#24242a;cursor:pointer;transition:.15s;
+}
+.kd-back:hover{background:#e4e4e8}
+body.dark-mode .kd-back{background:#202024;border-color:#3a3a42;color:#d6d6dc}
+body.dark-mode .kd-back:hover{background:#26262b}
+.kd-back svg{width:18px;height:18px}
+.kd-meta{min-width:0;flex:1}
+.kd-fname{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kd-sub{font-size:11.5px;color:#5c5c66;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.dark-mode .kd-sub{color:#9a9aa4}
+.kd-btn{
+  flex-shrink:0;border:none;cursor:pointer;font-family:inherit;font-weight:600;font-size:12.5px;
+  height:34px;padding:0 16px;border-radius:999px;transition:.15s;
+  background:#1a1a1e;color:#fff;
+}
+.kd-btn:hover{opacity:.85}
+.kd-btn.ghost{background:transparent;border:1px solid rgba(0,0,0,.15);color:inherit}
+.kd-btn.ghost:hover{background:rgba(0,0,0,.05)}
+body.dark-mode .kd-btn{background:#e9e9ee;color:#141416}
+body.dark-mode .kd-btn.ghost{background:transparent;border:1px solid #3a3a42;color:#d6d6dc}
+body.dark-mode .kd-btn.ghost:hover{background:#26262b}
+
+/* ===== Area editor ===== */
+.kd-main{flex:1;min-height:0;position:relative;display:flex}
+#kd-editor{flex:1;min-width:0}
+/* fallback tanpa Monaco: teks polos */
+.kd-fallback{display:none;flex:1;min-width:0}
+.kd-fallback.on{display:block}
+.kd-code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:13px;line-height:1.55;padding:16px;min-height:100%;
+  white-space:pre;overflow:auto;tab-size:2;
+}
+.kd-edit{
+  width:100%;height:100%;min-height:60vh;display:none;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:13px;line-height:1.55;padding:16px;
+  border:none;outline:none;resize:none;
+  background:transparent;color:inherit;
+  white-space:pre;overflow:auto;
+}
+.kd-edit.on{display:block}
+
+.kd-empty{padding:60px 20px;text-align:center;color:#5c5c66;flex:1}
+.kd-empty h2{font-size:15px;margin-bottom:8px;color:inherit}
+body.dark-mode .kd-empty{color:#9a9aa4}
+
+/* ===== Preview media (gambar/audio/video/pdf) ===== */
+.kd-preview{display:none;flex:1;min-width:0;align-items:center;justify-content:center;overflow:auto;padding:24px;background:#ececef}
+body.dark-mode .kd-preview{background:#1a1a1d}
+.kd-preview.on{display:flex}
+.kd-preview img{max-width:100%;max-height:100%;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.18);background:#fff}
+.kd-preview audio{width:min(420px,90%)}
+.kd-preview video{max-width:100%;max-height:100%;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.18)}
+.kd-preview iframe{width:100%;height:100%;border:none;border-radius:10px;background:#fff}
+
+/* ===== Status bar minimalis ===== */
+.kd-status{
+  flex-shrink:0;display:flex;align-items:center;gap:14px;
+  height:26px;padding:0 12px;font-size:11.5px;color:#5c5c66;
+  background:#e4e4e8;border-top:1px solid #d8d8de;user-select:none;
+}
+body.dark-mode .kd-status{background:#131316;border-top-color:#2c2c33;color:#9a9aa4}
+.kd-status .spacer{flex:1}
+
+/* ===== Toolbar quick-tools (undo/redo/tab/warna/snippet) ala Clincoo Code ===== */
+.kd-tools{
+  flex-shrink:0;display:flex;align-items:center;gap:6px;
+  height:40px;padding:0 6px;
+  background:#ececef;border-bottom:1px solid #d8d8de;
+}
+.kd-tools[hidden]{display:none}
+body.dark-mode .kd-tools{background:#1a1a1d;border-bottom-color:#2c2c33}
+.kd-qt-btn{
+  flex-shrink:0;width:30px;height:30px;border-radius:8px;border:none;background:transparent;cursor:pointer;
+  display:grid;place-items:center;color:#5c5c66;font-size:13px;font-weight:700;transition:.15s;
+}
+.kd-qt-btn:hover{background:#e4e4e8;color:#24242a}
+body.dark-mode .kd-qt-btn{color:#9a9aa4}
+body.dark-mode .kd-qt-btn:hover{background:#26262b;color:#d6d6dc}
+.kd-qt-sep{width:1px;height:20px;background:#d8d8de;flex-shrink:0}
+body.dark-mode .kd-qt-sep{background:#2c2c33}
+.kd-qt-swatch{width:16px;height:16px;border-radius:50%;border:1.5px solid #d8d8de;
+  background:conic-gradient(from 180deg,#ff5f5f,#ffd15f,#6bff6b,#5fd8ff,#7a6bff,#ff5fd1,#ff5f5f);}
+body.dark-mode .kd-qt-swatch{border-color:#3a3a42}
+.kd-qt-snippets{flex:1;min-width:0;display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none}
+.kd-qt-snippets::-webkit-scrollbar{display:none}
+.kd-qt-chip{
+  flex-shrink:0;height:28px;padding:0 11px;border-radius:7px;cursor:pointer;
+  background:#fff;border:1px solid #d8d8de;color:#24242a;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;white-space:nowrap;transition:.15s;
+}
+.kd-qt-chip:hover{border-color:#c8c8d0;background:#e4e4e8}
+body.dark-mode .kd-qt-chip{background:#202024;border-color:#3a3a42;color:#d6d6dc}
+body.dark-mode .kd-qt-chip:hover{border-color:#4a4a55;background:#26262b}
+
+.kd-cp{position:fixed;z-index:970;display:none;background:#fff;border:1px solid #d8d8de;border-radius:12px;
+  box-shadow:0 12px 40px rgba(0,0,0,.18);padding:12px;width:216px}
+.kd-cp.show{display:block}
+body.dark-mode .kd-cp{background:#202024;border-color:#3a3a42;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.kd-cp-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:10px}
+.kd-cp-swatch{width:20px;height:20px;border-radius:6px;border:1px solid rgba(0,0,0,.15);cursor:pointer;transition:.1s}
+.kd-cp-swatch:hover{transform:scale(1.15)}
+.kd-cp-hexrow{display:flex;gap:6px}
+.kd-cp-hexrow input{flex:1;height:30px;background:#f4f4f6;border:1px solid #d8d8de;border-radius:7px;padding:0 9px;
+  font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;outline:none;color:inherit}
+body.dark-mode .kd-cp-hexrow input{background:#1a1a1d;border-color:#3a3a42}
+.kd-cp-hexrow button{height:30px;padding:0 12px;border-radius:999px;border:none;cursor:pointer;background:#1a1a1e;color:#fff;font-size:12px;font-weight:600}
+body.dark-mode .kd-cp-hexrow button{background:#e9e9ee;color:#141416}
+
+.kd-toast{
+  position:fixed;bottom:36px;left:50%;transform:translateX(-50%);
+  background:#1a1a1e;color:#fff;font-size:12.5px;font-weight:600;
+  padding:9px 18px;border-radius:999px;z-index:50;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+body.dark-mode .kd-toast{background:#e9e9ee;color:#141416}
+.kd-toast.show{opacity:1}
+
+/* Cegah auto-zoom iOS/Android saat mengetik di editor */
+.monaco-editor .inputarea{font-size:16px!important}
+@media (pointer:coarse){input,textarea,select{font-size:16px!important}}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#c8c8d0;border-radius:6px;border:2px solid transparent;background-clip:content-box}
+body.dark-mode ::-webkit-scrollbar-thumb{background:#3a3a42;border-radius:6px;border:2px solid transparent;background-clip:content-box}
+/* embed=1: dipakai dalam split view halaman chat — header chat (fixed) menutupi ~76px atas iframe,
+   geser seluruh halaman turun agar header lokal (tombol kembali, nama berkas) tetap terlihat */
+html.embed-mode body{padding-top:76px}
+</style>
+</head>
+<body>
+<div class="kd-header">
+  <button class="kd-back" onclick="history.back()" aria-label="Kembali">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+  </button>
+  <div class="kd-meta">
+    <div class="kd-fname" id="kd-fname">…</div>
+    <div class="kd-sub" id="kd-sub"></div>
+  </div>
+  <button class="kd-btn" id="kd-save-btn" type="button">Simpan</button>
+</div>
+<div class="kd-tools" id="kd-tools" hidden>
+  <button class="kd-qt-btn" id="kd-undo-btn" title="Urungkan" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg></button>
+  <button class="kd-qt-btn" id="kd-redo-btn" title="Ulangi" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M21 13a9 9 0 1 1-3-7.7L21 8"/></svg></button>
+  <button class="kd-qt-btn" id="kd-tab-btn" title="Tab" type="button">⇥</button>
+  <button class="kd-qt-btn kd-qt-color" id="kd-color-btn" title="Pemetik warna" type="button"><span class="kd-qt-swatch"></span></button>
+  <div class="kd-qt-sep"></div>
+  <div class="kd-qt-snippets" id="kd-qt-snippets"></div>
+</div>
+<div class="kd-cp" id="kd-cp"></div>
+<div class="kd-main">
+  <div id="kd-editor"></div>
+  <div class="kd-fallback" id="kd-fallback">
+    <pre class="kd-code" id="kd-code"></pre>
+    <textarea class="kd-edit" id="kd-edit" spellcheck="false"></textarea>
+  </div>
+  <div class="kd-preview" id="kd-preview"></div>
+  <div class="kd-empty" id="kd-empty" style="display:none">
+    <h2>Berkas tidak ditemukan</h2>
+    <p>Berkas mungkin sudah dihapus atau dipindahkan.</p>
+  </div>
+</div>
+<div class="kd-status" id="kd-status" hidden>
+  <span id="kd-st-size">—</span>
+  <span class="spacer"></span>
+  <span id="kd-st-cursor">Ln 1, Col 1</span>
+</div>
+<div class="kd-toast" id="kd-toast">Tersimpan</div>
+
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.min.js"></script>
+<script>
+(function () {
+  var qs = new URLSearchParams(location.search);
+  var pid = qs.get('id') || '';
+  var folder = qs.get('folder') || '';
+  var fname = qs.get('file') || '';
+  var key = 'clincoo_workspace_files_' + (pid || 'global');
+
+  var elFname = document.getElementById('kd-fname');
+  var elSub = document.getElementById('kd-sub');
+  var elCode = document.getElementById('kd-code');
+  var elEdit = document.getElementById('kd-edit');
+  var elEmpty = document.getElementById('kd-empty');
+  var elSaveBtn = document.getElementById('kd-save-btn');
+  var elToast = document.getElementById('kd-toast');
+  var elStatus = document.getElementById('kd-status');
+  var elStSize = document.getElementById('kd-st-size');
+  var elStCursor = document.getElementById('kd-st-cursor');
+  var elFallback = document.getElementById('kd-fallback');
+  var elPreview = document.getElementById('kd-preview');
+  var elTools = document.getElementById('kd-tools');
+  var elUndoBtn = document.getElementById('kd-undo-btn');
+  var elRedoBtn = document.getElementById('kd-redo-btn');
+  var elTabBtn = document.getElementById('kd-tab-btn');
+  var elColorBtn = document.getElementById('kd-color-btn');
+  var elSnippets = document.getElementById('kd-qt-snippets');
+  var elCp = document.getElementById('kd-cp');
+
+  /* ---------- snippet cepat per-bahasa (samakan dengan Clincoo Code) ---------- */
+  var SNIPPETS = {
+    html: ['<div>|</div>', '<a href="|"></a>', '<img src="|" alt="">', ' class="|"', ' id="|"', '<!-- | -->', '<span>|</span>', '</', '>', '<', '-', '&nbsp;'],
+    css: ['{\n\t|\n}', ':', ';', '%', 'px', 'rem', '.class{|}', '#id{|}', ':hover{|}', '@media{|}'],
+    javascript: ['(|)', '{|}', '[|]', '=>', 'console.log(|)', 'function () {|}', 'const |', '===', '!==', '; '],
+    typescript: ['(|)', '{|}', '[|]', '=>', 'console.log(|)', 'function (): void {|}', 'const |: string', 'interface |{}', '===', '!=='],
+    markdown: ['**|**', '_|_', '# |', '- |', '[|]()', '```|```', '> |'],
+    json: ['{|}', '[|]', ':', ',', '"|": ""'],
+    plaintext: ['{', '}', '(', ')', '[', ']', '<', '>', '=', '-'],
+  };
+  var CP_COLORS = ['#000000', '#ffffff', '#e55454', '#f0ad4e', '#f5d76e', '#2fbf71', '#3ba9e0', '#5c6bc0', '#8a5cf6', '#e5604f', '#9a9aa4', '#4a4a55', '#d6d6dc', '#6c6c76', '#26262b', '#1a1a1d'];
+  function escHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+
+  /* ---------- jenis berkas media (samakan dengan daftar Workspace) ---------- */
+  var AUDIO_EXT=['mp3','wav','ogg','oga','flac','m4a','m4b','aac','opus','wma','aiff','aif','amr','mid','midi'];
+  var VIDEO_EXT=['mp4','m4v','avi','mkv','mov','webm','wmv','flv','mpg','mpeg','3gp','3g2','ogv'];
+  var IMAGE_EXT=['png','jpg','jpeg','jfif','svg','gif','webp','bmp','ico','avif','apng','tif','tiff','heic','heif'];
+  var PDF_EXT=['pdf'];
+  function mediaKind(ext){
+    if (IMAGE_EXT.indexOf(ext)!==-1) return 'image';
+    if (AUDIO_EXT.indexOf(ext)!==-1) return 'audio';
+    if (VIDEO_EXT.indexOf(ext)!==-1) return 'video';
+    if (PDF_EXT.indexOf(ext)!==-1) return 'pdf';
+    return 'code';
+  }
+
+  document.title = (fname || 'Lihat Kode') + ' — Clincoo';
+
+  // tema
+  try {
+    var t = localStorage.getItem('clincoo_theme') || 'Sistem (Default)';
+    var isDark = (t === 'Gelap') || ((!t || t === 'Sistem (Default)') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (isDark) document.body.classList.add('dark-mode');
+  } catch (e) {}
+
+  /* ---------- ekstensi -> bahasa (samakan dengan Clincoo Code) ---------- */
+  var LANGS={js:'javascript',mjs:'javascript',jsx:'javascript',ts:'typescript',tsx:'typescript',html:'html',htm:'html',css:'css',scss:'scss',json:'json',md:'markdown',py:'python',xml:'xml',svg:'xml',yml:'yaml',yaml:'yaml',txt:'plaintext',sh:'shell',sql:'sql',java:'java',c:'cpp',cpp:'cpp',cs:'csharp',go:'go',rs:'rust',php:'php',rb:'ruby',swift:'swift',kt:'kotlin'};
+  var LANG_LABELS={javascript:'JavaScript',typescript:'TypeScript',html:'HTML',css:'CSS',scss:'SCSS',json:'JSON',markdown:'Markdown',python:'Python',xml:'XML',yaml:'YAML',plaintext:'Plain Text',shell:'Shell',sql:'SQL',java:'Java',cpp:'C++',csharp:'C#',go:'Go',rust:'Rust',php:'PHP',ruby:'Ruby',swift:'Swift',kotlin:'Kotlin'};
+  function extOf(name){ var n=String(name||'').trim(); if(!n) return ''; if(n.indexOf('.')>0) return n.split('.').pop().toLowerCase(); if(n.charAt(0)==='.') return n.slice(1).toLowerCase(); return ''; }
+  function langOf(name){ return LANGS[extOf(name)] || 'plaintext'; }
+  function langLabel(name){ var l=langOf(name); return LANG_LABELS[l] || l.toUpperCase(); }
+
+  function loadData() {
+    try { return JSON.parse(localStorage.getItem(key)) || {}; } catch (e) { return {}; }
+  }
+  function findItem(data) {
+    var arr = data[folder] || [];
+    for (var i = 0; i < arr.length; i++) {
+      if (arr[i] && arr[i].name === fname && arr[i].type === 'file') return arr[i];
+    }
+    for (var k in data) {
+      var a = data[k] || [];
+      for (var j = 0; j < a.length; j++) {
+        if (a[j] && a[j].name === fname && a[j].type === 'file') return a[j];
+      }
+    }
+    return null;
+  }
+  function sizeLabel(c) {
+    var b = new Blob([c || '']).size;
+    if (b > 1024 * 1024) return (b / (1024 * 1024)).toFixed(2) + ' MB';
+    if (b > 1024) return (b / 1024).toFixed(1) + ' KB';
+    return b + ' B';
+  }
+  function toast(msg) {
+    elToast.textContent = msg;
+    elToast.classList.add('show');
+    setTimeout(function () { elToast.classList.remove('show'); }, 2000);
+  }
+
+  /* ---------- Monaco (tema sama dengan editor Clincoo Code) ---------- */
+  var monacoReady = false, editor = null, model = null;
+  function initMonaco(cb) {
+    try {
+      require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs' } });
+      require(['vs/editor/editor.main'], function () {
+        monaco.editor.defineTheme('clincoo-dark', { base: 'vs-dark', inherit: true, rules: [], colors: {
+          'editor.background': '#1a1a1d', 'editor.foreground': '#d6d6dc',
+          'editor.selectionBackground': '#3c3c46', 'editor.inactiveSelectionBackground': '#2c2c34',
+          'editor.lineHighlightBackground': '#232329',
+          'editorCursor.foreground': '#c8c8d0',
+          'editorIndentGuide.background1': '#2a2a31', 'editorIndentGuide.activeBackground1': '#3a3a44',
+          'editorLineNumber.foreground': '#4c4c56', 'editorLineNumber.activeForeground': '#9a9aa4',
+          'minimap.background': '#18181b'
+        }});
+        monaco.editor.defineTheme('clincoo-light', { base: 'vs', inherit: true, rules: [], colors: {
+          'editor.selectionBackground': '#d8d8e0', 'editor.inactiveSelectionBackground': '#e4e4ea',
+          'editor.lineHighlightBackground': '#ececef',
+          'editorCursor.foreground': '#4a4a55',
+          'editorIndentGuide.background1': '#e0e0e6', 'editorIndentGuide.activeBackground1': '#c8c8d0',
+          'editorWidget.background': '#f4f4f6', 'editorWidget.border': '#c8c8d0'
+        }});
+        monaco.editor.setTheme(document.body.classList.contains('dark-mode') ? 'clincoo-dark' : 'clincoo-light');
+        model = monaco.editor.createModel('', langOf(fname), monaco.Uri.parse('inmemory:/' + (fname || 'file.txt')));
+        editor = monaco.editor.create(document.getElementById('kd-editor'), {
+          model: model,
+          automaticLayout: true,
+          fontSize: 14,
+          fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+          minimap: { enabled: false },
+          wordWrap: 'on',
+          tabSize: 2,
+          smoothScrolling: true,
+          cursorBlinking: 'smooth',
+          renderLineHighlight: 'all',
+          scrollBeyondLastLine: false,
+          padding: { top: 12 },
+          readOnly: false,
+          scrollbar: { verticalScrollbarSize: 10, horizontalScrollbarSize: 10 }
+        });
+        editor.onDidChangeCursorPosition(function (e) {
+          elStCursor.textContent = 'Ln ' + e.position.lineNumber + ', Col ' + e.position.column;
+        });
+        monacoReady = true;
+        elFallback.classList.remove('on'); // pastikan hanya satu mode yang tampil
+        document.getElementById('kd-editor').style.display = '';
+        if (cb) cb();
+      }, function () { fallbackMode(); });
+    } catch (e) { fallbackMode(); }
+  }
+  function fallbackMode() {
+    elFallback.classList.add('on');
+    document.getElementById('kd-editor').style.display = 'none';
+  }
+  // jaringan lambat: kalau Monaco belum juga siap 8 dtk, pakai fallback teks polos
+  setTimeout(function () {
+    if (!monacoReady && !document.getElementById('kd-editor').childElementCount) fallbackMode();
+  }, 8000);
+
+  var data = loadData();
+  var item = fname ? findItem(data) : null;
+
+  function showEmpty() {
+    document.getElementById('kd-editor').style.display = 'none';
+    elFallback.style.display = 'none';
+    elEmpty.style.display = 'block';
+    elSaveBtn.style.display = 'none';
+    elTools.hidden = true;
+    elStatus.hidden = true;
+    elFname.textContent = fname || 'Berkas';
+    elSub.textContent = '';
+  }
+
+  if (!item) {
+    // localStorage gak punya berkas ini (bisa karena kuota penuh / data belum sinkron /
+    // penyimpanan dibersihkan): tarik langsung dari cloud D1 sebelum menyerah.
+    if (!pid) { showEmpty(); return; }
+    elSub.textContent = 'Memuat dari cloud…';
+    var WS_API2 = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-files';
+    var tk2 = '';
+    try { tk2 = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
+    var h2 = tk2 ? { Authorization: 'Bearer ' + tk2 } : {};
+    fetch(WS_API2 + '?project_id=' + encodeURIComponent(pid), { headers: h2 })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function (d) {
+        var files = (d && d.files) || [];
+        var hit = null;
+        var want = (folder && folder !== 'root' ? folder + '/' : '') + fname;
+        for (var i = 0; i < files.length; i++) {
+          var p = files[i] && files[i].path;
+          if (!p) continue;
+          var base = String(p).replace(/\/$/, '').split('/').pop();
+          if (base === fname) { hit = files[i]; if (p === want) break; }
+        }
+        if (hit && hit.is_big) {
+          // FILE BESAR: isinya di chunk cloud — ambil utuh lalu tampilkan
+          elSub.textContent = 'Memuat berkas besar dari cloud…';
+          fetch(WS_API2 + '?project_id=' + encodeURIComponent(pid) + '&path=' + encodeURIComponent(hit.path) + '&content=1', { headers: h2 })
+            .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+            .then(function (d2) {
+              var content = '';
+              if (typeof d2.content_b64 === 'string') {
+                var bin = atob(d2.content_b64);
+                var bytes = new Uint8Array(bin.length);
+                for (var j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
+                content = new TextDecoder('utf-8').decode(bytes);
+              } else if (typeof d2.content === 'string') content = d2.content;
+              item = { name: fname, path: hit.path, content: content, _cloudOnly: true };
+              render();
+              if (mediaKind(extOf(item.name)) === 'code') initMonaco();
+            })
+            .catch(function () { showEmpty(); });
+        } else if (hit && typeof hit.content === 'string') {
+          item = { name: fname, path: hit.path, content: hit.content, _cloudOnly: true };
+          render();
+          if (mediaKind(extOf(item.name)) === 'code') initMonaco();
+        } else {
+          showEmpty();
+        }
+      })
+      .catch(function () { showEmpty(); });
+    return;
+  }
+
+  /* ---------- quicktools: render chip, sisip teks, undo/redo, pemetik warna ---------- */
+  function currentSnippets() {
+    return SNIPPETS[langOf(fname)] || SNIPPETS.plaintext;
+  }
+  function renderQuickTools() {
+    var list = currentSnippets();
+    elSnippets.innerHTML = list.map(function (sn, i) {
+      var label = escHtml(sn.replace(/\|/g, '').replace(/\n/g, ' ').replace(/\t/g, '')) || '&nbsp;';
+      return '<button type="button" class="kd-qt-chip" data-qi="' + i + '">' + label + '</button>';
+    }).join('');
+    Array.prototype.forEach.call(elSnippets.querySelectorAll('.kd-qt-chip'), function (btn) {
+      btn.addEventListener('click', function () { qtInsert(list[+btn.getAttribute('data-qi')]); });
+    });
+  }
+  function activeTarget() {
+    return (monacoReady && editor && !elFallback.classList.contains('on')) ? 'monaco' : 'textarea';
+  }
+  function qtInsert(snippet) {
+    var text = snippet.split('\n').join('\n');
+    var idx = text.indexOf('|');
+    var clean = idx >= 0 ? text.replace('|', '') : text;
+    if (activeTarget() === 'monaco') {
+      var sel = editor.getSelection();
+      var start = sel.getStartPosition();
+      editor.executeEdits('quicktools', [{ range: sel, text: clean, forceMoveMarkers: true }]);
+      if (idx >= 0) {
+        var before = clean.slice(0, idx);
+        var beforeLines = before.split('\n');
+        var lineOffset = beforeLines.length - 1;
+        var col = lineOffset === 0 ? start.column + before.length : beforeLines[beforeLines.length - 1].length + 1;
+        editor.setPosition({ lineNumber: start.lineNumber + lineOffset, column: col });
+      }
+      editor.focus();
+    } else {
+      var ta = elEdit;
+      var s0 = ta.selectionStart, e0 = ta.selectionEnd;
+      var val = ta.value;
+      ta.value = val.slice(0, s0) + clean + val.slice(e0);
+      var newPos = s0 + (idx >= 0 ? idx : clean.length);
+      ta.focus();
+      ta.setSelectionRange(newPos, newPos);
+    }
+  }
+  function qtUndo() {
+    if (activeTarget() === 'monaco') { editor.getAction && editor.getAction('undo') && editor.getAction('undo').run(); }
+    else { elEdit.focus(); try { document.execCommand('undo'); } catch (e) {} }
+  }
+  function qtRedo() {
+    if (activeTarget() === 'monaco') { editor.getAction && editor.getAction('redo') && editor.getAction('redo').run(); }
+    else { elEdit.focus(); try { document.execCommand('redo'); } catch (e) {} }
+  }
+  function toggleColorPicker(e) {
+    if (elCp.classList.contains('show')) { closeColorPicker(); return; }
+    elCp.innerHTML = '<div class="kd-cp-grid">' + CP_COLORS.map(function (c) {
+      return '<div class="kd-cp-swatch" style="background:' + c + '" data-color="' + c + '" title="' + c + '"></div>';
+    }).join('') + '</div><div class="kd-cp-hexrow"><input id="kd-cp-hex" placeholder="#3ba9e0" maxlength="9"><button type="button" id="kd-cp-insert">Sisip</button></div>';
+    Array.prototype.forEach.call(elCp.querySelectorAll('.kd-cp-swatch'), function (sw) {
+      sw.addEventListener('click', function () { pickColor(sw.getAttribute('data-color')); });
+    });
+    document.getElementById('kd-cp-insert').addEventListener('click', function () {
+      pickColor(document.getElementById('kd-cp-hex').value);
+    });
+    elCp.classList.add('show');
+    var r = e.currentTarget.getBoundingClientRect();
+    var w = 216;
+    elCp.style.left = Math.min(r.left, window.innerWidth - w - 10) + 'px';
+    elCp.style.top = (r.bottom + 8) + 'px';
+  }
+  function closeColorPicker() { elCp.classList.remove('show'); }
+  function pickColor(hex) {
+    if (!hex) return;
+    if (hex.charAt(0) !== '#') hex = '#' + hex;
+    qtInsert(hex);
+    closeColorPicker();
+  }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('#kd-cp') && !e.target.closest('.kd-qt-color')) closeColorPicker();
+  });
+  elUndoBtn.addEventListener('click', qtUndo);
+  elRedoBtn.addEventListener('click', qtRedo);
+  elTabBtn.addEventListener('click', function () { qtInsert('\t'); });
+  elColorBtn.addEventListener('click', toggleColorPicker);
+
+  function render() {
+    elFname.textContent = item.name;
+    var ext = extOf(item.name);
+    var kind = mediaKind(ext);
+    elStatus.hidden = false;
+    function subLabel() {
+      var bits = [];
+      if (item.path) bits.push(item.path);
+      bits.push(sizeLabel(item.content));
+      elSub.textContent = bits.join(' · ');
+      elStSize.textContent = sizeLabel(item.content);
+    }
+    subLabel();
+
+    if (kind !== 'code') {
+      // ---------- berkas media: tampilkan preview, bukan teks mentah ----------
+      document.getElementById('kd-editor').style.display = 'none';
+      elFallback.style.display = 'none';
+      elSaveBtn.style.display = 'none';
+      elTools.hidden = true;
+      elPreview.classList.add('on');
+      var raw = item.content || '';
+      var isDataUri = /^data:/.test(raw);
+      var src = isDataUri ? raw : raw; // berkas lama/non-dataURI tampil as-is
+      if (kind === 'image') {
+        elPreview.innerHTML = '<img src="' + src.replace(/"/g, '&quot;') + '" alt="' + item.name.replace(/"/g, '&quot;') + '">';
+      } else if (kind === 'audio') {
+        elPreview.innerHTML = '<audio controls src="' + src.replace(/"/g, '&quot;') + '"></audio>';
+      } else if (kind === 'video') {
+        elPreview.innerHTML = '<video controls src="' + src.replace(/"/g, '&quot;') + '"></video>';
+      } else if (kind === 'pdf') {
+        elPreview.innerHTML = '<iframe src="' + src.replace(/"/g, '&quot;') + '" title="' + item.name.replace(/"/g, '&quot;') + '"></iframe>';
+      }
+      return;
+    }
+
+    // ---------- berkas kode/teks: Monaco (atau fallback teks polos) ----------
+    renderQuickTools();
+    var monacoTimer = setInterval(function () {
+      if (monacoReady && editor) { model.setValue(item.content || ''); clearInterval(monacoTimer); }
+      else if (elFallback.classList.contains('on')) {
+        elCode.textContent = item.content || '';
+        elEdit.value = item.content || '';
+        clearInterval(monacoTimer);
+      }
+    }, 120);
+    setTimeout(function () { clearInterval(monacoTimer); }, 15000);
+    elCode.textContent = item.content || '';
+    elEdit.value = item.content || '';
+
+    function getContent() {
+      return (monacoReady && editor && !elFallback.classList.contains('on')) ? model.getValue() : elEdit.value;
+    }
+
+    // langsung bisa diedit tanpa toggle: Monaco editable + toolbar quick-tools tampil
+    elTools.hidden = false;
+    elEdit.classList.add('on');
+    elCode.style.display = 'none';
+    if (monacoReady && editor && !elFallback.classList.contains('on')) editor.updateOptions({ readOnly: false });
+    else elEdit.focus();
+
+    elSaveBtn.addEventListener('click', function () {
+      item.content = getContent();
+      if (item._cloudOnly) { // berkas baru ditarik dari cloud: masukkan dulu ke data lokal
+        var fk = (folder && folder !== 'root') ? folder : 'root';
+        if (!Array.isArray(data[fk])) data[fk] = [];
+        if (!data[fk].some(function (x) { return x && x.name === item.name; })) data[fk].push(item);
+        item._cloudOnly = false;
+      }
+      try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) { toast('Gagal: penyimpanan penuh'); return; }
+      elCode.textContent = item.content || '';
+      subLabel();
+      cloudPush();
+      toast('Tersimpan');
+    });
+  }
+
+  render();
+
+  // sinkronisasi ke Cloudflare D1 (format sama dengan halaman workspace)
+  var WS_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-files';
+  function authHeaders() {
+    var tk = '';
+    try { tk = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
+    return tk ? { Authorization: 'Bearer ' + tk } : {};
+  }
+  function flatten(d) {
+    var files = [];
+    Object.keys(d || {}).forEach(function (fk) {
+      (d[fk] || []).forEach(function (it) {
+        if (!it || !it.path) return;
+        if (it.type === 'file') files.push({ path: it.path, content: it.content || '' });
+        else if (it.type === 'folder') {
+          var hasKids = Object.keys(d).some(function (k) { return k === it.path || k.indexOf(it.path + '/') === 0; });
+          if (!hasKids) files.push({ path: it.path + '/', content: '' });
+        }
+      });
+    });
+    return files;
+  }
+  var pushed = false;
+  function cloudPush() {
+    if (!pid || pushed) return;
+    pushed = true;
+    fetch(WS_API + '?project_id=' + encodeURIComponent(pid), { method: 'DELETE', headers: authHeaders() })
+      .then(function (r) {
+        if (!r.ok) return Promise.reject();
+        return fetch(WS_API, {
+          method: 'POST',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+          body: JSON.stringify({ project_id: pid, files: flatten(data) })
+        });
+      })
+      .catch(function () { pushed = false; });
+  }
+
+  // hanya muat Monaco untuk berkas kode/teks; berkas media tak butuh editor
+  if (item && mediaKind(extOf(item.name)) === 'code') initMonaco();
+})();
+</script>
+</body>
+</html>

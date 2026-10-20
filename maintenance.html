@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Susun Balok — Clincoo</title>
+<meta name="description" content="Susun menara balok setinggi mungkin. Game ringan dari Clincoo.">
+<style>
+  :root { color-scheme: dark; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0a0a0a; color: #e5e5e5;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 16px; overflow: hidden;
+  }
+  .back-btn {
+    position: fixed; top: 16px; left: 16px; z-index: 50;
+    width: 42px; height: 42px; border-radius: 9999px;
+    background: #171717; border: 1px solid #2a2a2a; color: #d4d4d4;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: background .15s;
+  }
+  .back-btn:hover { background: #232323; }
+  .card { width: 100%; max-width: 560px; text-align: center; }
+  h1 { font-size: 26px; font-weight: 700; color: #fafafa; margin: 0 0 8px; }
+  p.sub { font-size: 14px; color: #8f8f8f; line-height: 1.6; max-width: 430px; margin: 0 auto; }
+  .game-wrap { position: relative; margin: 22px auto 0; width: 100%; max-width: 560px; }
+  canvas {
+    width: 100%; height: auto; display: block;
+    background: #111; border: 1px solid #242424; border-radius: 14px;
+    touch-action: manipulation;
+  }
+  .score {
+    position: absolute; top: 10px; right: 14px; font-size: 13px; color: #7a7a7a;
+    font-variant-numeric: tabular-nums;
+  }
+  .hint { margin-top: 10px; font-size: 12px; color: #666; }
+  footer { margin-top: 26px; font-size: 12px; color: #595959; }
+  footer a { color: #8f8f8f; text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+  @media (max-width: 480px) { h1 { font-size: 21px; } }
+</style>
+</head>
+<body>
+  <a class="back-btn" href="/" title="Buka Clincoo" aria-label="Buka Clincoo">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+  </a>
+
+  <div class="card">
+    <h1>Susun Menara Balok</h1>
+    <p class="sub">Balok meluncur dari kiri dan kanan. Ketuk layar atau tekan Spasi tepat di atas balok di bawahnya — bagian yang meleset terpotong, dan tantangan makin sempit.</p>
+
+    <div class="game-wrap">
+      <canvas id="game" width="560" height="220"></canvas>
+      <div class="score">SKOR <span id="score">0</span></div>
+    </div>
+    <p class="hint">Ketuk layar / Spasi untuk menaruh balok</p>
+
+    <footer>
+      <a href="https://blog.clincoo.buzz/legal/syarat-ketentuan/" target="_blank" rel="noopener">Syarat &amp; Ketentuan</a>
+      &middot;
+      <a href="https://blog.clincoo.buzz/legal/kebijakan-privasi/" target="_blank" rel="noopener">Kebijakan Privasi</a>
+    </footer>
+  </div>
+
+<script>
+(function () {
+  'use strict';
+  var PING_MS = 30000;
+  var checking = false, everOk = false;
+  var canvas = document.getElementById('game');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  var GROUND = H - 42;
+  var scoreEl = document.getElementById('score');
+
+  // ---- GAME: Susun Balok (stack) monokrom ----
+  var blocks = [];        // {x, w} balok tersusun, index 0 = paling atas
+  var moving = null;      // balok yang sedang meluncur {x, w, dir}
+  var BH = 16;            // tinggi tiap balok
+  var speed = 2.6, score = 0, best = 0, running = true, tPrev = 0, flash = 0;
+  try { best = parseInt(localStorage.getItem('clincoo_stack_best') || '0', 10) || 0; } catch (e) {}
+
+  function newMoving() {
+    if (Math.random() < .5) moving = { x: -blocks[0].w, w: blocks[0].w, dir: 1 };
+    else moving = { x: W, w: blocks[0].w, dir: -1 };
+  }
+  function reset() {
+    blocks = [{ x: (W - 90) / 2, w: 90 }];
+    speed = 2.6; score = 0; running = true; newMoving();
+    scoreEl.textContent = '0';
+  }
+  function place() {
+    if (!running || !moving) return;
+    var top = blocks[0];
+    var l = Math.max(moving.x, top.x), r = Math.min(moving.x + moving.w, top.x + top.w);
+    if (r <= l) { gameOver(); return; }
+    var perfect = Math.abs(moving.x - top.x) <= 3;
+    var nx = perfect ? top.x : l, nw = perfect ? top.w : (r - l);
+    if (nw < 3) { gameOver(); return; }
+    blocks.unshift({ x: nx, w: nw });
+    score++;
+    scoreEl.textContent = score;
+    if (perfect) flash = 10;
+    speed = Math.min(7, 2.6 + score * .18);
+    moving = null;
+    newMoving();
+  }
+  function gameOver() {
+    running = false; moving = null;
+    if (score > best) { best = score; try { localStorage.setItem('clincoo_stack_best', String(best)); } catch (e) {} }
+    ctx.fillStyle = 'rgba(10,10,10,.72)'; ctx.fillRect(0, H/2 - 34, W, 68);
+    ctx.fillStyle = '#f5f5f5'; ctx.font = '600 15px Inter, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Menara ' + score + ' lantai' + (best ? ' \u00b7 Terbaik ' + best : ''), W/2, H/2 - 6);
+    ctx.fillStyle = '#8f8f8f'; ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Ketuk untuk main lagi dari dasar', W/2, H/2 + 16);
+    ctx.textAlign = 'left';
+  }
+  function onTap(e) {
+    if (e && e.target && e.target.closest && e.target.closest('a,button')) return;
+    if (e) e.preventDefault();
+    if (!running) { reset(); return; }
+    place();
+  }
+  window.addEventListener('keydown', function (e) {
+    if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); onTap(null); }
+  });
+  canvas.addEventListener('pointerdown', onTap);
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#111'; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = '#1d1d1d'; ctx.lineWidth = 1;
+    for (var gy = 0; gy < H; gy += 28) { ctx.beginPath(); ctx.moveTo(0, gy + .5); ctx.lineTo(W, gy + .5); ctx.stroke(); }
+    var baseY = H - 14;
+    ctx.strokeStyle = '#3a3a3a';
+    ctx.beginPath(); ctx.moveTo(0, baseY + .5); ctx.lineTo(W, baseY + .5); ctx.stroke();
+    var camY = Math.max(0, (blocks.length - 1) * BH - (H - 90));
+    var tone = ['#f5f5f5', '#e5e5e5', '#d4d4d4', '#c4c4c4', '#b5b5b5', '#a5a5a5', '#969696'];
+    for (var i = 0; i < blocks.length; i++) {
+      var b = blocks[i];
+      var y = baseY - (blocks.length - 1 - i) * BH - camY;
+      if (y < -BH || y > H) continue;
+      ctx.fillStyle = tone[(blocks.length - 1 - i) % tone.length];
+      ctx.fillRect(b.x, y, b.w, BH - 2);
+    }
+    if (moving) {
+      var my = baseY - blocks.length * BH - camY;
+      ctx.fillStyle = '#fafafa';
+      ctx.fillRect(moving.x, my, moving.w, BH - 2);
+      var top = blocks[0];
+      var l = Math.max(moving.x, top.x), r = Math.min(moving.x + moving.w, top.x + top.w);
+      if (r > l) { ctx.fillStyle = 'rgba(245,245,245,.14)'; ctx.fillRect(l, baseY - ((blocks.length - 1) * BH) - camY, r - l, BH - 2); }
+    }
+    if (flash > 0) {
+      ctx.fillStyle = 'rgba(245,245,245,' + (flash / 26) + ')';
+      ctx.fillRect(0, 0, W, H); flash--;
+    }
+    if (best > 0) { ctx.fillStyle = '#5a5a5a'; ctx.font = '11px Inter, sans-serif'; ctx.fillText('TERBAIK ' + best, 12, 18); }
+  }
+
+  function loop(t) {
+    requestAnimationFrame(loop);
+    if (!tPrev) tPrev = t;
+    var dt = Math.min(32, t - tPrev); tPrev = t;
+    var k = dt / 16.67;
+    if (running && moving) {
+      moving.x += moving.dir * speed * k;
+      if (moving.x <= -6) { moving.x = -6; moving.dir = 1; }
+      if (moving.x + moving.w >= W + 6) { moving.x = W + 6 - moving.w; moving.dir = -1; }
+    }
+    draw();
+  }
+  reset();
+  requestAnimationFrame(loop);
+
+  // ---- Deteksi senyap: begitu server siap, buka Clincoo tanpa teks apa pun ----
+  function checkNow() {
+    if (checking || everOk) return;
+    checking = true;
+    fetch('/api/health', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d && d.ok) { everOk = true; window.location.href = '/'; }
+        else throw new Error('down');
+      })
+      .catch(function () {
+        setTimeout(function () { checking = false; checkNow(); }, PING_MS);
+      });
+  }
+  checkNow();
+})();
+</script>
+
+<script>/* Clincoo Bug Beetle */(function(){var s=document.createElement("script");s.src=(location.hostname.indexOf("github.io")!==-1?"/Clincoo.":"")+"/js/bug-beetle.js?v=1";document.body.appendChild(s);}());</script>
+</body>
+</html>

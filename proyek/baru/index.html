@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../js/auth-client.js?v=6"></script>
+  <script src="../../js/accent-init.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="../../manifest.json">
+  <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.png">
+  <title>Clincoo - Buat Proyek</title>
+  <meta name="description" content="Buat proyek baru di Clincoo — cukup nama, desc dan logo opsional.">
+  <meta property="og:title" content="Clincoo - Buat Proyek">
+  <meta property="og:description" content="Buat proyek baru di Clincoo — cukup nama, desc dan logo opsional.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Clincoo">
+  <meta property="og:url" content="https://app.clincoo.buzz/proyek/baru/">
+  <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Clincoo">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <script src="https://unpkg.com/lucide@1.41.0"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    html, body { scrollbar-width: none; -ms-overflow-style: none; }
+    html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+    body { font-family: 'Inter', sans-serif; background-color: #ffffff; transition: background-color 0.3s ease, color 0.3s ease; }
+    :root { --accent-color: #000000; --accent-hover: #1f2937; }
+    .bg-accent { background-color: var(--accent-color) !important; }
+    .text-accent { color: var(--accent-color) !important; }
+    .border-accent { border-color: var(--accent-color) !important; }
+    body.dark-mode { background-color: #000000; color: #ffffff; }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode .bg-gray-50 { background-color: #141414 !important; }
+    body.dark-mode .bg-gray-100 { background-color: #1a1a1a !important; }
+    body.dark-mode .border-gray-100, body.dark-mode .border-gray-200, body.dark-mode .border-gray-300 { border-color: #222222 !important; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #f0f0f0 !important; }
+    body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 { color: #888888 !important; }
+    body.dark-mode .text-gray-400, body.dark-mode .text-gray-300 { color: #666666 !important; }
+    body.dark-mode .bg-accent { background-color: #ffffff !important; color: #000000 !important; }
+    body.dark-mode .bg-accent.text-white { color: #000000 !important; }
+    body.dark-mode .bg-accent.text-white svg { color: #000000 !important; stroke: #000000 !important; }
+    body.dark-mode button[onclick="goBack()"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
+    body.dark-mode button[onclick="goBack()"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
+    body.dark-mode button[onclick="goBack()"] svg { color: #ffffff !important; stroke: #ffffff !important; }
+    * { -webkit-tap-highlight-color: transparent; }
+    @keyframes popIn { from { opacity: 0; transform: translate(-50%, 8px) scale(.97); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+    #notice-pop.pop { animation: popIn .22s ease-out; }
+  </style>
+<style>
+      /* [19 Okt] opt-in cross-document View Transition — disamakan di SEMUA halaman
+         proyek: navigasi dari halaman ber-transisi ke halaman TANPA opt-in membatalkan
+         transisi di tengah jalan dan Chrome melempar InvalidStateError "Transition was
+         aborted" sebagai unhandled rejection (muncul sebagai ERROR di Bug Beetle). */
+      @view-transition { navigation: auto; }
+      ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; animation-timing-function: cubic-bezier(.2,.7,.3,1); }
+      html:active-view-transition body { animation: none; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-gray-900 pt-20">
+  <!-- [19 Okt, arahan pemilik] bg halaman ikut sistem tema seperti halaman lain -->
+  <script>try{var t=localStorage.getItem("clincoo_theme")||"Sistem (Default)";var d=(t==="Gelap")||((t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.body.classList.add("dark-mode");var a=localStorage.getItem("clincoo_accent")||"Hitam (Default)";var am={"Hitam (Default)":{m:"#000000",h:"#1f2937"},Biru:{m:"#2563eb",h:"#1d4ed8"},Hijau:{m:"#059669",h:"#047857"},Ungu:{m:"#9333ea",h:"#7e22ce"},Merah:{m:"#dc2626",h:"#b91c1c"}};var c=am[a]||am["Hitam (Default)"];document.documentElement.style.setProperty("--accent-color",c.m);document.documentElement.style.setProperty("--accent-hover",c.h);}catch(e){}</script>
+
+<button onclick="goBack()" class="fixed top-3 left-3 w-10 h-10 flex items-center justify-center rounded-full bg-white backdrop-blur border border-gray-100 shadow-sm hover:bg-gray-50 transition-all cursor-pointer text-gray-700 hover:text-black z-50" aria-label="Kembali">
+  <i data-lucide="arrow-left" class="w-5 h-5"></i>
+</button>
+
+<!-- Notice popover (bukan alert browser / modal) -->
+<div id="notice-pop" class="hidden fixed z-[60] top-20 left-1/2 -translate-x-1/2 w-[min(20rem,calc(100vw-1.5rem))] bg-white dark:bg-[#121212] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl px-4 py-3.5 flex items-center gap-2.5">
+  <i data-lucide="info" class="w-5 h-5 text-amber-500 shrink-0"></i>
+  <p id="notice-msg" class="text-[13px] font-medium text-gray-700 dark:text-gray-200 leading-snug"></p>
+</div>
+
+<main class="flex-1 w-full max-w-xl mx-auto pb-16 flex-col justify-start relative">
+
+  <div class="flex flex-col px-5 pb-2">
+    <h2 class="text-[24px] font-extrabold text-gray-900 tracking-tight">Buat Proyek Baru</h2>
+    <p class="text-[14px] text-gray-500 font-medium mt-0.5">Cukup nama proyeknya — desc dan logo opsional.</p>
+  </div>
+
+  <section class="px-5 mt-7">
+    <!-- [19 Okt, arahan pemilik] logo: cukup bulatan besar di tengah, pena di pojok kanan bawah -->
+    <div class="flex flex-col items-center">
+      <div class="relative">
+        <div id="logo-preview" class="w-28 h-28 rounded-full border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden cursor-pointer active:scale-95 transition-transform" onclick="document.getElementById('logo-input').click()">
+          <i data-lucide="image" class="w-7 h-7 text-gray-300"></i>
+        </div>
+        <!-- [19 Okt, arahan pemilik] pena: card warna bg halaman, tanpa border keliling -->
+        <button onclick="document.getElementById('logo-input').click()" class="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-white dark:bg-[#0a0a0a] flex items-center justify-center text-gray-700 dark:text-gray-200 active:scale-90 transition-transform" aria-label="Pilih logo">
+          <i data-lucide="pencil" class="w-4 h-4"></i>
+        </button>
+        <button id="logo-remove" onclick="clearLogo(event)" class="hidden absolute -top-1 -left-1 w-6 h-6 rounded-full bg-gray-900 dark:bg-white text-white dark:text-black border-2 border-white dark:border-black flex items-center justify-center active:scale-95 transition-all" aria-label="Hapus logo">
+          <i data-lucide="x" class="w-3 h-3"></i>
+        </button>
+      </div>
+      <input id="logo-input" type="file" accept="image/*" class="hidden">
+    </div>
+
+    <!-- Nama proyek (wajib) -->
+    <span class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mt-6">Nama Proyek</span>
+    <input id="inp-name" type="text" maxlength="60" placeholder="mis. Toko Kopi Kita"
+      class="w-full mt-2 px-4 py-3 text-sm font-semibold rounded-full border border-gray-200 bg-gray-50 focus:outline-none focus:border-gray-900 dark:focus:border-white transition-colors">
+
+    <!-- Deskripsi opsional -->
+    <span class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mt-4">Deskripsi <span class="normal-case">(opsional)</span></span>
+    <textarea id="inp-desc" rows="3" maxlength="600" placeholder="Ceritakan singkat proyek ini untuk apa…"
+      class="w-full mt-2 px-4 py-3.5 text-sm rounded-2xl border border-gray-200 bg-gray-50 focus:outline-none focus:border-gray-900 dark:focus:border-white transition-colors resize-none leading-relaxed"></textarea>
+
+    <!-- [19 Okt, arahan pemilik] CTA cukup "Konfirmasi" -> masuk workspace daftar file -->
+    <button id="ob-btn-konfirmasi" onclick="createProject()" class="mt-8 w-full py-3.5 rounded-full bg-accent text-white text-sm font-bold active:scale-[0.98] transition-all">Konfirmasi</button>
+  </section>
+
+</main>
+
+<script>
+  // Tombol kembali cerdas: datang dari halaman aplikasi -> history.back(),
+  // dibuka langsung/deep-link -> ke halaman daftar proyek.
+  function goBack() {
+    try {
+      var sameOrigin = document.referrer && new URL(document.referrer).origin === location.origin;
+      if (sameOrigin && history.length > 1) { window.history.back(); return; }
+    } catch (e) {}
+    location.replace('../../akun/proyek/');
+  }
+
+  // ==== Notice popover (pengganti alert browser) ====
+  var _noticeTimer = null;
+  function notice(msg) {
+    var pop = document.getElementById('notice-pop');
+    document.getElementById('notice-msg').textContent = msg;
+    pop.classList.remove('hidden');
+    pop.classList.remove('pop'); void pop.offsetWidth; pop.classList.add('pop');
+    if (_noticeTimer) clearTimeout(_noticeTimer);
+    _noticeTimer = setTimeout(function () { pop.classList.add('hidden'); }, 3500);
+  }
+  document.addEventListener('click', function (e) {
+    var pop = document.getElementById('notice-pop');
+    if (pop && !pop.classList.contains('hidden') && !pop.contains(e.target)) pop.classList.add('hidden');
+  });
+
+  // ==== Logo opsional: pilih file -> kecilkan ke 128px (canvas) -> dataURL ====
+  var logoData = ''; // dataURL hasil resize (jpg, ringan)
+  document.getElementById('logo-input').addEventListener('change', function (e) {
+    var file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!/^image\//.test(file.type)) { notice('File harus berupa gambar ya.'); return; }
+    if (file.size > 5 * 1024 * 1024) { notice('Logo maksimal 5MB.'); return; }
+    var reader = new FileReader();
+    reader.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var size = 128, cv = document.createElement('canvas');
+        cv.width = size; cv.height = size;
+        var ctx = cv.getContext('2d');
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, size, size);
+        // cover-crop ke persegi (tengah)
+        var s = Math.min(img.width, img.height);
+        var sx = (img.width - s) / 2, sy = (img.height - s) / 2;
+        ctx.drawImage(img, sx, sy, s, s, 0, 0, size, size);
+        logoData = cv.toDataURL('image/jpeg', 0.85);
+        var prev = document.getElementById('logo-preview');
+        prev.innerHTML = '<img src="' + logoData + '" class="w-full h-full object-cover" alt="Logo">';
+        document.getElementById('logo-remove').classList.remove('hidden');
+      };
+      img.onerror = function () { notice('Gagal membaca gambar itu.'); };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  function clearLogo(e) {
+    if (e) e.stopPropagation();
+    logoData = '';
+    var prev = document.getElementById('logo-preview');
+    prev.innerHTML = '<i data-lucide="image-plus" class="w-5 h-5 text-gray-400"></i>';
+    document.getElementById('logo-remove').classList.add('hidden');
+    lucide.createIcons();
+  }
+
+  // ==== Buat proyek: alur sama dengan homepage (clincoo_projects + sync keepalive) ====
+  var PROJECTS_API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/projects';
+  var SETTINGS_API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-settings';
+
+  function createProject() {
+    var name = document.getElementById('inp-name').value.trim();
+    var desc = document.getElementById('inp-desc').value.trim();
+    if (!name) { notice('Kasih nama proyekmu dulu ya.'); document.getElementById('inp-name').focus(); return; }
+
+    // Bersihkan data handover lama (persis homepage)
+    try {
+      localStorage.removeItem('clincoo_current_chat_msg');
+      localStorage.removeItem('clincoo_current_project_id');
+      localStorage.removeItem('clincoo_current_attachments');
+    } catch (e) {}
+
+    var projectId = 'proj_' + Date.now();
+
+    var projects = [];
+    try {
+      var stored = localStorage.getItem('clincoo_projects');
+      if (stored) projects = JSON.parse(stored);
+    } catch (e) {}
+    projects.unshift({ id: projectId, title: name, prompt: desc, updatedAt: new Date().toISOString() });
+
+    // Pengaturan Umum proyek (nama/desc/logo kartu) — cache lokal + server,
+    // sama seperti halaman proyek/pengaturan/umum.
+    try {
+      localStorage.setItem('clincoo_umum_' + projectId, JSON.stringify({
+        app_name: name, app_desc: desc, app_logo: logoData || ''
+      }));
+    } catch (e) {}
+
+    try {
+      localStorage.setItem('clincoo_projects', JSON.stringify(projects));
+      // Kirim SEKARANG dengan keepalive:true — request tetap hidup melewati
+      // navigasi halaman (perbaikan sama dengan homepage, 13 Okt).
+      fetch(PROJECTS_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify({ action: 'replace_all', projects: projects })
+      }).catch(function () {});
+      // Simpan juga ke project-settings (app_name/app_desc/app_logo) agar
+      // muncul di perangkat lain. Logo dikirim sebagai dataURL kecil (<=128px).
+      var settingsBody = { project_id: projectId, app_name: name, app_desc: desc };
+      if (logoData) settingsBody.app_logo = logoData;
+      fetch(SETTINGS_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify(settingsBody)
+      }).catch(function () {});
+      if (desc) localStorage.setItem('clincoo_current_chat_msg', desc);
+      localStorage.setItem('clincoo_current_project_id', projectId);
+    } catch (e) {}
+    window.location.href = '../code/?id=' + projectId;
+  }
+
+  if (window.lucide) lucide.createIcons();
+</script>
+<script src="../../js/onboarding.js?v=2"></script>
+</body>
+</html>

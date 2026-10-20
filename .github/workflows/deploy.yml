@@ -1,0 +1,88 @@
+name: Deploy Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  workflow_dispatch:
+
+concurrency:
+  group: pages-deploy-clincoo
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout kode
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: RESTORE full chat.js if stub/corrupt
+        run: |
+          set -e
+          GOOD=24ff913313d218c9359cad542b583ab917f5cece
+          SIZE=$(wc -c < functions/api/chat.js || echo 0)
+          echo "current chat.js size=$SIZE"
+          if [ "$SIZE" -lt 50000 ]; then
+            echo "Restoring functions/api/chat.js from $GOOD"
+            git show "$GOOD:functions/api/chat.js" > functions/api/chat.js
+            wc -c functions/api/chat.js
+            git config user.name Clincoo
+            git config user.email halo@clincoo.buzz
+            git add functions/api/chat.js
+            git commit -m "RESTORE: functions/api/chat.js full from 24ff913"
+            git push origin main || true
+          else
+            echo "chat.js already full, skip restore"
+          fi
+
+      - name: Apply UI/AI patches
+        run: |
+          python3 scripts/fix-large-files.py || true
+          python3 scripts/fix-auto-continue.py || true
+          python3 scripts/fix-chat-build-mode.py || true
+          python3 scripts/fix-shimmer-progress.py || true
+          python3 scripts/fix-answer-animation.py || true
+          python3 scripts/fix-session-resume.py || true
+          git config user.name Clincoo
+          git config user.email halo@clincoo.buzz
+          git add proyek/chat/index.html functions/api/chat.js 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "fix: chat mode no folder tools; build write-first + smarter tokens"
+          git push origin main || true
+
+      - name: Bersihkan artefak repo (tidak ikut di-publish)
+        run: rm -rf .git .github tests node_modules .wrangler package.json package-lock.json .gitignore debug debug-notif scripts
+
+      - name: Pasang wrangler
+        run: npm install -g wrangler
+
+      - name: Deploy ke Cloudflare Pages
+        run: npx wrangler pages deploy . --project-name=clincoo --branch=main
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  deploy-agent-worker:
+    name: Deploy Agent Worker (Cloudflare Workflows)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout kode
+        uses: actions/checkout@v4
+
+      - name: Pasang wrangler
+        run: npm install -g wrangler
+
+      - name: Deploy clincoo-agent (Workflows + cron)
+        run: npx wrangler deploy
+        working-directory: agent-worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

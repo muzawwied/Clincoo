@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../../../js/auth-client.js?v=6"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Clincoo - Data User</title>
+  <meta name="description" content="Data User Panel Admin — Clincoo">
+    <meta property="og:title" content="Clincoo - Data User">
+    <meta property="og:description" content="Data User Panel Admin — Clincoo">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/akun/profile/admin/users/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Clincoo - Data User">
+    <meta name="twitter:description" content="Data User Panel Admin — Clincoo">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+  <link rel="icon" href="../../../../assets/favicon.png">
+  <link rel="manifest" href="../../../../manifest.json">
+  <script src="../../../../js/accent-init.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@1.41.0"></script>
+  <script>
+    tailwind.config = { darkMode: ['class', '.dark-mode'], theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } } };
+  </script>
+  <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #ffffff;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    body.dark-mode {
+      background-color: #000000;
+      color: #e0e0e0;
+    }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #ffffff !important; }
+    body.dark-mode .text-gray-700, body.dark-mode .text-gray-600 { color: #a1a1aa !important; }
+    body.dark-mode .text-gray-500 { color: #71717a !important; }
+    body.dark-mode .border-gray-100, body.dark-mode .border-gray-200 { border-color: #222222 !important; }
+    body.dark-mode .bg-gray-50, body.dark-mode .bg-gray-100 { background-color: #141414 !important; }
+
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .shimmer-bar {
+      display: inline-block; height: 1.2em; border-radius: 6px; width: 90px;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%; animation: shimmer 1.5s infinite;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    body.dark-mode .shimmer-bar {
+      background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+      background-size: 200% 100%;
+    }
+  </style>
+  <script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+</head>
+
+<body class="min-h-screen flex flex-col bg-white dark:bg-black text-gray-900 dark:text-gray-100">
+  <script>(function(){var t=localStorage.getItem("clincoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+
+  <div id="admin-page-container" style="display: none;" class="flex-1 flex flex-col min-h-screen">
+
+    <header class="bg-white dark:bg-[#0a0a0a] sticky top-0 z-40 transition-colors">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <a href="../" class="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-100 dark:border-[#262626] hover:bg-gray-100 dark:hover:bg-[#1a1a1a] transition-all text-gray-700 dark:text-gray-200 shrink-0" title="Kembali">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+          </a>
+          <h1 class="font-extrabold text-lg text-gray-900 dark:text-white tracking-tight">Data User</h1>
+          <div class="w-10 shrink-0"></div>
+        </div>
+        <div class="flex flex-wrap items-center justify-center gap-1.5 pb-2.5 text-sm font-medium">
+          <a href="../" class="nav-tab-item px-4 py-1.5 rounded-full transition-all flex items-center gap-2 whitespace-nowrap text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#141414]">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="./" class="nav-tab-item px-4 py-1.5 rounded-full transition-all flex items-center gap-2 whitespace-nowrap bg-black text-white dark:bg-white dark:text-black font-semibold shadow-sm">
+            <i data-lucide="users" class="w-4 h-4"></i>
+            <span>Data User</span>
+          </a>
+          <a href="../reports/" class="nav-tab-item px-4 py-1.5 rounded-full transition-all flex items-center gap-2 whitespace-nowrap text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#141414]">
+            <i data-lucide="shield-alert" class="w-4 h-4"></i>
+            <span>Laporan & Scan</span>
+          </a>
+          <a href="../activity/" class="nav-tab-item px-4 py-1.5 rounded-full transition-all flex items-center gap-2 whitespace-nowrap text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#141414]">
+            <i data-lucide="activity" class="w-4 h-4"></i>
+            <span>Aktivitas Sistem</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+      <!-- Filter bar -->
+      <div class="flex flex-col sm:flex-row gap-3 sm:items-center mb-5">
+        <div class="relative flex-1">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+          <input id="user-search" type="text" placeholder="Cari nama atau email…" oninput="renderUserList()"
+            class="w-full pl-9 pr-3 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-[#262626] bg-gray-50 dark:bg-[#111] focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all">
+        </div>
+        <select id="status-filter" onchange="renderUserList()"
+          class="px-3 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-[#262626] bg-gray-50 dark:bg-[#111] focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white cursor-pointer">
+          <option value="all">Semua status</option>
+          <option value="active">Aktif</option>
+          <option value="suspended">Suspended</option>
+          <option value="deleted">Dihapus</option>
+        </select>
+        <select id="plan-filter" onchange="renderUserList()"
+          class="px-3 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-[#262626] bg-gray-50 dark:bg-[#111] focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white cursor-pointer">
+          <option value="all">Semua plan</option>
+        </select>
+      </div>
+
+      <!-- Summary kecil -->
+      <div class="flex flex-wrap items-center gap-x-5 gap-y-1 mb-4 text-xs text-gray-500 dark:text-gray-400">
+        <span id="sum-total" class="font-medium text-gray-700 dark:text-gray-300"><span class="shimmer-bar" style="width:40px"></span></span>
+        <span id="sum-active"></span>
+        <span id="sum-suspended"></span>
+        <span id="sum-balance"></span>
+      </div>
+
+      <!-- Skeleton loading -->
+      <div id="users-skeleton" class="flex flex-col gap-2">
+        <div class="px-4 py-4 rounded-lg border border-gray-100 dark:border-[#1c1c1c]"><span class="shimmer-bar" style="width:220px"></span></div>
+        <div class="px-4 py-4 rounded-lg border border-gray-100 dark:border-[#1c1c1c]"><span class="shimmer-bar" style="width:260px"></span></div>
+        <div class="px-4 py-4 rounded-lg border border-gray-100 dark:border-[#1c1c1c]"><span class="shimmer-bar" style="width:190px"></span></div>
+      </div>
+
+      <!-- List user -->
+      <div id="users-list" class="hidden flex-col gap-2"></div>
+      <div id="users-empty" class="hidden text-center py-16 text-sm text-gray-400">Tidak ada user yang cocok.</div>
+
+    </main>
+
+    <!-- Popover detail user (klik card user) -->
+    <div id="user-popover" class="hidden fixed z-50 w-[min(22rem,calc(100vw-1.5rem))] bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] rounded-2xl shadow-2xl overflow-hidden" style="top:0;left:0;">
+      <div id="user-popover-body"></div>
+    </div>
+
+    <!-- Popover konfirmasi aksi (menggantikan pop-up/modal lama) -->
+    <div id="confirm-modal" class="hidden fixed z-50 w-[min(20rem,calc(100vw-1.5rem))] bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] rounded-2xl p-5 shadow-2xl" style="top:0;left:0;">
+      <div class="flex items-start gap-3 mb-1">
+        <div id="confirm-icon-wrap" class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/40 flex items-center justify-center shrink-0">
+          <i data-lucide="alert-triangle" class="w-5 h-5 text-red-600"></i>
+        </div>
+        <div class="min-w-0">
+          <h3 id="confirm-title" class="font-bold text-gray-900 dark:text-white" style="font-family: 'Space Grotesk', sans-serif;">Konfirmasi</h3>
+          <p id="confirm-desc" class="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-relaxed"></p>
+        </div>
+      </div>
+      <div id="confirm-reason-wrap" class="hidden mt-4">
+        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Alasan (tercatat di audit log)</label>
+        <input id="confirm-reason" type="text" placeholder="mis. pelanggaran S&K pasal 5"
+          class="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-[#262626] bg-gray-50 dark:bg-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white">
+      </div>
+      <div class="flex gap-2 mt-5">
+        <button onclick="closeConfirmModal()" class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg border border-gray-200 dark:border-[#262626] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-all cursor-pointer">Batal</button>
+        <button id="confirm-cta" class="flex-1 px-4 py-2.5 text-sm font-bold rounded-lg bg-black text-white dark:bg-white dark:text-black hover:opacity-90 transition-all flex items-center justify-center gap-2 cursor-pointer">
+          <span id="confirm-cta-text">Ya, lanjutkan</span>
+          <i data-lucide="loader-2" class="w-4 h-4 animate-spin hidden" id="confirm-cta-spinner"></i>
+          <i data-lucide="check" class="w-4 h-4 hidden" id="confirm-cta-check"></i>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const API_BASE = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : '';
+    let allUsers = [];
+    let pendingAction = null; // { action, user, requiresReason }
+
+    function formatRupiah(v) { return 'Rp ' + Number(v || 0).toLocaleString('id-ID'); }
+    function esc(t) { const d = document.createElement('div'); d.textContent = String(t ?? ''); return d.innerHTML; }
+    function timeAgo(iso) {
+      if (!iso) return '—';
+      const diff = (Date.now() - new Date(iso.replace(' ', 'T') + 'Z').getTime()) / 1000;
+      if (isNaN(diff)) return iso;
+      if (diff < 3600) return Math.max(1, Math.floor(diff / 60)) + ' mnt lalu';
+      if (diff < 86400) return Math.floor(diff / 3600) + ' jam lalu';
+      return Math.floor(diff / 86400) + ' hari lalu';
+    }
+
+    function showToast(message, isError = false) {
+      let toast = document.getElementById('clincoo-toast');
+      if (!toast) { toast = document.createElement('div'); toast.id = 'clincoo-toast'; document.body.appendChild(toast); }
+      toast.className = `fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-2xl text-sm font-medium transition-all duration-300 transform translate-y-0 opacity-100 flex items-center gap-2 ${
+        isError ? 'bg-red-900 text-white border border-red-700' : 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border border-gray-700 dark:border-gray-300'}`;
+      toast.innerHTML = (isError ? '<i data-lucide="alert-circle" class="w-4 h-4"></i>' : '<i data-lucide="check-circle-2" class="w-4 h-4"></i>') + `<span>${esc(message)}</span>`;
+      if (window.lucide) lucide.createIcons();
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => { toast.classList.add('translate-y-10', 'opacity-0'); toast.classList.remove('translate-y-0', 'opacity-100'); }, 3000);
+    }
+
+    function redirectToProfile() {
+      const profilePath = location.pathname.includes('/Clincoo.') ? '/Clincoo./akun/profile/' : '/akun/profile/';
+      window.location.replace(profilePath);
+    }
+
+    async function checkAdminPing() {
+      try {
+        const token = (window.ClincooAuth && ClincooAuth.getToken) ? ClincooAuth.getToken() : (function(){try{return localStorage.getItem('clincoo_auth_token')||localStorage.getItem('clincoo_token')||'';}catch(e){return '';}})();
+        const res = await fetch(API_BASE + '/api/admin/ping', { headers: token ? { 'Authorization': 'Bearer ' + token } : {} });
+        if (!res.ok) { redirectToProfile(); return false; }
+        const data = await res.json();
+        if (!data || !data.success || !data.is_admin) { redirectToProfile(); return false; }
+        document.getElementById('admin-page-container').style.display = 'flex';
+        return true;
+      } catch (err) { redirectToProfile(); return false; }
+    }
+
+    function authHeaders() {
+      const token = (window.ClincooAuth && ClincooAuth.getToken) ? ClincooAuth.getToken() : (function(){try{return localStorage.getItem('clincoo_auth_token')||localStorage.getItem('clincoo_token')||'';}catch(e){return '';}})();
+      return token ? { 'Authorization': 'Bearer ' + token } : {};
+    }
+
+    async function fetchUsers() {
+      const spin = document.getElementById('refresh-spin-icon');
+      if (spin) spin.classList.add('animate-spin');
+      try {
+        const res = await fetch(API_BASE + '/api/admin/users', { headers: authHeaders() });
+        if (res.status === 403) { showToast('Akses ditolak (403)', true); redirectToProfile(); return; }
+        if (!res.ok) throw new Error('Gagal mengambil data');
+        const data = await res.json();
+        if (!data || !data.success) throw new Error(data?.error || 'Gagal memuat data user');
+        allUsers = data.users || [];
+        document.getElementById('users-skeleton').classList.add('hidden');
+        document.getElementById('users-list').classList.remove('hidden');
+        buildPlanFilter();
+        renderSummary();
+        renderUserList();
+        // [18 Okt 2026] popover detail user ikut diperbarui saat data real-time masuk
+        if (openUserId !== null && activePopover && activePopover.el.id === 'user-popover') {
+          const u2 = findUser(openUserId);
+          if (u2) renderUserPopover(u2);
+        }
+        handleHashAction();
+      } catch (err) {
+        showToast(err.message || 'Gagal memuat data user', true);
+      } finally {
+        if (spin) spin.classList.remove('animate-spin');
+      }
+    }
+
+    function refreshPageData() { fetchUsers(); }
+
+    // Dari laporan GitHub (users-live.md): #suspend-<id> / #unsuspend-<id> / #delete-<id>
+    // langsung buka dialog konfirmasi untuk user terkait.
+    function handleHashAction() {
+      const m = /^#(suspend|unsuspend|delete)-(\d+)$/.exec(location.hash || '');
+      if (!m) return;
+      const u = allUsers.find(x => Number(x.id) === Number(m[2]));
+      history.replaceState(null, '', location.pathname + location.search);
+      if (!u) { showToast('User #' + m[2] + ' tidak ditemukan', true); return; }
+      askConfirm(m[1], u.id);
+    }
+
+    function buildPlanFilter() {
+      const plans = [...new Set(allUsers.map(u => u.plan || 'Free'))].sort();
+      const sel = document.getElementById('plan-filter');
+      const cur = sel.value;
+      sel.innerHTML = '<option value="all">Semua plan</option>' + plans.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
+      if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+    }
+
+    function renderSummary() {
+      document.getElementById('sum-total').textContent = allUsers.length + ' user';
+      document.getElementById('sum-active').textContent = allUsers.filter(u => u.status === 'active').length + ' aktif';
+      document.getElementById('sum-suspended').textContent = allUsers.filter(u => u.status === 'suspended').length + ' suspended';
+      document.getElementById('sum-balance').textContent = 'Saldo beredar: ' + formatRupiah(allUsers.reduce((a, u) => a + (u.balance || 0), 0));
+    }
+
+    function filteredUsers() {
+      const q = (document.getElementById('user-search').value || '').toLowerCase().trim();
+      const st = document.getElementById('status-filter').value;
+      const pl = document.getElementById('plan-filter').value;
+      return allUsers.filter(u =>
+        (st === 'all' || u.status === st) &&
+        (pl === 'all' || (u.plan || 'Free') === pl) &&
+        (!q || (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q))
+      );
+    }
+
+    function avatarHtml(u) {
+      const initial = esc(((u.name || u.email || '?')[0] || '?').toUpperCase());
+      const fbClass = 'w-9 h-9 rounded-full bg-gray-100 dark:bg-[#1c1c1c] flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300 shrink-0';
+      if (u.avatar_url) {
+        const fb = '<div class="ava-fb hidden ' + fbClass + '">' + initial + '</div>';
+        const img = '<img src="' + esc(u.avatar_url) + '" alt="" class="' + fbClass + '" style="object-fit:cover" onerror="this.style.display=\'none\';this.previousElementSibling.classList.remove(\'hidden\');">';
+        return fb + img;
+      }
+      return '<div class="' + fbClass + '">' + initial + '</div>';
+    }
+
+    function statusBadge(u) {
+      if (u.role === 'owner') return '<span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md bg-black text-white dark:bg-white dark:text-black">Owner</span>';
+      if (u.role === 'admin') return '<span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md bg-black text-white dark:bg-white dark:text-black">Admin</span>';
+      if (u.status === 'suspended') return '<span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-400">Suspended</span>';
+      if (u.status === 'deleted') return '<span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md bg-gray-100 dark:bg-[#1c1c1c] text-gray-500">Dihapus</span>';
+      return '<span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md bg-gray-100 dark:bg-[#1c1c1c] text-gray-600 dark:text-gray-300">Aktif</span>';
+    }
+
+    function renderUserList() {
+      const wrap = document.getElementById('users-list');
+      const list = filteredUsers();
+      document.getElementById('users-empty').classList.toggle('hidden', list.length > 0);
+
+      wrap.innerHTML = list.map(u => {
+        const isAdmin = u.role === 'admin' || u.role === 'owner'; // owner & admin tidak bisa di-suspend/hapus dari UI
+        const canAct = !isAdmin;
+        const suspendBtn = u.status === 'suspended'
+          ? `<button onclick="askConfirm('unsuspend', ${u.id}, this)" ${canAct ? '' : 'disabled'} class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-all flex items-center gap-1.5 cursor-pointer ${canAct ? '' : 'opacity-40 cursor-not-allowed'}"><i data-lucide="play" class="w-3.5 h-3.5"></i>Aktifkan</button>`
+          : `<button onclick="askConfirm('suspend', ${u.id}, this)" ${canAct ? '' : 'disabled'} class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all flex items-center gap-1.5 cursor-pointer ${canAct ? '' : 'opacity-40 cursor-not-allowed'}"><i data-lucide="pause" class="w-3.5 h-3.5"></i>Suspend</button>`;
+        const delBtn = u.status === 'deleted'
+          ? '<span class="text-[10px] text-gray-400 italic pr-1">terhapus</span>'
+          : `<button onclick="askConfirm('delete', ${u.id}, this)" ${canAct ? '' : 'disabled'} class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all flex items-center gap-1.5 cursor-pointer ${canAct ? '' : 'opacity-40 cursor-not-allowed'}"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Hapus</button>`;
+        const balBtn = `<button onclick="askConfirm('adjust_balance', ${u.id}, this)" class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-all flex items-center gap-1.5 cursor-pointer"><i data-lucide="wallet" class="w-3.5 h-3.5"></i>Saldo</button>`;
+        const reason = u.status === 'suspended' && u.suspend_reason
+          ? `<p class="text-[11px] text-red-500 dark:text-red-400 mt-0.5 pl-12 sm:pl-[52px]">Alasan: ${esc(u.suspend_reason)}</p>` : '';
+
+        return `
+        <div id="user-card-${u.id}" onclick="openUserPopover(${u.id}, this)" title="Klik untuk lihat detail user"
+          class="px-4 py-3.5 rounded-lg border border-gray-100 dark:border-[#1c1c1c] hover:border-gray-200 dark:hover:border-[#333] transition-all bg-white dark:bg-transparent cursor-pointer">
+          <div class="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+            ${avatarHtml(u)}
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-sm font-semibold text-gray-900 dark:text-white truncate">${esc(u.name || '(tanpa nama)')}</span>
+                ${statusBadge(u)}
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400 truncate">${esc(u.email)}</p>
+            </div>
+            <div class="hidden sm:flex flex-col items-end text-xs">
+              <span class="font-semibold text-gray-800 dark:text-gray-200">${formatRupiah(u.balance)}</span>
+              <span class="text-gray-400">${esc(u.plan || 'Free')} · ${u.projects_count || 0} proyek</span>
+              <span class="text-gray-400">${timeAgo(u.last_activity)}</span>
+            </div>
+            <div class="flex flex-wrap items-center justify-end gap-1.5 w-full sm:w-auto" onclick="event.stopPropagation()">
+              ${balBtn}
+              ${suspendBtn}
+              ${delBtn}
+            </div>
+          </div>
+          ${reason}
+        </div>`;
+      }).join('');
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // ==== Popover helper (semua pop-up diganti popover) ====
+    let activePopover = null; // { el, anchor }
+    function positionPopover(pop, anchor) {
+      pop.classList.remove('hidden');
+      const r = anchor.getBoundingClientRect();
+      const pw = pop.offsetWidth, ph = pop.offsetHeight;
+      const vw = window.innerWidth, vh = window.innerHeight, m = 8;
+      let top = r.bottom + m;
+      if (top + ph > vh - m) top = Math.max(m, r.top - ph - m);
+      let left = r.left + (r.width / 2) - (pw / 2);
+      left = Math.min(Math.max(m, left), Math.max(m, vw - pw - m));
+      pop.style.top = top + 'px';
+      pop.style.left = left + 'px';
+    }
+    function closeActivePopover() {
+      if (!activePopover) return;
+      if (activePopover.el.id === 'user-popover') openUserId = null;
+      activePopover.el.classList.add('hidden');
+      activePopover = null;
+    }
+    document.addEventListener('click', (e) => {
+      if (!activePopover) return;
+      if (activePopover.el.contains(e.target)) return;
+      if (activePopover.anchor && activePopover.anchor.contains(e.target)) return;
+      closeActivePopover();
+    }, true);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeActivePopover(); });
+    window.addEventListener('resize', () => { if (activePopover) positionPopover(activePopover.el, activePopover.anchor); });
+    window.addEventListener('scroll', () => { if (activePopover) positionPopover(activePopover.el, activePopover.anchor); }, true);
+
+    // ==== Popover detail user (klik card -> data user real-time) ====
+    let openUserId = null;
+    function fmtDate(iso) {
+      if (!iso) return null;
+      const d = new Date(String(iso).replace(' ', 'T'));
+      return isNaN(d) ? String(iso) : d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    function detailRow(label, value) {
+      return `<div class="flex items-center justify-between gap-3 py-2 border-b border-gray-100 dark:border-[#1c1c1c] last:border-0">
+        <span class="text-xs text-gray-500 dark:text-gray-400">${label}</span>
+        <span class="text-xs font-semibold text-gray-900 dark:text-white text-right">${value}</span>
+      </div>`;
+    }
+    function renderUserPopover(u) {
+      const isAdmin = u.role === 'admin' || u.role === 'owner';
+      const canAct = !isAdmin;
+      const actBtn = (action, icon, label, danger, extra) => `<button onclick="askConfirm('${action}', ${u.id}, this)" ${(!danger || canAct) ? '' : 'disabled'} class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border ${danger ? 'border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30' : 'border-gray-200 dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-[#1a1a1a]'} transition-all flex items-center gap-1.5 cursor-pointer ${(!danger || canAct) ? '' : 'opacity-40 cursor-not-allowed'}"><i data-lucide="${icon}" class="w-3.5 h-3.5"></i>${label}</button>`;
+      document.getElementById('user-popover-body').innerHTML = `
+        <div class="p-4 pb-3 flex items-center gap-3 border-b border-gray-100 dark:border-[#1c1c1c]">
+          <div class="shrink-0">${avatarHtml(u)}</div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-sm font-bold text-gray-900 dark:text-white truncate">${esc(u.name || '(tanpa nama)')}</span>
+              ${statusBadge(u)}
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">${esc(u.email)}</p>
+          </div>
+        </div>
+        <div class="px-4 py-1">
+          ${detailRow('Plan', esc(u.plan || 'Free'))}
+          ${detailRow('Kredit AI', `${u.ai_credits || 0} kredit`)}
+          ${detailRow('Saldo Dompet', formatRupiah(u.balance))}
+          ${detailRow('Total Top Up', formatRupiah(u.topup_total))}
+          ${detailRow('Proyek', `${u.projects_count || 0} proyek`)}
+          ${detailRow('Terdaftar', fmtDate(u.created_at) || '—')}
+          ${detailRow('Terakhir Aktif', timeAgo(u.last_activity))}
+          ${u.status === 'suspended' && u.suspend_reason ? detailRow('Alasan Suspend', esc(u.suspend_reason)) : ''}
+        </div>
+        <div class="p-3 border-t border-gray-100 dark:border-[#1c1c1c] flex flex-wrap items-center justify-center gap-1.5 bg-gray-50/60 dark:bg-[#0d0d0d]">
+          ${actBtn('adjust_balance', 'wallet', 'Saldo', false)}
+          ${u.status === 'suspended'
+            ? actBtn('unsuspend', 'play', 'Aktifkan', true)
+            : (u.status === 'deleted' ? '' : actBtn('suspend', 'pause', 'Suspend', true))}
+          ${u.status === 'deleted' ? '' : actBtn('delete', 'trash-2', 'Hapus', true)}
+        </div>`;
+      if (window.lucide) lucide.createIcons();
+    }
+    function openUserPopover(userId, anchor) {
+      const u = findUser(userId);
+      if (!u) return;
+      openUserId = userId;
+      renderUserPopover(u);
+      const pop = document.getElementById('user-popover');
+      positionPopover(pop, anchor);
+      activePopover = { el: pop, anchor: anchor };
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // ==== Modal & aksi ====
+    function findUser(id) { return allUsers.find(u => u.id === Number(id)); }
+
+    function askConfirm(action, userId, anchorEl) {
+      const u = findUser(userId);
+      if (!u) return;
+      pendingAction = { action, user: u };
+      closeActivePopover(); // tutup popover detail user bila terbuka
+      const isSuspend = action === 'suspend';
+      const isDelete = action === 'delete';
+      const isBalance = action === 'adjust_balance';
+      document.getElementById('confirm-title').textContent = isSuspend ? 'Suspend akun?' : isDelete ? 'Hapus akun?' : isBalance ? 'Atur saldo' : 'Aktifkan akun?';
+      document.getElementById('confirm-desc').textContent = isSuspend
+        ? `${u.name || u.email} akan langsung dikeluarkan dari semua sesi dan tidak bisa login sampai diaktifkan kembali.`
+        : isDelete ? `Akun ${u.name || u.email} dihapus (soft-delete): semua sesi dihapus, data historis disimpan untuk audit.`
+        : isBalance ? `Saldo saat ini: ${formatRupiah(u.balance)}. Masukkan nominal penyesuaian (boleh negatif, mis. -10000).`
+        : `${u.name || u.email} akan bisa login kembali seperti biasa.`;
+
+      const reasonWrap = document.getElementById('confirm-reason-wrap');
+      const reasonInput = document.getElementById('confirm-reason');
+      reasonInput.value = '';
+      if (isBalance) {
+        reasonWrap.classList.remove('hidden');
+        reasonInput.type = 'number';
+        reasonInput.placeholder = 'mis. 10000 atau -5000';
+        reasonInput.classList.remove('hidden');
+      } else if (isSuspend) {
+        reasonWrap.classList.remove('hidden');
+        reasonInput.type = 'text';
+        reasonInput.placeholder = 'mis. pelanggaran S&K pasal 5';
+      } else {
+        reasonWrap.classList.add('hidden');
+      }
+      document.getElementById('confirm-cta-text').textContent = isSuspend ? 'Suspend sekarang' : isDelete ? 'Ya, hapus' : isBalance ? 'Simpan saldo' : 'Ya, aktifkan';
+      const pop = document.getElementById('confirm-modal');
+      const anchor = (anchorEl && anchorEl.getBoundingClientRect) ? anchorEl : document.getElementById('user-card-' + u.id);
+      if (anchor) {
+        positionPopover(pop, anchor);
+        activePopover = { el: pop, anchor: anchor };
+      } else {
+        pop.classList.remove('hidden'); // tanpa anchor: tengah layar atas
+        pop.style.top = '72px';
+        pop.style.left = Math.max(8, (window.innerWidth - pop.offsetWidth) / 2) + 'px';
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirm-modal').classList.add('hidden');
+      if (activePopover && activePopover.el.id === 'confirm-modal') activePopover = null;
+      pendingAction = null;
+    }
+
+    async function executePendingAction() {
+      if (!pendingAction) return;
+      const { action, user } = pendingAction;
+      const reasonInput = document.getElementById('confirm-reason');
+      const cta = document.getElementById('confirm-cta');
+      const ctaText = document.getElementById('confirm-cta-text');
+      const spinner = document.getElementById('confirm-cta-spinner');
+      const check = document.getElementById('confirm-cta-check');
+
+      let body = { action, user_id: user.id };
+      if (action === 'suspend') body.reason = reasonInput.value.trim() || 'Pelanggaran ketentuan';
+      if (action === 'adjust_balance') {
+        const amount = parseFloat(reasonInput.value);
+        if (isNaN(amount)) { showToast('Nominal tidak valid', true); return; }
+        body.amount = amount;
+      }
+
+      cta.disabled = true;
+      ctaText.classList.add('hidden');
+      spinner.classList.remove('hidden');
+      try {
+        const res = await fetch(API_BASE + '/api/admin/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) throw new Error(data?.error || 'Aksi gagal');
+
+        spinner.classList.add('hidden');
+        check.classList.remove('hidden');
+        await new Promise(r => setTimeout(r, 700));
+        closeConfirmModal();
+        setTimeout(() => { spinner.classList.add('hidden'); check.classList.add('hidden'); ctaText.classList.remove('hidden'); cta.disabled = false; }, 300);
+        showToast(action === 'adjust_balance' ? 'Saldo diperbarui' : action === 'unsuspend' ? 'Akun diaktifkan' : action === 'delete' ? 'Akun dihapus' : 'Akun disuspend');
+        fetchUsers();
+      } catch (err) {
+        spinner.classList.add('hidden');
+        ctaText.classList.remove('hidden');
+        cta.disabled = false;
+        showToast(err.message || 'Aksi gagal', true);
+      }
+    }
+
+    document.getElementById('confirm-cta').addEventListener('click', executePendingAction);
+    document.addEventListener('DOMContentLoaded', async () => {
+      const ok = await checkAdminPing();
+      if (!ok) return;
+      if (window.lucide) lucide.createIcons();
+      fetchUsers();
+      setInterval(fetchUsers, 30000);
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) fetchUsers(); });
+    });
+  </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

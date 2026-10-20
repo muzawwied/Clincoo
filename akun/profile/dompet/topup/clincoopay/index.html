@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../../../../js/auth-client.js?v=6"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../../../../assets/favicon.png">
+    <link rel="manifest" href="../../../../../manifest.json">
+    <link rel="apple-touch-icon" href="../../../../../assets/icons/apple-touch-icon.png">
+    <title>Top Up ClincooPay — Clincoo</title>
+    <meta name="description" content="Top Up ClincooPay — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clincoo">
+    <meta property="og:title" content="Top Up ClincooPay — Clincoo">
+    <meta property="og:description" content="Top Up ClincooPay — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Top Up ClincooPay — Clincoo">
+    <meta name="twitter:description" content="Top Up ClincooPay — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+body{font-family:'Outfit',system-ui,sans-serif}</style>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="/js/path-router.js"></script>
+    <style>
+        body { font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif; }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fade-in 0.25s ease-out; }
+        .otp-hidden { display: none; }
+        /* Keypad PIN — desain diambil dari repo Wallet */
+        .pin-dots { display: flex; gap: 16px; justify-content: center; margin: 24px 0 12px; }
+        .pin-dot { width: 16px; height: 16px; border-radius: 50%; background-color: #e2e8f0; transition: all 0.2s ease; }
+        .pin-dot.filled { background-color: #38bdf8; transform: scale(1.1); }
+        .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 24px; padding: 0 24px; margin-top: 16px; }
+        .pin-key { width: 70px; height: 70px; border-radius: 50%; border: none; background-color: #f8fafc; color: #0f172a; font-size: 1.5rem; font-weight: 500; display: flex; align-items: center; justify-content: center; margin: auto; cursor: pointer; transition: all 0.1s ease; -webkit-tap-highlight-color: transparent; }
+        .pin-key:active { background-color: #e2e8f0; transform: scale(0.92); }
+        .pin-key.ghost { background-color: transparent; cursor: default; pointer-events: none; }
+        body.dark-mode .pin-dot { background-color: #334155; }
+        body.dark-mode .pin-key { background-color: #1a1a1a; color: #f8fafc; }
+        body.dark-mode .pin-key:active { background-color: #2a2a2a; }
+    </style>
+
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
+(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<5;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
+    </script>
+<!-- Google tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+<!-- End Google tag -->
+<script src="../../../../../js/i18n-dict.js" defer></script>
+<script src="../../../../../js/i18n.js" defer></script>
+</head>
+<body class="min-h-screen flex flex-col text-slate-900 bg-white dark:text-white">
+    <style>
+        /* ==== Style ClincooPay — halaman integrasi ==== */
+        .cp-glow { background: radial-gradient(70% 90% at 50% 0%, rgba(56,189,248,.13) 0%, rgba(255,255,255,0) 72%); }
+        body.dark-mode .cp-glow { background: radial-gradient(70% 90% at 50% 0%, rgba(56,189,248,.09) 0%, rgba(10,10,10,0) 72%); }
+        .cp-card { border-radius: 18px; border: 1px solid #eef2f7; background: #ffffff; box-shadow: 0 2px 16px rgba(15,23,42,.05); }
+        body.dark-mode .cp-card { border-color: rgba(30,41,59,.5); background: #111111; box-shadow: none; }
+        .cp-logo-tile { width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #e2e8f0; box-shadow: 0 2px 10px rgba(15,23,42,.06); overflow: hidden; position: relative; flex-shrink: 0; }
+        body.dark-mode .cp-logo-tile { background: #111111; border-color: #1e293b; }
+        .cp-link-line { width: 100%; border-top: 2px dashed #7dd3fc; }
+        .cp-link-badge { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 26px; height: 26px; border-radius: 9999px; background: linear-gradient(135deg,#38bdf8,#0284c7); color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 5px rgba(56,189,248,.15), 0 4px 10px rgba(56,189,248,.35); }
+        .cp-pulse { animation: cpPulse 2.2s ease-in-out infinite; }
+        @keyframes cpPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(56,189,248,.30), 0 4px 10px rgba(56,189,248,.35); } 50% { box-shadow: 0 0 0 9px rgba(56,189,248,0), 0 4px 10px rgba(56,189,248,.35); } }
+        .cp-btn-primary { background: linear-gradient(135deg,#38bdf8 0%,#0284c7 100%); box-shadow: 0 6px 16px rgba(14,165,233,.28); transition: all .2s ease; }
+        .cp-btn-primary:hover { filter: brightness(1.06); }
+        .cp-btn-primary:active { transform: scale(.98); }
+        /* Step indicator */
+        .cp-steps { display: flex; align-items: flex-start; width: 100%; margin-bottom: 20px; }
+        .cp-step { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 62px; }
+        .cp-step-dot { width: 28px; height: 28px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; background: #f1f5f9; color: #94a3b8; transition: all .3s ease; }
+        body.dark-mode .cp-step-dot { background: #1a1a1a; color: #64748b; }
+        .cp-step.done .cp-step-dot { background: #e0f2fe; color: #0284c7; }
+        body.dark-mode .cp-step.done .cp-step-dot { background: rgba(14,165,233,.15); color: #38bdf8; }
+        .cp-step.active .cp-step-dot { background: linear-gradient(135deg,#38bdf8,#0284c7); color: #fff; box-shadow: 0 4px 12px rgba(14,165,233,.45); }
+        .cp-step-label { font-size: 9.5px; font-weight: 700; color: #94a3b8; letter-spacing: .03em; text-align: center; }
+        .cp-step.active .cp-step-label, .cp-step.done .cp-step-label { color: #0284c7; }
+        body.dark-mode .cp-step.active .cp-step-label, body.dark-mode .cp-step.done .cp-step-label { color: #38bdf8; }
+        .cp-sep { flex: 1; height: 2px; background: #e2e8f0; margin-top: 13px; border-radius: 2px; transition: background .3s ease; }
+        body.dark-mode .cp-sep { background: #1e293b; }
+        .cp-sep.done { background: #7dd3fc; }
+        /* Checklist izin (terinspirasi layar konfirmasi DANA x Bukalapak) */
+        .cp-perm-item { display: flex; align-items: flex-start; gap: 9px; }
+        .cp-perm-check { width: 18px; height: 18px; border-radius: 9999px; background: #22c55e; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+        .cp-perm-text { font-size: 11.5px; color: #475569; line-height: 1.5; font-weight: 500; }
+        body.dark-mode .cp-perm-text { color: #94a3b8; }
+        .cp-secured { display: flex; align-items: center; justify-content: center; gap: 6px; color: #64748b; }
+        body.dark-mode .cp-secured { color: #64748b; }
+        .cp-secured-label { font-size: 9.5px; font-weight: 800; letter-spacing: .04em; line-height: 1.15; text-align: left; }
+        .cp-secured-label b { display: block; color: #0284c7; font-size: 10.5px; }
+        body.dark-mode .cp-secured-label b { color: #38bdf8; }
+    </style>
+
+    <div class="flex flex-col bg-white dark:bg-[#0a0a0a] min-h-screen w-full overflow-x-hidden">
+
+        <header class="sticky top-0 z-40 w-full bg-white/85 dark:bg-[#0a0a0a]/85 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/70">
+            <div class="flex items-center gap-3 px-4 py-3" style="max-width: 26rem; margin: 0 auto;">
+                <button onclick="goBack()" aria-label="Kembali" class="w-9 h-9 flex items-center justify-center rounded-full bg-white dark:bg-[#0a0a0a] border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all cursor-pointer text-slate-700 dark:text-slate-300 shadow-sm shrink-0">
+                    <i data-lucide="arrow-left" class="w-[18px] h-[18px]"></i>
+                </button>
+                <div class="flex-1 min-w-0">
+                    <p class="text-[13px] font-bold text-slate-900 dark:text-white leading-tight">ClincooPay</p>
+                    <p class="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">Integrasi dompet digital</p>
+                </div>
+                <div class="cp-logo-tile" style="width:36px;height:36px;border-radius:9999px;">
+                    <img src="/assets/ewallet-logos/clincoopay.png" alt="ClincooPay" class="w-full h-full object-contain">
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 w-full flex flex-col px-5 py-6" style="max-width: 26rem; margin: 0 auto;">
+
+            <!-- HERO: logo Clincoo x ClincooPay -->
+            <div class="cp-glow -mx-5 px-5 pt-5 pb-7 mb-5 text-center" style="border-radius: 0 0 26px 26px;">
+                <div class="flex items-center justify-center mb-4">
+                    <div class="cp-logo-tile">
+                        <img src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%2084%22%3E%3Cpath%20d%3D%22M28%208C34%208%2038%2015%2038%2024C38%2030%2035%2033%2032%2033L24%2020C24%2013%2023%208%2028%208Z%22%20fill%3D%22%23000000%22/%3E%0A%20%20%3Cpath%20d%3D%22M72%208C66%208%2062%2015%2062%2024C62%2030%2065%2033%2068%2033L76%2020C76%2013%2077%208%2072%208Z%22%20fill%3D%22%23000000%22/%3E%0A%20%20%3Cpath%20d%3D%22M29.5%2014C32%2016%2033.5%2020%2033%2025L26.5%2019.5C27%2016.5%2027.5%2014.5%2029.5%2014Z%22%20fill%3D%22%233f3f3f%22/%3E%0A%20%20%3Cpath%20d%3D%22M70.5%2014C68%2016%2066.5%2020%2067%2025L73.5%2019.5C73%2016.5%2072.5%2014.5%2070.5%2014Z%22%20fill%3D%22%233f3f3f%22/%3E%0A%20%20%3Cpath%20d%3D%22M50%2026C68%2026%2084%2031%2084%2049C84%2066%2068%2076%2050%2076C32%2076%2016%2066%2016%2049C16%2031%2032%2026%2050%2026Z%22%20fill%3D%22%23000000%22/%3E%0A%20%20%3Ccircle%20cx%3D%2240%22%20cy%3D%2250%22%20r%3D%227%22%20fill%3D%22%23999999%22/%3E%0A%20%20%3Ccircle%20cx%3D%2260%22%20cy%3D%2250%22%20r%3D%227%22%20fill%3D%22%23999999%22/%3E%0A%20%20%3Cpath%20d%3D%22M50%2055L46%2061L54%2061Z%22%20fill%3D%22%23999999%22/%3E%3C/svg%3E" alt="Clincoo" class="absolute inset-0 w-full h-full object-contain p-2">
+                    </div>
+                    <div class="relative flex-1 max-w-[96px] mx-1.5">
+                        <div class="cp-link-line"></div>
+                        <div class="cp-link-badge cp-pulse"><i data-lucide="link" class="w-3.5 h-3.5"></i></div>
+                    </div>
+                    <div class="cp-logo-tile">
+                        <img src="/assets/ewallet-logos/clincoopay.png" alt="ClincooPay" class="w-full h-full object-contain">
+                    </div>
+                </div>
+                <h1 class="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">Hubungkan ClincooPay</h1>
+                <p id="page-subtitle" class="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed px-6">Sinkronkan dompet Wallet kamu dengan Clincoo.</p>
+                <p id="cp-credits" class="text-[10px] text-slate-400 dark:text-slate-500 mt-1 hidden"></p>
+            </div>
+
+            <!-- INDIKATOR LANGKAH -->
+            <div id="cp-steps" class="cp-steps otp-hidden">
+                <div class="cp-step" id="cp-si-1"><span class="cp-step-dot">1</span><span class="cp-step-label">ID Wallet</span></div>
+                <div class="cp-sep" id="cp-sep-1"></div>
+                <div class="cp-step" id="cp-si-2"><span class="cp-step-dot">2</span><span class="cp-step-label">Konfirmasi</span></div>
+                <div class="cp-sep" id="cp-sep-2"></div>
+                <div class="cp-step" id="cp-si-3"><span class="cp-step-dot">3</span><span class="cp-step-label">PIN</span></div>
+            </div>
+
+            <!-- STEP 0: MEMERIKSA KONEKSI -->
+            <div id="step-check" class="w-full otp-hidden">
+                <div class="cp-card px-5 py-9 text-center animate-fade-in">
+                    <div class="w-11 h-11 rounded-full bg-sky-50 dark:bg-sky-400/10 flex items-center justify-center mx-auto cp-pulse">
+                        <svg class="animate-spin text-sky-500" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                    </div>
+                    <p class="text-sm font-bold text-slate-900 dark:text-white mt-4">Memeriksa Koneksi…</p>
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Sebentar, cek status dompet dulu.</p>
+                </div>
+            </div>
+
+            <!-- STEP 1: INPUT ID WALLET -->
+            <div id="step-id" class="w-full otp-hidden animate-fade-in">
+                <div class="cp-card p-5 space-y-4">
+                    <div>
+                        <label for="cp-wallet-id" class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+                            <i data-lucide="wallet" class="w-3 h-3"></i>ID Wallet
+                        </label>
+                        <div class="relative">
+                            <i data-lucide="hash" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 pointer-events-none"></i>
+                            <input id="cp-wallet-id" type="text" maxlength="10" placeholder="Contoh: aYSRRPE5yX" autocomplete="off"
+                                class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-[#161616] text-sm font-bold text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 focus:outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100 dark:focus:ring-sky-400/10 tracking-widest uppercase transition-all">
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-2 px-0.5">Buka aplikasi Wallet → Profil → salin 10 karakter ID kamu.</p>
+                        <p id="cp-id-error" class="text-xs text-red-500 hidden px-0.5 mt-1"></p>
+                    </div>
+
+                    <div class="rounded-xl bg-sky-50/70 dark:bg-sky-400/5 border border-sky-100 dark:border-sky-400/10 px-3.5 py-2.5 text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Belum punya akun ClincooPay? Daftar gratis di <a href="https://clincoo-wallet.pages.dev/" target="_blank" rel="noopener" class="text-sky-600 dark:text-sky-400 font-bold underline underline-offset-2">clincoo-wallet.pages.dev</a>
+                    </div>
+
+                    <div class="border-t border-slate-100 dark:border-slate-800/70 pt-3.5 space-y-2.5">
+                        <p class="text-[10.5px] font-bold text-slate-700 dark:text-slate-300 mb-1">Dengan menghubungkan ClincooPay ke Clincoo, kamu setuju untuk:</p>
+                        <div class="cp-perm-item">
+                            <div class="cp-perm-check"><i data-lucide="check" class="w-3 h-3"></i></div>
+                            <p class="cp-perm-text">Membagikan status koneksi &amp; alamat dompet ClincooPay</p>
+                        </div>
+                        <div class="cp-perm-item">
+                            <div class="cp-perm-check"><i data-lucide="check" class="w-3 h-3"></i></div>
+                            <p class="cp-perm-text">Menyinkronkan saldo ClincooPay secara otomatis ke Clincoo</p>
+                        </div>
+                        <div class="cp-perm-item">
+                            <div class="cp-perm-check"><i data-lucide="check" class="w-3 h-3"></i></div>
+                            <p class="cp-perm-text">Melakukan top up &amp; transaksi tanpa perlu login ulang</p>
+                        </div>
+                        <div class="cp-perm-item">
+                            <div class="cp-perm-check"><i data-lucide="check" class="w-3 h-3"></i></div>
+                            <p class="cp-perm-text">Mengarahkan ke ClincooPay saat proses pembayaran diperlukan</p>
+                        </div>
+                    </div>
+
+                    <div class="cp-secured py-1">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-sky-500 shrink-0"></i>
+                        <span class="cp-secured-label">Secured by<b>CLINCOOPAY PROTECTION</b></span>
+                    </div>
+
+                    <button id="cp-send-btn" onclick="sendRequest()" class="cp-btn-primary w-full py-3.5 text-white rounded-xl font-bold text-sm">Kirim Permintaan</button>
+                    <p class="text-[10px] text-slate-400 leading-relaxed text-center px-1">
+                        Dengan melanjutkan proses ini, kamu menyetujui <a href="https://clincoo-blog.pages.dev/legal/syarat-ketentuan/" target="_blank" rel="noopener" class="text-sky-600 dark:text-sky-400 font-semibold underline underline-offset-2">S&amp;K</a> dan <a href="https://clincoo-blog.pages.dev/legal/kebijakan-privasi/" target="_blank" rel="noopener" class="text-sky-600 dark:text-sky-400 font-semibold underline underline-offset-2">Kebijakan Privasi</a> ClincooPay. PIN tidak pernah disimpan Clincoo.
+                    </p>
+                </div>
+            </div>
+
+            <!-- STEP 2: MENUNGGU KONFIRMASI DI APLIKASI WALLET -->
+            <div id="step-wait" class="w-full otp-hidden animate-fade-in">
+                <div class="cp-card px-5 py-8 text-center">
+                    <div class="relative w-12 h-12 mx-auto mb-4">
+                        <div class="absolute inset-0 rounded-full bg-sky-100 dark:bg-sky-400/10 cp-pulse" style="box-shadow:none"></div>
+                        <div class="absolute inset-0 flex items-center justify-center text-sky-500 dark:text-sky-400"><i data-lucide="bell-ring" class="w-5 h-5"></i></div>
+                    </div>
+                    <p class="text-sm font-bold text-slate-900 dark:text-white">Menunggu Konfirmasi</p>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed px-2">Buka aplikasi <b>Wallet</b> → <b>Notifikasi</b> → tekan <b>Konfirmasi</b> pada permintaan ClincooPay.</p>
+                    <button onclick="cancelWait()" class="mt-5 px-6 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:border-sky-400 hover:text-sky-500 transition-all">Batalkan</button>
+                </div>
+            </div>
+
+            <!-- STEP 3: INPUT PIN WALLET -->
+            <div id="step-pin" class="w-full otp-hidden animate-fade-in">
+                <div class="cp-card p-5">
+                    <div class="flex items-center gap-2 mb-3 rounded-xl bg-emerald-50 dark:bg-emerald-400/5 border border-emerald-100 dark:border-emerald-400/10 px-3 py-2">
+                        <div class="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0"><i data-lucide="check" class="w-3 h-3"></i></div>
+                        <p class="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold">Dompet sudah dikonfirmasi di aplikasi Wallet</p>
+                    </div>
+                    <p class="text-sm font-bold text-slate-900 dark:text-white text-center">Masukkan PIN Wallet</p>
+                    <p class="text-[10px] text-slate-400 mt-1 text-center">Ketuk angka di keypad di bawah. PIN tidak pernah disimpan Clincoo.</p>
+                    <div id="cp-pin-dots" class="pin-dots"></div>
+                    <p id="cp-pin-error" class="text-xs text-red-500 hidden text-center" style="min-height: 1em;"></p>
+                    <div id="cp-pin-pad" class="pin-pad"></div>
+                    <button id="cp-pin-btn" onclick="confirmPin()" class="cp-btn-primary w-full py-3.5 text-white rounded-xl font-bold text-sm mt-5">Konfirmasi &amp; Hubungkan</button>
+                </div>
+            </div>
+
+            <!-- STEP 4: TERHUBUNG -->
+            <div id="step-done" class="w-full otp-hidden animate-fade-in">
+                <div class="cp-card px-5 py-8 text-center">
+                    <div class="w-14 h-14 rounded-full bg-emerald-50 dark:bg-emerald-400/10 text-emerald-500 dark:text-emerald-400 flex items-center justify-center mx-auto mb-1" style="box-shadow: 0 0 0 6px rgba(16,185,129,.08);">
+                        <i data-lucide="check-circle" class="w-7 h-7"></i>
+                    </div>
+                    <p class="text-sm font-bold text-slate-900 dark:text-white mt-3">Dompet Terhubung</p>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Terhubung ke <span id="cp-done-addr" class="font-semibold"></span></p>
+                    <div class="mt-4 rounded-xl bg-slate-50 dark:bg-[#161616] border border-slate-100 dark:border-slate-800 px-4 py-3.5">
+                        <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400">Saldo Tersinkron</p>
+                        <p class="text-lg font-extrabold text-slate-900 dark:text-white mt-0.5" id="cp-done-balance"></p>
+                        <p class="text-[10px] text-slate-400 mt-1">Saldo Clincoo dan Wallet kini tersinkron otomatis.</p>
+                    </div>
+                    <div class="space-y-2 mt-4">
+                        <button onclick="location.href='../../'" class="cp-btn-primary w-full py-3 text-white rounded-xl font-bold text-sm">Kembali ke Dompet</button>
+                        <button id="cp-unlink-btn" onclick="doUnlink()" class="w-full py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:border-red-300 dark:hover:border-red-400/40 hover:text-red-500 transition-all">Putuskan Dompet</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="w-full px-5 pb-6 pt-3 mt-auto" style="max-width: 26rem; margin: 0 auto;">
+            <div class="border-t border-slate-100 dark:border-slate-800/70 pt-4 flex flex-col items-center gap-2.5">
+                <div class="flex items-center justify-center gap-4">
+                    <a href="https://www.tiktok.com/@clincoo.co?_r=1&_t=ZS-99qknXlhEXc" target="_blank" rel="noopener" aria-label="TikTok" class="w-9 h-9 flex items-center justify-center rounded-full text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"><svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.9 2.9 0 1 1-2.31-2.83V9.37a6.36 6.36 0 1 0 5.76 6.35V8.71a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.14z"/></svg></a>
+                    <a href="https://www.instagram.com/clincoo.co?stkn=b2Zhajh3ZmtqMnd4" target="_blank" rel="noopener" aria-label="Instagram" class="w-9 h-9 flex items-center justify-center rounded-full text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"><svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.012-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
+                    <a href="https://wa.me/6283849297259" target="_blank" rel="noopener" aria-label="WhatsApp" class="w-9 h-9 flex items-center justify-center rounded-full text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"><svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.334.101 11.893c0 2.096.549 4.14 1.595 5.945L0 24l6.335-1.652a11.98 11.98 0 0 0 5.71 1.448h.006c6.585 0 11.946-5.336 11.949-11.897 0-3.179-1.24-6.165-3.495-8.411M12.05 21.785h-.004a9.87 9.87 0 0 1-5.031-1.378l-.36-.214-3.742.976 1.005-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.002-5.45 4.457-9.884 9.942-9.884 2.652 0 5.145 1.035 7.021 2.91a9.83 9.83 0 0 1 2.909 6.99c-.003 5.45-4.458 9.884-9.995 9.884"/></svg></a>
+                </div>
+                <p class="text-center text-[10px] text-slate-300 dark:text-slate-600">© 2026 ClincooPay — bagian dari Clincoo</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- // [18 Okt 2026, arahan pemilik] pop-up -> popover -->
+    <div id="system-modal" class="hidden fixed z-50 w-[min(20rem,calc(100vw-1.5rem))] bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] rounded-2xl shadow-2xl p-6 text-center relative" style="top:84px;left:50%;transform:translateX(-50%);">
+        <button type="button" onclick="closeModal()" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 dark:bg-[#1a1a1a] hover:bg-gray-100 dark:hover:bg-[#222] text-gray-500 dark:text-gray-400 transition-all">
+            <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+        <div id="modal-icon-wrap" class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 mx-auto">
+            <i data-lucide="check-circle" class="w-6 h-6"></i>
+        </div>
+        <h3 id="modal-title" class="text-base font-bold text-gray-900 dark:text-white mb-2"></h3>
+        <p id="modal-message" class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed"></p>
+        <button onclick="closeModal()" class="cp-btn-primary w-full py-3 text-white rounded-xl font-bold text-sm active:scale-[0.98] transition-all">Tutup</button>
+    </div>
+
+    <script>
+        const API_BASE = ['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev' : '';
+        const CP_API = API_BASE + '/api/clincoopay';
+        var currentRequestId = null;
+        var pollTimer = null;
+
+        // feedback loading tombol: ganti isi tombol jadi spinner + teks, disable sambil proses
+        function btnBusy(id, busy, busyText) {
+            var b = document.getElementById(id); if (!b) return;
+            if (busy) {
+                if (!b.dataset.orig) b.dataset.orig = b.innerHTML;
+                b.disabled = true; b.style.opacity = '0.7';
+                b.innerHTML = '<svg class="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="display:inline-block;vertical-align:-3px;margin-right:6px"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>' + (busyText || 'Memproses…');
+            } else {
+                b.disabled = false; b.style.opacity = '';
+                if (b.dataset.orig) { b.innerHTML = b.dataset.orig; delete b.dataset.orig; }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Sisa kredit AI hari ini (info kecil di bawah judul)
+            (async function () {
+                try {
+                    var t = ''; try { t = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
+                    var r = await fetch(API_BASE + '/api/chat', { headers: { 'Authorization': 'Bearer ' + t } }).then(function (x) { return x.json(); });
+                    if (r && r.success) {
+                        var el = document.getElementById('cp-credits');
+                        el.textContent = 'Sisa kuota chat AI Clincoo hari ini: ' + r.remaining + '/' + r.limit;
+                        el.classList.remove('hidden');
+                    }
+                } catch (e) {}
+            })();
+            try { lucide.createIcons(); } catch (e) {}
+            buildPinPad();
+            showStep('step-check');
+            await loadStatus();
+            if (document.getElementById('step-check') && !document.getElementById('step-check').classList.contains('otp-hidden')) showStep('step-id');
+        });
+
+        function goBack() {
+            // Kembali SELALU ke halaman Dompet (bukan history.back yang bisa nyasar ke halaman topup)
+            try { location.replace('../../'); return; } catch (e) {}
+            if (history.length > 1) { history.back(); } else { location.replace('../../'); }
+        }
+
+        function authHeaders() {
+            var token = ''; try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
+            return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+        }
+        function showStep(id) {
+            ['step-check', 'step-id', 'step-wait', 'step-pin', 'step-done'].forEach(function (s) {
+                document.getElementById(s).classList.toggle('otp-hidden', s !== id);
+            });
+            var map = { 'step-id': 1, 'step-wait': 2, 'step-pin': 3, 'step-done': 'done' };
+            setStepIndicator(map.hasOwnProperty(id) ? map[id] : null);
+        }
+        function setStepIndicator(state) {
+            var wrap = document.getElementById('cp-steps'); if (!wrap) return;
+            if (state == null) { wrap.classList.add('otp-hidden'); return; }
+            wrap.classList.remove('otp-hidden');
+            var doneAll = state === 'done';
+            var cur = doneAll ? 4 : state;
+            for (var i = 1; i <= 3; i++) {
+                var st = document.getElementById('cp-si-' + i); if (!st) continue;
+                st.classList.remove('done', 'active');
+                if (doneAll || i < cur) st.classList.add('done');
+                else if (i === cur) st.classList.add('active');
+            }
+            var s1 = document.getElementById('cp-sep-1'), s2 = document.getElementById('cp-sep-2');
+            if (s1) s1.classList.toggle('done', doneAll || cur > 1);
+            if (s2) s2.classList.toggle('done', doneAll || cur > 2);
+        }
+        // [18 Okt 2026, arahan pemilik] pop-up -> popover
+        function positionPopover(pop, anchor) {
+          pop.classList.remove('hidden');
+          const r = anchor.getBoundingClientRect();
+          const pw = pop.offsetWidth, ph = pop.offsetHeight;
+          const vw = window.innerWidth, vh = window.innerHeight, m = 8;
+          let top = r.bottom + m;
+          if (top + ph > vh - m) top = Math.max(m, r.top - ph - m);
+          let left = r.left + (r.width / 2) - (pw / 2);
+          left = Math.min(Math.max(m, left), Math.max(m, vw - pw - m));
+          pop.style.top = top + 'px';
+          pop.style.left = left + 'px';
+          pop.style.transform = 'none';
+        }
+
+        function showModal(title, message, okIcon, anchor) {
+            var m = document.getElementById('system-modal'); if (!m) return;
+            document.getElementById('modal-title').textContent = title || '';
+            document.getElementById('modal-message').textContent = message || '';
+            var good = okIcon !== false;
+            var w = document.getElementById('modal-icon-wrap');
+            if (w) {
+                w.className = 'w-12 h-12 rounded-full flex items-center justify-center mb-4 mx-auto ' + (good ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600');
+                w.innerHTML = '<i data-lucide="' + (good ? 'check-circle' : 'alert-circle') + '" class="w-6 h-6"></i>';
+                try { lucide.createIcons(); } catch (e) {}
+            }
+            var btn = (anchor && anchor.nodeType === 1) ? anchor : (anchor && anchor.currentTarget ? anchor.currentTarget : null);
+            if (btn) {
+                positionPopover(m, btn);
+            } else {
+                m.classList.remove('hidden');
+                m.style.top = '84px';
+                m.style.left = '50%';
+                m.style.transform = 'translateX(-50%)';
+            }
+        }
+        function closeModal() {
+            var m = document.getElementById('system-modal');
+            if (m) m.classList.add('hidden');
+        }
+
+        document.addEventListener('click', function(e) {
+            var pop = document.getElementById('system-modal');
+            if (pop && !pop.classList.contains('hidden')) {
+                if (!pop.contains(e.target) && !e.target.closest('[onclick*="Modal"]') && !e.target.closest('[onclick*="showModal"]')) {
+                    pop.classList.add('hidden');
+                }
+            }
+        }, true);
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                var pop = document.getElementById('system-modal');
+                if (pop) pop.classList.add('hidden');
+            }
+        });
+        function maskAddr(a) { return a ? '0x…' + String(a).slice(-6) : ''; }
+        function fmtIDR(n) { return Number(n || 0).toLocaleString('id-ID'); }
+
+        async function loadStatus() {
+            var ctrl = ('AbortController' in window) ? new AbortController() : null;
+            var timer = ctrl ? setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 8000) : null;
+            try {
+                var st = await fetch(CP_API, { headers: authHeaders(), signal: ctrl ? ctrl.signal : undefined }).then(function (r) { return r.json(); });
+                if (st.connected) {
+                    renderDone(st.wallet_address, st.wallet_balance);
+                    document.getElementById('page-subtitle').textContent = 'Dompet kamu sudah terhubung dan tersinkron dengan Clincoo.';
+                    showStep('step-done');
+                }
+            } catch (e) {
+            } finally {
+                if (timer) clearTimeout(timer);
+            }
+        }
+
+        function renderDone(addr, balance) {
+            document.getElementById('cp-done-addr').textContent = maskAddr(addr);
+            document.getElementById('cp-done-balance').textContent = balance == null ? '—' : 'Rp ' + fmtIDR(balance);
+        }
+
+        async function sendRequest() {
+            var wid = (document.getElementById('cp-wallet-id').value || '').trim();
+            var err = document.getElementById('cp-id-error');
+            err.classList.add('hidden');
+            if (!/^[A-Za-z0-9]{10}$/.test(wid)) {
+                err.textContent = 'ID Wallet harus 10 karakter huruf/angka.';
+                err.classList.remove('hidden'); return;
+            }
+            btnBusy('cp-send-btn', true, 'Mengirim…');
+            try {
+                var res = await fetch(CP_API, { method: 'POST', headers: authHeaders(),
+                    body: JSON.stringify({ action: 'connect_start', wallet_id: wid }) }).then(function (r) { return r.json(); });
+                if (!res.success) {
+                    btnBusy('cp-send-btn', false);
+                    if (res.need_login) { location.href = '../../../../auth.html'; return; }
+                    err.textContent = res.error || 'Gagal mengirim permintaan.';
+                    err.classList.remove('hidden'); return;
+                }
+                currentRequestId = res.request_id;
+                btnBusy('cp-send-btn', false);
+                showStep('step-wait');
+                startPolling();
+            } catch (e) {
+                btnBusy('cp-send-btn', false);
+                err.textContent = 'Tidak dapat terhubung ke server ClincooPay.';
+                err.classList.remove('hidden');
+            }
+        }
+
+        function startPolling() {
+            stopPolling();
+            pollTimer = setInterval(pollOnce, 3000);
+            pollOnce();
+        }
+        function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
+        async function pollOnce() {
+            if (!currentRequestId) { stopPolling(); return; }
+            try {
+                var res = await fetch(CP_API, { method: 'POST', headers: authHeaders(),
+                    body: JSON.stringify({ action: 'connect_status', request_id: currentRequestId }) }).then(function (r) { return r.json(); });
+                if (!res.success) return;
+                if (res.status === 'confirmed') {
+                    stopPolling();
+                    showStep('step-pin');
+                    resetPinPad();
+                } else if (res.status === 'rejected') {
+                    stopPolling();
+                    showModal('Permintaan Ditolak', 'Kamu menolak permintaan ini di aplikasi Wallet. Kamu bisa mengirim permintaan baru kapan saja.', false);
+                    showStep('step-id');
+                } else if (res.status === 'expired') {
+                    stopPolling();
+                    showModal('Permintaan Kedaluwarsa', 'Permintaan konfirmasi kedaluwarsa (10 menit). Kirim permintaan baru.', false);
+                    showStep('step-id');
+                }
+            } catch (e) {}
+        }
+        function cancelWait() { stopPolling(); currentRequestId = null; showStep('step-id'); }
+
+        // ===== Keypad PIN (keyboard buatan web — desain dari repo Wallet) =====
+        var cpPin = '';
+        var cpPinBusy = false;
+        function renderPinDots() {
+            var el = document.getElementById('cp-pin-dots'); if (!el) return;
+            var h = '';
+            for (var i = 0; i < 6; i++) h += '<span class="pin-dot' + (i < cpPin.length ? ' filled' : '') + '"></span>';
+            el.innerHTML = h;
+        }
+        function showPinError(msg) {
+            var e = document.getElementById('cp-pin-error');
+            if (e) { e.textContent = msg; e.classList.remove('hidden'); }
+        }
+        function hidePinError() {
+            var e = document.getElementById('cp-pin-error');
+            if (e) e.classList.add('hidden');
+        }
+        function resetPinPad() { cpPin = ''; cpPinBusy = false; hidePinError(); renderPinDots(); }
+        function buildPinPad() {
+            var el = document.getElementById('cp-pin-pad'); if (!el) return;
+            var layout = ['1','2','3','4','5','6','7','8','9','','0','del'];
+            el.innerHTML = '';
+            layout.forEach(function (k) {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                if (k === '') { btn.className = 'pin-key ghost'; }
+                else if (k === 'del') {
+                    btn.className = 'pin-key';
+                    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>';
+                    btn.onclick = function () { pinKey('del'); };
+                } else {
+                    btn.className = 'pin-key'; btn.textContent = k;
+                    btn.onclick = function () { pinKey(k); };
+                }
+                el.appendChild(btn);
+            });
+            renderPinDots();
+        }
+        function pinKey(k) {
+            hidePinError();
+            if (k === 'del') { cpPin = cpPin.slice(0, -1); }
+            else if (/^\d$/.test(k) && cpPin.length < 6) { cpPin += k; }
+            renderPinDots();
+            if (cpPin.length === 6) { setTimeout(function () { if (cpPin.length === 6 && !cpPinBusy) confirmPin(); }, 250); }
+        }
+
+        async function confirmPin() {
+            if (cpPinBusy) return;
+            cpPinBusy = true;
+            var pin = cpPin;
+            var err = document.getElementById('cp-pin-error');
+            err.classList.add('hidden');
+            if (!/^\d{6}$/.test(pin)) {
+                cpPinBusy = false;
+                err.textContent = 'PIN harus 6 digit angka.';
+                err.classList.remove('hidden'); return;
+            }
+            btnBusy('cp-pin-btn', true, 'Menghubungkan…');
+            try {
+                var res = await fetch(CP_API, { method: 'POST', headers: authHeaders(),
+                    body: JSON.stringify({ action: 'connect_finish', request_id: currentRequestId, pin: pin }) }).then(function (r) { return r.json(); });
+                if (!res.success) {
+                    btnBusy('cp-pin-btn', false);
+                    cpPin = ''; cpPinBusy = false; renderPinDots();
+                    err.textContent = res.error || 'PIN tidak cocok.';
+                    err.classList.remove('hidden'); return;
+                }
+                renderDone(res.wallet_address, res.wallet_balance);
+                showStep('step-done');
+                showModal('Dompet Terhubung', 'Saldo Clincoo kamu kini tersinkron otomatis dengan dompet ClincooPay ' + maskAddr(res.wallet_address) + '.');
+            } catch (e) {
+                btnBusy('cp-pin-btn', false);
+                cpPin = ''; cpPinBusy = false; renderPinDots();
+                err.textContent = 'Tidak dapat terhubung ke server ClincooPay.';
+                err.classList.remove('hidden');
+            }
+        }
+
+        async function doUnlink() {
+            btnBusy('cp-unlink-btn', true, 'Memutuskan…');
+            try {
+                await fetch(CP_API, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ action: 'unlink' }) }).then(function (r) { return r.json(); });
+                btnBusy('cp-unlink-btn', false);
+                showModal('Dompet Diputuskan', 'Saldo Clincoo kembali berdiri sendiri dan tidak lagi tersinkron.');
+                document.getElementById('page-subtitle').textContent = 'Hubungkan dompet web Wallet kamu agar saldo Clincoo tersinkron otomatis.';
+                showStep('step-id');
+            } catch (e) {}
+        }
+    </script>
+
+    <script>/* clincoo-sw-register */
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../../../sw.js').catch(function () {}); }); }
+    </script>
+</body>
+</html>

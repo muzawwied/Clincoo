@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../../../js/accent-init.js"></script>
+<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clincoo_current_project_id',__p);}else{var __go=function(__pid){try{localStorage.setItem('clincoo_current_project_id',__pid);}catch(e){}var __sp=new URLSearchParams(location.search);__sp.set('id',__pid);var __q=__sp.toString();location.replace(location.pathname+(__q?'?'+__q:'')+location.hash);};var __c='';try{__c=localStorage.getItem('clincoo_current_project_id')||'';}catch(e){}if(__c){var __l=null;try{__l=JSON.parse(localStorage.getItem('clincoo_projects')||'[]');}catch(e){}if(!Array.isArray(__l)||!__l.length||__l.some(function(p){return p&&p.id===__c;})){__go(__c);return;}try{localStorage.removeItem('clincoo_current_project_id');}catch(e){}}var __t='';try{__t=localStorage.getItem('clincoo_auth_token')||localStorage.getItem('clincoo_token')||'';}catch(e){}var __o=(['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname)===-1)?'https://clincoo-be2.pages.dev':'';fetch(__o+'/api/projects',{headers:__t?{'Authorization':'Bearer '+__t}:{}}).then(function(r){return r.ok?r.json():null;}).then(function(d){var __l2=(d&&d.projects)||[];if(!__l2.length){location.replace('/');return;}__l2.sort(function(a,b){return String(b.updatedAt||'').localeCompare(String(a.updatedAt||''));});__go(String(__l2[0].id));}).catch(function(){location.replace('/');});}}catch(e){}})();</script>
+  <script src="../../../../js/current-project.js?v=1"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../../../assets/favicon.png">
+    <link rel="manifest" href="../../../../manifest.json">
+    <link rel="apple-touch-icon" href="../../../../assets/icons/apple-touch-icon.png">
+  <title>Kunci API — Clincoo Email</title>
+    <meta name="description" content="Pengaturan: Email — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clincoo">
+    <meta property="og:title" content="Pengaturan: Email — Clincoo">
+    <meta property="og:description" content="Pengaturan: Email — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Pengaturan: Email — Clincoo">
+    <meta name="twitter:description" content="Pengaturan: Email — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+  <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+    body { font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { display: none; width: 0; height: 0; background: transparent; }
+    * { -ms-overflow-style: none; scrollbar-width: none; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    body.dark-mode { background-color: #000000; color: #e0e0e0; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800 { color: #f0f0f0; }
+    body.dark-mode .text-gray-700 { color: #b0b0b0; }
+    body.dark-mode .text-gray-500, body.dark-mode .text-gray-600 { color: #888888; }
+    body.dark-mode .text-gray-400 { color: #666666; }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode header button[onclick="history.back()"], body.dark-mode header button[aria-label="Kembali"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
+    body.dark-mode header button[onclick="history.back()"] svg, body.dark-mode header button[aria-label="Kembali"] svg { color: #ffffff !important; stroke: #ffffff !important; }
+    body.dark-mode header button[onclick="history.back()"]:hover, body.dark-mode header button[aria-label="Kembali"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
+    body.dark-mode .bg-gray-50 { background-color: #222222 !important; }
+    body.dark-mode .bg-gray-100 { background-color: #222222 !important; }
+    body.dark-mode .border-gray-200, body.dark-mode .border-gray-100 { border-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-200:hover { background-color: #222222 !important; }
+    body.dark-mode input, body.dark-mode select, body.dark-mode textarea { background-color: #0a0a0a; color: #ffffff; border-color: #222222; }
+    body.dark-mode input:focus, body.dark-mode select:focus, body.dark-mode textarea:focus { border-color: #222222; outline: none; }
+    body.dark-mode header { background-color: #000000 !important; }
+    body.dark-mode .bg-black { background-color: #ffffff !important; color: #000000 !important; }
+  /* auto-dark-fix v1 */
+    body.dark-mode .bg-gray-50\/80 { background-color: #141414 !important; }
+    body.dark-mode .bg-gray-200 { background-color: #262626 !important; }
+    body.dark-mode .bg-gray-300 { background-color: #333333 !important; }
+    body.dark-mode .bg-gray-400 { background-color: #444444 !important; }
+    body.dark-mode .border-gray-50 { border-color: #0a0a0a !important; }
+    body.dark-mode .border-gray-200\/50,
+    body.dark-mode .border-gray-200\/60,
+    body.dark-mode .border-gray-200\/70 { border-color: #222222 !important; }
+    body.dark-mode .border-gray-300 { border-color: #333333 !important; }
+    body.dark-mode .border-gray-400 { border-color: #444444 !important; }
+    body.dark-mode .bg-blue-50,
+    body.dark-mode .bg-blue-50\/50 { background-color: #0d1a26 !important; }
+    body.dark-mode .border-blue-100,
+    body.dark-mode .border-blue-200 { border-color: #1e3a52 !important; }
+    body.dark-mode .bg-red-50,
+    body.dark-mode .bg-red-50\/50 { background-color: #2a1414 !important; }
+    body.dark-mode .bg-red-100 { background-color: #3a1a1a !important; }
+    body.dark-mode .border-red-100,
+    body.dark-mode .border-red-200 { border-color: #4a2020 !important; }
+    body.dark-mode .bg-green-100 { background-color: #14301c !important; }
+    body.dark-mode .bg-white\/95 { background-color: rgba(10,10,10,0.95) !important; }
+    body.dark-mode .hover\:bg-gray-50:hover,
+    body.dark-mode .hover\:bg-gray-50\/50:hover,
+    body.dark-mode .hover\:bg-gray-50\/80:hover { background-color: #1a1a1a !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #262626 !important; }
+    body.dark-mode .hover\:bg-gray-200:hover,
+    body.dark-mode .hover\:bg-gray-200\/50:hover { background-color: #333333 !important; }
+    body.dark-mode .hover\:bg-blue-50:hover,
+    body.dark-mode .hover\:bg-blue-100:hover { background-color: #163247 !important; }
+    body.dark-mode .hover\:bg-red-50:hover,
+    body.dark-mode .hover\:bg-red-100:hover { background-color: #3a1a1a !important; }
+    body.dark-mode .hover\:border-gray-300:hover,
+    body.dark-mode .hover\:border-gray-400:hover,
+    body.dark-mode .hover\:border-gray-900:hover { border-color: #555555 !important; }
+    body.dark-mode .focus\:border-gray-400:focus,
+    body.dark-mode .focus\:border-gray-900:focus { border-color: #666666 !important; }
+    body.dark-mode input::placeholder, body.dark-mode textarea::placeholder { color: #666666 !important; }
+#chat-header-capsule { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        /* Kapsul: mobile 2 menu (Workspace|Dashboard), desktop 3 menu (Live preview|Workspace|Dashboard) */
+        .chat-nav-link[data-nav="agent"] { display: none !important; }
+        .chat-nav-link[data-nav="live"] { display: none; }
+        @media (min-width: 900px) { .chat-nav-link[data-nav="live"] { display: inline-flex; } }
+        #chat-nav-pill { display: none; }
+        @view-transition { navigation: auto; }
+        /* pindah antar halaman: crossfade singkat + pill morph singkat, biar gak kedip */
+        @media (prefers-reduced-motion: no-preference) {
+            ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; animation-timing-function: cubic-bezier(.2,.7,.3,1); }
+            ::view-transition-group(chat-nav-pill) { animation-duration: .18s; animation-timing-function: cubic-bezier(.2,.7,.3,1); }
+        }
+        /* fallback browser tanpa cross-doc view transition: fade-in halus (bukan pop putih keras) */
+        @keyframes clq-page-in { from { opacity: 0 } to { opacity: 1 } }
+        @media (prefers-reduced-motion: no-preference) {
+            body { animation: clq-page-in .18s cubic-bezier(.2,.7,.3,1) both; }
+            html:active-view-transition body { animation: none; }
+        }
+        .chat-nav-link.is-active { color: #111111; background: #e9e9ec; view-transition-name: chat-nav-pill; }
+        #header-more-menu.open { display: flex; opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto; }
+        .header-menu-item { -webkit-tap-highlight-color: transparent; }
+        .header-menu-item:focus, .header-menu-item:focus-visible { outline: none; box-shadow: none; }
+        button.header-menu-item { -webkit-appearance: none; appearance: none; background: transparent; border: none; margin: 0; font: inherit; color: inherit; }
+        button.header-menu-item:active { background: rgba(0,0,0,0.04); }
+        body.dark-mode button.header-menu-item:active { background: rgba(255,255,255,0.08); }
+        .header-menu-item { cursor: pointer; }
+        body.dark-mode #chat-header-capsule { background-color: #0a0a0a; border-color: rgba(255,255,255,0.15); box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
+        body.dark-mode #chat-nav-pill { background: #ffffff !important; }
+        body.dark-mode .chat-nav-link { color: #9ca3af !important; }
+        body.dark-mode .chat-nav-link.is-active { color: #0a0a0a !important; background: #ffffff !important; }
+        body.dark-mode #sidebar-toggle, body.dark-mode #header-more-btn { background-color: #000000; border: 1.5px solid rgba(255,255,255,0.4); color: #ffffff; }
+        body.dark-mode #sidebar-toggle:hover, body.dark-mode #header-more-btn:hover { background-color: #1a1a1a; border-color: rgba(255,255,255,0.7); }
+        body.dark-mode #sidebar-toggle svg, body.dark-mode #header-more-btn svg { color: #ffffff; stroke: #ffffff; }
+        body.dark-mode #header-more-menu { background-color: #0a0a0a; border-color: rgba(255,255,255,0.15); }
+        body.dark-mode .header-menu-item { color: #e5e7eb; }
+        body.dark-mode .header-menu-item:hover { background-color: #1a1a1a; color: #ffffff; }
+        body.dark-mode .header-menu-item svg { color: #9ca3af; }
+        @media (max-width: 384px) { #sidebar-toggle, #header-more-btn { width: 38px; height: 38px; } }
+        @media (max-width: 330px) { #sidebar-toggle, #header-more-btn { width: 34px; height: 34px; } .chat-nav-link { padding-left: 0.5rem; padding-right: 0.5rem; } }
+      /* Animasi & skeleton halaman Pembayaran */
+    @keyframes payFadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .pay-fade { animation: payFadeUp .35s ease both; }
+    @keyframes payShimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+    .pay-skel { background: linear-gradient(90deg, rgba(0,0,0,.06) 25%, rgba(0,0,0,.12) 37%, rgba(0,0,0,.06) 63%); background-size: 400% 100%; animation: payShimmer 1.2s ease infinite; }
+    .dark-mode .pay-skel { background: linear-gradient(90deg, rgba(255,255,255,.06) 25%, rgba(255,255,255,.12) 37%, rgba(255,255,255,.06) 63%); background-size: 400% 100%; }
+    </style>
+
+  <script>(function(){var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var isDark=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(isDark)document.documentElement.classList.add('dark-mode');})();</script>
+<!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';var tm=document.querySelector('meta[name="theme-color"]');if(tm){tm.setAttribute('content','#0a0a0a');}}}catch(e){}})();</script>
+
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
+(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<3;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
+    </script>
+<!-- Google tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+<!-- End Google tag -->
+<script src="../../../../js/i18n-dict.js" defer></script>
+<script src="../../../../js/i18n.js" defer></script>
+</head>
+<body class="text-gray-900 antialiased h-screen w-full overflow-hidden relative bg-white">
+  <script>(function(){var t=localStorage.getItem("clincoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+  <div class="w-full h-full overflow-y-auto hide-scrollbar flex flex-col items-center">
+    <header class="fixed top-0 left-0 right-0 z-30 px-3 pt-3 pointer-events-none flex justify-between items-center">
+        <button id="sidebar-toggle" type="button" class="pointer-events-auto flex-shrink-0 flex items-center justify-center text-[#222222] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:text-black hover:bg-gray-100 transition-all rounded-full w-11 h-11" aria-label="Kembali ke Beranda">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+        <div class="pointer-events-auto inline-flex items-center gap-1 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-gray-100/80 rounded-full pl-1.5 pr-1.5 h-11" id="chat-header-capsule">
+            <nav id="chat-top-nav" class="relative inline-flex items-center h-full">
+                <div id="chat-nav-pill" class="absolute bg-gray-100 rounded-full pointer-events-none" style="top:0;left:0;width:0;height:0"></div>
+                <a href="/proyek/chat/" data-nav="agent" class="chat-nav-link relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Agent</a>
+                <a href="/proyek/code/" data-nav="code" class="chat-nav-link relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Workspace</a>
+                <a href="/proyek/dashboard/" data-nav="dashboard" class="chat-nav-link is-active relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Dashboard</a>
+            </nav>
+        </div>
+        <div class="relative flex items-center gap-1.5 flex-shrink-0 pointer-events-auto"><button id="header-more-btn" type="button" onclick="toggleHeaderMenu(event)" class="w-11 h-11 rounded-full flex items-center justify-center text-[#222222] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:bg-gray-100 hover:text-black transition-all" aria-label="Menu lainnya">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle>
+                </svg>
+            </button>
+            <div id="header-more-menu" class="absolute top-full right-0 mt-1 w-56 bg-white rounded-xl shadow-xl p-1.5 flex-col gap-0.5 opacity-0 invisible translate-y-1 pointer-events-none transition-all duration-200 z-50 hidden">
+                <a href="/proyek/pengaturan/email/" data-menu="email" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><path stroke-linecap="round" stroke-linejoin="round" d="m22 6-10 7L2 6"></path></svg>
+                    Email
+                </a>
+                <a href="/proyek/pengaturan/email/broadcast/" data-menu="broadcast" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m3 11 18-5v12L3 14v-3z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path></svg>
+                    Broadcast
+                </a>
+                <a href="/proyek/pengaturan/email/otomasi/" data-menu="otomasi" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                    Otomasi
+                </a>
+                <a href="/proyek/pengaturan/email/template/" data-menu="template" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path stroke-linecap="round" d="M3 9h18"></path><path d="M9 21V9"></path></svg>
+                    Template
+                </a>
+                <a href="/proyek/pengaturan/email/audiens/" data-menu="audiens" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path stroke-linecap="round" d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    Audiens
+                </a>
+                <a href="/proyek/pengaturan/email/metrik/" data-menu="metrik" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M18 20V10M12 20V4M6 20v-6"></path></svg>
+                    Metrik
+                </a>
+                <a href="/proyek/pengaturan/email/kunci-api/" data-menu="apikey" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
+                    Kunci API
+                </a>
+                                <a href="https://docs.clincoo.buzz/bantuan/" target="_blank" rel="noopener" data-menu="bantuan" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left"><svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path stroke-linecap="round" d="M12 17h.01"></path></svg>
+                    Bantuan
+                </a>
+            </div>
+        </div>
+    </header>
+    <main class="w-full max-w-5xl px-4 sm:px-6 pt-20 pb-28 flex flex-col min-h-screen">
+<style>
+        #settings-menu-pop.open { display: grid; }
+        .settings-menu-item { cursor: pointer; }
+        .settings-menu-item .text-sm { line-height: 1.3; }
+        .settings-menu-item .text-xs { line-height: 1.15; }
+        body.dark-mode #settings-menu-btn { background-color: #1c1c1c !important; border-color: rgba(255,255,255,0.22) !important; color: #f3f4f6 !important; }
+        body.dark-mode #settings-menu-pop { background-color: #1c1c1c !important; border-color: rgba(255,255,255,0.22) !important; }
+        body.dark-mode .settings-menu-item:hover { background-color: #1a1a1a; }
+        body.dark-mode .settings-menu-item .block.text-sm { color: #e5e7eb !important; }
+        body.dark-mode .settings-menu-item .block.text-xs { color: #6b7280 !important; }
+    </style>
+    <div class="relative mb-5" id="settings-menu-wrap">
+            <button id="settings-menu-btn" type="button" onclick="toggleSettingsMenu(event)" class="w-full flex items-center justify-between rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-800 shadow-sm transition-all">
+                <span class="flex items-center gap-2.5">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"></path></svg>
+                    Email
+                </span>
+                <svg id="settings-menu-chev" class="w-4 h-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div id="settings-menu-pop" class="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-12px)] sm:w-[860px] mt-0 bg-white rounded-2xl shadow-xl p-1 grid grid-cols-1 sm:grid-cols-2 gap-px z-40 hidden">
+                                <a href="/proyek/dashboard/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Umum</span><span class="block text-xs text-gray-400 truncate">Nama, deskripsi, dan runtime aplikasi</span></span>
+                </a>
+<a href="/proyek/build-deployment/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Build &amp; Deployment</span><span class="block text-xs text-gray-400 truncate">Sumber branch dan konfigurasi deployment</span></span>
+                </a>
+                <a href="/proyek/pengaturan/keamanan-https/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Keamanan &amp; HTTPS</span><span class="block text-xs text-gray-400 truncate">Sertifikat SSL dan protokol HTTPS</span></span>
+                </a>
+                <a href="/proyek/pengaturan/visibilitas-akses/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Visibilitas Akses</span><span class="block text-xs text-gray-400 truncate">Atur hak akses dan visibilitas</span></span>
+                </a>
+                <a href="/proyek/pengaturan/integrasi-webhook/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17H7a5 5 0 1 1 0-10h2M15 7h2a5 5 0 1 1 0 10h-2M8 12h8"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Webhook</span><span class="block text-xs text-gray-400 truncate">Notifikasi event lewat webhook</span></span>
+                </a>
+<a href="/proyek/pengaturan/integrasi-ai/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 5.7a2 2 0 001.4 1.4L21 12l-5.7 1.9a2 2 0 00-1.4 1.4L12 21l-1.9-5.7a2 2 0 00-1.4-1.4L3 12l5.7-1.9a2 2 0 001.4-1.4L12 3z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Integrasi AI</span><span class="block text-xs text-gray-400 truncate">AI Router: model dan secret per proyek</span></span>
+                </a>
+                <a href="/proyek/pengaturan/server-mcp/" class="settings-menu-item settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.01M6 18h.01"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Server MCP</span><span class="block text-xs text-gray-400 truncate">Sambungkan proyek ke platform AI lain (MCP)</span></span>
+                </a>
+<a href="/proyek/pengaturan/database/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3 5v14a9 3 0 0 0 18 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 3 0 0 0 18 0"></path></svg>
+                <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Database</span><span class="block text-xs text-gray-400 truncate">Tabel data untuk aplikasimu</span></span>
+                </a>
+                <a href="/proyek/pengaturan/pembayaran/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Pembayaran</span><span class="block text-xs text-gray-400 truncate">Terima pembayaran lewat QRIS</span></span>
+                </a>
+                <a href="/proyek/pengaturan/email/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Email</span><span class="block text-xs text-gray-400 truncate">Kirim email otomatis lewat API Clincoo</span></span>
+                </a>
+                <a href="/proyek/pengaturan/zona-bahaya/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-red-50/60 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-red-600">Zona Bahaya</span><span class="block text-xs text-red-500/70 truncate">Hapus situs atau proyek</span></span>
+                </a>
+            </div>
+    </div>
+    <script>
+    (function () {
+        var btn = document.getElementById('settings-menu-btn');
+        var pop = document.getElementById('settings-menu-pop');
+        var chev = document.getElementById('settings-menu-chev');
+        window.toggleSettingsMenu = function (e) {
+            e.stopPropagation();
+            var open = pop.classList.toggle('open');
+            chev.style.transform = open ? 'rotate(180deg)' : '';
+        };
+        document.addEventListener('click', function (e) {
+            if (pop.classList.contains('open') && !pop.contains(e.target) && !btn.contains(e.target)) {
+                pop.classList.remove('open');
+                chev.style.transform = '';
+            }
+        });
+        window.addEventListener('scroll', function () {
+            if (pop.classList.contains('open')) {
+                pop.classList.remove('open');
+                chev.style.transform = '';
+            }
+        }, true);
+    })();
+    </script>
+            <div class="w-full flex-1 flex flex-col divide-y divide-gray-200 dark:divide-slate-700/60">
+        <div class="py-5">
+          <div class="flex items-start sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <h4 id="sec-title" class="text-base font-semibold text-gray-900 dark:text-white">Kunci API</h4>
+              <p id="sec-sub" class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kunci akses Clincoo Email API proyek ini.</p>
+            </div>
+          </div>
+
+          <!-- Butuh login -->
+          <div id="kirim-login" class="hidden py-10 flex flex-col items-center justify-center text-center">
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Masuk dulu untuk mengelola email</p>
+            <a id="kirim-login-btn" href="/auth/" class="mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Masuk ke Clincoo</a>
+          </div>
+
+          <!-- Belum aktif -->
+          <div id="kirim-inactive" class="hidden py-10 flex flex-col items-center justify-center text-center">
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Email proyek ini belum aktif</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Aktifkan fitur email untuk proyek ini — sekali klik.</p>
+            <button type="button" onclick="activateEmail()" class="mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center gap-2 cursor-pointer">Aktifkan Email</button>
+          </div>
+
+          <!-- Aktif: mini-app email -->
+          <div id="kirim-active" class="flex-col">
+            <div class="flex flex-col border-t border-gray-100 dark:border-slate-800">
+              <div class="py-3.5 border-b border-gray-100 dark:border-slate-800">
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">API key</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 mb-3">Pakai di situs deploy kamu untuk kirim email lewat Clincoo Email API.</p>
+                <div class="relative flex items-center w-full bg-gray-50 dark:bg-slate-800 rounded-full pl-3.5 pr-2.5 py-2">
+                    <code id="key-val" class="block flex-1 min-w-0 text-xs font-mono text-gray-800 dark:text-gray-200 whitespace-nowrap overflow-hidden">…</code>
+                    <div class="absolute inset-y-0 right-0 w-14 bg-gradient-to-r from-transparent to-gray-50 dark:to-slate-800 pointer-events-none rounded-r-full"></div>
+                    <script>
+                    try {
+                      var _q = new URLSearchParams(location.search).get('id');
+                      var _pp = (_q && _q.indexOf('proj_') === 0) ? _q : ((typeof getClincooProjectId === 'function' && getClincooProjectId()) || localStorage.getItem('clincoo_current_project_id') || '');
+                      var _cc = JSON.parse(localStorage.getItem('clincoo_email_cfg_' + _pp) || 'null');
+                      var _el = document.getElementById('key-val');
+                      if (_cc && _cc.api_key && _el) { _el.textContent = _cc.api_key; _el.setAttribute('data-key', _cc.api_key); }
+                    } catch (e) {}
+                    </script>
+                  <button type="button" onclick="copyKey()" title="Salin kunci" aria-label="Salin kunci" class="relative shrink-0 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                </div>
+              </div>
+
+              <div class="py-3.5 border-b border-gray-100 dark:border-slate-800 flex flex-wrap items-center gap-2">
+                <button type="button" onclick="regenKey()" class="px-5 py-2.5 text-sm font-medium border border-gray-200 dark:border-slate-700 rounded-full hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">Buat ulang kunci</button>
+                <button type="button" onclick="revokeKey()" class="px-5 py-2.5 text-sm font-medium text-red-500 border border-red-200 dark:border-red-900/50 rounded-full hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer">Nonaktifkan</button>
+              </div>
+
+              <details class="py-3.5 border-b border-gray-100 dark:border-slate-800">
+                <summary class="text-sm font-semibold text-gray-900 dark:text-white cursor-pointer">Contoh pemakaian dari situs deploy</summary>
+                <div class="relative mt-3">
+                  <pre id="curl-example" class="text-[11px] font-mono overflow-x-auto bg-gray-50 dark:bg-slate-800 rounded-lg p-3 pr-11 text-gray-700 dark:text-gray-300">curl -X POST https://app.clincoo.buzz/api/email \
+  -H "Content-Type: application/json" \
+  -d '{"action":"send","api_key":"clc_email_…","to":"penerima@contoh.com","subject":"Halo","html":"&lt;p&gt;Halo!&lt;/p&gt;"}'</pre>
+                  <script>
+                  // isi contoh curl dari cache sejak paint pertama — template sinkron dgn buildCurl()
+                  try {
+                    var _q2 = new URLSearchParams(location.search).get('id');
+                    var _pp2 = (_q2 && _q2.indexOf('proj_') === 0) ? _q2 : ((typeof getClincooProjectId === 'function' && getClincooProjectId()) || localStorage.getItem('clincoo_current_project_id') || '');
+                    var _cc2 = JSON.parse(localStorage.getItem('clincoo_email_cfg_' + _pp2) || 'null');
+                    var _pre = document.getElementById('curl-example');
+                    if (_cc2 && _cc2.api_key && _pre) {
+                      if (_cc2.owner_email) { try { window._ownerEmail = String(_cc2.owner_email).trim(); } catch (e) {} }
+                      var _to = (_cc2.owner_email || 'penerima@contoh.com');
+                      _pre.textContent = 'curl -X POST https://app.clincoo.buzz/api/email \\\n  -H "Content-Type: application/json" \\\n  -d \'{"action":"send","api_key":"' + _cc2.api_key + '","to":"' + _to + '","subject":"Halo","html":"<p>Halo!</p>"}\'';
+                    }
+                  } catch (e) {}
+                  </script>
+                  <button type="button" onclick="copyCurl()" title="Salin contoh curl" aria-label="Salin contoh curl" class="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                </div>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">Kuota mengikuti paket akunmu (Starter 100, Pro 500, Bisnis 1.000 email/bulan). Bisa kirim ke alamat mana pun — ke email akun Clincoo sendiri lewat jalur Cloudflare, ke luar (Gmail, dll) lewat jalur terverifikasi clincoo.buzz.</p>
+              </details>
+
+              <div class="py-3.5">
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">Identitas pengirim</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 mb-3">Nama dan alamat yang tampil di email dari proyek ini. Nama kosong = otomatis pakai nama proyek; alamat kosong = noreply@clincoo.buzz.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label for="sender-name" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Nama tampilan</label>
+                    <input id="sender-name" type="text" maxlength="60" placeholder="Nama pengirim" oninput="senderDirty()" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                  </div>
+                  <div>
+                    <label for="sender-email" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Alamat pengirim (harus @clincoo.buzz)</label>
+                    <input id="sender-email" type="email" placeholder="alamat@clincoo.buzz" oninput="senderDirty()" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 transition-colors">
+                    <p id="sender-avail" class="text-xs mt-1.5"></p>
+                  </div>
+                </div>
+                <button type="button" id="sender-save" onclick="saveSender()" class="px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-colors cursor-pointer">Simpan Pengirim</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+            <footer class="w-full mt-auto pt-6 pb-5 text-center text-xs text-gray-400 dark:text-gray-500">
+        Penggunaan Clincoo Email API tunduk pada <a href="https://blog.clincoo.buzz/legal/syarat-ketentuan/" target="_blank" rel="noopener" class="underline hover:text-gray-600 dark:hover:text-gray-300">Syarat &amp; Ketentuan</a> dan <a href="https://blog.clincoo.buzz/legal/kebijakan-privasi/" target="_blank" rel="noopener" class="underline hover:text-gray-600 dark:hover:text-gray-300">Kebijakan Privasi</a> Clincoo.
+      </footer>
+</main>
+
+<!-- Menu email (pop-up bawah) -->
+  </div>
+  <script>
+    let isEdited=false;function showActionButtons(){if(!isEdited){isEdited=true;const c=document.getElementById('action-buttons');if(!c)return;c.classList.remove('hidden');c.classList.add('flex');void c.offsetWidth;c.classList.remove('opacity-0');c.classList.add('opacity-100');}}function cancelChanges(){window.location.reload();}function saveChanges(){showActionButtons();}document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('input,textarea,select').forEach(input=>{input.addEventListener('input',showActionButtons);input.addEventListener('change',showActionButtons);});});function toggleSwitch(idPrefix){showActionButtons();const bg=document.getElementById(idPrefix+'-bg');const knob=document.getElementById(idPrefix+'-knob');if(bg.classList.contains('bg-blue-500')){bg.classList.replace('bg-blue-500','bg-gray-200');bg.classList.add('dark:bg-slate-700');knob.classList.remove('translate-x-5');}else{bg.classList.remove('bg-gray-200','dark:bg-slate-700');bg.classList.add('bg-blue-500');knob.classList.add('translate-x-5');}}
+  </script>
+    <script>if (window.lucide) { lucide.createIcons(); }</script>
+
+<script src="../email-core.js"></script>
+<script>
+// ===== Email: kunci API =====
+  function maskKey(k) {
+    // key utuh di DOM; ujung kanan ditutup efek fade di chip (tanpa titik2)
+    return String(k || '');
+  }
+  var _ownerEmail = window._ownerEmail || '';
+  function buildCurl(k) {
+    return 'curl -X POST https://app.clincoo.buzz/api/email \\\n  -H "Content-Type: application/json" \\\n  -d \'{"action":"send","api_key":"' + (k || 'clc_email_…') + '","to":"' + (_ownerEmail || 'penerima@contoh.com') + '","subject":"Halo","html":"<p>Halo!</p>"}\'';
+  }
+  function senderDirty() {
+    var el = document.getElementById('sender-name');
+    if (el) el.dataset.dirty = '1';
+    el = document.getElementById('sender-email');
+    if (el) el.dataset.dirty = '1';
+    scheduleAvail();
+  }
+
+  var _availT = null;
+  function scheduleAvail() {
+    var p = document.getElementById('sender-avail');
+    if (!p) return;
+    clearTimeout(_availT);
+    var email = ((document.getElementById('sender-email') || {}).value || '').trim().toLowerCase();
+    if (!/^[^\s@]+@clincoo\.buzz$/.test(email)) { p.textContent = ''; return; }
+    p.className = 'text-xs mt-1.5 text-gray-400';
+    p.textContent = 'Memeriksa…';
+    _availT = setTimeout(function () {
+      _apiPost('sender_check', { sender_email: email })
+        .then(function (r) {
+          var ok = !!(r && r.available);
+          p.className = 'text-xs mt-1.5 ' + (ok ? 'text-green-600' : 'text-red-500');
+          p.textContent = ok ? 'Tersedia' : 'Tidak tersedia — sudah dipakai proyek lain';
+        })
+        .catch(function () { p.textContent = ''; });
+    }, 450);
+  }
+  function fillSender(cfg) {
+    var sn = document.getElementById('sender-name');
+    var se = document.getElementById('sender-email');
+    if (sn && !sn.dataset.dirty) sn.value = (cfg && cfg.from_name) || '';
+    if (se && !se.dataset.dirty) se.value = (cfg && cfg.sender_email) || '';
+  }
+  function saveSender() {
+    var btn = document.getElementById('sender-save');
+    var name = (document.getElementById('sender-name') || {}).value || '';
+    var email = (document.getElementById('sender-email') || {}).value || '';
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan…';
+    _apiPost('sender', { from_name: name.trim(), sender_email: email.trim() })
+      .then(function (r) {
+        try {
+          var c = JSON.parse(localStorage.getItem('clincoo_email_cfg_' + _pid()) || 'null') || {};
+          c.from_name = (r && r.from_name) || name.trim();
+          c.sender_email = (r && r.sender_email) || email.trim();
+          localStorage.setItem('clincoo_email_cfg_' + _pid(), JSON.stringify(c));
+        } catch (e) {}
+        var sn = document.getElementById('sender-name');
+        var se = document.getElementById('sender-email');
+        if (sn) delete sn.dataset.dirty;
+        if (se) delete se.dataset.dirty;
+        emailToast('Identitas pengirim disimpan', true);
+        var av = document.getElementById('sender-avail');
+        if (av) { av.className = 'text-xs mt-1.5 text-green-600'; av.textContent = 'Tersedia'; }
+      })
+      .catch(function (e) {
+        emailToast(e && e.error ? e.error : 'Gagal menyimpan (' + ((e && e.status) || e) + ')', false);
+      })
+      .then(function () {
+        btn.disabled = false;
+        btn.textContent = 'Simpan Pengirim';
+      });
+  }
+  function applyCfg(cfg) {
+    fillSender(cfg);
+    if (cfg && cfg.owner_email) _ownerEmail = String(cfg.owner_email).trim();
+    var k = (cfg && cfg.api_key) || '';
+    var el = document.getElementById('key-val');
+    if (el) { el.textContent = maskKey(k); el.setAttribute('data-key', k); }
+    var pre = document.getElementById('curl-example');
+    if (pre) pre.textContent = buildCurl(k);
+  }
+  function renderKey(cfg) { applyCfg(cfg); }
+  function copyCurl() {
+    var k = document.getElementById('key-val').getAttribute('data-key') || '';
+    if (!k) { emailToast('Kunci belum tersedia', false); return; }
+    if (navigator.clipboard) navigator.clipboard.writeText(buildCurl(k)).then(function () { emailToast('Contoh curl disalin', true); }).catch(function () { emailToast('Gagal menyalin', false); });
+  }
+  function copyKey() {
+    var k = document.getElementById('key-val').getAttribute('data-key') || '';
+    if (!k) { emailToast('Kunci belum tersedia', false); return; }
+    if (navigator.clipboard) navigator.clipboard.writeText(k).then(function () { emailToast('API key disalin', true); }).catch(function () { emailToast('Gagal menyalin', false); });
+  }
+  function regenKey() {
+    if (!confirm('Buat ulang API key? Situs deploy yang masih memakai kunci lama akan berhenti bisa mengirim.')) return;
+    _apiPost('regenerate', {})
+      .then(function (r) {
+        try {
+          var cfg = JSON.parse(localStorage.getItem('clincoo_email_cfg_' + _pid()) || 'null') || {};
+          cfg.api_key = r.api_key || ''; cfg.active = 1;
+          localStorage.setItem('clincoo_email_cfg_' + _pid(), JSON.stringify(cfg));
+        } catch (e) {}
+        applyCfg({ api_key: r.api_key });
+        emailToast('Kunci baru diterbitkan', true);
+      })
+      .catch(function (e) { emailToast(e && e.error ? e.error : 'Gagal (' + (e && e.status || e) + ')', false); });
+  }
+  function revokeKey() {
+    if (!confirm('Nonaktifkan fitur email proyek ini? API key dihapus dan situs deploy berhenti bisa mengirim.')) return;
+    _apiPost('revoke', {})
+      .then(function () { emailToast('Fitur email dinonaktifkan', true); _clearCache(); renderEmailState('inactive'); })
+      .catch(function (e) { emailToast(e && e.error ? e.error : 'Gagal (' + (e && e.status || e) + ')', false); });
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    // Data email jarang berubah: kalau sudah ada cache, render langsung tanpa fetch.
+    // Fetch hanya saat cache belum ada (kunjungan pertama) atau setelah aksi ubah kunci.
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('clincoo_email_cfg_' + _pid()) || 'null'); } catch (e) {}
+    if (cached && cached.active && cached.api_key) {
+      renderEmailState('active');
+      applyCfg(cached);
+    } else {
+      emailGate(function (cfg) { applyCfg(cfg); });
+    }
+  });
+  window.addEventListener('clincoo:email-activated', function (ev) {
+    var cfg = (ev && ev.detail && ev.detail.api_key) ? ev.detail : null;
+    if (!cfg) { try { cfg = JSON.parse(localStorage.getItem('clincoo_email_cfg_' + _pid()) || 'null'); } catch (e) {} }
+    applyCfg(cfg || {});
+  });
+</script>
+
+
+    <script>/* clincoo-sw-register */
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../../sw.js').catch(function () {}); }); }
+    </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
+<script>
+        var chatNav = document.getElementById('chat-top-nav');
+        var chatNavPill = document.getElementById('chat-nav-pill');
+        var chatNavLinks = Array.prototype.slice.call(chatNav.querySelectorAll('.chat-nav-link'));
+        var CHAT_NAV_ACTIVE = 'dashboard';
+        var chatNavActive = chatNavLinks.filter(function(l) { return l.dataset.nav === CHAT_NAV_ACTIVE; })[0] || null;
+        if (chatNavActive) chatNavActive.classList.add('is-active');
+        function chatNavMovePill(el) {
+            if (!el) { chatNavPill.style.top = '0px'; chatNavPill.style.left = '0px'; chatNavPill.style.width = '0px'; chatNavPill.style.height = '0px'; return; }
+            chatNavPill.style.top = el.offsetTop + 'px';
+            chatNavPill.style.left = el.offsetLeft + 'px';
+            chatNavPill.style.width = el.offsetWidth + 'px';
+            chatNavPill.style.height = el.offsetHeight + 'px';
+        }
+        chatNavPill.style.transition = 'none';
+        chatNavMovePill(chatNavActive);
+        requestAnimationFrame(function() { requestAnimationFrame(function() { chatNavPill.style.transition = 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)'; }); });
+        chatNavLinks.forEach(function(l) {
+            l.addEventListener('mouseenter', function() { chatNavMovePill(l); });
+            l.addEventListener('click', function() { chatNavLinks.forEach(function(x) { x.classList.remove('is-active'); }); l.classList.add('is-active'); chatNavMovePill(l); });
+        });
+        chatNav.addEventListener('mouseleave', function() { chatNavMovePill(chatNavActive); });
+        window.addEventListener('resize', function() { chatNavMovePill(chatNavActive); });
+        document.getElementById('sidebar-toggle').addEventListener('click', function() { window.location.href = '/'; });
+        var headerMoreBtn = document.getElementById('header-more-btn');
+        var headerMoreMenu = document.getElementById('header-more-menu');
+        function closeHeaderMenu() { headerMoreMenu.classList.remove('open'); }
+        window.toggleHeaderMenu = function(e) {
+            e.stopPropagation();
+            headerMoreMenu.classList.contains('open') ? closeHeaderMenu() : headerMoreMenu.classList.add('open');
+        }
+        document.addEventListener('click', function(e) {
+            if (headerMoreMenu.classList.contains('open') && !headerMoreMenu.contains(e.target) && e.target !== headerMoreBtn) closeHeaderMenu();
+        });
+        window.chatExportZip = function () {
+    closeHeaderMenu();
+    var pid = ''; try { pid = localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) {}
+    var key = 'clincoo_workspace_files_' + (pid || 'global');
+    var byPath = {};
+    var raw = null;
+    try { raw = localStorage.getItem(key); } catch (e) {}
+    if (!raw) { try { var legacy = localStorage.getItem('clincoo_workspace_files'); if (legacy) { localStorage.setItem(key, legacy); raw = legacy; try { localStorage.removeItem('clincoo_workspace_files'); } catch (e0) {} } } catch (e) {} }
+    try {
+        var d = JSON.parse(raw) || {};
+        Object.keys(d).forEach(function (k) {
+            (d[k] || []).forEach(function (it) {
+                if (it && it.path && it.type === 'file') byPath[it.path] = it.content || '';
+            });
+        });
+    } catch (e) {}
+    var WS_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-files';
+    var tk = ''; try { tk = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
+    var headers = tk ? { Authorization: 'Bearer ' + tk } : {};
+    var filesFromMap = function () {
+        return Object.keys(byPath).sort().map(function (p) { return { path: p, content: byPath[p] }; });
+    };
+    var finish = function (files) {
+        if (!files.length) { alert('Tidak ada berkas di Workspace untuk dieksport.'); return; }
+        var run = function () {
+            var zip = new window.JSZip();
+            files.forEach(function (f) { zip.file(f.path, f.content || ''); });
+            zip.generateAsync({ type: 'blob' }).then(function (blob) {
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = (pid || 'clincoo') + '.zip';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(function () { URL.revokeObjectURL(a.href); }, 500);
+            });
+        };
+        if (window.JSZip) { run(); return; }
+        var sc = document.createElement('script');
+        sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        sc.onload = run;
+        document.head.appendChild(sc);
+    };
+    if (!pid) { finish(filesFromMap()); return; }
+    // Gabungkan file cloud (D1) supaya SEMUA berkas Workspace ikut terekspor.
+    fetch(WS_API + '?project_id=' + encodeURIComponent(pid), { headers: headers })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function (resp) {
+            ((resp && resp.files) || []).forEach(function (f) {
+                if (f && f.path && !(f.path in byPath)) byPath[f.path] = f.content || '';
+            });
+            finish(filesFromMap());
+        })
+        .catch(function () { finish(filesFromMap()); });
+};
+
+    </script>
+<script>/* clincoo-premium-sheet: bottom sheet daftar paket untuk fitur premium (crown) */
+(function(){
+  if (window.__clincooPremiumSheet) return; window.__clincooPremiumSheet = true;
+  function apiBase(){ return (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname)===-1)?'https://clincoo-be2.pages.dev':''; }
+  function token(){ try{ return localStorage.getItem('clincoo_auth_token')||localStorage.getItem('clincoo_token')||''; }catch(e){ return ''; } }
+  function readCache(k){ try{ var c=JSON.parse(localStorage.getItem(k)||'null'); return (c&&c.plan)?c:null; }catch(e){ return null; } }
+  var verifiedPlan=null, promoProActive=false, closeTimer=null, previousOverflow='';
+  var crownSelector='.clincoo-premium-crown, .clincoo-editor-crown, #export-crown-label';
+  function cacheSub(){ var a=readCache('TM_SUB_CACHE_KEY'), b=readCache('clincoo_subscription_cache'); return a&&b?((a.ts||0)>(b.ts||0)?a:b):(a||b); }
+  function currentPlan(){ var c=cacheSub(); return verifiedPlan||(c&&c.plan)||window.clincooEditorPlan||null; }
+  function isPaid(){ var p=currentPlan(); return !!p && String(p).toLowerCase()!=='starter'; }
+  var crownCss=document.createElement('style');
+    crownCss.textContent=
+    '/* Crown seragam: satu ikon & warna di seluruh halaman */' +
+    '.clincoo-premium-crown,.clincoo-editor-crown,#export-crown-label,#gh-connect-crown,#premium-invite-chip,[data-min-crown]{color:#f59e0b!important;}' +
+    '.clincoo-premium-crown svg,.clincoo-editor-crown svg,#export-crown-label svg,#gh-connect-crown svg,#premium-invite-chip svg,[data-min-crown] svg{width:15px!important;height:15px!important;fill:none!important;stroke:#f59e0b!important;stroke-width:2.2!important;display:inline-block;vertical-align:-2px;}' +
+    '/* Visibility crown per paket: Starter = semua; Pro = hanya level Bisnis; Bisnis = tanpa crown */' +
+    'body[data-pps-plan="Pro"] .clincoo-premium-crown,body[data-pps-plan="Pro"] .clincoo-editor-crown,body[data-pps-plan="Pro"] #gh-connect-crown,body[data-pps-plan="Pro"] #premium-invite-chip,body[data-pps-plan="Pro"] [data-min-crown][data-min="Pro"]{display:none!important;}' +
+    'body[data-pps-plan="Bisnis"] .clincoo-premium-crown,body[data-pps-plan="Bisnis"] .clincoo-editor-crown,body[data-pps-plan="Bisnis"] #export-crown-label,body[data-pps-plan="Bisnis"] #gh-connect-crown,body[data-pps-plan="Bisnis"] #premium-invite-chip,body[data-pps-plan="Bisnis"] [data-min-crown]{display:none!important;}';
+document.head.appendChild(crownCss);
+  function currentBilling(){ var c=cacheSub(); return (c&&c.billingCycle)||'Bulanan'; }
+  var sheetEl=null, idx=1, featureMinimum='Pro';
+  // ===== Data paket: identik dengan halaman Upgrade (akun/langganan/upgrade) =====
+  var plans=[
+    { name:'Starter', tagline:'Untuk individu yang baru memulai.', price:'Gratis', per:'', hot:false,
+      items:[['Kuota workspace 1 GB per proyek',true],['Hingga 3 proyek aktif + editor kode',true],['1 kolaborator per proyek',true],['Chat AI di setiap proyek (50 pesan/bulan) + pencarian web',true],['Kelola 1 domain: verifikasi, DNS & SSL',true], ['3 template proyek siap pakai',true],['Tugas terjadwal & notifikasi',true],['Deploy web 5x per bulan',true],['Editor full-stack & integrasi GitHub',false],['Domain tanpa batas & deploy tanpa batas',false]] },
+    { name:'Pro', tagline:'Untuk profesional dan kreator aktif.', price:'49K', per:'/bln', hot:true,
+      items:[['Kuota workspace 5 GB per proyek',true],['Hingga 10 proyek aktif',true],['Hingga 5 kolaborator per proyek',true],['Semua fitur Starter',true], ['Editor kode full-stack: bangun & publikasikan dari browser',true], ['Domain tanpa batas: verifikasi, DNS & SSL',true],['Chat AI hingga 500 pesan/bulan (maks 50/hari)',true],['Deploy web hingga 25x per bulan ke domain sendiri',true],['Integrasi GitHub: impor repo, AI kerja langsung di repo kamu',true]] },
+    { name:'Bisnis', tagline:'Untuk tim dan operasi skala besar.', price:'129K', per:'/bln', hot:false,
+      items:[['Kuota workspace 20 GB per proyek',true],['Semua fitur Pro',true],['Chat AI hingga 2.000 pesan/bulan (maks 150/hari)',true],['Hingga 50 proyek aktif',true],['Hingga 20 kolaborator per proyek',true],['Kontrol akses & keamanan proyek lanjutan',true], ['Dilindungi Password & ekspor data penuh akun',true],['Deploy web tanpa batas',true]] }
+  ];
+  function checkoutUrl(name){
+    var base=(location.pathname.indexOf('/Clincoo')!==-1)?'/Clincoo.':'';
+    return base+'/akun/langganan/upgrade/konfirmasi/?plan='+encodeURIComponent(name)+'&billing='+encodeURIComponent(currentBilling());
+  }
+  function cardHtml(p,current){
+    var list=p.items.map(function(it){
+      return '<li class="flex items-start gap-2.5 text-[13px] '+(p.hot?'text-gray-900 font-medium':(it[1]?'text-gray-700':'text-gray-400 opacity-70'))+'">'+
+        (it[1]?'<svg class="w-4 h-4 shrink-0 '+(p.hot?'text-accent':'text-gray-900')+'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5"></path></svg>':'<svg class="w-4 h-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"></path></svg>')+
+        '<span>'+it[0]+'</span></li>';
+    }).join('');
+    var btn;
+    if(p.name.toLowerCase()===String(current).toLowerCase()){ btn='<div class="w-full py-3 bg-gray-50 text-gray-500 border border-gray-200 rounded-xl font-semibold text-sm text-center cursor-not-allowed">Paket Saat Ini</div>'; }
+    else if(p.hot){ btn='<a href="'+checkoutUrl(p.name)+'" class="block w-full py-3 bg-accent rounded-xl font-semibold text-sm text-center transition-all shadow-md active:scale-95">'+(p.name==='Pro'&&promoProActive?'Ambil Promo Pro Rp5.000':'Upgrade ke '+p.name)+'</a>'; }
+    else { btn='<a href="'+checkoutUrl(p.name)+'" class="block w-full py-3 bg-white text-gray-900 border-2 border-gray-200 hover:border-gray-900 hover:bg-gray-50 rounded-xl font-semibold text-sm text-center transition-all">Mulai '+p.name+'</a>'; }
+    return '<div class="w-full shrink-0 px-0.5"><div class="pps-plan-card bg-white border '+(p.hot?'border-2 border-accent shadow-xl':'border-gray-200')+' rounded-3xl p-4 sm:p-5 flex flex-col relative text-left">'+
+      (p.hot?'<div class="absolute top-0 right-0 bg-accent text-[10px] font-bold px-3.5 py-1 rounded-bl-xl rounded-tr-2xl uppercase tracking-wider">Discount</div>':'')+
+      '<div class="mb-4 '+(p.hot?'mt-2':'')+'"><h3 class="text-lg font-bold text-gray-900 '+(p.hot?'text-accent':'')+'">'+p.name+'</h3><p class="text-xs text-gray-500 mt-0.5">'+p.tagline+'</p></div>'+
+      '<div class="mb-4 flex items-baseline gap-2 flex-wrap"><span class="text-2xl font-extrabold tracking-tight text-gray-900">'+(p.name==='Pro'&&promoProActive?'Rp5.000':p.price)+'</span><span class="text-xs font-medium text-gray-500">'+p.per+'</span>'+(p.name==='Pro'&&promoProActive?'<span class="text-sm text-gray-400 line-through">Rp49.000</span>':'')+'</div>'+
+      '<ul class="flex flex-col gap-2.5 mb-4 flex-1">'+list+'</ul>'+btn+'</div></div>';
+  }
+  function buildSheet(){
+    if(sheetEl) return;
+    var current=currentPlan()||'Starter';
+    var slides=plans.map(function(p){ return cardHtml(p,current); }).join('');
+    var dots=plans.map(function(p,i){ return '<button class="pps-dot rounded-full transition-all duration-200" data-i="'+i+'" style="width:6px;height:6px;background:#d1d5db;"></button>'; }).join('');
+    var css=document.createElement('style'); css.id='premium-sheet-css';
+    css.textContent='#premium-plans-sheet .text-accent{color:var(--accent-color,#000000);} #premium-plans-sheet .bg-accent{background-color:var(--accent-color,#000000);color:#ffffff;} #premium-plans-sheet .border-accent{border-color:var(--accent-color,#000000);}'+
+      'body:is(.dark-mode,.dark) #premium-plans-sheet .text-accent{color:#ffffff !important;} body:is(.dark-mode,.dark) #premium-plans-sheet .bg-accent{background-color:#ffffff !important;color:#000000 !important;} body:is(.dark-mode,.dark) #premium-plans-sheet .border-accent{border-color:#ffffff !important;}'+
+      'body:is(.dark-mode,.dark) #premium-plans-sheet .pps-plan-card{background-color:#0a0a0a!important;border-color:#222;} body:is(.dark-mode,.dark) #premium-plans-sheet .text-gray-700{color:#d1d5db;} body:is(.dark-mode,.dark) #premium-plans-sheet .pps-card{background-color:#0a0a0a !important;} body:is(.dark-mode,.dark) #premium-plans-sheet .pps-card h3,body:is(.dark-mode,.dark) #premium-plans-sheet .pps-card .text-gray-900{color:#ffffff !important;}';
+    document.head.appendChild(css);
+    sheetEl=document.createElement('div'); sheetEl.id='premium-plans-sheet'; sheetEl.setAttribute('role','dialog'); sheetEl.setAttribute('aria-modal','true'); sheetEl.setAttribute('aria-label','Paket Clincoo');
+    sheetEl.innerHTML=
+      '<div id="pps-backdrop" class="fixed inset-0 z-[95] opacity-0 transition-opacity duration-300" style="background:rgba(0,0,0,.45)"></div>'+
+      '<div class="fixed bottom-0 left-0 right-0 z-[96] flex justify-center pointer-events-none">'+
+        '<div id="pps-card" class="pps-card pointer-events-auto w-full max-w-md bg-white rounded-t-3xl px-4 pt-3 pb-5 translate-y-full transition-transform duration-300 ease-out shadow-2xl" style="max-height:90dvh;overflow-y:auto;padding-bottom:calc(1.25rem + env(safe-area-inset-bottom,0px));">'+
+          '<div class="flex justify-center"><div class="w-10 h-1.5 rounded-full bg-gray-200 mb-2"></div></div>'+
+          '<div class="flex items-start justify-between px-1">'+
+            '<div class="pr-8"><h3 class="text-base font-semibold text-gray-900">Paket Clincoo</h3>'+
+            '<p id="pps-feature-hint" class="text-[12.5px] text-gray-500 mt-0.5 leading-snug">Fitur ini hanya untuk paket Pro. Paket kamu saat ini: <b>'+current+'</b>.</p></div>'+
+            '<button id="pps-x" aria-label="Tutup" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-black flex items-center justify-center transition-colors shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6 6 18M6 6l12 12"></path></svg></button>'+
+          '</div>'+
+          '<div class="relative mt-3">'+
+            '<div id="pps-viewport" class="overflow-hidden rounded-2xl" style="touch-action:pan-y;">'+
+              '<div id="pps-track" class="flex transition-transform duration-300 ease-out">'+slides+'</div>'+
+            '</div>'+
+            '<button id="pps-prev" class="absolute left-0 top-1/2 -translate-y-1/2 -ml-2 w-7 h-7 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-600 hover:text-black transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6"></path></svg></button>'+
+            '<button id="pps-next" class="absolute right-0 top-1/2 -translate-y-1/2 -mr-2 w-7 h-7 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-600 hover:text-black transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"></path></svg></button>'+
+          '</div>'+
+          '<div class="flex items-center justify-center gap-2 mt-3.5">'+dots+'</div>'+
+        '</div>'+
+      '</div>';
+    document.body.appendChild(sheetEl);
+    var track=sheetEl.querySelector('#pps-track'), dotsEls=sheetEl.querySelectorAll('.pps-dot');
+    function render(){ track.style.transform='translateX(-'+(idx*100)+'%)'; dotsEls.forEach(function(d,i){ var on=(i===idx); d.style.width=on?'18px':'6px'; d.style.background=on?'':'#d1d5db'; d.classList.toggle('bg-accent',on); }); }
+    function go(i){ idx=(i+plans.length)%plans.length; render(); }
+    sheetEl.querySelector('#pps-prev').addEventListener('click',function(){ go(idx-1); });
+    sheetEl.querySelector('#pps-next').addEventListener('click',function(){ go(idx+1); });
+    dotsEls.forEach(function(d){ d.addEventListener('click',function(){ go(parseInt(d.dataset.i,10)); }); });
+    var vp=sheetEl.querySelector('#pps-viewport'), sx=null, dx=0;
+    vp.addEventListener('touchstart',function(e){ sx=e.touches[0].clientX; dx=0; track.style.transition='none'; },{passive:true});
+    vp.addEventListener('touchmove',function(e){ if(sx===null)return; dx=e.touches[0].clientX-sx; track.style.transform='translateX(calc(-'+(idx*100)+'% + '+dx+'px))'; },{passive:true});
+    vp.addEventListener('touchend',function(){ if(sx===null)return; track.style.transition=''; if(Math.abs(dx)>40){ go(idx+(dx<0?1:-1)); } else { render(); } sx=null; });
+    sheetEl.querySelector('#pps-x').addEventListener('click',closeSheet);
+    sheetEl.querySelector('#pps-backdrop').addEventListener('click',closeSheet);
+    sheetEl.__render=render;
+    render();
+  }
+  async function openSheet(crown){
+    if(isPaid()&&crownMin(crown)!=='Bisnis') return;
+    await refreshSubscription();
+    if((isPaid()&&crownMin(crown)!=='Bisnis')||(token()&&!currentPlan())) return;
+    featureMinimum=crownMin(crown);
+    buildSheet();
+    sheetEl.querySelector('#pps-track').innerHTML=plans.map(function(p){return cardHtml(p,currentPlan()||'Starter');}).join('');
+    sheetEl.querySelector('#pps-feature-hint').textContent='Fitur ini hanya untuk paket '+featureMinimum+'. '+(currentPlan()?'Paket kamu saat ini: '+currentPlan()+'.':'Pilih paket yang sesuai kebutuhanmu.');
+    idx=featureMinimum==='Bisnis'?2:1; sheetEl.__render();
+    if(closeTimer){clearTimeout(closeTimer);closeTimer=null;}
+    if(sheetEl.style.display==='none'||!sheetEl.__open) previousOverflow=document.body.style.overflow;
+    sheetEl.__open=true; document.body.style.overflow='hidden';
+    var b=sheetEl.querySelector('#pps-backdrop'), c=sheetEl.querySelector('#pps-card');
+    sheetEl.style.display='';
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ b.classList.remove('opacity-0'); c.classList.remove('translate-y-full'); }); });
+  }
+  function closeSheet(){
+    if(!sheetEl||!sheetEl.__open) return;
+    sheetEl.__open=false; document.body.style.overflow=previousOverflow;
+    var b=sheetEl.querySelector('#pps-backdrop'), c=sheetEl.querySelector('#pps-card');
+    b.classList.add('opacity-0'); c.classList.add('translate-y-full');
+    closeTimer=setTimeout(function(){ sheetEl.style.display='none'; closeTimer=null; },300);
+  }
+  function crownMin(c){
+    try{ if(c&&c.getAttribute&&c.getAttribute('data-min')==='Bisnis') return 'Bisnis';
+      if(c&&c.id==='export-crown-label') return 'Bisnis'; }catch(e){}
+    return 'Pro';
+  }
+  // Crown seragam: samakan ikon, ukuran & warna mahkota di seluruh halaman.
+  var CLINCOO_CROWN_PATH='M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z';
+  function clincooUniformCrowns(){
+    document.querySelectorAll(crownSelector).forEach(function(c){
+      try{ c.setAttribute('data-min-crown','1'); c.setAttribute('data-min',crownMin(c)); }catch(e){}
+      var sv=c.querySelector('svg');
+      if(sv){ sv.setAttribute('viewBox','0 0 24 24'); sv.setAttribute('aria-hidden','true');
+        var p=sv.querySelector('path'); if(p){ p.setAttribute('d',CLINCOO_CROWN_PATH); p.setAttribute('stroke-linecap','round'); p.setAttribute('stroke-linejoin','round'); } }
+      if(!c.title) c.title='Fitur premium — ketuk untuk lihat paket';
+    });
+  }
+  function applyCrownState(){
+    var plan=currentPlan()||'Starter';
+    document.body.setAttribute('data-pps-paid',isPaid()?'true':'false');
+    document.body.setAttribute('data-pps-plan',plan);
+    document.querySelectorAll(crownSelector).forEach(function(c){
+      // Starter = lihat semua crown (level Pro & Bisnis); Pro = hanya level Bisnis; Bisnis = tanpa crown.
+      var show=!isPaid()?true:(plan==='Pro'&&crownMin(c)==='Bisnis');
+      c.style.display=show?'':'none'; c.style.cursor='pointer';
+      c.setAttribute('role','button'); c.setAttribute('tabindex',show?'0':'-1');
+      c.setAttribute('aria-label','Lihat daftar paket');
+    });
+    clincooUniformCrowns();
+    if(plan==='Bisnis') closeSheet();
+  }
+  async function refreshSubscription(){
+    try{
+      var t=token();
+      var res=await fetch(apiBase()+'/api/subscription?fields=plan',{cache:'no-store',headers:t?{Authorization:'Bearer '+t}:{}});
+      if(res.ok){ var d=await res.json();
+        if(d&&d.plan){ verifiedPlan=d.plan;
+          var cache=JSON.stringify({plan:d.plan,billingCycle:d.billingCycle||'Bulanan',ts:Date.now()});
+          try{localStorage.setItem('TM_SUB_CACHE_KEY',cache);localStorage.setItem('clincoo_subscription_cache',cache);}catch(e){}
+          applyCrownState();
+        }
+      }
+    }catch(e){}
+  }
+  // Capture hanya mahkota: cegah handler modal lama atau navigasi induknya.
+  // ===== Gate layar penuh (klik fitur bermahkota oleh user Starter) =====
+  function clincooCrownGateClose(){var g=document.getElementById('cc-crown-gate');if(g)g.remove();}
+  function clincooCrownTheme(){
+    var bg='',nodes=[document.body,document.documentElement];
+    for(var i=0;i<nodes.length;i++){try{if(!nodes[i])continue;var v=getComputedStyle(nodes[i]).backgroundColor;if(v&&v!=='transparent'&&v!=='rgba(0, 0, 0, 0)'){bg=v;break;}}catch(e){}}
+    var m=bg.match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/i),lum=m?(0.299*+m[1]+0.587*+m[2]+0.114*+m[3]):-1;
+    if(lum<0){var dk=false;try{dk=!!(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);}catch(e){}bg=dk?'#0b0b0d':'#ffffff';lum=dk?20:255;}
+    return lum<128
+      ?{bg:bg,fg:'#f5f6f7',muted:'#9aa0a6',btnA:'#ffffff',btnAf:'#111111',bd:'rgba(255,255,255,.22)'}
+      :{bg:bg,fg:'#111111',muted:'#555555',btnA:'#111111',btnAf:'#ffffff',bd:'#e5e7eb'};
+  }
+  function clincooCrownGate(c){
+    clincooCrownGateClose();
+    var min=crownMin(c);
+    if(typeof isPaid==='function'&&isPaid()&&!((currentPlan()||'')==='Pro'&&min==='Bisnis'))return;
+    var t=clincooCrownTheme();
+    var ov=document.createElement('div');ov.id='cc-crown-gate';
+    ov.style.cssText='position:fixed;inset:0;z-index:2147483000;background:'+t.bg+';color:'+t.fg+';display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;padding:24px;';
+    ov.innerHTML='<div style="max-width:420px;width:100%;text-align:center">'+
+      '<div style="font-size:44px;line-height:1">&#128081;</div>'+
+      '<h2 style="font-size:20px;margin:14px 0 8px;color:'+t.fg+';font-weight:700">Fitur ini hanya untuk paket '+min+'</h2>'+
+      '<p style="font-size:14px;color:'+t.muted+';margin:0 0 20px">Paket kamu saat ini '+(currentPlan()||'Starter')+'. Upgrade untuk membuka fitur ini.</p>'+
+      '<button id="cc-gate-plans" style="display:block;width:100%;padding:13px;background:'+t.btnA+';color:'+t.btnAf+';border:0;border-radius:12px;font-weight:600;font-size:14px;cursor:pointer">Lihat Paket</button>'+
+      '<button id="cc-gate-close" style="display:block;width:100%;margin-top:10px;padding:13px;border:1.5px solid '+t.bd+';background:transparent;color:'+t.fg+';border-radius:12px;font-weight:600;font-size:14px;cursor:pointer">Tutup</button>'+
+      '</div>';
+    (document.body||document.documentElement).appendChild(ov);
+    ov.querySelector('#cc-gate-plans').addEventListener('click',function(){clincooCrownGateClose();openSheet(c);});
+    ov.querySelector('#cc-gate-close').addEventListener('click',clincooCrownGateClose);
+    document.addEventListener('keydown',function esc(ev){if(ev.key==='Escape'){clincooCrownGateClose();document.removeEventListener('keydown',esc,true);}},true);
+  }
+function crownAction(e){
+    var c=e.target&&e.target.closest?e.target.closest(crownSelector):null;
+    if(!c) return;
+    if(e.type==='keydown'&&e.key!=='Enter'&&e.key!==' ') return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    if(!isPaid()){ (async function(){ await refreshSubscription(); if(isPaid()||(token()&&!currentPlan())) return; clincooCrownGate(c); })(); return; }
+    if((currentPlan()||'')==='Pro'&&crownMin(c)==='Bisnis'){ (async function(){ await refreshSubscription(); if((currentPlan()||'')==='Pro') clincooCrownGate(c); })(); return; }
+    openSheet(c);
+  }
+  document.addEventListener('click',crownAction,true);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeSheet();return;}crownAction(e);},true);
+  window.addEventListener('storage',function(e){if(e.key==='TM_SUB_CACHE_KEY'||e.key==='clincoo_subscription_cache'){verifiedPlan=null;applyCrownState();refreshSubscription();}});
+  new MutationObserver(function(records){if(records.some(function(r){return Array.from(r.addedNodes).some(function(n){return n.nodeType===1&&(n.matches(crownSelector)||n.querySelector(crownSelector));});}))applyCrownState();}).observe(document.body,{childList:true,subtree:true});
+  applyCrownState();
+  document.addEventListener('DOMContentLoaded',applyCrownState);
+  refreshSubscription();
+  window.clincooOpenPlansPopup=function(){clincooCrownGate(null);};
+  window.clincooFeatureGate=function(min){clincooCrownGate({id:'cc-gate-'+(min||'Pro'),getAttribute:function(k){return k==='data-min'?(min||'Pro'):null;}});};
+  clincooUniformCrowns();
+  // Syarat promo dan harga mengikuti halaman Upgrade, bukan harga promo tanpa eligibility.
+  fetch(apiBase()+'/api/promo',{cache:'no-store'}).then(function(r){return r.json();}).then(function(p){
+    if(!p||p.active!==true||p.remaining<=0||!p.eligible)return;
+    promoProActive=true;
+    if(sheetEl){sheetEl.querySelector('#pps-track').innerHTML=plans.map(function(p){return cardHtml(p,currentPlan()||'Starter');}).join('');sheetEl.__render();}
+  }).catch(function(){});
+})();
+</script>
+
+<div id="withdraw-modal" class="fixed inset-0 z-[70] hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="w-full max-w-sm p-5 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-xl">
+    <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1">Tarik Saldo</h3>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Saldo tersedia: <span id="wd-avail" class="font-semibold text-gray-900 dark:text-white">Rp 0</span></p>
+    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Nominal (min. Rp 10.000)</label>
+    <input id="wd-amount" type="number" min="10000" step="1000" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:border-gray-500 mb-4" placeholder="Contoh: 50000">
+    <div class="flex gap-3 justify-end">
+      <button type="button" onclick="closeWithdrawModal()" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer">Batal</button>
+      <button type="button" id="wd-submit" onclick="submitWithdraw()" class="px-4 py-2 text-sm font-semibold text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-xl shadow-sm transition-colors cursor-pointer">Kirim Permintaan</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="email-toast" style="opacity:0" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full text-xs font-medium shadow-lg transition-opacity duration-300 pointer-events-none"></div>
+</body>
+</html>

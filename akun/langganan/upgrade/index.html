@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../../js/auth-client.js?v=6"></script>
+    <script src="../../../js/accent-init.js"></script>
+    <script src="../../../js/loading-state.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
+    <link rel="manifest" href="../../../manifest.json">
+    <link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
+    <title>Upgrade Paket — Clincoo</title>
+    <meta name="description" content="Upgrade Paket — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clincoo">
+    <meta property="og:title" content="Upgrade Paket — Clincoo">
+    <meta property="og:description" content="Upgrade Paket — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Upgrade Paket — Clincoo">
+    <meta name="twitter:description" content="Upgrade Paket — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+    <script src="https://unpkg.com/lucide@1.41.0"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        :root {
+            --accent-color: #000000;
+            --accent-hover: #1f2937;
+            --accent-text: #ffffff;
+        }
+
+        .bg-accent { background-color: var(--accent-color) !important; }
+        .text-accent { color: var(--accent-color) !important; }
+        .border-accent { border-color: var(--accent-color) !important; }
+        .hover\:bg-accent-hover:hover { background-color: var(--accent-hover) !important; }
+        
+        body.dark-mode {
+            background-color: #000000;
+            color: #ffffff;
+        }
+        body.dark-mode .bg-white {
+            background-color: #0a0a0a !important;
+        }
+        body.dark-mode .text-\[\#222222\] { color: #ffffff !important; }
+        body.dark-mode #sidebar-toggle,
+        body.dark-mode button[onclick="toggleSidebar()"],
+        body.dark-mode button[onclick="history.back()"],
+        body.dark-mode button[onclick="navigateTo(\'page-home\')"],
+        body.dark-mode .header-glass button[onclick],
+        body.dark-mode header button[onclick] {
+            background-color: #000000 !important;
+            border: 1.5px solid rgba(255,255,255,0.4) !important;
+            color: #ffffff !important;
+        }
+        body.dark-mode #sidebar-toggle svg,
+        body.dark-mode button[onclick="toggleSidebar()"] svg,
+        body.dark-mode button[onclick="history.back()"] svg,
+        body.dark-mode button[onclick="navigateTo(\'page-home\')"] svg,
+        body.dark-mode .header-glass button[onclick] svg,
+        body.dark-mode header button[onclick] svg {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+        }
+        body.dark-mode #sidebar-toggle:hover,
+        body.dark-mode button[onclick="toggleSidebar()"]:hover,
+        body.dark-mode button[onclick="history.back()"]:hover,
+        body.dark-mode button[onclick="navigateTo(\'page-home\')"]:hover,
+        body.dark-mode .header-glass button[onclick]:hover,
+        body.dark-mode header button[onclick]:hover {
+            background-color: #1a1a1a !important;
+            border-color: rgba(255,255,255,0.7) !important;
+        }
+        body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black {
+            color: #ffffff !important;
+        }
+        body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 {
+            color: #888888 !important;
+        }
+        body.dark-mode .border-gray-100, body.dark-mode .border-gray-200 {
+            border-color: #222222 !important;
+        }
+        body.dark-mode .hover\:bg-gray-50:hover, body.dark-mode .hover\:bg-gray-100:hover, body.dark-mode .hover\:bg-gray-200:hover {
+            background-color: #222222 !important;
+        }
+        body.dark-mode .bg-gray-50, body.dark-mode .bg-gray-100 {
+            background-color: #0a0a0a !important;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        body.dark-mode #system-modal .bg-white { background-color: #0a0a0a !important; }
+        body.dark-mode #system-modal .border-gray-100 { border-color: #222222 !important; }
+        body.dark-mode header { background-color: #000000 !important; border-color: #222222 !important; }
+        body.dark-mode .divide-gray-100 > * { border-color: #222222 !important; }
+        body.dark-mode .text-gray-400 { color: #666666 !important; }
+        body.dark-mode ::-webkit-scrollbar-thumb { background: #222222; }
+
+        body.dark-mode .bg-black { background-color: #ffffff !important; color: #000000 !important; }
+        body.dark-mode .bg-black.text-white { color: #000000 !important; }
+        body.dark-mode .hover\:bg-gray-800:hover { background-color: #333333 !important; }
+        body.dark-mode .bg-accent { background-color: #ffffff !important; color: #000000 !important; }
+        body.dark-mode .bg-accent.text-white { color: #000000 !important; }
+        body.dark-mode .text-accent { color: #ffffff !important; }
+        body.dark-mode .border-accent { border-color: #ffffff !important; }
+        body.dark-mode .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.3) !important; }
+        body.dark-mode .shadow-xl { box-shadow: 0 10px 30px rgba(0,0,0,0.4) !important; }
+        body.dark-mode .shadow-2xl { box-shadow: 0 20px 50px rgba(0,0,0,0.5) !important; }
+        body.dark-mode .border-gray-50 { border-color: #0a0a0a !important; }
+        body.dark-mode .border-black { border-color: #ffffff !important; }
+    </style>
+    
+<style>
+.clincoo-shimmer{position:relative;overflow:hidden;display:inline-block;min-width:4.5rem;min-height:1.4em;color:transparent!important;background:#e5e7eb;border-radius:8px;-webkit-user-select:none;user-select:none;vertical-align:middle}
+.clincoo-shimmer::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);animation:clincoo-shimmer 1.3s infinite}
+@keyframes clincoo-shimmer{100%{transform:translateX(100%)}}
+.dark-mode .clincoo-shimmer{background:#1e293b}
+.dark-mode .clincoo-shimmer::after{background:linear-gradient(90deg,transparent,rgba(148,163,184,.3),transparent)}
+</style>
+<!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
+(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<3;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
+    </script>
+<!-- Google tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+<!-- End Google tag -->
+<script src="../../../js/i18n-dict.js" defer></script>
+<script src="../../../js/i18n.js" defer></script>
+</head>
+
+<body class="min-h-screen flex flex-col text-gray-900 pt-16">
+    <script>(function(){var t=localStorage.getItem("clincoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+    <header class="bg-white flex justify-between items-center px-3 py-2 fixed top-0 w-full z-40 transition-colors">
+        <button onclick="history.back()" class="top-2 left-5 w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-100 hover:bg-gray-100 transition-all cursor-pointer text-gray-700 hover:text-black">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </button>
+        <h1 class="font-extrabold text-lg text-gray-900 tracking-tight">Upgrade Plan</h1>
+        <div class="w-10"></div>
+    </header>
+    <main class="flex-1 w-full max-w-6xl mx-auto px-5 py-8 flex flex-col">
+        <div class="mb-10 text-center mt-4">
+            <div class="inline-flex items-center justify-center mb-6">
+                <i data-lucide="crown" class="w-12 h-12 text-accent"></i>
+            </div>
+            <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-3" style="font-family: 'Space Grotesk', sans-serif;">
+                Buka Potensi Penuh
+            </h2>
+            <p class="text-gray-500 text-sm sm:text-base max-w-lg mx-auto leading-relaxed">
+                Editor full-stack, integrasi GitHub, kelola domain sendiri, dan kuota AI hingga 40x lipat — pilih paket sesuai kebutuhan Anda.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full mx-auto">
+            
+            <div class="bg-white border border-gray-200 rounded-3xl p-6 md:p-8 flex flex-col transition-all hover:shadow-md">
+                <div class="mb-6">
+                    <h3 class="text-lg font-bold text-gray-900">Starter</h3>
+                    <p class="text-xs text-gray-500 mt-1">Untuk mencoba dan membangun proyek sederhana.</p>
+                </div>
+                <div class="mb-6 flex items-baseline">
+                    <span class="text-3xl font-extrabold tracking-tight text-gray-900">Gratis</span>
+                </div>
+                <ul class="flex flex-col gap-4 mb-8 flex-1">
+                    <li class="flex items-start gap-3 text-sm text-gray-700">
+                        <i data-lucide="check" class="w-5 h-5 text-gray-900 shrink-0"></i>
+                        <span>3 proyek aktif</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-700">
+                        <i data-lucide="check" class="w-5 h-5 text-gray-900 shrink-0"></i>
+                        <span>Editor kode di browser</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-700">
+                        <i data-lucide="check" class="w-5 h-5 text-gray-900 shrink-0"></i>
+                        <span>Live preview real-time</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-700">
+                        <i data-lucide="check" class="w-5 h-5 text-gray-900 shrink-0"></i>
+                        <span>Terminal Linux</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-700">
+                        <i data-lucide="check" class="w-5 h-5 text-gray-900 shrink-0"></i>
+                        <span>Email API 100 kredit/bulan</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-700">
+                        <i data-lucide="check" class="w-5 h-5 text-gray-900 shrink-0"></i>
+                        <span>1 domain + DNS &amp; SSL otomatis</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-700">
+                        <i data-lucide="check" class="w-5 h-5 text-gray-900 shrink-0"></i>
+                        <span>Deploy web 5×/bulan</span>
+                    </li>
+                    </ul>
+                <button id="btn-starter" disabled class="w-full py-3.5 bg-gray-50 text-gray-500 border border-gray-200 rounded-xl font-semibold text-sm cursor-not-allowed">
+                    Paket Saat Ini
+                </button>
+            </div>
+
+            <div class="bg-white border-2 border-accent rounded-3xl p-6 md:p-8 flex flex-col relative shadow-xl transform md:-translate-y-2 transition-transform">
+                <div class="absolute top-0 right-0 bg-accent text-white text-[10px] font-bold px-4 py-1.5 rounded-bl-xl rounded-tr-2xl uppercase tracking-wider">
+                    Discount
+                </div>
+                <div class="mb-6 mt-1">
+                    <h3 class="text-lg font-bold text-accent">Pro</h3>
+                    <p class="text-xs text-gray-500 mt-1">Untuk developer dan tim kecil yang serius membangun &amp; menerbitkan.</p>
+                </div>
+                <div class="mb-6 flex items-baseline" id="pro-price-block">
+                    <span class="text-3xl font-extrabold tracking-tight text-gray-900">49K</span>
+                    <span class="text-sm font-medium text-gray-500 ml-1">/bln</span>
+                </div>
+                <ul class="flex flex-col gap-4 mb-8 flex-1">
+                    <li class="flex items-start gap-3 text-sm text-gray-900 font-medium">
+                        <i data-lucide="check-circle-2" class="w-5 h-5 text-accent shrink-0"></i>
+                        <span>Semua fitur Starter</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-900 font-medium">
+                        <i data-lucide="check-circle-2" class="w-5 h-5 text-accent shrink-0"></i>
+                        <span>10 proyek aktif</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-900 font-medium">
+                        <i data-lucide="check-circle-2" class="w-5 h-5 text-accent shrink-0"></i>
+                        <span>5 kolaborator per proyek</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-900 font-medium">
+                        <i data-lucide="check-circle-2" class="w-5 h-5 text-accent shrink-0"></i>
+                        <span>Editor full-stack + integrasi Git</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-900 font-medium">
+                        <i data-lucide="check-circle-2" class="w-5 h-5 text-accent shrink-0"></i>
+                        <span>Domain tanpa batas + DNS &amp; SSL otomatis</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-900 font-medium">
+                        <i data-lucide="check-circle-2" class="w-5 h-5 text-accent shrink-0"></i>
+                        <span>Email API 500 kredit/bulan + 500 kontak</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-900 font-medium">
+                        <i data-lucide="check-circle-2" class="w-5 h-5 text-accent shrink-0"></i>
+                        <span>Deploy web 25×/bulan</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-900 font-medium">
+                        <i data-lucide="check-circle-2" class="w-5 h-5 text-accent shrink-0"></i>
+                        <span>Penyimpanan 5 GB per proyek</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-900 font-medium">
+                        <i data-lucide="check-circle-2" class="w-5 h-5 text-accent shrink-0"></i>
+                        <span>Live URL tiap proyek</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-900 font-medium">
+                        <i data-lucide="check-circle-2" class="w-5 h-5 text-accent shrink-0"></i>
+                        <span>Version control &amp; riwayat versi</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-900 font-medium">
+                        <i data-lucide="check-circle-2" class="w-5 h-5 text-accent shrink-0"></i>
+                        <span>Ekspor proyek (HTML / ZIP)</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-900 font-medium">
+                        <i data-lucide="check-circle-2" class="w-5 h-5 text-accent shrink-0"></i>
+                        <span>Payment gateway (terima QRIS di situs)</span>
+                    </li>
+                    </ul>
+                <button id="btn-pro" onclick="openModal('Pro', '49.000')" class="w-full py-3.5 bg-accent text-white hover:bg-accent-hover rounded-xl font-semibold text-sm transition-all shadow-md active:scale-95 cursor-pointer">
+                    Upgrade ke Pro
+                </button>
+            </div>
+
+            <div class="bg-white border border-gray-200 rounded-3xl p-6 md:p-8 flex flex-col transition-all hover:shadow-md">
+                <div class="mb-6">
+                    <h3 class="text-lg font-bold text-gray-900">Bisnis</h3>
+                    <p class="text-xs text-gray-500 mt-1">Untuk tim dan bisnis yang butuh skala, kontrol, dan keandalan.</p>
+                </div>
+                <div class="mb-6 flex items-baseline">
+                    <span class="text-3xl font-extrabold tracking-tight text-gray-900">129K</span>
+                    <span class="text-sm font-medium text-gray-500 ml-1">/bln</span>
+                </div>
+                <ul class="flex flex-col gap-4 mb-8 flex-1">
+                    <li class="flex items-start gap-3 text-sm text-gray-700">
+                        <i data-lucide="check" class="w-5 h-5 text-gray-900 shrink-0"></i>
+                        <span>Semua fitur Pro</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-700">
+                        <i data-lucide="check" class="w-5 h-5 text-gray-900 shrink-0"></i>
+                        <span>50 proyek aktif</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-700">
+                        <i data-lucide="check" class="w-5 h-5 text-gray-900 shrink-0"></i>
+                        <span>20 kolaborator per proyek</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-700">
+                        <i data-lucide="check" class="w-5 h-5 text-gray-900 shrink-0"></i>
+                        <span>Email API 1.000 kredit/bulan + 1.000 kontak</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-700">
+                        <i data-lucide="check" class="w-5 h-5 text-gray-900 shrink-0"></i>
+                        <span>Deploy web tanpa batas</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-700">
+                        <i data-lucide="check" class="w-5 h-5 text-gray-900 shrink-0"></i>
+                        <span>Penyimpanan 20 GB per proyek</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-700">
+                        <i data-lucide="check" class="w-5 h-5 text-gray-900 shrink-0"></i>
+                        <span>Proteksi password situs</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-700">
+                        <i data-lucide="check" class="w-5 h-5 text-gray-900 shrink-0"></i>
+                        <span>Ekspor data penuh akun</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-700">
+                        <i data-lucide="check" class="w-5 h-5 text-gray-900 shrink-0"></i>
+                        <span>Kontrol akses &amp; keamanan proyek lanjutan</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-700">
+                        <i data-lucide="check" class="w-5 h-5 text-gray-900 shrink-0"></i>
+                        <span>Backend functions (API &amp; database tanpa server)</span>
+                    </li>
+                    <li class="flex items-start gap-3 text-sm text-gray-700">
+                        <i data-lucide="check" class="w-5 h-5 text-gray-900 shrink-0"></i>
+                        <span>Server MCP (hubungkan ke tool eksternal)</span>
+                    </li>
+                    </ul>
+                <button id="btn-bisnis" onclick="openModal('Bisnis', '129.000')" class="w-full py-3.5 bg-white text-gray-900 border-2 border-gray-200 hover:border-gray-900 hover:bg-gray-50 rounded-xl font-semibold text-sm transition-all cursor-pointer">
+                    Mulai Bisnis
+                </button>
+            </div>
+
+        </div>
+
+        <div class="mt-12 text-center text-xs text-gray-400">
+            <p>Paket Tahunan: bayar 10 bulan, pakai 12 bulan (hemat 2 bulan). Tanpa perpanjangan otomatis — setelah masa aktif habis, paket kembali ke Starter. Perpanjang di tengah periode? Sisa masa aktif ditambahkan, tidak hangus. Turun paket berlaku langsung tanpa pengembalian dana.</p>
+        </div>
+    </main>
+
+
+
+    <script>
+        try { lucide.createIcons(); } catch (e) {}
+
+        // fields=plan: mode ringan — cukup paket aktif + siklus tagihan (cepat)
+        const SUB_API = 'https://clincoo-be2.pages.dev/api/subscription';
+        const SUB_API_LIGHT = SUB_API + '?fields=plan';
+        const PROMO_API = 'https://clincoo-be2.pages.dev/api/promo';
+        // PROMO 100 User Pertama: utk user yang eligible, kartu Pro tampil Rp5.000 (coret 49.000)
+        let promoProActive = false;
+        (function(){
+          fetch(PROMO_API, { cache: 'no-store' }).then(function(r){ return r.json(); }).then(function(p){
+            if (!p || p.active !== true || p.remaining <= 0) return;
+            var card = document.getElementById('btn-pro');
+            if (!card) return;
+            if (p.eligible) {
+              promoProActive = true;
+              var priceBlock = document.getElementById('pro-price-block');
+              if (priceBlock) {
+                priceBlock.outerHTML =
+                  '<div class="mb-6 flex items-baseline gap-2 flex-wrap" id="pro-price-block">' +
+                    '<span class="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white" style="font-family:\'Space Grotesk\',sans-serif">Rp5.000</span>' +
+                    '<span class="text-sm font-medium text-gray-500">/bln</span>' +
+                    '<span class="text-sm text-gray-400 line-through">Rp49.000</span>' +
+                  '</div>';
+              }
+              card.textContent = 'Ambil Promo Pro Rp5.000';
+            }
+          }).catch(function(){});
+        })();
+        let currentActivePlan = 'Starter';
+        let selectedPlan = '';
+        let subData = null;
+
+
+        // ===== CACHE LANGGANAN (bersama dgn halaman Langganan & Konfirmasi) =====
+        // Buka lagi → data yang sudah pernah di-load tampil LANGSUNG tanpa loading.
+        // Belum ada cache / cache basi → halaman loading (loading-state.js) muncul
+        // dululu sambil ambil data real-time dari server, lalu disimpan ke cache.
+        const SUB_CACHE_KEY = 'clincoo_subscription_cache';
+        const SUB_CACHE_TTL = 5 * 60 * 1000; // segar selama 5 menit
+        function readSubCache() { try { return JSON.parse(localStorage.getItem(SUB_CACHE_KEY) || 'null') || null; } catch(e) { return null; } }
+        function writeSubCache(plan, billingCycle) { try { localStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ plan: plan, billingCycle: billingCycle || 'Bulanan', ts: Date.now() })); } catch(e) {} }
+
+        async function loadSubscription() {
+            // 1) Instan dari cache — mis. plan Pro dari halaman Langganan tampil langsung.
+            //    Cache basi pun tetap dipakai dulu (tampil instan), lalu diperbarui diam-diam
+            //    di belakang — tanpa loading, tanpa nunggu server.
+            const cached = readSubCache();
+            if (cached && cached.plan) {
+                currentActivePlan = cached.plan;
+                subData = { plan: cached.plan, billingCycle: cached.billingCycle || 'Bulanan' };
+                updateUI();
+                const fresh = (Date.now() - (cached.ts || 0)) < SUB_CACHE_TTL;
+                if (!fresh) {
+                    // STALE-WHILE-REVALIDATE: perbarui cache di belakang, render ulang kalau beda
+                    try {
+                        const res = await fetch(SUB_API_LIGHT, { headers: subAuthHeaders() });
+                        const data = await res.json();
+                        if (data && data.plan && data.plan !== currentActivePlan) {
+                            currentActivePlan = data.plan;
+                            subData = data;
+                            writeSubCache(data.plan, data.billingCycle);
+                            updateUI();
+                        } else if (data && data.plan) {
+                            writeSubCache(data.plan, data.billingCycle); // segarkan ts cache
+                        }
+                    } catch(e) {}
+                }
+                return;
+            }
+            // 2) Tidak ada cache sama sekali → ambil data asli lewat mode ringan
+            //    (loading indicator aktif selama fetch berjalan)
+            try {
+                const res = await fetch(SUB_API_LIGHT, { headers: subAuthHeaders() });
+                const data = await res.json();
+                subData = data || null;
+                if (data && data.plan) {
+                    currentActivePlan = data.plan;
+                    writeSubCache(data.plan, data.billingCycle); // simpan untuk buka lagi
+                }
+            } catch(e) { console.error('Failed to load subscription:', e); }
+            updateUI();
+        }
+        function subAuthHeaders() {
+            try {
+                var tok = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || '';
+                return tok ? { Authorization: 'Bearer ' + tok } : {};
+            } catch (e) { return {}; }
+        }
+
+        // Checkout paket: halaman /checkout/ (alur: pilih metode -> konfirmasi -> QRIS -> aktif)
+        const PLAN_PRICES = { Starter: 0, Pro: 49000, Bisnis: 129000 };
+        function openModal(plan) {
+            const billing = (subData && subData.billingCycle) ? subData.billingCycle : 'Bulanan';
+            let amount = PLAN_PRICES[plan] || 0;
+            if (plan === 'Pro' && promoProActive) amount = 5000; // promo 100 user pertama
+            selectedPlan = plan;
+            if (amount === 0) {
+                // Starter / program gratis: halaman konfirmasi yang mengaktivasi (Rp0).
+                window.location.href = 'konfirmasi/?plan=' + encodeURIComponent(plan) + '&billing=' + encodeURIComponent(billing);
+                return;
+            }
+            window.location.href = '../checkout/?plan=' + encodeURIComponent(plan) + '&billing=' + encodeURIComponent(billing) + '&amount=' + amount;
+        }
+
+        function closeModal() {}
+
+        function processUpgrade() {}
+
+        function finishUpgrade() {
+            currentActivePlan = selectedPlan;
+            updateUI();
+        }
+
+        function updateUI() {
+            const btnStarter = document.getElementById('btn-starter');
+            const btnPro = document.getElementById('btn-pro');
+            const btnBisnis = document.getElementById('btn-bisnis');
+
+            const btnActiveClasses = 'w-full py-3.5 bg-gray-50 text-gray-500 border border-gray-200 rounded-xl font-semibold text-sm cursor-not-allowed';
+            const btnDefaultClasses = 'w-full py-3.5 bg-white text-gray-900 border-2 border-gray-200 hover:border-gray-900 hover:bg-gray-50 rounded-xl font-semibold text-sm transition-all cursor-pointer';
+            const btnProClasses = 'w-full py-3.5 bg-accent text-white hover:bg-accent-hover rounded-xl font-semibold text-sm transition-all shadow-md active:scale-95 cursor-pointer';
+
+            btnStarter.innerText = 'Turunkan Paket';
+            btnStarter.className = btnDefaultClasses;
+            btnStarter.disabled = false;
+            btnStarter.onclick = () => openModal('Starter', 'Gratis');
+
+            btnPro.innerText = 'Upgrade ke Pro';
+            btnPro.className = btnProClasses;
+            btnPro.disabled = false;
+            btnPro.onclick = () => openModal('Pro', '49.000');
+
+            btnBisnis.innerText = 'Mulai Bisnis';
+            btnBisnis.className = btnDefaultClasses;
+            btnBisnis.disabled = false;
+            btnBisnis.onclick = () => openModal('Bisnis', '129.000');
+
+            if (currentActivePlan === 'Starter') {
+                btnStarter.innerText = 'Paket Saat Ini';
+                btnStarter.className = btnActiveClasses;
+                btnStarter.disabled = true;
+                btnStarter.onclick = null;
+            } else if (currentActivePlan === 'Pro') {
+                btnPro.innerText = 'Paket Saat Ini';
+                btnPro.className = btnActiveClasses;
+                btnPro.disabled = true;
+                btnPro.onclick = null;
+            } else if (currentActivePlan === 'Bisnis') {
+                btnBisnis.innerText = 'Paket Saat Ini';
+                btnBisnis.className = btnActiveClasses;
+                btnBisnis.disabled = true;
+                btnBisnis.onclick = null;
+            }
+        }
+
+        // Load on page open — data D1 langsung dirender tanpa shimmer
+        loadSubscription();
+    </script>
+<script>
+(function(){
+    var path = window.location.pathname.split('/').pop() || '../upgrade/';
+    var links = document.querySelectorAll('.sidebar-nav-link');
+    links.forEach(function(link){
+        var href = link.getAttribute('href');
+        if(href === path){
+            link.classList.add('bg-gray-50','text-gray-900');
+            link.classList.remove('hover:bg-gray-50','text-gray-700');
+        }
+    });
+})();
+</script>
+
+    <script>/* clincoo-sw-register */
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../sw.js').catch(function () {}); }); }
+    </script>
+</body>
+</html>

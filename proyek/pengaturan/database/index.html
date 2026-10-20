@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../../js/accent-init.js"></script>
+<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clincoo_current_project_id',__p);}else{var __go=function(__pid){try{localStorage.setItem('clincoo_current_project_id',__pid);}catch(e){}var __sp=new URLSearchParams(location.search);__sp.set('id',__pid);var __q=__sp.toString();location.replace(location.pathname+(__q?'?'+__q:'')+location.hash);};var __c='';try{__c=localStorage.getItem('clincoo_current_project_id')||'';}catch(e){}if(__c){var __l=null;try{__l=JSON.parse(localStorage.getItem('clincoo_projects')||'[]');}catch(e){}if(!Array.isArray(__l)||!__l.length||__l.some(function(p){return p&&p.id===__c;})){__go(__c);return;}try{localStorage.removeItem('clincoo_current_project_id');}catch(e){}}var __t='';try{__t=localStorage.getItem('clincoo_auth_token')||localStorage.getItem('clincoo_token')||'';}catch(e){}var __o=(['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname)===-1)?'https://clincoo-be2.pages.dev':'';fetch(__o+'/api/projects',{headers:__t?{'Authorization':'Bearer '+__t}:{}}).then(function(r){return r.ok?r.json():null;}).then(function(d){var __l2=(d&&d.projects)||[];if(!__l2.length){location.replace('/');return;}__l2.sort(function(a,b){return String(b.updatedAt||'').localeCompare(String(a.updatedAt||''));});__go(String(__l2[0].id));}).catch(function(){location.replace('/');});}}catch(e){}})();</script>
+  <script src="../../../js/current-project.js?v=1"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
+    <link rel="manifest" href="../../../manifest.json">
+    <link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
+  <title>Database — Clincoo</title>
+    <meta name="description" content="Pengaturan: Database — kelola tabel data aplikasi di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clincoo">
+    <meta property="og:title" content="Database — Clincoo">
+    <meta property="og:description" content="Pengaturan: Database — kelola tabel data aplikasi di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Pengaturan: Database — Clincoo">
+    <meta name="twitter:description" content="Pengaturan: Database — kelola tabel data aplikasi di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+  <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/assets/vendor/chart.umd.min.js"></script>
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+    body { font-family: 'Inter', sans-serif; }
+    @keyframes emailCtaSpin { to { transform: rotate(360deg); } }
+    .email-cta-spin { animation: emailCtaSpin 0.8s linear infinite; }
+    .email-cta { box-shadow: 0 2px 8px -2px rgba(0,0,0,0.15); }
+    .email-cta:not(:disabled):active { transform: scale(0.97); }
+    ::-webkit-scrollbar { display: none; width: 0; height: 0; background: transparent; }
+    * { -ms-overflow-style: none; scrollbar-width: none; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    body.dark-mode { background-color: #000000; color: #e0e0e0; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800 { color: #f0f0f0; }
+    body.dark-mode .text-gray-700 { color: #b0b0b0; }
+    body.dark-mode .text-gray-500, body.dark-mode .text-gray-600 { color: #888888; }
+    body.dark-mode .text-gray-400 { color: #666666; }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode header button[onclick="history.back()"], body.dark-mode header button[aria-label="Kembali"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
+    body.dark-mode header button[onclick="history.back()"] svg, body.dark-mode header button[aria-label="Kembali"] svg { color: #ffffff !important; stroke: #ffffff !important; }
+    body.dark-mode header button[onclick="history.back()"]:hover, body.dark-mode header button[aria-label="Kembali"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
+    body.dark-mode .bg-gray-50 { background-color: #222222 !important; }
+    body.dark-mode .bg-gray-100 { background-color: #222222 !important; }
+    body.dark-mode .border-gray-200, body.dark-mode .border-gray-100 { border-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-200:hover { background-color: #222222 !important; }
+    body.dark-mode input, body.dark-mode select, body.dark-mode textarea { background-color: #0a0a0a; color: #ffffff; border-color: #222222; }
+    body.dark-mode input:focus, body.dark-mode select:focus, body.dark-mode textarea:focus { border-color: #222222; outline: none; }
+    body.dark-mode header { background-color: #000000 !important; }
+    body.dark-mode .bg-black { background-color: #ffffff !important; color: #000000 !important; }
+  /* auto-dark-fix v1 */
+    body.dark-mode .bg-gray-50\/80 { background-color: #141414 !important; }
+    body.dark-mode .bg-gray-200 { background-color: #262626 !important; }
+    body.dark-mode .bg-gray-300 { background-color: #333333 !important; }
+    body.dark-mode .bg-gray-400 { background-color: #444444 !important; }
+    body.dark-mode .border-gray-50 { border-color: #0a0a0a !important; }
+    body.dark-mode .border-gray-200\/50,
+    body.dark-mode .border-gray-200\/60,
+    body.dark-mode .border-gray-200\/70 { border-color: #222222 !important; }
+    body.dark-mode .border-gray-300 { border-color: #333333 !important; }
+    body.dark-mode .border-gray-400 { border-color: #444444 !important; }
+    body.dark-mode .bg-blue-50,
+    body.dark-mode .bg-blue-50\/50 { background-color: #0d1a26 !important; }
+    body.dark-mode .border-blue-100,
+    body.dark-mode .border-blue-200 { border-color: #1e3a52 !important; }
+    body.dark-mode .bg-red-50,
+    body.dark-mode .bg-red-50\/50 { background-color: #2a1414 !important; }
+    body.dark-mode .bg-red-100 { background-color: #3a1a1a !important; }
+    body.dark-mode .border-red-100,
+    body.dark-mode .border-red-200 { border-color: #4a2020 !important; }
+    body.dark-mode .bg-green-100 { background-color: #14301c !important; }
+    body.dark-mode .bg-white\/95 { background-color: rgba(10,10,10,0.95) !important; }
+    body.dark-mode .hover\:bg-gray-50:hover,
+    body.dark-mode .hover\:bg-gray-50\/50:hover,
+    body.dark-mode .hover\:bg-gray-50\/80:hover { background-color: #1a1a1a !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #262626 !important; }
+    body.dark-mode .hover\:bg-gray-200:hover,
+    body.dark-mode .hover\:bg-gray-200\/50:hover { background-color: #333333 !important; }
+    body.dark-mode .hover\:bg-blue-50:hover,
+    body.dark-mode .hover\:bg-blue-100:hover { background-color: #163247 !important; }
+    body.dark-mode .hover\:bg-red-50:hover,
+    body.dark-mode .hover\:bg-red-100:hover { background-color: #3a1a1a !important; }
+    body.dark-mode .hover\:border-gray-300:hover,
+    body.dark-mode .hover\:border-gray-400:hover,
+    body.dark-mode .hover\:border-gray-900:hover { border-color: #555555 !important; }
+    body.dark-mode .focus\:border-gray-400:focus,
+    body.dark-mode .focus\:border-gray-900:focus { border-color: #666666 !important; }
+    body.dark-mode input::placeholder, body.dark-mode textarea::placeholder { color: #666666 !important; }
+#chat-header-capsule { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        /* Kapsul: mobile 2 menu (Workspace|Dashboard), desktop 3 menu (Live preview|Workspace|Dashboard) */
+        .chat-nav-link[data-nav="agent"] { display: none !important; }
+        .chat-nav-link[data-nav="live"] { display: none; }
+        @media (min-width: 900px) { .chat-nav-link[data-nav="live"] { display: inline-flex; } }
+        #chat-nav-pill { display: none; }
+        @view-transition { navigation: auto; }
+        /* pindah antar halaman: crossfade singkat + pill morph singkat, biar gak kedip */
+        @media (prefers-reduced-motion: no-preference) {
+            ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; animation-timing-function: cubic-bezier(.2,.7,.3,1); }
+            ::view-transition-group(chat-nav-pill) { animation-duration: .18s; animation-timing-function: cubic-bezier(.2,.7,.3,1); }
+        }
+        /* fallback browser tanpa cross-doc view transition: fade-in halus (bukan pop putih keras) */
+        @keyframes clq-page-in { from { opacity: 0 } to { opacity: 1 } }
+        @media (prefers-reduced-motion: no-preference) {
+            body { animation: clq-page-in .18s cubic-bezier(.2,.7,.3,1) both; }
+            html:active-view-transition body { animation: none; }
+        }
+        .chat-nav-link.is-active { color: #111111; background: #e9e9ec; view-transition-name: chat-nav-pill; }
+        #header-more-menu.open { display: flex; opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto; }
+        .header-menu-item { -webkit-tap-highlight-color: transparent; }
+        .header-menu-item:focus, .header-menu-item:focus-visible { outline: none; box-shadow: none; }
+        button.header-menu-item { -webkit-appearance: none; appearance: none; background: transparent; border: none; margin: 0; font: inherit; color: inherit; }
+        button.header-menu-item:active { background: rgba(0,0,0,0.04); }
+        body.dark-mode button.header-menu-item:active { background: rgba(255,255,255,0.08); }
+        .header-menu-item { cursor: pointer; }
+        body.dark-mode #chat-header-capsule { background-color: #0a0a0a; border-color: rgba(255,255,255,0.15); box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
+        body.dark-mode #chat-nav-pill { background: #ffffff !important; }
+        body.dark-mode .chat-nav-link { color: #9ca3af !important; }
+        body.dark-mode .chat-nav-link.is-active { color: #0a0a0a !important; background: #ffffff !important; }
+        body.dark-mode #sidebar-toggle, body.dark-mode #header-more-btn { background-color: #000000; border: 1.5px solid rgba(255,255,255,0.4); color: #ffffff; }
+        body.dark-mode #sidebar-toggle:hover, body.dark-mode #header-more-btn:hover { background-color: #1a1a1a; border-color: rgba(255,255,255,0.7); }
+        body.dark-mode #sidebar-toggle svg, body.dark-mode #header-more-btn svg { color: #ffffff; stroke: #ffffff; }
+        body.dark-mode #header-more-menu { background-color: #0a0a0a; border-color: rgba(255,255,255,0.15); }
+        body.dark-mode .header-menu-item { color: #e5e7eb; }
+        body.dark-mode .header-menu-item:hover { background-color: #1a1a1a; color: #ffffff; }
+        body.dark-mode .header-menu-item svg { color: #9ca3af; }
+        @media (max-width: 384px) { #sidebar-toggle, #header-more-btn { width: 38px; height: 38px; } }
+        @media (max-width: 330px) { #sidebar-toggle, #header-more-btn { width: 34px; height: 34px; } .chat-nav-link { padding-left: 0.5rem; padding-right: 0.5rem; } }
+      /* Animasi & skeleton halaman Pembayaran */
+    @keyframes payFadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .pay-fade { animation: payFadeUp .35s ease both; }
+    @keyframes payShimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+    .pay-skel { background: linear-gradient(90deg, rgba(0,0,0,.06) 25%, rgba(0,0,0,.12) 37%, rgba(0,0,0,.06) 63%); background-size: 400% 100%; animation: payShimmer 1.2s ease infinite; }
+    .dark-mode .pay-skel { background: linear-gradient(90deg, rgba(255,255,255,.06) 25%, rgba(255,255,255,.12) 37%, rgba(255,255,255,.06) 63%); background-size: 400% 100%; }
+    </style>
+
+  <script>(function(){var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var isDark=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(isDark)document.documentElement.classList.add('dark-mode');})();</script>
+<!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';var tm=document.querySelector('meta[name="theme-color"]');if(tm){tm.setAttribute('content','#0a0a0a');}}}catch(e){}})();</script>
+
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
+(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<3;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
+    </script>
+<!-- Google tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+<!-- End Google tag -->
+<script src="../../../js/i18n-dict.js" defer></script>
+<script src="../../../js/i18n.js" defer></script>
+</head>
+<body class="text-gray-900 antialiased h-screen w-full overflow-hidden relative bg-white">
+  <script>(function(){var t=localStorage.getItem("clincoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+  <div class="w-full h-full overflow-y-auto hide-scrollbar flex flex-col items-center">
+    <header class="fixed top-0 left-0 right-0 z-30 px-3 pt-3 pointer-events-none flex justify-between items-center">
+        <button id="sidebar-toggle" type="button" class="pointer-events-auto flex-shrink-0 flex items-center justify-center text-[#222222] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:text-black hover:bg-gray-100 transition-all rounded-full w-11 h-11" aria-label="Kembali ke Beranda">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+        <div class="pointer-events-auto inline-flex items-center gap-1 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-gray-100/80 rounded-full pl-1.5 pr-1.5 h-11" id="chat-header-capsule">
+            <nav id="chat-top-nav" class="relative inline-flex items-center h-full">
+                <div id="chat-nav-pill" class="absolute bg-gray-100 rounded-full pointer-events-none" style="top:0;left:0;width:0;height:0"></div>
+                <a href="/proyek/chat/" data-nav="agent" class="chat-nav-link relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Agent</a>
+                <a href="/proyek/code/" data-nav="code" class="chat-nav-link relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Workspace</a>
+                <a href="/proyek/dashboard/" data-nav="dashboard" class="chat-nav-link is-active relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Dashboard</a>
+            </nav>
+        </div>
+        <div class="relative flex items-center gap-1.5 flex-shrink-0 pointer-events-auto"><button id="header-more-btn" type="button" onclick="toggleHeaderMenu(event)" class="w-11 h-11 rounded-full flex items-center justify-center text-[#222222] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:bg-gray-100 hover:text-black transition-all" aria-label="Menu lainnya">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle>
+                </svg>
+            </button>
+            <div id="header-more-menu" class="absolute top-full right-0 mt-1 w-56 bg-white rounded-xl shadow-xl p-1.5 flex-col gap-0.5 opacity-0 invisible translate-y-1 pointer-events-none transition-all duration-200 z-50 hidden">
+<a id="header-editor" href="/proyek/workspace/editor/" onclick="var __pid='';try{__pid=localStorage.getItem('clincoo_current_project_id')||''}catch(e){}if(__pid){this.href='/proyek/workspace/editor/?id='+encodeURIComponent(__pid)}" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 18l6-6-6-6M8 6l-6 6 6 6"></path></svg>
+                    Editor <svg class="clincoo-premium-crown w-3.5 h-3.5 text-amber-500 shrink-0" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#f59e0b" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"></path></svg>
+                    <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg>
+                </a>
+                <button id="header-export-zip" type="button" onclick="chatExportZip()" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>
+                    Eksport zip
+                </button>
+                <a href="/integrasi/github/" class="header-menu-item flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path><path stroke-linecap="round" stroke-linejoin="round" d="M9 18c-4.51 2-5-2-7-2"></path></svg>
+                    Koneksi git
+                </a>
+                <a href="https://blog.clincoo.buzz/panduan/" target="_blank" rel="noopener" class="header-menu-item flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"></path></svg>
+                    Pusat bantuan
+                </a>
+            </div>
+        </div>
+    </header>
+    <main class="w-full max-w-5xl px-4 sm:px-6 pt-20 pb-28">
+<style>
+        #settings-menu-pop.open { display: grid; }
+        /* kartu grafik database */
+        .db-chart-card { border-radius: 1rem; border: 1px solid rgb(229 231 235); background: #fff; padding: 1rem 1.15rem 1.15rem; }
+        body.dark-mode .db-chart-card { border-color: #1e293b; background: #0d0d0d; }
+        .db-chart-head { display: flex; align-items: flex-start; gap: 0.65rem; }
+        .db-stat-card { border-radius: 1rem; border: 1px solid rgb(229 231 235); background: #fff; padding: 0.9rem 1rem 0.95rem; }
+        body.dark-mode .db-stat-card { border-color: #1e293b; background: #0d0d0d; }
+        .db-stat-num { font-size: 1.35rem; line-height: 1.1; font-weight: 700; color: #111827; font-variant-numeric: tabular-nums; }
+        body.dark-mode .db-stat-num { color: #f9fafb; }
+        /* popover pengganti dropdown (select native disembunyikan) */
+        .db-pop-wrap { position: relative; }
+        .db-pop-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; text-align: left; }
+        .db-pop-pop { position: absolute; left: 0; right: 0; margin-top: 0.3rem; border-radius: 0.85rem; border: 1px solid rgb(229 231 235); background: #fff; box-shadow: 0 12px 32px rgba(0,0,0,0.14); padding: 0.35rem; z-index: 60; max-height: 15rem; overflow-y: auto; }
+        body.dark-mode .db-pop-pop { border-color: #334155; background: #18181b; }
+        .db-pop-item { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.5rem 0.65rem; border-radius: 0.6rem; font-size: 0.825rem; color: #4b5563; cursor: pointer; }
+        .db-pop-item:hover { background: #f9fafb; color: #111827; }
+        body.dark-mode .db-pop-item { color: #d1d5db; }
+        body.dark-mode .db-pop-item:hover { background: #23272f; color: #f9fafb; }
+        .db-pop-item.sel { font-weight: 600; color: #111827; }
+        body.dark-mode .db-pop-item.sel { color: #f9fafb; }
+        .settings-menu-item { cursor: pointer; }
+        .settings-menu-item .text-sm { line-height: 1.3; }
+        .settings-menu-item .text-xs { line-height: 1.15; }
+        body.dark-mode #settings-menu-btn { background-color: #1c1c1c !important; border-color: rgba(255,255,255,0.22) !important; color: #f3f4f6 !important; }
+        body.dark-mode #settings-menu-pop { background-color: #1c1c1c !important; border-color: rgba(255,255,255,0.22) !important; }
+        body.dark-mode .settings-menu-item:hover { background-color: #1a1a1a; }
+        body.dark-mode .settings-menu-item .block.text-sm { color: #e5e7eb !important; }
+        body.dark-mode .settings-menu-item .block.text-xs { color: #6b7280 !important; }
+    </style>
+    <div class="relative mb-5" id="settings-menu-wrap">
+            <button id="settings-menu-btn" type="button" onclick="toggleSettingsMenu(event)" class="w-full flex items-center justify-between rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-800 shadow-sm transition-all">
+                <span class="flex items-center gap-2.5">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3 5v14a9 3 0 0 0 18 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 3 0 0 0 18 0"></path></svg>
+                    Database
+                </span>
+                <svg id="settings-menu-chev" class="w-4 h-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div id="settings-menu-pop" class="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-12px)] sm:w-[860px] mt-0 bg-white rounded-2xl shadow-xl p-1 grid grid-cols-1 sm:grid-cols-2 gap-px z-40 hidden">
+                                <a href="/proyek/dashboard/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Umum</span><span class="block text-xs text-gray-400 truncate">Nama, deskripsi, dan runtime aplikasi</span></span>
+                </a>
+<a href="/proyek/build-deployment/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Build &amp; Deployment</span><span class="block text-xs text-gray-400 truncate">Sumber branch dan konfigurasi deployment</span></span>
+                </a>
+                <a href="/proyek/pengaturan/keamanan-https/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Keamanan &amp; HTTPS</span><span class="block text-xs text-gray-400 truncate">Sertifikat SSL dan protokol HTTPS</span></span>
+                </a>
+                <a href="/proyek/pengaturan/visibilitas-akses/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Visibilitas Akses</span><span class="block text-xs text-gray-400 truncate">Atur hak akses dan visibilitas</span></span>
+                </a>
+                <a href="/proyek/pengaturan/integrasi-webhook/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17H7a5 5 0 1 1 0-10h2M15 7h2a5 5 0 1 1 0 10h-2M8 12h8"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Webhook</span><span class="block text-xs text-gray-400 truncate">Notifikasi event lewat webhook</span></span>
+                </a>
+<a href="/proyek/pengaturan/integrasi-ai/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 5.7a2 2 0 001.4 1.4L21 12l-5.7 1.9a2 2 0 00-1.4 1.4L12 21l-1.9-5.7a2 2 0 00-1.4-1.4L3 12l5.7-1.9a2 2 0 001.4-1.4L12 3z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Integrasi AI</span><span class="block text-xs text-gray-400 truncate">AI Router: model dan secret per proyek</span></span>
+                </a>
+                <a href="/proyek/pengaturan/server-mcp/" class="settings-menu-item settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.01M6 18h.01"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Server MCP</span><span class="block text-xs text-gray-400 truncate">Sambungkan proyek ke platform AI lain (MCP)</span></span>
+                </a>
+<a href="/proyek/pengaturan/database/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3 5v14a9 3 0 0 0 18 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 3 0 0 0 18 0"></path></svg>
+                <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Database</span><span class="block text-xs text-gray-400 truncate">Tabel data untuk aplikasimu</span></span>
+                </a>
+                <a href="/proyek/pengaturan/pembayaran/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Pembayaran</span><span class="block text-xs text-gray-400 truncate">Terima pembayaran lewat QRIS</span></span>
+                </a>
+                <a href="/proyek/pengaturan/email/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Email</span><span class="block text-xs text-gray-400 truncate">Kirim email otomatis lewat API Clincoo</span></span>
+                </a>
+                <a href="/proyek/pengaturan/zona-bahaya/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-red-50/60 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-red-600">Zona Bahaya</span><span class="block text-xs text-red-500/70 truncate">Hapus situs atau proyek</span></span>
+                </a>
+            </div>
+    </div>
+    <script>
+    (function () {
+        var btn = document.getElementById('settings-menu-btn');
+        var pop = document.getElementById('settings-menu-pop');
+        var chev = document.getElementById('settings-menu-chev');
+        window.toggleSettingsMenu = function (e) {
+            e.stopPropagation();
+            var open = pop.classList.toggle('open');
+            chev.style.transform = open ? 'rotate(180deg)' : '';
+        };
+        document.addEventListener('click', function (e) {
+            if (pop.classList.contains('open') && !pop.contains(e.target) && !btn.contains(e.target)) {
+                pop.classList.remove('open');
+                chev.style.transform = '';
+            }
+        });
+        window.addEventListener('scroll', function () {
+            if (pop.classList.contains('open')) {
+                pop.classList.remove('open');
+                chev.style.transform = '';
+            }
+        }, true);
+    })();
+    </script>
+
+            <div class="w-full flex flex-col">
+        <div class="py-5">
+          <div class="mb-1">
+            <h4 id="db-title" class="text-base font-semibold text-gray-900 dark:text-white">Database</h4>
+            <p id="db-sub" class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Simpan dan kelola data aplikasimu dalam tabel yang rapi — bisa diakses lewat API kapan saja.</p>
+            <p id="db-proj" class="hidden mt-2">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 dark:bg-slate-800 text-[11px] font-medium text-gray-600 dark:text-gray-300">Proyek aktif:&nbsp;<span id="db-proj-name" class="font-semibold"></span></span>
+            </p>
+          </div>
+
+          <!-- perlu login -->
+          <div id="db-login" class="hidden py-12 flex flex-col items-center justify-center text-center">
+            <svg class="w-8 h-8 text-gray-300 mb-3" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3 5v14a9 3 0 0 0 18 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 3 0 0 0 18 0"></path></svg>
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Masuk dulu untuk mengelola database</p>
+            <a href="/auth/" class="mt-4 px-5 py-2.5 text-sm font-medium text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">Masuk</a>
+          </div>
+
+          <!-- belum aktif untuk proyek ini -->
+          <div id="db-inactive" class="hidden py-12 flex flex-col items-center justify-center text-center">
+            <svg class="w-8 h-8 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3 5v14a9 3 0 0 0 18 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 3 0 0 0 18 0"></path></svg>
+            <p id="db-inactive-title" class="text-sm font-medium text-gray-500 dark:text-gray-400">Database proyek ini belum aktif</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">Aktifkan fitur database untuk proyek ini — sekali klik.</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-3 max-w-sm mx-auto">Setiap proyek punya database terpisah — cek nama proyek di atas kalau tabel yang kamu cari tidak muncul.</p>
+            <button type="button" id="db-cta" onclick="activateDatabase()" class="email-cta mt-4 mx-auto px-5 py-2.5 text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer">Aktifkan Database</button>
+          </div>
+
+          <!-- loading -->
+          <div id="db-loading" class="py-4 space-y-4">
+            <div class="h-12 rounded-xl pay-skel"></div>
+            <div class="h-12 rounded-xl pay-skel"></div>
+            <div class="h-12 rounded-xl pay-skel"></div>
+          </div>
+
+          <!-- error -->
+          <div id="db-error" class="hidden py-8 text-center">
+            <p id="db-error-text" class="text-xs text-red-500 dark:text-red-400"></p>
+            <button id="db-retry-btn" type="button" class="mt-3 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors">Coba lagi</button>
+          </div>
+
+          <!-- daftar tabel: CTA di atas daftar -->
+          <div id="db-list-head" class="hidden items-center justify-between gap-3 mt-6 mb-4">
+            <p class="text-sm font-semibold text-gray-900 dark:text-white">Daftar tabel</p>
+            <button id="db-new-btn" type="button" class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"></path></svg>
+              Buat tabel
+            </button>
+          </div>
+          <div id="db-list" class="hidden"></div>
+
+          <!-- kosong -->
+          <div id="db-empty" class="hidden py-12 flex flex-col items-center justify-center text-center">
+            <svg class="w-10 h-10 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3 5v14a9 3 0 0 0 18 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 3 0 0 0 18 0"></path></svg>
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Belum ada tabel</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-xs">Buat tabel pertamamu lewat tombol di atas untuk mulai menyimpan data aplikasi.</p>
+          </div>
+        </div>
+
+        <!-- cara pemakaian: panduan singkat memakai database -->
+        <div id="db-how-sec" class="hidden pt-8 mt-10 border-t border-gray-100 dark:border-slate-700/60">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white">Cara pemakaian</p>
+          <div class="mt-4 space-y-4">
+            <div class="flex items-start gap-3">
+              <span class="shrink-0 w-6 h-6 rounded-full bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs font-semibold">1</span>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed"><span class="font-semibold text-gray-800 dark:text-gray-200">Buat tabel.</span> Klik <span class="font-semibold">Buat tabel</span> di atas, beri nama, lalu tentukan kolomnya — misal tabel <span class="font-mono text-[11px]">pengguna</span> dengan kolom nama dan email.</p>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="shrink-0 w-6 h-6 rounded-full bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs font-semibold">2</span>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed"><span class="font-semibold text-gray-800 dark:text-gray-200">Isi data.</span> Buka tabelnya, lalu tambah, ubah, atau hapus baris kapan saja — datanya langsung tersimpan.</p>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="shrink-0 w-6 h-6 rounded-full bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs font-semibold">3</span>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed"><span class="font-semibold text-gray-800 dark:text-gray-200">Buat kunci akses.</span> Di bagian <span class="font-semibold">Akses dari aplikasi</span> di bawah, buat kuncinya dan simpan di tempat aman.</p>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="shrink-0 w-6 h-6 rounded-full bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs font-semibold">4</span>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed"><span class="font-semibold text-gray-800 dark:text-gray-200">Sambungkan aplikasimu.</span> Tempel kunci sebagai Bearer token di kode aplikasi — contoh pemakaian lengkap tersedia tepat di bawah kuncinya.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- akses dari aplikasi: kunci API per proyek -->
+        <div id="db-key-sec" class="hidden pt-8 mt-10 border-t border-gray-100 dark:border-slate-700/60">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h4 class="text-base font-semibold text-gray-900 dark:text-white">Akses dari aplikasi</h4>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed max-w-md">Sambungkan aplikasi deploy-mu ke database proyek lewat kunci API sebagai Bearer token.</p>
+            </div>
+            <button id="db-key-btn" type="button" class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">Buat kunci</button>
+          </div>
+          <div id="db-key-empty" class="py-1">
+            <span id="db-key-status" class="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400">Memuat…</span>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-3 leading-relaxed max-w-md">Belum ada kunci akses untuk proyek ini. Kunci API dipakai aplikasi yang kamu deploy untuk mengakses database — dikirim sebagai Bearer token di header Authorization pada setiap request. Buat kuncinya di sini, simpan di tempat aman, lalu tempel ke kode aplikasimu. Kunci bisa diganti kapan saja; kunci lama otomatis berhenti berlaku begitu diganti.</p>
+          </div>
+          <div id="db-key-hint-wrap" class="hidden">
+            <div class="relative">
+              <input type="password" id="db-key-val-input" autocomplete="off" spellcheck="false" readonly class="w-full px-4 py-2.5 pr-11 text-sm font-mono rounded-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none transition-colors">
+              <button type="button" onclick="copyDbKey()" class="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer" aria-label="Salin kunci" title="Salin kunci">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+              </button>
+            </div>
+            <div class="mt-3">
+              <button id="db-key-change-btn" type="button" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Ganti kunci</button>
+            </div>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-3">Contoh pemakaian:</p>
+            <div class="relative mt-1.5">
+              <pre id="db-key-curl" class="w-full text-xs leading-relaxed bg-gray-950 text-gray-100 rounded-xl border border-gray-800 dark:border-slate-700 p-4 pr-12 overflow-x-auto whitespace-pre font-mono"></pre>
+              <button type="button" onclick="copyDbKeyCurl()" class="absolute right-2 top-2 p-1.5 rounded-lg text-gray-500 hover:text-gray-200 hover:bg-gray-800 transition-colors cursor-pointer" aria-label="Salin contoh kode" title="Salin contoh kode">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- grafik database: statistik ringkas + 5 chart (Chart.js) dalam kartu -->
+        <div id="db-chart-sec" class="hidden pt-8 mt-10 border-t border-gray-100 dark:border-slate-700/60">
+          <div class="flex items-end justify-between gap-3">
+            <div>
+              <p class="text-sm font-semibold text-gray-900 dark:text-white">Grafik</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Ringkasan database proyekmu — terisi otomatis dari tabel dan barismu.</p>
+            </div>
+          </div>
+          <div id="db-stats" class="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+          <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="db-chart-card sm:col-span-2">
+              <div class="db-chart-head">
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Baris per tabel</p>
+                  <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Total baris tersimpan di tiap tabel</p>
+                </div>
+                <button type="button" class="db-save-img shrink-0 inline-flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors" data-canvas="db-chart-rows" data-name="baris-per-tabel"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"></path></svg> Simpan</button>
+              </div>
+              <div class="h-56 sm:h-64 mt-4"><canvas id="db-chart-rows"></canvas></div>
+            </div>
+            <div class="db-chart-card">
+              <div class="db-chart-head">
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Tabel dibuat per hari</p>
+                  <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Aktivitas pembuatan tabel</p>
+                </div>
+                <button type="button" class="db-save-img shrink-0 inline-flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors" data-canvas="db-chart-created" data-name="tabel-per-hari"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"></path></svg> Simpan</button>
+              </div>
+              <div class="h-56 mt-4"><canvas id="db-chart-created"></canvas></div>
+            </div>
+            <div class="db-chart-card">
+              <div class="db-chart-head">
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Komposisi baris per tabel</p>
+                  <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Porsi baris tiap tabel dari total</p>
+                </div>
+                <button type="button" class="db-save-img shrink-0 inline-flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors" data-canvas="db-chart-share" data-name="komposisi-baris"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"></path></svg> Simpan</button>
+              </div>
+              <div class="h-56 mt-4"><canvas id="db-chart-share"></canvas></div>
+            </div>
+            <div class="db-chart-card">
+              <div class="db-chart-head">
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Sebaran tabel: kolom vs baris</p>
+                  <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Posisi tiap tabel berdasarkan ukurannya</p>
+                </div>
+                <button type="button" class="db-save-img shrink-0 inline-flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors" data-canvas="db-chart-scatter" data-name="sebaran-tabel"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"></path></svg> Simpan</button>
+              </div>
+              <div class="h-56 mt-4"><canvas id="db-chart-scatter"></canvas></div>
+            </div>
+            <div class="db-chart-card">
+              <div class="db-chart-head">
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Aktivitas per hari</p>
+                  <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Jumlah tabel & baris yang lahir tiap hari</p>
+                </div>
+                <button type="button" class="db-save-img shrink-0 inline-flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors" data-canvas="db-chart-bubble" data-name="aktivitas-per-hari"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"></path></svg> Simpan</button>
+              </div>
+              <div class="h-56 mt-4"><canvas id="db-chart-bubble"></canvas></div>
+            </div>
+          </div>
+          <p id="db-chart-note" class="text-xs text-gray-400 dark:text-gray-500 mt-5"></p>
+        </div>
+
+        <!-- form buat tabel: pop-up modal -->
+        <div id="db-form" class="hidden fixed inset-0 z-50 items-end sm:items-center justify-center p-4 sm:p-6">
+          <div id="db-form-backdrop" class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"></div>
+          <div class="relative w-full max-w-lg max-h-[88vh] overflow-y-auto rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-[#0d0d0d] shadow-2xl p-5 sm:p-6">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-sm font-semibold text-gray-900 dark:text-white">Tabel baru</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Beri nama tabel dan tentukan kolomnya.</p>
+            </div>
+            <button id="db-form-close" type="button" class="shrink-0 p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+          </div>
+          <div class="mt-4">
+            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5" for="db-tbl-name">Nama tabel</label>
+            <input id="db-tbl-name" type="text" inputmode="text" placeholder="misal: pengguna" class="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">
+          </div>
+          <div class="mt-5">
+            <div class="flex items-center justify-between mb-1.5">
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Kolom</p>
+              <button id="db-add-col" type="button" class="inline-flex items-center gap-1 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"></path></svg>
+                Tambah kolom
+              </button>
+            </div>
+            <div id="db-cols" class="space-y-2"></div>
+            <p id="db-form-error" class="hidden text-xs text-red-500 dark:text-red-400 mt-3"></p>
+            <div class="flex items-center gap-2 mt-6">
+              <button id="db-save-btn" type="button" class="flex-1 py-2.5 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">Simpan tabel</button>
+              <button id="db-cancel-btn" type="button" class="flex-1 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Batal</button>
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    lucide.createIcons();
+    document.getElementById('sidebar-toggle').addEventListener('click', function () { window.location.href = '/'; });
+    (function () {
+      var btn = document.getElementById('header-more-btn');
+      var menu = document.getElementById('header-more-menu');
+      window.toggleHeaderMenu = function (e) {
+        e.stopPropagation();
+        menu.classList.contains('open') ? menu.classList.remove('open') : menu.classList.add('open');
+      };
+      document.addEventListener('click', function (e) {
+        if (menu.classList.contains('open') && !menu.contains(e.target) && e.target !== btn) menu.classList.remove('open');
+      });
+    })();
+
+    // ================= DATABASE proyek =================
+    var DB_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev' : '') + '/api';
+    function dbPid() { try { return localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) { return ''; } }
+    function dbProjName() {
+      var pid = dbPid(); if (!pid) return '';
+      var list = null;
+      try { list = JSON.parse(localStorage.getItem('clincoo_projects') || '[]'); } catch (e) {}
+      if (!Array.isArray(list) || !list.length) {
+        try {
+          for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i);
+            if (k && /(?:^|:)clincoo_projects$/.test(k)) { list = JSON.parse(localStorage.getItem(k) || '[]'); if (list.length) break; }
+          }
+        } catch (e) {}
+      }
+      var t = '';
+      (list || []).forEach(function (p) { if (p && p.id === pid) t = p.title || p.name || t; });
+      return t;
+    }
+    function dbShowProj() {
+      var n = dbProjName();
+      var wrap = document.getElementById('db-proj');
+      if (wrap) { wrap.classList.toggle('hidden', !n); }
+      var nm = document.getElementById('db-proj-name');
+      if (nm) nm.textContent = n || '';
+      var ct = document.getElementById('db-inactive-title');
+      if (ct) ct.textContent = n ? ('Database proyek «' + n + '» belum aktif') : 'Database proyek ini belum aktif';
+    }
+    function dbHdrs(json) {
+      var t = ''; try { t = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
+      var h = t ? { Authorization: 'Bearer ' + t } : {};
+      if (json) h['Content-Type'] = 'application/json';
+      return h;
+    }
+    // tipe kolom lengkap: [nilai, label] — nilai yang dikirim ke server, label yang tampil di dropdown
+    var COL_TYPES = [
+      ['text', 'Teks'],
+      ['longtext', 'Paragraf'],
+      ['number', 'Angka'],
+      ['currency', 'Uang'],
+      ['boolean', 'Ya/Tidak'],
+      ['date', 'Tanggal'],
+      ['datetime', 'Tanggal & jam'],
+      ['email', 'Email'],
+      ['url', 'Tautan'],
+      ['phone', 'No. HP'],
+      ['json', 'Kode/JSON'],
+      ['image', 'Gambar'],
+      ['video', 'Video'],
+      ['audio', 'Audio/MP3'],
+      ['file', 'Dokumen'],
+      ['select', 'Pilihan (dropdown)']
+    ];
+
+    function dbShow(id) {
+      ['db-loading', 'db-list', 'db-empty', 'db-error', 'db-login', 'db-form', 'db-inactive'].forEach(function (k) {
+        var el = document.getElementById(k);
+        if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
+      });
+      if (id) { var t = document.getElementById(id); t.classList.remove('hidden'); if (id === 'db-form') t.classList.add('flex'); }
+      var nb = document.getElementById('db-list-head');
+      if (nb) {
+        var on = id === 'db-list' || id === 'db-empty';
+        nb.classList.toggle('hidden', !on);
+        nb.classList.toggle('flex', on);
+      }
+    }
+    function dbErr(msg) {
+      var et = document.getElementById('db-error-text');
+      if (et) et.textContent = msg;
+      dbShow('db-error');
+    }
+
+    var dbTables = null;
+    function dbDateShort(s) {
+      try {
+        var d = new Date(String(s || '').replace(' ', 'T'));
+        if (isNaN(d.getTime())) return String(s || '').slice(0, 10);
+        return d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][d.getMonth()] + ' ' + String(d.getFullYear()).slice(2);
+      } catch (e) { return String(s || '').slice(0, 10); }
+    }
+
+    // ---- aksi per baris: menu titik tiga (popup) ----
+    var dbMenuEl = null;
+    function dbRowMenuClose() {
+      if (dbMenuEl) { dbMenuEl.remove(); dbMenuEl = null; document.removeEventListener('click', dbRowMenuOutClose, true); }
+    }
+    function dbRowMenuOutClose(e) { if (dbMenuEl && !dbMenuEl.contains(e.target)) dbRowMenuClose(); }
+    function dbRowMenu(btn, t) {
+      dbRowMenuClose();
+      var nm = String(t.name || '').replace(/[&<>]/g, function (s2) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[s2]; });
+      var pop = document.createElement('div');
+      pop.className = 'fixed z-50 w-48 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl py-1.5';
+      var rect = btn.getBoundingClientRect();
+      pop.style.top = Math.min(rect.bottom + 6, window.innerHeight - 150) + 'px';
+      pop.style.left = Math.max(8, Math.min(rect.right - 192, window.innerWidth - 200)) + 'px';
+      pop.innerHTML =
+        '<button type="button" class="db-m-open w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors inline-flex items-center gap-2.5"><svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 12h18M3 17h10"></path></svg>Buka tabel</button>' +
+        '<button type="button" class="db-m-del w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors inline-flex items-center gap-2.5"><svg class="w-3.5 h-3.5 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"></path></svg>Hapus tabel</button>';
+      document.body.appendChild(pop);
+      pop.querySelector('.db-m-open').addEventListener('click', function () {
+        dbRowMenuClose();
+        location.href = '/proyek/pengaturan/database/tabel/?name=' + encodeURIComponent(t.name);
+      });
+      pop.querySelector('.db-m-del').addEventListener('click', function () {
+        pop.innerHTML =
+          '<p class="px-4 pt-2 pb-1 text-xs font-semibold text-gray-800 dark:text-gray-200">Hapus tabel "' + nm + '"?</p>' +
+          '<p class="px-4 pb-2.5 text-[11px] text-gray-400 dark:text-gray-500">Semua barisnya juga ikut terhapus.</p>' +
+          '<div class="flex gap-2 px-4 pb-3">' +
+          '<button type="button" class="db-m-yes flex-1 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">Hapus</button>' +
+          '<button type="button" class="db-m-no flex-1 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg transition-colors">Batal</button>' +
+          '</div>';
+        pop.querySelector('.db-m-yes').addEventListener('click', function () { dbRowMenuClose(); dbDeleteTable(t.name); });
+        pop.querySelector('.db-m-no').addEventListener('click', dbRowMenuClose);
+      });
+      dbMenuEl = pop;
+      setTimeout(function () { document.addEventListener('click', dbRowMenuOutClose, true); }, 0);
+    }
+    function dbDeleteTable(name) {
+      fetch(DB_API + '/db/tables?project_id=' + encodeURIComponent(dbPid()) + '&name=' + encodeURIComponent(name), { method: 'DELETE', headers: dbHdrs(false) })
+        .then(function (r) { return r.ok ? null : r.json().catch(function () { return {}; }).then(function (d) { throw new Error((d && d.error) || 'Gagal menghapus tabel'); }); })
+        .then(function () { dbCacheClear(); dbLoadBusy = false; dbLoad(); })
+        .catch(function (e) { dbErr(e.message || 'Gagal menghapus tabel. Coba lagi.'); });
+    }
+
+    function dbRender(tables) {
+      dbTables = tables || [];
+      dbRowMenuClose();
+      var list = document.getElementById('db-list');
+      // kartu daftar tabel: rounded-xl (permintaan), border halus, overflow rapi
+      list.innerHTML =
+        '<div class="rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-[#0d0d0d] overflow-hidden shadow-sm">' +
+        '<div class="overflow-x-auto"><table class="w-full text-sm border-collapse">' +
+        '<thead><tr class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 bg-gray-50/80 dark:bg-slate-800/60 border-b border-gray-100 dark:border-slate-800">' +
+        '<th class="py-3 pl-5 pr-4 font-semibold text-left">Tabel</th>' +
+        '<th class="py-3 px-4 font-semibold text-right">Kolom</th>' +
+        '<th class="py-3 px-4 font-semibold text-right">Baris</th>' +
+        '<th class="py-3 pl-4 pr-5 font-semibold text-right">Dibuat</th>' +
+        '<th class="py-3 pl-2 pr-4 font-semibold text-right">Aksi</th>' +
+        '</tr></thead><tbody id="db-tbody" class="divide-y divide-gray-100 dark:divide-slate-800"></tbody></table></div></div>';
+      var body = document.getElementById('db-tbody');
+      (tables || []).forEach(function (t) {
+        var tr = document.createElement('tr');
+        tr.className = 'group cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/40';
+        var nm = String(t.name || '').replace(/[&<>]/g, function (s2) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[s2]; });
+        tr.innerHTML =
+          '<td class="py-3.5 pl-5 pr-4 whitespace-nowrap">' +
+          '<span class="inline-flex items-center gap-2.5 min-w-0">' +
+          '<span class="shrink-0 inline-flex w-7 h-7 items-center justify-center rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400">' +
+          '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8.5" ry="2.8"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3.5 5v14a8.5 2.8 0 0 0 17 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3.5 12a8.5 2.8 0 0 0 17 0"></path></svg>' +
+          '</span>' +
+          '<span class="font-medium text-gray-800 dark:text-gray-200 truncate">' + nm + '</span>' +
+          '</span></td>' +
+          '<td class="py-3.5 px-4 text-right text-gray-600 dark:text-gray-300 font-medium tabular-nums whitespace-nowrap">' + (t.columns || []).length + '</td>' +
+          '<td class="py-3.5 px-4 text-right text-gray-600 dark:text-gray-300 font-medium tabular-nums whitespace-nowrap">' + (typeof t.rows === 'number' ? t.rows : '\u2014') + '</td>' +
+          '<td class="py-3.5 pl-4 pr-5 text-right text-gray-400 dark:text-gray-500 tabular-nums whitespace-nowrap">' + (t.created_at ? dbDateShort(t.created_at) : '\u2014') + '</td>' +
+          '<td class="py-2.5 pl-2 pr-4 text-right whitespace-nowrap">' +
+          '<button type="button" aria-label="Menu tabel" class="db-row-menu-btn inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">' +
+          '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"></circle><circle cx="12" cy="12" r="1.7"></circle><circle cx="12" cy="19" r="1.7"></circle></svg>' +
+          '</button></td>';
+        tr.addEventListener('click', function (ev) {
+          var mb = ev.target.closest('.db-row-menu-btn');
+          if (mb) { ev.stopPropagation(); dbRowMenu(mb, t); return; }
+          location.href = '/proyek/pengaturan/database/tabel/?name=' + encodeURIComponent(t.name);
+        });
+        body.appendChild(tr);
+      });
+      dbShow(tables && tables.length ? 'db-list' : 'db-empty');
+      try { dbChartRender(); window.__dbChartErr = null; } catch (e) { window.__dbChartErr = (e && e.stack) || String(e); var _cs = document.getElementById('db-chart-sec'); if (_cs) _cs.classList.add('hidden'); }
+    }
+
+    // ---- grafik ringkasan database: 5 chart (Chart.js), warna-warni ala chart integrasi AI ----
+    var dbCharts = [];
+    function dbChartTheme() {
+      var dark = document.body.classList.contains('dark-mode');
+      return {
+        text: dark ? '#9aa0a6' : '#6b7280',
+        grid: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+        border: dark ? '#0d0d0d' : '#ffffff',
+        // palet warna-warni: kontras di bg gelap maupun terang
+        palette: ['#60a5fa', '#34d399', '#fbbf24', '#f472b6', '#a78bfa', '#38bdf8', '#fb923c', '#4ade80', '#e879f9', '#2dd4bf', '#facc15', '#f87171']
+      };
+    }
+    function dbPctTooltip() {
+      return { callbacks: { label: function (ctx) {
+        var d = ctx.dataset.data || [];
+        var total = d.reduce(function (a, b) { return a + (b || 0); }, 0);
+        var pct = total ? Math.round((ctx.parsed || 0) / total * 100) : 0;
+        return ' ' + ctx.label + ': ' + ctx.parsed + ' (' + pct + '%)';
+      } } };
+    }
+    function dbChartRender() {
+      var sec = document.getElementById('db-chart-sec');
+      var tables = dbTables || [];
+      // grafik SELALU tampil — walau belum ada tabel/data (bidang kosong + catatan)
+      sec.classList.remove('hidden');
+      var th = dbChartTheme();
+      dbCharts.forEach(function (c) { try { c.destroy(); } catch (e) {} });
+      dbCharts = [];
+      // baris statistik ringkas di atas grafik
+      var stEl = document.getElementById('db-stats');
+      if (stEl) {
+        var totRows = 0, totCols = 0, typeSet = {};
+        tables.forEach(function (t) {
+          totRows += (typeof t.rows === 'number' ? t.rows : 0);
+          (t.columns || []).forEach(function (c) { typeSet[c.type] = 1; });
+          totCols += (t.columns || []).length;
+        });
+        var stats = [
+          ['Tabel', tables.length],
+          ['Total baris', totRows],
+          ['Total kolom', totCols],
+          ['Tipe data dipakai', Object.keys(typeSet).length]
+        ];
+        stEl.innerHTML = stats.map(function (x) {
+          return '<div class="db-stat-card"><p class="text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">' + x[0] +
+            '</p><p class="db-stat-num mt-1">' + x[1] + '</p></div>';
+        }).join('');
+      }
+      var names = tables.map(function (t) { return String(t.name).slice(0, 24); });
+      function pal(offset) {
+        // opsi scriptable Chart.js menerima SATU argumen: context (bukan value, index)
+        return function (ctx) {
+          var i = ctx && ctx.dataIndex !== undefined ? ctx.dataIndex : (ctx && ctx.index) || 0;
+          return th.palette[(i + (offset || 0)) % th.palette.length];
+        };
+      }
+      // tooltip rapi: gelap, bulat, tanpa kotak warna utk chart satu-dataset
+      function tipOpts(pct) {
+        var base = { backgroundColor: 'rgba(17,24,39,0.96)', padding: 10, cornerRadius: 10, titleFont: { weight: '600', size: 12 }, bodyFont: { size: 12 }, displayColors: false };
+        return pct ? Object.assign(base, dbPctTooltip()) : base;
+      }
+      function barOpts() {
+        return { responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+          plugins: { legend: { display: false }, tooltip: tipOpts(false) },
+          scales: { x: { ticks: { color: th.text, maxRotation: 45, autoSkip: true, font: { size: 11 } }, grid: { display: false } },
+            y: { ticks: { color: th.text, precision: 0, font: { size: 11 } }, grid: { color: th.grid }, border: { display: false }, beginAtZero: true } } };
+      }
+      function pieOpts() {
+        return { responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+          plugins: { legend: { position: 'bottom', labels: { color: th.text, usePointStyle: true, pointStyle: 'circle', boxWidth: 6, boxHeight: 6, font: { size: 11 }, padding: 14 } },
+            tooltip: tipOpts(true) } };
+      }
+      function xyOpts(xLab, yLab, xCallback) {
+        return { responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+          plugins: { legend: { display: false }, tooltip: Object.assign(tipOpts(false), { callbacks: { label: function (ctx) {
+            var p = ctx.raw || {};
+            return (p.n ? p.n + ' — ' : '') + (xLab || 'x') + ': ' + (p.x !== undefined ? p.x : '') + ' · ' + (yLab || 'y') + ': ' + (p.y !== undefined ? p.y : '') + (p.val ? ' · total baris: ' + p.val : '');
+          } } }) },
+          scales: { x: { type: 'linear', position: 'bottom', ticks: Object.assign({ color: th.text, precision: 0, font: { size: 11 } }, xCallback ? { callback: xCallback } : {}), grid: { color: th.grid }, border: { display: false } },
+            y: { ticks: { color: th.text, precision: 0, font: { size: 11 } }, grid: { color: th.grid }, border: { display: false }, beginAtZero: true } } };
+      }
+      // 1. bar — baris per tabel, tiap batang beda warna
+      dbCharts.push(new Chart(document.getElementById('db-chart-rows'), { type: 'bar',
+        data: { labels: names, datasets: [{ data: tables.map(function (t) { return typeof t.rows === 'number' ? t.rows : 0; }), backgroundColor: pal(0), borderRadius: 7, hoverOffset: 6, maxBarThickness: 44, categoryPercentage: 0.72 }] }, options: barOpts() }));
+      // 2. line — tabel dibuat per hari
+      var days = {};
+      tables.forEach(function (t) { var d = String(t.created_at || '').slice(0, 10); if (d) days[d] = (days[d] || 0) + 1; });
+      var dl = Object.keys(days).sort();
+      dbCharts.push(new Chart(document.getElementById('db-chart-created'), { type: 'line',
+        data: { labels: dl.map(function (d) { return dbDateShort(d); }), datasets: [{ data: dl.map(function (d) { return days[d]; }),
+          borderColor: th.palette[0], backgroundColor: 'rgba(96,165,250,0.12)', pointBackgroundColor: pal(8),
+          pointBorderColor: th.border, pointRadius: 4, pointHoverRadius: 6, tension: 0.35, fill: true, borderWidth: 2 }] }, options: barOpts() }));
+      // 3. pie — komposisi baris per tabel
+      var withRows = tables.filter(function (t) { return (t.rows || 0) > 0; });
+      dbCharts.push(new Chart(document.getElementById('db-chart-share'), { type: 'pie',
+        data: { labels: withRows.length ? withRows.map(function (t) { return String(t.name).slice(0, 20); }) : ['Belum ada baris'],
+          datasets: [{ data: withRows.length ? withRows.map(function (t) { return t.rows; }) : [1],
+            backgroundColor: withRows.length ? pal(0) : [document.body.classList.contains('dark-mode') ? 'rgba(255,255,255,0.18)' : '#e5e7eb'], borderColor: th.border, borderWidth: 2, hoverOffset: 6 }] }, options: pieOpts() }));
+      // 4. scatter — sebaran tabel (kolom vs baris), tiap titik = 1 tabel
+      dbCharts.push(new Chart(document.getElementById('db-chart-scatter'), { type: 'scatter',
+        data: { datasets: [{ data: tables.map(function (t) { return { x: (t.columns || []).length, y: typeof t.rows === 'number' ? t.rows : 0, n: String(t.name).slice(0, 24) }; }),
+          pointBackgroundColor: pal(3), pointBorderColor: th.border, pointRadius: 6, pointHoverRadius: 8, borderWidth: 1.5 }] },
+        options: xyOpts('kolom', 'baris') }));
+      // 5. bubble — aktivitas per hari: posisi = hari, ukuran = total baris yang lahir
+      var dayRows = {};
+      tables.forEach(function (t) { var d = String(t.created_at || '').slice(0, 10); if (d) dayRows[d] = (dayRows[d] || 0) + (typeof t.rows === 'number' ? t.rows : 0); });
+      var maxRows = Math.max.apply(null, dl.map(function (d) { return dayRows[d] || 0; }).concat([1]));
+      var bub = dl.map(function (d, i) { var r = dayRows[d] || 0; return { x: i, y: days[d], r: 6 + 14 * (r / maxRows), val: r, n: dbDateShort(d) }; });
+      if (!bub.length) bub = [{ x: 0, y: 0, r: 6, val: 0, n: 'Belum ada' }];
+      dbCharts.push(new Chart(document.getElementById('db-chart-bubble'), { type: 'bubble',
+        data: { datasets: [{ data: bub, backgroundColor: 'rgba(96,165,250,0.45)', borderColor: th.palette[0], borderWidth: 1.5, hoverBackgroundColor: 'rgba(96,165,250,0.7)' }] },
+        options: xyOpts('hari', 'tabel dibuat', function (v) { var b = dl[Math.round(v)]; return b ? dbDateShort(b) : ''; }) }));
+      document.getElementById('db-chart-note').textContent = tables.length
+        ? tables.length + ' tabel · ringkasan lengkap database proyekmu'
+        : 'Belum ada tabel — grafik terisi otomatis setelah tabel dan baris ditambahkan.';
+    }
+
+    // ---- simpan chart sebagai gambar PNG (latar ikut mode terang/gelap) ----
+    function dbSavePng(canvas, filename) {
+      try {
+        var dark = document.body.classList.contains('dark-mode');
+        var tmp = document.createElement('canvas');
+        tmp.width = canvas.width; tmp.height = canvas.height;
+        var c2 = tmp.getContext('2d');
+        c2.fillStyle = dark ? '#0d0d0d' : '#ffffff';
+        c2.fillRect(0, 0, tmp.width, tmp.height);
+        c2.drawImage(canvas, 0, 0);
+        var a = document.createElement('a');
+        a.href = tmp.toDataURL('image/png');
+        a.download = (filename || 'grafik') + '.png';
+        document.body.appendChild(a); a.click(); a.remove();
+      } catch (e) {}
+    }
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('.db-save-img');
+      if (!b) return;
+      var c = document.getElementById(b.getAttribute('data-canvas'));
+      if (c) dbSavePng(c, b.getAttribute('data-name') || 'grafik');
+    });
+
+    // ---- cache lokal: data tersimpan di perangkat biar tiap refresh nggak load dari awal ----
+    function dbDataCacheKey() { return 'clincoo_db_data_' + dbPid(); }
+    function dbCacheRead() {
+      try { var c = JSON.parse(localStorage.getItem(dbDataCacheKey()) || 'null'); return c && c.tables ? c : null; } catch (e) { return null; }
+    }
+    function dbCacheWrite(tables) {
+      try { localStorage.setItem(dbDataCacheKey(), JSON.stringify({ ts: Date.now(), tables: tables })); } catch (e) {}
+    }
+    function dbCacheClear() { try { localStorage.removeItem(dbDataCacheKey()); } catch (e) {} }
+
+    var dbLoadBusy = false;
+    // RETRY BERLAPIS: cold-start/blip jaringan jangan langsung jadi error ke user.
+    // Total 4 percobaan (1 awal + 3 retry diam-diam) dengan jeda makin panjang
+    // sebelum benar-benar menampilkan pesan error.
+    var DB_RETRY_DELAYS = [1500, 3000, 6000];
+    function dbLoad(retryIdx) {
+      var attempt = retryIdx || 0;
+      var t = ''; try { t = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
+      if (!t) { dbShow('db-login'); return; }
+      if (!dbPid()) { dbErr('Proyek belum dipilih — buka dashboard proyekmu dulu.'); return; }
+      if (dbLoadBusy) return;
+      dbLoadBusy = true;
+      var cached = dbCacheRead();
+      // tampilkan cache SEKARANG (kalau ada), loading hanya kalau benar-benar belum ada data
+      if (!attempt) { if (cached) dbRender(cached.tables); else dbShow('db-loading'); }
+      fetch(DB_API + '/db/tables?project_id=' + encodeURIComponent(dbPid()), { headers: dbHdrs(false) })
+        .then(function (r) {
+          if (r.status === 401) { dbShow('db-login'); return null; }
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function (d) {
+          dbLoadBusy = false;
+          if (d === null) return;
+          dbCacheWrite(d && d.tables || []);
+          dbRender(d && d.tables);
+        })
+        .catch(function (err) {
+          dbLoadBusy = false;
+          // blip jaringan/cold-start -> coba lagi diam-diam sampai budget retry habis
+          if (attempt < DB_RETRY_DELAYS.length) { setTimeout(function () { dbLoad(attempt + 1); }, DB_RETRY_DELAYS[attempt]); return; }
+          // punya cache? tampilkan data cache, nggak perlu error sama sekali
+          var c = dbCacheRead();
+          if (c) { try { dbRender(c.tables); return; } catch (e2) {} }
+          var why = err && err.message ? String(err.message).replace(/^Error:\s*/, '') : 'jaringan bermasalah';
+          dbErr('Tidak bisa memuat tabel (' + why + '). Coba lagi.');
+        });
+    }
+
+    // ---- popover select: pengganti dropdown native di halaman ini ----
+    // Select asli tetap di DOM (disembunyikan) supaya semua logika yang membaca
+    // .value / mengisi <option> tetap berjalan; yang tampil adalah tombol rapi
+    // yang membuka popover daftar pilihan.
+    var dbPopOpen = null;
+    function dbPopCloseAll() {
+      if (dbPopOpen) { dbPopOpen.pop.remove(); document.removeEventListener('click', dbPopOut, true); window.removeEventListener('resize', dbPopCloseAll); dbPopOpen = null; }
+    }
+    function dbPopOut(e) { if (dbPopOpen && !dbPopOpen.wrap.contains(e.target)) dbPopCloseAll(); }
+    function dbPopoverize(sel) {
+      if (!sel || sel.__pop) return;
+      sel.__pop = true;
+      sel.classList.add('hidden');
+      var parent = sel.parentElement;
+      var wrap = document.createElement('div');
+      wrap.className = 'db-pop-wrap w-full max-w-[11rem]';
+      parent.insertBefore(wrap, sel);
+      wrap.appendChild(sel);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'db-pop-btn px-3 py-2 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors';
+      btn.innerHTML = '<span class="db-pop-lab truncate text-gray-700 dark:text-gray-200"></span>' +
+        '<svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>';
+      wrap.appendChild(btn);
+      function sync() {
+        var o = sel.options[sel.selectedIndex];
+        var lab = btn.querySelector('.db-pop-lab');
+        if (lab) lab.textContent = o ? o.textContent : '';
+      }
+      sel.__popSync = sync;
+      function build() {
+        var frag = document.createDocumentFragment();
+        [].slice.call(sel.options).forEach(function (o) {
+          var it = document.createElement('button');
+          it.type = 'button';
+          it.className = 'db-pop-item' + (o.value === sel.value ? ' sel' : '');
+          it.innerHTML = '<span class="truncate">' + String(o.textContent).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }) + '</span>' +
+            (o.value === sel.value ? '<svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>' : '');
+          it.addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            sel.value = o.value;
+            sync();
+            dbPopCloseAll();
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+          });
+          frag.appendChild(it);
+        });
+        return frag;
+      }
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (dbPopOpen && dbPopOpen.wrap === wrap) { dbPopCloseAll(); return; }
+        dbPopCloseAll();
+        sync();
+        var pop = document.createElement('div');
+        pop.className = 'db-pop-pop fade-in';
+        pop.appendChild(build());
+        wrap.appendChild(pop);
+        dbPopOpen = { wrap: wrap, pop: pop };
+        document.addEventListener('click', dbPopOut, true);
+        window.addEventListener('resize', dbPopCloseAll);
+      });
+      sel.addEventListener('change', sync);
+      sync();
+    }
+
+    // ---- form buat tabel ----
+    function dbColRow(name, type, optStr) {
+      var row = document.createElement('div');
+      row.className = 'flex items-center gap-2';
+      row.innerHTML =
+        '<input type="text" placeholder="nama kolom" class="db-col-name flex-1 min-w-0 px-3 py-2 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">' +
+        '<select class="db-col-type px-2.5 py-2 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">' +
+        COL_TYPES.map(function (tp) { return '<option value="' + tp[0] + '"' + (tp[0] === type ? ' selected' : '') + '>' + tp[1] + '</option>'; }).join('') +
+        '</select>' +
+        '<input type="text" placeholder="opsi: satu, dua, tiga" class="db-col-opts hidden flex-1 min-w-0 px-3 py-2 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">' +
+        '<button type="button" class="db-col-del shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" aria-label="Hapus kolom">' +
+        '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12"></path></svg></button>';
+      if (name) row.querySelector('.db-col-name').value = name;
+      var tSel = row.querySelector('.db-col-type');
+      var oIn = row.querySelector('.db-col-opts');
+      function syncOpts() { oIn.classList.toggle('hidden', tSel.value !== 'select'); }
+      tSel.addEventListener('change', syncOpts);
+      if (type === 'select') { oIn.classList.remove('hidden'); if (optStr) oIn.value = optStr; }
+      row.querySelector('.db-col-del').addEventListener('click', function () {
+        if (document.querySelectorAll('#db-cols > div').length > 1) row.remove();
+      });
+      dbPopoverize(row.querySelector('.db-col-type'));
+      return row;
+    }
+    function dbFormOpen() {
+      var cols = document.getElementById('db-cols');
+      cols.innerHTML = '';
+      cols.appendChild(dbColRow('nama', 'text'));
+      cols.appendChild(dbColRow('email', 'email'));
+      document.getElementById('db-tbl-name').value = '';
+      var fe = document.getElementById('db-form-error');
+      fe.classList.add('hidden');
+      dbShow('db-form');
+      document.getElementById('db-tbl-name').focus();
+    }
+    function dbFormSave() {
+      var name = (document.getElementById('db-tbl-name').value || '').trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+      if (!name) { var fe = document.getElementById('db-form-error'); fe.textContent = 'Nama tabel wajib diisi.'; fe.classList.remove('hidden'); return; }
+      var columns = [];
+      var badSel = null;
+      document.querySelectorAll('#db-cols > div').forEach(function (row) {
+        var cn = (row.querySelector('.db-col-name').value || '').trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+        if (!cn) return;
+        var tp = row.querySelector('.db-col-type').value;
+        var col = { name: cn, type: tp };
+        if (tp === 'select') {
+          var oi = row.querySelector('.db-col-opts');
+          col.options = (oi ? oi.value : '').split(',').map(function (x) { return x.trim(); }).filter(Boolean).slice(0, 60);
+          if (!col.options.length) badSel = cn;
+        }
+        columns.push(col);
+      });
+      if (badSel) {
+        var fe0 = document.getElementById('db-form-error');
+        fe0.textContent = 'Kolom Pilihan "' + badSel + '" butuh minimal 1 opsi (pisahkan dengan koma).';
+        fe0.classList.remove('hidden'); return;
+      }
+      if (!columns.length) { var fe2 = document.getElementById('db-form-error'); fe2.textContent = 'Minimal satu kolom wajib diisi.'; fe2.classList.remove('hidden'); return; }
+      var btn = document.getElementById('db-save-btn');
+      btn.disabled = true; btn.textContent = 'Menyimpan…';
+      fetch(DB_API + '/db/tables', {
+        method: 'POST',
+        headers: dbHdrs(true),
+        body: JSON.stringify({ project_id: dbPid(), name: name, columns: columns })
+      })
+        .then(function (r) {
+          return r.json().catch(function () { return null; }).then(function (d) {
+            if (!r.ok) throw new Error((d && d.error) || ('HTTP ' + r.status));
+            return d;
+          });
+        })
+        .then(function () { btn.disabled = false; btn.textContent = 'Simpan tabel'; dbLoad(); })
+        .catch(function (e) {
+          btn.disabled = false; btn.textContent = 'Simpan tabel';
+          var fe3 = document.getElementById('db-form-error');
+          fe3.textContent = (e && e.message) || 'Gagal menyimpan tabel. Periksa koneksi lalu coba lagi.';
+          fe3.classList.remove('hidden');
+        });
+    }
+
+    document.getElementById('db-new-btn').addEventListener('click', dbFormOpen);
+    document.getElementById('db-form-close').addEventListener('click', dbLoad);
+    document.getElementById('db-form-backdrop').addEventListener('click', dbLoad);
+    document.getElementById('db-form').addEventListener('click', function (e) { if (e.target === this) dbLoad(); });
+    document.getElementById('db-add-col').addEventListener('click', function () { document.getElementById('db-cols').appendChild(dbColRow('', 'text')); });
+    document.getElementById('db-save-btn').addEventListener('click', dbFormSave);
+    document.getElementById('db-cancel-btn').addEventListener('click', dbLoad);
+    document.getElementById('db-retry-btn').addEventListener('click', function () { dbLoad(); });
+
+    // ---- kunci API aplikasi ----
+    var dbKey = null;
+    function dbKeyBtnHtml(state) {
+      var b = document.getElementById('db-key-btn');
+      var chg = document.getElementById('db-key-change-btn');
+      if (state === 'active') { b.classList.add('hidden'); if (chg) chg.classList.remove('hidden'); }
+      else { b.textContent = 'Buat kunci'; b.className = 'shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors'; b.classList.remove('hidden'); if (chg) chg.classList.add('hidden'); }
+    }
+    function dbKeyRenderCurl() {
+      var pre = document.getElementById('db-key-curl');
+      if (!pre) return;
+      pre.textContent =
+        "fetch('https://app.clincoo.buzz/v1/db/rows?table=nama', {\n" +
+        "  headers: { Authorization: 'Bearer " + (dbKey || 'clc_db_SECRET_PROYEK_KAMU') + "' }\n" +
+        '})';
+    }
+    function _dbFlashCopied(sel) {
+      var btn = document.querySelector(sel);
+      if (!btn) return;
+      var orig = btn.innerHTML;
+      btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>';
+      setTimeout(function () { btn.innerHTML = orig; }, 1500);
+    }
+    function _dbCopyText(text, done) {
+      if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(done).catch(function () {}); return; }
+      var ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+    function copyDbKey() {
+      if (!dbKey) return;
+      _dbCopyText(dbKey, function () { _dbFlashCopied('button[onclick="copyDbKey()"]'); });
+    }
+    function copyDbKeyCurl() {
+      var pre = document.getElementById('db-key-curl');
+      if (!pre) return;
+      _dbCopyText(pre.textContent, function () { _dbFlashCopied('button[onclick="copyDbKeyCurl()"]'); });
+    }
+    function dbKeyRender(d) {
+      dbKey = d && d.key || null;
+      var empty = document.getElementById('db-key-empty');
+      var st = document.getElementById('db-key-status');
+      var hint = document.getElementById('db-key-hint-wrap');
+      if (d && d.active) {
+        empty.classList.add('hidden');
+        hint.classList.remove('hidden');
+        document.getElementById('db-key-val-input').value = dbKey;
+        dbKeyRenderCurl();
+        dbKeyBtnHtml('active');
+      } else {
+        st.textContent = 'Belum ada kunci akses';
+        empty.classList.remove('hidden');
+        hint.classList.add('hidden');
+        dbKeyBtnHtml('none');
+      }
+    }
+    function dbKeyLoad() {
+      fetch(DB_API + '/db/key?project_id=' + encodeURIComponent(dbPid()), { headers: dbHdrs(false) })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          var sec = document.getElementById('db-key-sec');
+          sec.classList.remove('hidden');
+          var how = document.getElementById('db-how-sec');
+          if (how) how.classList.remove('hidden');
+          dbKeyRender(d);
+        })
+        .catch(function () {});
+    }
+    function dbKeyAction() {
+      var btn = dbKey ? document.getElementById('db-key-change-btn') : document.getElementById('db-key-btn');
+      if (dbKey && !confirm('Ganti kunci? Aplikasi lama yang memakai kunci sekarang akan berhenti bisa akses.')) return;
+      btn.disabled = true; btn.textContent = dbKey ? 'Mengganti…' : 'Membuat…';
+      fetch(DB_API + '/db/key', { method: 'POST', headers: dbHdrs(true), body: JSON.stringify({ project_id: dbPid() }) })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) { btn.disabled = false; dbKeyRender(d && d.key ? { active: true, key: d.key } : null); })
+        .catch(function () { btn.disabled = false; dbKeyRender(dbKey ? { active: true, key: dbKey } : null); });
+    }
+    document.getElementById('db-key-btn').addEventListener('click', dbKeyAction);
+    var dbKeyChgBtn = document.getElementById('db-key-change-btn');
+    if (dbKeyChgBtn) dbKeyChgBtn.addEventListener('click', dbKeyAction);
+
+    // ---- gerbang aktivasi: cek status dulu, baru tampilkan tabel & kunci ----
+    function dbCacheKey() { return 'clincoo_db_active_' + dbPid(); }
+    function dbSetActiveCache(v) { try { localStorage.setItem(dbCacheKey(), v ? '1' : '0'); } catch (e) {} }
+    function dbGetActiveCache() { try { return localStorage.getItem(dbCacheKey()); } catch (e) { return null; } }
+
+    function dbEnterActive() {
+      dbLoad();
+      dbKeyLoad();
+    }
+
+    function dbGate() {
+      var t = ''; try { t = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
+      if (!t) { dbShow('db-login'); return; }
+      if (!dbPid()) { dbErr('Proyek belum dipilih — buka dashboard proyekmu dulu.'); return; }
+      dbShowProj();
+      var cached = dbGetActiveCache();
+      if (cached === '1') { dbEnterActive(); return; }
+      if (cached === null) dbShow('db-loading'); else dbShow('db-inactive');
+      fetch(DB_API + '/db/activate?project_id=' + encodeURIComponent(dbPid()), { headers: dbHdrs(false) })
+        .then(function (r) {
+          if (r.status === 401) { dbShow('db-login'); return null; }
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function (d) {
+          if (d === null) return;
+          dbSetActiveCache(!!d.active);
+          if (d.active) dbEnterActive(); else dbShow('db-inactive');
+        })
+        .catch(function () {
+          if (cached === '1') { dbEnterActive(); return; }
+          dbErr('Tidak bisa memuat status database. Periksa koneksi lalu coba lagi.');
+        });
+    }
+
+    window.activateDatabase = function () {
+      var btn = document.getElementById('db-cta');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<svg class="email-cta-spin" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="3"/><path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg><span>Mengaktifkan…</span>'; }
+      fetch(DB_API + '/db/activate', { method: 'POST', headers: dbHdrs(true), body: JSON.stringify({ project_id: dbPid() }) })
+        .then(function (r) {
+          if (r.status === 401) { dbShow('db-login'); return null; }
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function (d) {
+          if (d === null) return;
+          dbSetActiveCache(!!d.active);
+          if (d.active) { dbEnterActive(); return; }
+          if (btn) { btn.disabled = false; btn.textContent = 'Aktifkan Database'; }
+        })
+        .catch(function () {
+          if (btn) {
+            btn.disabled = false; btn.textContent = 'Aktifkan Database';
+            var old = document.getElementById('db-cta-error');
+            if (old) old.remove();
+            var pe = document.createElement('p');
+            pe.id = 'db-cta-error';
+            pe.style.cssText = 'margin-top:.5rem;font-size:.8rem;color:#dc2626;max-width:20rem;margin-left:auto;margin-right:auto';
+            pe.textContent = 'Gagal mengaktifkan. Periksa koneksi lalu coba lagi.';
+            btn.parentNode.appendChild(pe);
+          }
+        });
+    };
+
+    dbGate();
+  </script>
+<script>/* Item menu header standar: Live preview & Eksport zip (serupa halaman pengaturan lain) */
+(function(){
+  window.closeHeaderMenu = function(){ var m=document.getElementById('header-more-menu'); if(m) m.classList.remove('open'); };
+    window.chatExportZip = function () {
+    closeHeaderMenu();
+    var pid = ''; try { pid = localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) {}
+    var key = 'clincoo_workspace_files_' + (pid || 'global');
+    var byPath = {};
+    var raw = null;
+    try { raw = localStorage.getItem(key); } catch (e) {}
+    if (!raw) { try { var legacy = localStorage.getItem('clincoo_workspace_files'); if (legacy) { localStorage.setItem(key, legacy); raw = legacy; try { localStorage.removeItem('clincoo_workspace_files'); } catch (e0) {} } } catch (e) {} }
+    try {
+        var d = JSON.parse(raw) || {};
+        Object.keys(d).forEach(function (k) {
+            (d[k] || []).forEach(function (it) {
+                if (it && it.path && it.type === 'file') byPath[it.path] = it.content || '';
+            });
+        });
+    } catch (e) {}
+    var WS_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-files';
+    var tk = ''; try { tk = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
+    var headers = tk ? { Authorization: 'Bearer ' + tk } : {};
+    var filesFromMap = function () {
+        return Object.keys(byPath).sort().map(function (p) { return { path: p, content: byPath[p] }; });
+    };
+    var finish = function (files) {
+        if (!files.length) { alert('Tidak ada berkas di Workspace untuk dieksport.'); return; }
+        var run = function () {
+            var zip = new window.JSZip();
+            files.forEach(function (f) { zip.file(f.path, f.content || ''); });
+            zip.generateAsync({ type: 'blob' }).then(function (blob) {
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = (pid || 'clincoo') + '.zip';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(function () { URL.revokeObjectURL(a.href); }, 500);
+            });
+        };
+        if (window.JSZip) { run(); return; }
+        var sc = document.createElement('script');
+        sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        sc.onload = run;
+        document.head.appendChild(sc);
+    };
+    if (!pid) { finish(filesFromMap()); return; }
+    // Gabungkan file cloud (D1) supaya SEMUA berkas Workspace ikut terekspor.
+    fetch(WS_API + '?project_id=' + encodeURIComponent(pid), { headers: headers })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function (resp) {
+            ((resp && resp.files) || []).forEach(function (f) {
+                if (f && f.path && !(f.path in byPath)) byPath[f.path] = f.content || '';
+            });
+            finish(filesFromMap());
+        })
+        .catch(function () { finish(filesFromMap()); });
+}
+})();
+</script>
+<script>/* Crown Editor (menu pojok kanan atas) — visibility per paket + gate layar penuh */
+(function(){
+  function readCache(k){try{var v=localStorage.getItem(k);if(!v)return null;var c=JSON.parse(v);return c&&c.plan?c:null;}catch(e){return null;}}
+  function plan(){var a=readCache('TM_SUB_CACHE_KEY'),b=readCache('clincoo_subscription_cache');var c=(a&&b)?((a.ts||0)>(b.ts||0)?a:b):(a||b);return (c&&c.plan)||'Starter';}
+  function apply(){
+    var p=plan();var paid=(p&&p.toLowerCase()!=='starter');
+    document.querySelectorAll('.clincoo-premium-crown').forEach(function(c){c.style.display=paid?'none':'inline';});
+    if(!paid)return;
+  }
+  function theme(){
+    var dark=true;
+    try{dark=!!(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);}catch(e){}
+    if(dark)return {bg:'#141416',fg:'#f5f6f7',muted:'#9aa0a6',btnA:'#ffffff',btnAf:'#111111',bd:'rgba(255,255,255,.22)'};
+    return {bg:'#f4f4f6',fg:'#111111',muted:'#555555',btnA:'#111111',btnAf:'#ffffff',bd:'#e5e7eb'};
+  }
+  function gate(){
+    var t=theme();
+    var ov=document.createElement('div');ov.id='cc-crown-gate';
+    ov.style.cssText='position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;padding:24px;background:'+t.bg+';color:'+t.fg+';';
+    ov.innerHTML='<div style="max-width:420px;width:100%;text-align:center"><div style="font-size:44px;line-height:1">&#128081;</div><h2 style="font-size:20px;margin:14px 0 8px;font-weight:700;color:'+t.fg+'">Fitur ini hanya untuk paket Pro</h2><p style="font-size:14px;margin:0 0 20px;color:'+t.muted+'">Editor kode tersedia setelah upgrade paket.</p><a href="/akun/langganan/upgrade/" style="display:block;padding:13px;border-radius:12px;text-decoration:none;font-weight:600;font-size:14px;background:'+t.btnA+';color:'+t.btnAf+'">Lihat Paket</a><button id="cc-cg-close" style="display:block;width:100%;margin-top:10px;padding:13px;border:1.5px solid '+t.bd+';background:transparent;color:'+t.fg+';border-radius:12px;font-weight:600;font-size:14px;cursor:pointer">Tutup</button></div>';
+    document.body.appendChild(ov);
+    ov.querySelector('#cc-cg-close').addEventListener('click',function(){ov.remove();});
+    document.addEventListener('keydown',function esc(ev){if(ev.key==='Escape'){ov.remove();document.removeEventListener('keydown',esc,true);}},true);
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    apply();
+    document.querySelectorAll('#header-editor .clincoo-premium-crown').forEach(function(c){
+      c.style.cursor='pointer';
+      c.addEventListener('click',function(ev){ev.preventDefault();ev.stopPropagation();gate();});
+    });
+  });
+})();
+</script>
+</body>
+</html>

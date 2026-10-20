@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../../js/accent-init.js"></script>
+<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clincoo_current_project_id',__p);}else{var __go=function(__pid){try{localStorage.setItem('clincoo_current_project_id',__pid);}catch(e){}var __sp=new URLSearchParams(location.search);__sp.set('id',__pid);var __q=__sp.toString();location.replace(location.pathname+(__q?'?'+__q:'')+location.hash);};var __c='';try{__c=localStorage.getItem('clincoo_current_project_id')||'';}catch(e){}if(__c){var __l=null;try{__l=JSON.parse(localStorage.getItem('clincoo_projects')||'[]');}catch(e){}if(!Array.isArray(__l)||!__l.length||__l.some(function(p){return p&&p.id===__c;})){__go(__c);return;}try{localStorage.removeItem('clincoo_current_project_id');}catch(e){}}var __t='';try{__t=localStorage.getItem('clincoo_auth_token')||localStorage.getItem('clincoo_token')||'';}catch(e){}var __o=(['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname)===-1)?'https://clincoo-be2.pages.dev':'';fetch(__o+'/api/projects',{headers:__t?{'Authorization':'Bearer '+__t}:{}}).then(function(r){return r.ok?r.json():null;}).then(function(d){var __l2=(d&&d.projects)||[];if(!__l2.length){location.replace('/');return;}__l2.sort(function(a,b){return String(b.updatedAt||'').localeCompare(String(a.updatedAt||''));});__go(String(__l2[0].id));}).catch(function(){location.replace('/');});}}catch(e){}})();</script>
+  <script src="../../../js/current-project.js?v=1"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../../../assets/favicon.png">
+    <link rel="manifest" href="../../../../manifest.json">
+    <link rel="apple-touch-icon" href="../../../../assets/icons/apple-touch-icon.png">
+  <title>Tabel — Database — Clincoo</title>
+    <meta name="description" content="Pengaturan: Database — lihat dan kelola baris tabel di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clincoo">
+    <meta property="og:title" content="Tabel — Database — Clincoo">
+    <meta property="og:description" content="Pengaturan: Database — lihat dan kelola baris tabel di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Pengaturan: Tabel — Database — Clincoo">
+    <meta name="twitter:description" content="Pengaturan: Database — lihat dan kelola baris tabel di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+  <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/assets/vendor/chart.umd.min.js"></script>
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+    body { font-family: 'Inter', sans-serif; }
+    @keyframes emailCtaSpin { to { transform: rotate(360deg); } }
+    .email-cta-spin { animation: emailCtaSpin 0.8s linear infinite; }
+    .email-cta { box-shadow: 0 2px 8px -2px rgba(0,0,0,0.15); }
+    .email-cta:not(:disabled):active { transform: scale(0.97); }
+    ::-webkit-scrollbar { display: none; width: 0; height: 0; background: transparent; }
+    * { -ms-overflow-style: none; scrollbar-width: none; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    body.dark-mode { background-color: #000000; color: #e0e0e0; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800 { color: #f0f0f0; }
+    body.dark-mode .text-gray-700 { color: #b0b0b0; }
+    body.dark-mode .text-gray-500, body.dark-mode .text-gray-600 { color: #888888; }
+    body.dark-mode .text-gray-400 { color: #666666; }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode header button[onclick="history.back()"], body.dark-mode header button[aria-label="Kembali"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
+    body.dark-mode header button[onclick="history.back()"] svg, body.dark-mode header button[aria-label="Kembali"] svg { color: #ffffff !important; stroke: #ffffff !important; }
+    body.dark-mode header button[onclick="history.back()"]:hover, body.dark-mode header button[aria-label="Kembali"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
+    body.dark-mode .bg-gray-50 { background-color: #222222 !important; }
+    body.dark-mode .bg-gray-100 { background-color: #222222 !important; }
+    body.dark-mode .border-gray-200, body.dark-mode .border-gray-100 { border-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-200:hover { background-color: #222222 !important; }
+    body.dark-mode input, body.dark-mode select, body.dark-mode textarea { background-color: #0a0a0a; color: #ffffff; border-color: #222222; }
+    body.dark-mode input:focus, body.dark-mode select:focus, body.dark-mode textarea:focus { border-color: #222222; outline: none; }
+    body.dark-mode header { background-color: #000000 !important; }
+    body.dark-mode .bg-black { background-color: #ffffff !important; color: #000000 !important; }
+  /* auto-dark-fix v1 */
+    body.dark-mode .bg-gray-50\/80 { background-color: #141414 !important; }
+    body.dark-mode .bg-gray-200 { background-color: #262626 !important; }
+    body.dark-mode .bg-gray-300 { background-color: #333333 !important; }
+    body.dark-mode .bg-gray-400 { background-color: #444444 !important; }
+    body.dark-mode .border-gray-50 { border-color: #0a0a0a !important; }
+    body.dark-mode .border-gray-200\/50,
+    body.dark-mode .border-gray-200\/60,
+    body.dark-mode .border-gray-200\/70 { border-color: #222222 !important; }
+    body.dark-mode .border-gray-300 { border-color: #333333 !important; }
+    body.dark-mode .border-gray-400 { border-color: #444444 !important; }
+    body.dark-mode .bg-blue-50,
+    body.dark-mode .bg-blue-50\/50 { background-color: #0d1a26 !important; }
+    body.dark-mode .border-blue-100,
+    body.dark-mode .border-blue-200 { border-color: #1e3a52 !important; }
+    body.dark-mode .bg-red-50,
+    body.dark-mode .bg-red-50\/50 { background-color: #2a1414 !important; }
+    body.dark-mode .bg-red-100 { background-color: #3a1a1a !important; }
+    body.dark-mode .border-red-100,
+    body.dark-mode .border-red-200 { border-color: #4a2020 !important; }
+    body.dark-mode .bg-green-100 { background-color: #14301c !important; }
+    body.dark-mode .bg-white\/95 { background-color: rgba(10,10,10,0.95) !important; }
+    body.dark-mode .hover\:bg-gray-50:hover,
+    body.dark-mode .hover\:bg-gray-50\/50:hover,
+    body.dark-mode .hover\:bg-gray-50\/80:hover { background-color: #1a1a1a !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #262626 !important; }
+    body.dark-mode .hover\:bg-gray-200:hover,
+    body.dark-mode .hover\:bg-gray-200\/50:hover { background-color: #333333 !important; }
+    body.dark-mode .hover\:bg-blue-50:hover,
+    body.dark-mode .hover\:bg-blue-100:hover { background-color: #163247 !important; }
+    body.dark-mode .hover\:bg-red-50:hover,
+    body.dark-mode .hover\:bg-red-100:hover { background-color: #3a1a1a !important; }
+    body.dark-mode .hover\:border-gray-300:hover,
+    body.dark-mode .hover\:border-gray-400:hover,
+    body.dark-mode .hover\:border-gray-900:hover { border-color: #555555 !important; }
+    body.dark-mode .focus\:border-gray-400:focus,
+    body.dark-mode .focus\:border-gray-900:focus { border-color: #666666 !important; }
+    body.dark-mode input::placeholder, body.dark-mode textarea::placeholder { color: #666666 !important; }
+#chat-header-capsule { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        /* Kapsul: mobile 2 menu (Workspace|Dashboard), desktop 3 menu (Live preview|Workspace|Dashboard) */
+        .chat-nav-link[data-nav="agent"] { display: none !important; }
+        .chat-nav-link[data-nav="live"] { display: none; }
+        @media (min-width: 900px) { .chat-nav-link[data-nav="live"] { display: inline-flex; } }
+        #chat-nav-pill { display: none; }
+        @view-transition { navigation: auto; }
+        /* pindah antar halaman: crossfade singkat + pill morph singkat, biar gak kedip */
+        @media (prefers-reduced-motion: no-preference) {
+            ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; animation-timing-function: cubic-bezier(.2,.7,.3,1); }
+            ::view-transition-group(chat-nav-pill) { animation-duration: .18s; animation-timing-function: cubic-bezier(.2,.7,.3,1); }
+        }
+        /* fallback browser tanpa cross-doc view transition: fade-in halus (bukan pop putih keras) */
+        @keyframes clq-page-in { from { opacity: 0 } to { opacity: 1 } }
+        @media (prefers-reduced-motion: no-preference) {
+            body { animation: clq-page-in .18s cubic-bezier(.2,.7,.3,1) both; }
+            html:active-view-transition body { animation: none; }
+        }
+        .chat-nav-link.is-active { color: #111111; background: #e9e9ec; view-transition-name: chat-nav-pill; }
+        #header-more-menu.open { display: flex; opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto; }
+        .header-menu-item { -webkit-tap-highlight-color: transparent; }
+        .header-menu-item:focus, .header-menu-item:focus-visible { outline: none; box-shadow: none; }
+        button.header-menu-item { -webkit-appearance: none; appearance: none; background: transparent; border: none; margin: 0; font: inherit; color: inherit; }
+        button.header-menu-item:active { background: rgba(0,0,0,0.04); }
+        body.dark-mode button.header-menu-item:active { background: rgba(255,255,255,0.08); }
+        .header-menu-item { cursor: pointer; }
+        body.dark-mode #chat-header-capsule { background-color: #0a0a0a; border-color: rgba(255,255,255,0.15); box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
+        body.dark-mode #chat-nav-pill { background: #ffffff !important; }
+        body.dark-mode .chat-nav-link { color: #9ca3af !important; }
+        body.dark-mode .chat-nav-link.is-active { color: #0a0a0a !important; background: #ffffff !important; }
+        body.dark-mode #sidebar-toggle, body.dark-mode #header-more-btn { background-color: #000000; border: 1.5px solid rgba(255,255,255,0.4); color: #ffffff; }
+        body.dark-mode #sidebar-toggle:hover, body.dark-mode #header-more-btn:hover { background-color: #1a1a1a; border-color: rgba(255,255,255,0.7); }
+        body.dark-mode #sidebar-toggle svg, body.dark-mode #header-more-btn svg { color: #ffffff; stroke: #ffffff; }
+        body.dark-mode #header-more-menu { background-color: #0a0a0a; border-color: rgba(255,255,255,0.15); }
+        body.dark-mode .header-menu-item { color: #e5e7eb; }
+        body.dark-mode .header-menu-item:hover { background-color: #1a1a1a; color: #ffffff; }
+        body.dark-mode .header-menu-item svg { color: #9ca3af; }
+        @media (max-width: 384px) { #sidebar-toggle, #header-more-btn { width: 38px; height: 38px; } }
+        @media (max-width: 330px) { #sidebar-toggle, #header-more-btn { width: 34px; height: 34px; } .chat-nav-link { padding-left: 0.5rem; padding-right: 0.5rem; } }
+      /* Animasi & skeleton halaman Pembayaran */
+    @keyframes payFadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .pay-fade { animation: payFadeUp .35s ease both; }
+    @keyframes payShimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+    .pay-skel { background: linear-gradient(90deg, rgba(0,0,0,.06) 25%, rgba(0,0,0,.12) 37%, rgba(0,0,0,.06) 63%); background-size: 400% 100%; animation: payShimmer 1.2s ease infinite; }
+    .dark-mode .pay-skel { background: linear-gradient(90deg, rgba(255,255,255,.06) 25%, rgba(255,255,255,.12) 37%, rgba(255,255,255,.06) 63%); background-size: 400% 100%; }
+    </style>
+
+  <script>(function(){var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var isDark=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(isDark)document.documentElement.classList.add('dark-mode');})();</script>
+<!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';var tm=document.querySelector('meta[name="theme-color"]');if(tm){tm.setAttribute('content','#0a0a0a');}}}catch(e){}})();</script>
+
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
+(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<3;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
+    </script>
+<!-- Google tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+<!-- End Google tag -->
+<script src="../../../js/i18n-dict.js" defer></script>
+<script src="../../../js/i18n.js" defer></script>
+</head>
+<body class="text-gray-900 antialiased h-screen w-full overflow-hidden relative bg-white">
+  <script>(function(){var t=localStorage.getItem("clincoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+  <div class="w-full h-full overflow-y-auto hide-scrollbar flex flex-col items-center">
+    <header class="fixed top-0 left-0 right-0 z-30 px-3 pt-3 pointer-events-none flex justify-between items-center">
+        <button id="sidebar-toggle" type="button" class="pointer-events-auto flex-shrink-0 flex items-center justify-center text-[#222222] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:text-black hover:bg-gray-100 transition-all rounded-full w-11 h-11" aria-label="Kembali ke Beranda">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+        <div class="pointer-events-auto inline-flex items-center gap-1 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-gray-100/80 rounded-full pl-1.5 pr-1.5 h-11" id="chat-header-capsule">
+            <nav id="chat-top-nav" class="relative inline-flex items-center h-full">
+                <div id="chat-nav-pill" class="absolute bg-gray-100 rounded-full pointer-events-none" style="top:0;left:0;width:0;height:0"></div>
+                <a href="/proyek/chat/" data-nav="agent" class="chat-nav-link relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Agent</a>
+                <a href="/proyek/code/" data-nav="code" class="chat-nav-link relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Workspace</a>
+                <a href="/proyek/dashboard/" data-nav="dashboard" class="chat-nav-link is-active relative z-10 px-2.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors text-gray-500 hover:text-gray-800">Dashboard</a>
+            </nav>
+        </div>
+        <div class="relative flex items-center gap-1.5 flex-shrink-0 pointer-events-auto"><button id="header-more-btn" type="button" onclick="toggleHeaderMenu(event)" class="w-11 h-11 rounded-full flex items-center justify-center text-[#222222] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:bg-gray-100 hover:text-black transition-all" aria-label="Menu lainnya">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle>
+                </svg>
+            </button>
+            <div id="header-more-menu" class="absolute top-full right-0 mt-1 w-56 bg-white rounded-xl shadow-xl p-1.5 flex-col gap-0.5 opacity-0 invisible translate-y-1 pointer-events-none transition-all duration-200 z-50 hidden">
+<a id="header-editor" href="/proyek/workspace/editor/" onclick="var __pid='';try{__pid=localStorage.getItem('clincoo_current_project_id')||''}catch(e){}if(__pid){this.href='/proyek/workspace/editor/?id='+encodeURIComponent(__pid)}" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 18l6-6-6-6M8 6l-6 6 6 6"></path></svg>
+                    Editor <svg class="clincoo-premium-crown w-3.5 h-3.5 text-amber-500 shrink-0" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#f59e0b" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.019a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"></path></svg>
+                    <svg class="ml-auto w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M7 7h10v10"></path></svg>
+                </a>
+                <button id="header-export-zip" type="button" onclick="chatExportZip()" class="header-menu-item w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>
+                    Eksport zip
+                </button>
+                <a href="/integrasi/github/" class="header-menu-item flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path><path stroke-linecap="round" stroke-linejoin="round" d="M9 18c-4.51 2-5-2-7-2"></path></svg>
+                    Koneksi git
+                </a>
+                <a href="https://blog.clincoo.buzz/panduan/" target="_blank" rel="noopener" class="header-menu-item flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-800 text-left">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"></path></svg>
+                    Pusat bantuan
+                </a>
+            </div>
+        </div>
+    </header>
+    <main class="w-full max-w-5xl px-4 sm:px-6 pt-20 pb-28">
+<style>
+        #settings-menu-pop.open { display: grid; }
+        /* kartu grafik per-tabel */
+        .db-chart-card { border-radius: 1rem; border: 1px solid rgb(229 231 235); background: #fff; padding: 1rem 1.15rem 1.15rem; }
+        body.dark-mode .db-chart-card { border-color: #1e293b; background: #0d0d0d; }
+        .db-chart-head { display: flex; align-items: flex-start; gap: 0.65rem; }
+        .db-stat-card { border-radius: 1rem; border: 1px solid rgb(229 231 235); background: #fff; padding: 0.9rem 1rem 0.95rem; }
+        body.dark-mode .db-stat-card { border-color: #1e293b; background: #0d0d0d; }
+        .db-stat-num { font-size: 1.35rem; line-height: 1.1; font-weight: 700; color: #111827; font-variant-numeric: tabular-nums; }
+        body.dark-mode .db-stat-num { color: #f9fafb; }
+        /* popover pengganti dropdown (select native disembunyikan) */
+        .db-pop-wrap { position: relative; }
+        .db-pop-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; text-align: left; }
+        .db-pop-pop { position: absolute; left: 0; right: 0; margin-top: 0.3rem; border-radius: 0.85rem; border: 1px solid rgb(229 231 235); background: #fff; box-shadow: 0 12px 32px rgba(0,0,0,0.14); padding: 0.35rem; z-index: 60; max-height: 15rem; overflow-y: auto; }
+        body.dark-mode .db-pop-pop { border-color: #334155; background: #18181b; }
+        .db-pop-item { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.5rem 0.65rem; border-radius: 0.6rem; font-size: 0.825rem; color: #4b5563; cursor: pointer; }
+        .db-pop-item:hover { background: #f9fafb; color: #111827; }
+        body.dark-mode .db-pop-item { color: #d1d5db; }
+        body.dark-mode .db-pop-item:hover { background: #23272f; color: #f9fafb; }
+        .db-pop-item.sel { font-weight: 600; color: #111827; }
+        body.dark-mode .db-pop-item.sel { color: #f9fafb; }
+        .settings-menu-item { cursor: pointer; }
+        .settings-menu-item .text-sm { line-height: 1.3; }
+        .settings-menu-item .text-xs { line-height: 1.15; }
+        body.dark-mode #settings-menu-btn { background-color: #1c1c1c !important; border-color: rgba(255,255,255,0.22) !important; color: #f3f4f6 !important; }
+        body.dark-mode #settings-menu-pop { background-color: #1c1c1c !important; border-color: rgba(255,255,255,0.22) !important; }
+        body.dark-mode .settings-menu-item:hover { background-color: #1a1a1a; }
+        body.dark-mode .settings-menu-item .block.text-sm { color: #e5e7eb !important; }
+        body.dark-mode .settings-menu-item .block.text-xs { color: #6b7280 !important; }
+    </style>
+    <div class="relative mb-5" id="settings-menu-wrap">
+            <button id="settings-menu-btn" type="button" onclick="toggleSettingsMenu(event)" class="w-full flex items-center justify-between rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-800 shadow-sm transition-all">
+                <span class="flex items-center gap-2.5">
+                    <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3 5v14a9 3 0 0 0 18 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 3 0 0 0 18 0"></path></svg>
+                    Database
+                </span>
+                <svg id="settings-menu-chev" class="w-4 h-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div id="settings-menu-pop" class="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-12px)] sm:w-[860px] mt-0 bg-white rounded-2xl shadow-xl p-1 grid grid-cols-1 sm:grid-cols-2 gap-px z-40 hidden">
+                                <a href="/proyek/dashboard/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Umum</span><span class="block text-xs text-gray-400 truncate">Nama, deskripsi, dan runtime aplikasi</span></span>
+                </a>
+<a href="/proyek/build-deployment/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Build &amp; Deployment</span><span class="block text-xs text-gray-400 truncate">Sumber branch dan konfigurasi deployment</span></span>
+                </a>
+                <a href="/proyek/pengaturan/keamanan-https/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Keamanan &amp; HTTPS</span><span class="block text-xs text-gray-400 truncate">Sertifikat SSL dan protokol HTTPS</span></span>
+                </a>
+                <a href="/proyek/pengaturan/visibilitas-akses/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Visibilitas Akses</span><span class="block text-xs text-gray-400 truncate">Atur hak akses dan visibilitas</span></span>
+                </a>
+                <a href="/proyek/pengaturan/integrasi-webhook/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17H7a5 5 0 1 1 0-10h2M15 7h2a5 5 0 1 1 0 10h-2M8 12h8"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Webhook</span><span class="block text-xs text-gray-400 truncate">Notifikasi event lewat webhook</span></span>
+                </a>
+<a href="/proyek/pengaturan/integrasi-ai/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 5.7a2 2 0 001.4 1.4L21 12l-5.7 1.9a2 2 0 00-1.4 1.4L12 21l-1.9-5.7a2 2 0 00-1.4-1.4L3 12l5.7-1.9a2 2 0 001.4-1.4L12 3z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Integrasi AI</span><span class="block text-xs text-gray-400 truncate">AI Router: model dan secret per proyek</span></span>
+                </a>
+                <a href="/proyek/pengaturan/server-mcp/" class="settings-menu-item settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.01M6 18h.01"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Server MCP</span><span class="block text-xs text-gray-400 truncate">Sambungkan proyek ke platform AI lain (MCP)</span></span>
+                </a>
+<a href="/proyek/pengaturan/database/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3 5v14a9 3 0 0 0 18 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 3 0 0 0 18 0"></path></svg>
+                <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Database</span><span class="block text-xs text-gray-400 truncate">Tabel data untuk aplikasimu</span></span>
+                </a>
+                <a href="/proyek/pengaturan/pembayaran/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Pembayaran</span><span class="block text-xs text-gray-400 truncate">Terima pembayaran lewat QRIS</span></span>
+                </a>
+                <a href="/proyek/pengaturan/email/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-gray-800">Email</span><span class="block text-xs text-gray-400 truncate">Kirim email otomatis lewat API Clincoo</span></span>
+                </a>
+                <a href="/proyek/pengaturan/zona-bahaya/" class="settings-menu-item flex items-center gap-2.5 px-3 py-1 hover:bg-red-50/60 rounded-lg transition-colors text-left">
+                    <svg class="w-[18px] h-[18px] text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    <span class="min-w-0"><span class="block text-sm font-medium text-red-600">Zona Bahaya</span><span class="block text-xs text-red-500/70 truncate">Hapus situs atau proyek</span></span>
+                </a>
+            </div>
+    </div>
+    <script>
+    (function () {
+        var btn = document.getElementById('settings-menu-btn');
+        var pop = document.getElementById('settings-menu-pop');
+        var chev = document.getElementById('settings-menu-chev');
+        window.toggleSettingsMenu = function (e) {
+            e.stopPropagation();
+            var open = pop.classList.toggle('open');
+            chev.style.transform = open ? 'rotate(180deg)' : '';
+        };
+        document.addEventListener('click', function (e) {
+            if (pop.classList.contains('open') && !pop.contains(e.target) && !btn.contains(e.target)) {
+                pop.classList.remove('open');
+                chev.style.transform = '';
+            }
+        });
+        window.addEventListener('scroll', function () {
+            if (pop.classList.contains('open')) {
+                pop.classList.remove('open');
+                chev.style.transform = '';
+            }
+        }, true);
+    })();
+    </script>
+
+            <div class="w-full flex flex-col">
+        <!-- ===== tampilan utama ===== -->
+        <div id="vw-main" class="py-5">
+          <div class="flex items-start sm:items-center justify-between gap-3 mb-1">
+            <div class="min-w-0">
+              <a href="/proyek/pengaturan/database/" class="inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors mb-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"></path></svg>
+                Database
+              </a>
+              <h4 id="tb-name" class="text-base font-semibold text-gray-900 dark:text-white truncate">Tabel</h4>
+              <p id="tb-meta" class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Memuat…</p>
+            </div>
+            <div class="hidden shrink-0 flex items-center gap-2" id="tb-head-actions">
+              <button id="tb-add-btn" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"></path></svg>
+                Tambah baris
+              </button>
+              <button id="tb-menu-btn" type="button" class="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-100 transition-colors">
+                <svg class="w-4.5 h-4.5 w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.7"></circle><circle cx="12" cy="12" r="1.7"></circle><circle cx="12" cy="19" r="1.7"></circle></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- statistik ringkas tabel -->
+          <div id="tb-main-stats" class="hidden mt-3 grid grid-cols-3 gap-3"></div>
+
+          <!-- cari baris (filter muatan yang sudah tampil) -->
+          <div id="tb-search-wrap" class="hidden mt-3 relative">
+            <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 1 1-12 0 6 6 0 0 1 12 0z"></path></svg>
+            <input id="tb-search" type="text" inputmode="search" placeholder="Cari baris di data yang sudah dimuat…" class="w-full pl-9 pr-3 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">
+          </div>
+
+          <!-- perlu login -->
+          <div id="tb-login" class="hidden py-12 flex flex-col items-center justify-center text-center">
+            <svg class="w-8 h-8 text-gray-300 mb-3" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path stroke-linecap="round" stroke-linejoin="round" d="M3 5v14a9 3 0 0 0 18 0V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 3 0 0 0 18 0"></path></svg>
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Masuk dulu untuk mengelola database</p>
+            <a href="/auth/" class="mt-4 px-5 py-2.5 text-sm font-medium text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">Masuk</a>
+          </div>
+
+          <!-- loading -->
+          <div id="tb-loading" class="py-4 space-y-4">
+            <div class="h-12 rounded-xl pay-skel"></div>
+            <div class="h-12 rounded-xl pay-skel"></div>
+            <div class="h-12 rounded-xl pay-skel"></div>
+          </div>
+
+          <!-- error -->
+          <div id="tb-error" class="hidden py-8 text-center">
+            <p id="tb-error-text" class="text-xs text-red-500 dark:text-red-400"></p>
+            <button id="tb-retry-btn" type="button" class="mt-3 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors">Coba lagi</button>
+          </div>
+
+          <!-- daftar baris: polos divide-y -->
+          <div id="tb-rows-wrap" class="hidden">
+            <div class="rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-[#0d0d0d] overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm border-collapse">
+                  <thead id="tb-rows-head" class="hidden bg-gray-50 dark:bg-slate-800/60">
+                    <tr id="tb-rows-head-row" class="text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500"></tr>
+                  </thead>
+                  <tbody id="tb-rows" class="divide-y divide-gray-100 dark:divide-slate-800"></tbody>
+                </table>
+              </div>
+            </div>
+            <button id="tb-more-btn" type="button" class="hidden w-full mt-4 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full transition-colors">Muat lagi</button>
+            <p id="tb-count" class="hidden text-center text-xs text-gray-400 dark:text-gray-500 mt-4"></p>
+          </div>
+
+          <!-- kosong -->
+          <div id="tb-empty" class="hidden py-12 flex flex-col items-center justify-center text-center">
+            <svg class="w-10 h-10 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 12h18M3 17h10M17 17h4"></path></svg>
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Belum ada baris</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Tambahkan baris pertama lewat tombol di atas.</p>
+          </div>
+
+        </div>
+
+        <!-- ===== form tambah/edit baris ===== -->
+        <div id="vw-form" class="hidden py-5">
+          <a id="tb-form-back" href="#" class="inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors mb-3">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"></path></svg>
+            <span id="tb-form-back-label">Kembali</span>
+          </a>
+          <p id="tb-form-title" class="text-sm font-semibold text-gray-900 dark:text-white">Tambah baris</p>
+          <div id="tb-fields" class="mt-5 space-y-4"></div>
+          <p id="tb-form-error" class="hidden text-xs text-red-500 dark:text-red-400 mt-4"></p>
+          <div class="flex items-center gap-2 mt-7">
+            <button id="tb-save-btn" type="button" class="flex-1 py-2.5 text-sm font-semibold text-white bg-black dark:bg-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">Simpan</button>
+            <button id="tb-cancel-btn" type="button" class="flex-1 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Batal</button>
+          </div>
+          <div class="mt-8 pt-6 border-t border-gray-100 dark:border-slate-700/60 text-center hidden" id="tb-delrow-wrap">
+            <button id="tb-delrow-btn" type="button" class="text-xs font-semibold text-red-500 dark:text-red-400 hover:text-red-600 transition-colors">Hapus baris ini</button>
+          </div>
+        </div>
+
+        <!-- ===== tampilan grafik ===== -->
+        <div id="vw-chart" class="hidden py-5">
+          <a id="tb-chart-back" href="#" class="inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors mb-3">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"></path></svg>
+            Kembali ke tabel
+          </a>
+          <p id="tb-chart-title" class="text-sm font-semibold text-gray-900 dark:text-white">Grafik</p>
+          <div id="tb-chart-stats" class="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
+          <label id="tb-chart-colwrap" class="block mt-4 max-w-xs">
+            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Kolom kategori</span>
+            <select id="tb-chart-col" class="w-full px-3 py-2.5 text-sm bg-white dark:bg-black border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none"></select>
+          </label>
+          <p id="tb-chart-note" class="text-xs text-gray-400 dark:text-gray-500 mt-3">Memuat data…</p>
+          <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="db-chart-card sm:col-span-2">
+            <div class="db-chart-head">
+              <div class="flex-1 min-w-0">
+                <p id="tb-c1-title" class="text-xs font-semibold text-gray-700 dark:text-gray-200">Grafik</p>
+                <p id="tb-c1-sub" class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Terisi otomatis dari baris tabel</p>
+              </div>
+              <button type="button" class="db-save-img shrink-0 inline-flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors" data-canvas="tb-chart-1" data-name="grafik-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"></path></svg> Simpan</button>
+            </div>
+            <div class="h-64 sm:h-72 mt-4"><canvas id="tb-chart-1"></canvas></div>
+          </div>
+          <div class="db-chart-card">
+            <div class="db-chart-head">
+              <div class="flex-1 min-w-0">
+                <p id="tb-c2-title" class="text-xs font-semibold text-gray-700 dark:text-gray-200">Grafik</p>
+                <p id="tb-c2-sub" class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Terisi otomatis dari baris tabel</p>
+              </div>
+              <button type="button" class="db-save-img shrink-0 inline-flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors" data-canvas="tb-chart-2" data-name="grafik-2"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"></path></svg> Simpan</button>
+            </div>
+            <div class="h-64 mt-4"><canvas id="tb-chart-2"></canvas></div>
+          </div>
+          <div class="db-chart-card">
+            <div class="db-chart-head">
+              <div class="flex-1 min-w-0">
+                <p id="tb-c3-title" class="text-xs font-semibold text-gray-700 dark:text-gray-200">Grafik</p>
+                <p id="tb-c3-sub" class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Terisi otomatis dari baris tabel</p>
+              </div>
+              <button type="button" class="db-save-img shrink-0 inline-flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors" data-canvas="tb-chart-3" data-name="grafik-3"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"></path></svg> Simpan</button>
+            </div>
+            <div class="h-64 mt-4"><canvas id="tb-chart-3"></canvas></div>
+          </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    lucide.createIcons();
+    document.getElementById('sidebar-toggle').addEventListener('click', function () { window.location.href = '/'; });
+    (function () {
+      var btn = document.getElementById('header-more-btn');
+      var menu = document.getElementById('header-more-menu');
+      window.toggleHeaderMenu = function (e) {
+        e.stopPropagation();
+        menu.classList.contains('open') ? menu.classList.remove('open') : menu.classList.add('open');
+      };
+      document.addEventListener('click', function (e) {
+        if (menu.classList.contains('open') && !menu.contains(e.target) && e.target !== btn) menu.classList.remove('open');
+      });
+    })();
+
+    // ================= detail tabel =================
+    var TB_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev' : '') + '/api';
+    var tbName = (new URLSearchParams(location.search).get('name') || '').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    var tbCols = [], tbOffset = 0, tbTotal = 0, tbEditId = null, tbBusy = false, tbLastMain = null;
+
+    // ---- cache lokal: data tersimpan di perangkat biar refresh nggak load dari awal ----
+    function tbPageCacheKey() { return 'clincoo_tb_page_' + tbPid() + '_' + tbName; }
+    function tbAllCacheKey() { return 'clincoo_tb_all_' + tbPid() + '_' + tbName; }
+    function tbPageCacheRead() { try { var c = JSON.parse(localStorage.getItem(tbPageCacheKey()) || 'null'); return c && c.rows && c.cols ? c : null; } catch (e) { return null; } }
+    function tbPageCacheWrite(cols, rows, total) { try { localStorage.setItem(tbPageCacheKey(), JSON.stringify({ ts: Date.now(), cols: cols, rows: rows.slice(0, 100), total: total })); } catch (e) {} }
+    function tbCacheClearAll() {
+      try { localStorage.removeItem(tbPageCacheKey()); localStorage.removeItem(tbAllCacheKey()); } catch (e) {}
+      try { localStorage.removeItem('clincoo_db_data_' + tbPid()); } catch (e) {}
+    }
+
+    function tbPid() { try { return localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) { return ''; } }
+    function tbHdrs(json) {
+      var t = ''; try { t = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
+      var h = t ? { Authorization: 'Bearer ' + t } : {};
+      if (json) h['Content-Type'] = 'application/json';
+      return h;
+    }
+    function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+    function tbShow(id) {
+      ['tb-loading', 'tb-rows-wrap', 'tb-empty', 'tb-error', 'tb-login'].forEach(function (k) { document.getElementById(k).classList.add('hidden'); });
+      ['vw-form', 'vw-chart'].forEach(function (k) { document.getElementById(k).classList.add('hidden'); });
+      document.getElementById('vw-main').classList.remove('hidden');
+      if (id) { document.getElementById(id).classList.remove('hidden'); tbLastMain = id; }
+      var onList = id === 'tb-rows-wrap' || id === 'tb-empty';
+      document.getElementById('tb-head-actions').classList.toggle('hidden', !onList);
+      document.getElementById('tb-main-stats').classList.toggle('hidden', !onList);
+      document.getElementById('tb-search-wrap').classList.toggle('hidden', id !== 'tb-rows-wrap');
+      if (tbMenuEl) tbMenuClose();
+    }
+    function tbShowForm(editing) {
+      tbEditId = editing ? editing.id : null;
+      document.getElementById('vw-main').classList.add('hidden');
+      document.getElementById('vw-form').classList.remove('hidden');
+      document.getElementById('tb-form-title').textContent = editing ? 'Edit baris' : 'Tambah baris';
+      document.getElementById('tb-form-back-label').textContent = editing ? 'Kembali ke tabel' : 'Kembali';
+      document.getElementById('tb-delrow-wrap').classList.toggle('hidden', !editing);
+      var f = document.getElementById('tb-fields');
+      f.innerHTML = '';
+      tbCols.forEach(function (c) {
+        var val = editing ? editing[c.name] : '';
+        var row = document.createElement('div');
+        var label = '<label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">' + esc(c.name) + '</label>';
+        if (c.type === 'boolean') {
+          var on = editing ? !!val : false;
+          row.innerHTML = label +
+            '<button type="button" data-col="' + esc(c.name) + '" class="tb-bool inline-flex items-center gap-2 text-sm font-medium ' + (on ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500') + '" data-on="' + (on ? '1' : '') + '">' +
+            '<span class="w-10 h-6 rounded-full transition-colors relative ' + (on ? 'bg-black dark:bg-white' : 'bg-gray-200 dark:bg-gray-700') + '">' +
+            '<span class="absolute top-0.5 w-5 h-5 rounded-full bg-white dark:bg-black shadow transition-all ' + (on ? 'left-[18px]' : 'left-0.5') + '"></span></span>' +
+            '<span class="tb-bool-label">' + (on ? 'Ya' : 'Tidak') + '</span></button>';
+          row.querySelector('.tb-bool').addEventListener('click', function () {
+            var on2 = this.getAttribute('data-on') === '1';
+            this.setAttribute('data-on', on2 ? '' : '1');
+            this.className = 'tb-bool inline-flex items-center gap-2 text-sm font-medium ' + (on2 ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white');
+            this.firstChild.setAttribute('class', 'w-10 h-6 rounded-full transition-colors relative ' + (on2 ? 'bg-gray-200 dark:bg-gray-700' : 'bg-black dark:bg-white'));
+            this.firstChild.firstChild.setAttribute('class', 'absolute top-0.5 w-5 h-5 rounded-full bg-white dark:bg-black shadow transition-all ' + (on2 ? 'left-0.5' : 'left-[18px]'));
+            this.lastChild.textContent = on2 ? 'Tidak' : 'Ya';
+          });
+        } else if (c.type === 'number' || c.type === 'currency') {
+          row.innerHTML = label + '<input type="text" inputmode="decimal" data-col="' + esc(c.name) + '" value="' + esc(val) + '" class="tb-in w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors" placeholder="' + (c.type === 'currency' ? '0 atau 15000' : '0') + '">';
+        } else if (c.type === 'date') {
+          row.innerHTML = label + '<input type="date" data-col="' + esc(c.name) + '" value="' + esc(val) + '" class="tb-in w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">';
+        } else if (c.type === 'datetime') {
+          var dtv = val ? String(val).replace(' ', 'T').slice(0, 16) : '';
+          row.innerHTML = label + '<input type="datetime-local" data-col="' + esc(c.name) + '" value="' + esc(dtv) + '" class="tb-in w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">';
+        } else if (c.type === 'email') {
+          row.innerHTML = label + '<input type="email" inputmode="email" data-col="' + esc(c.name) + '" value="' + esc(val) + '" placeholder="nama@contoh.com" class="tb-in w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">';
+        } else if (c.type === 'url') {
+          row.innerHTML = label + '<input type="url" inputmode="url" data-col="' + esc(c.name) + '" value="' + esc(val) + '" placeholder="https://contoh.com" class="tb-in w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">';
+        } else if (c.type === 'phone') {
+          row.innerHTML = label + '<input type="tel" inputmode="tel" data-col="' + esc(c.name) + '" value="' + esc(val) + '" placeholder="0812xxxxxxx" class="tb-in w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">';
+        } else if (c.type === 'image' || c.type === 'video' || c.type === 'audio' || c.type === 'file') {
+          var ph = { image: 'https://… link gambar', video: 'https://… link video', audio: 'https://… link audio', file: 'https://… link dokumen' }[c.type];
+          var prev = '';
+          if (c.type === 'image') prev = '<img src="' + esc(val) + '" alt="" class="tb-prev mt-2 rounded-xl border border-gray-200 dark:border-slate-700 object-cover max-h-28' + (val ? '' : ' hidden') + '">';
+          else if (c.type === 'video') prev = val ? '<video src="' + esc(val) + '" controls preload="metadata" class="tb-prev mt-2 w-full max-h-44 rounded-xl border border-gray-200 dark:border-slate-700 bg-black"></video>' : '<video controls preload="metadata" class="tb-prev hidden"></video>';
+          else if (c.type === 'audio') prev = val ? '<audio src="' + esc(val) + '" controls class="tb-prev mt-2 w-full"></audio>' : '<audio controls class="tb-prev hidden"></audio>';
+          row.innerHTML = label + '<input type="text" data-col="' + esc(c.name) + '" data-prev="' + c.type + '" value="' + esc(val) + '" placeholder="' + ph + '" class="tb-in w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">' + prev;
+          var inp = row.querySelector('.tb-in'), pv = row.querySelector('.tb-prev');
+          inp.addEventListener('input', function () {
+            var u = this.value.trim();
+            if (!pv) return;
+            if (!u) { pv.classList.add('hidden'); pv.removeAttribute('src'); return; }
+            pv.classList.remove('hidden'); pv.src = u;
+          });
+        } else if (c.type === 'select' && c.options && c.options.length) {
+          var opts = c.options.map(function (o) {
+            var sel = String(val) === String(o) ? ' selected' : '';
+            return '<option value="' + esc(String(o)) + '"' + sel + '>' + esc(String(o)) + '</option>';
+          }).join('');
+          row.innerHTML = label + '<select data-col="' + esc(c.name) + '" class="tb-sel w-full px-3 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-gray-400 transition-colors"><option value="">— pilih —</option>' + opts + '</select>';
+          dbPopoverize(row.querySelector('.tb-sel'));
+        } else if (c.type === 'longtext' || c.type === 'json') {
+          row.innerHTML = label + '<textarea rows="3" data-col="' + esc(c.name) + '" placeholder="' + (c.type === 'json' ? '{ &quot;kunci&quot;: &quot;nilai&quot; }' : 'Tulis teks panjang di sini…') + '" class="tb-in tb-area w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">' + esc(val) + '</textarea>';
+        } else {
+          row.innerHTML = label + '<input type="text" data-col="' + esc(c.name) + '" value="' + esc(val) + '" class="tb-in w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-gray-400 transition-colors">';
+        }
+        f.appendChild(row);
+      });
+      document.getElementById('tb-form-error').classList.add('hidden');
+      window.scrollTo(0, 0);
+    }
+    function tbFormBack(e) { e.preventDefault(); tbShow(null); tbOffset = 0; tbLoadRows(); }
+
+    function tbCollect() {
+      var data = {};
+      document.querySelectorAll('#tb-fields [data-col]').forEach(function (el) {
+        var k = el.getAttribute('data-col');
+        if (el.tagName === 'SELECT') data[k] = el.value || '';
+        else if (el.classList.contains('tb-bool')) data[k] = el.getAttribute('data-on') === '1';
+        else if (el.getAttribute('type') === 'date') data[k] = el.value || '';
+        else if (el.getAttribute('type') === 'datetime-local') data[k] = el.value ? el.value.replace('T', ' ') : '';
+        else if (el.getAttribute('inputmode') === 'decimal') data[k] = el.value === '' ? null : Number(el.value.replace(',', '.'));
+        else data[k] = el.value;
+      });
+      return data;
+    }
+
+    function tbLoadMeta() {
+      return fetch(TB_API + '/db/tables?project_id=' + encodeURIComponent(tbPid()), { headers: tbHdrs(false) })
+        .then(function (r) { if (r.status === 401) { tbShow('tb-login'); throw new Error('login'); } return r.json(); })
+        .then(function (d) {
+          var t = (d && d.tables || []).filter(function (x) { return x.name === tbName; })[0];
+          if (!t) throw new Error('notfound');
+          tbCols = t.columns || [];
+          document.getElementById('tb-name').textContent = t.name;
+          document.getElementById('tb-meta').textContent = tbCols.length + ' kolom · ' + (t.rows || 0) + ' baris';
+          var mst = document.getElementById('tb-main-stats');
+          if (mst) {
+            var tset = {};
+            tbCols.forEach(function (c) { tset[c.type] = 1; });
+            var ms = [ ['Baris', t.rows || 0], ['Kolom', tbCols.length], ['Tipe data', Object.keys(tset).length] ];
+            mst.innerHTML = ms.map(function (x) {
+              return '<div class="db-stat-card"><p class="text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">' + x[0] +
+                '</p><p class="db-stat-num mt-1">' + x[1] + '</p></div>';
+            }).join('');
+          }
+          tbBuildHead();
+        });
+    }
+
+    function tbLoadRows(append) {
+      if (!tbName) { document.getElementById('tb-error-text').textContent = 'Tabel tidak diketahui.'; tbShow('tb-error'); return; }
+      var tok = ''; try { tok = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
+      if (!tok) { tbShow('tb-login'); return; }
+      if (!tbPid()) { document.getElementById('tb-error-text').textContent = 'Proyek belum dipilih.'; tbShow('tb-error'); return; }
+      if (tbBusy) return;
+      tbBusy = true;
+      var cached = null;
+      if (!append) {
+        cached = tbPageCacheRead();
+        if (cached) {
+          // data tersimpan di perangkat: tampilkan SEKARANG tanpa loading
+          tbCols = cached.cols;
+          tbTotal = cached.total;
+          tbBuildHead();
+          tbOffset = cached.rows.length;
+          var cw = document.getElementById('tb-rows'); cw.innerHTML = '';
+          cached.rows.forEach(function (row) { cw.appendChild(tbRowEl(row)); });
+          document.getElementById('tb-more-btn').classList.toggle('hidden', tbOffset >= tbTotal);
+          document.getElementById('tb-count').classList.toggle('hidden', !(tbTotal > 0 && tbOffset >= tbTotal));
+          document.getElementById('tb-count').textContent = tbTotal + ' baris total';
+          document.getElementById('tb-danger').classList.remove('hidden');
+          tbShow(tbTotal === 0 ? 'tb-empty' : 'tb-rows-wrap');
+        } else {
+          tbShow('tb-loading');
+        }
+      }
+      return tbLoadMeta()
+        .then(function () { return fetch(TB_API + '/db/rows?project_id=' + encodeURIComponent(tbPid()) + '&table=' + encodeURIComponent(tbName) + '&limit=50&offset=' + (append ? tbOffset : 0), { headers: tbHdrs(false) }); })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function (d) {
+          tbBusy = false;
+          var rows = d.rows || [];
+          tbTotal = d.total || 0;
+          var wrap = document.getElementById('tb-rows');
+          if (!append) { wrap.innerHTML = ''; tbOffset = rows.length; }
+          else tbOffset += rows.length;
+          if (!append) tbPageCacheWrite(tbCols, rows, tbTotal);
+          rows.forEach(function (row) { wrap.appendChild(tbRowEl(row)); });
+          document.getElementById('tb-more-btn').classList.toggle('hidden', tbOffset >= tbTotal);
+          document.getElementById('tb-count').classList.toggle('hidden', !(tbTotal > 0 && tbOffset >= tbTotal));
+          document.getElementById('tb-count').textContent = tbTotal + ' baris total';
+          document.getElementById('tb-danger').classList.remove('hidden');
+          tbShow(tbTotal === 0 && tbOffset === 0 ? 'tb-empty' : 'tb-rows-wrap');
+        })
+        .catch(function (e) {
+          tbBusy = false;
+          if (e && e.message === 'login') return;
+          // punya cache? data cache tetap tampil, tidak perlu error
+          if (cached) return;
+          document.getElementById('tb-error-text').textContent = e && e.message === 'notfound' ? 'Tabel tidak ditemukan.' : 'Tidak bisa memuat baris. Coba lagi.';
+          tbShow('tb-error');
+        });
+    }
+
+    var tbSortState = null;
+    function tbBuildHead() {
+      var headRow = document.getElementById('tb-rows-head-row');
+      var html = '';
+      tbCols.forEach(function (c, i) {
+        var dir = tbSortState && tbSortState.col === c.name ? (tbSortState.dir > 0 ? ' ↑' : ' ↓') : '';
+        html += '<th class="py-3 ' + (i === 0 ? 'pl-5 ' : '') + 'pr-4 font-semibold whitespace-nowrap">' +
+          '<button type="button" class="tb-sort inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" data-col="' + esc(c.name) + '">' + esc(c.name) + '<span class="text-gray-400 dark:text-gray-500">' + dir + '</span></button></th>';
+      });
+      html += '<th class="py-3 pl-3 pr-4 font-semibold text-right">Aksi</th>';
+      headRow.innerHTML = html;
+      document.getElementById('tb-rows-head').classList.remove('hidden');
+      [].slice.call(headRow.querySelectorAll('.tb-sort')).forEach(function (b) {
+        b.addEventListener('click', function () {
+          var col = b.getAttribute('data-col');
+          if (tbSortState && tbSortState.col === col) { tbSortState.dir = -tbSortState.dir; } else { tbSortState = { col: col, dir: 1 }; }
+          tbSortLoaded();
+        });
+      });
+    }
+    // sortir baris yang sudah dimuat (klik judul kolom)
+    function tbSortLoaded() {
+      var body = document.getElementById('tb-rows');
+      var trs = [].slice.call(body.children);
+      if (!trs.length || !tbSortState) return;
+      trs.sort(function (a, b) {
+        var va = (a.__row || {})[tbSortState.col], vb = (b.__row || {})[tbSortState.col];
+        if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * tbSortState.dir;
+        return String(va === null || va === undefined ? '' : va).localeCompare(String(vb === null || vb === undefined ? '' : vb)) * tbSortState.dir;
+      });
+      trs.forEach(function (tr) { body.appendChild(tr); });
+      tbBuildHead();
+    }
+    function tbRowEl(row) {
+      var tr = document.createElement('tr');
+      tr.className = 'group cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/40';
+      tr.__row = row;
+      var tds = '';
+      tbCols.forEach(function (c, idx) {
+        var v = row[c.name];
+        if (v === null || v === undefined) v = '';
+        var num = c.type === 'number' || c.type === 'currency' || c.type === 'date' || c.type === 'datetime';
+        var cell;
+        if (c.type === 'image' && v) {
+          cell = '<img src="' + esc(String(v)) + '" alt="" class="w-10 h-10 rounded-lg object-cover border border-gray-200 dark:border-slate-700" loading="lazy" onerror="this.replaceWith(document.createRange().createContextualFragment(\'<span class=&quot;text-xs text-gray-400&quot;>rusak</span>\'))">';
+        } else if ((c.type === 'video' || c.type === 'audio' || c.type === 'file') && v) {
+          var ic = c.type === 'video' ? 'M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.5v7l5-3.5-5-3.5z' : (c.type === 'audio' ? 'M17.5 8a5.5 5.5 0 10-11 0v8a3.5 3.5 0 107 0V8a1.5 1.5 0 10-3 0v7' : 'M9 12h6m-6 4h6M8 4h8a2 2 0 012 2v12a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2z');
+          cell = '<a href="' + esc(String(v)) + '" target="_blank" rel="noopener" class="tb-media inline-flex items-center gap-1.5 text-blue-600 dark:text-blue-400 hover:underline text-sm">' +
+            '<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="' + ic + '"></path></svg><span class="truncate max-w-[170px]">buka</span></a>';
+        } else if (c.type === 'select' && v) {
+          cell = '<span class="inline-block px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-slate-700/60 text-xs font-medium text-gray-700 dark:text-gray-200">' + esc(String(v)) + '</span>';
+        } else if (c.type === 'boolean') {
+          cell = v ? '<span class="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>Ya</span>' : '<span class="inline-flex items-center gap-1 text-xs font-medium text-gray-400 dark:text-gray-500"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>Tidak</span>';
+        } else {
+          cell = esc(String(v));
+        }
+        tds += '<td class="py-3.5 ' + (idx === 0 ? 'pl-5 ' : '') + 'pr-4 whitespace-nowrap max-w-[240px] truncate ' +
+          (num ? 'text-right tabular-nums ' : '') + 'text-gray-700 dark:text-gray-300">' + cell + '</td>';
+      });
+      tds +=
+        '<td class="py-3 pl-3 pr-4 text-right whitespace-nowrap">' +
+        '<button type="button" class="tb-row-menu inline-flex p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200 transition-colors" aria-label="Menu baris">' +
+        '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.7"></circle><circle cx="12" cy="12" r="1.7"></circle><circle cx="12" cy="19" r="1.7"></circle></svg></button>' +
+        '</td>';
+      tr.innerHTML = tds;
+      tr.addEventListener('click', function (ev) {
+        var m = ev.target.closest('.tb-row-menu');
+        if (m) { ev.stopPropagation(); tbRowMenuOpen(m, row); return; }
+        if (ev.target.closest('a')) return; // klik tautan media: buka tautannya, jangan buka form
+        tbShowForm(row);
+      });
+      return tr;
+    }
+    // menu ⋮ per baris: ubah & hapus (hapus pakai konfirmasi dua langkah)
+    var tbRowMenuEl = null;
+    function tbRowMenuClose() {
+      if (tbRowMenuEl) { tbRowMenuEl.remove(); tbRowMenuEl = null; document.removeEventListener('click', tbRowMenuOut, true); }
+    }
+    function tbRowMenuOut(e) { if (tbRowMenuEl && !tbRowMenuEl.contains(e.target) && !e.target.closest('.tb-row-menu')) tbRowMenuClose(); }
+    function tbRowMenuOpen(btn, row) {
+      tbRowMenuClose();
+      var pop = document.createElement('div');
+      pop.className = 'fixed z-50 w-44 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl py-1.5';
+      var rect = btn.getBoundingClientRect();
+      pop.style.top = Math.min(rect.bottom + 6, window.innerHeight - 140) + 'px';
+      pop.style.left = Math.max(8, Math.min(rect.right - 176, window.innerWidth - 184)) + 'px';
+      pop.innerHTML =
+        '<button type="button" class="tb-rm-edit w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors inline-flex items-center gap-2.5"><svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>Ubah baris</button>' +
+        '<button type="button" class="tb-rm-del w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors inline-flex items-center gap-2.5"><svg class="w-3.5 h-3.5 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"></path></svg>Hapus baris</button>';
+      document.body.appendChild(pop);
+      tbRowMenuEl = pop;
+      document.addEventListener('click', tbRowMenuOut, true);
+      pop.querySelector('.tb-rm-edit').addEventListener('click', function () { tbRowMenuClose(); tbShowForm(row); });
+      pop.querySelector('.tb-rm-del').addEventListener('click', function () {
+        pop.innerHTML =
+          '<p class="px-4 pt-2 pb-1 text-xs font-semibold text-gray-800 dark:text-gray-200">Hapus baris ini?</p>' +
+          '<p class="px-4 pb-2.5 text-[11px] text-gray-400 dark:text-gray-500">Tindakan ini nggak bisa dibatalkan.</p>' +
+          '<div class="flex gap-2 px-4 pb-3">' +
+          '<button type="button" class="tb-rm-yes flex-1 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">Hapus</button>' +
+          '<button type="button" class="tb-rm-no flex-1 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg transition-colors">Batal</button></div>';
+        pop.querySelector('.tb-rm-yes').addEventListener('click', function () {
+          tbRowMenuClose();
+          fetch(TB_API + '/db/rows?project_id=' + encodeURIComponent(tbPid()) + '&table=' + encodeURIComponent(tbName) + '&id=' + encodeURIComponent(row.id), { method: 'DELETE', headers: tbHdrs(false) })
+            .then(function (r) {
+              if (!r.ok) throw new Error('HTTP ' + r.status);
+              tbBusy = false; tbOffset = 0; tbLoadRows();
+            })
+            .catch(function () { document.getElementById('tb-error-text').textContent = 'Gagal menghapus baris. Coba lagi.'; tbShow('tb-error'); });
+        });
+        pop.querySelector('.tb-rm-no').addEventListener('click', tbRowMenuClose);
+      });
+    }
+    // menu ⋮ halaman: grafik, unduh, hapus tabel
+    var tbMenuEl = null;
+    function tbMenuClose() {
+      if (tbMenuEl) { tbMenuEl.remove(); tbMenuEl = null; document.removeEventListener('click', tbMenuOut, true); }
+    }
+    function tbMenuOut(e) { if (tbMenuEl && !tbMenuEl.contains(e.target) && !e.target.closest('#tb-menu-btn')) tbMenuClose(); }
+    function tbMenuOpen(btn) {
+      tbMenuClose();
+      var pop = document.createElement('div');
+      pop.className = 'fixed z-50 w-52 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl py-1.5';
+      var rect = btn.getBoundingClientRect();
+      pop.style.top = Math.min(rect.bottom + 6, window.innerHeight - 220) + 'px';
+      pop.style.left = Math.max(8, Math.min(rect.right - 208, window.innerWidth - 216)) + 'px';
+      pop.innerHTML =
+        '<button type="button" class="tb-mm-chart w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors inline-flex items-center gap-2.5"><svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M7 17V9m5 8V5m5 12v-6"></path></svg>Lihat grafik</button>' +
+        '<button type="button" class="tb-mm-csv w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors inline-flex items-center gap-2.5"><svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"></path></svg>Unduh CSV</button>' +
+        '<button type="button" class="tb-mm-json w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors inline-flex items-center gap-2.5"><svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>Unduh JSON</button>' +
+        '<div class="my-1 border-t border-gray-100 dark:border-slate-800"></div>' +
+        '<button type="button" class="tb-mm-drop w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors inline-flex items-center gap-2.5"><svg class="w-3.5 h-3.5 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"></path></svg>Hapus tabel</button>';
+      document.body.appendChild(pop);
+      tbMenuEl = pop;
+      document.addEventListener('click', tbMenuOut, true);
+      pop.querySelector('.tb-mm-chart').addEventListener('click', function () { tbMenuClose(); tbOpenChart(); });
+      pop.querySelector('.tb-mm-csv').addEventListener('click', function () { tbMenuClose(); tbExport('csv'); });
+      pop.querySelector('.tb-mm-json').addEventListener('click', function () { tbMenuClose(); tbExport('json'); });
+      pop.querySelector('.tb-mm-drop').addEventListener('click', function () {
+        var nm = String(tbName || '').replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; });
+        pop.innerHTML =
+          '<p class="px-4 pt-2 pb-1 text-xs font-semibold text-gray-800 dark:text-gray-200">Hapus tabel "' + nm + '"?</p>' +
+          '<p class="px-4 pb-2.5 text-[11px] text-gray-400 dark:text-gray-500">Semua barisnya juga ikut terhapus.</p>' +
+          '<div class="flex gap-2 px-4 pb-3">' +
+          '<button type="button" class="tb-mm-yes flex-1 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">Hapus</button>' +
+          '<button type="button" class="tb-mm-no flex-1 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg transition-colors">Batal</button></div>';
+        pop.querySelector('.tb-mm-yes').addEventListener('click', function () { tbMenuClose(); tbDropTable(); });
+        pop.querySelector('.tb-mm-no').addEventListener('click', tbMenuClose);
+      });
+    }
+    // cari baris: filter teks pada baris yang sudah dimuat
+    document.getElementById('tb-search').addEventListener('input', function () {
+      var q = this.value.trim().toLowerCase();
+      var trs = document.querySelectorAll('#tb-rows tr');
+      var shown = 0;
+      trs.forEach(function (tr) {
+        var hit = !q || tr.textContent.toLowerCase().indexOf(q) !== -1;
+        tr.style.display = hit ? '' : 'none';
+        if (hit) shown++;
+      });
+      var cnt = document.getElementById('tb-count');
+      if (cnt && q) cnt.textContent = shown + ' baris cocok';
+    });
+    // hapus baris: dua langkah (klik "Hapus" -> "Yakin?") supaya nggak sengaja kehapus
+    function tbDelRow(btn, row) {
+      if (btn.getAttribute('data-armed') !== '1') {
+        btn.setAttribute('data-armed', '1');
+        btn.textContent = 'Yakin?';
+        btn.className = 'px-2.5 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 rounded-lg transition-colors';
+        setTimeout(function () {
+          if (btn.isConnected) {
+            btn.removeAttribute('data-armed');
+            btn.textContent = 'Hapus';
+            btn.className = 'px-2.5 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors';
+          }
+        }, 3500);
+        return;
+      }
+      fetch(TB_API + '/db/rows?project_id=' + encodeURIComponent(tbPid()) + '&table=' + encodeURIComponent(tbName) + '&id=' + encodeURIComponent(row.id), { method: 'DELETE', headers: tbHdrs(false) })
+        .then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          tbBusy = false;
+          tbOffset = 0;
+          tbLoadRows();
+        })
+        .catch(function () {
+          btn.removeAttribute('data-armed');
+          btn.textContent = 'Hapus';
+          btn.className = 'px-2.5 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors';
+          document.getElementById('tb-error-text').textContent = 'Gagal menghapus baris. Coba lagi.';
+          tbShow('tb-error');
+        });
+    }
+
+    function tbFormError(msg) { var el = document.getElementById('tb-form-error'); el.textContent = msg; el.classList.remove('hidden'); }
+
+    function tbSave() {
+      var data = tbCollect();
+      // validasi JSON: kolom bertipe json harus berisi JSON valid (kalau diisi)
+      var badJson = null;
+      tbCols.forEach(function (c) {
+        if (c.type === 'json' && data[c.name]) {
+          try { JSON.parse(data[c.name]); } catch (e) { badJson = c.name; }
+        }
+      });
+      if (badJson) { tbFormError('Kolom "' + badJson + '" harus berisi JSON yang valid, misal: { "kunci": "nilai" }'); return; }
+      var btn = document.getElementById('tb-save-btn');
+      btn.disabled = true; btn.textContent = 'Menyimpan…';
+      var url = TB_API + '/db/rows';
+      var init = { method: tbEditId ? 'PATCH' : 'POST', headers: tbHdrs(true), body: JSON.stringify({ project_id: tbPid(), table: tbName, data: data, id: tbEditId || undefined }) };
+      fetch(url, init)
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) {
+          btn.disabled = false; btn.textContent = 'Simpan';
+          if (!res.ok) { tbFormError(res.d && res.d.error ? res.d.error : 'Gagal menyimpan baris.'); return; }
+          tbCacheClearAll(); tbShow(null); tbOffset = 0; tbLoadRows();
+        })
+        .catch(function () { btn.disabled = false; btn.textContent = 'Simpan'; tbFormError('Tidak bisa menghubungi server.'); });
+    }
+
+    function tbDelRow() {
+      if (!tbEditId) return;
+      fetch(TB_API + '/db/rows?project_id=' + encodeURIComponent(tbPid()) + '&table=' + encodeURIComponent(tbName) + '&id=' + encodeURIComponent(tbEditId), { method: 'DELETE', headers: tbHdrs(false) })
+        .then(function (r) {
+          if (!r.ok) { tbFormError('Gagal menghapus baris.'); return; }
+          tbCacheClearAll(); tbShow(null); tbOffset = 0; tbLoadRows();
+        })
+        .catch(function () { tbFormError('Gagal menghapus baris.'); });
+    }
+
+    function tbDropTable() {
+      if (!confirm('Hapus tabel "' + tbName + '" beserta semua barisnya?')) return;
+      fetch(TB_API + '/db/tables?project_id=' + encodeURIComponent(tbPid()) + '&name=' + encodeURIComponent(tbName), { method: 'DELETE', headers: tbHdrs(false) })
+        .then(function (r) { if (r.ok) { tbCacheClearAll(); window.location.href = '/proyek/pengaturan/database/'; } })
+        .catch(function () { document.getElementById('tb-error-text').textContent = 'Gagal menghapus tabel.'; tbShow('tb-error'); });
+    }
+
+    // ================= grafik (Chart.js) & unduh =================
+    var tbAll = null, tbAllBusy = false, tbChart = null;
+    var TB_PALETTE = ['#111827', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#84cc16', '#f97316', '#6366f1', '#14b8a6', '#a855f7', '#eab308', '#64748b'];
+    // warna dasar & palet menyesuaikan tema: saat mode gelap jangan pakai warna gelap
+    function tbDark() { return document.body.classList.contains('dark-mode'); }
+    function tbChartBase() { return tbDark() ? '#60a5fa' : '#3b82f6'; }
+    function tbChartFill() { return tbDark() ? 'rgba(96,165,250,0.10)' : 'rgba(59,130,246,0.08)'; }
+    function tbChartPalette() { return tbDark()
+      ? ['#60a5fa', '#fbbf24', '#34d399', '#a78bfa', '#f87171', '#22d3ee', '#f472b6', '#a3e635', '#fb923c', '#818cf8', '#2dd4bf', '#c084fc', '#facc15', '#94a3b8', '#e5e7eb']
+      : TB_PALETTE; }
+
+    function tbAllCacheRead() { try { var c = JSON.parse(localStorage.getItem(tbAllCacheKey()) || 'null'); return c && c.rows ? c : null; } catch (e) { return null; } }
+
+    // muat SEMUA baris (bertahap, maks 2000) — untuk grafik & unduh; hasil disimpan ke perangkat
+    function tbLoadAll() {
+      if (tbAllBusy) return Promise.resolve(tbAll);
+      var c = tbAllCacheRead();
+      if (c) { tbAll = c.rows; if (Date.now() - (c.ts || 0) < 60000) return Promise.resolve(tbAll); }
+      var key = tbAllCacheKey();
+      if (tbAllPending[key]) return tbAllPending[key];
+      tbAllBusy = true;
+      var p = new Promise(function (resolve, reject) {
+        var out = [], offset = 0, total = Infinity;
+        function page() {
+          return fetch(TB_API + '/db/rows?project_id=' + encodeURIComponent(tbPid()) + '&table=' + encodeURIComponent(tbName) + '&limit=200&offset=' + offset, { headers: tbHdrs(false) })
+            .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+            .then(function (d) {
+              out = out.concat(d.rows || []);
+              total = d.total || 0;
+              offset += (d.rows || []).length;
+              if (offset < total && offset < 2000) return page();
+            });
+        }
+        page().then(function () {
+          tbAll = out; tbAllBusy = false; delete tbAllPending[key];
+          try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), rows: out.slice(0, 2000) })); } catch (e) {}
+          resolve(out);
+        }).catch(function (e) { tbAllBusy = false; delete tbAllPending[key]; reject(e); });
+      });
+      tbAllPending[key] = p;
+      return p;
+    }
+    var tbAllPending = {};
+
+    function tbChartTheme() {
+      var dark = document.body.classList.contains('dark-mode');
+      return { text: dark ? '#9aa0a6' : '#6b7280', grid: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', border: dark ? '#0d0d0d' : '#ffffff' };
+    }
+    function tbChartColsOf(kind) {
+      // angka/uang: chart garis/gelembung/sebar; kategori: teks/email/link/telpon/tanggal/ya-tidak
+      var numTypes = ['number', 'currency'];
+      var catTypes = ['text', 'email', 'url', 'phone', 'date', 'datetime', 'boolean', 'select'];
+      return tbCols.filter(function (c) {
+        return kind === 'number' ? numTypes.indexOf(c.type) !== -1 : catTypes.indexOf(c.type) !== -1;
+      });
+    }
+    function tbChartPopulate() {
+      var colSel = document.getElementById('tb-chart-col');
+      var cats = tbChartColsOf('cat');
+      colSel.innerHTML = cats.map(function (c) { return '<option value="' + esc(c.name) + '">' + esc(c.name) + ' (per kategori)</option>'; }).join('');
+      if (colSel.__popSync) colSel.__popSync();
+      var cw = document.getElementById('tb-chart-colwrap'); if (cw) cw.classList.toggle('hidden', !cats.length);
+      return cats.length > 0 || tbChartColsOf('number').length > 0;
+    }
+    // tooltip gelap membulat; persen khusus pie/donat
+    function tbChartTip(pct) {
+      var base = { backgroundColor: 'rgba(17,24,39,0.96)', padding: 10, cornerRadius: 10, titleFont: { weight: '600', size: 12 }, bodyFont: { size: 12 }, displayColors: false };
+      if (pct) base.callbacks = { label: function (ctx) {
+        var d = ctx.dataset.data || [];
+        var tot = d.reduce(function (a, b) { return a + (b || 0); }, 0);
+        var p = tot ? Math.round((ctx.parsed || 0) / tot * 100) : 0;
+        return ' ' + ctx.label + ': ' + ctx.parsed + ' (' + p + '%)';
+      } };
+      return base;
+    }
+    function tbChartColors() {
+      return function (ctx) {
+        var p = tbChartPalette();
+        var i = ctx && ctx.dataIndex !== undefined ? ctx.dataIndex : 0;
+        return p[i % p.length];
+      };
+    }
+    function tbChartStats() {
+      var el = document.getElementById('tb-chart-stats');
+      if (!el) return;
+      var types = {};
+      (tbCols || []).forEach(function (c) { types[c.type] = 1; });
+      var stats = [ ['Total baris', (tbAll || []).length], ['Jumlah kolom', (tbCols || []).length], ['Tipe data', Object.keys(types).length] ];
+      el.innerHTML = stats.map(function (x) {
+        return '<div class="db-stat-card"><p class="text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">' + x[0] +
+          '</p><p class="db-stat-num mt-1">' + x[1] + '</p></div>';
+      }).join('');
+    }
+    // simpan chart sebagai gambar PNG
+    function tbSavePng(canvas, filename) {
+      try {
+        var tmp = document.createElement('canvas');
+        tmp.width = canvas.width; tmp.height = canvas.height;
+        var c2 = tmp.getContext('2d');
+        c2.fillStyle = tbDark() ? '#0d0d0d' : '#ffffff';
+        c2.fillRect(0, 0, tmp.width, tmp.height);
+        c2.drawImage(canvas, 0, 0);
+        var a = document.createElement('a');
+        a.href = tmp.toDataURL('image/png');
+        a.download = (filename || 'grafik') + '.png';
+        document.body.appendChild(a); a.click(); a.remove();
+      } catch (e) {}
+    }
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('.db-save-img');
+      if (!b) return;
+      var c = document.getElementById(b.getAttribute('data-canvas'));
+      if (c) tbSavePng(c, b.getAttribute('data-name') || 'grafik');
+    });
+    function tbCardSet(n, title, sub) {
+      var t = document.getElementById('tb-c' + n + '-title'), su = document.getElementById('tb-c' + n + '-sub');
+      if (t) t.textContent = title;
+      if (su) su.textContent = sub;
+    }
+    function tbAgg(rows, col, cap) {
+      var agg = {}, order = [];
+      rows.forEach(function (r) {
+        var k = r[col]; if (k === null || k === undefined || k === '') k = '(kosong)';
+        k = String(k).slice(0, 40);
+        if (!(k in agg)) { agg[k] = 0; order.push(k); }
+        agg[k] += 1;
+      });
+      order.sort(function (a, b) { return agg[b] - agg[a]; });
+      var labels = order.slice(0, cap), data = labels.map(function (k) { return agg[k]; });
+      var rest = order.slice(cap);
+      if (rest.length) { labels.push('Lainnya (' + rest.length + ')'); data.push(rest.reduce(function (t, k) { return t + agg[k]; }, 0)); }
+      return { labels: labels, data: data };
+    }
+    // 3 chart langsung tampil: bar + pie per kategori, plus chart ketiga otomatis
+    // (bubble bila 3+ kolom angka, scatter bila 2, line bila 1; fallback bar kategori kedua)
+    var tbCharts = [];
+    function tbChartRender() {
+      var note = document.getElementById('tb-chart-note');
+      var rows = (tbAll || []).slice(0, 1000);
+      var th = tbChartTheme();
+      tbCharts.forEach(function (c) { try { c.destroy(); } catch (e) {} });
+      tbCharts = [];
+      tbChartStats();
+      var cats = tbChartColsOf('cat');
+      var colSel = document.getElementById('tb-chart-col');
+      var cat = null;
+      if (cats.length) {
+        cat = colSel.value && cats.some(function (c) { return c.name === colSel.value; }) ? colSel.value : cats[0].name;
+      }
+      var nums = tbChartColsOf('number').map(function (c) { return c.name; });
+      var barOpts = { responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+        plugins: { legend: { display: false }, tooltip: tbChartTip(false) },
+        scales: { x: { ticks: { color: th.text, maxRotation: 45, autoSkip: true, font: { size: 11 } }, grid: { display: false } }, y: { ticks: { color: th.text, precision: 0, font: { size: 11 } }, grid: { color: th.grid }, border: { display: false }, beginAtZero: true } } };
+      var pieOpts = { responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+        plugins: { legend: { position: 'bottom', labels: { color: th.text, usePointStyle: true, pointStyle: 'circle', boxWidth: 6, boxHeight: 6, font: { size: 11 }, padding: 14 } }, tooltip: tbChartTip(true) } };
+      function xyOpts(xLab, yLab) {
+        return { responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+          plugins: { legend: { display: false }, tooltip: Object.assign(tbChartTip(false), { callbacks: { label: function (ctx) {
+            var p = ctx.raw || {};
+            return (xLab || 'x') + ': ' + (p.x !== undefined ? p.x : '') + ' · ' + (yLab || 'y') + ': ' + (p.y !== undefined ? p.y : '');
+          } } }) },
+          scales: { x: { type: 'linear', position: 'bottom', ticks: { color: th.text, precision: 0, font: { size: 11 } }, grid: { color: th.grid }, border: { display: false } },
+            y: { ticks: { color: th.text, precision: 0, font: { size: 11 } }, grid: { color: th.grid }, border: { display: false }, beginAtZero: true } } };
+      }
+      function cardOf(n) { var c = document.getElementById('tb-chart-' + n); return c ? c.closest('.db-chart-card') : null; }
+      // chart 1: bar per kategori
+      var c1 = cardOf(1);
+      if (cat && c1) {
+        c1.classList.remove('hidden');
+        var a1 = tbAgg(rows, cat, 15);
+        tbCardSet(1, 'Baris per ' + cat, 'Tabel ' + tbName + ' · jumlah baris tiap kategori');
+        tbCharts.push(new Chart(document.getElementById('tb-chart-1'), { type: 'bar',
+          data: { labels: a1.labels, datasets: [{ data: a1.data, backgroundColor: tbChartColors(), borderRadius: 7, maxBarThickness: 44, hoverOffset: 6, categoryPercentage: 0.72 }] }, options: barOpts }));
+      } else if (c1) c1.classList.add('hidden');
+      // chart 2: pie komposisi kategori
+      var c2 = cardOf(2);
+      if (cat && c2) {
+        c2.classList.remove('hidden');
+        var a2 = tbAgg(rows, cat, 8);
+        tbCardSet(2, 'Komposisi ' + cat, 'Porsi tiap kategori dari total baris');
+        tbCharts.push(new Chart(document.getElementById('tb-chart-2'), { type: 'pie',
+          data: { labels: a2.labels, datasets: [{ data: a2.data, backgroundColor: tbChartColors(), borderColor: tbDark() ? '#0d0d0d' : '#ffffff', borderWidth: 2, hoverOffset: 6 }] }, options: pieOpts }));
+      } else if (c2) c2.classList.add('hidden');
+      // chart 3: bubble / scatter / line otomatis
+      var c3 = cardOf(3);
+      if (c3) {
+        if (nums.length >= 3) {
+          c3.classList.remove('hidden');
+          var n0 = nums[0], n1 = nums[1], n2 = nums[2];
+          var pts = rows.map(function (r) { return { x: Number(r[n0]) || 0, y: Number(r[n1]) || 0, v: Number(r[n2]) || 0 }; });
+          var maxV = Math.max.apply(null, pts.map(function (p) { return Math.abs(p.v); }).concat([1]));
+          var bub = pts.map(function (p) { return { x: p.x, y: p.y, r: 5 + 13 * (Math.abs(p.v) / maxV) }; }).slice(0, 300);
+          tbCardSet(3, 'Sebaran ' + n0 + ' vs ' + n1, 'Ukuran gelembung = ' + n2 + ' · tiap gelembung 1 baris');
+          tbCharts.push(new Chart(document.getElementById('tb-chart-3'), { type: 'bubble',
+            data: { datasets: [{ data: bub, backgroundColor: 'rgba(96,165,250,0.45)', borderColor: tbChartBase(), borderWidth: 1.5, hoverBackgroundColor: 'rgba(96,165,250,0.7)' }] },
+            options: xyOpts(n0, n1) }));
+        } else if (nums.length === 2) {
+          c3.classList.remove('hidden');
+          var sc = rows.map(function (r) { return { x: Number(r[nums[0]]) || 0, y: Number(r[nums[1]]) || 0 }; }).slice(0, 300);
+          tbCardSet(3, 'Sebaran ' + nums[0] + ' vs ' + nums[1], 'Tiap titik = 1 baris');
+          tbCharts.push(new Chart(document.getElementById('tb-chart-3'), { type: 'scatter',
+            data: { datasets: [{ data: sc, pointBackgroundColor: tbChartColors(), pointBorderColor: th.border, pointRadius: 5, pointHoverRadius: 7, borderWidth: 1.5 }] },
+            options: xyOpts(nums[0], nums[1]) }));
+        } else if (nums.length === 1) {
+          c3.classList.remove('hidden');
+          var ptsL = rows.slice().sort(function (a, b) { return (a.id || 0) - (b.id || 0); });
+          tbCardSet(3, 'Tren ' + nums[0], 'Nilai tiap baris, urut dari baris terlama');
+          tbCharts.push(new Chart(document.getElementById('tb-chart-3'), { type: 'line',
+            data: { labels: ptsL.map(function (r, i) { return '#' + (i + 1); }), datasets: [{ label: nums[0], data: ptsL.map(function (r) { return Number(r[nums[0]]) || 0; }), borderColor: tbChartBase(), backgroundColor: tbChartFill(), tension: 0.35, pointRadius: 3, pointHoverRadius: 5, pointBackgroundColor: tbChartColors(), fill: true }] }, options: barOpts }));
+        } else if (cats.length >= 2) {
+          c3.classList.remove('hidden');
+          var a3 = tbAgg(rows, cats[1].name, 12);
+          tbCardSet(3, 'Baris per ' + cats[1].name, 'Jumlah baris tiap kategori ' + cats[1].name);
+          tbCharts.push(new Chart(document.getElementById('tb-chart-3'), { type: 'bar',
+            data: { labels: a3.labels, datasets: [{ data: a3.data, backgroundColor: tbChartColors(), borderRadius: 7, maxBarThickness: 44, hoverOffset: 6, categoryPercentage: 0.72 }] }, options: barOpts }));
+        } else {
+          c3.classList.add('hidden');
+        }
+      }
+      if (!rows.length) {
+        note.innerHTML = 'Belum ada baris di tabel ini — grafik terisi otomatis setelah kamu <a href="#" id="tb-chart-add" class="underline">menambahkan baris</a>.';
+        var add = document.getElementById('tb-chart-add');
+        if (add) add.addEventListener('click', function (e) { e.preventDefault(); tbShow(tbLastMain || null); tbShowForm(null); });
+      } else {
+        note.textContent = rows.length + ' baris dimuat' + (rows.length >= 2000 ? ' (maksimal 2000 teratas)' : '') + ' · grafik diperbarui otomatis dari data terbaru perangkat ini';
+      }
+    }
+    function tbChartRefresh() {
+      var ok = tbChartPopulate();
+      if (!ok) { document.getElementById('tb-chart-note').textContent = 'Tabel ini belum punya kolom yang bisa digrafik.'; return; }
+      var note = document.getElementById('tb-chart-note');
+      note.textContent = 'Memuat data…';
+      tbLoadAll().then(function () { tbChartRender(); }).catch(function () { note.textContent = 'Gagal memuat data. ' + (tbAll ? 'Menampilkan data tersimpan di perangkat.' : 'Coba lagi.'); if (tbAll) tbChartRender(); });
+    }
+    function tbOpenChart() {
+      document.getElementById('tb-chart-title').textContent = 'Grafik ' + tbName;
+      document.getElementById('vw-main').classList.add('hidden');
+      document.getElementById('vw-chart').classList.remove('hidden');
+      tbChartRefresh();
+    }
+    document.getElementById('tb-chart-back').addEventListener('click', function (e) { e.preventDefault(); document.getElementById('vw-chart').classList.add('hidden'); tbShow(tbTotal === 0 ? 'tb-empty' : 'tb-rows-wrap'); });
+    document.getElementById('tb-chart-col').addEventListener('change', function () {
+      if (document.getElementById('tb-chart-col').__popSync) document.getElementById('tb-chart-col').__popSync();
+      if (tbAll) tbChartRender(); else tbChartRefresh();
+    });
+    // ---- popover select: pengganti dropdown native (chart) ----
+    // Select asli tetap di DOM (tersembunyi); tombol rapi membuka popover pilihan.
+    var dbPopOpen = null;
+    function dbPopCloseAll() {
+      if (dbPopOpen) { dbPopOpen.pop.remove(); document.removeEventListener('click', dbPopOut, true); window.removeEventListener('resize', dbPopCloseAll); dbPopOpen = null; }
+    }
+    function dbPopOut(e) { if (dbPopOpen && !dbPopOpen.wrap.contains(e.target)) dbPopCloseAll(); }
+    function dbPopoverize(sel) {
+      if (!sel || sel.__pop) return;
+      sel.__pop = true;
+      sel.classList.add('hidden');
+      var parent = sel.parentElement;
+      var wrap = document.createElement('div');
+      wrap.className = 'db-pop-wrap w-full';
+      parent.insertBefore(wrap, sel);
+      wrap.appendChild(sel);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'db-pop-btn px-3 py-2.5 text-sm bg-white dark:bg-black border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-gray-400 transition-colors';
+      btn.innerHTML = '<span class="db-pop-lab truncate text-gray-700 dark:text-gray-200"></span>' +
+        '<svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>';
+      wrap.appendChild(btn);
+      function sync() {
+        var o = sel.options[sel.selectedIndex];
+        var lab = btn.querySelector('.db-pop-lab');
+        if (lab) lab.textContent = o ? o.textContent : '';
+      }
+      sel.__popSync = sync;
+      function build() {
+        var frag = document.createDocumentFragment();
+        [].slice.call(sel.options).forEach(function (o) {
+          var it = document.createElement('button');
+          it.type = 'button';
+          it.className = 'db-pop-item' + (o.value === sel.value ? ' sel' : '');
+          it.innerHTML = '<span class="truncate">' + String(o.textContent).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }) + '</span>' +
+            (o.value === sel.value ? '<svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>' : '');
+          it.addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            sel.value = o.value;
+            sync();
+            dbPopCloseAll();
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+          });
+          frag.appendChild(it);
+        });
+        return frag;
+      }
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (dbPopOpen && dbPopOpen.wrap === wrap) { dbPopCloseAll(); return; }
+        dbPopCloseAll();
+        sync();
+        var pop = document.createElement('div');
+        pop.className = 'db-pop-pop fade-in';
+        pop.appendChild(build());
+        wrap.appendChild(pop);
+        dbPopOpen = { wrap: wrap, pop: pop };
+        document.addEventListener('click', dbPopOut, true);
+        window.addEventListener('resize', dbPopCloseAll);
+      });
+      sel.addEventListener('change', sync);
+      sync();
+    }
+    dbPopoverize(document.getElementById('tb-chart-col'));
+
+    // ---- unduh CSV / JSON ----
+    function tbDownload(fname, blob) {
+      var u = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = u; a.download = fname;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(u); }, 3000);
+    }
+    function tbExport(fmt) {
+      tbLoadAll().then(function (rows) {
+        if (!rows.length) { alert('Belum ada baris untuk diunduh.'); return; }
+        var heads = tbCols.map(function (c) { return c.name; });
+        if (fmt === 'json') {
+          var out = rows.map(function (r) { var o = {}; tbCols.forEach(function (c) { o[c.name] = r[c.name]; }); return o; });
+          tbDownload(tbName + '.json', new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }));
+        } else {
+          function cell(v) { if (v === null || v === undefined) return ''; v = String(v); if (/[",\n]/.test(v)) v = '"' + v.replace(/"/g, '""') + '"'; return v; }
+          var csv = '\ufeff' + heads.map(cell).join(',') + '\n' + rows.map(function (r) { return heads.map(function (h) { return cell(r[h]); }).join(','); }).join('\n');
+          tbDownload(tbName + '.csv', new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+        }
+      }).catch(function () { alert('Gagal memuat data untuk diunduh. Coba lagi.'); });
+    }
+    document.getElementById('tb-add-btn').addEventListener('click', function () { tbShowForm(null); });
+    document.getElementById('tb-menu-btn').addEventListener('click', function (e) { e.stopPropagation(); tbMenuEl ? tbMenuClose() : tbMenuOpen(this); });
+    document.getElementById('tb-save-btn').addEventListener('click', tbSave);
+    document.getElementById('tb-cancel-btn').addEventListener('click', tbFormBack);
+    document.getElementById('tb-form-back').addEventListener('click', tbFormBack);
+    document.getElementById('tb-delrow-btn').addEventListener('click', function () { var btn = this; if (tbEditId) { tbDelRow(btn, { id: tbEditId }); } });
+    document.getElementById('tb-retry-btn').addEventListener('click', function () { tbOffset = 0; tbLoadRows(); });
+    document.getElementById('tb-more-btn').addEventListener('click', function () { tbLoadRows(true); });
+
+    tbLoadRows();
+  </script>
+<script>/* Item menu header standar: Live preview & Eksport zip (serupa halaman pengaturan lain) */
+(function(){
+  window.closeHeaderMenu = function(){ var m=document.getElementById('header-more-menu'); if(m) m.classList.remove('open'); };
+    window.chatExportZip = function () {
+    closeHeaderMenu();
+    var pid = ''; try { pid = localStorage.getItem('clincoo_current_project_id') || ''; } catch (e) {}
+    var key = 'clincoo_workspace_files_' + (pid || 'global');
+    var byPath = {};
+    var raw = null;
+    try { raw = localStorage.getItem(key); } catch (e) {}
+    if (!raw) { try { var legacy = localStorage.getItem('clincoo_workspace_files'); if (legacy) { localStorage.setItem(key, legacy); raw = legacy; try { localStorage.removeItem('clincoo_workspace_files'); } catch (e0) {} } } catch (e) {} }
+    try {
+        var d = JSON.parse(raw) || {};
+        Object.keys(d).forEach(function (k) {
+            (d[k] || []).forEach(function (it) {
+                if (it && it.path && it.type === 'file') byPath[it.path] = it.content || '';
+            });
+        });
+    } catch (e) {}
+    var WS_API = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/project-files';
+    var tk = ''; try { tk = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
+    var headers = tk ? { Authorization: 'Bearer ' + tk } : {};
+    var filesFromMap = function () {
+        return Object.keys(byPath).sort().map(function (p) { return { path: p, content: byPath[p] }; });
+    };
+    var finish = function (files) {
+        if (!files.length) { alert('Tidak ada berkas di Workspace untuk dieksport.'); return; }
+        var run = function () {
+            var zip = new window.JSZip();
+            files.forEach(function (f) { zip.file(f.path, f.content || ''); });
+            zip.generateAsync({ type: 'blob' }).then(function (blob) {
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = (pid || 'clincoo') + '.zip';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(function () { URL.revokeObjectURL(a.href); }, 500);
+            });
+        };
+        if (window.JSZip) { run(); return; }
+        var sc = document.createElement('script');
+        sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        sc.onload = run;
+        document.head.appendChild(sc);
+    };
+    if (!pid) { finish(filesFromMap()); return; }
+    // Gabungkan file cloud (D1) supaya SEMUA berkas Workspace ikut terekspor.
+    fetch(WS_API + '?project_id=' + encodeURIComponent(pid), { headers: headers })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function (resp) {
+            ((resp && resp.files) || []).forEach(function (f) {
+                if (f && f.path && !(f.path in byPath)) byPath[f.path] = f.content || '';
+            });
+            finish(filesFromMap());
+        })
+        .catch(function () { finish(filesFromMap()); });
+}
+})();
+</script>
+<script>/* Crown Editor (menu pojok kanan atas) — visibility per paket + gate layar penuh */
+(function(){
+  function readCache(k){try{var v=localStorage.getItem(k);if(!v)return null;var c=JSON.parse(v);return c&&c.plan?c:null;}catch(e){return null;}}
+  function plan(){var a=readCache('TM_SUB_CACHE_KEY'),b=readCache('clincoo_subscription_cache');var c=(a&&b)?((a.ts||0)>(b.ts||0)?a:b):(a||b);return (c&&c.plan)||'Starter';}
+  function apply(){
+    var p=plan();var paid=(p&&p.toLowerCase()!=='starter');
+    document.querySelectorAll('.clincoo-premium-crown').forEach(function(c){c.style.display=paid?'none':'inline';});
+    if(!paid)return;
+  }
+  function theme(){
+    var dark=true;
+    try{dark=!!(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);}catch(e){}
+    if(dark)return {bg:'#141416',fg:'#f5f6f7',muted:'#9aa0a6',btnA:'#ffffff',btnAf:'#111111',bd:'rgba(255,255,255,.22)'};
+    return {bg:'#f4f4f6',fg:'#111111',muted:'#555555',btnA:'#111111',btnAf:'#ffffff',bd:'#e5e7eb'};
+  }
+  function gate(){
+    var t=theme();
+    var ov=document.createElement('div');ov.id='cc-crown-gate';
+    ov.style.cssText='position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;padding:24px;background:'+t.bg+';color:'+t.fg+';';
+    ov.innerHTML='<div style="max-width:420px;width:100%;text-align:center"><div style="font-size:44px;line-height:1">&#128081;</div><h2 style="font-size:20px;margin:14px 0 8px;font-weight:700;color:'+t.fg+'">Fitur ini hanya untuk paket Pro</h2><p style="font-size:14px;margin:0 0 20px;color:'+t.muted+'">Editor kode tersedia setelah upgrade paket.</p><a href="/akun/langganan/upgrade/" style="display:block;padding:13px;border-radius:12px;text-decoration:none;font-weight:600;font-size:14px;background:'+t.btnA+';color:'+t.btnAf+'">Lihat Paket</a><button id="cc-cg-close" style="display:block;width:100%;margin-top:10px;padding:13px;border:1.5px solid '+t.bd+';background:transparent;color:'+t.fg+';border-radius:12px;font-weight:600;font-size:14px;cursor:pointer">Tutup</button></div>';
+    document.body.appendChild(ov);
+    ov.querySelector('#cc-cg-close').addEventListener('click',function(){ov.remove();});
+    document.addEventListener('keydown',function esc(ev){if(ev.key==='Escape'){ov.remove();document.removeEventListener('keydown',esc,true);}},true);
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    apply();
+    document.querySelectorAll('#header-editor .clincoo-premium-crown').forEach(function(c){
+      c.style.cursor='pointer';
+      c.addEventListener('click',function(ev){ev.preventDefault();ev.stopPropagation();gate();});
+    });
+  });
+})();
+</script>
+</body>
+</html>

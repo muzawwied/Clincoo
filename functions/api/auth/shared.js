@@ -1,0 +1,214 @@
+// Helper bersama untuk /api/auth/* — JANGAN pakai prefix "_" (wrangler mengecualikannya dari bundle)
+// Skema mengikuti tabel production yang sudah ada: auth_users(name, email, password_hash, avatar_url)
+// Format hash: "pbkdf2:<iterations>:<salthex>:<hashhex>"
+export const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+};
+export const JSON_HEADERS = { 'Content-Type': 'application/json', ...CORS };
+
+export function json(data, status) {
+  return new Response(JSON.stringify(data), { status: status || 200, headers: JSON_HEADERS });
+}
+
+// [13 Okt] Hemat kuota gateway D1: skema cukup dibuat SEKALI per isolate, bukan 5 query
+// (3 CREATE + 2 ALTER yg selalu gagal) di tiap request auth. Sebelumnya ikut
+// menghabiskan kuota Workers harian akun gateway -> login 'Client ID Google tidak tersedia'.
+let __authTablesReady = false;
+export async function initTables(db) {
+  if (__authTablesReady) return;
+  await db.prepare(`CREATE TABLE IF NOT EXISTS auth_users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE,
+    password_hash TEXT,
+    avatar_url TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  )`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS auth_sessions (
+    token TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    expires_at TEXT NOT NULL
+  )`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS auth_oauth_accounts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    provider TEXT NOT NULL,
+    provider_account_id TEXT NOT NULL,
+    access_token TEXT,
+    scope TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(provider, provider_account_id)
+  )`).run();
+  // Migrasi aman untuk DB yang sudah ada sebelumnya
+  try { await db.prepare('ALTER TABLE auth_oauth_accounts ADD COLUMN access_token TEXT').run(); } catch (e) {}
+  try { await db.prepare('ALTER TABLE auth_oauth_accounts ADD COLUMN scope TEXT').run(); } catch (e) {}
+  __authTablesReady = true;
+}
+
+function hexToBytes(hex) {
+  const out = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i * 2, 2), 16);
+  return out;
+}
+function bytesToHex(bytes) {
+  return Array.from(bytes).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
+export function randomHex(nBytes) {
+  const b = new Uint8Array(nBytes);
+  crypto.getRandomValues(b);
+  return bytesToHex(b);
+}
+async function pbkdf2(password, saltHex, iterations) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: hexToBytes(saltHex), iterations }, key, 256);
+  return bytesToHex(new Uint8Array(bits));
+}
+export async function makePasswordHash(password) {
+  const iterations = 100000;
+  const salt = randomHex(16);
+  const hash = await pbkdf2(password, salt, iterations);
+  return 'pbkdf2:' + iterations + ':' + salt + ':' + hash;
+}
+export async function verifyPassword(password, stored) {
+  try {
+    const parts = String(stored || '').split(':');
+    if (parts.length !== 4 || parts[0] !== 'pbkdf2') return false;
+    const iterations = parseInt(parts[1], 10) || 100000;
+    const hash = await pbkdf2(password, parts[2], iterations);
+    return hash === parts[3];
+  } catch (e) { return false; }
+}
+export function validEmail(e) { return typeof e === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim()); }
+
+export function publicUser(u) {
+  return { id: u.id, email: u.email, name: u.name || '', avatar_url: u.avatar_url || '' };
+}
+
+export function getToken(request) {
+  const h = request.headers.get('Authorization') || '';
+  const m = h.match(/^Bearer\s+(.+)$/i);
+  return m ? m[1].trim() : null;
+}
+
+export async function createSession(db, userId) {
+  const token = randomHex(32);
+  const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  await db.prepare('INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)').bind(token, userId, expires).run();
+  return token;
+}
+
+export async function getUserByToken(db, token) {
+  if (!token) return null;
+  const sess = await db.prepare('SELECT * FROM auth_sessions WHERE token = ?').bind(token).first();
+  if (!sess) return null;
+  if (new Date(sess.expires_at) < new Date()) {
+    try { await db.prepare('DELETE FROM auth_sessions WHERE token = ?').bind(token).run(); } catch (e) {}
+    return null;
+  }
+  const user = await db.prepare('SELECT * FROM auth_users WHERE id = ?').bind(sess.user_id).first();
+  if (!user) return null;
+  if (user.status === 'suspended') {
+    try { await db.prepare('DELETE FROM auth_sessions WHERE token = ?').bind(token).run(); } catch (e) {}
+    return null;
+  }
+  return user;
+}
+
+// [8 Okt 2026, arahan pemilik] User baru dapat KREDIT CHAT PERCOBAAN:
+// 5 kredit (hemat — saldo provider terbatas), masa aktif 30 hari, masuk sebagai paket di ai_packs (sumber data
+// yang sama dengan Paket Kredit AI — otomatis terpakai /api/chat saat kuota
+// langganan habis, dan dipotong per penggunaan token, bukan flat per pesan).
+// [8 Okt 2026] Diturunkan 20 -> 5: saldo provider terbatas, tanpa investor —
+// kredit gratis harus hemat supaya saldo provider tidak terkuras pendaftar baru.
+const STARTER_CREDITS = 5;
+const STARTER_DAYS = 30;
+async function grantStarterCredits(db, userId) {
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS ai_packs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_key TEXT NOT NULL,
+      pack_id TEXT NOT NULL,
+      name TEXT,
+      price INTEGER,
+      credits_total INTEGER,
+      credits_left INTEGER,
+      purchased_at TEXT,
+      expires_at TEXT
+    )`).run();
+    const now = new Date();
+    const expires = new Date(now.getTime() + STARTER_DAYS * 86400_000);
+    await db.prepare(
+      'INSERT INTO ai_packs (user_key, pack_id, name, price, credits_total, credits_left, purchased_at, expires_at) VALUES (?, ?, ?, 0, ?, ?, ?, ?)'
+    ).bind('u' + Number(userId), 'starter', 'Kredit Chat Percobaan', STARTER_CREDITS, STARTER_CREDITS, now.toISOString(), expires.toISOString()).run();
+  } catch (e) { /* gagal grant ≠ gagal daftar */ }
+}
+
+// Login/daftar via OAuth: pakai auth_oauth_accounts, email sebagai fallback identitas
+export async function upsertOauthUser(db, provider, providerAccountId, email, name, avatarUrl, accessToken, scope) {
+  let link = await db.prepare('SELECT user_id FROM auth_oauth_accounts WHERE provider = ? AND provider_account_id = ?')
+    .bind(provider, String(providerAccountId)).first();
+  let user;
+  if (link) {
+    user = await db.prepare('SELECT * FROM auth_users WHERE id = ?').bind(link.user_id).first();
+  } else {
+    user = email ? await db.prepare('SELECT * FROM auth_users WHERE email = ?').bind(email.toLowerCase()).first() : null;
+    if (user && user.status === 'suspended') throw new Error('Akun ini sedang ditangguhkan.');
+    if (!user) {
+      await db.prepare('INSERT INTO auth_users (name, email, password_hash, avatar_url) VALUES (?, ?, \'\', ?)')
+        .bind(name || '', email ? email.toLowerCase() : null, avatarUrl || '').run();
+      user = await db.prepare('SELECT * FROM auth_users WHERE email = ?').bind(email.toLowerCase()).first();
+      if (user) await grantStarterCredits(db, user.id); // kredit chat percobaan user baru
+    }
+    await db.prepare('INSERT OR IGNORE INTO auth_oauth_accounts (user_id, provider, provider_account_id) VALUES (?, ?, ?)')
+      .bind(user.id, provider, String(providerAccountId)).run();
+  }
+  // Simpan/perbarui token provider (dipakai untuk akses API provider, mis. import repo GitHub)
+  if (accessToken) {
+    await db.prepare('UPDATE auth_oauth_accounts SET access_token = ?, scope = ? WHERE provider = ? AND provider_account_id = ?')
+      .bind(accessToken, scope || null, provider, String(providerAccountId)).run();
+  }
+  if (user && (avatarUrl && !user.avatar_url)) {
+    await db.prepare('UPDATE auth_users SET avatar_url = ? WHERE id = ?').bind(avatarUrl, user.id).run();
+    user.avatar_url = avatarUrl;
+  }
+  return user;
+}
+
+export async function getTurnstileSiteKey(db) {
+  try { return (await getEnvVarDb(db, 'TURNSTILE_SITEKEY')) || ''; } catch (e) { return ''; }
+}
+
+export async function turnstileOk(db, token, ip) {
+  let secret = '';
+  try { secret = (await getEnvVarDb(db, 'TURNSTILE_SECRET')) || ''; } catch (e) {}
+  if (!secret) return true;
+  if (!token) return false;
+  try {
+    const b = new URLSearchParams();
+    b.set('secret', secret);
+    b.set('response', String(token || ''));
+    if (ip) b.set('remoteip', String(ip));
+    const r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { method: 'POST', body: b.toString() });
+    const d = await r.json().catch(() => ({}));
+    return !!(d && d.success);
+  } catch (e) { return false; }
+}
+
+// [13 Okt] Cache 5 menit per isolate (nilai env_vars hampir tak pernah berubah) +
+// JANGAN cache hasil kosong/gagal: kalau gateway D1 sempat gangguan, request berikutnya
+// langsung coba lagi. Nilai lama tetap dipakai bila baca gagal (stale-if-error).
+const __envCache = new Map();
+export async function getEnvVarDb(db, key) {
+  const now = Date.now();
+  const c = __envCache.get(key);
+  if (c && now - c.t < 300000) return c.v;
+  try {
+    const row = await db.prepare('SELECT value FROM env_vars WHERE key = ?').bind(key).first();
+    const v = row ? row.value : null;
+    if (v) __envCache.set(key, { v, t: now });
+    return v;
+  } catch (e) { return c ? c.v : null; }
+}

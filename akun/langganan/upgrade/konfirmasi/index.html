@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../../../js/auth-client.js?v=6"></script>
+  <script src="../../../../js/accent-init.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../../../assets/favicon.png">
+    <link rel="manifest" href="../../../../manifest.json">
+    <link rel="apple-touch-icon" href="../../../../assets/icons/apple-touch-icon.png">
+  <title>Konfirmasi Upgrade — Clincoo</title>
+    <meta name="description" content="Konfirmasi Upgrade — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clincoo">
+    <meta property="og:title" content="Konfirmasi Upgrade — Clincoo">
+    <meta property="og:description" content="Konfirmasi Upgrade — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Konfirmasi Upgrade — Clincoo">
+    <meta name="twitter:description" content="Konfirmasi Upgrade — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+  <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <script src="https://unpkg.com/lucide@1.41.0"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+    body { font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { display: none; width: 0; height: 0; background: transparent; }
+    * { -ms-overflow-style: none; scrollbar-width: none; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    :root {
+      --accent-color: #000000;
+      --accent-hover: #1f2937;
+      --accent-text: #ffffff;
+    }
+
+    body.dark-mode { background-color: #000000; color: #e0e0e0; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800 { color: #f0f0f0; }
+    body.dark-mode .text-gray-700 { color: #b0b0b0; }
+    body.dark-mode .text-gray-500, body.dark-mode .text-gray-600 { color: #888888; }
+    body.dark-mode .text-gray-400 { color: #666666; }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode header { background-color: transparent !important; }
+
+    body.dark-mode header button[onclick="history.back()"] {
+        background-color: #000000 !important;
+        border: 1.5px solid rgba(255,255,255,0.4) !important;
+        color: #ffffff !important;
+    }
+    body.dark-mode header button[onclick="history.back()"] svg {
+        color: #ffffff !important;
+        stroke: #ffffff !important;
+    }
+    body.dark-mode header button[onclick="history.back()"]:hover {
+        background-color: #1a1a1a !important;
+        border-color: rgba(255,255,255,0.7) !important;
+    }
+
+    body.dark-mode .bg-gray-100 { background-color: #222222 !important; }
+    body.dark-mode .border-gray-200, body.dark-mode .border-gray-100 { border-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-200\/50:hover { background-color: #1a1a1a !important; }
+    body.dark-mode .border-gray-300 { border-color: #333333 !important; }
+    body.dark-mode .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #222222 !important; }
+    body.dark-mode .text-red-600, body.dark-mode .text-red-700 { color: #f0a3a3 !important; }
+
+    /* --- outline secondary button (kembali / batal) --- */
+    .btn-outline {
+      width: 100%;
+      padding: 0.85rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-align: center;
+      background: transparent;
+      border: 1.5px solid #d1d5db;
+      color: #111827;
+      transition: background-color .15s ease;
+      cursor: pointer;
+    }
+    .btn-outline:hover { background: #f3f4f6; }
+    body.dark-mode .btn-outline { border-color: #333333; color: #f0f0f0; }
+    body.dark-mode .btn-outline:hover { background: #1a1a1a; }
+
+    /* --- slide to pay --- */
+    .slide-track {
+      position: relative;
+      width: 100%;
+      height: 56px;
+      border-radius: 9999px;
+      background: var(--accent-color);
+      overflow: hidden;
+      user-select: none;
+      transition: opacity .2s ease;
+    }
+    .slide-label {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-text);
+      font-weight: 600;
+      font-size: 0.875rem;
+      pointer-events: none;
+      transition: opacity .2s ease;
+    }
+    .slide-handle {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      cursor: grab;
+      touch-action: none;
+      will-change: transform;
+    }
+    .slide-handle:active { cursor: grabbing; }
+    .slide-handle i { color: var(--accent-color); width: 20px; height: 20px; }
+
+    body.dark-mode .slide-handle { background: #000000; box-shadow: 0 2px 6px rgba(0,0,0,0.5); }
+    body.dark-mode .slide-handle i { color: #ffffff; }
+
+    .slide-track.disabled { background: #e5e7eb; cursor: not-allowed; }
+    body.dark-mode .slide-track.disabled { background: #262626; }
+    .slide-track.disabled .slide-label { color: #9ca3af; }
+    .slide-track.disabled .slide-handle { background: #ffffff; box-shadow: none; cursor: not-allowed; }
+    .slide-track.disabled .slide-handle i { color: #9ca3af; }
+    body.dark-mode .slide-track.disabled .slide-handle { background: #3a3a3a; }
+    body.dark-mode .slide-track.disabled .slide-handle i { color: #6b7280; }
+  </style>
+  <script>
+    (function(){
+      var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';
+      var isDark=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);
+      if(isDark) document.documentElement.classList.add('dark-mode');
+      var a=localStorage.getItem('clincoo_accent')||'Hitam (Default)';
+      var am={'Hitam (Default)':{m:'#000000',h:'#1f2937'},'Biru':{m:'#2563eb',h:'#1d4ed8'},'Hijau':{m:'#059669',h:'#047857'},'Ungu':{m:'#9333ea',h:'#7e22ce'},'Merah':{m:'#dc2626',h:'#b91c1c'}};
+      var c=am[a]||am['Hitam (Default)'];
+      document.documentElement.style.setProperty('--accent-color',c.m);
+      document.documentElement.style.setProperty('--accent-hover',c.h);
+    })();
+  </script>
+<!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+<style>
+.clincoo-shimmer{position:relative;overflow:hidden;display:inline-block;min-width:4.5rem;min-height:1.4em;color:transparent!important;background:#e5e7eb;border-radius:8px;-webkit-user-select:none;user-select:none;vertical-align:middle}
+.clincoo-shimmer::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);animation:clincoo-shimmer 1.3s infinite}
+@keyframes clincoo-shimmer{100%{transform:translateX(100%)}}
+.dark-mode .clincoo-shimmer{background:#1e293b}
+.dark-mode .clincoo-shimmer::after{background:linear-gradient(90deg,transparent,rgba(148,163,184,.3),transparent)}
+</style>
+
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
+(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<4;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
+    </script>
+<!-- Google tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+<!-- End Google tag -->
+<script src="../../../../js/i18n-dict.js" defer></script>
+<script src="../../../../js/i18n.js" defer></script>
+<script>window.ClincooBack = window.ClincooBack || function (fallbackUrl) {             try {                 var sameOrigin = document.referrer && new URL(document.referrer).origin === location.origin;                 if (sameOrigin && history.length > 1) { window.history.back(); return; }             } catch (e) {}             if (fallbackUrl) { try { location.replace(fallbackUrl); return; } catch (e2) {} }             try { window.history.back(); } catch (e3) {}         };</script>
+</head>
+<body class="text-gray-900 antialiased h-screen w-full overflow-hidden relative bg-white">
+  <script>
+    if(document.documentElement.classList.contains('dark-mode')) {
+        document.body.classList.add("dark-mode");
+    }
+  </script>
+
+  <header class="bg-white flex justify-between items-center px-3 py-2 fixed top-0 w-full z-40 transition-colors">
+    <button onclick="history.back()" aria-label="Kembali" class="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-100 hover:bg-gray-100 transition-all cursor-pointer text-gray-700 hover:text-black">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    </button>
+    <h1 class="font-extrabold text-lg text-gray-900 tracking-tight">Konfirmasi Langganan</h1>
+    <div class="w-10"></div>
+  </header>
+
+  <div class="w-full h-full overflow-y-auto hide-scrollbar flex flex-col items-center pt-16">
+
+    <div class="w-full max-w-5xl px-4 sm:px-6 pt-2">
+      <p class="text-xs text-gray-500 dark:text-gray-400">Periksa pesanan Anda sebelum melanjutkan</p>
+    </div>
+
+    <main class="w-full max-w-5xl px-4 sm:px-6 py-2 pb-28">
+      <div class="w-full flex flex-col divide-y divide-gray-200 dark:divide-slate-700/60">
+
+        <div class="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <h4 class="text-base font-semibold text-gray-900 dark:text-white">Paket Dipilih</h4>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Paket yang akan diaktifkan</p>
+          </div>
+          <span id="order-plan-badge" class="clincoo-shimmer inline-flex items-center self-start sm:self-auto px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">-</span>
+        </div>
+
+        <div class="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <h4 class="text-base font-semibold text-gray-900 dark:text-white">Siklus Tagihan</h4>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Periode pembayaran langganan</p>
+          </div>
+          <div class="w-full sm:w-80">
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" data-billing="Bulanan" onclick="setBilling('Bulanan')" class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 dark:border-gray-700 transition-colors">Bulanan</button>
+              <button type="button" data-billing="Tahunan" onclick="setBilling('Tahunan')" class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 dark:border-gray-700 transition-colors">Tahunan · hemat 2 bulan</button>
+              <span id="order-billing" class="hidden">-</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <h4 class="text-base font-semibold text-gray-900 dark:text-white">Harga</h4>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Harga per bulan</p>
+          </div>
+          <div class="w-full sm:w-80">
+            <span id="order-price" class="clincoo-shimmer text-sm text-gray-600 dark:text-gray-400">-</span>
+          </div>
+        </div>
+
+        <div class="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <h4 class="text-base font-semibold text-gray-900 dark:text-white">Total Pembayaran</h4>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Ditagih sekali per siklus</p>
+          </div>
+          <div class="w-full sm:w-80">
+            <span id="order-total" class="clincoo-shimmer text-lg font-extrabold text-gray-900 dark:text-white">-</span>
+          </div>
+        </div>
+
+        <div class="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <h4 class="text-base font-semibold text-gray-900 dark:text-white">Metode Pembayaran</h4>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Pembayaran dipotong dari Saldo Dompet</p>
+          </div>
+          <div class="w-full sm:w-80 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0">
+                <i data-lucide="wallet" class="w-4 h-4 text-gray-500 dark:text-gray-400"></i>
+              </div>
+              <span class="text-sm text-gray-600 dark:text-gray-400 truncate">Saldo Dompet</span>
+            </div>
+            <span id="wallet-balance" class="clincoo-shimmer text-sm font-semibold text-gray-900 dark:text-white">-</span>
+          </div>
+        </div>
+
+        <div class="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <h4 class="text-base font-semibold text-gray-900 dark:text-white">Sisa Saldo</h4>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Saldo dompet setelah pembayaran</p>
+          </div>
+          <div class="w-full sm:w-80">
+            <span id="wallet-after" class="clincoo-shimmer text-sm text-gray-600 dark:text-gray-400">-</span>
+          </div>
+        </div>
+
+        <div id="pay-error" class="hidden pt-1" style="border-top-width:0">
+          <p class="text-xs text-red-600">
+            <span id="pay-error-text"></span>
+            <button onclick="window.location.href='../../../profile/dompet/'" class="underline underline-offset-2 font-semibold cursor-pointer">Isi saldo dompet</button>
+          </p>
+        </div>
+      </div>
+
+      <div id="pay-success" class="hidden mt-4 bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3 text-xs text-emerald-700 font-medium"></div>
+
+      <div class="flex flex-col gap-2.5 mt-6">
+        <div id="slide-track" class="slide-track disabled">
+          <span id="slide-label" class="slide-label">Memuat...</span>
+          <div id="slide-handle" class="slide-handle">
+            <i data-lucide="arrow-right"></i>
+          </div>
+        </div>
+        <button id="btn-fallback" class="btn-outline hidden"></button>
+        <button onclick="history.back()" class="w-full py-1 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">Batal</button>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    try { lucide.createIcons(); } catch (e) {}
+
+    const SUB_API = 'https://clincoo-be2.pages.dev/api/subscription';
+    const WALLET_API = 'https://clincoo-be2.pages.dev/api/wallet';
+    const PRICES = { 'Starter': 0, 'Pro': 49000, 'Bisnis': 129000 };
+    const PROMO_API = 'https://clincoo-be2.pages.dev/api/promo';
+    let PROMO = null; // status promo 100 user pertama (Pro Rp5.000)
+    const fmtID = function(n){ return Number(n).toLocaleString('id-ID'); };
+
+    const params = new URLSearchParams(window.location.search);
+    const PLAN = params.get('plan') || 'Starter';
+    // Program beta: 25 user pertama, Pro Bulanan Rp 0 selama 30 hari (CTA dari email undangan)
+    const BETA = params.get('beta') === '1' && PLAN === 'Pro' && (params.get('billing') || 'Bulanan') === 'Bulanan';
+    const BETA_API = '/api/beta-claim';
+    let betaInfo = null;
+    let BILLING = params.get('billing') === 'Tahunan' ? 'Tahunan' : 'Bulanan';
+    function setBilling(cycle){
+      BILLING = (cycle === 'Tahunan') ? 'Tahunan' : 'Bulanan';
+      renderOrder();
+    }
+    function promoPrice(){
+      return (PROMO && PROMO.eligible && PLAN === 'Pro' && BILLING === 'Bulanan') ? PROMO.price : null;
+    }
+    function renderOrder(){
+      const pp = promoPrice();
+      totalPrice = BILLING === 'Tahunan' ? PRICES[PLAN] * 10 : PRICES[PLAN];
+      if (pp !== null) totalPrice = pp;
+      if (BETA && betaInfo && betaInfo.eligible) totalPrice = 0;
+      setVal('order-billing', BILLING);
+      setVal('order-total', (BETA && betaInfo && betaInfo.eligible) ? 'Rp 0 — Program Beta 30 Hari' : (totalPrice === 0 ? 'Gratis' : fmtID(totalPrice) + (pp !== null ? ' (PROMO 100 User Pertama, reguler ' + fmtID(PROMO.original) + ')' : '')));
+      const bal = (typeof lastBalance === 'number') ? lastBalance : null;
+      if (bal !== null) {
+        setVal('wallet-after', totalPrice === 0 ? fmtID(bal) : fmtID(bal - totalPrice));
+      }
+      document.querySelectorAll('[data-billing]').forEach(function(b){
+        const on = b.getAttribute('data-billing') === BILLING;
+        b.classList.toggle('bg-gray-900', on);
+        b.classList.toggle('text-white', on);
+        b.classList.toggle('dark:bg-white', on);
+        b.classList.toggle('dark:text-gray-900', on);
+      });
+    }
+
+    let totalPrice = 0;
+    let lastBalance = null;
+    let alreadyActive = false;
+    let slideEnabled = false;
+    let slideCompleted = false;
+
+    const track = document.getElementById('slide-track');
+    const handle = document.getElementById('slide-handle');
+    const label = document.getElementById('slide-label');
+    const fallbackBtn = document.getElementById('btn-fallback');
+
+    function setSlideEnabled(on){
+      slideEnabled = on;
+      track.classList.toggle('disabled', !on);
+    }
+    function setLabel(text){ label.textContent = text; }
+
+    function planBadgeClass(plan){
+      if(plan === 'Pro') return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
+      if(plan === 'Bisnis') return 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
+      return 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+    }
+
+    function setVal(id, text){
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.textContent = text;
+      el.classList.remove('clincoo-shimmer');
+    }
+
+    function showFallback(text, onClick){
+      track.classList.add('hidden');
+      fallbackBtn.classList.remove('hidden');
+      fallbackBtn.textContent = text;
+      fallbackBtn.onclick = onClick;
+    }
+
+    async function load(){
+      if(!PRICES.hasOwnProperty(PLAN)){
+        document.getElementById('order-plan-badge').textContent = PLAN + ' tidak dikenal';
+        showFallback('Paket Tidak Valid', null);
+        fallbackBtn.disabled = true;
+        fallbackBtn.classList.add('opacity-60','cursor-not-allowed');
+        return;
+      }
+      lastBalance = 0;
+
+      let sub = null, wallet = null;
+      try { const r = await fetch(SUB_API); sub = await r.json(); } catch(e) {}
+      try { const r = await fetch(WALLET_API); wallet = await r.json(); } catch(e) {}
+      if (!BETA && PLAN === 'Pro' && BILLING === 'Bulanan') {
+        try { const r = await fetch(PROMO_API, { cache: 'no-store' }); PROMO = await r.json(); } catch(e) { PROMO = null; }
+      }
+      if (BETA) {
+        try {
+          const r = await fetch(BETA_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'eligibility' }) });
+          betaInfo = await r.json();
+        } catch(e) { betaInfo = null; }
+        if (betaInfo && betaInfo.eligible === false) {
+          const why = betaInfo.alreadyClaimed ? 'Email Anda sudah pernah klaim program beta ini.' : 'Kuota 25 beta tester sudah penuh.';
+          document.getElementById('pay-error-text').textContent = why;
+          document.getElementById('pay-error').classList.remove('hidden');
+          showFallback('Kembali ke Langganan', function(){ window.ClincooBack('../langganan/'); });
+          return;
+        }
+      }
+
+      const badge = document.getElementById('order-plan-badge');
+      badge.className = 'inline-flex items-center self-start sm:self-auto px-3 py-1 rounded-full text-xs font-medium ' + planBadgeClass(PLAN);
+      setVal('order-plan-badge', PLAN);
+      const pp0 = promoPrice();
+      const betaOk = BETA && betaInfo && betaInfo.eligible;
+      setVal('order-price', betaOk ? 'Rp 0/bulan — PROGRAM BETA 30 Hari (reguler ' + fmtID(PRICES[PLAN]) + ')' : (PRICES[PLAN] === 0 ? 'Gratis' : (pp0 !== null ? fmtID(pp0) + '/bulan — PROMO 100 User Pertama (reguler ' + fmtID(PRICES[PLAN]) + ')' : fmtID(PRICES[PLAN]) + '/bulan')));
+
+      const balance = (wallet && typeof wallet.balance === 'number') ? wallet.balance : 0;
+      lastBalance = balance;
+      setVal('wallet-balance', fmtID(balance));
+      renderOrder();
+
+      if(totalPrice > 0 && balance < totalPrice){
+        document.getElementById('pay-error-text').textContent = 'Saldo dompet tidak cukup. Butuh ' + fmtID(totalPrice) + ', saldo Anda ' + fmtID(balance) + '.';
+        document.getElementById('pay-error').classList.remove('hidden');
+        setLabel('Saldo Tidak Cukup');
+        setSlideEnabled(false);
+        return;
+      }
+
+      if(sub && sub.plan === PLAN){
+        alreadyActive = true;
+        document.getElementById('pay-success').textContent = 'Paket ' + PLAN + ' sudah aktif di akun Anda.';
+        document.getElementById('pay-success').classList.remove('hidden');
+        showFallback('Kembali ke Langganan', function(){ window.ClincooBack('../langganan/'); });
+        return;
+      }
+
+      setLabel(totalPrice === 0 ? 'Geser untuk Aktifkan' : 'Geser untuk Bayar');
+      setSlideEnabled(true);
+    }
+
+    async function doPay(){
+      if (BETA && betaInfo && betaInfo.eligible){
+        try {
+          const res = await fetch(BETA_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'activate' })
+          });
+          const data = await res.json();
+          if(res.ok && data.success){
+            try { localStorage.setItem('clincoo_subscription_cache', JSON.stringify({ plan: 'Pro', billingCycle: 'Bulanan', ts: Date.now() })); } catch(e) {}
+            document.getElementById('pay-success').textContent = 'Berhasil! Paket Pro (Bulanan) aktif selama 30 hari lewat program beta.';
+            document.getElementById('pay-success').classList.remove('hidden');
+            document.getElementById('pay-error').classList.add('hidden');
+            setLabel('Berhasil!');
+            setTimeout(function(){ window.ClincooBack('../langganan/'); }, 1200);
+          } else {
+            document.getElementById('pay-error-text').textContent = 'Gagal klaim beta: ' + ((data && data.error) || 'coba lagi nanti');
+            document.getElementById('pay-error').classList.remove('hidden');
+            resetSlide();
+            setSlideEnabled(false);
+          }
+        } catch(e) {
+          document.getElementById('pay-error-text').textContent = 'Koneksi bermasalah, coba lagi.';
+          document.getElementById('pay-error').classList.remove('hidden');
+          resetSlide();
+          setSlideEnabled(true);
+        }
+        return;
+      }
+      try {
+        const res = await fetch(SUB_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plan: PLAN, billingCycle: BILLING })
+        });
+        const data = await res.json();
+        if(res.ok && data.success){
+          try { localStorage.setItem('clincoo_subscription_cache', JSON.stringify({ plan: PLAN, billingCycle: BILLING, ts: Date.now() })); } catch(e) {}
+          document.getElementById('pay-success').textContent = 'Berhasil! Paket ' + PLAN + ' (' + BILLING + ') sekarang aktif.';
+          document.getElementById('pay-success').classList.remove('hidden');
+          document.getElementById('pay-error').classList.add('hidden');
+          setLabel('Berhasil!');
+          setTimeout(function(){ window.ClincooBack('../langganan/'); }, 900);
+        } else if(res.status === 402){
+          document.getElementById('pay-error-text').textContent = 'Saldo dompet tidak cukup. Butuh ' + fmtID(data.required || totalPrice) + ', saldo Anda ' + fmtID(data.balance || 0) + '.';
+          document.getElementById('pay-error').classList.remove('hidden');
+          resetSlide();
+          setLabel('Saldo Tidak Cukup');
+          setSlideEnabled(false);
+        } else {
+          document.getElementById('pay-error-text').textContent = 'Gagal memproses: ' + ((data && data.error) || 'coba lagi nanti');
+          document.getElementById('pay-error').classList.remove('hidden');
+          resetSlide();
+          setLabel(totalPrice === 0 ? 'Geser untuk Aktifkan' : 'Geser untuk Bayar');
+          setSlideEnabled(true);
+        }
+      } catch(e) {
+        document.getElementById('pay-error-text').textContent = 'Koneksi bermasalah, coba lagi.';
+        document.getElementById('pay-error').classList.remove('hidden');
+        resetSlide();
+        setLabel(totalPrice === 0 ? 'Geser untuk Aktifkan' : 'Geser untuk Bayar');
+        setSlideEnabled(true);
+      }
+    }
+
+    // ---- slide-to-pay drag logic ----
+    let maxX = 0, baseX = 0, dragging = false, startClientX = 0, totalMoved = 0;
+
+    function computeMaxX(){
+      maxX = track.clientWidth - handle.clientWidth - 8;
+      if(maxX < 0) maxX = 0;
+    }
+    window.addEventListener('resize', computeMaxX);
+    computeMaxX();
+
+    function setHandleX(x, animate){
+      handle.style.transition = animate ? 'transform .25s cubic-bezier(.22,1,.36,1)' : 'none';
+      handle.style.transform = 'translateX(' + x + 'px)';
+      const progress = maxX > 0 ? x / maxX : 0;
+      label.style.opacity = String(Math.max(0, 1 - progress * 1.3));
+    }
+
+    function resetSlide(){
+      slideCompleted = false;
+      setHandleX(0, true);
+      label.style.opacity = '1';
+    }
+
+    function completeSlide(){
+      if(slideCompleted) return;
+      slideCompleted = true;
+      setSlideEnabled(false);
+      setHandleX(maxX, true);
+      setLabel('Memproses...');
+      label.style.opacity = '1';
+      doPay();
+    }
+
+    handle.addEventListener('pointerdown', function(e){
+      if(!slideEnabled || slideCompleted) return;
+      dragging = true;
+      totalMoved = 0;
+      startClientX = e.clientX;
+      baseX = 0;
+      try { handle.setPointerCapture(e.pointerId); } catch(err) {}
+      handle.style.transition = 'none';
+    });
+
+    handle.addEventListener('pointermove', function(e){
+      if(!dragging) return;
+      const dx = e.clientX - startClientX;
+      totalMoved = Math.abs(dx);
+      const x = Math.min(Math.max(0, baseX + dx), maxX);
+      setHandleX(x, false);
+    });
+
+    function endDrag(e){
+      if(!dragging) return;
+      dragging = false;
+      if(totalMoved < 6){
+        // treated as a tap -> handled by click listener below
+        return;
+      }
+      const dx = e.clientX - startClientX;
+      const x = Math.min(Math.max(0, baseX + dx), maxX);
+      if(maxX > 0 && x >= maxX * 0.7){
+        completeSlide();
+      } else {
+        resetSlide();
+      }
+    }
+    handle.addEventListener('pointerup', endDrag);
+    handle.addEventListener('pointercancel', endDrag);
+
+    handle.addEventListener('click', function(){
+      if(!slideEnabled || slideCompleted) return;
+      if(totalMoved >= 6) return;
+      completeSlide();
+    });
+    track.addEventListener('click', function(e){
+      if(e.target.closest('#slide-handle')) return;
+      if(!slideEnabled || slideCompleted) return;
+      completeSlide();
+    });
+
+    load();
+  </script>
+
+    <script>/* clincoo-sw-register */
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../../sw.js').catch(function () {}); }); }
+    </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

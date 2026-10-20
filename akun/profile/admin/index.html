@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../../js/auth-client.js?v=6"></script>
+  <script src="../../../js/accent-init.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
+  <link rel="manifest" href="../../../manifest.json">
+  <link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
+  <title>Clincoo - Dashboard Admin</title>
+  <meta name="description" content="Dashboard Admin — Clincoo">
+    <meta property="og:title" content="Clincoo - Dashboard Admin">
+    <meta property="og:description" content="Dashboard Admin - Clincoo">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/akun/profile/admin/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Clincoo - Dashboard Admin">
+    <meta name="twitter:description" content="Dashboard Admin - Clincoo">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#ffffff">
+
+  <!-- Tailwind & Lucide & Fonts -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+  <script src="https://unpkg.com/lucide@1.41.0"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+
+  <!-- Three.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-KMQ8WBZF6E');
+  </script>
+
+  <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #ffffff;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    :root {
+      --accent-color: #000000;
+      --accent-hover: #1f2937;
+      --accent-text: #ffffff;
+    }
+    body.dark-mode {
+      background-color: #000000;
+      color: #e0e0e0;
+    }
+    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #ffffff !important; }
+    body.dark-mode .text-gray-700, body.dark-mode .text-gray-600 { color: #a1a1aa !important; }
+    body.dark-mode .text-gray-500 { color: #71717a !important; }
+    body.dark-mode .border-gray-100, body.dark-mode .border-gray-200 { border-color: #222222 !important; }
+    body.dark-mode .bg-gray-50, body.dark-mode .bg-gray-100 { background-color: #141414 !important; }
+
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    .shimmer-bar {
+      display: inline-block;
+      height: 1.5em;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+      width: 80px;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    body.dark-mode .shimmer-bar {
+      background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+      background-size: 200% 100%;
+    }
+  </style>
+
+  <script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+</head>
+
+<body class="min-h-screen flex flex-col bg-white dark:bg-black text-gray-900 dark:text-gray-100">
+  <script>(function(){var t=localStorage.getItem("clincoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+
+  <!-- Blank/Hidden Wrapper for Privacy Guard -->
+  <div id="admin-page-container" style="display: none;" class="flex-1 flex flex-col min-h-screen">
+    
+    <!-- Sub-Header Navigation -->
+    <header class="bg-white dark:bg-[#0a0a0a] sticky top-0 z-40 transition-colors">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <a href="../" class="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-100 dark:border-[#262626] hover:bg-gray-100 dark:hover:bg-[#1a1a1a] transition-all text-gray-700 dark:text-gray-200 shrink-0" title="Kembali">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+          </a>
+          <h1 class="font-extrabold text-lg text-gray-900 dark:text-white tracking-tight">Panel Admin</h1>
+          <div class="w-10 shrink-0"></div>
+        </div>
+        <div class="flex flex-wrap items-center justify-center gap-1.5 pb-2.5 text-sm font-medium">
+          <a href="./" class="nav-tab-item px-4 py-1.5 rounded-full transition-all flex items-center gap-2 whitespace-nowrap bg-black text-white dark:bg-white dark:text-black font-semibold shadow-sm">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="users/" class="nav-tab-item px-4 py-1.5 rounded-full transition-all flex items-center gap-2 whitespace-nowrap text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#141414]">
+            <i data-lucide="users" class="w-4 h-4"></i>
+            <span>Data User</span>
+          </a>
+          <a href="reports/" class="nav-tab-item px-4 py-1.5 rounded-full transition-all flex items-center gap-2 whitespace-nowrap text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#141414]">
+            <i data-lucide="shield-alert" class="w-4 h-4"></i>
+            <span>Laporan & Scan</span>
+          </a>
+          <a href="activity/" class="nav-tab-item px-4 py-1.5 rounded-full transition-all flex items-center gap-2 whitespace-nowrap text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#141414]">
+            <i data-lucide="activity" class="w-4 h-4"></i>
+            <span>Aktivitas Sistem</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      
+      <!-- Stat Grid (9 Cards) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        
+        <!-- Total User -->
+        <div class="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-xl p-5 transition-all hover:border-gray-300 dark:hover:border-[#333]">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Total User</span>
+            <div class="p-2 rounded-lg bg-gray-100 dark:bg-[#141414] text-gray-800 dark:text-gray-200">
+              <i data-lucide="users" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white" id="stat-users-total">
+            <span class="shimmer-bar"></span>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Seluruh akun terdaftar</p>
+        </div>
+
+        <!-- User Baru (7 Hari) -->
+        <div class="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-xl p-5 transition-all hover:border-gray-300 dark:hover:border-[#333]">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">User Baru (7 Hari)</span>
+            <div class="p-2 rounded-lg bg-gray-100 dark:bg-[#141414] text-gray-800 dark:text-gray-200">
+              <i data-lucide="user-plus" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white" id="stat-new-users-7d">
+            <span class="shimmer-bar"></span>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Registrasi minggu ini</p>
+        </div>
+
+        <!-- User Suspended -->
+        <div class="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-xl p-5 transition-all hover:border-gray-300 dark:hover:border-[#333]">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">User Suspended</span>
+            <div class="p-2 rounded-lg bg-gray-100 dark:bg-[#141414] text-gray-800 dark:text-gray-200">
+              <i data-lucide="user-x" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white" id="stat-users-suspended">
+            <span class="shimmer-bar"></span>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Akun dibekukan sementara</p>
+        </div>
+
+        <!-- Total Proyek -->
+        <div class="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-xl p-5 transition-all hover:border-gray-300 dark:hover:border-[#333]">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Total Proyek</span>
+            <div class="p-2 rounded-lg bg-gray-100 dark:bg-[#141414] text-gray-800 dark:text-gray-200">
+              <i data-lucide="folder" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white" id="stat-projects-total">
+            <span class="shimmer-bar"></span>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Proyek aktif di platform</p>
+        </div>
+
+        <!-- Deploy 7 Hari -->
+        <div class="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-xl p-5 transition-all hover:border-gray-300 dark:hover:border-[#333]">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Deploy (7 Hari)</span>
+            <div class="p-2 rounded-lg bg-gray-100 dark:bg-[#141414] text-gray-800 dark:text-gray-200">
+              <i data-lucide="rocket" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white" id="stat-deploys-7d">
+            <span class="shimmer-bar"></span>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Total publikasi minggu ini</p>
+        </div>
+
+        <!-- Total Kredit AI -->
+        <div class="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-xl p-5 transition-all hover:border-gray-300 dark:hover:border-[#333]">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Total Kredit AI</span>
+            <div class="p-2 rounded-lg bg-gray-100 dark:bg-[#141414] text-gray-800 dark:text-gray-200">
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white" id="stat-ai-credits">
+            <span class="shimmer-bar"></span>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Kredit AI aktif milik semua user</p>
+        </div>
+
+        <!-- Pesan AI -->
+        <div class="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-xl p-5 transition-all hover:border-gray-300 dark:hover:border-[#333]">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Pesan AI</span>
+            <div class="p-2 rounded-lg bg-gray-100 dark:bg-[#141414] text-gray-800 dark:text-gray-200">
+              <i data-lucide="bot" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white" id="stat-ai-messages">
+            <span class="shimmer-bar"></span>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Penggunaan AI Chat & Generator</p>
+        </div>
+
+        <!-- Laporan Terbuka -->
+        <div class="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-xl p-5 transition-all hover:border-gray-300 dark:hover:border-[#333]">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Laporan Terbuka</span>
+            <div class="p-2 rounded-lg bg-gray-100 dark:bg-[#141414] text-gray-800 dark:text-gray-200">
+              <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white" id="stat-reports-open">
+            <span class="shimmer-bar"></span>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Laporan perlu ditinjau</p>
+        </div>
+
+      </div>
+
+      <!-- 3D Visualization Section -->
+      <div class="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-2xl p-5 shadow-sm mb-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+          <div>
+            <h2 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <i data-lucide="box" class="w-4 h-4"></i>
+              <span>Visualisasi Seri Aktivitas (Three.js 3D)</span>
+            </h2>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Grafik 3D interaktif harian (geser mouse untuk memutar grafik)</p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Period Dropdown -->
+            <div class="flex items-center gap-2 bg-gray-50 dark:bg-[#141414] p-1 rounded-xl border border-gray-200 dark:border-[#262626]">
+              <span class="text-xs font-medium text-gray-500 px-2">Periode:</span>
+              <select id="chart-period-select" onchange="onChartPeriodChange(this.value)" class="text-xs font-medium bg-transparent text-gray-800 dark:text-gray-200 outline-none cursor-pointer pr-1">
+                <option value="14" class="dark:bg-[#141414]">14 Hari Terakhir</option>
+                <option value="7" class="dark:bg-[#141414]">7 Hari Terakhir</option>
+              </select>
+            </div>
+
+            <!-- Series Toggle Buttons -->
+            <div class="flex items-center gap-1 bg-gray-50 dark:bg-[#141414] p-1 rounded-xl border border-gray-200 dark:border-[#262626]">
+              <button id="btn-series-users" onclick="setActiveSeries('users')" class="px-2.5 py-1 text-xs font-medium rounded-lg transition-all bg-black text-white dark:bg-white dark:text-black shadow-sm">
+                User Baru
+              </button>
+              <button id="btn-series-topup" onclick="setActiveSeries('topup')" class="px-2.5 py-1 text-xs font-medium rounded-lg transition-all text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                Top Up
+              </button>
+              <button id="btn-series-deploys" onclick="setActiveSeries('deploys')" class="px-2.5 py-1 text-xs font-medium rounded-lg transition-all text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                Deploy
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div id="three-chart-container" class="w-full h-80 rounded-xl relative overflow-hidden bg-gray-50 dark:bg-[#0d0d0d] border border-gray-100 dark:border-[#222]">
+          <!-- Floating Tooltip -->
+          <div id="chart-tooltip" class="absolute hidden z-30 px-3 py-1.5 bg-black/90 dark:bg-white/90 text-white dark:text-black text-xs font-semibold rounded-lg shadow-xl pointer-events-none transition-all"></div>
+          
+          <!-- 2D Canvas Fallback (hidden by default) -->
+          <canvas id="canvas-2d-fallback" class="hidden w-full h-full"></canvas>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full max-w-7xl mx-auto px-5 pb-6 pt-4 mt-2 border-t border-gray-100 dark:border-[#222] text-center">
+      <p class="text-xs text-gray-400 dark:text-gray-500">&copy; 2026 Clincoo Admin Panel. Seluruh hak cipta dilindungi.</p>
+    </footer>
+
+  </div>
+
+  <script>
+    const API_BASE = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : '';
+    let rawSeriesData = { users_daily: [], topup_daily: [], deploys_daily: [] };
+    let currentSeriesKey = 'users';
+    let currentPeriodDays = 14;
+
+    // Toast Notification Helper
+    function showToast(message, isError = false) {
+      let toast = document.getElementById('clincoo-toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'clincoo-toast';
+        document.body.appendChild(toast);
+      }
+      toast.className = `fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-2xl text-sm font-medium transition-all duration-300 transform translate-y-0 opacity-100 flex items-center gap-2 ${
+        isError ? 'bg-red-900 text-white border border-red-700' : 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border border-gray-700 dark:border-gray-300'
+      }`;
+      toast.innerHTML = (isError ? '<i data-lucide="alert-circle" class="w-4 h-4"></i>' : '<i data-lucide="check-circle-2" class="w-4 h-4"></i>') + `<span>${message}</span>`;
+      if (window.lucide) lucide.createIcons();
+
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        toast.classList.add('translate-y-10', 'opacity-0');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 3000);
+    }
+
+    // Privacy Guard Logic
+    async function checkAdminPing() {
+      try {
+        const token = (window.ClincooAuth && ClincooAuth.getToken) ? ClincooAuth.getToken() : (function(){try{return localStorage.getItem('clincoo_auth_token')||localStorage.getItem('clincoo_token')||'';}catch(e){return '';}})();
+        const res = await fetch(API_BASE + '/api/admin/ping', {
+          headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+        });
+        if (!res.ok) {
+          redirectToProfile();
+          return false;
+        }
+        const data = await res.json();
+        if (!data || !data.success || !data.is_admin) {
+          redirectToProfile();
+          return false;
+        }
+        document.getElementById('admin-page-container').style.display = 'flex';
+        return true;
+      } catch (err) {
+        redirectToProfile();
+        return false;
+      }
+    }
+
+    function redirectToProfile() {
+      const profilePath = location.pathname.includes('/Clincoo.') ? '/Clincoo./akun/profile/' : '/akun/profile/';
+      window.location.replace(profilePath);
+    }
+
+    // Helper Format Rupiah & Angka
+    function formatRupiah(amount) {
+      const val = Number(amount || 0);
+      return 'Rp ' + val.toLocaleString('id-ID');
+    }
+
+    function formatNumber(num) {
+      return Number(num || 0).toLocaleString('id-ID');
+    }
+
+    // Fetch Dashboard Stats
+    async function fetchDashboardStats() {
+      const spin = document.getElementById('refresh-spin-icon');
+      if (spin) spin.classList.add('animate-spin');
+
+      try {
+        const token = (window.ClincooAuth && ClincooAuth.getToken) ? ClincooAuth.getToken() : (function(){try{return localStorage.getItem('clincoo_auth_token')||localStorage.getItem('clincoo_token')||'';}catch(e){return '';}})();
+        const res = await fetch(API_BASE + '/api/admin/stats', {
+          headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+        });
+
+        if (res.status === 403) {
+          showToast('Akses ditolak (403)', true);
+          redirectToProfile();
+          return;
+        }
+
+        if (!res.ok) throw new Error('Gagal mengambil data stats');
+
+        const data = await res.json();
+        if (!data || !data.success) throw new Error(data?.error || 'Gagal memuat statistik');
+
+        const s = data.stats || {};
+        document.getElementById('stat-users-total').textContent = formatNumber(s.users_total);
+        document.getElementById('stat-new-users-7d').textContent = formatNumber(s.new_users_7d);
+        document.getElementById('stat-users-suspended').textContent = formatNumber(s.users_suspended);
+        document.getElementById('stat-projects-total').textContent = formatNumber(s.projects_total);
+        document.getElementById('stat-deploys-7d').textContent = formatNumber(s.deploys_7d);
+        document.getElementById('stat-ai-credits').textContent = formatNumber(s.ai_credits_total) + ' kredit';
+        document.getElementById('stat-ai-messages').textContent = formatNumber(s.ai_messages_total);
+        document.getElementById('stat-reports-open').textContent = formatNumber(s.reports_open);
+
+        const _lut = document.getElementById('last-updated-text'); if (_lut) _lut.textContent = new Date().toLocaleTimeString('id-ID');
+
+        rawSeriesData = data.series || { users_daily: [], topup_daily: [], deploys_daily: [] };
+        renderActiveChart();
+
+      } catch (err) {
+        showToast(err.message || 'Gagal memperbarui data', true);
+      } finally {
+        if (spin) spin.classList.remove('animate-spin');
+      }
+    }
+
+    function refreshPageData() {
+      fetchDashboardStats();
+    }
+
+    function setActiveSeries(seriesKey) {
+      currentSeriesKey = seriesKey;
+      ['users', 'topup', 'deploys'].forEach(k => {
+        const btn = document.getElementById(`btn-series-${k}`);
+        if (!btn) return;
+        if (k === seriesKey) {
+          btn.className = 'px-2.5 py-1 text-xs font-medium rounded-lg transition-all bg-black text-white dark:bg-white dark:text-black shadow-sm';
+        } else {
+          btn.className = 'px-2.5 py-1 text-xs font-medium rounded-lg transition-all text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white';
+        }
+      });
+      renderActiveChart();
+    }
+
+    function onChartPeriodChange(val) {
+      currentPeriodDays = parseInt(val, 10) || 14;
+      renderActiveChart();
+    }
+
+    function getSlicedSeries() {
+      let list = [];
+      if (currentSeriesKey === 'topup') list = rawSeriesData.topup_daily || [];
+      else if (currentSeriesKey === 'deploys') list = rawSeriesData.deploys_daily || [];
+      else list = rawSeriesData.users_daily || [];
+
+      // Defensive fallback if series is empty
+      if (!list || list.length === 0) {
+        list = [];
+        const now = new Date();
+        for (let i = 13; i >= 0; i--) {
+          const d = new Date(now);
+          d.setDate(d.getDate() - i);
+          list.push({ d: d.toISOString().split('T')[0], count: 0 });
+        }
+      }
+      return list.slice(-currentPeriodDays);
+    }
+
+    // Three.js 3D & 2D Fallback Chart Engine
+    let threeRenderer, threeScene, threeCamera, threeAnimationId;
+    let threeBars = [];
+
+    function renderActiveChart() {
+      const data = getSlicedSeries();
+      const container = document.getElementById('three-chart-container');
+      if (!container) return;
+
+      if (typeof THREE !== 'undefined') {
+        try {
+          render3DChart(data, container);
+          return;
+        } catch (e) {
+          console.warn('Three.js render error, falling back to 2D canvas', e);
+        }
+      }
+      render2DFallback(data, container);
+    }
+
+    function render3DChart(data, container) {
+      const fallbackCanvas = document.getElementById('canvas-2d-fallback');
+      if (fallbackCanvas) fallbackCanvas.classList.add('hidden');
+
+      if (!threeRenderer) {
+        threeScene = new THREE.Scene();
+        threeCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+        threeRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        threeRenderer.setSize(container.clientWidth, container.clientHeight);
+        threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(threeRenderer.domElement);
+
+        threeCamera.position.set(0, 8, 16);
+        threeCamera.lookAt(0, 0, 0);
+
+        // Lighting
+        const ambLight = new THREE.AmbientLight(0xffffff, 0.8);
+        threeScene.add(ambLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(10, 20, 15);
+        threeScene.add(dirLight);
+
+        // Interaction state
+        let isDragging = false;
+        let previousMouseX = 0;
+
+        threeRenderer.domElement.addEventListener('pointerdown', (e) => {
+          isDragging = true;
+          previousMouseX = e.clientX;
+        });
+
+        window.addEventListener('pointermove', (e) => {
+          if (isDragging) {
+            const deltaX = e.clientX - previousMouseX;
+            threeScene.rotation.y += deltaX * 0.008;
+            previousMouseX = e.clientX;
+          }
+
+          // Tooltip Raycasting
+          const rect = threeRenderer.domElement.getBoundingClientRect();
+          const mouse = new THREE.Vector2(
+            ((e.clientX - rect.left) / rect.width) * 2 - 1,
+            -((e.clientY - rect.top) / rect.height) * 2 + 1
+          );
+
+          const raycaster = new THREE.Raycaster();
+          raycaster.setFromCamera(mouse, threeCamera);
+          const intersects = raycaster.intersectObjects(threeBars);
+
+          const tooltip = document.getElementById('chart-tooltip');
+          if (intersects.length > 0 && tooltip) {
+            const bar = intersects[0].object;
+            tooltip.style.display = 'block';
+            tooltip.style.left = (e.clientX - rect.left + 10) + 'px';
+            tooltip.style.top = (e.clientY - rect.top - 30) + 'px';
+            tooltip.textContent = `${bar.userData.d}: ${formatNumber(bar.userData.count)}`;
+          } else if (tooltip) {
+            tooltip.style.display = 'none';
+          }
+        });
+
+        window.addEventListener('pointerup', () => { isDragging = false; });
+
+        window.addEventListener('resize', () => {
+          if (!container) return;
+          threeCamera.aspect = container.clientWidth / container.clientHeight;
+          threeCamera.updateProjectionMatrix();
+          threeRenderer.setSize(container.clientWidth, container.clientHeight);
+        });
+      }
+
+      // Clear previous bars
+      threeBars.forEach(b => threeScene.remove(b));
+      threeBars = [];
+
+      const isDark = document.body.classList.contains('dark-mode');
+      const barColor = isDark ? 0xf4f4f5 : 0x18181b;
+
+      const maxVal = Math.max(...data.map(d => Number(d.count || 0)), 1);
+      const count = data.length;
+      const spacing = 0.9;
+      const startX = -((count - 1) * spacing) / 2;
+
+      data.forEach((item, idx) => {
+        const val = Number(item.count || 0);
+        const height = Math.max(0.2, (val / maxVal) * 6);
+        const geometry = new THREE.BoxGeometry(0.6, height, 0.6);
+        const material = new THREE.MeshStandardMaterial({
+          color: barColor,
+          roughness: 0.3,
+          metalness: 0.1
+        });
+
+        const bar = new THREE.Mesh(geometry, material);
+        bar.position.set(startX + idx * spacing, height / 2, 0);
+        bar.userData = { d: item.d, count: val };
+
+        threeScene.add(bar);
+        threeBars.push(bar);
+      });
+
+      // Animation loop
+      if (threeAnimationId) cancelAnimationFrame(threeAnimationId);
+      function animate() {
+        threeAnimationId = requestAnimationFrame(animate);
+        threeScene.rotation.y += 0.002; // Slow auto rotation
+        threeRenderer.render(threeScene, threeCamera);
+      }
+      animate();
+    }
+
+    // 2D Canvas Fallback Function
+    function render2DFallback(data, container) {
+      const canvas = document.getElementById('canvas-2d-fallback');
+      if (!canvas) return;
+      canvas.classList.remove('hidden');
+
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const isDark = document.body.classList.contains('dark-mode');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const maxVal = Math.max(...data.map(d => Number(d.count || 0)), 1);
+      const padding = 40;
+      const chartWidth = canvas.width - padding * 2;
+      const chartHeight = canvas.height - padding * 2;
+      const barWidth = (chartWidth / data.length) * 0.6;
+      const gap = (chartWidth / data.length) * 0.4;
+
+      data.forEach((item, i) => {
+        const val = Number(item.count || 0);
+        const h = (val / maxVal) * chartHeight;
+        const x = padding + i * (barWidth + gap) + gap / 2;
+        const y = canvas.height - padding - h;
+
+        ctx.fillStyle = isDark ? '#ffffff' : '#18181b';
+        ctx.beginPath();
+        ctx.roundRect(x, y, barWidth, h, [4, 4, 0, 0]);
+        ctx.fill();
+
+        // Date label
+        ctx.fillStyle = isDark ? '#888888' : '#666666';
+        ctx.font = '10px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        const dayLabel = item.d ? item.d.slice(5) : '';
+        ctx.fillText(dayLabel, x + barWidth / 2, canvas.height - 15);
+      });
+    }
+
+    // Init Page
+    document.addEventListener('DOMContentLoaded', async () => {
+      const isAuthorized = await checkAdminPing();
+      if (!isAuthorized) return;
+
+      if (window.lucide) lucide.createIcons();
+      fetchDashboardStats();
+
+      // Auto Refresh every 30s
+      setInterval(fetchDashboardStats, 30000);
+
+      // Auto Refresh on tab focus
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) fetchDashboardStats();
+      });
+    });
+  </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

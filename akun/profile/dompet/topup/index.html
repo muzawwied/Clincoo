@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script>/* base dinamis: pastikan aset dimuat dari folder halaman top-up */
+  (function(){var p=location.pathname.replace(/[^/]+\.html$/,'');if(!/\/$/.test(p))p+='/';document.write('<base href="'+p+'">');})();</script>
+  <script src="../../../../js/auth-client.js?v=6"></script>
+    <script src="../../../../js/accent-init.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../../../assets/favicon.png">
+    <link rel="manifest" href="../../../../manifest.json">
+    <link rel="apple-touch-icon" href="../../../../assets/icons/apple-touch-icon.png">
+    <title>Top Up Saldo — Clincoo</title>
+    <meta name="description" content="Top Up Saldo — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clincoo">
+    <meta property="og:title" content="Top Up Saldo — Clincoo">
+    <meta property="og:description" content="Top Up Saldo — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Top Up Saldo — Clincoo">
+    <meta name="twitter:description" content="Top Up Saldo — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+    <script src="https://unpkg.com/lucide@1.41.0"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+        body { font-family: 'Inter', sans-serif; background-color: #ffffff; transition: background-color 0.3s ease, color 0.3s ease; }
+        :root { --accent-color: #000000; --accent-hover: #1f2937; --accent-text: #ffffff; }
+        .bg-accent { background-color: var(--accent-color) !important; }
+        .text-accent { color: var(--accent-color) !important; }
+        .border-accent { border-color: var(--accent-color) !important; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        #method-cta-wrap { max-height: 120px; opacity: 1; transition: max-height 0.35s ease, opacity 0.35s ease; }
+        #method-cta-wrap.cta-hidden { max-height: 0; opacity: 0; pointer-events: none; overflow: hidden; }
+        #qris-paid-btn .paid-label { display: inline-block; max-width: 200px; opacity: 1; margin-left: 8px; overflow: hidden; white-space: nowrap; transition: opacity 0.35s ease, max-width 0.35s ease, margin-left 0.35s ease; }
+        #qris-paid-btn.checking .paid-label { opacity: 0; max-width: 0; margin-left: 0; }
+        #qris-paid-btn.checking svg { animation: cpSpin 0.8s linear infinite; }
+        @keyframes cpSpin { to { transform: rotate(360deg); } }
+        .pay-method-card .radio-indicator { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #e5e7eb; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
+        body.dark-mode .pay-method-card .radio-indicator { border-color: #374151; }
+        .pay-method-card.selected .radio-indicator { border-color: #111827; background-color: #111827; }
+        .pay-method-card.selected .radio-indicator::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #ffffff; }
+        body.dark-mode .pay-method-card.selected .radio-indicator { border-color: #ffffff; background-color: #ffffff; }
+        body.dark-mode .pay-method-card.selected .radio-indicator::after { background: #000000; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        body.dark-mode { background-color: #000000; color: #e0e0e0; }
+        body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #f0f0f0 !important; }
+        body.dark-mode .text-gray-700 { color: #b0b0b0 !important; }
+        body.dark-mode .text-gray-500, body.dark-mode .text-gray-600 { color: #888888 !important; }
+        body.dark-mode .text-gray-400 { color: #666666 !important; }
+        body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+        body.dark-mode .payment-logo-badge { background-color: #ffffff !important; }
+        body.dark-mode .bg-gray-50, body.dark-mode .bg-gray-100 { background-color: #222222 !important; }
+        body.dark-mode .border-gray-200, body.dark-mode .border-gray-100, body.dark-mode .border-gray-50 { border-color: #222222 !important; }
+        body.dark-mode .hover\:bg-gray-50:hover, body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
+        body.dark-mode input { background-color: #0a0a0a; color: #f0f0f0; border-color: #222222; }
+        body.dark-mode header, body.dark-mode .bg-\[\#ffffff\] { background-color: #000000 !important; border-color: #222222 !important; }
+        
+        body.dark-mode button[onclick="PathRouter.goBack()"] {
+            background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important;
+        }
+        body.dark-mode button[onclick="PathRouter.goBack()"]:hover {
+            background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important;
+        }
+        
+        .pay-method-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        .pay-method-card:active { transform: scale(0.98); }
+        
+        .pay-method-card input[type="radio"] { display: none; }
+        .pay-method-card .radio-indicator { 
+            width: 20px; height: 20px; border-radius: 50%; border: 2px solid #e5e7eb; 
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; 
+        }
+        body.dark-mode .pay-method-card .radio-indicator { border-color: #374151; }
+        .pay-method-card.selected .radio-indicator { border-color: #111827; background-color: #111827; }
+        .pay-method-card.selected .radio-indicator::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: white; }
+        body.dark-mode .pay-method-card.selected .radio-indicator { border-color: #ffffff; background-color: #ffffff; }
+        body.dark-mode .pay-method-card.selected .radio-indicator::after { background: #000000; }
+
+        .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        .shimmer-bar {
+        display: inline-block;
+        height: 1em;
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 6px;
+        width: 60px;
+        vertical-align: middle;
+    }
+    .shimmer-bar-sm { height: 0.75em; width: 40px; }
+    .shimmer-bar-md { height: 0.875em; width: 120px; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    body.dark-mode .shimmer-bar {
+        background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+        background-size: 200% 100%;
+    }
+    body.dark-mode .skel-dot { background-color: #141414 !important; border-color: #222222 !important; }
+    </style>
+    <script src="/js/path-router.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #ffffff; transition: background-color 0.3s ease, color 0.3s ease; }
+        :root { --accent-color: #000000; --accent-hover: #1f2937; --accent-text: #ffffff; }
+        .bg-accent { background-color: var(--accent-color) !important; }
+        .text-accent { color: var(--accent-color) !important; }
+        .border-accent { border-color: var(--accent-color) !important; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        body.dark-mode { background-color: #000000; color: #e0e0e0; }
+        body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #f0f0f0 !important; }
+        body.dark-mode .text-gray-700 { color: #b0b0b0 !important; }
+        body.dark-mode .text-gray-500, body.dark-mode .text-gray-600 { color: #888888 !important; }
+        body.dark-mode .text-gray-400 { color: #666666 !important; }
+        body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+        body.dark-mode .payment-logo-badge { background-color: #ffffff !important; }
+        body.dark-mode .bg-gray-50, body.dark-mode .bg-gray-100 { background-color: #222222 !important; }
+        body.dark-mode .border-gray-200, body.dark-mode .border-gray-100, body.dark-mode .border-gray-50 { border-color: #222222 !important; }
+        body.dark-mode .hover\:bg-gray-50:hover, body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
+        body.dark-mode input { background-color: #0a0a0a; color: #f0f0f0; border-color: #222222; }
+        body.dark-mode header, body.dark-mode .bg-\[\#ffffff\] { background-color: #000000 !important; border-color: #222222 !important; }
+        
+        body.dark-mode button[onclick="PathRouter.goBack()"] {
+            background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important;
+        }
+        body.dark-mode button[onclick="PathRouter.goBack()"]:hover {
+            background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important;
+        }
+        
+        .pay-method-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        .pay-method-card:active { transform: scale(0.98); }
+        
+        .pay-method-card input[type="radio"] { display: none; }
+        .pay-method-card .radio-indicator { 
+            width: 20px; height: 20px; border-radius: 50%; border: 2px solid #e5e7eb; 
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; 
+        }
+        body.dark-mode .pay-method-card .radio-indicator { border-color: #374151; }
+        .pay-method-card.selected .radio-indicator { border-color: #111827; background-color: #111827; }
+        .pay-method-card.selected .radio-indicator::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: white; }
+        body.dark-mode .pay-method-card.selected .radio-indicator { border-color: #ffffff; background-color: #ffffff; }
+        body.dark-mode .pay-method-card.selected .radio-indicator::after { background: #000000; }
+
+        .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        .shimmer-bar {
+        display: inline-block;
+        height: 1em;
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 6px;
+        width: 60px;
+        vertical-align: middle;
+    }
+    .shimmer-bar-sm { height: 0.75em; width: 40px; }
+    .shimmer-bar-md { height: 0.875em; width: 120px; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    body.dark-mode .shimmer-bar {
+        background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+        background-size: 200% 100%;
+    }
+    body.dark-mode .skel-dot { background-color: #141414 !important; border-color: #222222 !important; }
+    </style>
+    <script src="/js/path-router.js"></script>
+<!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
+(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<4;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
+    </script>
+<!-- Google tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+<!-- End Google tag -->
+<script src="../../../../js/i18n-dict.js" defer></script>
+<script src="../../../../js/i18n.js" defer></script>
+</head>
+<body class="min-h-screen flex flex-col text-gray-900 bg-white">
+    <script>(function(){var t=localStorage.getItem("clincoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+
+
+        <div id="page-topup" class="flex flex-col bg-white min-h-screen w-full overflow-x-hidden">
+        
+        <!-- STEP 1: PAYMENT METHOD -->
+        <div id="step-method" class="flex flex-col w-full min-h-screen overflow-y-auto">
+            <header class="flex justify-start px-4 py-3 sticky top-0 w-full z-40 bg-white dark:bg-[#0a0a0a]">
+                <button onclick="closeTopUpPage()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-900 transition-all cursor-pointer text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white shadow-sm">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+            </header>
+            <main class="flex-1 w-full flex flex-col px-5 py-6">
+                <div class="mb-6 w-full">
+                    <h2 class="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">Isi Saldo</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1.5">Pilih metode pembayaran untuk mengisi dompet Anda.</p>
+                </div>
+                
+                <div class="space-y-6 w-full pb-4" id="payment-methods-list">
+                    
+                    <!-- Instant Payment -->
+                    <div class="space-y-3">
+                        <h4 class="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 px-1">Pembayaran Instan</h4>
+                        <!-- ClincooPay (metode aktif satu-satunya) — kartu tunggal: metode + status koneksi menyatu -->
+                        <div class="pay-method-card selected border border-gray-200 dark:border-gray-800 rounded-2xl w-full bg-gray-50 dark:bg-[#1a1a1a]">
+                            <div class="flex items-center space-x-3 p-3.5">
+                                <div class="relative w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white shadow-sm border border-gray-200 dark:border-gray-700">
+                                    <img src="/assets/ewallet-logos/clincoopay.png" alt="ClincooPay" class="w-full h-full object-contain">
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-bold text-gray-900 dark:text-white truncate">ClincooPay</p>
+                                    <p id="clincoopay-desc" class="text-[11px] md:text-xs text-gray-500 mt-0.5 truncate">Memuat…</p>
+                                </div>
+                                <div id="clincoopay-cta" class="shrink-0"></div>
+                            </div>
+                            <input type="hidden" name="payment-method" value="ClincooPay">
+                        </div>
+                        <!-- QRIS via BuatQris — aktif: buat transaksi, QR ditampilkan di step khusus -->
+                        <div onclick="selectPaymentMethod(this)" class="pay-method-card border border-gray-200 dark:border-gray-800 rounded-2xl w-full bg-white dark:bg-[#0a0a0a]">
+                            <div class="flex items-center space-x-3.5 flex-1 min-w-0 mr-2 p-3.5">
+                                <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white shadow-sm border border-gray-200 dark:border-gray-700">
+                                    <img src="../../../assets/qris-wikimedia.svg" alt="QRIS" class="w-full h-full object-contain">
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-bold text-gray-900 dark:text-white truncate">QRIS</p>
+                                    <p class="text-[11px] md:text-xs text-gray-500 mt-0.5 truncate">Gopay, OVO, Dana, BCA Mobile, dll</p>
+                                </div>
+                                <div class="radio-indicator shrink-0"></div>
+                            </div>
+                            <input type="radio" name="payment-method" value="QRIS" class="hidden">
+                        </div>
+                    </div>
+
+                    <!-- E-Wallet -->
+                    <div class="space-y-3">
+                        <h4 class="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 px-1">E-Wallet</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="pay-method-card-locked flex items-center justify-between p-3.5 border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl w-full bg-white dark:bg-[#0a0a0a] opacity-70 cursor-default select-none" aria-disabled="true">
+                                <div class="flex items-center space-x-3 flex-1 min-w-0 mr-2">
+                                    <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white shadow-sm border border-gray-200 dark:border-gray-700">
+                                        <img src="../../../assets/ewallet-logos/gopay.svg" alt="GoPay" class="w-full h-full object-contain">
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-bold text-gray-900 dark:text-white truncate">GoPay</p>
+                                        <p class="text-[11px] md:text-xs text-gray-500 mt-0.5 truncate">E-wallet</p>
+                                    </div>
+                                </div>
+                                <span class="shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400">Segera</span>
+                            </div>
+                            
+                            <div class="pay-method-card-locked flex items-center justify-between p-3.5 border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl w-full bg-white dark:bg-[#0a0a0a] opacity-70 cursor-default select-none" aria-disabled="true">
+                                <div class="flex items-center space-x-3 flex-1 min-w-0 mr-2">
+                                    <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white shadow-sm border border-gray-200 dark:border-gray-700">
+                                        <img src="../../../assets/ewallet-logos/dana.png" alt="DANA" class="w-full h-full object-contain">
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-bold text-gray-900 dark:text-white truncate">DANA</p>
+                                        <p class="text-[11px] md:text-xs text-gray-500 mt-0.5 truncate">E-wallet</p>
+                                    </div>
+                                </div>
+                                <span class="shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400">Segera</span>
+                            </div>
+                            
+                            <div class="pay-method-card-locked flex items-center justify-between p-3.5 border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl w-full bg-white dark:bg-[#0a0a0a] opacity-70 cursor-default select-none" aria-disabled="true">
+                                <div class="flex items-center space-x-3 flex-1 min-w-0 mr-2">
+                                    <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white shadow-sm border border-gray-200 dark:border-gray-700">
+                                        <img src="../../../assets/ewallet-logos/ovo.svg" alt="OVO" class="w-full h-full object-contain">
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-bold text-gray-900 dark:text-white truncate">OVO</p>
+                                        <p class="text-[11px] md:text-xs text-gray-500 mt-0.5 truncate">E-wallet</p>
+                                    </div>
+                                </div>
+                                <span class="shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400">Segera</span>
+                            </div>
+                            
+                            <div class="pay-method-card-locked flex items-center justify-between p-3.5 border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl w-full bg-white dark:bg-[#0a0a0a] opacity-70 cursor-default select-none" aria-disabled="true">
+                                <div class="flex items-center space-x-3 flex-1 min-w-0 mr-2">
+                                    <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white shadow-sm border border-gray-200 dark:border-gray-700">
+                                        <img src="../../../assets/shopeepay-logo.svg" alt="ShopeePay" class="w-full h-full object-contain">
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-bold text-gray-900 dark:text-white truncate">ShopeePay</p>
+                                        <p class="text-[11px] md:text-xs text-gray-500 mt-0.5 truncate">E-wallet</p>
+                                    </div>
+                                </div>
+                                <span class="shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400">Segera</span>
+                            </div>
+                            
+                            <div class="pay-method-card-locked flex items-center justify-between p-3.5 border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl w-full bg-white dark:bg-[#0a0a0a] opacity-70 cursor-default select-none" aria-disabled="true">
+                                <div class="flex items-center space-x-3 flex-1 min-w-0 mr-2">
+                                    <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white shadow-sm border border-gray-200 dark:border-gray-700">
+                                        <img src="../../../assets/ewallet-logos/linkaja.svg" alt="LinkAja" class="w-full h-full object-contain">
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-bold text-gray-900 dark:text-white truncate">LinkAja</p>
+                                        <p class="text-[11px] md:text-xs text-gray-500 mt-0.5 truncate">E-wallet</p>
+                                    </div>
+                                </div>
+                                <span class="shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400">Segera</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Virtual Account -->
+                    <div class="space-y-3">
+                        <h4 class="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 px-1">Virtual Account</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="pay-method-card-locked flex items-center justify-between p-3.5 border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl w-full bg-white dark:bg-[#0a0a0a] opacity-70 cursor-default select-none" aria-disabled="true">
+                                <div class="flex items-center space-x-3 flex-1 min-w-0 mr-2">
+                                    <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white shadow-sm border border-gray-200 dark:border-gray-700">
+                                        <img src="../../../assets/bank-logos/bca-wikimedia.svg" alt="BCA" class="w-full h-full object-contain">
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-bold text-gray-900 dark:text-white truncate">BCA</p>
+                                        <p class="text-[11px] md:text-xs text-gray-500 mt-0.5 truncate">Virtual Account</p>
+                                    </div>
+                                </div>
+                                <span class="shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400">Segera</span>
+                            </div>
+                            
+                            <div class="pay-method-card-locked flex items-center justify-between p-3.5 border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl w-full bg-white dark:bg-[#0a0a0a] opacity-70 cursor-default select-none" aria-disabled="true">
+                                <div class="flex items-center space-x-3 flex-1 min-w-0 mr-2">
+                                    <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white shadow-sm border border-gray-200 dark:border-gray-700">
+                                        <img src="../../../assets/bank-logos/mandiri-wikimedia.svg" alt="Mandiri" class="w-full h-full object-contain">
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-bold text-gray-900 dark:text-white truncate">Mandiri</p>
+                                        <p class="text-[11px] md:text-xs text-gray-500 mt-0.5 truncate">Virtual Account</p>
+                                    </div>
+                                </div>
+                                <span class="shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400">Segera</span>
+                            </div>
+                            
+                            <div class="pay-method-card-locked flex items-center justify-between p-3.5 border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl w-full bg-white dark:bg-[#0a0a0a] opacity-70 cursor-default select-none" aria-disabled="true">
+                                <div class="flex items-center space-x-3 flex-1 min-w-0 mr-2">
+                                    <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white shadow-sm border border-gray-200 dark:border-gray-700">
+                                        <img src="../../../assets/bank-logos/bri-logo.png" alt="BRI" class="w-full h-full object-contain">
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-bold text-gray-900 dark:text-white truncate">BRI</p>
+                                        <p class="text-[11px] md:text-xs text-gray-500 mt-0.5 truncate">Virtual Account</p>
+                                    </div>
+                                </div>
+                                <span class="shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400">Segera</span>
+                            </div>
+                            
+                            <div class="pay-method-card-locked flex items-center justify-between p-3.5 border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl w-full bg-white dark:bg-[#0a0a0a] opacity-70 cursor-default select-none" aria-disabled="true">
+                                <div class="flex items-center space-x-3 flex-1 min-w-0 mr-2">
+                                    <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 overflow-hidden payment-logo-badge bg-white shadow-sm border border-gray-200 dark:border-gray-700">
+                                        <img src="../../../assets/bank-logos/bni-wikimedia.svg" alt="BNI" class="w-full h-full object-contain">
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-bold text-gray-900 dark:text-white truncate">BNI</p>
+                                        <p class="text-[11px] md:text-xs text-gray-500 mt-0.5 truncate">Virtual Account</p>
+                                    </div>
+                                </div>
+                                <span class="shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400">Segera</span>
+                            </div>
+                        </div>
+
+                                        </div>
+                </div>
+
+                <div class="pt-4 pb-8 w-full mt-auto">
+                    <div id="method-cta-wrap" class="cta-hidden">
+                        <button onclick="goToStep2()" class="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl font-bold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-all shadow-lg active:scale-[0.98]">Lanjutkan</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- STEP 2: AMOUNT KEYPAD -->
+        <div id="step-amount" class="hidden flex-col w-full min-h-screen overflow-y-auto">
+            <header class="flex justify-start px-4 py-3 sticky top-0 w-full z-40 bg-white dark:bg-[#0a0a0a]">
+                <button onclick="goToStep1()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-900 transition-all cursor-pointer text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white shadow-sm">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+            </header>
+
+            <main class="flex-1 w-full flex flex-col px-5 py-6">
+                <div class="flex flex-col items-center mb-4 w-full mt-2">
+                    <h2 class="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight text-center">Nominal Top Up</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1.5 text-center">Tentukan jumlah saldo yang ingin diisi</p>
+                </div>
+
+                <!-- PIN Keypad Display -->
+                <div class="flex flex-col items-center justify-center py-6 mb-4 w-full">
+                    <p id="keypad-display" class="text-5xl font-extrabold text-gray-900 dark:text-white tracking-tighter">0</p>
+                    <div class="mt-4 bg-gray-100 dark:bg-gray-800/80 px-4 py-1.5 rounded-full border border-gray-200 dark:border-gray-700">
+                        <p class="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Minimal pengisian 10.000</p>
+                    </div>
+                </div>
+
+                <!-- Custom Web Keypad -->
+                <div class="grid grid-cols-3 gap-3 w-full max-w-md mx-auto select-none">
+                    <button onclick="pressKey('1')" class="w-full py-4 rounded-xl text-lg font-bold bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 hover:border-gray-900 dark:hover:border-white text-gray-900 dark:text-white transition-all active:scale-95">1</button>
+                    <button onclick="pressKey('2')" class="w-full py-4 rounded-xl text-lg font-bold bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 hover:border-gray-900 dark:hover:border-white text-gray-900 dark:text-white transition-all active:scale-95">2</button>
+                    <button onclick="pressKey('3')" class="w-full py-4 rounded-xl text-lg font-bold bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 hover:border-gray-900 dark:hover:border-white text-gray-900 dark:text-white transition-all active:scale-95">3</button>
+                    <button onclick="pressKey('4')" class="w-full py-4 rounded-xl text-lg font-bold bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 hover:border-gray-900 dark:hover:border-white text-gray-900 dark:text-white transition-all active:scale-95">4</button>
+                    <button onclick="pressKey('5')" class="w-full py-4 rounded-xl text-lg font-bold bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 hover:border-gray-900 dark:hover:border-white text-gray-900 dark:text-white transition-all active:scale-95">5</button>
+                    <button onclick="pressKey('6')" class="w-full py-4 rounded-xl text-lg font-bold bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 hover:border-gray-900 dark:hover:border-white text-gray-900 dark:text-white transition-all active:scale-95">6</button>
+                    <button onclick="pressKey('7')" class="w-full py-4 rounded-xl text-lg font-bold bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 hover:border-gray-900 dark:hover:border-white text-gray-900 dark:text-white transition-all active:scale-95">7</button>
+                    <button onclick="pressKey('8')" class="w-full py-4 rounded-xl text-lg font-bold bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 hover:border-gray-900 dark:hover:border-white text-gray-900 dark:text-white transition-all active:scale-95">8</button>
+                    <button onclick="pressKey('9')" class="w-full py-4 rounded-xl text-lg font-bold bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 hover:border-gray-900 dark:hover:border-white text-gray-900 dark:text-white transition-all active:scale-95">9</button>
+                    <button onclick="pressKey('000')" class="w-full py-4 rounded-xl text-lg font-bold bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 hover:border-gray-900 dark:hover:border-white text-gray-900 dark:text-white transition-all active:scale-95">000</button>
+                    <button onclick="pressKey('0')" class="w-full py-4 rounded-xl text-lg font-bold bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 hover:border-gray-900 dark:hover:border-white text-gray-900 dark:text-white transition-all active:scale-95">0</button>
+                    <button onclick="pressKey('back')" class="w-full py-4 rounded-xl text-lg font-bold bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 hover:border-gray-900 dark:hover:border-white text-gray-900 dark:text-white transition-all flex items-center justify-center active:scale-95"><i data-lucide="delete" class="w-5 h-5 mx-auto"></i></button>
+                </div>
+
+                <div id="confirm-action-container" class="pt-4 pb-8 w-full mt-auto hidden animate-fade-in">
+                    <button onclick="processTopUp()" class="w-full py-4 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-gray-800 transition-all shadow-lg active:scale-[0.98]">Konfirmasi</button>
+                </div>
+            </main>
+        </div>
+
+        <!-- STEP 3: KONFIRMASI TOP UP QRIS (ringkasan + CTA Konfirmasi) -->
+        <div id="step-qris-confirm" class="hidden flex-col w-full min-h-screen overflow-y-auto">
+            <header class="flex justify-start px-4 py-3 sticky top-0 w-full z-40 bg-white dark:bg-[#0a0a0a]">
+                <button onclick="qrisConfirmBack()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-900 transition-all cursor-pointer text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white shadow-sm">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+            </header>
+
+            <main class="flex-1 w-full flex flex-col px-5 py-6">
+                <div class="flex flex-col items-center mb-5 w-full mt-2">
+                    <h2 class="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight text-center">Konfirmasi Top Up</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1.5 text-center">Periksa detail pembayaran sebelum melanjutkan</p>
+                </div>
+
+                <div class="w-full max-w-sm mx-auto">
+                    <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0a0a0a] p-5">
+                        <div class="flex items-center justify-between py-2.5">
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Metode Pembayaran</p>
+                            <div class="flex items-center gap-2">
+                                <img src="../../../assets/qris-wikimedia.svg" alt="QRIS" class="w-6 h-6 object-contain">
+                                <p class="text-sm font-bold text-gray-900 dark:text-white">QRIS</p>
+                            </div>
+                        </div>
+                        <div class="border-t border-gray-100 dark:border-gray-800"></div>
+                        <div class="flex items-center justify-between py-2.5">
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Nominal Top Up</p>
+                            <p id="qris-confirm-nominal" class="text-sm font-bold text-gray-900 dark:text-white"></p>
+                        </div>
+                        <div class="border-t border-gray-100 dark:border-gray-800"></div>
+                        <div class="flex items-center justify-between py-2.5">
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Biaya Layanan</p>
+                            <p id="qris-confirm-fee" class="text-sm font-bold text-gray-900 dark:text-white"></p>
+                        </div>
+                        <div class="border-t border-gray-100 dark:border-gray-800"></div>
+                        <div class="flex items-center justify-between py-2.5">
+                            <p class="text-sm font-bold text-gray-900 dark:text-white">Total Bayar</p>
+                            <p id="qris-confirm-total" class="text-base font-extrabold text-gray-900 dark:text-white"></p>
+                        </div>
+                    </div>
+                    <p class="text-center text-[11px] text-gray-400 dark:text-gray-500 mt-3">Biaya layanan bersifat estimasi; total final mengikuti tagihan QRIS.</p>
+                </div>
+
+                <div class="pt-4 pb-8 w-full mt-auto max-w-sm mx-auto">
+                    <button id="qris-continue-btn" onclick="processQRIS()" class="w-full py-4 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-gray-800 transition-all shadow-lg active:scale-[0.98]">Konfirmasi</button>
+                </div>
+            </main>
+        </div>
+
+        <!-- STEP 4: QRIS PAYMENT (BuatQris) -->
+        <div id="step-qris" class="hidden flex-col w-full min-h-screen overflow-y-auto">
+            <header class="flex justify-start px-4 py-3 sticky top-0 w-full z-40 bg-white dark:bg-[#0a0a0a]">
+                <button onclick="qrisBackToAmount()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-900 transition-all cursor-pointer text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white shadow-sm">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+            </header>
+
+            <main class="flex-1 w-full flex flex-col px-5 py-6">
+                <div class="flex flex-col items-center mb-5 w-full mt-2">
+                    <h2 class="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight text-center">Scan &amp; Bayar via QRIS</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1.5 text-center">Scan dengan GoPay, DANA, OVO, ShopeePay, atau m-banking</p>
+                </div>
+
+                <div class="w-full max-w-sm mx-auto">
+                    <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0a0a0a] p-5 text-center">
+                        <div class="flex justify-between items-center text-[11px] font-medium text-gray-400 dark:text-gray-500">
+                            <span>Order</span>
+                            <span id="qris-order-id" class="font-mono"></span>
+                        </div>
+                        <div id="qris-qr-box" class="w-[220px] h-[220px] mx-auto my-4 rounded-xl bg-white flex items-center justify-center overflow-hidden border border-gray-100"></div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Total Bayar</p>
+                        <p id="qris-total" class="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight mt-1"></p>
+                        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Sesuai tagihan di e-wallet — sudah termasuk biaya layanan & kode unik</p>
+                        <p id="qris-expire" class="text-[11px] text-gray-400 dark:text-gray-500 mt-2"></p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 pt-4">
+                        <button onclick="downloadQris()" class="w-full py-3.5 rounded-xl font-bold text-sm bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white hover:border-gray-900 dark:hover:border-white transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                            <i data-lucide="download" class="w-4 h-4"></i>Download QR
+                        </button>
+                        <button id="qris-paid-btn" onclick="checkQrisStatusNow()" class="w-full py-3.5 rounded-xl font-bold text-sm bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-100 transition-all active:scale-[0.98] flex items-center justify-center">
+                            <i data-lucide="refresh-cw" class="w-4 h-4 shrink-0"></i><span class="paid-label">Sudah Bayar</span>
+                        </button>
+                    </div>
+                    <p class="text-center text-[11px] text-gray-400 dark:text-gray-500 mt-3">Status pembayaran dicek otomatis setiap beberapa detik.</p>
+                    <p class="text-center mt-1.5"><span onclick="qrisCancelTopup()" class="text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer transition-colors">Batalkan Top Up</span></p>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- // [18 Okt 2026, arahan pemilik] pop-up -> popover -->
+    <div id="system-modal" class="hidden fixed z-50 w-[min(20rem,calc(100vw-1.5rem))] bg-white dark:bg-[#111] border border-gray-200 dark:border-[#262626] rounded-2xl shadow-2xl p-5 md:p-6 text-center relative" style="top:84px;left:50%;transform:translateX(-50%);">
+        <button type="button" onclick="closeModal()" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 dark:bg-[#1a1a1a] hover:bg-gray-100 dark:hover:bg-[#222] text-gray-500 dark:text-gray-400 transition-all">
+            <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+        <div id="modal-icon-wrap" class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 mx-auto">
+            <i data-lucide="check-circle" class="w-6 h-6"></i>
+        </div>
+        <h3 id="modal-title" class="text-base md:text-lg font-bold text-gray-900 dark:text-white mb-2"></h3>
+        <p id="modal-message" class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed"></p>
+        <button onclick="closeModal()" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-lg font-semibold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors shadow-sm active:scale-95">Tutup</button>
+    </div>
+
+    <script>
+        // Library render QR dari string QRIS (ringan, tanpa dependency)
+        document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>');
+        const API_BASE = ['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev' : '';
+        var TOPUP_API = API_BASE + '/api/topup';
+        let selectedNominalAmount = 0;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try { lucide.createIcons(); } catch (e) {}
+            resetKeypad();
+            goToStep1();
+            // Order QRIS aktif? Langsung kembali ke step QR (tahan saat refresh)
+            qrisRestore();
+        });
+
+        
+        
+        function closeTopUpPage() { qrisForgetSession(); window.ClincooBack('../'); }
+
+        
+        function goToStep1() {
+            var stepMethod = document.getElementById('step-method');
+            var stepAmount = document.getElementById('step-amount');
+            if (stepMethod) { stepMethod.classList.remove('hidden'); stepMethod.classList.add('flex'); }
+            if (stepAmount) { stepAmount.classList.add('hidden'); stepAmount.classList.remove('flex'); }
+        }
+
+        function goToStep2() {
+            // ClincooPay = hubungkan dompet: pindah ke halaman auth ClincooPay (bukan input nominal).
+            // Kalau sudah terhubung, saldo sudah tersinkron — tidak perlu isi saldo.
+            var el = document.querySelector('input[name="payment-method"]:checked');
+            if (el && el.value === 'ClincooPay') {
+                if (cpConnected) {
+                    showModal('Saldo Sudah Terhubung', 'Saldo ClincooPay dan saldo Clincoo kamu sudah tersinkron otomatis. Tidak perlu isi saldo — cukup isi dari aplikasi Wallet.');
+                } else {
+                    window.location.href = 'clincoopay/';
+                }
+                return;
+            }
+            var stepMethod = document.getElementById('step-method');
+            var stepAmount = document.getElementById('step-amount');
+            if (stepMethod) { stepMethod.classList.add('hidden'); stepMethod.classList.remove('flex'); }
+            if (stepAmount) { stepAmount.classList.remove('hidden'); stepAmount.classList.add('flex'); }
+            try { lucide.createIcons(); } catch (e) {}
+        }
+
+        var keypadAmount = '';
+
+        function pressKey(k) {
+            if (k === 'back') {
+                keypadAmount = keypadAmount.slice(0, -1);
+            } else {
+                if (keypadAmount === '0') keypadAmount = '';
+                if ((keypadAmount + k).replace(/^0+/, '').length <= 9) {
+                    keypadAmount = (keypadAmount + k).replace(/^0+/, '');
+                }
+            }
+            selectedNominalAmount = parseInt(keypadAmount || '0', 10);
+            renderKeypadDisplay();
+            toggleConfirmButton();
+        }
+
+        function renderKeypadDisplay() {
+            var display = document.getElementById('keypad-display');
+            if (display) display.textContent = formatNumberOnly(parseInt(keypadAmount || '0', 10));
+        }
+
+        function resetKeypad() {
+            keypadAmount = '';
+            selectedNominalAmount = 0;
+            renderKeypadDisplay();
+            toggleConfirmButton();
+        }
+
+        function toggleConfirmButton() {
+            var btnContainer = document.getElementById('confirm-action-container');
+            if (btnContainer) {
+                if (selectedNominalAmount > 0) {
+                    btnContainer.classList.remove('hidden');
+                } else {
+                    btnContainer.classList.add('hidden');
+                }
+            }
+        }
+
+        function selectPaymentMethod(labelEl) {
+            // Pilihan hanya ditandai bg + indikator bulat kanan — border kartu tidak diubah
+            document.querySelectorAll('.pay-method-card').forEach(function(card) {
+                card.classList.remove('selected', 'bg-gray-50', 'dark:bg-[#1a1a1a]');
+                card.classList.add('bg-white', 'dark:bg-[#0a0a0a]');
+            });
+            labelEl.classList.add('selected', 'bg-gray-50', 'dark:bg-[#1a1a1a]');
+            labelEl.classList.remove('bg-white', 'dark:bg-[#0a0a0a]');
+            var radio = labelEl.querySelector('input[type="radio"]');
+            if (radio) radio.checked = true;
+            // CTA Lanjutkan hanya untuk QRIS & metode lain — ClincooPay informatif saja
+            var inp = labelEl.querySelector('input[name="payment-method"]');
+            var wrap = document.getElementById('method-cta-wrap');
+            if (wrap && inp) {
+                if (inp.value === 'ClincooPay') wrap.classList.add('cta-hidden');
+                else wrap.classList.remove('cta-hidden');
+            }
+        }
+
+        async function processClincooPay() {
+            if (cpConnected) {
+                showModal('Saldo Sudah Terhubung', 'Saldo ClincooPay dan saldo Clincoo kamu sudah tersinkron otomatis. Tidak perlu isi saldo — cukup isi dari aplikasi Wallet.');
+                return;
+            }
+            var token = '';
+            try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
+            try {
+                var res = await fetch(API_BASE + '/api/wallet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ action: 'add_transaction', title: 'Top Up ClincooPay', amount: selectedNominalAmount, type: 'in', method: 'ClincooPay' })
+                }).then(function(r) { return r.json(); });
+                if (!res.success) {
+                    if (res.need_login) { showModal('Sesi Berakhir', 'Silakan masuk ulang, lalu coba isi saldo kembali.'); return; }
+                    showModal('Top Up Gagal', res.error || 'Gagal memproses ClincooPay.');
+                    return;
+                }
+                showModal('Top Up Berhasil', 'Saldo ' + Number(selectedNominalAmount).toLocaleString('id-ID') + ' berhasil masuk lewat ClincooPay.');
+                setTimeout(function() { closeTopUpPage(); }, 1200);
+            } catch (e) {
+                showModal('Gagal', 'Tidak dapat terhubung ke server ClincooPay.');
+            }
+        }
+
+        // ===== ClincooPay: hubungkan/putuskan dompet web Wallet (mirroring saldo 2 arah) =====
+        var cpConnected = false;
+        function cpAuthHeaders() {
+            var token = '';
+            try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
+            return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+        }
+        function cpMask(addr) { return addr ? '0x…' + String(addr).slice(-6) : ''; }
+
+        async function cpLoad() {
+            var desc = document.getElementById('clincoopay-desc');
+            var cta = document.getElementById('clincoopay-cta');
+            if (!desc) return;
+            desc.textContent = 'Memuat…';
+            if (cta) cta.innerHTML = '';
+            try {
+                var st = await fetch(API_BASE + '/api/clincoopay', { headers: cpAuthHeaders() }).then(function(r) { return r.json(); });
+                cpConnected = !!st.connected;
+                if (st.connected) {
+                    var bal = (st.wallet_balance == null) ? '…' : Number(st.wallet_balance).toLocaleString('id-ID');
+                    desc.innerHTML = 'Saldo · <span class="font-bold text-gray-900 dark:text-white">' + bal + '</span>';
+                } else {
+                    desc.textContent = 'Clincoo wallet';
+                    if (cta) cta.innerHTML =
+                        '<button type="button" onclick="location.href=\'clincoopay/\'" class="px-3.5 py-1.5 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-black text-[11px] font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-all">Hubungkan</button>';
+                }
+            } catch (e) {
+                desc.textContent = 'Gagal memuat status ClincooPay.';
+            }
+        }
+
+        cpLoad();
+
+        var XENDIT_METHOD_MAP = { 'QRIS Instant': 'qris', 'LinkAja': 'linkaja', 'GoPay': 'gopay', 'OVO': 'ovo', 'DANA': 'dana', 'ShopeePay': 'shopeepay', 'BCA Virtual Account': 'bca', 'Mandiri Virtual Account': 'mandiri', 'BRI Virtual Account': 'bri', 'BNI Virtual Account': 'bni' };
+        var topupPollTimer = null;
+
+        // ===== QRIS via BuatQris =====
+        var qrisOrder = null;
+        var qrisPollTimer = null;
+        var qrisCountdownTimer = null;
+
+        // Estimasi biaya layanan BuatQris: mulai 1% per transaksi berhasil (buatqris.site) — final mengikuti tagihan
+        function qrisFeeEstimate(amount) {
+            return Math.ceil(amount * 0.01);
+        }
+
+        function showQrisConfirm() {
+            var stepMethod = document.getElementById('step-method');
+            var stepAmount = document.getElementById('step-amount');
+            var st = document.getElementById('step-qris-confirm');
+            if (stepMethod) { stepMethod.classList.add('hidden'); stepMethod.classList.remove('flex'); }
+            if (stepAmount) { stepAmount.classList.add('hidden'); stepAmount.classList.remove('flex'); }
+            st.classList.remove('hidden'); st.classList.add('flex');
+            var fee = qrisFeeEstimate(selectedNominalAmount);
+            document.getElementById('qris-confirm-nominal').textContent = 'Rp ' + Number(selectedNominalAmount).toLocaleString('id-ID');
+            document.getElementById('qris-confirm-fee').textContent = 'Rp ' + Number(fee).toLocaleString('id-ID');
+            document.getElementById('qris-confirm-total').textContent = 'Rp ' + Number(selectedNominalAmount + fee).toLocaleString('id-ID');
+            var btn = document.getElementById('qris-continue-btn');
+            btn.disabled = false;
+            btn.textContent = 'Konfirmasi';
+            try { lucide.createIcons(); } catch (e) {}
+        }
+
+        function qrisConfirmBack() {
+            var st = document.getElementById('step-qris-confirm');
+            st.classList.add('hidden'); st.classList.remove('flex');
+            var stepAmount = document.getElementById('step-amount');
+            stepAmount.classList.remove('hidden'); stepAmount.classList.add('flex');
+        }
+
+        async function processQRIS() {
+            var btn = document.getElementById('qris-continue-btn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Memproses…'; }
+            var token = '';
+            try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
+            var res;
+            try {
+                res = await fetch(API_BASE + '/api/topup-qris', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ action: 'create', amount: selectedNominalAmount })
+                }).then(function (r) { return r.json(); });
+            } catch (e) { showModal('Gagal', 'Tidak dapat terhubung ke server pembayaran.'); return; }
+            if (!res.success) {
+                if (btn) { btn.disabled = false; btn.textContent = 'Konfirmasi'; }
+                if (res.need_login) { showModal('Sesi Berakhir', 'Silakan masuk ulang, lalu coba isi saldo kembali.'); return; }
+                if (res.error === 'payment_not_configured') { showModal('Top Up Gagal', res.message || 'BuatQris belum dikonfigurasi (BUATQRIS_ACCOUNT_ID / BUATQRIS_SECRET_TOKEN).'); return; }
+                showModal('Top Up Gagal', res.message || res.error || 'Gagal membuat transaksi QRIS.');
+                return;
+            }
+            if (btn) { btn.disabled = false; btn.textContent = 'Konfirmasi'; }
+            qrisOrder = res;
+            showQrisStep(res);
+        }
+
+        function showQrisStep(res) {
+            var stepMethod = document.getElementById('step-method');
+            var stepAmount = document.getElementById('step-amount');
+            var stepConfirm = document.getElementById('step-qris-confirm');
+            var st = document.getElementById('step-qris');
+            if (stepMethod) { stepMethod.classList.add('hidden'); stepMethod.classList.remove('flex'); }
+            if (stepAmount) { stepAmount.classList.add('hidden'); stepAmount.classList.remove('flex'); }
+            if (stepConfirm) { stepConfirm.classList.add('hidden'); stepConfirm.classList.remove('flex'); }
+            st.classList.remove('hidden'); st.classList.add('flex');
+            document.getElementById('qris-order-id').textContent = res.order_id || '';
+            document.getElementById('qris-total').textContent = 'Rp ' + Number(res.total_payment || 0).toLocaleString('id-ID');
+            var box = document.getElementById('qris-qr-box');
+            box.innerHTML = '';
+            if (res.qr_image) {
+                // BuatQris: QR sudah berupa gambar siap tampil
+                box.innerHTML = '<img src="' + res.qr_image + '" alt="QRIS" class="w-[220px] h-[220px] object-contain">';
+            } else {
+                try {
+                    new QRCode(box, { text: res.qr_string, width: 220, height: 220, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+                } catch (e) {
+                    box.innerHTML = '<p class="text-xs text-gray-500 dark:text-gray-400 px-4">Gagal merender QR. Coba lagi.</p>';
+                }
+            }
+            try { lucide.createIcons(); } catch (e) {}
+            try { localStorage.setItem('clincoo_qris_active_order', JSON.stringify(res)); } catch (e) {}
+            startQrisCountdown(res.expired_at);
+            startQrisPoll(res.order_id);
+        }
+
+        function qrisForgetSession() {
+            try { localStorage.removeItem('clincoo_qris_active_order'); } catch (e) {}
+        }
+
+        function qrisRestore() {
+            try {
+                var raw = localStorage.getItem('clincoo_qris_active_order');
+                if (!raw) return;
+                var o = JSON.parse(raw);
+                if (!o || !o.order_id || !o.qr_string) { qrisForgetSession(); return; }
+                if (o.expired_at && !isNaN(new Date(o.expired_at).getTime()) && new Date(o.expired_at).getTime() < Date.now()) { qrisForgetSession(); return; }
+                qrisOrder = o;
+                showQrisStep(o);
+            } catch (e) {}
+        }
+
+        function qrisBackToAmount() {
+            qrisForgetSession();
+            stopQrisTimers();
+            var st = document.getElementById('step-qris');
+            st.classList.add('hidden'); st.classList.remove('flex');
+            var stepAmount = document.getElementById('step-amount');
+            stepAmount.classList.remove('hidden'); stepAmount.classList.add('flex');
+            try { lucide.createIcons(); } catch (e) {}
+        }
+
+        function startQrisCountdown(expiredAt) {
+            var el = document.getElementById('qris-expire');
+            var end = expiredAt ? new Date(expiredAt).getTime() : 0;
+            if (!end) { el.textContent = ''; return; }
+            function tick() {
+                var left = Math.floor((end - Date.now()) / 1000);
+                if (left <= 0) {
+                    el.textContent = 'QR kedaluwarsa — silakan buat transaksi baru.';
+                    stopQrisTimers();
+                    return;
+                }
+                var m = Math.floor(left / 60), sec = left % 60;
+                el.textContent = 'Kedaluwarsa dalam ' + m + ':' + (sec < 10 ? '0' : '') + sec;
+            }
+            tick();
+            qrisCountdownTimer = setInterval(tick, 1000);
+        }
+
+        function startQrisPoll(orderId) {
+            if (qrisPollTimer) { clearInterval(qrisPollTimer); qrisPollTimer = null; }
+            var attempts = 0;
+            checkQris(orderId, true);
+            qrisPollTimer = setInterval(async function () {
+                attempts++;
+                if (attempts > 600) { clearInterval(qrisPollTimer); qrisPollTimer = null; return; }
+                await checkQris(orderId, true);
+            }, 3000);
+        }
+
+        async function checkQris(orderId, auto) {
+            var token = '';
+            try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
+            try {
+                var data = await fetch(API_BASE + '/api/topup-qris?action=status&order_id=' + encodeURIComponent(orderId), {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                }).then(function (r) { return r.json(); });
+                if (data.status === 'paid') {
+                    stopQrisTimers();
+                    qrisForgetSession();
+                    showModal('Top Up Berhasil', 'Pembayaran QRIS diterima. Saldo sudah masuk ke Dompet Clincoo.');
+                    setTimeout(function () { closeTopUpPage(); }, 1500);
+                    return;
+                }
+                if (data.status === 'failed') {
+                    stopQrisTimers();
+                    qrisForgetSession();
+                    showModal('Pembayaran Tidak Selesai', 'Transaksi dibatalkan atau kedaluwarsa.');
+                    return;
+                }
+                if (!auto) showModal('Belum Terbayar', 'Belum ada pembayaran terdeteksi. Coba lagi beberapa saat setelah membayar.');
+            } catch (e) {
+                if (!auto) showModal('Gagal', 'Tidak dapat menghubungi server.');
+            }
+        }
+
+        async function qrisCancelTopup() {
+            if (!qrisOrder || !qrisOrder.order_id) return;
+            var token = '';
+            try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
+            stopQrisTimers();
+            try {
+                await fetch(API_BASE + '/api/topup-qris', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ action: 'cancel', order_id: qrisOrder.order_id })
+                });
+            } catch (e) {}
+            qrisForgetSession();
+            goToStep1();
+            showModal('Top Up Dibatalkan', 'Transaksi QRIS dibatalkan. Saldo kamu tetap aman.');
+        }
+
+        async function checkQrisStatusNow() {
+            var btn = document.getElementById('qris-paid-btn');
+            if (!qrisOrder || !btn || btn.classList.contains('checking')) return;
+            btn.classList.add('checking');
+            try { await checkQris(qrisOrder.order_id, false); }
+            finally { btn.classList.remove('checking'); }
+        }
+
+        function downloadQris() {
+            var box = document.getElementById('qris-qr-box');
+            var canvas = box ? box.querySelector('canvas') : null;
+            var img = box ? box.querySelector('img') : null;
+            var src = canvas ? canvas.toDataURL('image/png') : (img ? img.src : null);
+            if (!src) { showModal('Gagal', 'QR belum siap untuk diunduh.'); return; }
+            var a = document.createElement('a');
+            a.href = src;
+            a.download = 'clincoo-qris-' + (qrisOrder ? qrisOrder.order_id : 'bayar') + '.png';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+
+        function stopQrisTimers() {
+            if (qrisPollTimer) { clearInterval(qrisPollTimer); qrisPollTimer = null; }
+            if (qrisCountdownTimer) { clearInterval(qrisCountdownTimer); qrisCountdownTimer = null; }
+        }
+
+        async function processTopUp() {
+            if (!selectedNominalAmount || selectedNominalAmount < 10000) {
+                showModal('Nominal Tidak Valid', 'Minimal isi saldo adalah 10.000. Ketik jumlahnya di keyboard di atas.');
+                return;
+            }
+            var methodEl = document.querySelector('input[name="payment-method"]:checked');
+            var method = methodEl ? methodEl.value : 'ClincooPay';
+            if (method === 'ClincooPay') { return processClincooPay(); }
+            if (method === 'QRIS') { return showQrisConfirm(); }
+            var channel = XENDIT_METHOD_MAP[method] || 'qris';
+            try {
+                var payerEmail = ''; try { payerEmail = localStorage.getItem('clincoo_email') || ''; } catch(e) {}
+                var payerToken = ''; try { payerToken = localStorage.getItem('clincoo_auth_token') || ''; } catch(e) {}
+                var res = await fetch(TOPUP_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + payerToken },
+                    body: JSON.stringify({ action: 'create', amount: selectedNominalAmount, method: channel })
+                }).then(function(r) { return r.json(); });
+                if (!res.success) {
+                    var msg = (res.error === 'payment_not_configured')
+                        ? 'Payment gateway belum dikonfigurasi. Setel XENDIT_SECRET_KEY di Cloudflare Pages > Settings > Environment variables.'
+                        : (res.message || res.error || 'Gagal membuat transaksi.');
+                    showModal('Top Up Gagal', msg);
+                    return;
+                }
+                window.open(res.invoice_url, '_blank');
+                pollTopUpStatus(res.order_id, channel);
+            } catch(e) {
+                showModal('Gagal', 'Tidak dapat terhubung ke server pembayaran.');
+            }
+        }
+
+        function pollTopUpStatus(orderId, channel) {
+            stopTopUpPoll();
+            var attempts = 0;
+            var checking = false; // cegah tick tumpang tindih (race condition) jika request sebelumnya belum selesai
+            topupPollTimer = setInterval(async function() {
+                if (checking) return;
+                checking = true;
+                attempts++;
+                try {
+                    var data = await fetch(TOPUP_API + '?action=status&order_id=' + encodeURIComponent(orderId), {
+                        method: 'GET',
+                        headers: { 'Authorization': 'Bearer ' + (function(){ try { return localStorage.getItem('clincoo_auth_token') || ''; } catch(e) { return ''; } })() }
+                    }).then(function(r) { return r.json(); });
+                    if (data.status === 'paid') {
+                        stopTopUpPoll();
+                        closeTopUpPage();
+                        // Notifikasi top up sudah dikirim server (wallet.js add_transaction) saat saldo dikreditkan —
+                        // jangan kirim lagi dari sini (dulu bikin notif dobel & saldo "NaN" karena field respons tidak lengkap).
+                        return;
+                    }
+                    if (data.status === 'failed') {
+                        stopTopUpPoll();
+                        showModal('Pembayaran Tidak Selesai', 'Transaksi kedaluwarsa atau dibatalkan.');
+                        return;
+                    }
+                } catch(err) {
+                } finally {
+                    checking = false;
+                }
+                if (attempts > 300) stopTopUpPoll();
+            }, 3000);
+        }
+
+        function stopTopUpPoll() {
+            if (topupPollTimer) { clearInterval(topupPollTimer); topupPollTimer = null; }
+        }
+
+        document.addEventListener('change', function(e) {
+            if (e.target && e.target.name === 'payment-method') {
+                var card = e.target.closest('.pay-method-card');
+                if (card) selectPaymentMethod(card);
+            }
+        });
+
+        function formatNumberOnly(num) { return Number(num).toLocaleString('id-ID'); }
+
+        // [18 Okt 2026, arahan pemilik] pop-up -> popover
+        function positionPopover(pop, anchor) {
+          pop.classList.remove('hidden');
+          const r = anchor.getBoundingClientRect();
+          const pw = pop.offsetWidth, ph = pop.offsetHeight;
+          const vw = window.innerWidth, vh = window.innerHeight, m = 8;
+          let top = r.bottom + m;
+          if (top + ph > vh - m) top = Math.max(m, r.top - ph - m);
+          let left = r.left + (r.width / 2) - (pw / 2);
+          left = Math.min(Math.max(m, left), Math.max(m, vw - pw - m));
+          pop.style.top = top + 'px';
+          pop.style.left = left + 'px';
+          pop.style.transform = 'none';
+        }
+
+        function showModal(title, message, isError, anchor) {
+            var iconWrap = document.getElementById('modal-icon-wrap');
+            if (iconWrap) {
+                var icon = isError ? 'alert-circle' : 'check-circle';
+                var cls = isError ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600';
+                iconWrap.className = 'w-12 h-12 rounded-full ' + cls + ' flex items-center justify-center mb-4 mx-auto';
+                iconWrap.innerHTML = '<i data-lucide="' + icon + '" class="w-6 h-6"></i>';
+            }
+            document.getElementById('modal-title').textContent = title || '';
+            document.getElementById('modal-message').textContent = message || '';
+            var modal = document.getElementById('system-modal');
+            var btn = (anchor && anchor.nodeType === 1) ? anchor : (anchor && anchor.currentTarget ? anchor.currentTarget : null);
+            if (btn) {
+                positionPopover(modal, btn);
+            } else {
+                modal.classList.remove('hidden');
+                modal.style.top = '84px';
+                modal.style.left = '50%';
+                modal.style.transform = 'translateX(-50%)';
+            }
+            try { lucide.createIcons(); } catch (e) {}
+        }
+
+        function closeModal() {
+            var modal = document.getElementById('system-modal');
+            modal.classList.add('hidden');
+        }
+
+        document.addEventListener('click', function(e) {
+            var pop = document.getElementById('system-modal');
+            if (pop && !pop.classList.contains('hidden')) {
+                if (!pop.contains(e.target) && !e.target.closest('[onclick*="Modal"]') && !e.target.closest('[onclick*="showModal"]')) {
+                    pop.classList.add('hidden');
+                }
+            }
+        }, true);
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                var pop = document.getElementById('system-modal');
+                if (pop) pop.classList.add('hidden');
+            }
+        });
+    </script>
+
+    <script>/* clincoo-sw-register */
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../../sw.js').catch(function () {}); }); }
+    </script>
+</body>
+</html>

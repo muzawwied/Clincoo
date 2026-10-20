@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../js/auth-client.js?v=6"></script>
+    <script src="../../js/accent-init.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../assets/favicon.png">
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.png">
+    <title>Laporkan Bug — Clincoo</title>
+    <meta name="description" content="Laporkan Bug — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clincoo">
+    <meta property="og:title" content="Laporkan Bug — Clincoo">
+    <meta property="og:description" content="Laporkan Bug — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Laporkan Bug — Clincoo">
+    <meta name="twitter:description" content="Laporkan Bug — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+    <script src="https://unpkg.com/lucide@1.41.0"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        :root {
+            --accent-color: #000000;
+            --accent-hover: #1f2937;
+            --accent-text: #ffffff;
+        }
+
+        .bg-accent { background-color: var(--accent-color) !important; }
+        .text-accent { color: var(--accent-color) !important; }
+        .border-accent { border-color: var(--accent-color) !important; }
+        
+        body.dark-mode {
+            background-color: #000000;
+            color: #ffffff;
+        }
+        body.dark-mode .bg-white {
+            background-color: #0a0a0a !important;
+        }
+        body.dark-mode .text-\[\#222222\] { color: #ffffff !important; }
+        body.dark-mode button[onclick="history.back()"],
+        body.dark-mode header button[onclick] {
+            background-color: #000000 !important;
+            border: 1.5px solid rgba(255,255,255,0.4) !important;
+            color: #ffffff !important;
+        }
+        body.dark-mode button[onclick="history.back()"] svg,
+        body.dark-mode header button[onclick] svg {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+        }
+        body.dark-mode button[onclick="history.back()"]:hover,
+        body.dark-mode header button[onclick]:hover {
+            background-color: #1a1a1a !important;
+            border-color: rgba(255,255,255,0.7) !important;
+        }
+        body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black {
+            color: #ffffff !important;
+        }
+        body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 {
+            color: #888888 !important;
+        }
+        body.dark-mode .border-gray-100, body.dark-mode .border-gray-200, body.dark-mode .border-gray-300 {
+            border-color: #222222 !important;
+        }
+        body.dark-mode .hover\:bg-gray-50:hover, body.dark-mode .hover\:bg-gray-100:hover {
+            background-color: #0a0a0a !important;
+        }
+        body.dark-mode .bg-gray-50, body.dark-mode .bg-gray-100 {
+            background-color: #0a0a0a !important;
+        }
+        
+        body.dark-mode select, body.dark-mode textarea {
+            background-color: #0a0a0a;
+            color: #ffffff;
+            border-color: #222222;
+        }
+        body.dark-mode select:focus, body.dark-mode textarea:focus {
+            border-color: #444444;
+            outline: none;
+        }
+        body.dark-mode .border-dashed {
+            border-color: #222222 !important;
+        }
+        body.dark-mode .popover-item:hover {
+            background-color: #1a1a1a !important;
+        }
+        body.dark-mode .hover\:border-blue-700:hover {
+            border-color: #1d4ed8 !important;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        body.dark-mode header { background-color: #000000 !important; border-color: #222222 !important; }
+        body.dark-mode .divide-gray-100 > *, body.dark-mode .divide-gray-200 > * { border-color: #222222 !important; }
+        body.dark-mode .text-gray-400 { color: #666666 !important; }
+
+        body.dark-mode .bg-black { background-color: #ffffff !important; color: #000000 !important; }
+        body.dark-mode .bg-black.text-white { color: #000000 !important; }
+        body.dark-mode .hover\:bg-gray-800:hover { background-color: #e5e5e5 !important; }
+        body.dark-mode .bg-accent { background-color: #ffffff !important; color: #000000 !important; }
+        body.dark-mode .bg-accent.text-white { color: #000000 !important; }
+        body.dark-mode .text-accent { color: #ffffff !important; }
+        body.dark-mode .border-accent { border-color: #ffffff !important; }
+    </style>
+<!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
+(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<2;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
+    </script>
+<!-- Google tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+<!-- End Google tag -->
+<script src="../../js/i18n-dict.js" defer></script>
+<script src="../../js/i18n.js" defer></script>
+</head>
+
+<body class="min-h-screen flex flex-col text-gray-900 pt-16 bg-[#ffffff]">
+    <script>(function(){var t=localStorage.getItem("clincoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+    
+    <header class="bg-white flex justify-between items-center px-3 py-2 fixed top-0 w-full z-40 transition-colors">
+        <button onclick="history.back()" class="top-2 left-5 w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-100 hover:bg-gray-100 transition-all cursor-pointer text-gray-700 hover:text-black">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </button>
+        <h1 class="font-extrabold text-lg text-gray-900 tracking-tight">Laporkan Bug</h1>
+        <div class="w-10"></div>
+    </header>
+    <main class="flex-1 w-full max-w-2xl mx-auto px-6 py-4 flex flex-col relative min-h-[80vh]">
+        <div id="form-view" class="w-full flex flex-col transition-all duration-300">
+            <div class="w-full flex flex-col divide-y divide-gray-100">
+                
+                <div class="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <h4 class="text-base font-semibold text-gray-900">Kategori</h4>
+                        <p class="text-xs sm:text-sm text-gray-500 mt-0.5">Jenis masalah yang dilaporkan</p>
+                    </div>
+                    <div class="relative w-full sm:w-80" id="category-popover-container">
+                        <input type="hidden" id="category-input" value="ui">
+                        
+                        <button type="button" id="category-trigger" class="w-full px-3.5 py-2.5 text-sm text-left rounded-xl border border-gray-200 focus:border-gray-400 focus:outline-none cursor-pointer transition-colors bg-white flex justify-between items-center shadow-sm" onclick="togglePopoverMenu(event)">
+                            <span id="category-text" class="text-gray-900 font-medium">Tampilan / UI</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-200" id="category-icon"></i>
+                        </button>
+
+                        <div id="category-menu" class="absolute z-50 w-full mt-2 bg-white shadow-xl rounded-xl overflow-hidden hidden opacity-0 translate-y-[-10px] transition-all duration-200 origin-top">
+                            <ul class="py-1.5 flex flex-col">
+                                <li onclick="selectCategory('ui', 'Tampilan / UI')" class="px-4 py-2.5 text-sm text-gray-900 hover:bg-gray-50 cursor-pointer transition-colors flex items-center justify-between popover-item">Tampilan / UI</li>
+                                <li onclick="selectCategory('function', 'Fungsi / Fitur')" class="px-4 py-2.5 text-sm text-gray-900 hover:bg-gray-50 cursor-pointer transition-colors flex items-center justify-between popover-item">Fungsi / Fitur</li>
+                                <li onclick="selectCategory('performance', 'Performa')" class="px-4 py-2.5 text-sm text-gray-900 hover:bg-gray-50 cursor-pointer transition-colors flex items-center justify-between popover-item">Performa</li>
+                            <li onclick="selectCategory('security', 'Keamanan')" class="px-4 py-2.5 text-sm text-gray-900 hover:bg-gray-50 cursor-pointer transition-colors flex items-center justify-between popover-item">Keamanan</li>
+                            <li onclick="selectCategory('other', 'Lainnya')" class="px-4 py-2.5 text-sm text-gray-900 hover:bg-gray-50 cursor-pointer transition-colors flex items-center justify-between popover-item">Lainnya</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="py-5">
+                <h4 class="text-base font-semibold text-gray-900 mb-2">Deskripsi Masalah <span class="text-red-500">*</span></h4>
+                <p class="text-xs sm:text-sm text-gray-500 mb-3">Jelaskan masalah yang Anda alami secara detail</p>
+                <textarea id="description-input" oninput="checkRequiredFields()" rows="5" class="w-full px-3.5 py-3 text-sm rounded-xl border border-gray-200 focus:border-gray-400 focus:outline-none resize-none transition-colors bg-white" placeholder="Langkah reproduksi, apa yang terjadi, dan apa yang diharapkan..."></textarea>
+            </div>
+            
+            <div class="py-5">
+                <h4 class="text-base font-semibold text-gray-900 mb-2">Screenshot (Opsional)</h4>
+                <p class="text-xs sm:text-sm text-gray-500 mb-3">Lampirkan tangkapan layar untuk membantu kami memahami masalah</p>
+                
+                <input type="file" id="file-input" accept="image/*" multiple class="hidden" onchange="handleFileSelect(event)">
+                
+                <div id="dropzone" class="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center transition-colors bg-transparent min-h-[140px] flex flex-col relative">
+                    <div id="preview-list" class="flex flex-row flex-wrap gap-3 w-full mb-2 hidden"></div>
+                    
+                    <div id="upload-prompt" onclick="triggerFileInput()" class="flex flex-col items-center justify-center py-6 cursor-pointer rounded-lg hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors w-full flex-1">
+                        <i data-lucide="upload-cloud" class="h-8 w-8 text-gray-400 mx-auto mb-2"></i>
+                        <p class="text-sm text-gray-500 font-medium">Klik untuk upload atau drag & drop</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="action-buttons" class="mt-8 pt-6 border-t border-gray-100 hidden justify-end gap-3 opacity-0 transition-opacity duration-300">
+                <button type="button" onclick="cancelChanges()" class="px-5 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl transition-all cursor-pointer shadow-sm">
+                    Batal
+                </button>
+                <button type="button" onclick="saveChanges()" class="px-5 py-2.5 text-sm font-semibold text-white bg-black hover:bg-gray-800 rounded-xl transition-all cursor-pointer shadow-sm focus:outline-none flex items-center justify-center min-w-[140px]">
+                    Kirim Laporan
+                </button>
+            </div>
+        </div>
+
+        <div id="success-view" class="fixed inset-0 hidden opacity-0 transition-all duration-500 bg-white dark:bg-[#000000] z-50 flex-col overflow-y-auto">
+            <!-- CTA Kembali di Pojok Kanan Atas -->
+            <div class="flex justify-end pt-6 pr-6 w-full max-w-3xl mx-auto shrink-0">
+                <button onclick="goBackManually()" class="px-4 py-2 text-sm font-semibold text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white transition-colors flex items-center gap-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 cursor-pointer">
+                    Kembali
+                </button>
+            </div>
+
+            <!-- Konten Surat Digital -->
+            <div class="max-w-2xl mx-auto px-6 sm:px-8 w-full flex-1 pt-6 sm:pt-12 pb-16 sm:pb-24">
+                <div class="relative w-16 h-16 mb-8 flex items-center justify-center">
+                    <div class="absolute inset-0 bg-green-100 dark:bg-green-900/30 rounded-full animate-ping opacity-75"></div>
+                    <div class="relative w-12 h-12 bg-white dark:bg-[#1a1a1a] border-2 border-green-500 dark:border-green-400 rounded-full flex items-center justify-center shadow-sm">
+                        <i data-lucide="check" class="w-6 h-6 text-green-500 dark:text-green-400 stroke-[3]"></i>
+                    </div>
+                </div>
+                
+                <h2 class="text-3xl font-extrabold text-gray-900 mb-8 tracking-tight">Laporan Anda Telah Diterima</h2>
+                
+                <div class="space-y-5 text-gray-600 dark:text-gray-300 text-base leading-relaxed font-medium">
+                    <p class="text-gray-900 dark:text-white">Yth. Pengguna,</p>
+                    
+                    <p>Terima kasih banyak telah meluangkan waktu berharga Anda untuk mengirimkan laporan bug ini. Kami sangat menghargai kontribusi aktif Anda dalam membantu kami menjaga dan meningkatkan kualitas sistem.</p>
+                    
+                    <p>Kami memohon maaf yang sebesar-besarnya atas kendala dan ketidaknyamanan yang Anda alami saat menggunakan layanan kami. Kami memahami bahwa hal ini dapat mengganggu aktivitas Anda dan ini bukanlah standar pelayanan yang kami harapkan.</p>
+                    
+                    <p>Laporan Anda sangat penting bagi kami. Tim teknis kami telah menerima detail masalah yang Anda sampaikan dan akan segera melakukan investigasi menyeluruh. Kami berkomitmen untuk melakukan perbaikan secepat mungkin agar masalah serupa tidak terulang kembali.</p>
+                    
+                    <p class="pt-8 text-gray-900 dark:text-white">
+                        Salam hangat,<br>
+                        <span class="font-bold mt-1 inline-block">Tim Developer</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = ['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev' : '';
+
+        try { lucide.createIcons(); } catch (e) {}
+
+        let uploadedFiles = [];
+
+        function checkRequiredFields() {
+            const desc = document.getElementById('description-input').value.trim();
+            const actionButtons = document.getElementById('action-buttons');
+            
+            if (desc.length > 0) {
+                actionButtons.classList.remove('hidden');
+                actionButtons.classList.add('flex');
+                void actionButtons.offsetWidth;
+                actionButtons.classList.remove('opacity-0');
+                actionButtons.classList.add('opacity-100');
+            } else {
+                actionButtons.classList.remove('opacity-100');
+                actionButtons.classList.add('opacity-0');
+                setTimeout(() => {
+                    if(document.getElementById('description-input').value.trim().length === 0) {
+                        actionButtons.classList.remove('flex');
+                        actionButtons.classList.add('hidden');
+                    }
+                }, 300);
+            }
+        }
+
+        function togglePopoverMenu(event) {
+            if(event) event.stopPropagation();
+            const menu = document.getElementById('category-menu');
+            const icon = document.getElementById('category-icon');
+            const isHidden = menu.classList.contains('hidden');
+            
+            if (isHidden) {
+                menu.classList.remove('hidden');
+                void menu.offsetWidth;
+                menu.classList.remove('opacity-0', 'translate-y-[-10px]');
+                menu.classList.add('opacity-100', 'translate-y-0');
+                icon.classList.add('rotate-180');
+            } else {
+                closePopover();
+            }
+        }
+
+        function closePopover() {
+            const menu = document.getElementById('category-menu');
+            const icon = document.getElementById('category-icon');
+            if (menu && !menu.classList.contains('hidden')) {
+                menu.classList.remove('opacity-100', 'translate-y-0');
+                menu.classList.add('opacity-0', 'translate-y-[-10px]');
+                icon.classList.remove('rotate-180');
+                setTimeout(() => {
+                    menu.classList.add('hidden');
+                }, 200);
+            }
+        }
+
+        document.addEventListener('click', function(event) {
+            const container = document.getElementById('category-popover-container');
+            if (container && !container.contains(event.target)) {
+                closePopover();
+            }
+        });
+
+        function selectCategory(value, text) {
+            document.getElementById('category-input').value = value;
+            document.getElementById('category-text').innerText = text;
+            closePopover();
+        }
+
+        function triggerFileInput() {
+            document.getElementById('file-input').click();
+        }
+
+        function handleFileSelect(event) {
+            const files = Array.from(event.target.files);
+            addFiles(files);
+            event.target.value = '';
+        }
+
+        function addFiles(newFiles) {
+            newFiles.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    uploadedFiles.push({
+                        file: file,
+                        id: Math.random().toString(36).substr(2, 9)
+                    });
+                }
+            });
+            renderPreviews();
+        }
+
+        function removeImage(event, id) {
+            event.stopPropagation();
+            uploadedFiles = uploadedFiles.filter(item => item.id !== id);
+            renderPreviews();
+        }
+
+        function renderPreviews() {
+            const list = document.getElementById('preview-list');
+            list.innerHTML = '';
+            if (uploadedFiles.length > 0) {
+                list.classList.remove('hidden');
+                uploadedFiles.forEach(item => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const div = document.createElement('div');
+                        div.className = 'relative group w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0';
+                        div.innerHTML = `
+                            <img src="${e.target.result}" class="w-full h-full object-cover rounded-lg border border-gray-200 shadow-sm">
+                            <button type="button" onclick="removeImage(event, '${item.id}')" class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-md cursor-pointer">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            </button>
+                        `;
+                        list.appendChild(div);
+                    };
+                    reader.readAsDataURL(item.file);
+                });
+            } else {
+                list.classList.add('hidden');
+            }
+        }
+
+        const dropzone = document.getElementById('dropzone');
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, () => dropzone.classList.add('border-gray-400'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, () => dropzone.classList.remove('border-gray-400'), false);
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = Array.from(dt.files);
+            addFiles(files);
+        }, false);
+
+        function cancelChanges() {
+            window.location.reload();
+        }
+
+        // Kompres gambar di sisi klien sebelum dikirim (maks 1280px, JPEG 72%)
+        function compressImage(file) {
+            return new Promise(function(resolve) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var img = new Image();
+                    img.onload = function() {
+                        try {
+                            var maxDim = 1280;
+                            var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+                            var canvas = document.createElement('canvas');
+                            canvas.width = Math.round(img.width * scale);
+                            canvas.height = Math.round(img.height * scale);
+                            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                            resolve(canvas.toDataURL('image/jpeg', 0.72));
+                        } catch (err) { resolve(e.target.result); }
+                    };
+                    img.onerror = function() { resolve(null); };
+                    img.src = e.target.result;
+                };
+                reader.onerror = function() { resolve(null); };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function saveChanges() {
+            const btn = document.querySelector('#action-buttons button.bg-black');
+            if (!btn) return;
+
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 mr-2 animate-spin"></i> Mengirim...';
+            try { lucide.createIcons(); } catch (e) {}
+            btn.disabled = true;
+            btn.classList.add('opacity-80', 'cursor-not-allowed');
+
+            try {
+                const attachments = [];
+                for (let i = 0; i < uploadedFiles.length && i < 3; i++) {
+                    const c = await compressImage(uploadedFiles[i].file);
+                    if (c) attachments.push(c);
+                }
+
+                const res = await fetch(API_BASE + '/api/bug-report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        category: document.getElementById('category-input').value,
+                        category_label: document.getElementById('category-text').innerText.trim(),
+                        description: document.getElementById('description-input').value.trim(),
+                        page_url: document.referrer || location.href,
+                        user_agent: navigator.userAgent,
+                        attachments: attachments
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.ok) throw new Error(data.error || ('HTTP ' + res.status));
+
+                const formView = document.getElementById('form-view');
+                const successView = document.getElementById('success-view');
+                const header = document.getElementById('main-header');
+
+                if (header) {
+                    header.classList.add('-translate-y-full', 'opacity-0');
+                }
+                if (formView) formView.classList.add('opacity-0', 'scale-95');
+
+                setTimeout(() => {
+                    if (formView) formView.classList.add('hidden');
+
+                    if (successView) {
+                        successView.scrollTop = 0;
+                        successView.classList.remove('hidden');
+                        successView.classList.add('flex');
+                        void successView.offsetWidth;
+                        successView.classList.remove('opacity-0');
+                        successView.classList.add('opacity-100');
+                        try { lucide.createIcons(); } catch (e) {}
+                    }
+                    // Fitur kembali otomatis DIHAPUS.
+                    // Pengguna harus menekan tombol "Kembali" secara manual.
+                }, 300);
+            } catch (err) {
+                btn.innerHTML = '<i data-lucide="send" class="w-4 h-4 mr-2"></i> Kirim Laporan';
+                lucide.createIcons();
+                btn.disabled = false;
+                btn.classList.remove('opacity-80', 'cursor-not-allowed');
+                console.warn('Gagal mengirim laporan: ' + (err && err.message ? err.message : 'kesalahan jaringan') + '. Silakan coba lagi.');
+            }
+        }
+
+        function goBackManually() {
+            document.body.style.transition = 'opacity 0.3s ease';
+            document.body.style.opacity = '0';
+            
+            setTimeout(() => {
+                if (window.history.length > 1) {
+                    history.back();
+                } else {
+                    window.location.reload();
+                }
+            }, 300);
+        }
+    </script>
+
+    <script>/* clincoo-sw-register */
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../sw.js').catch(function () {}); }); }
+    </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

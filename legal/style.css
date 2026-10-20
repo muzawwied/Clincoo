@@ -1,0 +1,38 @@
+:root{--bg:#fff;--fg:#0a0a0a;--muted:#666;--line:#e5e5e5;--accent:#0a0a0a}
+@media (prefers-color-scheme:dark){:root{--bg:#0a0a0a;--fg:#fafafa;--muted:#a1a1a1;--line:#222}}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--fg);line-height:1.75;font-size:16px;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.wrap{max-width:720px;margin:0 auto;padding:0 24px}
+header.nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:10}
+.nav-in{max-width:720px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+.brand{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:19px;text-decoration:none;letter-spacing:-.02em}
+.nav nav{display:flex;gap:20px;flex-wrap:wrap}
+.nav nav a{font-size:13px;color:var(--muted);text-decoration:none;font-weight:500}
+.nav nav a:hover{color:var(--fg)}
+main{padding:56px 0 32px}
+h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(30px,5vw,42px);line-height:1.1;letter-spacing:-.03em;margin-bottom:12px}
+h2{font-family:'Space Grotesk',sans-serif;font-size:20px;margin:40px 0 8px;letter-spacing:-.01em}
+h3{font-size:16px;font-weight:700;margin:24px 0 4px}
+p,li{color:var(--fg)}
+p{margin-bottom:12px}
+.sub{color:var(--muted);font-size:15px;margin-bottom:8px}
+ul,ol{margin:0 0 14px 22px}
+li{margin-bottom:6px}
+hr{border:0;border-top:1px solid var(--line);margin:40px 0}
+footer{border-top:1px solid var(--line);padding:28px 0 48px;margin-top:48px}
+footer .sub{font-size:13px}
+footer .flinks{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px}
+footer .flinks a{font-size:13px;color:var(--muted);text-decoration:none}
+footer .flinks a:hover{color:var(--fg)}
+.updated{font-size:13px;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:34px}
+.docs-list{margin-top:24px}
+.docs-list a{display:block;padding:18px 0;border-bottom:1px solid var(--line);text-decoration:none}
+.docs-list a b{font-weight:600}
+.docs-list a span{display:block;font-size:14px;color:var(--muted)}
+.docs-list a:hover b{text-decoration:underline}
+.toc{margin:18px 0 0;padding:4px 0 0;border-top:1px solid var(--line)}
+.toc a{display:block;font-size:14px;color:var(--muted);text-decoration:none;padding:5px 0}
+.toc a:hover{color:var(--fg)}
+@media(max-width:560px){.nav nav{display:none}}

@@ -1,0 +1,37 @@
+/* Floating typing surface: shares the editor's existing palette. */
+#floating-keyboard{position:fixed;z-index:2500;left:16px;top:90px;width:min(680px,calc(100vw - 8px));max-height:calc(100dvh - 8px);background:var(--bg2);border:1px solid var(--line2);border-radius:8px;box-shadow:var(--shadow);display:none;user-select:none;overflow:hidden;font-family:'Inter',system-ui,sans-serif;--fk-height:38px;touch-action:none}
+#floating-keyboard.show{display:flex;flex-direction:column}
+#floating-keyboard.fk-compact{width:min(510px,calc(100vw - 8px));--fk-height:34px}
+#floating-keyboard .fk-head{min-height:38px;display:flex;align-items:center;gap:7px;padding:4px 7px 4px 10px;border-bottom:1px solid var(--line);cursor:grab;touch-action:none;flex:none}
+#floating-keyboard .fk-head:active{cursor:grabbing}
+#floating-keyboard .fk-grip{color:var(--text3);font-size:15px;line-height:1}
+#floating-keyboard .fk-heading{display:flex;flex-direction:column;gap:1px;pointer-events:none}
+#floating-keyboard .fk-title{font-size:10px;font-weight:700;color:var(--text2);white-space:nowrap}
+#floating-keyboard .fk-target{font-size:8px;font-weight:700;color:var(--accent);white-space:nowrap}
+#floating-keyboard .fk-spacer{flex:1}
+#floating-keyboard button{font-family:inherit}
+#floating-keyboard .fk-head button{min-width:30px;height:28px;border-radius:5px;color:var(--text2);font-size:12px;display:grid;place-items:center;padding:0 5px}
+#floating-keyboard .fk-head button:hover,#floating-keyboard .fk-head button.active{background:var(--bg4);color:var(--text)}
+#floating-keyboard .fk-modes{display:flex;gap:2px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:2px}
+#floating-keyboard .fk-modes button{font-size:10px;min-width:47px;height:23px}
+#floating-keyboard .fk-modes button.active{background:var(--bg4);color:var(--text)}
+#floating-keyboard .fk-body{padding:8px;display:flex;flex-direction:column;gap:5px;overflow:auto;overscroll-behavior:contain}
+#floating-keyboard .fk-row{display:flex;gap:4px;width:100%;min-width:0}
+#floating-keyboard .fk-key{flex:1 1 0;min-width:0;height:var(--fk-height);border-radius:5px;background:var(--bg3);border:1px solid var(--line2);border-bottom-width:2px;color:var(--text);font-family:'Fira Code',monospace;font-size:12px;white-space:nowrap;overflow:hidden;touch-action:manipulation}
+#floating-keyboard .fk-key:hover{background:var(--bg4)}
+#floating-keyboard .fk-key:active,#floating-keyboard .fk-key.active{background:var(--accent-soft);border-color:var(--accent);color:var(--text)}
+#floating-keyboard .fk-key.fk-wide{flex:1.5 1 0;font-size:9px}
+#floating-keyboard .fk-key.fk-space{flex:4 1 0}
+#floating-keyboard .fk-key.fk-accent{color:var(--accent)}
+#floating-keyboard .fk-settings{display:none;border-top:1px solid var(--line);padding:9px 10px 12px;max-height:35dvh;overflow:auto;overscroll-behavior:contain;flex:none}
+#floating-keyboard .fk-settings.show{display:block}
+#floating-keyboard .fk-setting-row{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:11px;color:var(--text2)}
+#floating-keyboard .fk-setting-row label{min-width:88px}
+#floating-keyboard .fk-setting-row input[type=range]{flex:1;min-width:70px;accent-color:var(--accent)}
+#floating-keyboard .fk-setting-row input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+#floating-keyboard .fk-setting-title{margin:12px 0 6px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase}
+#floating-keyboard .fk-custom-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+#floating-keyboard .fk-custom-grid select{width:100%;min-width:0;height:32px;background:var(--bg3);border:1px solid var(--line2);border-radius:5px;color:var(--text);font-size:11px;padding:0 6px}
+@media(max-width:600px){#floating-keyboard{width:calc(100vw - 8px);--fk-height:34px}#floating-keyboard.fk-compact{width:calc(100vw - 8px);--fk-height:30px}#floating-keyboard .fk-body{padding:5px 4px;gap:3px}#floating-keyboard .fk-row{gap:2px}#floating-keyboard .fk-key{font-size:10px;border-radius:4px}#floating-keyboard .fk-key.fk-wide{font-size:8px;flex:1.25 1 0}#floating-keyboard .fk-key.fk-space{flex:2.6 1 0}#floating-keyboard .fk-head{gap:4px;padding-left:7px}#floating-keyboard .fk-title{font-size:9px}#floating-keyboard .fk-modes button{min-width:42px;padding:0 3px}#floating-keyboard .fk-settings{padding:7px 8px 10px;max-height:30dvh}}
+@media(max-width:380px){#floating-keyboard{--fk-height:32px}#floating-keyboard.fk-compact{--fk-height:29px}#floating-keyboard .fk-key{font-size:9px}#floating-keyboard .fk-key.fk-wide{font-size:7px}#floating-keyboard .fk-grip{display:none}#floating-keyboard .fk-heading{display:none}#floating-keyboard .fk-head{padding-left:4px}}
+@media(prefers-reduced-motion:no-preference){#floating-keyboard .fk-key{transition:background .12s,border-color .12s,transform .08s}#floating-keyboard .fk-key:active{transform:translateY(1px)}}

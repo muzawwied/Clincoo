@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../js/auth-client.js?v=6"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Galeri Template Web — Clincoo</title>
+<meta name="description" content="Galeri template web siap pakai dari Clincoo: portfolio, landing page SaaS, toko online, sampai aplikasi produktivitas. Pilih template, login, dan langsung deploy dalam hitungan menit.">
+<meta property="og:title" content="Galeri Template Web — Clincoo">
+<meta property="og:description" content="Template web siap pakai: portfolio, landing page, toko online, dan aplikasi. Pakai template, login, langsung deploy.">
+<meta property="og:type" content="website">
+<meta name="robots" content="index, follow">
+    <link rel="icon" type="image/png" sizes="64x64" href="../assets/favicon.png">
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+    <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+        body { font-family: 'Inter', sans-serif; }
+
+        /* Menyembunyikan scrollbar di seluruh browser (pola Clincoo) */
+        ::-webkit-scrollbar { display: none; width: 0; height: 0; background: transparent; }
+        * { -ms-overflow-style: none; scrollbar-width: none; }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .tpl-card { animation: fadeInUp 0.35s ease both; }
+
+        /* Popover dropdown urutkan */
+        #sort-popover { transform-origin: top right; animation: fadeInUp 0.15s ease both; }
+        #sort-popover.hidden { display: none; }
+
+        /* Skeleton saat gambar pratinjau belum termuat */
+        .img-skeleton { background: linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+                body.dark-mode .option-popup {
+            background-color: #0a0a0a !important;
+            border-color: #222222 !important;
+            color: #ffffff !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5) !important;
+        }
+body.dark-mode .img-skeleton { background: linear-gradient(90deg,#111 25%,#1c1c1c 50%,#111 75%); background-size: 200% 100%; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        /* Capsule CTA "+ daftarkan template" (header, hanya untuk yang sudah masuk) */
+        #reg-capsule.hidden { display: none; }
+        #reg-capsule { display: inline-flex; align-items: center; gap: 7px; background: transparent;
+            border: 1px solid #e5e7eb; border-radius: 9999px; padding: 8px 16px;
+            font-size: 13px; font-weight: 600; color: inherit;
+            transition: padding .45s cubic-bezier(.4,0,.2,1), border-color .3s, gap .45s; }
+        #reg-capsule:hover { border-color: #9ca3af; }
+        body.dark-mode #reg-capsule { border-color: #2a2a2a; }
+        body.dark-mode #reg-capsule:hover { border-color: #4b5563; }
+        #reg-capsule .cap-plus { display: inline-flex; align-items: center; justify-content: center;
+            width: 18px; height: 18px; line-height: 1; font-size: 15px; flex-shrink: 0; }
+        #reg-capsule .cap-label { display: inline-flex; overflow: hidden; white-space: nowrap;
+            max-width: 200px; opacity: 1; transition: max-width .5s cubic-bezier(.4,0,.2,1), opacity .35s ease; }
+        #reg-capsule .cap-label .ch { transition: opacity .38s ease; }
+        #reg-capsule.cap-collapsed { padding: 8px 9px; gap: 0; }
+        #reg-capsule.cap-collapsed .cap-label { max-width: 0; opacity: 0; }
+        #reg-capsule.cap-collapsed .cap-plus { width: 16px; height: 16px; font-size: 16px; }
+    </style>
+    <script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+<script src="../js/i18n-dict.js" defer></script>
+<script src="../js/i18n.js" defer></script>
+<style id="cc-dots-style">.cc-dots,.cc-dots:hover,.cc-dots:focus,.cc-dots:active{background:transparent!important;box-shadow:none!important;border:0!important;outline:none!important;-webkit-tap-highlight-color:transparent;color:#9ca3af!important;transition:none!important}.cc-dots svg{color:#9ca3af!important;transition:none!important;opacity:1!important;filter:none!important}</style>
+</head>
+<body class="bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white min-h-screen antialiased">
+    <script>try{var t=localStorage.getItem("clincoo_theme")||"Sistem (Default)";var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}}catch(e){}</script>
+
+    <!-- HEADER -->
+    <header class="sticky top-0 z-40 border-b border-gray-100 dark:border-[#222] bg-white/90 dark:bg-[#0a0a0a]/90 backdrop-blur-md">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+            <a href="../" class="flex items-center gap-2">
+                <img src="../assets/logo-clincoo.png?v=20261007" alt="Clincoo" class="w-7 h-7 rounded-full">
+                <span class="font-bold text-[15px]">Clincoo</span>
+            </a>
+            <div id="hdr-auth" class="flex items-center gap-2"></div>
+            <a id="reg-capsule" href="daftarkan" class="hidden" aria-label="Daftarkan template" title="Daftarkan template">
+                <span class="cap-plus">+</span><span class="cap-label">daftarkan template</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-6 text-center">
+        <p class="text-xs font-semibold tracking-widest text-gray-400 dark:text-gray-500 uppercase mb-2">Galeri Template</p>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-3">Template web siap pakai, langsung deploy.</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 max-w-xl mx-auto leading-relaxed">Pilih template, masuk ke akun Clincoo kamu, dan situs langsung online dalam hitungan menit. Tanpa mulai dari nol.</p>
+    </section>
+
+    <!-- TOOLBAR: search + dropdown urutkan + filter kategori -->
+    <section class="max-w-6xl mx-auto px-4 sm:px-6 pb-8">
+        <div class="flex flex-col sm:flex-row gap-3">
+
+            <!-- Search -->
+            <div class="relative flex-1">
+                <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                <input id="tpl-search" type="text" placeholder="Cari template..." class="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-[#222] bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 transition-colors">
+            </div>
+
+            <!-- Dropdown popover: Urutkan -->
+            <div class="relative sm:w-44">
+                <button id="sort-btn" type="button" class="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-[#222] bg-gray-50 dark:bg-[#111] hover:border-gray-300 dark:hover:border-[#333] transition-colors">
+                    <span class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 truncate">Urutkan: <span id="sort-label" class="font-semibold text-gray-900 dark:text-white">Terbaru</span></span>
+                    <svg id="sort-chevron" class="w-3.5 h-3.5 text-gray-400 shrink-0 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div id="sort-popover" class="hidden absolute right-0 mt-2 w-full sm:w-44 bg-white dark:bg-[#141414] border border-gray-100 dark:border-[#2a2a2a] rounded-lg shadow-lg py-1 z-50">
+                    <button type="button" data-sort="new" class="sort-option w-full text-left px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1e1e1e] transition-colors">Terbaru</button>
+                    <button type="button" data-sort="az" class="sort-option w-full text-left px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1e1e1e] transition-colors">Nama A ke Z</button>
+                    <button type="button" data-sort="za" class="sort-option w-full text-left px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#1e1e1e] transition-colors">Nama Z ke A</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter kategori -->
+        <div id="tpl-filters" class="flex items-center gap-2 mt-3 overflow-x-auto pb-1"></div>
+    </section>
+
+    <!-- GRID TEMPLATE -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
+        <div id="tpl-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        <div id="tpl-empty" class="hidden text-center py-16">
+            <p class="text-sm text-gray-400 dark:text-gray-500">Tidak ada template yang cocok dengan pencarianmu.</p>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-gray-100 dark:border-[#222]">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p class="text-xs text-gray-400 dark:text-gray-500">© 2026 Clincoo — Ruang kerja untuk membangun, mendeploy, dan berkolaborasi.</p>
+            <div class="flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500">
+                <span id="ftr-auth" class="flex items-center gap-4">
+                    <a href="../auth/" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Masuk</a>
+                    <a href="../auth/" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Daftar</a>
+                </span>
+                <a href="../akun/tentang/" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Tentang</a>
+                <a href="../" class="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Beranda</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../js/templates-data.js?v=20261017"></script>
+    <script>var _tSeg=location.pathname.split('/')[1]||'';var _tKnown=['akun','proyek','auth','templates','integrasi','assets','js','demo','sw.js','manifest.json','robots.txt','_redirects','index.html','404.html'];window.CLINCOO_BASE=window.CLINCOO_BASE||(location.hostname.indexOf('github.io')!==-1&&_tSeg&&_tKnown.indexOf(_tSeg)===-1?'/'+_tSeg:'');
+    // ===== Data template (public) — diambil langsung dari js/templates-data.js (sumber sama dengan halaman utama) =====
+    // Galeri selalu menampilkan SEMUA template; halaman utama maksimal 5.
+    var _TPL_CATS = { "kedai-kopi": "Kuliner", "modelabs": "Developer", portfolio: "Portfolio", saas: "Landing Page", topup: "Toko Online", tasks: "Produktivitas", properti: "Properti", "ai-router": "Developer", "wedding": "Undangan" };
+    var TEMPLATES = [];
+    (function () {
+        var src = (typeof ClincooTemplates !== "undefined" && ClincooTemplates.list) ? ClincooTemplates.list : null;
+        if (src) {
+            Object.keys(src).forEach(function (k) {
+                var t = src[k];
+                if (!t) return;
+                TEMPLATES.push({ key: k, name: t.name, cat: _TPL_CATS[k] || "Lainnya", desc: t.desc, url: t.url });
+            });
+        } else {
+            // Fallback bila modul data gagal dimuat
+    TEMPLATES = [
+        { key: "kedai-kopi", name: "Vylonium Kedai Kopi", cat: "Kuliner", desc: "Landing page kedai kopi satu halaman — beranda, menu, cerita, suasana, dan reservasi meja. React 19 + TanStack Start, shadcn/ui, Tailwind CSS v4, Supabase.", url: "/demo/kedai-kopi/" },
+        { key: "modelabs", name: "AI Orchestrator Hub", cat: "Developer", desc: "Console manajemen & pengujian model AI — bandingkan model gratis/murah, kelola API key multi-outlet, log, kredit, playground. React 19 + TanStack Start, Drizzle ORM, Supabase.", url: "/demo/modelabs/" },
+        { key: "portfolio", name: "Portfolio Profesional", cat: "Portfolio", desc: "Portfolio pribadi full-stack developer — desain gelap elegan dengan bagian karya, layanan, blog, dan kontak.", url: "/demo/portfolio/" },
+        { key: "saas", name: "Landing Page SaaS", cat: "Landing Page", desc: "Landing page produk SaaS modern — hero, fitur, showcase, testimoni, pricing, dan FAQ dalam satu halaman ringan yang siap konversi.", url: "/demo/saas/" },
+        { key: "topup", name: "Top Up Game", cat: "Toko Online", desc: "Situs top up game instan dengan tema terang/gelap — katalog game populer, pilihan nominal lengkap, metode pembayaran beragam, dan pelacakan status pesanan.", url: "/demo/topup/" },
+        { key: "tasks", name: "Manajemen Tugas", cat: "Produktivitas", desc: "Aplikasi manajemen tugas profesional — dashboard statistik, papan kanban, kalender, proyek, dan laporan dalam desain terang elegan.", url: "/demo/tasks/" },
+        { key: "properti", name: "Web Properti", cat: "Properti", desc: "Template web properti profesional — katalog listing dengan filter tipe, lokasi, dan budget; valuasi properti; layanan agen; serta halaman properti, layanan, tentang, dan kontak.", url: "/demo/properti/" },
+        { key: "ai-router", name: "AI Router Console", cat: "Developer", desc: "Template workspace full-stack untuk gateway AI — console React untuk kelola provider, model, API key, routing, kredit, dan playground, plus API server Express 5 dengan PostgreSQL + Drizzle ORM dan validasi Zod.", url: "/demo/ai-router/" }
+    ];
+        }
+    })();
+    var IMG_BASE = '../assets/templates/';
+    var API_BASE = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api');
+    var COMMUNITY = []; // template komunitas (pengajuan yang disetujui) — dimuat real-time
+
+    var state = { q: "", cat: "Semua", sort: "new" };
+
+    // ===== Filter kategori =====
+    function allCats() {
+        var base = TEMPLATES.map(function (t) { return t.cat; });
+        if (COMMUNITY.length) base.push('Komunitas');
+        return base;
+    }
+    var filterWrap = document.getElementById('tpl-filters');
+    function buildChips() {
+        var cats = ["Semua"].concat(Array.from(new Set(allCats())));
+        filterWrap.innerHTML = '';
+        cats.forEach(function (c) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.dataset.cat = c;
+            b.textContent = c;
+            b.className = 'tpl-chip shrink-0 text-xs font-medium px-3.5 py-1.5 rounded-lg border transition-colors';
+            filterWrap.appendChild(b);
+        });
+        paintChips();
+    }
+    buildChips();
+    function paintChips() {
+        filterWrap.querySelectorAll('.tpl-chip').forEach(function (b) {
+            var on = b.dataset.cat === state.cat;
+            b.className = 'tpl-chip shrink-0 text-xs font-medium px-3.5 py-1.5 rounded-lg border transition-colors ' +
+                (on ? 'bg-black dark:bg-white text-white dark:text-black border-black dark:border-white'
+                    : 'bg-transparent text-gray-500 dark:text-gray-400 border-gray-200 dark:border-[#2a2a2a] hover:border-gray-400 dark:hover:border-[#444]');
+        });
+    }
+    filterWrap.addEventListener('click', function (e) {
+        var b = e.target.closest('.tpl-chip');
+        if (!b) return;
+        state.cat = b.dataset.cat;
+        paintChips();
+        render();
+    });
+    paintChips();
+
+    // ===== Dropdown popover urutkan =====
+    var sortBtn = document.getElementById('sort-btn');
+    var sortPop = document.getElementById('sort-popover');
+    var sortChevron = document.getElementById('sort-chevron');
+    var sortLabel = document.getElementById('sort-label');
+    function closeSort() { sortPop.classList.add('hidden'); sortChevron.style.transform = ''; }
+    sortBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (!sortPop.classList.contains('hidden')) { closeSort(); return; }
+        sortPop.classList.remove('hidden');
+        sortChevron.style.transform = 'rotate(180deg)';
+    });
+    sortPop.addEventListener('click', function (e) {
+        var b = e.target.closest('.sort-option');
+        if (!b) return;
+        state.sort = b.dataset.sort;
+        sortLabel.textContent = b.textContent.trim();
+        closeSort();
+        render();
+    });
+    document.addEventListener('click', function (e) { if (!sortPop.contains(e.target) && !sortBtn.contains(e.target)) closeSort(); });
+    window.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSort(); });
+
+    // ===== Search =====
+    var searchInput = document.getElementById('tpl-search');
+    searchInput.addEventListener('input', function () {
+        state.q = searchInput.value.trim().toLowerCase();
+        render();
+    });
+
+    // ===== Render grid =====
+    function render() {
+        var all = TEMPLATES.concat(COMMUNITY);
+        var items = all.filter(function (t) {
+            var okCat = state.cat === 'Semua' || t.cat === state.cat;
+            var okQ = !state.q || t.name.toLowerCase().indexOf(state.q) !== -1 || t.desc.toLowerCase().indexOf(state.q) !== -1 || t.cat.toLowerCase().indexOf(state.q) !== -1;
+            return okCat && okQ;
+        });
+        // [8 Okt 2026, arahan pemilik] "Terbaru" kini benar-benar terbaru-di-atas:
+        // kiriman komunitas diurut turun berdasarkan tanggal masuk, template resmi menyusul.
+        if (state.sort === 'new') {
+          var waktu = function (t) {
+            return t.community ? (Date.parse(String(t.created_at || '').replace(' ', 'T') + 'Z') || 0) : 1;
+          };
+          items.sort(function (a, b) { return waktu(b) - waktu(a); });
+        }
+        else if (state.sort === 'az') items.sort(function (a, b) { return a.name.localeCompare(b.name); });
+        else if (state.sort === 'za') items.sort(function (a, b) { return b.name.localeCompare(a.name); });
+
+        var grid = document.getElementById('tpl-grid');
+        var empty = document.getElementById('tpl-empty');
+        grid.innerHTML = '';
+        empty.classList.toggle('hidden', items.length > 0);
+
+        items.forEach(function (t) {
+            var card = document.createElement('article');
+            card.className = 'tpl-card group border border-gray-100 dark:border-[#222] rounded-lg overflow-hidden bg-white dark:bg-[#0d0d0d] hover:border-gray-300 dark:hover:border-[#3a3a3a] hover:shadow-md transition-all';
+
+            // Gambar pratinjau — aspect-video (16:9, pas sama ukuran asli 1280x720) agar tidak terpotong
+            var imgWrap = document.createElement('a');
+            imgWrap.href = (window.CLINCOO_BASE||'') + t.url;
+            imgWrap.target = '_blank';
+            imgWrap.rel = 'noopener';
+            imgWrap.className = 'block relative aspect-video overflow-hidden bg-gray-100 dark:bg-[#111]';
+            imgWrap.setAttribute('aria-label', 'Pratinjau ' + t.name);
+            var img = document.createElement('img');
+            img.src = t.thumbnail ? t.thumbnail : (IMG_BASE + t.key + '.webp');
+            img.alt = 'Pratinjau template ' + t.name;
+            img.loading = 'lazy';
+            img.className = 'img-skeleton w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300';
+            img.addEventListener('load', function () { img.classList.remove('img-skeleton'); });
+            imgWrap.appendChild(img);
+
+            var body = document.createElement('div');
+            body.className = 'p-4 relative';
+            // [8 Okt 2026, arahan pemilik] nama kategori TIDAK ditampilkan di card galeri.
+            var title = document.createElement('h3');
+            title.className = 'text-sm font-bold mb-1';
+            title.textContent = t.name;
+            var desc = document.createElement('p');
+            desc.className = 'text-xs text-gray-500 dark:text-gray-400 leading-relaxed';
+            desc.textContent = t.desc;
+
+            // [8 Okt 2026] Label abu-abu: Gratis / crown+PRO / harga kredit (diskon paket tampil coret harga dasar)
+            var labelEl = document.createElement('p');
+            labelEl.setAttribute('data-tpl-label', t.key);
+            labelEl.className = 'text-xs text-gray-400 dark:text-gray-500 flex items-center flex-shrink-0';
+            labelEl.className = 'absolute top-4 right-4 text-xs text-gray-400 dark:text-gray-500 flex items-center';
+            try { labelEl.innerHTML = ClincooTemplates.tplLabelHtml(t.key); labelEl.style.display = labelEl.innerHTML ? '' : 'none'; } catch (e) { labelEl.style.display = 'none'; }
+
+            // Meta komunitas: icon user = pencipta, icon gunakan = jumlah dipakai, icon mata = kunjungan
+            if (t.community) {
+                var meta = document.createElement('div');
+                meta.className = 'flex items-center flex-wrap gap-x-3 gap-y-1 text-[11px] text-gray-400 dark:text-gray-500 mb-4';
+                function metaItem(svgPath, label) {
+                    var sp = document.createElement('span');
+                    sp.className = 'inline-flex items-center gap-1';
+                    var sv = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    sv.setAttribute('class', 'w-3.5 h-3.5');
+                    sv.setAttribute('fill', 'none'); sv.setAttribute('stroke', 'currentColor');
+                    sv.setAttribute('stroke-width', '2'); sv.setAttribute('viewBox', '0 0 24 24');
+                    var pth = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    pth.setAttribute('stroke-linecap', 'round'); pth.setAttribute('stroke-linejoin', 'round');
+                    pth.setAttribute('d', svgPath);
+                    sv.appendChild(pth);
+                    var tx = document.createElement('span');
+                    tx.textContent = label;
+                    sp.appendChild(sv); sp.appendChild(tx);
+                    return sp;
+                }
+                meta.appendChild(metaItem('M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-8 8c0-3 3.5-5 8-5s8 2 8 5', 'by ' + t.creator));
+                meta.appendChild(metaItem('M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M12 4v12m0 0l-4-4m4 4l4-4', String(t.uses) + ' dipakai'));
+                meta.appendChild(metaItem('M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7zm10 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6z', String(t.views) + ' dilihat'));
+                body.appendChild(meta);
+            }
+
+            // Titik 3 + popup opsi — mengikuti kartu template di halaman utama
+            var row = document.createElement('div');
+            row.className = 'flex justify-between items-end gap-3';
+            var txtCol = document.createElement('div');
+            txtCol.className = 'flex flex-col flex-1 overflow-hidden';
+            // [8 Okt 2026, arahan pemilik] label harga/PRO di pojok kanan, sejajar dengan judul
+            // [8 Okt 2026, arahan pemilik] label nempel tembok kanan kartu: absolut pojok kanan-atas body
+            title.className = 'text-sm font-bold mb-1 truncate';
+            txtCol.appendChild(title);
+            txtCol.appendChild(desc);
+            row.appendChild(txtCol);
+
+            var dotsWrap = document.createElement('div');
+            dotsWrap.className = 'relative flex-shrink-0';
+            var dotsBtn = document.createElement('button');
+            dotsBtn.type = 'button';
+            dotsBtn.className = 'cc-dots p-1.5 text-gray-400 focus:outline-none focus-visible:outline-none';
+            dotsBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>';
+            dotsBtn.setAttribute('aria-label', 'Opsi template');
+            dotsBtn.setAttribute('data-dots', '');
+            dotsBtn.addEventListener('click', function (e) { toggleOption(this, e); });
+            dotsWrap.appendChild(dotsBtn);
+
+            var popup = document.createElement('div');
+            popup.className = 'option-popup absolute bottom-full right-0 mb-2 w-44 bg-white border border-gray-100 rounded-xl shadow-[0_4px_20px_rgb(0,0,0,0.08)] py-2 opacity-0 invisible translate-y-2 transition-all duration-200 z-20 origin-bottom-right';
+            function menuBtn(label, cls, handler) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.className = cls || 'w-full text-left px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 dark:focus-visible:ring-white/20';
+                b.textContent = label;
+                b.addEventListener('click', function (e) { e.stopPropagation(); closeGaleriPopups(); handler(e); });
+                popup.appendChild(b);
+                return b;
+            }
+            var _useCta = menuBtn('Gunakan Template', null, function () {
+                if (t.community) {
+                    trackCommunity(t.id, 'use');
+                    pakaiPromptGallery('Gunakan template komunitas \"' + t.name + '\" sebagai dasar website saya. ' + (t.desc || ''));
+                    return;
+                }
+                useTemplate(t.key); // alur yang sama dengan halaman utama: buat proyek + masuk workspace
+            });
+            _useCta.setAttribute('data-tpl-use', t.key);
+            try { ClincooTemplates.syncCrowns(popup); } catch (e) {}
+            if (!t.community) {
+                menuBtn('Pakai Prompt Ini', null, function () {
+                    pakaiPromptGallery('Tolong buatkan website ' + t.name + ' berbasis template. ' + t.desc);
+                });
+            }
+            menuBtn('Lihat Preview', null, function (e) {
+                if (t.community) {
+                    trackCommunity(t.id, 'view');
+                    window.open((window.CLINCOO_BASE || '') + t.url, '_blank', 'noopener');
+                } else { previewTemplate(t.key, e); }
+            });
+            if (!t.community) {
+                var favBtn = menuBtn(isFavGallery(t.key) ? 'Hapus dari Favorit' : 'Simpan ke Favorit', null, function (e) {
+                    favoriteTemplate(t.key, e);
+                    favBtn.textContent = isFavGallery(t.key) ? 'Hapus dari Favorit' : 'Simpan ke Favorit';
+                });
+            }
+            menuBtn('Laporkan', 'w-full text-left px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500/30', function (e) { reportTemplate(t.key, e); });
+            dotsWrap.appendChild(popup);
+            row.appendChild(dotsWrap);
+
+            body.appendChild(labelEl);
+            body.appendChild(row);
+            card.appendChild(imgWrap);
+            card.appendChild(body);
+            grid.appendChild(card);
+            try { ClincooTemplates.fitCardLabels(card); } catch (e) {}
+        });
+    }
+
+    // ===== Template komunitas: pencatatan real-time (uses/views) =====
+    function trackCommunity(id, action) {
+        try {
+            fetch(API_BASE + '/template-submissions/track', {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ id: id, action: action === 'view' ? 'view' : 'use' }),
+                keepalive: true
+            }).catch(function () {});
+        } catch (e) {}
+    }
+
+    // ===== Muat template komunitas (disetujui) dari API, real-time =====
+    fetch(API_BASE + '/template-submissions')
+        .then(function (r) { return r.ok ? r.json() : { templates: [] }; })
+        .then(function (d) {
+            if (d && d.templates) {
+                COMMUNITY = d.templates.map(function (t) {
+                    t.community = true;
+                    t.cat = 'Komunitas';
+                    return t;
+                });
+                buildChips();
+                render();
+            }
+        })
+        .catch(function () {});
+
+    // ===== Auth ringan: cek status login tanpa redirect (galeri tetap publik) =====
+    var TOKEN = '';
+    try { TOKEN = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
+    if (TOKEN) {
+        fetch(API_BASE + '/auth/me', { headers: { 'Authorization': 'Bearer ' + TOKEN } })
+            .then(function (r) { return r.ok ? r.json() : { authenticated: false }; })
+            .then(function (d) {
+                if (d && d.authenticated) onAuthed(d.user);
+                else localStorage.removeItem('clincoo_auth_token');
+            })
+            .catch(function () {});
+    }
+
+    // ===== Sudah masuk: sembunyikan CTA masuk/daftar, tampilkan capsule "+ daftarkan template" =====
+    function onAuthed(user) {
+        var hdrAuth = document.getElementById('hdr-auth');
+        var ftrAuth = document.getElementById('ftr-auth');
+        if (hdrAuth) hdrAuth.style.display = 'none';
+        if (ftrAuth) ftrAuth.style.display = 'none';
+        var cap = document.getElementById('reg-capsule');
+        if (!cap) return;
+        cap.classList.remove('hidden');
+
+        // Pecah teks jadi huruf: hilang berurutan & halus, sisakan icon +, capsule jadi bulat
+        var label = cap.querySelector('.cap-label');
+        var chars = [];
+        try {
+            var text = label.textContent;
+            label.innerHTML = text.split('').map(function (c) {
+                return '<span class="ch">' + (c === ' ' ? '&nbsp;' : c) + '</span>';
+            }).join('');
+            chars = Array.prototype.slice.call(label.querySelectorAll('.ch'));
+        } catch (e) {}
+
+        var timers = [];
+        function collapse() {
+            chars.forEach(function (ch, i) {
+                timers.push(setTimeout(function () { ch.style.opacity = '0'; }, i * 45));
+            });
+            timers.push(setTimeout(function () { cap.classList.add('cap-collapsed'); }, chars.length * 45 + 380));
+        }
+        function expand() {
+            cap.classList.remove('cap-collapsed');
+            chars.forEach(function (ch) { ch.style.opacity = '1'; });
+        }
+        function restart(delay) {
+            timers.forEach(clearTimeout); timers = [];
+            timers.push(setTimeout(collapse, delay));
+        }
+        restart(2800);
+        cap.addEventListener('mouseenter', function () {
+            timers.forEach(clearTimeout); timers = [];
+            expand();
+        });
+        cap.addEventListener('mouseleave', function () { restart(1200); });
+        cap.addEventListener('focus', function () {
+            timers.forEach(clearTimeout); timers = [];
+            expand();
+        });
+        cap.addEventListener('blur', function () { restart(600); });
+    }
+
+    // ===== Aksi "Gunakan": simpan pilihan, arahkan ke login/app =====
+    function closeGaleriPopups() {
+        document.querySelectorAll('.option-popup').forEach(function (p) {
+            p.classList.remove('opacity-100', 'visible', 'translate-y-0');
+            p.classList.add('opacity-0', 'invisible', 'translate-y-2');
+        });
+    }
+    function toggleOption(btn, event) {
+        event.preventDefault();
+        event.stopPropagation();
+        document.querySelectorAll('.option-popup').forEach(function (p) {
+            if (p !== btn.nextElementSibling) {
+                p.classList.remove('opacity-100', 'visible', 'translate-y-0');
+                p.classList.add('opacity-0', 'invisible', 'translate-y-2');
+            }
+        });
+        var p = btn.nextElementSibling;
+        if (p.classList.contains('opacity-100')) {
+            p.classList.remove('opacity-100', 'visible', 'translate-y-0');
+            p.classList.add('opacity-0', 'invisible', 'translate-y-2');
+        } else {
+            p.classList.remove('opacity-0', 'invisible', 'translate-y-2');
+            p.classList.add('opacity-100', 'visible', 'translate-y-0');
+        }
+    }
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.option-popup') && !e.target.closest('[data-dots]')) closeGaleriPopups();
+    });
+
+    // Template Pro terkunci: di halaman utama memakai modal langganan; di galeri cukup toast + arahkan
+    if (typeof tmShowCollabPlansModal !== 'function') {
+        window.tmShowCollabPlansModal = function () {
+            try { ClincooTemplates.showToast('Template ini untuk paket Pro & Bisnis — buka menu Langganan untuk upgrade.'); } catch (e) {}
+        };
+    }
+
+    // ===== Helper popup galeri =====
+    function isFavGallery(key) {
+        try { return (ClincooTemplates.getFavorites() || []).indexOf(key) !== -1; } catch (e) { return false; }
+    }
+    function pakaiPromptGallery(promptText) {
+        // Sama seperti "Pakai Prompt Ini" di halaman utama: prompt diisi di input utama.
+        try { localStorage.setItem('clincoo_pending_prompt', promptText); } catch (e) {}
+        window.location.href = '../';
+    }
+
+    // Favorit & data template tersambung lintas halaman (utama <-> galeri <-> favorit):
+    // perubahan dari tab/halaman lain (storage) atau saat balik via tombol back (bfcache) langsung dirender ulang.
+    window.addEventListener('storage', function (ev) { if (ev.key === 'clincoo_template_favorites') render(); });
+    window.addEventListener('pageshow', function () { try { render(); } catch (e) {} });
+    window.addEventListener('storage', function (ev) { if (ev.key === 'clincoo_subscription_cache') { try { render(); } catch (e) {} } });
+    window.addEventListener('storage', function (ev) { if (ev.key === 'clincoo_subscription_cache') render(); });
+    try { ClincooTemplates.refreshPlan(); } catch (e) {}
+
+    render();
+    </script>
+
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
+(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<1;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
+    </script>
+<!-- Google tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+<!-- End Google tag -->
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

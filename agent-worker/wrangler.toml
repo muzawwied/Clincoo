@@ -1,0 +1,24 @@
+name = "clincoo-agent"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# D1 yang sama dengan app Clinqoo (akun be2) — task & event dibaca/tulis langsung
+[[d1_databases]]
+binding = "DB"
+database_name = "clincoo-db"
+database_id = "49b6fed3-a237-46e3-ab2b-b0de31cc862b"
+
+# Workers AI — rantai model sama dengan /api/agent
+[ai]
+binding = "AI"
+
+# Cloudflare Workflows — eksekusi tugas agent yang durable
+[[workflows]]
+name = "agent-flow"
+binding = "AGENT_FLOW"
+class_name = "AGENT_FLOW"
+
+# Cron: jemput task dari antrean tiap menit + sweep task macet
+[triggers]
+crons = ["* * * * *"]

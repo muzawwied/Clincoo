@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../../js/auth-client.js?v=6"></script>
+  <script src="../../../js/accent-init.js"></script>
+<script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){localStorage.setItem('clincoo_current_project_id',__p);}else{var __go=function(__pid){try{localStorage.setItem('clincoo_current_project_id',__pid);}catch(e){}var __sp=new URLSearchParams(location.search);__sp.set('id',__pid);var __q=__sp.toString();location.replace(location.pathname+(__q?'?'+__q:'')+location.hash);};var __c='';try{__c=localStorage.getItem('clincoo_current_project_id')||'';}catch(e){}if(__c){var __l=null;try{__l=JSON.parse(localStorage.getItem('clincoo_projects')||'[]');}catch(e){}if(!Array.isArray(__l)||!__l.length||__l.some(function(p){return p&&p.id===__c;})){__go(__c);return;}try{localStorage.removeItem('clincoo_current_project_id');}catch(e){}}var __t='';try{__t=localStorage.getItem('clincoo_auth_token')||localStorage.getItem('clincoo_token')||'';}catch(e){}var __o=(['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname)===-1)?'https://clincoo-be2.pages.dev':'';fetch(__o+'/api/projects',{headers:__t?{'Authorization':'Bearer '+__t}:{}}).then(function(r){return r.ok?r.json():null;}).then(function(d){var __l2=(d&&d.projects)||[];if(!__l2.length){location.replace('/');return;}__l2.sort(function(a,b){return String(b.updatedAt||'').localeCompare(String(a.updatedAt||''));});__go(String(__l2[0].id));}).catch(function(){location.replace('/');});}}catch(e){}})();</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
+    <link rel="manifest" href="../../../manifest.json">
+    <link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
+    <title>Konfigurasi Build — Clincoo</title>
+    <meta name="description" content="Konfigurasi Build — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clincoo">
+    <meta property="og:title" content="Konfigurasi Build — Clincoo">
+    <meta property="og:description" content="Konfigurasi Build — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Konfigurasi Build — Clincoo">
+    <meta name="twitter:description" content="Konfigurasi Build — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+        /* Base styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f9;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        /* Dark Mode Configuration */
+        body.dark-mode { background-color: #000000; color: #ffffff; }
+        body.dark-mode .bg-white { background-color: #0a0a0a !important; }
+        
+        /* Header Buttons Dark Mode */
+        body.dark-mode button[onclick="history.back()"],
+        body.dark-mode header button[onclick] {
+            background-color: #000000 !important;
+            border: 1.5px solid rgba(255,255,255,0.4) !important;
+            color: #ffffff !important;
+        }
+        body.dark-mode button[onclick="history.back()"] svg,
+        body.dark-mode header button[onclick] svg { stroke: #ffffff !important; }
+        body.dark-mode button[onclick="history.back()"]:hover,
+        body.dark-mode header button[onclick]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
+        
+        /* Typography & Borders Dark Mode */
+        body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #ffffff !important; }
+        body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 { color: #888888 !important; }
+        body.dark-mode .border-gray-100, body.dark-mode .border-gray-200, body.dark-mode .border-gray-300 { border-color: #222222 !important; }
+        body.dark-mode header { background-color: #000000 !important; border-color: #222222 !important; }
+        body.dark-mode .bg-\[#f7f7f9\], body.dark-mode .bg-gray-50 { background-color: #000000 !important; }
+        body.dark-mode .bg-gray-100 { background-color: #111111 !important; }
+        body.dark-mode .hover\:bg-gray-50:hover, body.dark-mode .hover\:bg-gray-100:hover { background-color: #1a1a1a !important; }
+        
+        /* Inputs & Buttons Custom Dark Mode */
+        body.dark-mode input[type="text"], body.dark-mode .custom-select-trigger, body.dark-mode .dropdown-menu, body.dark-mode .custom-dropdown-menu { background-color: #0a0a0a; color: #ffffff; border-color: #222222; }
+        body.dark-mode input[type="text"]:focus { border-color: #222222; }
+        body.dark-mode .bg-black.text-white { background-color: #ffffff !important; color: #000000 !important; }
+        body.dark-mode .hover\:bg-gray-800:hover { background-color: #dddddd !important; }
+        body.dark-mode .custom-domain-btn { background-color: #111111 !important; color: #ffffff !important; border-color: #444444 !important; }
+        body.dark-mode .custom-domain-btn:hover { background-color: #222222 !important; }
+
+        /* Animation Utilities */
+        .fade-in { animation: fadeIn 0.3s ease-in-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Shimmer Loading Effect */
+        .shimmer {
+            background: #f6f7f8;
+            background-image: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+            background-repeat: no-repeat;
+            background-size: 800px 100%; 
+            display: inline-block;
+            position: relative;
+            animation-duration: 1.5s;
+            animation-fill-mode: forwards; 
+            animation-iteration-count: infinite;
+            animation-name: placeholderShimmer;
+            animation-timing-function: linear;
+            border-radius: 4px;
+        }
+        
+        body.dark-mode .shimmer {
+            background: #111;
+            background-image: linear-gradient(to right, #111 0%, #222 20%, #111 40%, #111 100%);
+        }
+
+        @keyframes placeholderShimmer {
+            0% { background-position: -468px 0; }
+            100% { background-position: 468px 0; }
+        }
+
+        /* Hide scrollbar */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
+(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<3;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
+    </script>
+<!-- Google tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+<!-- End Google tag -->
+<script src="../../../js/i18n-dict.js" defer></script>
+<script src="../../../js/i18n.js" defer></script>
+<style>
+      /* [19 Okt] opt-in cross-document View Transition — disamakan di SEMUA halaman
+         proyek: navigasi dari halaman ber-transisi ke halaman TANPA opt-in membatalkan
+         transisi di tengah jalan dan Chrome melempar InvalidStateError "Transition was
+         aborted" sebagai unhandled rejection (muncul sebagai ERROR di Bug Beetle). */
+      @view-transition { navigation: auto; }
+      ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; animation-timing-function: cubic-bezier(.2,.7,.3,1); }
+      html:active-view-transition body { animation: none; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-gray-900 pt-16 relative">
+    <script>
+        (function(){
+            var t=localStorage.getItem("clincoo_theme");
+            var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);
+            if(isDark){document.body.classList.add("dark-mode");}
+        })();
+    </script>
+    
+    <header class="bg-[#f7f7f9] flex justify-between items-center px-3 py-2 fixed top-0 w-full z-40 transition-colors">
+        <button onclick="history.back()" class="top-2 left-5 w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-100 hover:bg-gray-100 transition-all cursor-pointer text-gray-700 hover:text-black">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </button>
+        <h1 class="font-extrabold text-lg text-gray-900 tracking-tight">Deployment</h1>
+        <div class="w-10"></div>
+    </header>
+
+    <main class="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 py-8 pb-24 relative overflow-x-hidden">
+                <!-- VIEW 2: Halaman Konfigurasi (Flat) -->
+        <div id="view-config" class="flex flex-col gap-8 fade-in max-w-xl mx-auto w-full pt-4">
+            <div class="mb-2">
+                <h2 class="text-2xl font-extrabold text-gray-900 tracking-tight">Pengaturan Deploy</h2>
+                <p class="text-sm text-gray-500 mt-2">Tentukan sumber dan lingkungan tujuan untuk rilis ini.</p>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Dropdown: Branch -->
+                <div class="relative w-full">
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">Pilih Branch</label>
+                    <div class="custom-select-trigger flex items-center justify-between w-full px-4 py-3 text-sm rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleDropdown(this, 'branch', ['main', 'staging', 'development'])">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="git-branch" class="w-4 h-4 text-gray-500"></i>
+                            <span id="label-branch" class="font-medium">main</span>
+                        </div>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-200 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <!-- Dropdown: Environment -->
+                <div class="relative w-full">
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">Lingkungan Tujuan</label>
+                    <div class="custom-select-trigger flex items-center justify-between w-full px-4 py-3 text-sm rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleDropdown(this, 'env', ['Production Server', 'Preview / Staging'])">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="server" class="w-4 h-4 text-gray-500"></i>
+                            <span id="label-env" class="font-medium">Production Server</span>
+                        </div>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-200 pointer-events-none"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subdomain Publik: rename subdomain inline (bukan popup), style selaras -->
+            <div class="w-full">
+                <label class="block text-sm font-semibold text-gray-900 mb-2">Subdomain Publik</label>
+                <div class="flex items-center gap-2">
+                    <input id="input-subdomain" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="otomatis dari nama proyek" oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/^-+/g, '')" class="flex-1 min-w-0 px-4 py-3 text-sm rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-colors focus:outline-none focus:border-gray-900">
+                    <span class="text-sm text-gray-400 font-medium whitespace-nowrap select-none">.clincoo.biz.id</span>
+                </div>
+                <p class="text-xs text-gray-400 mt-1.5 leading-relaxed">Biarkan kosong: subdomain dibuat otomatis dari nama proyek Anda. Isi untuk mengganti subdomain publik situs Anda (huruf kecil, angka, tanda hubung). Ini adalah domain utama situs yang dipublikasikan.</p>
+            </div>
+
+            <div class="flex gap-3 mt-4 pt-6 border-t border-gray-200">
+                <button id="btn-process-deploy" onclick="processDeploy()" class="flex-[2] py-4 bg-transparent border border-gray-300 text-gray-900 rounded-2xl font-bold text-sm hover:bg-gray-100 transition-all shadow-lg flex items-center justify-center gap-2">
+                    Jalankan Deploy
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Render Icons Awal
+        lucide.createIcons();
+
+        // ===================== DEPLOY ASLI (Cloudflare Pages) =====================
+        const API = 'https://clincoo-be2.pages.dev/api'; // deploy engine (satu backend & satu D1 dgn auth/files)
+        const pid = () => localStorage.getItem('clincoo_current_project_id') || '';
+        let deployState = { pages_url: '', pollTimer: null, domainTimer: null, deploying: false };
+
+        // ===================== SESI DEPLOY (klik deploy cukup sekali) =====================
+        // Sesi per proyek tersimpan di localStorage: halaman langsung membuka dashboard
+        // situs yang sudah dideploy tanpa harus menekan tombol Deploy lagi.
+        const DEPLOY_SESSION_KEY = 'clincoo_deploy_session';
+        function readDeploySession() {
+            try {
+                const ses = JSON.parse(localStorage.getItem(DEPLOY_SESSION_KEY) || 'null');
+                return (ses && ses.project_id && ses.project_id === pid()) ? ses : null;
+            } catch (e) { return null; }
+        }
+        function writeDeploySession(patch) {
+            try {
+                const cur = readDeploySession() || { project_id: pid() };
+                localStorage.setItem(DEPLOY_SESSION_KEY, JSON.stringify(Object.assign(cur, patch)));
+            } catch (e) {}
+        }
+        function clearDeploySession() {
+            try { localStorage.removeItem(DEPLOY_SESSION_KEY); } catch (e) {}
+        }
+
+        // ===== Dropdown popover (Pilih Branch & Lingkungan) — dulu trigger memanggil
+        // toggleDropdown tanpa definisi di halaman ini sehingga popover tidak pernah muncul. =====
+        function toggleDropdown(element, targetId, optionsArray) {
+            const wrapper = element.parentElement;
+            const existingDropdown = wrapper.querySelector('.custom-dropdown-menu');
+            closeAllDropdowns();
+            if (existingDropdown) return;
+            const labelEl = document.getElementById('label-' + targetId);
+            const currentValue = labelEl ? labelEl.textContent.trim() : '';
+            const dropdown = document.createElement('div');
+            dropdown.className = 'custom-dropdown-menu absolute top-full left-0 w-full mt-1 z-50 bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden flex flex-col fade-in';
+            let optionsHtml = '';
+            optionsArray.forEach(option => {
+                const isActive = option === currentValue;
+                optionsHtml += `
+                    <div class="w-full px-4 py-3 text-left text-sm font-medium transition-colors cursor-pointer flex items-center justify-between ${isActive ? 'bg-gray-50 text-black dark:bg-gray-800 dark:text-white' : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}" onclick="selectOption(event, '${targetId}', '${option}')">
+                        <span>${option}</span>
+                        ${isActive ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}
+                    </div>
+                `;
+            });
+            dropdown.innerHTML = optionsHtml;
+            wrapper.appendChild(dropdown);
+            const chevron = element.querySelector('[data-lucide="chevron-down"]');
+            if (chevron) chevron.classList.add('rotate-180');
+            lucide.createIcons();
+            setTimeout(() => { document.addEventListener('click', outsideClickListener); }, 10);
+        }
+        function closeAllDropdowns() {
+            const openDropdowns = document.querySelectorAll('.custom-dropdown-menu');
+            openDropdowns.forEach(dropdown => {
+                const chevron = dropdown.parentElement.querySelector('.rotate-180');
+                if (chevron) chevron.classList.remove('rotate-180');
+                dropdown.remove();
+            });
+            document.removeEventListener('click', outsideClickListener);
+        }
+        function outsideClickListener(e) {
+            if (!e.target.closest('.custom-select-trigger') && !e.target.closest('.custom-dropdown-menu')) {
+                closeAllDropdowns();
+            }
+        }
+        function selectOption(event, targetId, value) {
+            event.stopPropagation();
+            const label = document.getElementById('label-' + targetId);
+            if (label) label.textContent = value;
+            closeAllDropdowns();
+        }
+
+        async function apiFetch(path, opts = {}) {
+            const token = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || '';
+            const res = await fetch(API + path, {
+                ...opts,
+                headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}), ...(opts.headers || {}) }
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+            return data;
+        }
+
+        function timeAgoIso(iso) {
+            if (!iso) return 'baru saja';
+            const t = new Date(iso + (iso.endsWith('Z') ? '' : 'Z')).getTime();
+            return timeAgo(t);
+        }
+
+        async function fetchStatus() {
+            return apiFetch('/deploy?project_id=' + encodeURIComponent(pid()));
+        }
+
+        // Deploy ASLI: file workspace proyek -> Cloudflare Pages
+        async function processDeploy() {
+            const btn = document.getElementById('btn-process-deploy');
+            if (!pid()) { console.warn('Proyek belum dipilih.'); return; }
+            if (deployState.deploying) return; // klik hanya sekali per sesi
+            // Feedback INSTAN begitu diklik — dulu tombol terasa mati selama pengecekan
+            // nama aplikasi (round-trip jaringan) sebelum "Menyiapkan deploy..." muncul.
+            const DEPLOY_BTN_IDLE = "flex-[2] py-4 bg-transparent border border-gray-300 text-gray-900 rounded-2xl font-bold text-sm hover:bg-gray-100 transition-all shadow-lg flex items-center justify-center gap-2";
+            const DEPLOY_BTN_BUSY = "flex-[2] py-4 bg-transparent border border-transparent text-gray-500 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-not-allowed";
+            const resetDeployBtn = () => {
+                btn.innerHTML = `Jalankan Deploy`;
+                btn.className = DEPLOY_BTN_IDLE;
+                btn.disabled = false;
+                lucide.createIcons();
+            };
+            btn.disabled = true;
+            // [10 Okt, arahan pemilik] loading TANPA teks — ikon spin saja
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>`;
+            btn.className = DEPLOY_BTN_BUSY;
+            lucide.createIcons();
+            // Subdomain: kosong -> backend buat otomatis dari nama proyek (AI);
+            // diisi -> rename subdomain situs yang dipublikasikan.
+            const subInput = document.getElementById('input-subdomain');
+            const subdomain = subInput ? subInput.value.trim().toLowerCase() : '';
+            deployState.deploying = true;
+            writeDeploySession({ status: 'deploying', started_at: Date.now() });
+            try {
+                const res = await apiFetch('/deploy', { method: 'POST', body: JSON.stringify({ project_id: pid(), ...(subdomain ? { subdomain } : {}) }) });
+                deployState.deploying = false;
+                // DNS cache: hasil deploy langsung siap di halaman Domain Kustom (tanpa buka halaman itu dulu)
+                try { var _dk = 'clincoo_' + pid() + "_domain_cache", _dc = {}; try { _dc = JSON.parse(localStorage.getItem(_dk) || '{}') || {}; } catch (e) {} localStorage.setItem(_dk, JSON.stringify(Object.assign(_dc, { pagesUrl: (res && res.pages_url) || '', deployed: true, ts: Date.now() }))); } catch (e) {}
+                writeDeploySession({ status: 'done', pages_url: (res && res.pages_url) || deployState.pages_url || '', public_url: (res && res.public_url) || '', done_at: Date.now() });
+                btn.innerHTML = `<i data-lucide="check-circle-2" class="w-5 h-5"></i> <span class="inline-block">Berhasil Deploy!</span>`;
+                lucide.createIcons();
+                // Setelah deploy sukses SELALU buka dashboard — jangan history.back(),
+                // karena halaman sebelumnya bisa jadi CTA "Mulai Konfigurasi" sehingga
+                // user seperti dibawa mundur setelah deploy selesai.
+                setTimeout(function () { location.replace('../dashboard/?id=' + encodeURIComponent(pid())); }, 600);
+                setTimeout(() => {
+                    btn.innerHTML = `Jalankan Deploy`;
+                    btn.className = "flex-[2] py-4 bg-transparent border border-gray-300 text-gray-900 rounded-2xl font-bold text-sm hover:bg-gray-100 transition-all shadow-lg flex items-center justify-center gap-2";
+                    btn.disabled = false;
+                }, 1000);
+            } catch (err) {
+                deployState.deploying = false;
+                writeDeploySession({ status: 'failed' });
+                console.warn('Deploy gagal: ' + err.message);
+                showDeployErrorModal(err);
+                btn.innerHTML = `Jalankan Deploy`;
+                btn.className = "flex-[2] py-4 bg-transparent border border-gray-300 text-gray-900 rounded-2xl font-bold text-sm hover:bg-gray-100 transition-all shadow-lg flex items-center justify-center gap-2";
+            }
+        }
+
+    </script>
+<script>
+    // Modal error deploy (termasuk kuota habis) — senada dgn halaman dashboard deployment
+    function showDeployErrorModal(err) {
+        var msg = (err && err.message) ? String(err.message) : '';
+        var isQuota = msg.indexOf('Kuota deploy') !== -1;
+        if (isQuota) { showDeployQuotaCarousel(msg); return; } // kuota habis -> carousel daftar paket
+        if (document.getElementById('deploy-error-modal')) return;
+        var m = document.createElement('div');
+        m.id = 'deploy-error-modal';
+        m.innerHTML =
+            '<div class="fixed inset-0 z-[90] flex items-center justify-center p-4" style="background:rgba(0,0,0,0.45)">' +
+            '<div class="bg-white rounded-2xl w-full max-w-xs px-5 pt-5 pb-4 text-center">' +
+            '<h3 class="text-base font-semibold text-gray-900">Deploy gagal</h3>' +
+            '<p class="text-sm text-gray-500 mt-1.5 leading-snug px-1">' + (msg || 'Terjadi kesalahan tak terduga. Coba lagi.') + '</p>' +
+            '<button id="deploy-error-close" class="mt-2 w-full py-2 text-sm font-medium text-gray-500 hover:text-black transition-colors">Tutup</button>' +
+            '</div></div>';
+        document.body.appendChild(m);
+        var btn = m.querySelector('#deploy-error-close');
+        if (btn) btn.addEventListener('click', function () { m.remove(); });
+    }
+
+    function showDeployQuotaCarousel(msg) {
+      if (document.getElementById('deploy-quota-modal')) return;
+      var m = document.createElement('div');
+      m.id = 'deploy-quota-modal';
+      var base = (location.pathname.indexOf('/Clincoo') !== -1) ? '/Clincoo.' : '';
+      var current = 'Starter';
+      var billing = 'Bulanan';
+      var checkoutUrl = function (name, cyc) {
+        return base + '/akun/langganan/upgrade/konfirmasi/?plan=' + encodeURIComponent(name) + '&billing=' + encodeURIComponent(cyc || billing);
+      };
+
+      var plans = [
+        { name: 'Starter', tagline: 'Untuk individu yang baru memulai.', price: 'Gratis', per: '', hot: false,
+          items: [
+            ['Hingga 3 proyek aktif + editor kode', true],
+            ['1 kolaborator per proyek', true],
+            ['Chat AI di setiap proyek (50 pesan/bulan) + pencarian web', true],
+            ['Kelola 1 domain: verifikasi, DNS & SSL', true], ['3 template proyek siap pakai', true],
+            ['Tugas terjadwal & notifikasi', true],
+            ['Deploy web 5x per bulan', true],
+            ['Editor full-stack & integrasi GitHub', false],
+            ['Domain tanpa batas & deploy tanpa batas', false]
+          ] },
+        { name: 'Pro', tagline: 'Untuk profesional dan kreator aktif.', price: '49K', per: '/bln', hot: true,
+          items: [
+            ['Hingga 10 proyek aktif', true],
+            ['Hingga 5 kolaborator per proyek', true],
+            ['Semua fitur Starter', true], ['Editor kode full-stack: bangun & publikasikan dari browser', true], ['Domain tanpa batas: verifikasi, DNS & SSL', true],
+            ['Deploy web hingga 25x per bulan ke domain sendiri', true],
+            ['Integrasi GitHub: impor repo, AI kerja langsung di repo kamu', true], ['Chat AI hingga 500 pesan/bulan (maks 50/hari)', true]
+          ] },
+        { name: 'Bisnis', tagline: 'Untuk tim dan operasi skala besar.', price: '129K', per: '/bln', hot: false,
+          items: [
+            ['Semua fitur Pro', true],
+            ['Hingga 50 proyek aktif', true],
+            ['Hingga 20 kolaborator per proyek', true],
+            ['Kontrol akses & keamanan proyek lanjutan', true],
+            ['Deploy web tanpa batas', true]
+          ] }
+      ];
+
+      var card = function (p) {
+        var isCurrent = (p.name === current);
+        var list = p.items.map(function (it) {
+          return '<li class="flex items-start gap-2.5 text-[13px] ' + (p.hot ? 'text-gray-900 font-medium' : (it[1] ? 'text-gray-700' : 'text-gray-400 opacity-70')) + '">' +
+            (it[1]
+              ? '<i data-lucide="' + (p.hot ? 'check-circle-2' : 'check') + '" class="w-4 h-4 shrink-0 ' + (p.hot ? 'text-accent' : 'text-gray-900') + '"></i>'
+              : '<i data-lucide="minus" class="w-4 h-4 shrink-0"></i>') +
+            '<span>' + it[0] + '</span></li>';
+        }).join('');
+        var btn;
+        if (isCurrent) {
+          btn = '<div class="w-full py-3 bg-gray-50 text-gray-500 border border-gray-200 rounded-xl font-semibold text-sm text-center cursor-not-allowed">Paket Saat Ini</div>';
+        } else if (p.hot) {
+          btn = '<a href="' + checkoutUrl(p.name, billing) + '" class="block w-full py-3 bg-accent rounded-xl font-semibold text-sm text-center transition-all shadow-md active:scale-95">Upgrade ke ' + p.name + '</a>';
+        } else {
+          btn = '<a href="' + checkoutUrl(p.name, billing) + '" class="block w-full py-3 bg-white text-gray-900 border-2 border-gray-200 hover:border-gray-900 hover:bg-gray-50 rounded-xl font-semibold text-sm text-center transition-all">Mulai ' + p.name + '</a>';
+        }
+        return '<div class="w-full shrink-0 px-0.5"><div class="bg-white border ' + (p.hot ? 'border-2 border-accent shadow-xl' : 'border-gray-200') + ' rounded-3xl p-4 sm:p-5 flex flex-col relative text-left">' +
+          (p.hot ? '<div class="absolute top-0 right-0 bg-accent text-[10px] font-bold px-3.5 py-1 rounded-bl-xl rounded-tr-2xl uppercase tracking-wider">Paling Populer</div>' : '') +
+          '<div class="mb-4 ' + (p.hot ? 'mt-2' : '') + '"><h3 class="text-lg font-bold text-gray-900 ' + (p.hot ? 'text-accent' : '') + '">' + p.name + '</h3>' +
+          '<p class="text-xs text-gray-500 mt-0.5">' + p.tagline + '</p></div>' +
+          '<div class="mb-4 flex items-baseline"><span class="text-2xl font-extrabold tracking-tight text-gray-900">' + p.price + '</span><span class="text-xs font-medium text-gray-500 ml-1">' + p.per + '</span></div>' +
+          '<ul class="flex flex-col gap-2.5 mb-4 flex-1">' + list + '</ul>' + btn + '</div></div>';
+      };
+
+      var slides = plans.map(card).join('');
+      var dots = plans.map(function (p, i) {
+        return '<button class="dqc-dot rounded-full transition-all duration-200" data-i="' + i + '" style="width:6px;height:6px;background:#d1d5db;"></button>';
+      }).join('');
+
+      var css = document.createElement('style');
+      css.textContent =
+        '#deploy-quota-modal .text-accent{color:var(--accent-color,#000000);} ' +
+        '#deploy-quota-modal .bg-accent{background-color:var(--accent-color,#000000);color:#ffffff;} ' +
+        '#deploy-quota-modal .border-accent{border-color:var(--accent-color,#000000);} ' +
+        'body.dark-mode #deploy-quota-modal .text-accent{color:#ffffff !important;} ' +
+        'body.dark-mode #deploy-quota-modal .bg-accent{background-color:#ffffff !important;color:#000000 !important;} ' +
+        'body.dark-mode #deploy-quota-modal .border-accent{border-color:#ffffff !important;}';
+
+      var subtitle = (msg || 'Kuota deploy paket Starter sudah habis bulan ini.').replace('Upgrade paket di halaman Langganan untuk deploy lagi.', '').trim();
+
+      m.innerHTML =
+        '<div class="fixed inset-0 z-[95] overflow-y-auto p-3 sm:p-4" style="background:rgba(0,0,0,0.45)">' +
+        '<div class="min-h-full flex items-center justify-center">' +
+        '<div class="bg-white rounded-2xl w-full max-w-sm relative px-4 sm:px-5 pt-9 pb-4 my-2">' +
+        '<button id="deploy-quota-x" class="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-black flex items-center justify-center transition-colors z-10" aria-label="Tutup"><i data-lucide="x" class="w-4 h-4"></i></button>' +
+        '<h3 class="text-base font-semibold text-gray-900 text-center pr-6">Kuota deploy habis</h3>' +
+        '<p class="text-[13px] sm:text-sm text-gray-500 mt-1 text-center leading-snug px-1">' + subtitle + '</p>' +
+        '<div class="relative mt-4">' +
+          '<div id="dqc-viewport" class="overflow-hidden rounded-2xl" style="touch-action:pan-y;">' +
+            '<div id="dqc-track" class="flex transition-transform duration-300 ease-out">' + slides + '</div>' +
+          '</div>' +
+          '<button id="dqc-prev" class="absolute left-0 top-1/2 -translate-y-1/2 -ml-2 w-7 h-7 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-600 hover:text-black transition-colors"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>' +
+          '<button id="dqc-next" class="absolute right-0 top-1/2 -translate-y-1/2 -mr-2 w-7 h-7 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-600 hover:text-black transition-colors"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>' +
+        '</div>' +
+        '<div class="flex items-center justify-center gap-2 mt-4">' + dots + '</div>' +
+        '</div></div>';
+      document.body.appendChild(css);
+      document.body.appendChild(m);
+      try { lucide.createIcons(); } catch (e) {}
+
+      var track = m.querySelector('#dqc-track');
+      var dotsEls = m.querySelectorAll('.dqc-dot');
+      var idx = 1;
+      function render() {
+        track.style.transform = 'translateX(-' + (idx * 100) + '%)';
+        dotsEls.forEach(function (d, i) {
+          var on = (i === idx);
+          d.style.width = on ? '18px' : '6px';
+          d.style.background = on ? '' : '#d1d5db';
+          d.classList.toggle('bg-accent', on);
+        });
+      }
+      function go(i) { idx = (i + plans.length) % plans.length; render(); }
+      m.querySelector('#dqc-prev').addEventListener('click', function () { go(idx - 1); });
+      m.querySelector('#dqc-next').addEventListener('click', function () { go(idx + 1); });
+      dotsEls.forEach(function (d) { d.addEventListener('click', function () { go(parseInt(d.dataset.i, 10)); }); });
+
+      var vp = m.querySelector('#dqc-viewport'), sx = null, dx = 0;
+      vp.addEventListener('touchstart', function (e) { sx = e.touches[0].clientX; dx = 0; track.style.transition = 'none'; }, { passive: true });
+      vp.addEventListener('touchmove', function (e) {
+        if (sx === null) return;
+        dx = e.touches[0].clientX - sx;
+        var w = vp.offsetWidth;
+        var lo = -(w * (plans.length - 1)) - 30;
+        var trackX = Math.min(Math.max(-(idx * w) + dx, lo), 30);
+        track.style.transform = 'translateX(' + trackX + 'px)';
+      }, { passive: true });
+      vp.addEventListener('touchend', function () {
+        track.style.transition = '';
+        if (Math.abs(dx) > 40) go(dx < 0 ? idx + 1 : idx - 1); else render();
+        sx = null;
+      });
+
+      m.querySelector('#deploy-quota-x').addEventListener('click', function () { m.remove(); });
+      m.firstElementChild.addEventListener('click', function (e) { if (e.target === m.firstElementChild) m.remove(); });
+      render();
+    }
+
+    // Subdomain saat ini (jika sudah ada) langsung terisi dari mode cepat backend —
+    // tanpa popup/modal, nempel di halaman, style selaras dengan input lain.
+    (async function () {
+        try {
+            const st = await apiFetch('/deploy?project_id=' + encodeURIComponent(pid()) + '&fast=1');
+            const inp = document.getElementById('input-subdomain');
+            // [10 Okt] tampilkan subdomain publik ASLI (label pilihan user), bukan nama
+            // project pages yang ber-suffix acak.
+            if (st && inp) inp.value = st.public_subdomain || st.pages_project || '';
+        } catch (e) {} // belum pernah deploy -> biarkan kosong (otomatis dari nama proyek)
+    })();
+</script>
+
+    <script>/* clincoo-sw-register */
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../sw.js').catch(function () {}); }); }
+    </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
+<script src="../../../js/onboarding.js?v=2"></script>
+</body>
+</html>

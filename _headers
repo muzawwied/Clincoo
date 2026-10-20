@@ -1,0 +1,20 @@
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+# Service worker harus selalu dicek ulang — SW basi membuat halaman tayang versi lama
+/sw.js
+  Cache-Control: no-cache, must-revalidate
+
+# Jangan publish halaman debug ke produksi (audit #9)
+/debug/*
+  X-Robots-Tag: noindex
+/debug-notif/*
+  X-Robots-Tag: noindex
+
+
+# Demo AI Router: HTML demo jangan di-cache — pembaruan demo langsung tayang
+/demo/ai-router/*
+  Cache-Control: no-cache, must-revalidate

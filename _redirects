@@ -1,0 +1,114 @@
+# Cloudflare Pages redirects — clean URL langsung ke file asli
+# GitHub Pages mengabaikan file ini (navigasi app pakai path file langsung).
+# 301 dipakai agar path relatif aset (../js, ../akun, ../proyek) tetap benar.
+
+/assets/logo-clinqoo.png    /assets/logo-clincoo.png    301
+
+# Home
+/    /index.html    200
+
+# Profil (akun)
+/profil    /akun/Profile/    200
+/profil/    /akun/Profile/    200
+/profil/aktivitas    /akun/aktivitas.html    301
+/profil/personal    /akun/profile/personal/    301
+/profil/dompet    /akun/profile/dompet/    301
+/profil/upgrade    /akun/langganan/upgrade/    301
+/profil/langganan    /akun/langganan.html    301
+/profil/konfirmasi-langganan    /akun/langganan/upgrade/konfirmasi/    301
+/profil/kolaborasi    /akun/kolaborasi.html    301
+/profil/kontrol-data    /akun/profile/kontrol-data/    301
+/profil/laporkan-bug    /akun/laporkan-bug.html    301
+/profil/tentang    /akun/tentang.html    301
+/notifikasi    /akun/notifikasi/    200
+/notifikasi/    /akun/notifikasi/    200
+
+# Langkah checkout (step dalam satu halaman + restore QRIS via localStorage) — 200 rewrite agar /checkout/qris/ bisa dipakai
+/akun/langganan/checkout/metode      /akun/langganan/checkout/    200
+/akun/langganan/checkout/metode/     /akun/langganan/checkout/    200
+/akun/langganan/checkout/konfirmasi    /akun/langganan/checkout/    200
+/akun/langganan/checkout/konfirmasi/   /akun/langganan/checkout/    200
+/akun/langganan/checkout/qris      /akun/langganan/checkout/    200
+/akun/langganan/checkout/qris/     /akun/langganan/checkout/    200
+/akun/langganan/checkout/qris/*    /akun/langganan/checkout/    200
+
+### Step topup lama (alur kini satu halaman + pop-up QRIS): redirect ke halaman top-up
+/akun/profile/dompet/topup/metode    /akun/profile/dompet/topup/    301
+/akun/profile/dompet/topup/metode/   /akun/profile/dompet/topup/    301
+/akun/profile/dompet/topup/nominal    /akun/profile/dompet/topup/    301
+/akun/profile/dompet/topup/nominal/   /akun/profile/dompet/topup/    301
+/akun/profile/dompet/topup/konfirmasi    /akun/profile/dompet/topup/    301
+/akun/profile/dompet/topup/konfirmasi/   /akun/profile/dompet/topup/    301
+/akun/profile/dompet/topup/qris      /akun/profile/dompet/topup/    301
+/akun/profile/dompet/topup/qris/     /akun/profile/dompet/topup/    301
+
+# Editor — sidebar link /editor/ langsung ke halaman editor asli (query ?pid= otomatis terjaga)
+/editor    /proyek/workspace/editor/    301
+/editor/   /proyek/workspace/editor/    301
+
+# Halaman proyek — id proyek dipertahankan lewat ?id= (rute spesifik dulu, catch-all terakhir)
+/workspace/*/pengaturan/umum    /proyek/pengaturan/umum/?id=:splat    301
+/workspace/*/pengaturan/build-deployment    /proyek/build-deployment.html?id=:splat    301
+/workspace/*/pengaturan/domain-kustom    /proyek/build-deployment/domain-kustom/?id=:splat    301
+/workspace/*/pengaturan/keamanan-https    /proyek/pengaturan/keamanan-https/?id=:splat    301
+/workspace/*/pengaturan/visibilitas-akses    /proyek/pengaturan/visibilitas-akses/?id=:splat    301
+/workspace/*/pengaturan/integrasi-webhook    /proyek/pengaturan/integrasi-webhook/?id=:splat    301
+/workspace/*/pengaturan/zona-bahaya    /proyek/pengaturan/zona-bahaya/?id=:splat    301
+/workspace/*/pengaturan    /proyek/pengaturan.html?id=:splat    301
+/workspace/*/chat    /proyek/chat.html?id=:splat    301
+/workspace/*/environment    /proyek/pengaturan/environment/?id=:splat    301
+/workspace/*/keamanan    /proyek/pengaturan/keamanan/?id=:splat    301
+/workspace/*    /proyek/workspace.html?id=:splat    301
+
+# Legacy URL lama -> path file asli
+/proyek    /akun/proyek/    200
+/proyek/    /akun/proyek/    200
+/chat    /proyek/chat.html    301
+/chat.html    /proyek/chat.html    301
+/aktivitas    /akun/aktivitas.html    301
+/aktivitas.html    /akun/aktivitas.html    301
+/personal    /akun/profile/personal/    200
+/personal/    /akun/profile/personal/    200
+/personal.html    /akun/profile/personal/index.html    301
+/dompet    /akun/dompet.html    301
+/dompet.html    /akun/dompet.html    301
+/pengaturan    /proyek/pengaturan.html    301
+/pengaturan.html    /proyek/pengaturan.html    301
+/umum    /proyek/pengaturan/umum/    301
+/umum.html    /proyek/pengaturan/umum/    301
+/upgrade    /akun/langganan/upgrade/    200
+/upgrade/    /akun/langganan/upgrade/    200
+/upgrade.html    /akun/langganan/upgrade/index.html    301
+/langganan    /akun/langganan.html    301
+/langganan.html    /akun/langganan.html    301
+/kolaborasi    /akun/kolaborasi.html    301
+/kolaborasi.html    /akun/kolaborasi.html    301
+/tentang    /akun/tentang/    200
+/tentang/    /akun/tentang/    200
+/tentang.html    /akun/tentang/index.html    301
+/laporkan-bug    /akun/laporkan-bug.html    301
+/laporkan-bug.html    /akun/laporkan-bug.html    301
+/workspace.html    /proyek/workspace.html    301
+/environment    /proyek/pengaturan/environment/    301
+/environment.html    /proyek/pengaturan/environment/    301
+/keamanan    /proyek/pengaturan/keamanan/    301
+/keamanan.html    /proyek/pengaturan/keamanan/    301
+/keamanan-https    /proyek/pengaturan/keamanan-https/    301
+/keamanan-https.html    /proyek/pengaturan/keamanan-https/    301
+/kontrol-data    /akun/profile/kontrol-data/    200
+/kontrol-data/    /akun/profile/kontrol-data/    200
+/kontrol-data.html    /akun/profile/kontrol-data/index.html    301
+/zona-bahaya    /proyek/pengaturan/zona-bahaya/    301
+/zona-bahaya.html    /proyek/pengaturan/zona-bahaya/    301
+/build-deployment    /proyek/build-deployment.html    301
+/build-deployment.html    /proyek/build-deployment.html    301
+/integrasi-webhook    /proyek/pengaturan/integrasi-webhook/    301
+/integrasi-webhook.html    /proyek/pengaturan/integrasi-webhook/    301
+/domain-kustom    /proyek/build-deployment/domain-kustom/    301
+/domain-kustom.html    /proyek/build-deployment/domain-kustom/    301
+/visibilitas-akses    /proyek/pengaturan/visibilitas-akses/    301
+/visibilitas-akses.html    /proyek/pengaturan/visibilitas-akses/    301
+
+/proyek/pengaturan/email/bantuan    https://docs.clincoo.buzz/dokumentasi/mengirim-email-dari-situs-deploy/    301
+/proyek/pengaturan/email/bantuan/   https://docs.clincoo.buzz/dokumentasi/mengirim-email-dari-situs-deploy/    301
+/proyek/pengaturan/email/pengaturan/* /proyek/pengaturan/email/ 301

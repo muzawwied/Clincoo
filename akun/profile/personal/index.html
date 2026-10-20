@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="../../../js/auth-client.js?v=6"></script>
+    <script src="../../../js/accent-init.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="../../../assets/favicon.png">
+    <link rel="manifest" href="../../../manifest.json">
+    <link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
+    <title>Pengaturan Personal — Clincoo</title>
+    <meta name="description" content="Pengaturan Personal — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clincoo">
+    <meta property="og:title" content="Pengaturan Personal — Clincoo">
+    <meta property="og:description" content="Pengaturan Personal — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Pengaturan Personal — Clincoo">
+    <meta name="twitter:description" content="Pengaturan Personal — kelola langsung di Clincoo. Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+    <script src="https://unpkg.com/lucide@1.41.0"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        :root {
+            --accent-color: #000000;
+            --accent-hover: #1f2937;
+            --accent-text: #ffffff;
+        }
+
+        .bg-accent { background-color: var(--accent-color) !important; }
+        .text-accent { color: var(--accent-color) !important; }
+        .border-accent { border-color: var(--accent-color) !important; }
+
+        body.dark-mode {
+            background-color: #000000;
+            color: #ffffff;
+        }
+        body.dark-mode .bg-white {
+            background-color: #0a0a0a !important;
+        }
+        body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black {
+            color: #ffffff !important;
+        }
+        body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 {
+            color: #888888 !important;
+        }
+        body.dark-mode .text-gray-400 {
+            color: #666666 !important;
+        }
+        body.dark-mode header button[onclick] {
+            background-color: #000000 !important;
+            border: 1.5px solid rgba(255,255,255,0.4) !important;
+            color: #ffffff !important;
+        }
+        body.dark-mode header button[onclick] svg {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+        }
+        body.dark-mode .bg-gray-50, body.dark-mode .bg-gray-100 {
+            background-color: #0a0a0a !important;
+        }
+        body.dark-mode .border-gray-100, body.dark-mode .border-gray-200 {
+            border-color: #222222 !important;
+        }
+        body.dark-mode .hover\:bg-gray-50:hover, body.dark-mode .hover\:bg-gray-100:hover {
+            background-color: #141414 !important;
+        }
+        body.dark-mode input {
+            background-color: #0a0a0a; color: #ffffff; border-color: #222222;
+        }
+        body.dark-mode input:focus {
+            border-color: #444444; outline: none;
+        }
+        body.dark-mode .divide-gray-200 > * { border-color: #222222 !important; }
+        body.dark-mode header { background-color: #000000 !important; border-color: #222222 !important; }
+        body.dark-mode .bg-black { background-color: #ffffff !important; color: #000000 !important; }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    /* auto-dark-fix v1 */
+    body.dark-mode .bg-gray-50\/80 { background-color: #141414 !important; }
+    body.dark-mode .bg-gray-200 { background-color: #262626 !important; }
+    body.dark-mode .bg-gray-300 { background-color: #333333 !important; }
+    body.dark-mode .bg-gray-400 { background-color: #444444 !important; }
+    body.dark-mode .border-gray-50 { border-color: #0a0a0a !important; }
+    body.dark-mode .border-gray-200\/50,
+    body.dark-mode .border-gray-200\/60,
+    body.dark-mode .border-gray-200\/70 { border-color: #222222 !important; }
+    body.dark-mode .border-gray-300 { border-color: #333333 !important; }
+    body.dark-mode .border-gray-400 { border-color: #444444 !important; }
+    body.dark-mode .bg-blue-50,
+    body.dark-mode .bg-blue-50\/50 { background-color: #0d1a26 !important; }
+    body.dark-mode .border-blue-100,
+    body.dark-mode .border-blue-200 { border-color: #1e3a52 !important; }
+    body.dark-mode .bg-red-50,
+    body.dark-mode .bg-red-50\/50 { background-color: #2a1414 !important; }
+    body.dark-mode .bg-red-100 { background-color: #3a1a1a !important; }
+    body.dark-mode .border-red-100,
+    body.dark-mode .border-red-200 { border-color: #4a2020 !important; }
+    body.dark-mode .bg-green-100 { background-color: #14301c !important; }
+    body.dark-mode .bg-white\/95 { background-color: rgba(10,10,10,0.95) !important; }
+    body.dark-mode .hover\:bg-gray-50:hover,
+    body.dark-mode .hover\:bg-gray-50\/50:hover,
+    body.dark-mode .hover\:bg-gray-50\/80:hover { background-color: #1a1a1a !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #262626 !important; }
+    body.dark-mode .hover\:bg-gray-200:hover,
+    body.dark-mode .hover\:bg-gray-200\/50:hover { background-color: #333333 !important; }
+    body.dark-mode .hover\:bg-blue-50:hover,
+    body.dark-mode .hover\:bg-blue-100:hover { background-color: #163247 !important; }
+    body.dark-mode .hover\:bg-red-50:hover,
+    body.dark-mode .hover\:bg-red-100:hover { background-color: #3a1a1a !important; }
+    body.dark-mode .hover\:border-gray-300:hover,
+    body.dark-mode .hover\:border-gray-400:hover,
+    body.dark-mode .hover\:border-gray-900:hover { border-color: #555555 !important; }
+    body.dark-mode .focus\:border-gray-400:focus,
+    body.dark-mode .focus\:border-gray-900:focus { border-color: #666666 !important; }
+    body.dark-mode input::placeholder, body.dark-mode textarea::placeholder { color: #666666 !important; }
+</style>
+<!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
+(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<3;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
+    </script>
+<!-- Google tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+<!-- End Google tag -->
+<script src="../../../js/i18n-dict.js" defer></script>
+<script src="../../../js/i18n.js" defer></script>
+</head>
+<body class="min-h-screen flex flex-col text-gray-900 pt-16">
+    <script>(function(){var t=localStorage.getItem("clincoo_theme");var isDark=(t==="Gelap")||((!t||t==="Sistem (Default)")&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+
+     <header class="bg-white flex justify-between items-center px-3 py-2 fixed top-0 w-full z-40 transition-colors">
+        <button onclick="history.back()" class="top-2 left-5 w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-100 hover:bg-gray-100 transition-all cursor-pointer text-gray-700 hover:text-black">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </button>
+        <h1 class="font-extrabold text-lg text-gray-900 tracking-tight">Profil Pribadi</h1>
+        <div class="w-10"></div>
+    </header>
+    <main class="flex-1 w-full max-w-2xl mx-auto px-6 py-8 flex flex-col">
+      <div class="w-full flex flex-col divide-y divide-gray-200">
+        
+        <!-- Avatar Photo Upload -->
+        <div class="py-6 flex flex-col items-center gap-4">
+          <div class="relative group cursor-pointer" onclick="document.getElementById('file-upload').click()">
+            <div id="avatar-container" class="w-24 h-24 rounded-full bg-accent flex items-center justify-center text-white text-3xl font-bold overflow-hidden bg-cover bg-center transition-all shadow-lg">
+              <span id="avatar-initial">C</span>
+            </div>
+            <div class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:bg-gray-50 transition-all z-10">
+              <i data-lucide="pencil" class="h-4 w-4 text-gray-600"></i>
+            </div>
+            <input id="file-upload" type="file" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+          </div>
+          <div class="text-center">
+            <h3 id="user-display-name" class="text-lg font-bold text-gray-900">Clincoo User</h3>
+            <p id="user-display-email" class="text-sm text-gray-500">email pengguna</p>
+          </div>
+        </div>
+
+        <!-- Nama Lengkap -->
+        <div class="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <h4 class="text-base font-semibold text-gray-900">Nama Lengkap</h4>
+            <p class="text-xs sm:text-sm text-gray-500 mt-0.5">Nama yang ditampilkan di ruang kerja</p>
+          </div>
+          <div class="w-full sm:w-80">
+            <input id="input-fullname" type="text" value="Clincoo User" class="w-full px-3.5 py-2 text-sm rounded-lg border border-gray-300 focus:outline-none transition-colors" placeholder="Nama lengkap">
+          </div>
+        </div>
+
+        <!-- Email (Disabled / Read-Only) -->
+        <div class="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <h4 class="text-base font-semibold text-gray-900">Email</h4>
+            <p class="text-xs sm:text-sm text-gray-500 mt-0.5">Alamat email tidak dapat diubah</p>
+          </div>
+          <div class="w-full sm:w-80">
+            <input id="input-email" type="text" value="" placeholder="email pengguna" class="w-full px-3.5 py-2 text-sm rounded-lg border border-gray-300 bg-gray-50 text-gray-500 focus:outline-none transition-colors cursor-not-allowed" readonly>
+          </div>
+        </div>
+
+        <!-- Notifikasi Email Switch -->
+        <div class="py-5 flex items-center justify-between gap-4">
+          <div class="min-w-0 flex-1">
+            <h4 class="text-base font-semibold text-gray-900">Notifikasi Email</h4>
+            <p class="text-xs sm:text-sm text-gray-500 mt-0.5">Terima update via email</p>
+          </div>
+          <button type="button" onclick="toggleSwitch('emailNotif')" class="relative flex-shrink-0 cursor-pointer focus:outline-none">
+            <div id="emailNotif-bg" class="w-11 h-6 bg-blue-500 rounded-full transition-colors duration-200 ease-in-out"></div>
+            <div id="emailNotif-knob" class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in-out translate-x-5"></div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Floating Save/Cancel Action Bar -->
+      <div id="action-buttons" class="mt-8 pt-6 border-t border-gray-200 hidden justify-end gap-3 opacity-0 transition-opacity duration-300">
+        <button type="button" onclick="cancelChanges()" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">Batal</button>
+        <button type="button" onclick="saveChanges()" class="px-5 py-2 text-sm font-medium text-white bg-black hover:bg-gray-800 rounded-lg shadow-sm transition-colors focus:outline-none cursor-pointer inline-flex items-center justify-center">Simpan</button>
+      </div>
+    </main>
+
+    <!-- Footer: hak cipta & syarat ketentuan -->
+    <footer class="w-full max-w-6xl mx-auto px-5 pb-6 pt-4 mt-2 border-t border-gray-100 dark:border-[#222] text-center">
+      <p class="text-xs text-gray-400 dark:text-gray-500">&copy; 2026 Clincoo. Seluruh hak cipta dilindungi.</p>
+      <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Penggunaan Clincoo tunduk pada Syarat &amp; Ketentuan serta Kebijakan Privasi yang berlaku.</p>
+    </footer>
+
+    <script>
+        // Initialize Lucide icons
+        try { lucide.createIcons(); } catch (e) {}
+
+        let isEdited = false;
+
+        function showActionButtons() {
+            if (!isEdited) {
+                isEdited = true;
+                const c = document.getElementById('action-buttons');
+                if (c) {
+                    c.classList.remove('hidden');
+                    c.classList.add('flex');
+                    void c.offsetWidth;
+                    c.classList.remove('opacity-0');
+                    c.classList.add('opacity-100');
+                }
+            }
+        }
+
+        function cancelChanges() {
+            window.location.reload();
+        }
+
+
+        // ===== SINKRONISASI D1: data profile & personal terhubung ke backend =====
+        const PROFILE_API = 'https://clincoo-be2.pages.dev/api/account-profile';
+        function syncProfileToD1() {
+            return new Promise(function(resolve) {
+                try {
+                    const payload = {};
+                    const name = localStorage.getItem('clincoo_fullname');
+                    const email = localStorage.getItem('clincoo_email');
+                    const pic = localStorage.getItem('clincoo_profile_pic');
+                    if (name) payload.name = name;
+                    if (email) payload.email = email;
+                    if (pic && pic.length < 700000) payload.avatar = pic;
+                    if (Object.keys(payload).length > 0) {
+                        fetch(PROFILE_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+                            .catch(function(){}).then(resolve, resolve);
+                    } else { resolve(); }
+                } catch(e) { resolve(); }
+            });
+        }
+
+        // Kompres gambar (maks 512px, JPEG) supaya avatar selalu lolos simpan ke D1 (<700KB)
+        function compressAvatar(file) {
+            return new Promise(function(resolve) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var img = new Image();
+                    img.onload = function() {
+                        try {
+                            var maxDim = 512;
+                            var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+                            var canvas = document.createElement('canvas');
+                            canvas.width = Math.max(1, Math.round(img.width * scale));
+                            canvas.height = Math.max(1, Math.round(img.height * scale));
+                            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                            resolve(canvas.toDataURL('image/jpeg', 0.85));
+                        } catch (err) { resolve(e.target.result); }
+                    };
+                    img.onerror = function() { resolve(null); };
+                    img.src = e.target.result;
+                };
+                reader.onerror = function() { resolve(null); };
+                reader.readAsDataURL(file);
+            });
+        }
+        function syncProfileFromD1() {
+            try {
+                fetch(PROFILE_API).then(function(r){ return r.json(); }).then(function(d) {
+                    if (!d || d.error) return;
+                    const hasData = Object.keys(d).filter(function(k){ return k !== 'error'; }).length > 0;
+                    if (!hasData) return;
+                    // Jangan menimpa saat ada perubahan yang belum disimpan
+                    const actions = document.getElementById('action-buttons');
+                    if (actions && !actions.classList.contains('hidden')) return;
+                    // Selalu samakan dengan D1 (real-time)
+                    if (d.name) { try { localStorage.setItem('clincoo_fullname', d.name); } catch(e) {} }
+                    if (d.email) { try { localStorage.setItem('clincoo_email', d.email); } catch(e) {} }
+                    if (d.avatar) { try { localStorage.setItem('clincoo_profile_pic', d.avatar); } catch(e) {} }
+                    const nameInput = document.getElementById('input-fullname');
+                    const emailInput = document.getElementById('input-email');
+                    const displayName = document.getElementById('user-display-name');
+                    const displayEmail = document.getElementById('user-display-email');
+                    const avatarContainer = document.getElementById('avatar-container');
+                    const avatarInitial = document.getElementById('avatar-initial');
+                    const nm = d.name || localStorage.getItem('clincoo_fullname');
+                    const em = d.email || localStorage.getItem('clincoo_email');
+                    const pc = d.avatar || localStorage.getItem('clincoo_profile_pic');
+                    if (nm && nameInput && document.activeElement !== nameInput && nameInput.value !== nm) nameInput.value = nm;
+                    if (nm && displayName && displayName.innerText !== nm) displayName.innerText = nm;
+                    if (em && emailInput && emailInput.value !== em) emailInput.value = em;
+                    if (em && displayEmail && displayEmail.innerText !== em) displayEmail.innerText = em;
+                    if (nm && avatarInitial && !pc) avatarInitial.innerText = nm.charAt(0).toUpperCase();
+                    if (pc && avatarContainer) {
+                        avatarContainer.style.backgroundImage = 'url(' + pc + ')';
+                        avatarContainer.classList.remove('bg-accent');
+                        if (avatarInitial) avatarInitial.style.display = 'none';
+                    }
+                }).catch(function(){});
+            } catch(e) {}
+        }
+
+        // Refresh real-time: cek D1 tiap 10 detik dan tiap kali halaman aktif kembali
+        setInterval(syncProfileFromD1, 10000);
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) syncProfileFromD1();
+        });
+
+        async function saveChanges() {
+            const btn = document.querySelector('#action-buttons button.bg-black');
+            if (!btn) return;
+
+            // Kunci lebar tombol agar tidak "loncat" saat teks diganti icon
+            try { btn.style.minWidth = btn.offsetWidth + 'px'; } catch(e) {}
+
+            // Teks "Simpan" hilang — hanya icon loading (versi baru)
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
+            btn.disabled = true;
+            btn.classList.add('opacity-80', 'cursor-not-allowed');
+            try { lucide.createIcons(); } catch(e) {}
+
+            // Update display name if input changed
+            const nameInput = document.getElementById('input-fullname');
+            const displayName = document.getElementById('user-display-name');
+            if (nameInput && displayName) {
+                displayName.innerText = nameInput.value;
+                try { localStorage.setItem('clincoo_fullname', nameInput.value); } catch(e) {}
+            }
+            await syncProfileToD1(); // tunggu benar2 tersimpan ke D1
+
+            // Selesai — langsung tersimpan: icon centang (bg tetap hitam, bukan hijau) lalu refresh
+            btn.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-white"></i>';
+            btn.classList.remove('opacity-80', 'cursor-not-allowed');
+            try { lucide.createIcons(); } catch(e) {}
+            setTimeout(() => window.location.reload(), 500);
+        }
+
+        // Photo Upload Handling — dikompres (maks 512px, JPEG) supaya selalu tersimpan ke D1
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            compressAvatar(file).then(function(base64) {
+                if (!base64) return;
+                const avatarContainer = document.getElementById('avatar-container');
+                const avatarInitial = document.getElementById('avatar-initial');
+                if (avatarContainer) {
+                    avatarContainer.style.backgroundImage = 'url(' + base64 + ')';
+                    avatarContainer.classList.remove('bg-accent');
+                }
+                if (avatarInitial) avatarInitial.style.display = 'none';
+                try { localStorage.setItem('clincoo_profile_pic', base64); } catch(err) {}
+                syncProfileToD1(); // sinkron avatar ke D1
+                showActionButtons();
+            });
+        }
+
+        // Toggle switch handler
+        function toggleSwitch(idPrefix) {
+            showActionButtons();
+            const bg = document.getElementById(idPrefix + '-bg');
+            const knob = document.getElementById(idPrefix + '-knob');
+            if (!bg || !knob) return;
+
+            if (bg.classList.contains('bg-blue-500')) {
+                bg.classList.replace('bg-blue-500', 'bg-gray-200');
+                knob.classList.remove('translate-x-5');
+            } else {
+                bg.classList.add('bg-blue-500');
+                bg.classList.remove('bg-gray-200');
+                knob.classList.add('translate-x-5');
+            }
+        }
+
+        // Event listener for inputs to show action buttons
+        document.addEventListener('DOMContentLoaded', () => {
+            syncProfileFromD1();
+            // Load Data from LocalStorage
+            try {
+                const savedName = localStorage.getItem('clincoo_fullname');
+                const savedEmail = localStorage.getItem('clincoo_email');
+                const savedPic = localStorage.getItem('clincoo_profile_pic');
+
+                const nameInput = document.getElementById('input-fullname');
+                const emailInput = document.getElementById('input-email');
+                const displayName = document.getElementById('user-display-name');
+                const displayEmail = document.getElementById('user-display-email');
+                const avatarContainer = document.getElementById('avatar-container');
+                const avatarInitial = document.getElementById('avatar-initial');
+
+                if (savedName) {
+                    if (nameInput) nameInput.value = savedName;
+                    if (displayName) displayName.innerText = savedName;
+                    if (avatarInitial) avatarInitial.innerText = savedName.charAt(0).toUpperCase();
+                }
+                
+                if (savedEmail) {
+                    if (emailInput) emailInput.value = savedEmail;
+                    if (displayEmail) displayEmail.innerText = savedEmail;
+                }
+
+                if (savedPic && avatarContainer) {
+                    avatarContainer.style.backgroundImage = `url(${savedPic})`;
+                    avatarContainer.classList.remove('bg-accent');
+                    if (avatarInitial) avatarInitial.style.display = 'none';
+                }
+            } catch(e) {}
+
+            document.querySelectorAll('input').forEach(input => {
+                if (input.type !== 'file' && !input.readOnly && !input.disabled) {
+                    input.addEventListener('input', showActionButtons);
+                }
+            });
+        });
+    </script>
+
+    <script>/* clincoo-sw-register */
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('../../../sw.js').catch(function () {}); }); }
+    </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

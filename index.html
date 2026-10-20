@@ -1,0 +1,2424 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<script>/* ob-replay: reset panduan onboarding (dibaca sebelum router SPA menimpa query) */if(location.search.indexOf("ob-replay=1")!==-1){try{localStorage.removeItem("clincoo_ob_done");localStorage.removeItem("clincoo_ob_state");}catch(e){}}</script>
+
+<script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
+  <script src="js/auth-client.js?v=6"></script>
+  <script>
+    // Domain publik clincoo.biz.id: root diredirect ke landing page resmi
+    // (landing page tetap beralamat clincoo-landing.pages.dev).
+    (function () {
+      var h = location.hostname;
+      var p = (location.pathname.replace(/\/+$/, '')) || '/';
+      if ((h === 'clincoo.biz.id' || h === 'www.clincoo.biz.id') && (p === '/' || p === '/index.html')) {
+        location.replace('https://clincoo.buzz/');
+      }
+    })();
+  </script>
+  <script src="js/templates-data.js?v=20261017"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+    <meta name="google-site-verification" content="HCtGe7V5sYoerCNurPfg3iawtdg7mpQq914vPpqUNvY" />
+    <meta name="google-site-verification" content="MSQHPML78vxo_IYLXr2yyjv630w8ndYnZi2hh15RZaQ" />
+    <title>Clincoo</title>
+    <meta name="description" content="Bangun, kelola, dan terbitkan website dalam satu workspace. Dilengkapi dengan asisten AI, template, penerimaan pembayaran, dan deployment.">    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clincoo">
+    <meta name="keywords" content="buat website, ai website builder, pembuatan website, template landing page, website profesional, editor kode online, deploy website">
+    <meta name="author" content="Clincoo">
+    <meta property="og:title" content="Clincoo">
+    <meta property="og:description" content="Bangun, kelola, dan terbitkan website dalam satu workspace. Dilengkapi dengan asisten AI, template, penerimaan pembayaran, dan deployment.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Clincoo">
+    <meta property="og:url" content="https://app.clincoo.buzz/">
+    <meta property="og:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Clincoo">
+    <meta name="twitter:description" content="Bangun, kelola, dan terbitkan website dalam satu workspace. Dilengkapi dengan asisten AI, template, penerimaan pembayaran, dan deployment.">
+    <meta name="twitter:image" content="https://app.clincoo.buzz/assets/og-image.png?v=7">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
+    <script src="https://unpkg.com/lucide@1.41.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    <style>
+        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+        html, body { overflow-x: hidden; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            position: relative;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        /* BG hero: hanya dari balik header sampai di atas judul 'Proyek terbaru' */
+        #hero-bg {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 100vw;
+            transform: translateX(-50%);
+            height: 70vh;
+            z-index: 0;
+            background-image: linear-gradient(180deg, rgba(255,255,255,0.66) 0%, rgba(255,255,255,0.80) 60%, #ffffff 100%), url('assets/backgrounds/bg-light-morning.webp');
+            background-size: cover;
+            background-position: top center;
+            background-repeat: no-repeat;
+            pointer-events: none;
+        }
+        body.dark-mode #hero-bg {
+            background-image: linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.68) 60%, #000000 100%), url('assets/backgrounds/bg-dark-night2.webp');
+        }
+        /* konten halaman selalu di atas lapisan BG hero */
+        /* ===== Footer halaman utama =====
+           BG = lanjutan/versi lain dari BG hero: asset sama, tapi crop bagian bawah gambar.
+           Gradasi menyatu dengan warna halaman di tepi atas, makin transparan ke bawah. */
+        #site-footer {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            background-image: linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0.55) 30%, rgba(255,255,255,0.28) 100%), url('assets/backgrounds/bg-light-morning.webp');
+            background-size: cover;
+            background-position: center bottom;
+            background-repeat: no-repeat;
+        }
+        body.dark-mode #site-footer {
+            background-image: linear-gradient(180deg, #000000 0%, rgba(0,0,0,0.58) 30%, rgba(0,0,0,0.42) 100%), url('assets/backgrounds/bg-dark-night2.webp');
+        }
+        body.dark-mode #site-footer a:hover { color: #ffffff !important; }
+        /* Wordmark 3D nempel di dalem gambar */
+        /* Panggung footer: wordmark besar DI BELAKANG (dgn refleksi kaya air),
+           teks navigasi + copyright abu-abu DI DEPAN, menimpa wordmark. Murni CSS (ringan, tanpa library 3D). */
+        #site-footer .footer-stage {
+            position: relative;
+            display: grid;
+            place-items: center;
+            padding: 10px 0 30px;
+            min-height: 92px;
+        }
+        #site-footer .footer-stage > * { grid-area: 1 / 1; }
+        #site-footer .footer-wordmark {
+            position: relative;
+            z-index: 1;
+            display: inline-block;
+            font-weight: 800;
+            font-size: clamp(2.2rem, 7vw, 3.5rem);
+            line-height: 1;
+            letter-spacing: -0.03em;
+            color: #ffffff;
+            opacity: 0.94;
+            text-shadow: 0 3px 14px rgba(0,0,0,0.28);
+        }
+        /* Refleksi kaya di air: mirror teks, pudar ke bawah */
+        #site-footer .footer-wordmark::after {
+            content: attr(data-text);
+            position: absolute;
+            left: 0;
+            top: 100%;
+            width: 100%;
+            transform: scaleY(-1);
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.32), transparent 75%);
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,0.32), transparent 75%);
+        }
+        body.dark-mode #site-footer .footer-wordmark {
+            color: #f3f4f6;
+            opacity: 0.92;
+            text-shadow: 0 3px 16px rgba(0,0,0,0.55);
+        }
+        /* Teks abu-abu di depan: tetap kebaca & terlihat menimpa wordmark */
+        #site-footer .footer-front {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        #site-footer .footer-front .footer-sub,
+        #site-footer .footer-front a,
+        #site-footer .footer-front span { text-shadow: 0 1px 4px rgba(0,0,0,0.45), 0 1px 1px rgba(255,255,255,0.25); }
+        .page-view { position: relative; z-index: 1; }
+        :root {
+            --accent-color: #000000;
+            --accent-hover: #1f2937;
+            --accent-text: #ffffff;
+        }
+        .bg-accent { background-color: var(--accent-color) !important; }
+        .text-accent { color: var(--accent-color) !important; }
+        .border-accent { border-color: var(--accent-color) !important; }
+        .hover\:bg-accent-hover:hover { background-color: var(--accent-hover) !important; }
+        body.dark-mode {
+            background-color: #000000;
+            color: #ffffff;
+        }
+        body.dark-mode header#main-header, body.dark-mode .header-bar {
+            background-color: #000000;
+            border-color: #0a0a0a;
+        }
+        body.dark-mode .bg-white {
+            background-color: #0a0a0a !important;
+        }
+        body.dark-mode .text-\[\#222222\] { color: #ffffff !important; }
+        body.dark-mode #sidebar-toggle,
+        body.dark-mode button[onclick="toggleSidebar()"],
+        body.dark-mode button[onclick="history.back()"],
+        body.dark-mode button[onclick="navigateTo(\'page-home\')"],
+        body.dark-mode .header-glass button[onclick],
+        body.dark-mode header button[onclick] {
+            background-color: #000000 !important;
+            border: 1.5px solid rgba(255,255,255,0.4) !important;
+            color: #ffffff !important;
+        }
+        body.dark-mode #sidebar-toggle svg,
+        body.dark-mode button[onclick="toggleSidebar()"] svg,
+        body.dark-mode button[onclick="history.back()"] svg,
+        body.dark-mode button[onclick="navigateTo(\'page-home\')"] svg,
+        body.dark-mode .header-glass button[onclick] svg,
+        body.dark-mode header button[onclick] svg {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+        }
+        body.dark-mode #sidebar-toggle:hover,
+        body.dark-mode button[onclick="toggleSidebar()"]:hover,
+        body.dark-mode button[onclick="history.back()"]:hover,
+        body.dark-mode button[onclick="navigateTo(\'page-home\')"]:hover,
+        body.dark-mode .header-glass button[onclick]:hover,
+        body.dark-mode header button[onclick]:hover {
+            background-color: #1a1a1a !important;
+            border-color: rgba(255,255,255,0.7) !important;
+        }
+        body.dark-mode .bg-\[\#F9FAFB\] {
+            background-color: #0a0a0a !important;
+        }
+        body.dark-mode .border-gray-100, body.dark-mode .border-gray-200 {
+            border-color: #222222 !important;
+        }
+        body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black {
+            color: #ffffff !important;
+        }
+        body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 {
+            color: #888888 !important;
+        }
+        body.dark-mode .text-gray-400 {
+            color: #666666 !important;
+        }
+        body.dark-mode svg.text-black {
+            color: #ffffff !important;
+        }
+        body.dark-mode .bg-gray-200, body.dark-mode .bg-gray-300 {
+            background-color: #222222 !important;
+        }
+        body.dark-mode .bg-gray-100, body.dark-mode .bg-gray-50 {
+            background-color: #0a0a0a !important;
+            border-color: #222222 !important;
+            color: #e0e0e0 !important;
+        }
+        body.dark-mode .hover\:bg-gray-50:hover, body.dark-mode .hover\:bg-gray-100:hover {
+            background-color: #0a0a0a !important;
+            color: #ffffff !important;
+        }
+        body.dark-mode .typing {
+            border-right-color: #ffffff;
+        }
+        body.dark-mode textarea {
+            color: #ffffff !important;
+        }
+        body.dark-mode textarea::placeholder {
+            color: #666666 !important;
+        }
+        body.dark-mode .option-popup, 
+        body.dark-mode #notif-menu, 
+        body.dark-mode #upload-menu, 
+        body.dark-mode #theme-dropdown-menu, 
+        body.dark-mode #accent-dropdown-menu {
+            background-color: #0a0a0a !important;
+            border-color: #222222 !important;
+            color: #ffffff !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5) !important;
+        }
+        body.dark-mode .group:hover .group-hover\:text-black {
+            color: #ffffff !important;
+        }
+        body.dark-mode .group:hover .group-hover\:text-gray-900 {
+            color: #ffffff !important;
+        }
+        body.dark-mode .group:hover .group-hover\:border-gray-200 {
+            border-color: #333333 !important;
+        }
+        body.dark-mode .bg-white.shadow-sm, body.dark-mode .bg-white.shadow-\[0_8px_30px_rgb\(0\,0\,0\,0\.08\)\] {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.3) !important;
+        }
+        body.dark-mode #file-preview-container > div {
+            background-color: #0a0a0a !important;
+            border-color: #222222 !important;
+            color: #e0e0e0 !important;
+        }
+        body.dark-mode .bg-black { background-color: #ffffff !important; color: #000000 !important; }
+        body.dark-mode .bg-black.text-white { color: #000000 !important; }
+        body.dark-mode .hover\:bg-gray-800:hover { background-color: #333333 !important; }
+        body.dark-mode .bg-accent { background-color: #ffffff !important; color: #000000 !important; }
+        body.dark-mode .bg-accent.text-white { color: #000000 !important; }
+        body.dark-mode .text-accent { color: #ffffff !important; }
+        body.dark-mode .border-accent { border-color: #ffffff !important; }
+        body.dark-mode header { background-color: #000000 !important; }
+       .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+       .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        textarea:focus {
+            outline: none!important;
+            box-shadow: none!important;
+        }
+       .typing {
+            display: inline-block;
+            border-right: 2px solid black;
+            white-space: nowrap;
+            overflow: hidden;
+            animation: blink 0.7s step-end infinite;
+        }
+        @keyframes blink {
+            50% { border-color: transparent; }
+        }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    /* auto-dark-fix v1 */
+    body.dark-mode .bg-gray-50\/80 { background-color: #141414 !important; }
+    body.dark-mode .bg-gray-200 { background-color: #262626 !important; }
+    body.dark-mode .bg-gray-300 { background-color: #333333 !important; }
+    body.dark-mode .bg-gray-400 { background-color: #444444 !important; }
+    body.dark-mode .border-gray-50 { border-color: #0a0a0a !important; }
+    body.dark-mode .border-gray-200\/50,
+    body.dark-mode .border-gray-200\/60,
+    body.dark-mode .border-gray-200\/70 { border-color: #222222 !important; }
+    body.dark-mode .border-gray-300 { border-color: #333333 !important; }
+    body.dark-mode .border-gray-400 { border-color: #444444 !important; }
+    body.dark-mode .bg-blue-50,
+    body.dark-mode .bg-blue-50\/50 { background-color: #0d1a26 !important; }
+    body.dark-mode .border-blue-100,
+    body.dark-mode .border-blue-200 { border-color: #1e3a52 !important; }
+    body.dark-mode .bg-red-50,
+    body.dark-mode .bg-red-50\/50 { background-color: #2a1414 !important; }
+    body.dark-mode .bg-red-100 { background-color: #3a1a1a !important; }
+    body.dark-mode .border-red-100,
+    body.dark-mode .border-red-200 { border-color: #4a2020 !important; }
+    body.dark-mode .bg-green-100 { background-color: #14301c !important; }
+    body.dark-mode .bg-white\/95 { background-color: rgba(10,10,10,0.95) !important; }
+    body.dark-mode .hover\:bg-gray-50:hover,
+    body.dark-mode .hover\:bg-gray-50\/50:hover,
+    body.dark-mode .hover\:bg-gray-50\/80:hover { background-color: #1a1a1a !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #262626 !important; }
+    body.dark-mode .hover\:bg-gray-200:hover,
+    body.dark-mode .hover\:bg-gray-200\/50:hover { background-color: #333333 !important; }
+    body.dark-mode .hover\:bg-blue-50:hover,
+    body.dark-mode .hover\:bg-blue-100:hover { background-color: #163247 !important; }
+    body.dark-mode .hover\:bg-red-50:hover,
+    body.dark-mode .hover\:bg-red-100:hover { background-color: #3a1a1a !important; }
+    body.dark-mode .hover\:border-gray-300:hover,
+    body.dark-mode .hover\:border-gray-400:hover,
+    body.dark-mode .hover\:border-gray-900:hover { border-color: #555555 !important; }
+    body.dark-mode .focus\:border-gray-400:focus,
+    body.dark-mode .focus\:border-gray-900:focus { border-color: #666666 !important; }
+    body.dark-mode input::placeholder, body.dark-mode textarea::placeholder { color: #666666 !important; }
+    /* daftar template dilebarkan keluar container (kiri-kanan) di layar lebar */
+    @media (min-width: 768px) {
+        #tpl-section { width: calc(100% + 72px); margin-left: -36px; margin-right: -36px; }
+    }
+</style>
+    <script>
+        // Early route detection - prevents flash of home page on refresh
+        (function() {
+            var params = new URLSearchParams(window.location.search);
+            var path = params.get('path');
+            var pageId = 'page-home';
+            // Save current page to localStorage as backup
+            try { localStorage.setItem('clincoo_current_page', pageId); } catch(e) {}
+            document.addEventListener('DOMContentLoaded', function() {
+                var pages = document.querySelectorAll('.page-view');
+                pages.forEach(function(p) {
+                    if (p.id === pageId) {
+                        p.classList.remove('hidden');
+                        p.classList.add('flex');
+                    } else {
+                        p.classList.add('hidden');
+                        p.classList.remove('flex');
+                    }
+                });
+            });
+        })();
+    </script>
+<!-- no-flash-v2: background tema diterapkan sebelum paint pertama (warna persis tema gelap Clincoo) -->
+<script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||((t==='Sistem (Default)'||!t)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.style.background='#0a0a0a';document.documentElement.style.colorScheme='dark';}}catch(e){}})();</script>
+    <link rel="preload" as="image" href="assets/backgrounds/bg-light-morning.webp">
+    <link rel="preload" as="image" href="assets/backgrounds/bg-dark-night2.webp">
+
+    <script>/* clincoo-seo-auto: canonical & og mengikuti domain aktif */
+(function(){try{var u=location.origin+location.pathname.replace(/(index\.html|[^\/]+\.html)$/,"").replace(/\/$/,"");var s2=u;for(var i=0;i<0;i++)s2=s2.slice(0,s2.lastIndexOf("/"));var c=document.querySelector('link[rel="canonical"]');if(!c){c=document.createElement("link");c.setAttribute("rel","canonical");document.head.appendChild(c);}c.setAttribute("href",u+"/");var m=document.querySelector('meta[property="og:url"]');if(m)m.setAttribute("content",u+"/");var g=document.querySelector('meta[property="og:image"]');if(g)g.setAttribute("content",s2+"/assets/og-image.png?v=7");var t=document.querySelector('meta[name="twitter:image"]');if(t)t.setAttribute("content",s2+"/assets/og-image.png?v=7");}catch(e){}})();
+    </script>
+
+    <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "WebSite", "name": "Clincoo", "url": "https://app.clincoo.buzz/", "description": "Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.", "inLanguage": "id"}, {"@type": "Organization", "name": "Clincoo", "url": "https://app.clincoo.buzz/", "logo": "https://app.clincoo.buzz/assets/og-image.png?v=7"}, {"@type": "SoftwareApplication", "name": "Clincoo", "applicationCategory": "DeveloperApplication", "operatingSystem": "Web", "url": "https://app.clincoo.buzz/", "description": "Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.", "inLanguage": "id", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}}]}</script>
+<!-- Google tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KMQ8WBZF6E');
+</script>
+<!-- End Google tag -->
+<script src="js/i18n-dict.js" defer></script>
+<script src="js/i18n.js" defer></script>
+<style id="cc-dots-style">.cc-dots,.cc-dots:hover,.cc-dots:focus,.cc-dots:active{background:transparent!important;box-shadow:none!important;border:0!important;outline:none!important;-webkit-tap-highlight-color:transparent;color:#9ca3af!important;transition:none!important}.cc-dots svg{color:#9ca3af!important;transition:none!important;opacity:1!important;filter:none!important}</style>
+</head>
+<body class="min-h-screen flex flex-col text-gray-900 pt-20">
+    <div id="hero-bg"></div>
+    <script>try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.body.classList.add('dark-mode');var a=localStorage.getItem('clincoo_accent')||'Hitam (Default)';var am={'Hitam (Default)':{m:'#000000',h:'#1f2937'},'Biru':{m:'#2563eb',h:'#1d4ed8'},'Hijau':{m:'#059669',h:'#047857'},'Ungu':{m:'#9333ea',h:'#7e22ce'},'Merah':{m:'#dc2626',h:'#b91c1c'}};var c=am[a]||am['Hitam (Default)'];document.documentElement.style.setProperty('--accent-color',c.m);document.documentElement.style.setProperty('--accent-hover',c.h);}catch(e){}</script>
+    <header id="main-header" class="bg-white flex justify-between items-center p-2 fixed top-0 w-full z-50 transition-transform duration-300">
+        <button id="menu-btn" type="button" onclick="toggleSidebar()" class="flex items-center justify-center p-2 hover:opacity-70 transition-opacity cursor-pointer rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20" aria-label="Buka Menu" aria-expanded="false">
+            <svg class="w-[22px] h-[22px] text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12h9"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 18h13"></path>
+            </svg>
+        </button>
+        <div class="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 cursor-pointer rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20" tabindex="0" role="button" onclick="navigateTo('page-home')" onkeydown="if(event.key==='Enter') navigateTo('page-home')">
+          <img src="assets/logo-clincoo.png?v=20261007" alt="App Logo" class="w-9 h-9 rounded-full bg-white shadow-sm hover:scale-105 transition-transform">
+            <div class="flex items-center gap-1.5">
+                <span class="font-[800] text-[26px] tracking-tight text-black">Clincoo</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-1">
+            <div class="relative">
+                <button id="notif-btn" class="flex items-center justify-center p-2 hover:opacity-70 transition-opacity cursor-pointer rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20" aria-label="Notifications" aria-expanded="false">
+                    <svg class="w-[22px] h-[22px] text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                    </svg>
+                </button>
+                <div id="notif-menu" class="absolute top-full right-0 mt-2 w-64 bg-white border border-gray-100 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-3 opacity-0 invisible -translate-y-2 pointer-events-none transition-all duration-300 z-50 origin-top-right">
+                    <div class="flex justify-between items-center mb-2 px-1">
+                        <span class="font-semibold text-sm text-gray-900">Notifikasi</span>
+                        <a href="notifikasi/" class="text-xs font-semibold text-gray-400 hover:text-black transition-colors cursor-pointer focus-visible:outline-none focus-visible:text-gray-900 dark:focus-visible:text-gray-100 focus-visible:underline rounded-sm">Lihat Semua</a>
+                    </div>
+                    <div class="flex flex-col gap-2 mb-2">
+                        <div class="text-xs text-gray-500 text-center py-5">Belum ada notifikasi baru</div>
+                    </div>
+                </div>
+            </div>
+            <a href="profil/" class="flex items-center justify-center p-2 hover:opacity-70 transition-opacity cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20" aria-label="User Profile">
+                <svg class="w-[22px] h-[22px] text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="8" r="5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></circle><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 21a8 8 0 0 0-16 0"></path>
+                </svg>
+            </a>
+        </div>
+    </header>
+
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[55] opacity-0 invisible pointer-events-none transition-opacity duration-300" onclick="toggleSidebar(false)"></div>
+    <aside id="app-sidebar" class="fixed inset-y-0 left-0 z-[60] w-72 max-w-[85vw] bg-white border-r border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex flex-col -translate-x-full transition-transform duration-300 ease-out" aria-label="Menu Samping" aria-hidden="true">
+        <style>
+            #menu-btn, body.dark-mode #menu-btn { background: transparent !important; border: none !important; box-shadow: none !important; }
+            #sidebar-nav .sb-item { color: #6b7280; }
+            #sidebar-nav .sb-item i, #sidebar-nav .sb-item svg, #sidebar-nav .sb-item span { color: #6b7280; }
+            #sidebar-nav .sb-item:hover, #sidebar-nav .sb-item:hover i, #sidebar-nav .sb-item:hover svg, #sidebar-nav .sb-item:hover span { color: #111827; }
+            body.dark-mode #sidebar-nav .sb-item, body.dark-mode #sidebar-nav .sb-item i, body.dark-mode #sidebar-nav .sb-item svg, body.dark-mode #sidebar-nav .sb-item span { color: #9ca3af !important; }
+            body.dark-mode #sidebar-nav .sb-item:hover, body.dark-mode #sidebar-nav .sb-item:hover i, body.dark-mode #sidebar-nav .sb-item:hover svg, body.dark-mode #sidebar-nav .sb-item:hover span { color: #ffffff !important; }
+            #sidebar-nav .sb-sub, #sidebar-nav .sb-sub i, #sidebar-nav .sb-sub svg, #sidebar-nav .sb-sub span { color: #6b7280 !important; }
+            #sidebar-nav .sb-sub:hover, #sidebar-nav .sb-sub:hover i, #sidebar-nav .sb-sub:hover svg, #sidebar-nav .sb-sub:hover span { color: #111827 !important; }
+            body.dark-mode #sidebar-nav .sb-sub, body.dark-mode #sidebar-nav .sb-sub i, body.dark-mode #sidebar-nav .sb-sub svg, body.dark-mode #sidebar-nav .sb-sub span { color: #9ca3af !important; }
+            body.dark-mode #sidebar-nav .sb-sub:hover, body.dark-mode #sidebar-nav .sb-sub:hover i, body.dark-mode #sidebar-nav .sb-sub:hover svg, body.dark-mode #sidebar-nav .sb-sub:hover span { color: #ffffff !important; }
+        </style>
+        <div class="flex items-center justify-between gap-3 p-2 pl-3">
+            <div class="flex items-center gap-1.5">
+                <img src="assets/logo-clincoo.png?v=20261007" alt="App Logo" class="w-9 h-9 rounded-full bg-white shadow-sm">
+                <span class="font-[800] text-[26px] tracking-tight text-black">Clincoo</span>
+            </div>
+            <button type="button" onclick="toggleSidebar(false)" class="flex items-center justify-center p-2 hover:opacity-70 transition-opacity cursor-pointer rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20" aria-label="Tutup Menu">
+                <i data-lucide="x" class="w-[22px] h-[22px] text-black"></i>
+            </button>
+        </div>
+        <div class="px-3 pt-3 pb-2">
+            <div class="relative">
+                <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10"></i>
+                <input id="sidebar-search" type="text" placeholder="Cari fitur..." autocomplete="off" class="w-full bg-gray-50 border border-gray-200 rounded-full pl-11 pr-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-gray-300 focus:bg-gray-100 transition-colors">
+                <div id="sidebar-search-pop" class="hidden absolute left-0 right-0 top-full mt-2 bg-white border border-gray-100 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] py-1.5 z-50 max-h-96 overflow-y-auto"></div>
+            </div>
+        </div>
+        <nav id="sidebar-nav" class="flex-1 overflow-y-auto pb-3 flex flex-col">
+            <a href="#" onclick="event.preventDefault();toggleSidebar(false);navigateTo('page-home');" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="home beranda">
+                <i data-lucide="home" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Home</span>
+            </a>
+            <a href="domain/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="domain kustom">
+                <i data-lucide="globe" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Domain</span>
+            </a>
+            <!-- [18 Okt 2026, arahan pemilik] Menu Kredit/Top Up sementara jadi placeholder (tidak bisa diklik) -->
+            <div class="sb-item w-full flex items-center px-6 py-2 opacity-50" aria-disabled="true" title="Sedang dalam pengembangan" data-search="kredit saldo ai top up">
+                <svg class="w-5 h-5 text-gray-500 mr-4 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12.5 7 7.5 13h4.5l-1 4 4.5-6h-4.5z"/></svg>
+                <span class="text-[15px] font-medium text-gray-500">Kredit</span>
+                <span class="ml-auto text-[10px] font-semibold text-gray-400">Segera</span>
+            </div>
+            <a id="ob-sb-proyek" href="proyek/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="proyek project daftar">
+                <i data-lucide="folder" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Proyek</span>
+            </a>
+            <a href="templates/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="template">
+                <i data-lucide="layout-template" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Template</span>
+            </a>
+            <a href="notifikasi/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="notifikasi">
+                <i data-lucide="bell" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Notifikasi</span>
+            </a>
+            <a href="upgrade/" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="upgrade langganan paket">
+                <i data-lucide="crown" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Upgrade</span>
+            </a>
+            <a href="https://blog.clincoo.buzz/bantuan/" target="_blank" rel="noopener" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="pusat bantuan help">
+                <i data-lucide="circle-help" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900">Pusat Bantuan</span>
+            </a>
+            <div class="sb-section" data-search="favorit template">
+                <button type="button" onclick="toggleSidebarDropdown('sidebar-fav-list', this)" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="template favorit">
+                    <i data-lucide="heart" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                    <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900 flex-1 text-left">Template Favorit</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform"></i>
+                </button>
+                <div id="sidebar-fav-list" class="hidden flex-col max-h-52 overflow-y-auto"></div>
+            </div>
+            <div class="sb-section" data-search="daftar proyek">
+                <button type="button" onclick="toggleSidebarDropdown('sidebar-proj-list', this)" class="sb-item w-full flex items-center px-6 py-2 hover:bg-gray-50 transition-colors group" data-search="daftar proyek project">
+                    <i data-lucide="layers" class="w-5 h-5 text-gray-500 mr-4 group-hover:text-gray-900 transition-colors"></i>
+                    <span class="text-[15px] font-medium text-gray-500 group-hover:text-gray-900 flex-1 text-left">Daftar Proyek</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform"></i>
+                </button>
+                <div id="sidebar-proj-list" class="hidden flex-col max-h-52 overflow-y-auto border-t border-gray-100"></div>
+            </div>
+        </nav>
+        <a href="profil/" onclick="toggleSidebar(false)" class="mt-auto border-t border-gray-100 flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors">
+            <div id="sidebar-avatar" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden shrink-0 text-sm font-bold text-gray-500"></div>
+            <div class="flex flex-col min-w-0">
+                <span id="sidebar-user-name" class="text-sm font-semibold text-gray-900 truncate">Pengguna</span>
+                <span id="sidebar-user-email" class="text-xs text-gray-500 truncate"></span>
+            </div>
+        </a>
+    </aside>
+    <script>
+        function toggleSidebar(forceState) {
+            var sidebar = document.getElementById('app-sidebar');
+            var backdrop = document.getElementById('sidebar-backdrop');
+            var menuBtn = document.getElementById('menu-btn');
+            if (!sidebar || !backdrop) return;
+            var open = (typeof forceState === 'boolean') ? forceState : sidebar.classList.contains('-translate-x-full');
+            if (open) {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.setAttribute('aria-hidden', 'false');
+                backdrop.classList.remove('opacity-0', 'invisible', 'pointer-events-none');
+                if (menuBtn) menuBtn.setAttribute('aria-expanded', 'true');
+                document.documentElement.style.overflow = 'hidden';
+                document.body.style.overflow = 'hidden';
+                renderSidebarDynamic();
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                sidebar.setAttribute('aria-hidden', 'true');
+                backdrop.classList.add('opacity-0', 'invisible', 'pointer-events-none');
+                if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+                document.documentElement.style.overflow = '';
+                document.body.style.overflow = '';
+                hideSbSearchPop();
+            }
+        }
+        // [19 Okt, laporan pemilik] blokir scroll-through saat sidebar terbuka (iOS bandel)
+        (function () {
+            var _bk = document.getElementById('sidebar-backdrop'), _sb = document.getElementById('app-sidebar');
+            if (_bk) { _bk.style.touchAction = 'none'; _bk.addEventListener('touchmove', function (e) { e.preventDefault(); }, { passive: false }); }
+            if (_sb) { _sb.addEventListener('touchmove', function (e) { if (!(e.target && e.target.closest && e.target.closest('.overflow-y-auto'))) e.preventDefault(); }, { passive: false }); }
+        })();
+        function toggleSidebarDropdown(listId, btn) {
+            var list = document.getElementById(listId);
+            if (!list) return;
+            var chevron = btn ? btn.querySelector('[data-lucide="chevron-down"]') : null;
+            if (list.classList.contains('hidden')) {
+                list.classList.remove('hidden');
+                list.classList.add('flex');
+                if (chevron) chevron.style.transform = 'rotate(180deg)';
+            } else {
+                list.classList.add('hidden');
+                list.classList.remove('flex');
+                if (chevron) chevron.style.transform = '';
+            }
+        }
+        function esc(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+        function renderSidebarDynamic() {
+            // Favorit template
+            var favList = document.getElementById('sidebar-fav-list');
+            if (favList) {
+                var favs = [];
+                try { favs = JSON.parse(localStorage.getItem('clincoo_template_favorites') || '[]'); } catch (e) {}
+                var html = '';
+                if (favs.length && typeof ClincooTemplates !== 'undefined') {
+                    favs.forEach(function (key) {
+                        var t = ClincooTemplates.list && ClincooTemplates.list[key];
+                        if (!t) return;
+                        html += '<a href="' + esc(t.url) + '" onclick="toggleSidebar(false)" class="sb-sub flex items-center gap-2.5 px-6 py-2 pl-[3.25rem] hover:bg-gray-50 transition-colors" data-search="' + esc((t.name || '') + ' ' + key) + '">' +
+                            '<i data-lucide="star" class="w-4 h-4 text-gray-500 shrink-0"></i>' +
+                            '<span class="text-sm text-gray-500 truncate">' + esc(t.name || key) + '</span></a>';
+                    });
+                }
+                if (!html) html = '<p class="sb-sub px-6 py-2 pl-[3.25rem] text-xs text-gray-400">Belum ada template favorit</p>';
+                favList.innerHTML = html;
+            }
+            // Daftar proyek
+            var projList = document.getElementById('sidebar-proj-list');
+            if (projList) {
+                var projects = [];
+                try { projects = JSON.parse(localStorage.getItem('clincoo_projects') || '[]'); } catch (e) {}
+                var html2 = '';
+                projects.forEach(function (p) {
+                    // Samakan dengan kartu proyek & Pengaturan Umum: nama custom (app_name) > nama AI > judul awal
+                    var _st = {}; try { _st = JSON.parse(localStorage.getItem('clincoo_umum_' + (p && p.id || 'default')) || '{}'); } catch (e2) {}
+                    var name = (_st && _st.app_name) || (p && (p.aiName || p.title)) || 'Tanpa nama';
+                    // Logo proyek (Pengaturan Umum > app_logo): tampil bundar ukuran ikon; tanpa logo pakai ikon folder
+                    var _lg = '';
+                    try { _lg = (window.umumSettingsMap && window.umumSettingsMap[p.id] && (window.umumSettingsMap[p.id].app_logo_data || window.umumSettingsMap[p.id].app_logo)) || (_st && (_st.app_logo_data || _st.app_logo)) || ''; } catch (e3) {}
+                    if (typeof _lg !== 'string' || !/^(data:image\/|https?:\/\/|\/)/.test(_lg)) _lg = '';
+                    html2 += '<a href="proyek/workspace/?id=' + encodeURIComponent(p.id) + '" onclick="toggleSidebar(false)" class="sb-sub flex items-center gap-2.5 px-6 py-2 pl-[3.25rem] hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0" data-search="' + esc(name) + '">' +
+                        (_lg ? '<img src="' + esc(_lg) + '" alt="Logo" class="w-4 h-4 rounded-full object-cover shrink-0 border border-gray-200 dark:border-[#2f2f2f] bg-white">' : '<i data-lucide="folder" class="w-4 h-4 text-gray-500 shrink-0"></i>') +
+                        '<span class="text-sm text-gray-500 truncate">' + esc(name) + '</span></a>';
+                });
+                if (!html2) html2 = '<p class="sb-sub px-6 py-2 pl-[3.25rem] text-xs text-gray-400">Belum ada proyek</p>';
+                projList.innerHTML = html2;
+            }
+            // Profil bawah
+            var av = document.getElementById('sidebar-avatar');
+            var nm = document.getElementById('sidebar-user-name');
+            var em = document.getElementById('sidebar-user-email');
+            var name = '', email = '', pic = '';
+            try { name = localStorage.getItem('clincoo_fullname') || ''; email = localStorage.getItem('clincoo_email') || ''; pic = localStorage.getItem('clincoo_profile_pic') || ''; } catch (e) {}
+            if (nm) nm.textContent = name || 'Pengguna';
+            if (em) em.textContent = email || '';
+            if (av) {
+                av.style.backgroundImage = '';
+                av.textContent = '';
+                if (pic) { av.style.backgroundImage = 'url(' + pic + ')'; av.style.backgroundSize = 'cover'; av.style.backgroundPosition = 'center'; }
+                else if (name) av.textContent = name.charAt(0).toUpperCase();
+                else av.innerHTML = '<i data-lucide="user" class="w-5 h-5 text-gray-400"></i>';
+            }
+            try { lucide.createIcons(); } catch (e) {}
+        }
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') { toggleSidebar(false); }
+        });
+        // ===== Popover pencarian fitur =====
+        // Ikon kustom ala Lucide (stroke currentColor) untuk menu yang ikon
+        // bawaannya terasa kaku/umum — sekarang dipakai: 'coin-bolt' untuk Kredit.
+        var SB_CUSTOM_ICONS = {
+            'coin-bolt': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12.5 7 7.5 13h4.5l-1 4 4.5-6h-4.5z"/></svg>'
+        };
+
+        function sbPopGroups() {
+            return [
+                { group: 'Menu', items: [
+                    { label: 'Home', icon: 'home', act: function () { toggleSidebar(false); navigateTo('page-home'); } },
+                    { label: 'Domain', icon: 'globe', act: function () { location.href = 'domain/'; } },
+                    // [18 Okt 2026, arahan pemilik] Kredit/Top Up sementara placeholder non-aktif
+                    { label: 'Kredit', icon: 'coin-bolt', act: function () { if (window.aiBuildDevNotice) { window.aiBuildDevNotice('Top Up Kredit sedang dalam pengembangan — segera hadir'); } else { alert('Top Up Kredit sedang dalam pengembangan.'); } } },
+                    { label: 'Template', icon: 'layout-template', act: function () { location.href = 'templates/'; } },
+                    { label: 'Notifikasi', icon: 'bell', act: function () { location.href = 'notifikasi/'; } },
+                    { label: 'Upgrade', icon: 'crown', act: function () { location.href = 'upgrade/'; } },
+                    { label: 'Pusat Bantuan', icon: 'circle-help', act: function () { window.open('https://blog.clincoo.buzz/bantuan/', '_blank', 'noopener'); } },
+                    { label: 'Template Favorit', icon: 'heart', act: function () { sbOpenSection('sidebar-fav-list'); } },
+                    { label: 'Daftar Proyek', icon: 'layers', act: function () { sbOpenSection('sidebar-proj-list'); } }
+                ] },
+                { group: 'Akun', items: [
+                    { label: 'Profil', icon: 'user', act: function () { location.href = 'profil/'; } },
+                    { label: 'Personal', icon: 'id-card', act: function () { location.href = 'personal/'; } },
+                    { label: 'Aktivitas', icon: 'rotate-ccw', act: function () { location.href = 'akun/aktivitas/'; } },
+                    { label: 'Kontrol Data', icon: 'database', act: function () { location.href = 'kontrol-data/'; } },
+                    { label: 'Favorit', icon: 'heart', act: function () { location.href = 'akun/favorit/'; } },
+                    { label: 'Kolaborasi', icon: 'users', act: function () { location.href = 'akun/kolaborasi/'; } },
+                    { label: 'Otomatisasi AI', icon: 'calendar-clock', act: function () { location.href = 'akun/otomatisasi-ai/'; } },
+                    { label: 'Langganan', icon: 'repeat', act: function () { location.href = 'akun/langganan/'; } },
+                    { label: 'Laporkan Bug', icon: 'bug', act: function () { location.href = 'akun/laporkan-bug/'; } },
+                    { label: 'Tentang', icon: 'info', act: function () { location.href = 'tentang/'; } }
+                ] },
+                { group: 'Proyek', items: [
+                    { label: 'Workspace', icon: 'layout-panel-left', act: function () { location.href = 'proyek/workspace/'; } },
+                    { label: 'Editor', icon: 'code', act: function () { location.href = 'proyek/workspace/editor/'; } },
+                    { label: 'Dashboard', icon: 'layout-dashboard', act: function () { location.href = 'proyek/dashboard/'; } },
+                    { label: 'Umum', icon: 'sliders-horizontal', act: function () { location.href = 'proyek/dashboard/'; } },
+                    { label: 'Domain Kustom', icon: 'globe-lock', act: function () { location.href = 'proyek/build-deployment/domain-kustom/'; } },
+                    { label: 'Environment', icon: 'braces', act: function () { location.href = 'proyek/pengaturan/environment/'; } },
+                    { label: 'Keamanan', icon: 'shield', act: function () { location.href = 'proyek/pengaturan/keamanan/'; } },
+                    { label: 'Keamanan HTTPS', icon: 'lock', act: function () { location.href = 'proyek/pengaturan/keamanan-https/'; } },
+                    { label: 'Integrasi Webhook', icon: 'webhook', act: function () { location.href = 'proyek/pengaturan/integrasi-webhook/'; } },
+                    { label: 'Build Deployment', icon: 'rocket', act: function () { location.href = 'proyek/build-deployment/'; } },
+                    { label: 'Dashboard Deployment', icon: 'chart-column', act: function () { location.href = 'proyek/build-deployment/dashboard/'; } },
+                    { label: 'Konfigurasi Build', icon: 'wrench', act: function () { location.href = 'proyek/build-deployment/config/'; } },
+                    { label: 'Visibilitas & Akses', icon: 'eye', act: function () { location.href = 'proyek/pengaturan/visibilitas-akses/'; } },
+                    { label: 'Zona Bahaya', icon: 'triangle-alert', act: function () { location.href = 'proyek/pengaturan/zona-bahaya/'; } }
+                ] }
+            ];
+        }
+        function sbOpenSection(listId) {
+            var list = document.getElementById(listId);
+            var btn = list ? (list.parentElement ? list.parentElement.querySelector('button') : null) : null;
+            if (list && btn) {
+                if (list.classList.contains('hidden')) toggleSidebarDropdown(listId, btn);
+                btn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            hideSbSearchPop();
+        }
+        function renderSbSearchPop(q) {
+            var pop = document.getElementById('sidebar-search-pop');
+            if (!pop) return;
+            q = (q || '').trim().toLowerCase();
+            var html = '', acts = [];
+            sbPopGroups().forEach(function (g) {
+                var hits = g.items.filter(function (it) { return !q || it.label.toLowerCase().indexOf(q) !== -1 || g.group.toLowerCase().indexOf(q) !== -1; });
+                if (!hits.length) return;
+                html += '<p class="px-4 pt-2.5 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">' + g.group + '</p>';
+                hits.forEach(function (it) {
+                    var i = acts.push(it) - 1;
+                    var __cust = SB_CUSTOM_ICONS[it.icon];
+                    var __icon = __cust
+                        ? __cust.replace('<svg ', '<svg class="w-4 h-4 shrink-0 text-gray-500 group-hover:text-gray-900 transition-colors" ', 1)
+                        : '<i data-lucide="' + it.icon + '" class="w-4 h-4 text-gray-500 group-hover:text-gray-900 transition-colors"></i>';
+                    html += '<button type="button" data-sbpop="' + i + '" class="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition-colors group">' +
+                        __icon +
+                        '<span class="text-sm font-medium text-gray-800 group-hover:text-gray-900">' + it.label + '</span></button>';
+                });
+            });
+            if (!html) html = '<p class="px-4 py-2.5 text-xs text-gray-400">Fitur tidak ditemukan</p>';
+            pop.innerHTML = html;
+            pop.querySelectorAll('[data-sbpop]').forEach(function (b) {
+                b.addEventListener('click', function () { acts[+b.getAttribute('data-sbpop')].act(); });
+            });
+            try { lucide.createIcons(); } catch (e) {}
+        }
+        function showSbSearchPop() {
+            var pop = document.getElementById('sidebar-search-pop');
+            var inp = document.getElementById('sidebar-search');
+            if (!pop) return;
+            renderSbSearchPop(inp ? inp.value : '');
+            pop.classList.remove('hidden');
+        }
+        function hideSbSearchPop() {
+            var pop = document.getElementById('sidebar-search-pop');
+            if (pop) pop.classList.add('hidden');
+        }
+        document.addEventListener('click', function (e) {
+            var pop = document.getElementById('sidebar-search-pop');
+            var inp = document.getElementById('sidebar-search');
+            if (pop && !pop.classList.contains('hidden') && inp && !inp.contains(e.target) && !pop.contains(e.target)) hideSbSearchPop();
+        });
+        (function () {
+            var input = document.getElementById('sidebar-search');
+            if (!input) return;
+            input.addEventListener('focus', showSbSearchPop);
+            input.addEventListener('click', function (e) { e.stopPropagation(); showSbSearchPop(); });
+            input.addEventListener('input', function () { showSbSearchPop();
+                var q = input.value.trim().toLowerCase();
+                document.querySelectorAll('#sidebar-nav .sb-item').forEach(function (el) {
+                    el.style.display = (!q || (el.getAttribute('data-search') || '').toLowerCase().indexOf(q) !== -1) ? '' : 'none';
+                });
+                document.querySelectorAll('#sidebar-nav .sb-section').forEach(function (sec) {
+                    var secMatch = (sec.getAttribute('data-search') || '').toLowerCase().indexOf(q) !== -1;
+                    var anySub = false;
+                    sec.querySelectorAll('.sb-sub').forEach(function (sub) {
+                        var m = secMatch || (sub.getAttribute('data-search') || '').toLowerCase().indexOf(q) !== -1;
+                        sub.style.display = (!q || m) ? '' : 'none';
+                        if (m && q) anySub = true;
+                    });
+                    if (q) {
+                        var btn = sec.querySelector('button');
+                        var list = sec.querySelector('[id]');
+                        if (btn && list) {
+                            if (anySub && list.classList.contains('hidden')) toggleSidebarDropdown(list.id, btn);
+                            if (!anySub && !list.classList.contains('hidden') && !secMatch) toggleSidebarDropdown(list.id, btn);
+                        }
+                    } else {
+                        var btn2 = sec.querySelector('button');
+                        var list2 = sec.querySelector('[id]');
+                        if (btn2 && list2 && !list2.classList.contains('hidden')) toggleSidebarDropdown(list2.id, btn2);
+                    }
+                });
+            });
+        })();
+    </script>
+    <main id="page-home" class="page-view hidden flex-1 w-full max-w-3xl mx-auto px-5 pt-8 pb-10 flex flex-col justify-start">
+        <div class="mb-10 text-center">
+            <h1 class="text-3xl sm:text-4xl font-bold tracking-tight" style="font-family: 'Space Grotesk', sans-serif;">
+                <span id="typing-text" class="text-black"></span>
+            </h1>
+            <p id="motivation-text" class="text-gray-500 mt-2 text-sm sm:text-base max-w-lg mx-auto leading-relaxed"></p>
+        </div>
+        <div class="w-full bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] p-5 transition-all text-left border border-gray-100">
+            <div id="file-preview-container" class="hidden flex-nowrap overflow-x-auto hide-scrollbar gap-2 mb-3 pb-1 w-full"></div>
+            <textarea
+                id="main-prompt-input"
+                rows="3"
+                placeholder="Tanya apa saja..."
+                class="w-full resize-none border-0 bg-transparent p-0 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 text-base md:text-lg leading-relaxed"
+            ></textarea>
+            <div class="flex items-center justify-between pt-2">
+                <div class="relative">
+                    <button id="add-btn" class="p-2 text-gray-400 hover:text-black rounded-full transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20" aria-expanded="false" title="Lampirkan File">
+                        <svg id="add-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                    </button>
+                    <div id="upload-menu" class="absolute bottom-full left-0 mb-2 w-56 bg-white text-gray-800 border border-gray-100 rounded-xl shadow-xl p-1.5 flex flex-col gap-1 opacity-0 invisible translate-y-2 pointer-events-none transition-all duration-300 z-50">
+                        <button id="upload-file-btn" class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 dark:focus-visible:ring-white/20">
+                            <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                            Upload file
+                        </button>
+                        <button id="upload-image-btn" class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 dark:focus-visible:ring-white/20">
+                            <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            Upload gambar
+                        </button>
+                        <a href="integrasi/" class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 dark:focus-visible:ring-white/20">
+                            <svg class="w-4 h-4 text-gray-500 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M15 8V2"/><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z"/><path d="M9 8V2"/></svg>
+                            Plug-in
+                        </a>
+                        <button id="upload-automation-btn" type="button" onclick="location.href='akun/otomatisasi-ai/'" class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 dark:focus-visible:ring-white/20">
+                            <i data-lucide="calendar-clock" class="w-4 h-4 text-gray-500 shrink-0"></i>
+                            Otomatisasi AI
+                        </button>
+                    </div>
+                    <input type="file" id="real-file-input" class="hidden" multiple>
+                    <input type="file" id="real-image-input" class="hidden" accept="image/*" multiple>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+<div class="relative">
+                    <button id="ai-mode-btn" type="button" class="h-9 px-3 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center gap-1.5 cursor-pointer" title="Pilih mode AI" aria-expanded="false">
+                        <span id="ai-mode-label" class="text-xs font-semibold text-gray-700 whitespace-nowrap">Chat</span>
+                        <svg id="ai-mode-caret" class="w-3 h-3 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="ai-mode-menu" class="absolute bottom-full right-0 mb-2 w-44 bg-white text-gray-800 border border-gray-100 rounded-lg shadow-xl p-1 flex flex-col gap-0.5 opacity-0 invisible translate-y-2 pointer-events-none transition-all duration-300 z-50 origin-bottom-right">
+                        <button type="button" onclick="applyAiMode('chat')" class="w-full flex items-center px-3 py-1.5 hover:bg-gray-50 rounded-md transition-colors text-sm font-medium text-left cursor-pointer">Chat</button>
+                        <!-- [18 Okt 2026, arahan pemilik] Mode Build ditutup sementara: tombol jadi placeholder non-aktif -->
+                        <button type="button" disabled class="w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-left text-gray-400 cursor-not-allowed" title="Sedang dalam pengembangan"><span>Build</span><span class="text-[10px] font-semibold text-gray-400">Segera</span></button>
+                    </div>
+                </div>
+                                <button id="submit-prompt-btn" class="w-10 h-10 bg-accent text-white rounded-full hover:bg-accent-hover transition-all duration-200 active:scale-90 flex items-center justify-center cursor-pointer shadow-sm hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+                    </svg>
+                </button>
+                </div>
+            </div>
+        </div>
+        <div class="w-full mt-6">
+            <div class="flex items-center gap-3 overflow-x-auto hide-scrollbar pb-3 w-full" aria-label="Contoh pertanyaan untuk AI">
+                <button type="button" onclick="usePrompt('Jelaskan apa itu API dengan bahasa sederhana dan satu contoh sehari-hari.')" class="whitespace-nowrap flex-shrink-0 px-4 py-2 bg-[#F9FAFB] hover:bg-gray-100 border border-gray-100 rounded-2xl transition-all duration-200 active:scale-95 cursor-pointer text-sm font-medium text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20">Jelaskan sebuah konsep</button>
+                <button type="button" onclick="usePrompt('Bantu saya menulis email profesional untuk mengusulkan jadwal rapat. Gunakan placeholder untuk nama dan waktu yang belum saya berikan.')" class="whitespace-nowrap flex-shrink-0 px-4 py-2 bg-[#F9FAFB] hover:bg-gray-100 border border-gray-100 rounded-2xl transition-all duration-200 active:scale-95 cursor-pointer text-sm font-medium text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20">Bantu menulis email</button>
+                <button type="button" onclick="usePrompt('Berikan lima ide konten Instagram untuk kedai kopi kecil, beserta satu contoh caption.')" class="whitespace-nowrap flex-shrink-0 px-4 py-2 bg-[#F9FAFB] hover:bg-gray-100 border border-gray-100 rounded-2xl transition-all duration-200 active:scale-95 cursor-pointer text-sm font-medium text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20">Cari ide konten</button>
+                <button type="button" onclick="usePrompt('Cari kabar teknologi terbaru hari ini dari sumber tepercaya, lalu ringkas dan sertakan tautan sumbernya.')" class="whitespace-nowrap flex-shrink-0 px-4 py-2 bg-[#F9FAFB] hover:bg-gray-100 border border-gray-100 rounded-2xl transition-all duration-200 active:scale-95 cursor-pointer text-sm font-medium text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20">Kabar teknologi terbaru</button>
+                <button type="button" onclick="usePrompt('Bantu buat situs portofolio sederhana yang responsif. Tanyakan dulu informasi penting yang belum saya berikan.')" class="whitespace-nowrap flex-shrink-0 px-4 py-2 bg-[#F9FAFB] hover:bg-gray-100 border border-gray-100 rounded-2xl transition-all duration-200 active:scale-95 cursor-pointer text-sm font-medium text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20">Buat situs portofolio</button>
+            </div>
+        </div>
+        <div id="section-proyek-terbaru" class="w-full mt-28">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-gray-900 tracking-tight">Proyek terbaru</h2>
+                <a href="proyek/" class="text-xs font-semibold text-gray-400 hover:text-black transition-colors cursor-pointer focus-visible:outline-none focus-visible:text-gray-900 dark:focus-visible:text-gray-100 focus-visible:underline rounded-sm">Lihat Semua</a>
+            </div>
+            <div id="home-projects-list" class="flex items-center gap-4 overflow-x-auto hide-scrollbar pb-2 pt-1 w-full"></div>
+        </div>
+        <div id="tpl-section" class="w-full mt-28">
+            <div class="mb-4">
+                <h2 class="text-lg font-bold text-gray-900 tracking-tight">Jelajahi template</h2>
+            </div>
+            <div id="home-tpl-grid" class="flex flex-col gap-5 w-full">
+
+        <script>
+        // Grid template halaman utama: 5 template acak dari seluruh pool (lihat keys di bawah).
+        (function () {
+          var HOME_TPL = {"kedai-kopi": {"img": "assets/templates/kedai-kopi.webp", "alt": "Pratinjau Vylonium Kedai Kopi", "name": "Vylonium Kedai Kopi", "desc": "Landing page kedai kopi satu halaman — beranda, menu, cerita, suasana, dan reservasi meja dengan desain hangat.", "prompt": "Buatkan landing page kedai kopi dengan beranda, menu, cerita, suasana, dan reservasi meja dalam desain hangat dan elegan."}, "modelabs": {"img": "assets/templates/modelabs.webp", "alt": "Pratinjau AI Orchestrator Hub", "name": "AI Orchestrator Hub", "desc": "Console manajemen & pengujian model AI — bandingkan model, kelola API key, log, kredit, dan playground.", "prompt": "Buatkan console manajemen model AI dengan perbandingan model, kelola API key, log, kredit, dan playground."}, "portfolio": {"img": "assets/templates/portfolio.webp?v=2", "alt": "Pratinjau Portfolio Profesional", "name": "Portfolio Profesional", "desc": "Portfolio pribadi full-stack developer dengan bagian karya, layanan, blog, dan kontak dalam desain gelap elegan.", "prompt": "Tolong buatkan website Portfolio Profesional berdasarkan template dengan desain minimalis dan elegan, sertakan bagian karya, resume, dan kontak."}, "saas": {"img": "assets/templates/saas.webp?v=2", "alt": "Pratinjau Landing Page SaaS", "name": "Landing Page SaaS", "desc": "Landing page produk SaaS modern — hero, fitur, showcase, testimoni, pricing, dan FAQ dalam satu halaman ringan yang siap konversi.", "prompt": "Buatkan landing page SaaS modern dengan hero section yang kuat, fitur unggulan, testimoni, tabel harga, dan FAQ yang meyakinkan."}, "topup": {"img": "assets/templates/topup.webp?v=4", "alt": "Pratinjau Top Up Game", "name": "Top Up Game", "desc": "Situs top up game instan dengan tema terang/gelap — katalog game populer, nominal lengkap, dan pelacakan pesanan.", "prompt": "Buatkan situs top up game instan dengan katalog game populer, pilihan nominal, dan alur pesanan yang cepat."}, "properti": {"img": "assets/templates/properti.webp", "alt": "Pratinjau Web Properti", "name": "Web Properti", "desc": "Situs agen properti profesional — katalog listing dengan filter tipe, lokasi, dan budget, valuasi properti, serta layanan agen.", "prompt": "Buatkan website agen properti profesional dengan katalog listing, filter pencarian tipe, lokasi, dan budget, valuasi properti, serta halaman layanan, tentang, dan kontak."}, "ai-router": {"img": "assets/templates/ai-router.webp?v=2", "alt": "Pratinjau AI Router Console", "name": "AI Router Console", "desc": "Console gateway AI full-stack — kelola provider, model, API key, routing, kredit, dan playground, plus API server Express 5 dengan PostgreSQL + Drizzle ORM.", "prompt": "Buatkan console gateway AI full-stack dengan kelola provider, model, API key, routing, kredit, dan playground, plus API server Express 5 dengan PostgreSQL + Drizzle ORM."}, "tasks": {"img": "assets/templates/tasks.webp?v=2", "alt": "Pratinjau Manajemen Tugas", "name": "Manajemen Tugas", "desc": "Aplikasi manajemen tugas profesional — dashboard statistik, papan kanban, kalender, proyek, dan laporan dalam desain terang elegan.", "prompt": "Buatkan aplikasi manajemen tugas profesional dengan dashboard statistik, papan kanban, kalender, proyek, dan laporan."}, "wedding": {"img": "assets/templates/wedding.webp", "alt": "Pratinjau Undangan Pernikahan", "name": "Undangan Pernikahan", "desc": "Undangan pernikahan digital satu halaman — hero parallax, profil mempelai, love story, countdown, RSVP, galeri, wedding gift, dan musik latar.", "prompt": "Tolong buatkan undangan pernikahan digital berdasarkan template dengan hero parallax, profil mempelai, love story, countdown, RSVP, galeri momen, wedding gift, dan FAQ."}};
+          var TPL_CARD = "                <div class=\"w-full border border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow duration-300 cursor-pointer group relative bg-white\">\n                    <div class=\"w-full aspect-video overflow-hidden bg-[#F9FAFB]\">\n                        <img src=\"__IMG__\" alt=\"__ALT__\" class=\"w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300\">\n                    </div>\n                    <div class=\"flex justify-between items-end gap-3 w-full p-4 relative\">\n                        <p data-tpl-label=\"__KEY__\" class=\"absolute top-4 right-4 text-xs text-gray-400 flex items-center flex-shrink-0\">Gratis</p>\n                        <div class=\"flex flex-col flex-1 overflow-hidden\">\n<h3 class=\"font-semibold text-gray-900 text-base group-hover:text-black truncate\">__NAME__</h3>\n                            <p class=\"text-sm text-gray-500 mt-1 leading-relaxed line-clamp-2\">__DESC__</p>\n                        </div>\n                        <div class=\"relative flex-shrink-0\">\n                            <button class=\"cc-dots p-1.5 text-gray-400 focus:outline-none focus-visible:outline-none\" onclick=\"toggleOption(this, event)\">\n                                <svg class=\"w-5 h-5\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z\"></path></svg>\n                            </button>\n                            <div class=\"option-popup absolute bottom-full right-0 mb-2 w-44 bg-white border border-gray-100 rounded-xl shadow-[0_4px_20px_rgb(0,0,0,0.08)] py-2 opacity-0 invisible translate-y-2 transition-all duration-200 z-20 origin-bottom-right\">\n                                <button onclick=\"useTemplate('__KEY__', event)\" class=\"w-full text-left px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 dark:focus-visible:ring-white/20\">Gunakan Template</button>\n                                <button onclick=\"usePrompt('__PROMPT__')\" class=\"w-full text-left px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 dark:focus-visible:ring-white/20\">Pakai Prompt Ini</button>\n                                <button onclick=\"previewTemplate('__KEY__', event)\" class=\"w-full text-left px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 dark:focus-visible:ring-white/20\">Lihat Preview</button>\n                                <button onclick=\"favoriteTemplate('__KEY__', event)\" class=\"w-full text-left px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 dark:focus-visible:ring-white/20\">Simpan ke Favorit</button>\n                                <button onclick=\"reportTemplate('__KEY__', event)\" class=\"w-full text-left px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500/30\">Laporkan</button>\n                            </div>\n                        </div>\n                    </div>\n                </div>";
+          // [19 Okt, arahan pemilik] Tampilkan 5 template ACAK dari seluruh pool
+          // (9 template, termasuk yang tidak pernah tampil di daftar tetap lama),
+          // urutannya pun diacak. Susunan berganti tiap halaman dimuat. Galeri
+          // lengkap tetap bisa dibuka lewat "Lihat semua".
+          var keys = Object.keys(HOME_TPL);
+          for (var _i = keys.length - 1; _i > 0; _i--) {
+            var _j = Math.floor(Math.random() * (_i + 1));
+            var _t = keys[_i]; keys[_i] = keys[_j]; keys[_j] = _t;
+          }
+          keys = keys.slice(0, 5);
+          var grid = document.getElementById('home-tpl-grid');
+          if (!grid) return;
+          keys.forEach(function (key) {
+            var t = HOME_TPL[key];
+            if (!t) return;
+            grid.insertAdjacentHTML('beforeend', TPL_CARD
+              .split('__KEY__').join(key)
+              .split('__NAME__').join(t.name)
+              .split('__DESC__').join(t.desc)
+              .split('__PROMPT__').join(t.prompt)
+              .split('__IMG__').join(t.img)
+              .split('__ALT__').join(t.alt));
+          });
+          try {
+            ClincooTemplates.syncCrowns(grid);   // crown CTA (Starter) + label harga/PRO
+            ClincooTemplates.syncTplLabels(grid);
+          } catch (e) {}
+        })();
+        </script>
+            </div>
+            <!-- CTA lihat semua template: teks + icon arrow abu-abu, di bawah section template (di atas footer) -->
+            <a href="templates/" class="flex items-center justify-center gap-1.5 w-full mt-5 text-sm font-medium text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+                Lihat semua template
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+            </a>
+        </div>
+    </main>
+
+    <!-- ===== Footer halaman utama ===== -->
+    <footer id="site-footer" class="w-full mt-2">
+        <div class="max-w-3xl mx-auto px-5 text-center">
+            <div class="footer-stage">
+                <span class="footer-wordmark" data-text="Clincoo">Clincoo</span>
+                <div class="footer-front">
+                    <div class="flex items-center justify-center gap-2 text-[12px] flex-wrap text-gray-600 dark:text-gray-300">
+                        <a href="tentang/" class="hover:text-black dark:hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20 rounded-sm">Tentang</a>
+                        <span class="text-gray-400 dark:text-gray-500">|</span>
+                        <a href="https://blog.clincoo.buzz/legal/syarat-ketentuan/" target="_blank" rel="noopener" class="hover:text-black dark:hover:text-white transition-colors">Ketentuan</a>
+                        <span class="text-gray-400 dark:text-gray-500">|</span>
+                        <a href="https://blog.clincoo.buzz/legal/kebijakan-privasi/" target="_blank" rel="noopener" class="hover:text-black dark:hover:text-white transition-colors">Privasi</a>
+                    </div>
+                    <span class="footer-sub text-[11px] text-gray-600 dark:text-gray-300">&copy; 2026 Clincoo. Semua hak dilindungi.</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script>
+    
+    // ============================================
+    // NOTIFICATION SYSTEM - D1-backed with page links
+    // ============================================
+    const NOTIF_API = 'https://clincoo-be2.pages.dev/api/notifications';
+    let d1Notifs = [];
+    let d1UnreadCount = 0;
+
+    // Icon mapping per notification type
+    const notifIcons = {
+        security: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />',
+        login: '<path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />',
+        settings: '<path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />',
+        deploy: '<path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />',
+        maintenance: '<path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />',
+        info: '<path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />'
+    };
+
+    const notifColors = {
+        security: '#ef4444',
+        login: '#3b82f6',
+        settings: '#6366f1',
+        deploy: '#10b981',
+        maintenance: '#f59e0b',
+        wallet: '#f59e0b',
+        info: '#6b7280'
+    };
+
+    async function fetchD1Notifications() {
+        try {
+            const res = await fetch(NOTIF_API);
+            if (!res.ok) return;
+            const data = await res.json();
+            d1Notifs = data.notifications || [];
+            d1UnreadCount = data.unreadCount || 0;
+            renderIndexNotifications();
+        } catch(e) {}
+    }
+
+    async function markNotifRead(id) {
+        try {
+            await fetch(NOTIF_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'mark_read', id }) });
+            fetchD1Notifications();
+        } catch(e) {}
+    }
+
+    async function markAllNotifsRead() {
+        try {
+            await fetch(NOTIF_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'mark_all_read' }) });
+            fetchD1Notifications();
+        } catch(e) {}
+    }
+
+    function handleNotifClick(n) {
+        if (!n.read) markNotifRead(n.id);
+        if (n.link) {
+            var link = n.link;
+            if (link.startsWith('/')) link = link.substring(1);
+            window.location.href = link;
+        }
+        // No link = just an informational notification, nothing to navigate to
+    }
+
+    function renderIndexNotifications() {
+        const notifs = d1Notifs;
+        const notifMenu = document.getElementById('notif-menu');
+        if (!notifMenu) return;
+
+        const contentArea = notifMenu.querySelector('.text-xs.text-gray-500.text-center');
+        const parent = contentArea ? contentArea.parentElement : null;
+
+        // Update bell badge
+        const notifBtn = document.getElementById('notif-btn');
+        if (notifBtn) {
+            let badge = notifBtn.querySelector('.notif-badge');
+            if (d1UnreadCount > 0) {
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'notif-badge absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center';
+                    notifBtn.style.position = 'relative';
+                    notifBtn.appendChild(badge);
+                }
+                badge.textContent = d1UnreadCount > 9 ? '9+' : d1UnreadCount;
+            } else if (badge) {
+                badge.remove();
+            }
+        }
+
+        if (!parent) return;
+
+        if (notifs.length === 0) {
+            // Sudah ada "Lihat Semua" di header dropdown — jangan diulang di bawah
+            parent.innerHTML = '<div class="text-xs text-gray-500 text-center py-5">Belum ada notifikasi baru</div>';
+            return;
+        }
+
+        parent.innerHTML = '<div class="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar"></div>';
+        const listContainer = parent.querySelector('div');
+
+        for (let n of notifs.slice(0, 5)) {
+            let timeStr = new Date(n.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            const type = n.type || 'info';
+            const color = notifColors[type] || notifColors.info;
+            const item = document.createElement('div');
+            item.className = 'flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-gray-50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 dark:focus-visible:ring-white/20' + (n.read ? ' opacity-60' : '');
+            item.tabIndex = 0;
+            item.onclick = function() { handleNotifClick(n); };
+            item.onkeydown = function(e) { if(e.key === 'Enter') handleNotifClick(n); };
+            item.innerHTML = '<div class="flex-1 min-w-0"><p class="text-xs text-gray-600">' + n.message + '</p><div class="flex items-center gap-1.5 mt-0.5"><span class="text-[10px] font-medium" style="color:' + color + '">' + (n.source || '') + '</span><span class="text-[10px] text-gray-400">' + timeStr + '</span></div></div>';
+            listContainer.appendChild(item);
+        }
+
+    }
+
+
+</script>
+    <script>
+        try { lucide.createIcons(); } catch (e) {}
+        let currentThemeMode = 'Sistem (Default)';
+        let currentAccentName = 'Hitam (Default)';
+        try {
+            currentThemeMode = localStorage.getItem('clincoo_theme') || 'Sistem (Default)';
+            currentAccentName = localStorage.getItem('clincoo_accent') || 'Hitam (Default)';
+        } catch(e) {}
+        function applyTheme() {
+            const isDark = (currentThemeMode === 'Gelap') || 
+                           (currentThemeMode === 'Sistem (Default)' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            
+            if (isDark) {
+                document.body.classList.add('dark-mode');
+                document.documentElement.style.background='#0a0a0a';
+                document.documentElement.style.colorScheme='dark';
+            } else {
+                document.body.classList.remove('dark-mode');
+                document.documentElement.style.background='';
+                document.documentElement.style.colorScheme='light';
+            }
+        }
+        function setTheme(themeName) {
+            currentThemeMode = themeName;
+            try { localStorage.setItem('clincoo_theme', themeName); } catch(e) {}
+            const themeStatusText = document.getElementById('theme-status-text');
+            const themeMenu = document.getElementById('theme-dropdown-menu');
+            if (themeStatusText) {
+                themeStatusText.textContent = themeName;
+            }
+            applyTheme();
+            if (themeMenu) themeMenu.classList.add('hidden');
+        }
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+                if (currentThemeMode === 'Sistem (Default)') {
+                    applyTheme();
+                }
+            });
+        }
+        const accentMap = {
+            'Hitam (Default)': { main: '#000000', hover: '#1f2937', cls: 'bg-gray-900' },
+            'Biru': { main: '#2563eb', hover: '#1d4ed8', cls: 'bg-blue-600' },
+            'Hijau': { main: '#059669', hover: '#047857', cls: 'bg-emerald-600' },
+            'Ungu': { main: '#9333ea', hover: '#7e22ce', cls: 'bg-purple-600' },
+            'Merah': { main: '#dc2626', hover: '#b91c1c', cls: 'bg-red-600' }
+        };
+        function setAccent(name, bgClass) {
+            currentAccentName = name;
+            try { localStorage.setItem('clincoo_accent', name); } catch(e) {}
+            const accentName = document.getElementById('accent-name');
+            const accentDot = document.getElementById('accent-dot');
+            const accentMenu = document.getElementById('accent-dropdown-menu');
+            if (accentName) accentName.textContent = name;
+            if (accentDot) {
+                accentDot.className = `w-2 h-2 rounded-full ${bgClass || accentMap[name].cls}`;
+            }
+            const colors = accentMap[name] || accentMap['Hitam (Default)'];
+            document.documentElement.style.setProperty('--accent-color', colors.main);
+            document.documentElement.style.setProperty('--accent-hover', colors.hover);
+            if (accentMenu) accentMenu.classList.add('hidden');
+        }
+        const profileInput = document.getElementById('profile-pic-input');
+        const profileDisplay = document.getElementById('profile-pic-display');
+        try {
+            const savedPic = localStorage.getItem('clincoo_profile_pic');
+            if(savedPic && profileDisplay) {
+                profileDisplay.style.backgroundImage = `url(${savedPic})`;
+                profileDisplay.textContent = '';
+            }
+        } catch(e) {}
+
+        // Sync name and email from localStorage (shared with personal/)
+        try {
+            const savedName = localStorage.getItem('clincoo_fullname');
+            const savedEmail = localStorage.getItem('clincoo_email');
+            const nameEl = document.getElementById('profile-display-name');
+            const emailEl = document.getElementById('profile-display-email');
+            if (savedName && nameEl) nameEl.textContent = savedName;
+            if (savedEmail && emailEl) emailEl.textContent = savedEmail;
+            // Update avatar initial if name exists
+            if (savedName && profileDisplay && !profileDisplay.style.backgroundImage) {
+                profileDisplay.textContent = savedName.charAt(0).toUpperCase();
+            }
+        } catch(e) {}
+
+        // Muat profil dari database per akun (D1) — sinkron lintas perangkat
+        try {
+            const PROFILE_API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/account-profile';
+            fetch(PROFILE_API).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+                if (!d) return;
+                const nm = d.name || '', em = d.email || '', av = d.avatar || '';
+                try {
+                    if (nm) localStorage.setItem('clincoo_fullname', nm);
+                    if (em) localStorage.setItem('clincoo_email', em);
+                    if (av) localStorage.setItem('clincoo_profile_pic', av);
+                } catch(e) {}
+                const nameEl2 = document.getElementById('profile-display-name');
+                const emailEl2 = document.getElementById('profile-display-email');
+                if (nm && nameEl2) nameEl2.textContent = nm;
+                if (em && emailEl2) emailEl2.textContent = em;
+                if (av && profileDisplay) { profileDisplay.style.backgroundImage = 'url(' + av + ')'; profileDisplay.textContent = ''; }
+                else if (nm && profileDisplay && !profileDisplay.style.backgroundImage) { profileDisplay.textContent = nm.charAt(0).toUpperCase(); }
+            }).catch(function () {});
+        } catch(e) {}
+
+        if (profileInput) {
+            profileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if(file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const base64 = event.target.result;
+                        try { localStorage.setItem('clincoo_profile_pic', base64); } catch(err) {}
+                        if (profileDisplay) {
+                            profileDisplay.style.backgroundImage = `url(${base64})`;
+                            profileDisplay.textContent = '';
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+        let greetName = 'Vylonium';
+        try {
+            const sn = localStorage.getItem('clincoo_fullname');
+            if (sn && sn.trim()) greetName = sn.trim().split(' ')[0];
+        } catch(e) {}
+        const text = "Hallo, " + greetName;
+        const motivations = [
+            "Setiap baris kode yang kamu tulis hari ini adalah fondasi untuk inovasi besar di masa depan.",
+            "Wujudkan imajinasi tanpa batasmu menjadi karya digital yang memukau dan bermanfaat.",
+            "Kreativitas dan ketekunan adalah kunci utama untuk menciptakan perubahan nyata.",
+            "Satu langkah kecil dalam membangun ide hari ini akan membawamu pada kesuksesan besar.",
+            "Jangan batasi mimpimu; rancang dan bangun masa depanmu sekarang juga dengan penuh semangat."
+        ];
+        const el = document.getElementById("typing-text");
+        const motEl = document.getElementById("motivation-text");
+        if (motEl) {
+            motEl.textContent = motivations[Math.floor(Math.random() * motivations.length)];
+        }
+        // Tampil langsung tanpa animasi typing — halaman sudah punya loading state sendiri
+        if (el) { el.textContent = text; el.classList.remove("typing"); }
+        const addBtn = document.getElementById('add-btn');
+        const addIcon = document.getElementById('add-icon');
+        const uploadMenu = document.getElementById('upload-menu');
+        if (addBtn && addIcon && uploadMenu) {
+            addBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const isExpanded = addBtn.getAttribute('aria-expanded') === 'true';
+                if (!isExpanded) {
+                    addBtn.setAttribute('aria-expanded', 'true');
+                    addIcon.style.transform = 'rotate(45deg)';
+                    uploadMenu.classList.remove('opacity-0', 'invisible', 'translate-y-2', 'pointer-events-none');
+                    uploadMenu.classList.add('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto');
+                } else {
+                    addBtn.setAttribute('aria-expanded', 'false');
+                    addIcon.style.transform = 'rotate(0deg)';
+                    uploadMenu.classList.remove('opacity-100', 'visible', 'translate-y-0', 'pointer-events-none');
+                    uploadMenu.classList.add('opacity-0', 'invisible', 'translate-y-2', 'pointer-events-auto');
+                }
+            });
+            document.addEventListener('click', (e) => {
+                if (!addBtn.contains(e.target) && !uploadMenu.contains(e.target)) {
+                    addBtn.setAttribute('aria-expanded', 'false');
+                    addIcon.style.transform = 'rotate(0deg)';
+                    uploadMenu.classList.remove('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto');
+                    uploadMenu.classList.add('opacity-0', 'invisible', 'translate-y-2', 'pointer-events-none');
+                }
+            });
+        }
+        if (window.pdfjsLib) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        }
+        const uploadFileBtn = document.getElementById('upload-file-btn');
+        const realFileInput = document.getElementById('real-file-input');
+        const filePreviewContainer = document.getElementById('file-preview-container');
+        if (uploadFileBtn && realFileInput) {
+            uploadFileBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (addBtn && uploadMenu) {
+                    addBtn.setAttribute('aria-expanded', 'false');
+                    if (addIcon) addIcon.style.transform = 'rotate(0deg)';
+                    uploadMenu.classList.remove('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto');
+                    uploadMenu.classList.add('opacity-0', 'invisible', 'translate-y-2', 'pointer-events-none');
+                }
+                realFileInput.click();
+            });
+            // Parser file "berat" (diparse sekarang di halaman utama, hasil teksnya
+            // yang distage — sama persis dengan yang dipakai halaman chat):
+            // - pdf.js untuk PDF (maks 10 halaman)
+            // - SheetJS untuk Excel/CSV (xlsx/xls/xlsm/ods): sheet -> baris teks
+            // - mammoth untuk DOCX -> teks bersih
+            window.__loadPdf = async function (f) {
+                try {
+                    const buf = await f.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument(buf).promise;
+                    let t = '';
+                    for (let p = 1; p <= Math.min(pdf.numPages, 10); p++) {
+                        const c = await pdf.getPage(p).getTextContent();
+                        t += c.items.map(it => it.str).join(' ') + '\n';
+                    }
+                    return t;
+                } catch (e) { return null; }
+            };
+            window.__loadSpreadsheet = async function (f) {
+                try {
+                    const buf = await f.arrayBuffer();
+                    const wb = XLSX.read(buf, { type: 'array' });
+                    let t = '';
+                    wb.SheetNames.forEach(function (sn) {
+                        t += '[Sheet: ' + sn + ']\n' + XLSX.utils.sheet_to_csv(wb.Sheets[sn], { FS: ' | ' }) + '\n\n';
+                    });
+                    return (t || '(sheet kosong)').substring(0, 50000);
+                } catch (e) { return null; }
+            };
+            window.__loadDocx = async function (f) {
+                try {
+                    const buf = await f.arrayBuffer();
+                    const r = await window.mammoth.extractRawText({ arrayBuffer: buf });
+                    return (r.value || '').substring(0, 50000);
+                } catch (e) { return null; }
+            };
+            // Upload dari halaman utama: ISI file dibaca sekarang (bukan cuma nama),
+            // distage di localStorage lalu dibawa ke halaman chat saat prompt dikirim.
+            window.__stagedAtt = [];
+            try { localStorage.removeItem('clincoo_staged_attachments'); } catch (e) {}
+            window.__readFileAsDataURL = function (f) {
+                return new Promise(function (res, rej) {
+                    const r = new FileReader();
+                    r.onload = function () { res(r.result); };
+                    r.onerror = function () { rej(r.error); };
+                    r.readAsDataURL(f);
+                });
+            };
+            window.__readFileAsText = function (f) {
+                return new Promise(function (res, rej) {
+                    const r = new FileReader();
+                    r.onload = function () { res(r.result); };
+                    r.onerror = function () { rej(r.error); };
+                    r.readAsText(f);
+                });
+            };
+            window.__stageSize = function () {
+                let total = 0;
+                window.__stagedAtt.forEach(function (a) {
+                    total += (a.data ? a.data.length : 0) + (a.text ? a.text.length : 0);
+                });
+                return total;
+            };
+            window.__saveStaged = function () {
+                try { localStorage.setItem('clincoo_staged_attachments', JSON.stringify(window.__stagedAtt)); return; } catch (e) {}
+                // kuota localStorage penuh: lepas isi file terbesar satu per satu (nama tetap ada)
+                var rescue = window.__stagedAtt.map(function (a) { return { id: a.id, type: a.type, name: a.name, size: a.size, extension: a.extension, data: a.data, text: a.text }; });
+                rescue.sort(function (a, b) { return ((b.data ? b.data.length : 0) + (b.text ? b.text.length : 0)) - ((a.data ? a.data.length : 0) + (a.text ? a.text.length : 0)); });
+                for (var i = 0; i < rescue.length; i++) {
+                    rescue[i].data = null; rescue[i].text = null;
+                    try { localStorage.setItem('clincoo_staged_attachments', JSON.stringify(rescue)); return; } catch (e2) {}
+                }
+            };
+            window.removeStagedChip = function (id) {
+                window.__stagedAtt = window.__stagedAtt.filter(function (a) { return a.id !== id; });
+                __saveStaged();
+                const chip = document.querySelector('.file-chip[data-att-id="' + id + '"]');
+                if (chip) chip.remove();
+                const c = document.getElementById('file-preview-container');
+                if (c && c.children.length === 0) c.classList.add('hidden');
+            };
+            const forceCloseUploadMenu = () => {
+                if (addBtn && uploadMenu) {
+                    addBtn.setAttribute('aria-expanded', 'false');
+                    if (addIcon) addIcon.style.transform = 'rotate(0deg)';
+                    uploadMenu.classList.remove('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto');
+                    uploadMenu.classList.add('opacity-0', 'invisible', 'translate-y-2', 'pointer-events-none');
+                }
+            };
+            const realImageInput = document.getElementById('real-image-input');
+            const uploadImageBtn = document.getElementById('upload-image-btn');
+            if (uploadImageBtn && realImageInput) {
+                uploadImageBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (addBtn && uploadMenu) {
+                        addBtn.setAttribute('aria-expanded', 'false');
+                        if (addIcon) addIcon.style.transform = 'rotate(0deg)';
+                        uploadMenu.classList.remove('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto');
+                        uploadMenu.classList.add('opacity-0', 'invisible', 'translate-y-2', 'pointer-events-none');
+                    }
+                    realImageInput.click();
+                });
+            }
+            if (realImageInput) {
+                realImageInput.addEventListener('change', (e) => {
+                    try {
+                        if (realImageInput.files && realImageInput.files.length) {
+                            const dt = new DataTransfer();
+                            Array.from(realImageInput.files).forEach(f => dt.items.add(f));
+                            realFileInput.files = dt.files;
+                            realFileInput.dispatchEvent(new Event('change'));
+                        }
+                    } catch (err) {}
+                    realImageInput.value = '';
+                });
+            }
+            realFileInput.addEventListener('change', async (e) => {
+                const maxFiles = 10;
+                const maxStage = 3.5 * 1024 * 1024; // batas total isi lampiran (localStorage)
+                const currentCount = filePreviewContainer ? filePreviewContainer.querySelectorAll('.file-chip').length : 0;
+                let files = Array.from(e.target.files);
+                if (currentCount + files.length > maxFiles) {
+                    files = files.slice(0, maxFiles - currentCount);
+                }
+                if (files.length > 0 && filePreviewContainer) {
+                    filePreviewContainer.classList.remove('hidden');
+                    filePreviewContainer.classList.add('flex');
+                    var skippedNames = [];
+                    for (const file of files) {
+                        const ext = (file.name.split('.').pop() || '').toLowerCase();
+                        let iconStr = 'file';
+                        if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].includes(ext)) iconStr = 'image';
+                        else if (['html', 'css', 'js', 'json', 'xml', 'jsx', 'tsx', 'php'].includes(ext)) iconStr = 'file-code-2';
+                        else if (['xlsx', 'xls', 'xlsm', 'ods'].includes(ext)) iconStr = 'file-spreadsheet';
+                        else if (['pdf', 'txt', 'doc', 'docx', 'md', 'csv'].includes(ext)) iconStr = 'file-text';
+                        else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) iconStr = 'file-archive';
+                        const attId = 'att_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+                        let data = null, text = null;
+                        const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext) || (file.type || '').startsWith('image/');
+                        try {
+                            if (isImage && file.size <= 2 * 1024 * 1024) {
+                                data = await __readFileAsDataURL(file);
+                            } else if (!isImage && ext === 'pdf' && file.size <= 10 * 1024 * 1024) {
+                                text = await __loadPdf(file);
+                            } else if (!isImage && ['xlsx', 'xls', 'xlsm', 'csv', 'ods'].includes(ext) && file.size <= 10 * 1024 * 1024) {
+                                text = await __loadSpreadsheet(file);
+                            } else if (!isImage && ext === 'docx' && file.size <= 10 * 1024 * 1024) {
+                                text = await __loadDocx(file);
+                            } else if (!isImage && !['zip', 'rar', '7z', 'tar', 'gz', 'pdf', 'doc', 'docx', 'xlsx', 'xls', 'xlsm', 'csv', 'ods'].includes(ext) && file.size <= 1500 * 1024) {
+                                text = await __readFileAsText(file);
+                            }
+                        } catch (err) {}
+                        if (__stageSize() + (data ? data.length : 0) + (text ? text.length : 0) > maxStage) {
+                            data = data && !text ? null : data; // jangan penuhi localStorage — lampiran berikutnya nama-saja
+                        }
+                        window.__stagedAtt.push({ id: attId, type: isImage ? 'image' : 'document', name: file.name, size: file.size, data: data, text: text, extension: ext });
+                        __saveStaged();
+                        if (!data && !text) skippedNames.push(file.name);
+                        const chip = document.createElement('div');
+                        chip.className = 'file-chip inline-flex items-center gap-2 bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-xl text-xs text-gray-800 font-medium shadow-sm transition-colors duration-300 flex-shrink-0';
+                        chip.setAttribute('data-att-id', attId);
+                        chip.innerHTML = `
+                            <i data-lucide="${iconStr}" class="w-3.5 h-3.5 text-gray-500"></i>
+                            <span class="max-w-[150px] truncate">${file.name}</span>
+                            <button type="button" class="text-gray-400 hover:text-black cursor-pointer ml-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20 rounded-sm" onclick="removeStagedChip('${attId}')" title="Hapus lampiran">
+                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                            </button>
+                        `;
+                        filePreviewContainer.appendChild(chip);
+                    }
+                    if (skippedNames.length) {
+                        alert('Isi file berikut tidak terbaca karena terlalu besar / tipenya belum didukung, jadi hanya namanya yang ikut: ' + skippedNames.join(', ') + '. Maksimum isi: file teks 1,5MB, gambar 2MB, PDF/Excel/DOCX 10MB. Kompres atau pecah filenya lalu unggah ulang.');
+                    }
+                    try { lucide.createIcons(); } catch (e) {}
+                    try { forceCloseUploadMenu(); } catch (e2) {}
+                }
+                realFileInput.value = '';
+            });
+        }
+        const themeBtn = document.getElementById('theme-dropdown-btn');
+        const themeMenu = document.getElementById('theme-dropdown-menu');
+        if (themeBtn && themeMenu) {
+            themeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                themeMenu.classList.toggle('hidden');
+                const accentMenu = document.getElementById('accent-dropdown-menu');
+                if (accentMenu) accentMenu.classList.add('hidden');
+            });
+        }
+        const accentBtn = document.getElementById('accent-dropdown-btn');
+        const accentMenu = document.getElementById('accent-dropdown-menu');
+        if (accentBtn && accentMenu) {
+            accentBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                accentMenu.classList.toggle('hidden');
+                if (themeMenu) themeMenu.classList.add('hidden');
+            });
+        }
+        document.addEventListener('click', (e) => {
+            if (themeMenu && !themeMenu.contains(e.target) && themeBtn && !themeBtn.contains(e.target)) {
+                themeMenu.classList.add('hidden');
+            }
+            if (accentMenu && !accentMenu.contains(e.target) && accentBtn && !accentBtn.contains(e.target)) {
+                accentMenu.classList.add('hidden');
+            }
+        });
+        const notifBtn = document.getElementById('notif-btn');
+        const notifMenu = document.getElementById('notif-menu');
+        if (notifBtn && notifMenu) {
+            notifBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const isExpanded = notifBtn.getAttribute('aria-expanded') === 'true';
+                if (!isExpanded) {
+                    notifBtn.setAttribute('aria-expanded', 'true');
+                    notifMenu.classList.remove('opacity-0', 'invisible', '-translate-y-2', 'pointer-events-none');
+                    notifMenu.classList.add('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto');
+                    markAllNotifsRead();
+                } else {
+                    notifBtn.setAttribute('aria-expanded', 'false');
+                    notifMenu.classList.remove('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto');
+                    notifMenu.classList.add('opacity-0', 'invisible', '-translate-y-2', 'pointer-events-none');
+                }
+            });
+            document.addEventListener('click', (e) => {
+                if (!notifBtn.contains(e.target) && !notifMenu.contains(e.target)) {
+                    notifBtn.setAttribute('aria-expanded', 'false');
+                    notifMenu.classList.remove('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto');
+                    notifMenu.classList.add('opacity-0', 'invisible', '-translate-y-2', 'pointer-events-none');
+                }
+            });
+        }
+        function toggleOption(btn, event) {
+            event.preventDefault();
+            event.stopPropagation();
+            document.querySelectorAll('.option-popup').forEach(popup => {
+                if (popup !== btn.nextElementSibling) {
+                    popup.classList.remove('opacity-100', 'visible', 'translate-y-0');
+                    popup.classList.add('opacity-0', 'invisible', 'translate-y-2');
+                }
+            });
+            const popup = btn.nextElementSibling;
+            if (popup.classList.contains('opacity-100')) {
+                popup.classList.remove('opacity-100', 'visible', 'translate-y-0');
+                popup.classList.add('opacity-0', 'invisible', 'translate-y-2');
+            } else {
+                popup.classList.remove('opacity-0', 'invisible', 'translate-y-2');
+                popup.classList.add('opacity-100', 'visible', 'translate-y-0');
+            }
+        }
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.option-popup') && !e.target.closest('button[onclick^="toggleOption"]')) {
+                document.querySelectorAll('.option-popup').forEach(popup => {
+                    popup.classList.remove('opacity-100', 'visible', 'translate-y-0');
+                    popup.classList.add('opacity-0', 'invisible', 'translate-y-2');
+                });
+            }
+        });
+        let lastScroll = 0;
+        const header = document.getElementById('main-header');
+        window.addEventListener('scroll', () => {
+            const currentScroll = window.pageYOffset;
+            if (currentScroll > lastScroll && currentScroll > 60) {
+                if(header) header.style.transform = 'translateY(-100%)';
+            } else {
+                if(header) header.style.transform = 'translateY(0)';
+            }
+            lastScroll = currentScroll;
+        });
+        const reverseRouteMap = {
+            'page-home': '?session=active&ref=client&path=/home'
+        };
+        function navigateTo(pageId, pushState = true) {
+            try { localStorage.setItem('clincoo_current_page', pageId); } catch(e) {}
+            document.querySelectorAll('.page-view').forEach(page => {
+                page.classList.add('hidden');
+                page.classList.remove('flex');
+            });
+            const target = document.getElementById(pageId);
+            if (target) {
+                target.classList.remove('hidden');
+                target.classList.add('flex');
+                window.scrollTo(0, 0);
+            }
+            if(notifMenu && notifBtn) {
+                notifBtn.setAttribute('aria-expanded', 'false');
+                notifMenu.classList.remove('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto');
+                notifMenu.classList.add('opacity-0', 'invisible', '-translate-y-2', 'pointer-events-none');
+            }
+            if (header) {
+                if (pageId === 'page-home') {
+                    header.style.display = 'flex';
+                } else {
+                    header.style.display = 'none';
+                }
+            }
+            if (pushState && reverseRouteMap[pageId]) {
+                const newPath = reverseRouteMap[pageId];
+                if (window.location.search !== newPath) {
+                    try {
+                        // replaceState (bukan pushState): ganti tab TIDAK menambah entri
+                        // history. Sebelumnya tiap klik tab nambah entri sehingga tombol
+                        // kembali muter-muter lewat semua tab yang pernah diklik.
+                        window.history.replaceState({ pageId: pageId }, "", newPath);
+                    } catch (e) {}
+                }
+            }
+        }
+        window.addEventListener('popstate', (event) => {
+            if (event.state && event.state.pageId) {
+                navigateTo(event.state.pageId, false);
+            } else {
+                const params = new URLSearchParams(window.location.search);
+                const path = params.get('path');
+                let pageId = 'page-home';
+                navigateTo(pageId, false);
+            }
+        });
+        function initializeRoute() {
+            const params = new URLSearchParams(window.location.search);
+            const path = params.get('path');
+            let initialPageId = 'page-home';
+            // Fallback: check localStorage if no URL path - validate the value exists
+            if (!path) {
+                try {
+                    const saved = localStorage.getItem('clincoo_current_page');
+                    // Only use saved page if the element actually exists
+                    if (saved && document.getElementById(saved)) {
+                        initialPageId = saved;
+                    }
+                } catch(e) {}
+            }
+            
+            navigateTo(initialPageId, false);
+            try {
+                if (window.location.search !== reverseRouteMap[initialPageId]) {
+                    window.history.replaceState({ pageId: initialPageId }, "", reverseRouteMap[initialPageId] || '?session=active&ref=client&path=/home');
+                }
+            } catch (e) {}
+        }
+        initializeRoute();
+        fetchD1Notifications();
+        setInterval(fetchD1Notifications, 30000);
+        
+        // Notif login dihilangkan — tidak dibuat otomatis lagi
+        function usePrompt(promptText) {
+            const textarea = document.getElementById('main-prompt-input');
+            if (textarea) {
+                textarea.value = promptText;
+                textarea.focus();
+                navigateTo('page-home');
+                window.scrollTo(0, 0);
+            }
+        }
+        const submitPromptBtn = document.getElementById('submit-prompt-btn');
+        const mainPromptInput = document.getElementById('main-prompt-input');
+
+        // PROMO: kartu harga homepage sinkron /api/promo (revert 49K + 'Paling Populer' kalau selesai)
+        // [9 Okt 2026] pembuka blok ini sempat terhapus bersama pembersihan banner kuota ->
+        // seluruh script beranda error & sambutan/motivasi gak muncul; dipulihkan apa adanya.
+        (function () {
+            try {
+                var apiB = (['clincoo-be2.pages.dev', 'localhost', '127.0.0.1'].indexOf(location.hostname) === -1) ? 'https://clincoo-be2.pages.dev' : '';
+                fetch(apiB + '/api/promo', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (p) {
+                    var ribbon = document.getElementById('home-pro-ribbon');
+                    var wrap = document.getElementById('home-pro-price-wrap');
+                    var note = document.getElementById('home-pro-promo-note');
+                    if (!p || p.active !== true || p.remaining <= 0) {
+                        if (ribbon) ribbon.textContent = 'Paling Populer';
+                        if (note) note.remove();
+                        if (wrap) wrap.innerHTML = '<span class="text-2xl font-extrabold tracking-tight text-gray-900">49K</span><span class="text-xs font-medium text-gray-500 ml-1">/bln</span>';
+                        return;
+                    }
+                    var rem = document.getElementById('home-promo-rem');
+                    if (rem) rem.textContent = String(p.remaining);
+                }).catch(function () {});
+            } catch (e) {}
+        })();
+        // [18 Okt 2026, arahan pemilik] Mode Build ditutup sementara — pesan
+        // pengganti yang rapi saat user mencoba memilih Mode Build.
+        window.aiBuildDevNotice = function (msg) {
+          var el = document.getElementById('ai-build-dev-notice');
+          if (el) el.remove();
+          el = document.createElement('div');
+          el.id = 'ai-build-dev-notice';
+          var dark = document.body.classList.contains('dark-mode');
+          el.style.cssText = 'position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:9999;display:flex;align-items:center;gap:8px;max-width:92vw;padding:10px 16px;border-radius:14px;background:' + (dark ? '#1c1c1e' : '#111827') + ';color:' + (dark ? '#f3f4f6' : '#ffffff') + ';font-size:13px;font-weight:600;line-height:1.4;box-shadow:0 10px 30px rgba(0,0,0,.3);opacity:0;transition:opacity .25s ease;font-family:inherit;text-align:center;';
+          el.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.3 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0z"/></svg><span>' + (msg || 'Mode Build sedang dalam pengembangan. Sementara ini gunakan Mode Chat ya.') + '</span>';
+          document.body.appendChild(el);
+          requestAnimationFrame(function () { el.style.opacity = '1'; });
+          setTimeout(function () { el.style.opacity = '0'; setTimeout(function () { if (el.parentNode) el.remove(); }, 300); }, 3400);
+        };
+        // ===== [7 Okt 2026] KAPSUL MODE AI (Chat / Build) di halaman utama =====
+        // Pilihan tersimpan di localStorage 'clincoo_ai_mode' — kunci yang sama
+        // dipakai halaman proyek/chat, jadi mode Build terbawa otomatis saat
+        // prompt dari homepage diteruskan ke chat AI.
+        (function () {
+          const KEY = 'clincoo_ai_mode';
+          // [18 Okt 2026, arahan pemilik] Mode Build DINONAKTIFKAN sementara —
+          // pilihan 'build' yang tersimpan dihapus, semua sesi dipaksa Mode Chat.
+          let choice = 'chat';
+          try { localStorage.removeItem(KEY); } catch (e0) {}
+          if (choice !== 'build') choice = 'chat';
+          const mBtn = document.getElementById('ai-mode-btn');
+          const mMenu = document.getElementById('ai-mode-menu');
+          if (!mBtn || !mMenu) return; // popover mode dihapus dari input chat (7 Okt 2026)
+          const mLabel = document.getElementById('ai-mode-label');
+          if (!mBtn || !mMenu || !mLabel) return;
+          const isOpen = function () { return mMenu.classList.contains('visible'); };
+          const setOpen = function (open) {
+            if (open) { mMenu.classList.remove('opacity-0', 'invisible', 'translate-y-2', 'pointer-events-none'); mMenu.classList.add('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto'); }
+            else { mMenu.classList.add('opacity-0', 'invisible', 'translate-y-2', 'pointer-events-none'); mMenu.classList.remove('opacity-100', 'visible', 'translate-y-0', 'pointer-events-auto'); }
+            const caret = document.getElementById('ai-mode-caret');
+            if (caret) caret.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+          };
+          const apply = function () {
+            mLabel.textContent = choice === 'build' ? 'Build' : 'Chat';
+            mBtn.setAttribute('aria-expanded', isOpen() ? 'true' : 'false');
+          };
+          apply();
+          mBtn.addEventListener('click', function (e) { e.stopPropagation(); setOpen(!isOpen()); apply(); });
+          document.addEventListener('click', function (e) {
+            if (!e.target.closest('#ai-mode-btn') && !e.target.closest('#ai-mode-menu')) setOpen(false);
+          });
+          window.applyAiMode = function (id) {
+            if (id === 'build') return; // [18 Okt 2026, arahan pemilik] Build sementara ditutup — cukup label "Segera", tanpa pop-up
+            choice = 'chat';
+            try { localStorage.setItem(KEY, 'chat'); } catch (e0) {}
+            apply();
+            setOpen(false);
+          };
+        })();
+        function processPromptSubmission(customTitle) {
+            if(!mainPromptInput) return;
+            const prompt = mainPromptInput.value.trim();
+            if(!prompt) return;
+            
+            // Clear stale handoff data that could cause issues
+            try {
+                localStorage.removeItem('clincoo_current_chat_msg');
+                localStorage.removeItem('clincoo_current_project_id');
+                localStorage.removeItem('clincoo_current_attachments');
+            } catch(e) {}
+            const projectId = 'proj_' + Date.now();
+            let titleParts = prompt.split(' ');
+            let title = customTitle || titleParts.slice(0, 4).join(' ');
+            if(!customTitle && titleParts.length > 4) title += '...';
+            const newProject = {
+                id: projectId,
+                title: title,
+                prompt: prompt,
+                updatedAt: new Date().toISOString()
+            };
+            let projects = [];
+            try {
+                const stored = localStorage.getItem('clincoo_projects');
+                if(stored) projects = JSON.parse(stored);
+            } catch(e) {}
+            projects.unshift(newProject);
+            try {
+                localStorage.setItem('clincoo_projects', JSON.stringify(projects));
+                // [13 Okt, laporan owner: "pesan dari homepage ga masuk ke bagian chat"]
+                // pushProjectsToServer menunda 700 ms; navigasi ke halaman chat MEMBATALKAN
+                // request-nya -> proyek baru tidak terdaftar di server -> tidak muncul di
+                // daftar proyek/chat sama sekali. Kirim SEKARANG dengan keepalive:true
+                // (request tetap hidup melewati navigasi halaman).
+                try {
+                    fetch(PROJECTS_API, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        keepalive: true,
+                        body: JSON.stringify({ action: 'replace_all', projects: projects })
+                    }).catch(function () {});
+                } catch (e0) {}
+                pushProjectsToServer(projects);
+                localStorage.setItem('clincoo_current_chat_msg', prompt);
+                localStorage.setItem('clincoo_current_project_id', projectId);
+                let staged = [];
+                try { staged = JSON.parse(localStorage.getItem('clincoo_staged_attachments') || '[]'); } catch(e) {}
+                if (staged.length > 0) {
+                    // Isi file ikut (teks utk dokumen, dataURL utk gambar) — bukan sekadar nama.
+                    // File besar yang tak terbaca tetap dikirim nama-saja agar AI tahu lampirannya ada.
+                    const attachments = staged.map(a => ({ type: a.type, name: a.name, size: a.size, data: a.data, text: a.text, extension: a.extension }));
+                    localStorage.setItem('clincoo_current_attachments', JSON.stringify(attachments));
+                    localStorage.removeItem('clincoo_staged_attachments');
+                    if (filePreviewContainer) {
+                        filePreviewContainer.classList.add('hidden');
+                        filePreviewContainer.classList.remove('flex');
+                        filePreviewContainer.innerHTML = '';
+                    }
+                }
+            } catch(e) {}
+            window.location.href = 'proyek/code/?id=' + projectId;
+        }
+        if(submitPromptBtn) {
+            submitPromptBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                try { processPromptSubmission(); } catch(err) { console.error('Submit error:', err); }
+            });
+        }
+        if(mainPromptInput) {
+            mainPromptInput.addEventListener('keydown', (e) => {
+                if(e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    try { processPromptSubmission(); } catch(err) { console.error('Submit error:', err); }
+                }
+            });
+        }
+
+        // Escape HTML + buang sisa sintaks markdown — pembersih pertahanan-berlapis untuk
+        // kartu proyek: menangani proyek lama yang sudah kesimpan dengan markdown mentah,
+        // bukan cuma proyek baru (perbaikan penyimpanan dilakukan juga di proyek/chat).
+        function escCard(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+        function stripMdCard(text) {
+            if (!text) return '';
+            return String(text)
+                .replace(/```[\s\S]*?```/g, ' ')
+                .replace(/`([^`]+)`/g, '$1')
+                .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+                .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+                .replace(/^#{1,6}\s+/gm, '')
+                .replace(/(\*\*|__)(.*?)\1/g, '$2')
+                .replace(/(\*|_)(.*?)\1/g, '$2')
+                .replace(/~~(.*?)~~/g, '$1')
+                .replace(/^\s*[-*+]\s+/gm, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+                function renderProjects() {
+            let projects = [];
+            try {
+                const stored = localStorage.getItem('clincoo_projects');
+                if (stored) projects = JSON.parse(stored);
+            } catch(e) {}
+
+            // Bersihin nama proyek yang ketiban pesan error kuota AI (biar balik ke nama template/asli)
+            let dirty = false;
+            projects.forEach(function(p) {
+                if (p && p.aiName && /^(kuota ai|maaf, terjadi kesalahan|maaf, terjadi)/i.test(p.aiName.trim())) {
+                    delete p.aiName; delete p.aiDesc; dirty = true;
+                }
+            });
+            if (dirty) {
+                try {
+                    localStorage.setItem('clincoo_projects', JSON.stringify(projects));
+                    if (typeof pushProjectsToServer === 'function') pushProjectsToServer(projects);
+                } catch(e) {}
+            }
+
+            const homeList = document.getElementById('home-projects-list');
+            const allList = document.getElementById('all-projects-list');
+
+            function timeAgo(dateStr) {
+                const diff = Date.now() - new Date(dateStr).getTime();
+                const hours = Math.floor(diff / 3600000);
+                const days = Math.floor(diff / 86400000);
+                if (days > 0) return 'Diperbarui ' + days + ' hari lalu';
+                if (hours > 0) return 'Diperbarui ' + hours + ' jam lalu';
+                return 'Diperbarui baru saja';
+            }
+
+            // === Judul & deskripsi kartu proyek: dari Pengaturan Umum (app_name/app_desc), BUKAN dari chat AI ===
+            const umumSettingsMap = {};
+            window.umumSettingsMap = umumSettingsMap;
+            function umumCacheRead(pid) {
+                try { return JSON.parse(localStorage.getItem('clincoo_umum_' + (pid || 'default')) || '{}'); } catch (e) { return {}; }
+            }
+            function projCardTitle(proj) {
+                const st = umumSettingsMap[proj.id] || umumCacheRead(proj.id);
+                return escCard(stripMdCard((st && st.app_name) || proj.aiName || proj.title || 'Proyek Tanpa Nama'));
+            }
+            function projCardDesc(proj) {
+                const st = umumSettingsMap[proj.id] || umumCacheRead(proj.id);
+                return escCard(stripMdCard((st && st.app_desc) || proj.prompt || ''));
+            }
+            function projCardLogo(proj) {
+                // [19 Okt, fix logo hilang] Logo dari Pengaturan Umum tersimpan sebagai file
+                // workspace: app_logo = PATH ('logo.png'), preview dataURL ada di app_logo_data.
+                // Pakai dataURL dulu; path ditolak filter supaya tidak jadi gambar rusak.
+                const st = umumSettingsMap[proj.id] || umumCacheRead(proj.id);
+                const v = (st && (st.app_logo_data || st.app_logo)) || '';
+                return (typeof v === 'string' && /^(data:image\/|https?:\/\/|\/)/.test(v)) ? v : '';
+            }
+
+            function createHomeCard(proj) {
+                // Kartu vertikal seperti semula; area placeholder kotak di atas kini menampilkan logo proyek
+                // (tanpa logo = skeleton abu-abu seperti dulu).
+                const title = projCardTitle(proj);
+                const desc = projCardDesc(proj);
+                const logo = projCardLogo(proj);
+                // Logo bundat agak besar, tanpa kotak, posisi kartu tetap vertikal.
+                // Proyek tanpa logo tetap pakai skeleton placeholder seperti dulu.
+                const thumbHtml = logo
+                    ? ('<div class="w-full h-28 bg-[#F9FAFB] rounded-xl mb-3.5 border border-gray-100 group-hover:border-gray-200 transition-colors flex items-center justify-center overflow-hidden"><img src="' + escCard(logo) + '" class="w-16 h-16 rounded-full object-cover border border-gray-100" alt="Logo"></div>')
+                    : ('<div class="w-full h-28 bg-[#F9FAFB] rounded-xl mb-3.5 p-3 flex flex-col justify-between border border-gray-100 group-hover:border-gray-200 transition-colors overflow-hidden">' +
+                    '<div class="flex items-center justify-between"><div class="w-12 h-2 bg-gray-200 rounded-full"></div><div class="w-3 h-3 rounded-full bg-black/10"></div></div>' +
+                    '<div class="grid grid-cols-2 gap-2 my-auto"><div class="h-10 rounded-lg border border-gray-100 p-1.5 flex flex-col justify-between"><div class="w-6 h-1.5 bg-gray-200 rounded"></div><div class="w-10 h-2 bg-gray-900 rounded"></div></div><div class="h-10 rounded-lg border border-gray-100 p-1.5 flex flex-col justify-between"><div class="w-6 h-1.5 bg-gray-200 rounded"></div><div class="w-8 h-2 bg-gray-400 rounded"></div></div></div>' +
+                    '<div class="w-full h-1.5 bg-gray-200 rounded-full"></div></div>');
+                return '<div data-proj-id="'+proj.id+'" class="relative w-56 sm:w-60 flex-shrink-0 border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20" tabindex="0" onclick="openProject(\''+proj.id+'\')" onkeydown="if(event.key===\'Enter\') openProject(\''+proj.id+'\')">' +
+                    thumbHtml +
+                    '<h3 class="font-semibold text-gray-900 text-sm group-hover:text-black truncate">'+title+'</h3>' +
+                    '<p class="text-[11px] text-gray-500 mt-0.5 truncate">'+desc.substring(0, 40)+'</p>' +
+                    '<p class="text-xs text-gray-400 mt-1.5">'+timeAgo(proj.updatedAt)+'</p>' +
+                    '</div>';
+            }
+
+            function createAllCard(proj) {
+                const title = projCardTitle(proj);
+                const desc = projCardDesc(proj);
+                const logo = projCardLogo(proj);
+                const thumbHtml = logo ? '<img src="' + escCard(logo) + '" class="w-full h-full rounded-full object-cover" alt="Logo">' :
+                    ('<div class="w-full h-1.5 bg-gray-200 rounded-full"></div><div class="w-full h-1.5 bg-gray-200 rounded-full"></div><div class="w-full h-1.5 bg-gray-200 rounded-full"></div>');
+                return '<div data-proj-id="'+proj.id+'" class="relative w-full bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group flex items-center gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20" tabindex="0" onclick="openProject(\''+proj.id+'\')" onkeydown="if(event.key===\'Enter\') openProject(\''+proj.id+'\')">' +
+                    '<div class="w-20 h-20 shrink-0 bg-[#F9FAFB] ' + (logo ? 'rounded-full' : 'rounded-xl') + ' p-2.5 flex flex-col justify-between border border-gray-100 group-hover:border-gray-200 transition-colors overflow-hidden">' +
+                    thumbHtml +
+                    '</div>' +
+                    '<div class="flex-1 min-w-0"><h3 class="font-semibold text-gray-900 text-base group-hover:text-black truncate">'+title+'</h3>' +
+                    '<p class="text-[13px] text-gray-500 mt-0.5 truncate">'+desc.substring(0, 60)+'</p>' +
+                    '<p class="text-sm text-gray-400 mt-1">'+timeAgo(proj.updatedAt)+'</p></div>' +
+                    '<div class="relative flex-shrink-0"><button class="cc-dots p-2 text-gray-400 focus:outline-none focus-visible:outline-none" onclick="toggleOption(this, event)"><i data-lucide="more-vertical" class="w-5 h-5"></i></button>' +
+                    '<div class="option-popup absolute top-full right-0 mt-2 w-40 bg-white border border-gray-100 rounded-xl shadow-[0_4px_20px_rgb(0,0,0,0.08)] py-2 opacity-0 invisible translate-y-2 transition-all duration-200 z-20 origin-top-right" onclick="event.stopPropagation()">' +
+                    '<button class="w-full text-left px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 dark:focus-visible:ring-white/20" onclick="openProject(\''+proj.id+'\')">Lanjutkan</button>' +
+                    '<button class="w-full text-left px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 dark:focus-visible:ring-white/20" onclick="duplicateProject(\''+proj.id+'\')">Duplikat</button>' +
+                    '<button class="w-full text-left px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 dark:focus-visible:ring-white/20" onclick="shareProject(\''+proj.id+'\')">Bagikan</button>' +
+                    '<button class="w-full text-left px-4 py-2 text-sm font-medium text-red-600 hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500/30" onclick="deleteProject(\''+proj.id+'\')">Hapus</button>' +
+                    '</div></div></div>';
+            }
+
+            if (homeList) {
+                if (projects.length === 0) {
+                    homeList.innerHTML = '<a href="proyek/baru/" class="block text-center py-8 text-sm text-gray-400">Belum ada proyek. <span class="font-semibold text-gray-700 dark:text-gray-200 underline underline-offset-2">Buat proyek baru dengan panduan &rarr;</span></a>';
+                } else {
+                    homeList.innerHTML = projects.slice(0, 6).map(createHomeCard).join('');
+                }
+            }
+            if (allList) {
+                if (projects.length === 0) {
+                    allList.innerHTML = '<a href="proyek/baru/" class="block text-center py-8 text-sm text-gray-400">Belum ada proyek. <span class="font-semibold text-gray-700 dark:text-gray-200 underline underline-offset-2">Buat proyek baru dengan panduan &rarr;</span></a>';
+                } else {
+                    allList.innerHTML = projects.map(createAllCard).join('');
+                }
+            }
+            if (typeof lucide !== 'undefined') try { lucide.createIcons(); } catch (e) {}
+        }
+        function openProject(id) {
+            let projects = [];
+            try { const stored = localStorage.getItem('clincoo_projects'); if (stored) projects = JSON.parse(stored); } catch(e) {}
+            const proj = projects.find(p => p.id === id);
+            if (proj) {
+                // Riwayat dimuat dari D1 di halaman chat, prompt lama tidak di-replay
+                localStorage.setItem('clincoo_current_project_id', id);
+                // Klik proyek dari halaman utama: SELALU langsung ke workspace
+                window.location.href = 'proyek/workspace/?id=' + id;
+            }
+        }
+        // Toast teks sederhana (preferensi notifikasi teks-saja)
+        function showToast(msg, kind) {
+            var t = document.createElement('div');
+            t.textContent = msg;
+            t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translate(-50%,12px);z-index:999;' +
+                'padding:9px 18px;border-radius:999px;font-size:13px;font-weight:600;color:#fff;' +
+                'background:' + (kind === 'error' ? '#dc2626' : '#111') + ';box-shadow:0 8px 24px rgba(0,0,0,.18);' +
+                'opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;white-space:nowrap;';
+            document.body.appendChild(t);
+            requestAnimationFrame(function () { t.style.opacity = '1'; t.style.transform = 'translate(-50%,0)'; });
+            setTimeout(function () { t.style.opacity = '0'; t.style.transform = 'translate(-50%,12px)'; setTimeout(function () { t.remove(); }, 350); }, 2200);
+        }
+        var _pendingDeleteId = null;
+        function deleteProject(id) {
+            let projects = [];
+            try { const stored = localStorage.getItem('clincoo_projects'); if (stored) projects = JSON.parse(stored); } catch(e) {}
+            const proj = projects.find(p => p.id === id);
+            const modal = document.getElementById('confirm-delete-modal');
+            const nameEl = document.getElementById('confirm-delete-name');
+            if (!modal) return; // popup tidak ada: jangan hapus tanpa konfirmasi
+            _pendingDeleteId = id;
+            if (nameEl) nameEl.textContent = (proj && projCardTitle(proj)) ? String(projCardTitle(proj)) : 'Proyek ini';
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+        function closeDeleteModal() {
+            const modal = document.getElementById('confirm-delete-modal');
+            if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+            _pendingDeleteId = null;
+            resetDeleteModalUI();
+        }
+        function syncDeleteOkBtn() {
+            const okBtn = document.getElementById('confirm-delete-ok');
+            if (!okBtn) return;
+            if (okBtn.dataset.step === 'otp') {
+                const otpEl = document.getElementById('confirm-delete-otp-input');
+                okBtn.disabled = !(otpEl && /^\d{6}$/.test((otpEl.value || '').trim()));
+            } else {
+                const nameEl = document.getElementById('confirm-delete-name-input');
+                let projects = [];
+                try { const stored = localStorage.getItem('clincoo_projects'); if (stored) projects = JSON.parse(stored); } catch(e) {}
+                const proj = projects.find(function (p) { return p.id === _pendingDeleteId; });
+                const expected = proj ? String(projCardTitle(proj) || '').trim().toLowerCase() : '';
+                okBtn.disabled = !expected || !nameEl || (nameEl.value || '').trim().toLowerCase() !== expected;
+            }
+            okBtn.classList.toggle('opacity-40', okBtn.disabled);
+        }
+        function resetDeleteModalUI() {
+            const okBtn = document.getElementById('confirm-delete-ok');
+            const cancelBtn = document.getElementById('confirm-delete-cancel');
+            const errEl = document.getElementById('confirm-delete-error');
+            const nameEl = document.getElementById('confirm-delete-name-input');
+            const otpStep = document.getElementById('confirm-delete-otp-step');
+            const otpEl = document.getElementById('confirm-delete-otp-input');
+            const otpErr = document.getElementById('confirm-delete-otp-error');
+            if (okBtn) { okBtn.disabled = true; okBtn.dataset.step = ''; okBtn.classList.remove('cc-spin'); okBtn.innerHTML = 'Hapus'; okBtn.classList.add('opacity-40'); }
+            if (cancelBtn) cancelBtn.style.visibility = '';
+            if (errEl) errEl.classList.add('hidden');
+            if (nameEl) { nameEl.value = ''; nameEl.classList.remove('border-red-300'); nameEl.classList.remove('hidden'); }
+            if (otpStep) otpStep.classList.add('hidden');
+            if (otpEl) otpEl.value = '';
+            if (otpErr) otpErr.classList.add('hidden');
+            document.querySelectorAll('.cc-del-overlay').forEach(function (ov) { ov.remove(); });
+            document.querySelectorAll('.cc-deleting').forEach(function (el) { el.classList.remove('cc-deleting'); });
+        }
+        // Hapus proyek dari tampilan & data lokal SEKETIKA (optimistic) — tidak menunggu server.
+        function removeProjectLocally(id) {
+            try {
+                localStorage.removeItem('clincoo_ls_chat_' + id);
+                localStorage.removeItem('clincoo_workspace_files_' + id);
+                localStorage.removeItem('clincoo_current_chat_msg_' + id);
+                if (localStorage.getItem('clincoo_current_project_id') === id) localStorage.removeItem('clincoo_current_project_id');
+            } catch (e) {}
+            let projects = [];
+            try { const stored = localStorage.getItem('clincoo_projects'); if (stored) projects = JSON.parse(stored); } catch(e) {}
+            projects = projects.filter(p => p.id !== id);
+            localStorage.setItem('clincoo_projects', JSON.stringify(projects));
+            pushProjectsToServer(projects);
+            renderProjects();
+        }
+        // Antrean retry diam-diam (dibagi dengan js/projects.js lewat key localStorage yang sama) —
+        // kalau penghapusan di server gagal, id-nya dicoba lagi otomatis saat halaman ini dibuka lagi.
+        function getPendingDeletes() {
+            try { return JSON.parse(localStorage.getItem('clincoo_pending_deletes') || '[]'); } catch (e) { return []; }
+        }
+        function setPendingDeletes(list) {
+            try { localStorage.setItem('clincoo_pending_deletes', JSON.stringify(list)); } catch (e) {}
+        }
+        function queuePendingDelete(id) {
+            const list = getPendingDeletes();
+            if (list.indexOf(id) === -1) { list.push(id); setPendingDeletes(list); }
+        }
+        function unqueuePendingDelete(id) {
+            setPendingDeletes(getPendingDeletes().filter(x => x !== id));
+        }
+        // Penghapusan sungguhan di server, jalan di latar belakang — tidak pernah mem-block UI.
+        async function deleteProjectInBackground(id, attempt) {
+            attempt = attempt || 1;
+            const tok = localStorage.getItem('clincoo_auth_token') || '';
+            const API_ROOT = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api');
+            const authHdr = { 'Content-Type': 'application/json', ...(tok ? { Authorization: 'Bearer ' + tok } : {}) };
+            try { fetch(API_ROOT + '/deploy', { method: 'POST', headers: authHdr, body: JSON.stringify({ project_id: id, action: 'unpublish' }) }).catch(function () {}); } catch (e) {}
+            let ok = false;
+            try {
+                const res = await fetch(PROJECTS_API, { method: 'POST', headers: authHdr, body: JSON.stringify({ action: 'delete', id: id }) });
+                if (res.ok) { const d = await res.json().catch(() => null); ok = !d || d.success !== false; }
+                else {
+                    const d = await res.json().catch(() => null);
+                    if (d && (d.guarded || d.need_otp)) { unqueuePendingDelete(id); return; } // diblokir guard saldo / butuh OTP: jangan retry diam-diam
+                }
+            } catch (e) { ok = false; }
+            if (ok) { unqueuePendingDelete(id); return; }
+            if (attempt < 3) setTimeout(function () { deleteProjectInBackground(id, attempt + 1); }, attempt * 2000);
+            else queuePendingDelete(id);
+        }
+        function flushPendingDeletes() {
+            getPendingDeletes().forEach(function (id) { deleteProjectInBackground(id, 1); });
+        }
+        document.addEventListener('DOMContentLoaded', flushPendingDeletes);
+        if (document.readyState !== 'loading') flushPendingDeletes();
+        document.addEventListener('DOMContentLoaded', function wireDeleteModal() {
+            const modal = document.getElementById('confirm-delete-modal');
+            if (!modal) return;
+            modal.addEventListener('click', function (e) { if (e.target === modal) closeDeleteModal(); });
+            document.getElementById('confirm-delete-cancel').addEventListener('click', closeDeleteModal);
+    var _cpBtn = document.getElementById('confirm-delete-copy');
+    if (_cpBtn) _cpBtn.addEventListener('click', function () {
+        var nm = String((function(){try{var st=JSON.parse(localStorage.getItem('clincoo_projects')||'[]');var pr=st.find(function(x){return x.id===_pendingDeleteId;});return pr?String(projCardTitle(pr)):'';}catch(e){return '';}})() || '').trim();
+        if (!nm) return;
+        var ICON_OK = '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>';
+        var ICON_COPY = '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+        var done = function () {
+            _cpBtn.innerHTML = ICON_OK;
+            setTimeout(function () { _cpBtn.innerHTML = ICON_COPY; }, 1400);
+        };
+        var fb = function () {
+            try {
+                var ta = document.createElement('textarea');
+                ta.value = nm; ta.style.cssText = 'position:fixed;opacity:0';
+                document.body.appendChild(ta); ta.select();
+                document.execCommand('copy'); ta.remove(); done();
+            } catch (e) {}
+        };
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(nm).then(done, fb);
+            else fb();
+        } catch (e) { fb(); }
+    });
+            const nameInput = document.getElementById('confirm-delete-name-input');
+            if (nameInput) nameInput.addEventListener('input', function () {
+                this.classList.remove('border-red-300');
+                const errEl = document.getElementById('confirm-delete-error');
+                if (errEl) errEl.classList.add('hidden');
+                syncDeleteOkBtn();
+            });
+            const otpInput = document.getElementById('confirm-delete-otp-input');
+            if (otpInput) otpInput.addEventListener('input', function () {
+                const otpErr = document.getElementById('confirm-delete-otp-error');
+                if (otpErr) otpErr.classList.add('hidden');
+                syncDeleteOkBtn();
+            });
+            document.getElementById('confirm-delete-ok').addEventListener('click', async function () {
+                const id = _pendingDeleteId;
+                if (!id) { closeDeleteModal(); return; }
+                const okBtn = document.getElementById('confirm-delete-ok');
+                const errEl = document.getElementById('confirm-delete-error');
+                const otpErr = document.getElementById('confirm-delete-otp-error');
+                const otpEl = document.getElementById('confirm-delete-otp-input');
+                const tok = localStorage.getItem('clincoo_auth_token') || '';
+                const authHdr = { 'Content-Type': 'application/json', ...(tok ? { Authorization: 'Bearer ' + tok } : {}) };
+                const API_ROOT = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api');
+
+                // STEP OTP: konfirmasi terakhir dengan kode 6 digit dari email.
+                if (okBtn.dataset.step === 'otp') {
+                    const otp = (otpEl.value || '').trim();
+                    if (!/^\d{6}$/.test(otp)) return;
+                    okBtn.disabled = true;
+                    okBtn.classList.add('cc-spin');
+                    okBtn.innerHTML = 'Menghapus...';
+                    try {
+                        try { fetch(API_ROOT + '/deploy', { method: 'POST', headers: authHdr, body: JSON.stringify({ project_id: id, action: 'unpublish' }) }).catch(function () {}); } catch (e) {}
+                        const res = await fetch(PROJECTS_API, { method: 'POST', headers: authHdr, body: JSON.stringify({ action: 'delete', id: id, otp: otp }) });
+                        const d = await res.json().catch(function () { return null; });
+                        if (res.ok && d && d.success) {
+                            okBtn.classList.remove('cc-spin');
+                            closeDeleteModal();
+                            removeProjectLocally(id);
+                            showToast('Proyek dihapus', 'success');
+                            return;
+                        }
+                        okBtn.classList.remove('cc-spin');
+                        okBtn.innerHTML = 'Konfirmasi Hapus';
+                        if (d && d.guarded) {
+                            okBtn.dataset.step = '';
+                            document.getElementById('confirm-delete-otp-step').classList.add('hidden');
+                            if (errEl) { errEl.textContent = d.error || 'Proyek ini tidak bisa dihapus dulu.'; errEl.classList.remove('hidden'); }
+                            syncDeleteOkBtn();
+                            return;
+                        }
+                        if (otpErr) { otpErr.textContent = (d && d.error) || 'Kode OTP salah atau kadaluarsa.'; otpErr.classList.remove('hidden'); }
+                        syncDeleteOkBtn();
+                    } catch (e) {
+                        okBtn.classList.remove('cc-spin');
+                        okBtn.innerHTML = 'Konfirmasi Hapus';
+                        if (otpErr) { otpErr.textContent = 'Koneksi gagal. Coba lagi.'; otpErr.classList.remove('hidden'); }
+                        syncDeleteOkBtn();
+                    }
+                    return;
+                }
+
+                // STEP 1: nama proyek harus cocok persis.
+                let projects = [];
+                try { const stored = localStorage.getItem('clincoo_projects'); if (stored) projects = JSON.parse(stored); } catch(e) {}
+                const proj = projects.find(function (p) { return p.id === id; });
+                const expected = proj ? String(projCardTitle(proj) || '').trim().toLowerCase() : '';
+                if (!nameInput || (nameInput.value || '').trim().toLowerCase() !== expected) {
+                    nameInput.classList.add('border-red-300');
+                    nameInput.focus();
+                    return;
+                }
+                okBtn.disabled = true;
+                okBtn.classList.add('cc-spin');
+                okBtn.innerHTML = 'Memeriksa...';
+                if (errEl) errEl.classList.add('hidden');
+                // Pre-check guard server: saldo ClincooPay diblokir; sesi baru -> minta OTP email.
+                let check = null;
+                try {
+                    const res = await fetch(PROJECTS_API + '?delete_check=' + encodeURIComponent(id), { headers: tok ? { Authorization: 'Bearer ' + tok } : {} });
+                    check = await res.json().catch(function () { return null; });
+                } catch (e) { check = null; }
+                okBtn.classList.remove('cc-spin');
+                okBtn.innerHTML = 'Hapus';
+                if (check && check.blocked) {
+                    if (errEl) { errEl.textContent = check.reason || 'Proyek ini tidak bisa dihapus dulu.'; errEl.classList.remove('hidden'); }
+                    syncDeleteOkBtn();
+                    return;
+                }
+                if (check && check.otp_required) {
+                    // masuk step OTP: kirim kode ke email akun
+                    okBtn.dataset.step = 'otp';
+                    okBtn.disabled = true;
+                    okBtn.classList.add('cc-spin');
+                    okBtn.innerHTML = 'Mengirim OTP...';
+                    if (errEl) errEl.classList.add('hidden');
+                    const otpStep = document.getElementById('confirm-delete-otp-step');
+                    if (otpStep) otpStep.classList.remove('hidden');
+                    if (nameInput) nameInput.classList.add('hidden');
+                    try {
+                        const r2 = await fetch(PROJECTS_API, { method: 'POST', headers: authHdr, body: JSON.stringify({ action: 'delete_otp_send' }) });
+                        const d2 = await r2.json().catch(function () { return null; });
+                        okBtn.classList.remove('cc-spin');
+                        if (!d2 || !d2.success) {
+                            if (otpErr) { otpErr.textContent = (d2 && d2.error) || 'Kode OTP gagal dikirim. Tutup modal lalu coba lagi.'; otpErr.classList.remove('hidden'); }
+                            okBtn.innerHTML = 'Konfirmasi Hapus';
+                            return;
+                        }
+                        okBtn.innerHTML = 'Konfirmasi Hapus';
+                        if (otpEl) otpEl.focus();
+                        syncDeleteOkBtn();
+                    } catch (e) {
+                        okBtn.classList.remove('cc-spin');
+                        okBtn.innerHTML = 'Konfirmasi Hapus';
+                        if (otpErr) { otpErr.textContent = 'Kode OTP gagal dikirim. Coba lagi.'; otpErr.classList.remove('hidden'); }
+                    }
+                    return;
+                }
+                // tanpa OTP: lanjut alur lama (optimistic + hapus di latar belakang)
+                // Optimistic: proyek langsung lenyap & modal langsung tertutup — penghapusan
+                // sungguhan di server jalan sendiri di latar belakang (fire-and-forget + retry diam-diam).
+                closeDeleteModal();
+                removeProjectLocally(id);
+                showToast('Proyek dihapus', 'success');
+                deleteProjectInBackground(id);
+            });
+        });
+        function duplicateProject(id) {
+            let projects = [];
+            try { const stored = localStorage.getItem('clincoo_projects'); if (stored) projects = JSON.parse(stored); } catch(e) {}
+            const proj = projects.find(p => p.id === id);
+            if (proj) {
+                const copy = { ...proj, id: 'proj_' + Date.now(), title: proj.title + ' (Copy)', updatedAt: new Date().toISOString() };
+                projects.unshift(copy);
+                localStorage.setItem('clincoo_projects', JSON.stringify(projects));
+                pushProjectsToServer(projects);
+                renderProjects();
+            }
+        }
+        function shareProject(id) {
+            let projects = [];
+            try { const stored = localStorage.getItem('clincoo_projects'); if (stored) projects = JSON.parse(stored); } catch(e) {}
+            const proj = projects.find(p => p.id === id);
+            if (proj && navigator.share) {
+                navigator.share({ title: proj.title, text: proj.prompt }).catch(() => {});
+            }
+        }
+        // === Sinkronisasi daftar proyek per akun ke D1 (Cloudflare) ===
+        const PROJECTS_API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/projects';
+        let _pushTimer = null;
+        function showPlanLimitModal(d) {
+            if (!d || !d.upgrade_needed) return;
+            if (document.getElementById('plan-limit-modal')) return;
+            var m = document.createElement('div');
+            m.id = 'plan-limit-modal';
+            var base = (location.pathname.indexOf('/Clincoo') !== -1) ? '/Clincoo.' : '';
+            m.innerHTML =
+                '<div class="fixed inset-0 z-[90] flex items-center justify-center p-4" style="background:rgba(0,0,0,0.45)">' +
+                '<div class="bg-white rounded-2xl w-full max-w-xs px-5 pt-5 pb-4 text-center">' +
+                '<h3 class="text-base font-semibold text-gray-900">Batas proyek paket ' + (d.plan || 'Starter') + '</h3>' +
+                '<p class="text-sm text-gray-500 mt-1.5 leading-snug px-1">Paket kamu hanya bisa menyimpan maksimal <span class="font-semibold text-gray-700">' + (d.limit || 0) + ' proyek</span>. Proyek baru tetap tersimpan di perangkat ini, tapi tidak tersinkron ke akun.</p>' +
+                '<a href="' + base + '/upgrade/" class="mt-4 block w-full py-2.5 text-sm font-semibold text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20">Upgrade Paket</a>' +
+                '<button id="plan-limit-close" class="mt-2 w-full py-2 text-sm font-medium text-gray-500 hover:text-black transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20 rounded-md">Nanti saja</button>' +
+                '</div></div>';
+            document.body.appendChild(m);
+            var btn = m.querySelector('#plan-limit-close');
+            if (btn) btn.addEventListener('click', function () { m.remove(); });
+        }
+        function pushProjectsToServer(projects) {
+            if (_pushTimer) clearTimeout(_pushTimer);
+            _pushTimer = setTimeout(function () {
+                try {
+                    fetch(PROJECTS_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'replace_all', projects: projects }) }).then(function (res) {
+                        if (!res.ok) return res.json().then(function (d) { showPlanLimitModal(d); }).catch(function () {});
+                    }).catch(function () {});
+                } catch (e) {}
+            }, 700);
+        }
+        function syncProjectsFromServer() {
+            try {
+                fetch(PROJECTS_API).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+                    if (!d || !Array.isArray(d.projects)) return;
+                    // Proyek yang sedang di antrean hapus (penghapusan server belum/berulah gagal)
+                    // TIDAK boleh di-restore balik dari server — kalau tidak, card yang sudah
+                    // dihapus akan terus muncul lagi setiap sinkronisasi.
+                    const pend = getPendingDeletes();
+                    const list = pend.length ? d.projects.filter(sp => pend.indexOf(sp.id) === -1) : d.projects;
+                    let local = [];
+                    try { const st = localStorage.getItem('clincoo_projects'); if (st) local = JSON.parse(st); } catch(e) {}
+                    // MERGE DUA ARAH (aman dari kehilangan data):
+                    // 1) proyek lokal yang belum ada di server -> dorong ke server (registrasi kepemilikan utk deploy)
+                    // 2) proyek server yang belum ada di lokal -> tambahkan ke lokal
+                    // 3) id sama -> pakai yang updatedAt-nya lebih baru
+                    const serverById = {};
+                    list.forEach(sp => serverById[sp.id] = sp);
+                    const merged = local.slice();
+                    local.forEach(lp => {
+                        const sp = serverById[lp.id];
+                        if (sp && new Date(sp.updatedAt || 0) > new Date(lp.updatedAt || 0)) {
+                            const idx = merged.findIndex(m => m.id === lp.id);
+                            if (idx !== -1) merged[idx] = sp;
+                        }
+                    });
+                    list.forEach(sp => { if (!merged.some(m => m.id === sp.id)) merged.push(sp); });
+                    const toPush = merged.filter(m => !serverById[m.id]); // belum terdaftar di server
+                    if (toPush.length) {
+                        try {
+                            fetch(PROJECTS_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'upsert', projects: toPush }) }).catch(function () {});
+                        } catch (e) {}
+                    }
+                    if (JSON.stringify(merged) !== JSON.stringify(local)) {
+                        try { localStorage.setItem('clincoo_projects', JSON.stringify(merged)); } catch(e) {}
+                        renderProjects();
+                        if (typeof loadUmumSettings === 'function') loadUmumSettings(); // daftar berubah -> tarik pengaturan final
+                    }
+                }).catch(function () {});
+            } catch (e) {}
+        }
+        renderProjects();
+        // Perubahan daftar proyek dari tab/halaman lain (mis. hapus proyek di /akun/proyek/)
+        // langsung dirender ulang di sini — tidak perlu reload halaman utama.
+        window.addEventListener('storage', function (ev) {
+            if (ev.key === 'clincoo_projects') renderProjects();
+            if (ev.key === 'clincoo_template_favorites') { try { ClincooTemplates.refreshFavoriteMenuLabels(); } catch (e) {} }
+        });
+        // Favorit tersambung dua arah dengan galeri & halaman favorit — juga saat balik via tombol back (bfcache).
+        window.addEventListener('pageshow', function () { try { ClincooTemplates.refreshFavoriteMenuLabels(); ClincooTemplates.syncCrowns(); } catch (e) {} });
+        try { ClincooTemplates.syncCrowns(); ClincooTemplates.refreshPlan(); } catch (e) {}
+        window.addEventListener('storage', function (ev) { if (ev.key === 'clincoo_subscription_cache') { try { ClincooTemplates.syncCrowns(); } catch (e) {} } });
+        syncProjectsFromServer();
+        // Tarik nama & deskripsi aplikasi tiap proyek dari Pengaturan Umum (backend), lalu render ulang kartu.
+        // [20 Okt, fix kartu tanpa nama/logo/desc] Dulu fungsi ini cuma jalan sekali dengan
+        // daftar localStorage yang bisa basi SEBELUM sync server merge selesai -> proyek hasil
+        // sync nggak pernah ditarik app_name/app_desc/app_logo-nya. Sekarang juga dipanggil
+        // ulang dari syncProjectsFromServer() setelah daftar final tersimpan.
+        function loadUmumSettings() {
+            try {
+                const base = PROJECTS_API.replace(/\/projects$/, '');
+                const tok = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || '';
+                const hdr = tok ? { Authorization: 'Bearer ' + tok } : {};
+                let plist = [];
+                try { plist = JSON.parse(localStorage.getItem('clincoo_projects') || '[]'); } catch (e) {}
+                Promise.all(plist.map(function (proj) {
+                    return fetch(base + '/project-settings?project_id=' + encodeURIComponent(proj.id), { headers: hdr })
+                        .then(function (r) { return r.ok ? r.json() : null; })
+                        .then(function (d) {
+                            if (d && (d.app_name || d.app_desc || d.app_logo || d.app_logo_data)) {
+                                umumSettingsMap[proj.id] = { app_name: d.app_name || '', app_desc: d.app_desc || '', app_logo: d.app_logo || '', app_logo_data: d.app_logo_data || '' };
+                            }
+                        }).catch(function () {});
+                })).then(function () { try { renderProjects(); } catch (e) {} try { renderSidebarDynamic(); } catch (e2) {} });
+            } catch (e) {}
+        }
+        loadUmumSettings();
+
+        setTheme(currentThemeMode);
+        setAccent(currentAccentName, accentMap[currentAccentName] ? accentMap[currentAccentName].cls : 'bg-gray-900');
+    </script>
+<style>
+.cc-spin{animation:cc-spin .8s linear infinite}
+@keyframes cc-spin{to{transform:rotate(360deg)}}
+.cc-deleting{opacity:.45;pointer-events:none;filter:grayscale(.3)}
+</style>
+<!-- Popup konfirmasi hapus proyek (CTA teks, radius kecil) -->
+<div id="confirm-delete-modal" class="fixed inset-0 z-[80] hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.45)">
+  <div class="bg-white rounded-md w-full max-w-xs px-5 pt-5 pb-4 text-center">
+    <h3 class="text-base font-semibold text-gray-900">Hapus proyek ini?</h3>
+    <div class="flex items-center justify-center gap-1.5 mt-1 px-2">
+      <p id="confirm-delete-name" class="text-sm text-gray-500 truncate"></p>
+      <button type="button" id="confirm-delete-copy" aria-label="Salin nama proyek" title="Salin nama proyek" class="shrink-0 p-0.5 text-gray-400 hover:text-gray-600 transition-colors rounded-sm focus-visible:outline-none"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+    </div>
+    <p class="text-[13px] text-gray-400 mt-2 leading-snug">Semua data proyek akan dihapus, <span class="text-gray-500">termasuk situs yang sudah dipublish dan link publiknya</span>.</p>
+    <input id="confirm-delete-name-input" type="text" autocomplete="off" spellcheck="false" placeholder="Ketik nama proyek untuk konfirmasi" class="w-full mt-3 px-3 py-2 text-sm text-center border border-gray-200 rounded-md focus:outline-none focus:border-gray-400" />
+    <p id="confirm-delete-error" class="text-xs text-red-600 mt-2 hidden">Gagal menghapus proyek. Periksa koneksi lalu coba lagi.</p>
+    <div id="confirm-delete-otp-step" class="hidden mt-3">
+      <p class="text-[13px] text-gray-500 leading-snug">Kode OTP 6 digit sudah dikirim ke email akunmu.</p>
+      <input id="confirm-delete-otp-input" type="text" inputmode="numeric" maxlength="6" placeholder="Kode OTP" class="w-full mt-2 px-3 py-2 text-sm text-center tracking-[0.3em] border border-gray-200 rounded-md focus:outline-none focus:border-gray-400" />
+      <p id="confirm-delete-otp-error" class="text-xs text-red-600 mt-2 hidden"></p>
+    </div>
+    <div class="flex items-center justify-center gap-10 mt-5">
+      <button type="button" id="confirm-delete-cancel" class="text-sm font-medium text-gray-400 hover:text-gray-900 transition-colors px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20 rounded-sm">Batal</button>
+      <button type="button" id="confirm-delete-ok" disabled class="text-sm font-semibold text-red-600 hover:text-red-700 transition-colors px-1 py-0.5 opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30 rounded-sm">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* BG hero: tinggi area gambar menyesuaikan posisi judul 'Proyek terbaru'.
+   Gambar tampil hanya di halaman home, dari balik header sampai tepat di atas judul. */
+(function(){
+    var heroBg = document.getElementById('hero-bg');
+    var homePage = document.getElementById('page-home');
+    var section = document.getElementById('section-proyek-terbaru');
+    function updateHeroBg(){
+        if(!heroBg) return;
+        var onHome = homePage && !homePage.classList.contains('hidden');
+        if(!onHome || !section){ heroBg.style.display = 'none'; return; }
+        heroBg.style.display = 'block';
+        var top = section.getBoundingClientRect().top + window.scrollY;
+        heroBg.style.height = Math.max(top - 16, 320) + 'px';
+    }
+    window.addEventListener('load', updateHeroBg);
+    window.addEventListener('resize', updateHeroBg);
+    document.addEventListener('DOMContentLoaded', updateHeroBg);
+    if(homePage){
+        try { new MutationObserver(updateHeroBg).observe(homePage, { attributes: true, attributeFilter: ['class'] }); } catch(e){}
+    }
+    /* re-hitung setelah render konten dinamis */
+    setTimeout(updateHeroBg, 300);
+    setTimeout(updateHeroBg, 1200);
+})();
+</script>
+
+    <script>/* clincoo-sw-register */
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); }); }
+    </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
+
+<script>
+  // Crown di opsi Build (menu mode AI): tampil untuk paket Starter — gaya konsisten dgn crown di profil/upgrade.
+  // + PEMBATASAN: klik Build oleh user Starter memunculkan konfirmasi kredit (4 kredit/jawaban) sebelum mode aktif.
+  (function(){
+    var SUB_API = (location.hostname.indexOf('github.io') !== -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/subscription';
+    fetch(SUB_API).then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
+      try {
+        var plan = (d && (d.plan || (d.subscription && d.subscription.plan))) || 'Starter';
+        window.clincooUserPlan = plan;
+        if (plan === 'Starter') document.querySelectorAll('.build-mode-crown').forEach(function(el){ el.classList.remove('hidden'); });
+      } catch(e){}
+    }).catch(function(){});
+  })();
+  (function(){
+    var origApply = window.applyAiMode;
+    if (!origApply) return;
+    function showBuildGate(){
+      var dark = document.body.classList.contains('dark-mode');
+      var acc = 'var(--accent-color, #b45309)';
+      var ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+      var card = 'background:' + (dark ? '#0a0a0a' : '#fff') + ';border:1px solid ' + (dark ? '#262626' : '#e5e7eb') + ';border-radius:16px;max-width:320px;width:100%;padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.25);';
+      var title = 'font-size:15px;font-weight:700;color:' + (dark ? '#fff' : '#111') + ';';
+      var desc = 'font-size:13px;color:' + (dark ? '#9ca3af' : '#6b7280') + ';margin:8px 0 16px;line-height:1.5;';
+      var btnC = 'flex:1;padding:10px;border-radius:12px;border:1px solid ' + (dark ? '#333' : '#e5e7eb') + ';background:' + (dark ? '#111' : '#f9fafb') + ';color:' + (dark ? '#e5e7eb' : '#374151') + ';font-size:13px;font-weight:600;cursor:pointer;';
+      var btnO = 'flex:1;padding:10px;border-radius:12px;border:none;background:' + (dark ? '#fff' : '#111') + ';color:' + (dark ? '#111' : '#fff') + ';font-size:13px;font-weight:600;cursor:pointer;';
+      ov.innerHTML = '<div style="' + card + '">'
+        + '<div style="display:flex;align-items:center;gap:8px">'
+        + '<svg class="w-4 h-4" style="color:' + acc + '" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>'
+        + '<span style="' + title + '">Mode Build (premium)</span></div>'
+        + '<p style="' + desc + '">Mode ini memakai 4 kredit per jawaban (model premium untuk membangun web lebih cepat). Kredit diambil dari kuota langganan atau Paket Kredit AI.</p>'
+        + '<div style="display:flex;gap:8px"><button id="build-gate-cancel" style="' + btnC + '">Batal</button><button id="build-gate-ok" style="' + btnO + '">Lanjut</button></div></div>';
+      document.body.appendChild(ov);
+      document.getElementById('build-gate-cancel').onclick = function(){ ov.remove(); };
+      document.getElementById('build-gate-ok').onclick = function(){ ov.remove(); origApply('build'); };
+    }
+    window.applyAiMode = function(id){
+      // [18 Okt 2026, arahan pemilik] Mode Build sementara ditutup — blokir
+      // SEBELUM gerbang premium; cukup pesan "sedang dikembangkan".
+      if (id === 'build') return; // [18 Okt] Build sementara ditutup — tanpa pop-up
+      try {
+        var plan = window.clincooUserPlan || 'Starter';
+        if (id === 'build' && plan === 'Starter') { showBuildGate(); return; }
+      } catch(e){}
+      origApply(id);
+    };
+  })();
+</script>
+
+
+
+<!-- Konsumsi prompt tertunda dari galeri template: isi input prompt utama lalu fokus ke sana -->
+<script>
+(function () {
+  try {
+    var pp = localStorage.getItem('clincoo_pending_prompt');
+    if (!pp) return;
+    localStorage.removeItem('clincoo_pending_prompt');
+    var ta = document.getElementById('main-prompt-input');
+    if (ta) ta.value = pp;
+    if (typeof usePrompt === 'function') { usePrompt(pp); return; }
+    if (typeof navigateTo === 'function') navigateTo('page-home');
+    window.scrollTo(0, 0);
+  } catch (e) {}
+})();
+</script>
+<script>
+// [11 Okt] Deteksi senyap: bila server deployment bermasalah, arahkan pengunjung
+// ke halaman game. Tanpa teks status apa pun — tidak membocorkan apa pun.
+(function clincoo_health_probe(){
+  try {
+    fetch('/api/health', { cache: 'no-store' })
+      .then(function(r){ return r.json(); })
+      .then(function(d){ if (!d || !d.ok) window.location.replace('/maintenance.html'); })
+      .catch(function(){});
+  } catch (e) {}
+})();
+</script>
+<script src="js/onboarding.js?v=2"></script>
+</body>
+</html>

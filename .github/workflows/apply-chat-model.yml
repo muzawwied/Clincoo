@@ -1,0 +1,46 @@
+name: apply-chat-model
+on:
+  workflow_dispatch:
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch chat.js Clouvia chat model
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+          p = Path('functions/api/chat.js')
+          t = p.read_text(encoding='utf-8')
+          old1 = "const CLOUVIA_SOL_MODELS = ['claude-sonnet-5-thinking-agentic']; // Model utama Clouvia sesuai arahan pemilik"
+          new1 = "const CLOUVIA_SOL_MODELS = ['claude-sonnet-5-thinking-agentic']; // Build: Clouvia sonnet-agentic\nconst CLOUVIA_CHAT_MODELS = ['deepseek-v4.1-flash']; // Chat: DeepSeek flash (cepat)"
+          if old1 not in t:
+              if "CLOUVIA_CHAT_MODELS = ['deepseek-v4.1-flash']" in t:
+                  print('already patched')
+                  raise SystemExit(0)
+              raise SystemExit('anchor1 missing')
+          t = t.replace(old1, new1, 1)
+          old2 = "const sp = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, CLOUVIA_SOL_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 40000, 'ClouviaSolPro').catch(e => ({ error: e.message }));"
+          new2 = "const sp = await withTimeout(tryClouviaText(cvKeysEarly, workMessages, toolDecls, CLOUVIA_CHAT_MODELS, streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null), 40000, 'ClouviaChatFlash').catch(e => ({ error: e.message }));"
+          if old2 not in t:
+              if 'CLOUVIA_CHAT_MODELS' in t and 'ClouviaChatFlash' in t:
+                  print('already patched call site')
+                  p.write_text(t, encoding='utf-8')
+                  raise SystemExit(0)
+              raise SystemExit('anchor2 missing')
+          t = t.replace(old2, new2, 1)
+          p.write_text(t, encoding='utf-8')
+          print('patched ok')
+          PY
+          node --check functions/api/chat.js
+          grep -n "CLOUVIA_CHAT_MODELS\|ClouviaChatFlash\|CLOUVIA_SOL_MODELS" functions/api/chat.js | head -10
+      - name: Commit and push
+        run: |
+          git config user.name "clincoo-bot"
+          git config user.email "bot@clincoo.buzz"
+          git add functions/api/chat.js
+          git diff --cached --quiet && echo "no changes" && exit 0
+          git commit -m "fix: mode chat Clouvia -> deepseek-v4.1-flash (build tetap sonnet-agentic)"
+          git push
