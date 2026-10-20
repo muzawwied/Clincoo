@@ -15,6 +15,9 @@
 <script>(function(){var h=location.hostname,d="";if(/\.pages\.dev$/.test(h))d="app.clincoo.buzz";else if(/clincoo\.biz\.id$/.test(h))d="clincoo.buzz";else if(/clin[q]oo\.biz\.id$/.test(h))d="app.clincoo.buzz";if(d)location.replace("https://"+d+location.pathname+location.search+location.hash);})();</script>
   <script src="../../js/auth-client.js?v=6"></script>
   <script src="../../js/accent-init.js"></script>
+<script>/* [20 Okt] simpan handoff pesan dari beranda SEBELUM id proyek aktif menimpa localStorage di bawah */
+window.__clqHandoff = (function(){try{var m=localStorage.getItem('clincoo_current_chat_msg');var a=localStorage.getItem('clincoo_current_attachments');if(!m&&!a)return null;return{msg:m||'',pid:localStorage.getItem('clincoo_current_project_id')||'',atts:a||''};}catch(e){return null;}})();
+</script>
 <script>(function(){try{var __p=new URLSearchParams(location.search).get('id');if(__p){sessionStorage.setItem('clincoo_tab_project_id',__p);localStorage.setItem('clincoo_current_project_id',__p);}}catch(e){}})();</script>
 <script>(function(){try{var __t=new URLSearchParams(location.search).get('id');if(!__t){__t=sessionStorage.getItem('clincoo_tab_project_id')||'';}if(__t){try{localStorage.setItem('clincoo_current_project_id',__t);}catch(e){}}}catch(e){}})();</script>
 <script>/* embed=1: chat dalam overlay sheet di halaman lain (tanpa header) */(function(){try{if(/(^|[?&])embed=1(&|$)/.test(location.search)){document.documentElement.classList.add('embed-mode');}}catch(e){}})();</script>
@@ -2775,6 +2778,50 @@ async function sendMessage(opts) {
 }
 
 $('submit-prompt-btn').onclick = () => { if (busy) stopGeneration(); else sendMessage(); };
+
+// ===== [20 Okt] Handoff pesan dari beranda (localStorage) =====
+// Beranda & daftar proyek menyimpan prompt ke clincoo_current_chat_msg lalu
+// membuka halaman ini; sebelumnya TIDAK ADA pembaca sehingga pesan tidak pernah
+// terkirim. Sekarang: pesan (beserta lampirannya) otomatis terkirim saat chat dibuka.
+(function consumeHandoff() {
+    try {
+        var msg = '', atts = [], perProj = '';
+        try { perProj = localStorage.getItem('clincoo_current_chat_msg_' + PROJECT_ID) || ''; } catch (e) {}
+        if (perProj) {
+            msg = perProj;
+            try { localStorage.removeItem('clincoo_current_chat_msg_' + PROJECT_ID); } catch (e) {}
+        } else {
+            var h = window.__clqHandoff;
+            if (h && h.msg && (!h.pid || h.pid === PROJECT_ID)) {
+                msg = h.msg;
+                try { atts = h.atts ? JSON.parse(h.atts) : []; } catch (e) { atts = []; }
+                try {
+                    localStorage.removeItem('clincoo_current_chat_msg');
+                    localStorage.removeItem('clincoo_current_attachments');
+                } catch (e) {}
+            }
+        }
+        if (!msg && !atts.length) return;
+        // lampiran beranda {type:'image'|'document', data, text} -> format chat (pendingImg/pendingFile)
+        (atts || []).forEach(function (a) {
+            if (!a || busy) return;
+            var d = typeof a.data === 'string' ? a.data : '';
+            if (String(a.type) === 'image' && d && !pendingImgBase64) {
+                pendingImgMime = (a.extension && 'image/' + a.extension) || 'image/png';
+                pendingImgBase64 = d.split(',')[1] || '';
+                pendingImgThumb = d;
+            } else if (a.text && !pendingFile) {
+                pendingFile = { name: a.name, size: a.size, kind: 'text', text: a.text };
+            } else if (d.indexOf('data:application/pdf') === 0 && !pendingFile) {
+                pendingFile = { name: a.name, size: a.size, kind: 'pdf', base64: d.split(',')[1] };
+            } // file lain yang hanya berupa nama tidak bisa dibawa isinya — abaikan
+        });
+        if (atts.length) renderImgPreview();
+        if (!msg && !pendingFile && !pendingImgBase64) return;
+        $('main-prompt-input').value = msg;
+        if (!busy) sendMessage();
+    } catch (e) { try { console.warn('handoff', e); } catch (e2) {} }
+})();
 $('main-prompt-input').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
 $('main-prompt-input').addEventListener('input', function () { this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 140) + 'px'; renderChips(); });
 
