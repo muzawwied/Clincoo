@@ -42,7 +42,7 @@
   var j = function (r) { return r.ok ? r.json() : Promise.reject(r.status); };
   window.__clincooPrefetch = {
     settings: fetch(base + '/project-settings?project_id=' + encodeURIComponent(pid), { headers: h }).then(j).catch(function(){ return null; }),
-    paths: fetch(base + '/project-files?project_id=' + encodeURIComponent(pid) + '&meta=1', { headers: h }).then(j).catch(function(){ return null; })
+    paths: pid ? fetch(base + '/project-files?project_id=' + encodeURIComponent(pid) + '&meta=1', { headers: h }).then(j).catch(function(){ return null; }) : Promise.resolve(null)
   ,projects: fetch(base + '/projects', { headers: h }).then(j).catch(function(){ return null; })
   };
 }catch(e){}})();
@@ -823,6 +823,7 @@ body.dark-mode .chat-nav-link.is-active { background: #2a2a30 !important; color:
 
         // ---- Lingkungan Runtime dibaca dari isi Workspace (bukan pilihan statis) ----
         async function syncRuntimeFromWorkspace(fresh) {
+            if (!pid()) return; // [21 Okt] stop Fetch 400 x70+ saat project id belum ada
             try {
                 let data = (!fresh && window.__clincooPrefetch && window.__clincooPrefetch.paths) ? await window.__clincooPrefetch.paths : null;
                 if (!data) {

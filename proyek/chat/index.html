@@ -901,6 +901,8 @@ let curAbort = null, userStopped = false;
 function setBusy(v) { busy = v; const b = $('submit-prompt-btn'); b.style.opacity = 1; b.classList.toggle('stopping', v); b.title = v ? 'Hentikan' : 'Kirim'; b.setAttribute('aria-label', v ? 'Hentikan jawaban' : 'Kirim'); }
 function stopGeneration() { if (!busy) return; userStopped = true; if (curAbort) curAbort.abort(); }
 const copyShown = new Set();
+// [21 Okt, minta owner] aksi (salin dll) di SEMUA pesan AI: ketuk pesan untuk memunculkan; pesan terakhir selalu tampil
+const aiActionsShown = new Set();
 let pendingImgBase64 = null, pendingImgMime = null, pendingImgThumb = null;
 
 const welcomeGreetings = [ "Ada rencana apa hari ini, Clincoo?", "Halo! Ada yang bisa saya bantu hari ini?", "Siap mewujudkan ide hebatmu hari ini?", "Apa proyek seru kita selanjutnya?", "Mari selesaikan berbagai tugas bersamaku!" ];
@@ -2063,20 +2065,21 @@ function renderMessages() {
         if (msg.role === 'ai') {
             row.classList.add('justify-start');
             
-            const actionBtns = (index === visible.length - 1) ? `<button onclick="copyText('msg-text-${msg.id}', this)" class="relative text-gray-400 hover:text-black transition p-1" title="Salin"><i class="ph ph-copy text-lg"></i></button>
+            const _isLastA = (index === visible.length - 1);
+            const actionBtns = (!msg.isProcessing) ? `<button onclick="copyText('msg-text-${msg.id}', this)" class="relative text-gray-400 hover:text-black transition p-1" title="Salin"><i class="ph ph-copy text-lg"></i></button>
                     <button onclick="shareText('msg-text-${msg.id}')" class="text-gray-400 hover:text-black transition p-1" title="Bagikan"><i class="ph ph-arrow-bend-up-right text-lg"></i></button>
                     <button onclick="handleThumbs(${msg.id}, 'up')" data-fb="up" class="${msg.fb === 'up' ? 'text-gray-900' : 'text-gray-400'} hover:text-black transition p-1" title="Suka"><i class="${msg.fb === 'up' ? 'ph-fill' : 'ph'} ph-thumbs-up text-lg"></i></button>
                     <button onclick="handleThumbs(${msg.id}, 'down')" data-fb="down" class="${msg.fb === 'down' ? 'text-gray-900' : 'text-gray-400'} hover:text-black transition p-1" title="Tidak Suka"><i class="${msg.fb === 'down' ? 'ph-fill' : 'ph'} ph-thumbs-down text-lg"></i></button>
-                    ${(index === visible.length - 1 && !busy) ? `<button onclick="regenerate(${msg.id})" class="text-gray-400 hover:text-black transition p-1" title="Ulangi jawaban"><i class="ph ph-arrow-clockwise text-lg"></i></button>` : ''}
-                    <span class="ml-auto text-[11px] text-gray-400 font-medium select-none whitespace-nowrap">${msg.stopped ? 'Dihentikan \u00b7 ' : ''}${fmtMs(msg.ms)}</span>
+                    ${(_isLastA && !busy) ? `<button onclick="regenerate(${msg.id})" class="text-gray-400 hover:text-black transition p-1" title="Ulangi jawaban"><i class="ph ph-arrow-clockwise text-lg"></i></button>` : ''}
+                    ${_isLastA ? `<span class="ml-auto text-[11px] text-gray-400 font-medium select-none whitespace-nowrap">${msg.stopped ? 'Dihentikan \u00b7 ' : ''}${fmtMs(msg.ms)}</span>` : ''}
                     ` : '';
             let contentHTML = '';
             if (msg.isProcessing) {
                 contentHTML = `<div class="shimmer-search"><span>${esc(msg.statusText || 'Composing answer...')}</span></div>`;
             } else {
                 contentHTML = `
-                <div class="ai-md text-black text-[17px] leading-relaxed break-words w-full md-content pointer-events-auto overflow-hidden" style="word-break: break-word; overflow-wrap: break-word; max-width: 100%;" id="msg-text-${msg.id}">${ckBody(msg)}</div>
-                <div class="flex items-center gap-3 mt-1 pointer-events-auto" id="action-bar-${msg.id}">
+                <div class="ai-md text-black text-[17px] leading-relaxed break-words w-full md-content pointer-events-auto overflow-hidden" ${(!_isLastA) ? `data-aibar="${msg.id}"` : ''} style="word-break: break-word; overflow-wrap: break-word; max-width: 100%;" id="msg-text-${msg.id}">${ckBody(msg)}</div>
+                <div class="flex items-center gap-3 mt-1 pointer-events-auto ${(!_isLastA) ? ('user-action-bar' + (aiActionsShown.has(msg.id) ? ' show' : '')) : ''}" id="action-bar-${msg.id}">
                     ${actionBtns}
                 </div>`;
             }
@@ -2922,6 +2925,18 @@ if (location.hash === '#admin') drawerOpen(true);
     $('scroll-down-btn').onclick = () => { const sp = $('chat-spacer'); c.scrollTo({ top: Math.max(0, c.scrollHeight - (sp ? sp.offsetHeight : 0) - c.clientHeight), behavior: 'smooth' }); };
 }
 chatContainer().addEventListener('click', e => {
+    // [21 Okt, minta owner] ketuk pesan AI tengah (bukan tombol) -> toggle bar salin/bagikan/jempol
+    if (!e.target.closest('button')) {
+        const t = e.target.closest('[data-aibar]');
+        if (t) {
+            const id = t.dataset.aibar, bar = $('action-bar-' + id);
+            if (bar) {
+                bar.classList.toggle('show');
+                bar.classList.contains('show') ? aiActionsShown.add(+id) : aiActionsShown.delete(+id);
+                return;
+            }
+        }
+    }
     const b = e.target.closest('.user-bubble'); if (!b) return;
     const id = +b.dataset.id, bar = $('user-action-bar-' + id); if (!bar) return;
     bar.classList.toggle('show');
