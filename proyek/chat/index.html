@@ -2069,6 +2069,8 @@ function adjustChatSpacer() {
 // Perbarui teks jawaban yang sedang mengalir tanpa merender ulang seluruh chat
 // Dibatasi ~11x/detik dan DITAHAN saat tab tersembunyi; begitu tab kembali, dirender sekali. Tanpa ini, chunk yang menumpuk di tab latar
 // memicu render ulang seluruh jawaban berkali-kali sekaligus sehingga halaman terasa freeze saat kembali ke tab.
+let wsIncLast = 0;
+function wsIncScanThrottled(pm) { const n = performance.now(); if (n - wsIncLast < 1200) return; wsIncLast = n; try { wsIncScan(pm, false); } catch (e) {} }
 let stTimer = 0, stLast = 0, stPm = null;
 function flushStreaming() {
     stTimer = 0; stLast = performance.now();
@@ -2156,6 +2158,56 @@ async function wsLoadReal() {
     } catch (e) { console.warn('seed workspace gagal:', e); }
 }
 // Sync: blok project/patch di pesan AI yang selesai diterapkan ke workspace D1.
+// ===== [20 Okt, laporan owner] SYNC BERTAHAP ke workspace saat AI masih menulis =====
+// Sebelumnya file baru masuk workspace setelah SELURUH jawaban selesai, jadi bila stream lama/putus/tab
+// ditutup, file yang sudah tertulis di chat hilang dari workspace. Kini tiap file yang SUDAH LENGKAP
+// (file berikutnya sudah mulai ditulis) langsung dikirim; file terakhir menyusul saat jawaban selesai.
+const wsInc = { sent: new Map(), q: [], busy: false, msgId: 0, notified: 0 };
+function wsIncReset(id) { wsInc.sent = new Map(); wsInc.q = []; wsInc.msgId = id; wsInc.notified = 0; }
+function wsIncScan(pm, final) {
+    if (!PROJECT_ID || !pm || pm.wsSeed) return;
+    if (wsInc.msgId !== pm.id) wsIncReset(pm.id);
+    const text = pm.text || '';
+    const bl = findBlocks(text).filter(b => b.lang === 'project');
+    const fresh = [];
+    for (const b of bl) {
+        const files = parseProject(text.slice(b.bodyStart, b.bodyEnd)).files;
+        // file terakhir di blok yang belum ditutup masih ditulis -> tunda (kecuali sudah final/blok tertutup)
+        const complete = (b.closed || final) ? files : files.slice(0, -1);
+        for (const f of complete) {
+            if (!f.code) continue;
+            if (wsInc.sent.get(f.path) === f.code) continue;
+            wsInc.sent.set(f.path, f.code);
+            fresh.push({ path: f.path, content: f.code });
+        }
+    }
+    if (fresh.length) { wsInc.q.push(...fresh); wsIncPump(); }
+}
+async function wsIncPump() {
+    if (wsInc.busy) return; wsInc.busy = true;
+    try {
+        while (wsInc.q.length) {
+            // satu path = versi terbaru saja; kirim per batch kecil
+            const batch = new Map(); while (wsInc.q.length && batch.size < 8) { const f = wsInc.q.shift(); batch.set(f.path, f); }
+            let ok = false;
+            for (let a = 0; a < 3 && !ok; a++) {
+                try {
+                    const r = await fetch(TOOL_API_BASE + '/api/project-files', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project_id: PROJECT_ID, files: [...batch.values()] }) });
+                    ok = r.ok;
+                } catch (e) {}
+                if (!ok) await new Promise(r => setTimeout(r, 600 * (a + 1)));
+            }
+            if (ok) {
+                wsInc.notified += batch.size;
+                try { if (window.parent && window.parent !== window) window.parent.postMessage('clincoo:files-updated', '*'); } catch (e) {}
+            } else {
+                // gagal 3x: lupakan penanda supaya dicoba ulang pada pemindaian berikutnya / sync akhir
+                batch.forEach(f => { if (wsInc.sent.get(f.path) === f.content) wsInc.sent.delete(f.path); });
+                break;
+            }
+        }
+    } finally { wsInc.busy = false; }
+}
 async function wsSyncFromMessage(m) {
     if (!PROJECT_ID || !m || m.role !== 'ai' || m.wsSeed) return;
     try {
@@ -2172,7 +2224,10 @@ async function wsSyncFromMessage(m) {
         }
         dels.forEach(p => writes.delete(p));
         const payload = [];
-        for (const p of writes) { const f = st.files.get(p); if (f) payload.push({ path: p, content: f.code }); }
+        // lewati file yang sudah terkirim bertahap dengan isi PERSIS sama (hemat request)
+        const already = (wsInc.msgId === m.id) ? wsInc.sent : new Map();
+        let skipped = 0;
+        for (const p of writes) { const f = st.files.get(p); if (!f) continue; if (already.get(p) === f.code) { skipped++; continue; } payload.push({ path: p, content: f.code }); }
         let saved = 0;
         if (payload.length) {
             const r = await fetch(TOOL_API_BASE + '/api/project-files', {
@@ -2186,6 +2241,8 @@ async function wsSyncFromMessage(m) {
             const r = await fetch(TOOL_API_BASE + '/api/project-files?project_id=' + encodeURIComponent(PROJECT_ID) + '&path=' + encodeURIComponent(p), { method: 'DELETE' });
             if (r.ok) removed++;
         }
+        saved += (wsInc.msgId === m.id) ? 0 : 0;
+        if (skipped && !saved) saved = skipped; // semua sudah terkirim bertahap -> tetap umumkan jumlahnya
         if (saved || removed) {
             toast((saved ? saved + ' file tersimpan' : '') + (saved && removed ? ' · ' : '') + (removed ? removed + ' dihapus' : '') + ' di workspace proyek.');
             try { if (window.parent && window.parent !== window) window.parent.postMessage('clincoo:files-updated', '*'); } catch (e) {}
@@ -2606,6 +2663,7 @@ async function sendMessage(opts) {
                     add += tx;
                     if (pm.thinkMs == null) pm.thinkMs = Date.now() - t0;
                     pm.text = base + add;
+                    wsIncScanThrottled(pm); // sync bertahap file yang sudah lengkap ke workspace
                     if (!started) {
                         started = true; pm.isProcessing = false;
                         renderMessages();
@@ -2712,6 +2770,7 @@ async function sendMessage(opts) {
     renderMessages(); // setelah busy=false, supaya poll dan checkpoint tidak dianggap masih mengalir
     pollAuto(); // poll baru dari AI: sheet naik otomatis
     saveChat(); // [Clincoo] simpan percakapan
+    try { wsIncScan(pm, true); } catch (e) {}
     wsSyncFromMessage(pm); // [Clincoo] terapkan blok project/patch ke workspace nyata (D1)
 }
 
