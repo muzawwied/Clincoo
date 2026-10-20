@@ -1065,8 +1065,36 @@ function findBlocks(txt) {
 // [20 Okt, laporan owner] Model kadang menulis web sebagai fence html/css/js TERPISAH (bukan blok project):
 // kode bocor jadi teks/kartu "Kode css" dan TIDAK tersinkron ke workspace. Jaring pengaman: bila jawaban
 // punya >=2 fence web lepas (atau html lengkap) dan tidak ada blok project/patch, gabungkan jadi SATU blok project.
-function normalizeLooseWeb(txt) {
+// [20 Okt, laporan owner: kode web tampil mentah di chat] Dua pemulihan sebelum normalisasi fence lepas:
+//  (1) PAGAR HILANG tapi baris baru utuh: ada >=1 penanda "=== FILE: x ===" di awal baris di luar blok kode
+//      -> bungkus dari penanda pertama sampai akhir jawaban jadi blok ````project (kode tidak lagi bocor).
+//  (2) KORUP (baris menyatu, karakter || dan backtick hilang): penanda file ada di tengah teks, bukan awal
+//      baris, sehingga kode tidak mungkin dipulihkan benar -> ganti dengan pesan jelas, JANGAN tampilkan
+//      tumpahan kode (dan jangan simpan kode rusak ke workspace).
+function healFilePayload(txt) {
     txt = String(txt || '');
+    if (!/===\s*FILE\s*:/i.test(txt)) return txt;
+    if (findBlocks(txt).some(b => b.lang === 'project' || b.lang === 'patch')) return txt;
+    const lineStart = txt.match(/^[ \t]*===\s*FILE\s*:\s*[^\n=]+?\s*===[ \t]*$/m);
+    const markers = (txt.match(/===\s*FILE\s*:\s*[^=\n]+?\s*===/gi) || []).length;
+    if (!lineStart) {
+        // penanda ada tapi tidak ada satu pun di awal baris -> teks korup (butuh >=2 penanda; 1 penanda di tengah kalimat = penjelasan biasa)
+        if (markers < 2) return txt;
+        const head = txt.slice(0, txt.search(/===\s*FILE\s*:/i)).replace(/`{0,4}\s*project\s*name:[\s\S]*$/i, '').replace(/\d+\s*kb\s*$/i, '').trim();
+        return (head ? head + '\n\n' : '') + 'Maaf, jawaban AI terpotong dan formatnya rusak (' + markers + ' file tidak bisa dibaca). Kode tidak disimpan ke workspace supaya tidak merusak proyek. Coba kirim ulang permintaanmu.';
+    }
+    const at = txt.indexOf(lineStart[0]);
+    let before = txt.slice(0, at), body = txt.slice(at);
+    // meta name:/entry: tepat sebelum penanda pertama ikut masuk blok
+    const mm = before.match(/((?:^|\n)[ \t]*(?:name|entry|desc)\s*:[^\n]*\n?)+\s*$/i);
+    let meta = '';
+    if (mm) { meta = mm[0].replace(/^\n/, ''); before = before.slice(0, before.length - mm[0].length); }
+    if (!/^\s*name\s*:/im.test(meta)) meta = 'name: Proyek Web\n' + meta;
+    if (!/^\s*entry\s*:/im.test(meta)) { const em = body.match(/===\s*FILE\s*:\s*([^=\n]+?\.html?)\s*===/i); meta += 'entry: ' + (em ? em[1].trim() : 'index.html') + '\n'; }
+    return before.replace(/\s+$/, '') + (before.trim() ? '\n\n' : '') + '````project\n' + meta.replace(/\n*$/, '\n') + body.replace(/\s+$/, '') + '\n````\n';
+}
+function normalizeLooseWeb(txt) {
+    txt = healFilePayload(String(txt || ''));
     const blocks = findBlocks(txt);
     if (!blocks.length || blocks.some(b => b.lang === 'project' || b.lang === 'patch')) return txt;
     const WEB = { html: 'html', htm: 'html', css: 'css', js: 'js', javascript: 'js' };
@@ -1880,7 +1908,9 @@ function projectTimeline(body) {
 const TOOLCALL_FENCE = /(`{3,})[ \t]*(?:json)?[ \t]*\n\s*\{\s*"name"\s*:\s*"[a-z_]+"\s*,\s*"(?:parameters|arguments)"\s*:[\s\S]*?\n\1[ \t]*(?=\n|$)/gi;
 const stripLooseSay = t => String(t == null ? '' : t).replace(/^[ \t]*===[ \t]*SAY[ \t]*:[^\n]*$/gim, '').replace(TOOLCALL_FENCE, '');
 function ckParts(m) {
-    const t = m.text || '', parts = []; let pos = 0;
+    // [20 Okt] tampilan saja: pulihkan pagar project yang hilang / sembunyikan teks korup selama streaming
+    // (teks asli m.text TIDAK diubah; normalisasi final tetap jalan di akhir jawaban)
+    const t = (m.text && /===\s*FILE\s*:/i.test(m.text)) ? healFilePayload(m.text) : (m.text || ''), parts = []; let pos = 0;
     // Checkpoint pembuka: selalu di paling atas jawaban (membaca proyek + proses berpikir)
     const lead = [];
     if (m.reads && m.reads.length) lead.push({ type: 'read', label: 'Reading ' + m.reads.length + ' project files', en: 'Reading ' + m.reads.length + ' project files', done: 'Read ' + m.reads.length + ' project files', body: m.reads.join('\n') });
