@@ -11,6 +11,11 @@
   const posKey = 'clincoo-bug-pos';
   const storeKey = 'clincoo_bug_beetle_recent';
   let saveT = null, unseen = 0;
+  // [21 Okt] FIX regresi: elemen UI dideklarasi di atas (var, bukan const) dan
+  // render() dijaga `uiReady`. Dulu hook console dipasang SEBELUM elemen dibuat ->
+  // render() menyentuh const yang belum diinisialisasi (TDZ ReferenceError) ->
+  // IIFE mati dan tombol bug TIDAK PERNAH terpasang.
+  var root, fab, panelEl, logsEl, report, badge, countEl, uiReady = false;
 
   const BEETLE =
     '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
@@ -53,12 +58,16 @@
     let msg = String(msgRaw == null ? '' : msgRaw);
     if (msg.length > 1500) msg = msg.slice(0, 1497) + '...';
     const last = logs[logs.length - 1];
-    if (last && last.level === level && last.msg === msg) { last.n = (last.n || 1) + 1; last.t = new Date().toLocaleTimeString('id-ID', { hour12: false }); render(); return; }
+    if (last && last.level === level && last.msg === msg) { last.n = (last.n || 1) + 1; last.t = new Date().toLocaleTimeString('id-ID', { hour12: false }); persistSoon(); if (uiReady) render(); return; }
     logs.push({ t: new Date().toLocaleTimeString('id-ID', { hour12: false }), level, msg });
     if (logs.length > MAX) logs.shift();
     persistSoon();
-    if (level === 'error' && panelEl && !panelEl.classList.contains('open')) bumpBadge();
-    render();
+    if (uiReady) {
+      if (level === 'error' && !panelEl.classList.contains('open')) bumpBadge();
+      render();
+    } else if (level === 'error') {
+      unseen++; // dihitung, ditampilkan begitu UI siap
+    }
   };
   const persistSoon = () => {
     if (saveT) clearTimeout(saveT);
@@ -175,7 +184,7 @@
 
   const stale = document.getElementById('clincoo-bug-root');
   if (stale && stale.parentNode) stale.parentNode.removeChild(stale);
-  const root = document.createElement('div');
+  root = document.createElement('div');
   root.id = 'clincoo-bug-root';
   root.innerHTML =
     '<button id="clincoo-bug-fab" type="button" title="Seret · klik untuk log" aria-label="Console error" aria-expanded="false">' +
@@ -190,12 +199,12 @@
   const applyTheme = () => { root.dataset.theme = isDarkBg() ? 'dark' : 'light'; };
   applyTheme();
 
-  const fab = document.getElementById('clincoo-bug-fab');
-  const panelEl = document.getElementById('clincoo-bug-panel');
-  const logsEl = document.getElementById('clincoo-bug-logs');
-  const report = document.getElementById('clincoo-bug-report');
-  const badge = document.getElementById('clincoo-bug-badge');
-  const countEl = document.getElementById('clincoo-bug-count');
+  fab = document.getElementById('clincoo-bug-fab');
+  panelEl = document.getElementById('clincoo-bug-panel');
+  logsEl = document.getElementById('clincoo-bug-logs');
+  report = document.getElementById('clincoo-bug-report');
+  badge = document.getElementById('clincoo-bug-badge');
+  countEl = document.getElementById('clincoo-bug-count');
 
   const bumpBadge = () => {
     unseen++;
@@ -221,6 +230,7 @@
   const esc = (s) => { const d = document.createElement('div'); d.appendChild(document.createTextNode(String(s))); return d.innerHTML; };
 
   function render() {
+    if (!uiReady) return;
     if (!logs.length) {
       logsEl.innerHTML = '<div class="cb-empty">Belum ada error tertangkap.</div>';
     } else {
@@ -254,8 +264,8 @@
   try {
     const p = JSON.parse(localStorage.getItem(posKey) || 'null');
     if (p && Number.isFinite(p.x) && Number.isFinite(p.y)) {
-      fab.style.left = Math.max(4, Math.min(innerWidth - 56, p.x)) + 'px';
-      fab.style.top = Math.max(4, Math.min(innerHeight - 56, p.y)) + 'px';
+      fab.style.left = Math.max(4, Math.min(innerWidth - 60, p.x)) + 'px';
+      fab.style.top = Math.max(4, Math.min(innerHeight - 60, p.y)) + 'px';
       fab.style.right = 'auto'; fab.style.bottom = 'auto';
       root.style.right = 'auto'; root.style.bottom = 'auto';
       root.style.left = fab.style.left; root.style.top = fab.style.top;
@@ -312,5 +322,30 @@
     }
   } catch (_) {}
 
+  // [21 Okt, laporan owner: tombol bug hilang di HP] posisi tersimpan (drag lama /
+  // address bar HP berubah tinggi / rotasi layar) bisa membuat tombol berada DI LUAR
+  // layar. Pastikan tombol terlihat penuh; kalau tidak, kembalikan ke pojok default.
+  function ensureVisible() {
+    try {
+      const vw = (window.visualViewport && window.visualViewport.width) || window.innerWidth;
+      const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+      const r = fab.getBoundingClientRect();
+      const bad = !isFinite(r.left) || !isFinite(r.top) || r.width < 10 || r.right < 24 || r.bottom < 24 || r.left > vw - 24 || r.top > vh - 24 || r.right > vw + 4 || r.bottom > vh + 4 || r.left < -4 || r.top < -4;
+      if (bad) {
+        root.style.left = ''; root.style.top = ''; root.style.right = ''; root.style.bottom = '';
+        fab.style.left = ''; fab.style.top = ''; fab.style.right = ''; fab.style.bottom = '';
+        try { localStorage.removeItem(posKey); } catch (_) {}
+      }
+    } catch (_) {}
+  }
+  ensureVisible();
+  window.addEventListener('resize', ensureVisible);
+  window.addEventListener('orientationchange', () => setTimeout(ensureVisible, 250));
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', ensureVisible);
+  setTimeout(ensureVisible, 800); // setelah layout & address bar stabil
+  window.addEventListener('pageshow', ensureVisible); // balik via bfcache
+
+  uiReady = true;
+  if (unseen > 0) { const n = unseen; unseen = 0; for (let i = 0; i < n; i++) bumpBadge(); }
   render();
 })();
