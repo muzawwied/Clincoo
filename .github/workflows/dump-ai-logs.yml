@@ -24,7 +24,7 @@ jobs:
           if not d.get('success'):
               print('CF error:', d.get('errors')); sys.exit(0)
           r = d['result']
-          print('project:', r.get('name'), '| domains:', [x.get('name') for x in r.get('domains', [])])
+          print('project:', r.get('name'), '| domains:', r.get('domains', []))
           for env_name, cfg in (r.get('deployment_configs') or {}).items():
               b = (cfg.get('d1_databases') or {}).get('binding') or cfg.get('d1_databases') or {}
               ev = cfg.get('env_vars') or {}
