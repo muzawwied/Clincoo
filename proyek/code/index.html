@@ -722,6 +722,22 @@
     const GITHUB_CLIENT_ID = 'Ov23ctIBGjQBolR5PS2C';
     const GITHUB_TOKEN_KEY = 'clincoo_github_token';
     const GITHUB_USER_KEY = 'clincoo_github_user';
+    // [20 Okt 2026] Jembatan token GitHub: editor memakai kunci 'clincoo_github_token'
+    // sedangkan halaman Plugin & popup chat memakai 'clincoo_gh_token' — dua kunci
+    // historis ini disinkronkan dua arah di setiap pemuatan halaman agar status
+    // "terhubung" konsisten di semua halaman (plugin terhubung -> editor ikut).
+    try {
+      (function () {
+        var a = localStorage.getItem('clincoo_github_token');
+        var b = localStorage.getItem('clincoo_gh_token');
+        if (a && !b) localStorage.setItem('clincoo_gh_token', a);
+        if (b && !a) localStorage.setItem('clincoo_github_token', b);
+        var ua = localStorage.getItem('clincoo_github_user');
+        var ub = localStorage.getItem('clincoo_gh_user');
+        if (ua && !ub) localStorage.setItem('clincoo_gh_user', ua);
+        if (ub && !ua) localStorage.setItem('clincoo_github_user', ub);
+      })();
+    } catch (e) {}
     let isGithubConnected = !!localStorage.getItem(GITHUB_TOKEN_KEY);
 
     // Kunci workspace per-proyek — pola yang sama dengan riwayat per-chat (clincoo_ls_chat_<projectId>).
@@ -1794,6 +1810,7 @@
         }
 
         localStorage.setItem(GITHUB_TOKEN_KEY, data.access_token);
+        try { localStorage.setItem('clincoo_gh_token', data.access_token); } catch (e) {}
 
         // Fetch the connected user's profile
         const userResp = await fetch('https://api.github.com/user', {
@@ -1869,7 +1886,7 @@
     }
 
     function getGitHubToken() {
-      return localStorage.getItem(GITHUB_TOKEN_KEY);
+      return localStorage.getItem(GITHUB_TOKEN_KEY) || localStorage.getItem('clincoo_gh_token');
     }
 
     // Pakai token GitHub dari sesi login Clincoo (masuk via GitHub OAuth) tanpa auth ulang
@@ -1885,6 +1902,7 @@
         const data = await res.json();
         if (!data.access_token) return;
         localStorage.setItem(GITHUB_TOKEN_KEY, data.access_token);
+        try { localStorage.setItem('clincoo_gh_token', data.access_token); } catch (e) {}
         const userResp = await fetch('https://api.github.com/user', {
           headers: { Authorization: 'Bearer ' + data.access_token }
         });

@@ -8740,7 +8740,7 @@ function crownAction(e){
   function cfgKey() { return 'clincoo_git_export_' + (pid() || 'global'); }
   function cfg() { return tryJson(localStorage.getItem(cfgKey()) || '', {}); }
   function cfgSave(c) { try { localStorage.setItem(cfgKey(), JSON.stringify(c)); } catch (e) {} }
-  function ghToken() { try { return localStorage.getItem('clincoo_gh_token') || ''; } catch (e) { return ''; } }
+  function ghToken() { try { return localStorage.getItem('clincoo_gh_token') || localStorage.getItem('clincoo_github_token') || ''; } catch (e) { return ''; } }
   function authH() {
     var t = ''; try { t = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
     return t ? { Authorization: 'Bearer ' + t } : {};

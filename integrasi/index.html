@@ -1315,6 +1315,10 @@
         function disconnectGitHub() {
             localStorage.removeItem('clincoo_gh_token');
             localStorage.removeItem('clincoo_gh_user');
+            // [20 Okt 2026] putus koneksi harus berlaku di semua halaman —
+            // bersihkan juga kunci kembar yang dipakai editor (proyek/code).
+            localStorage.removeItem('clincoo_github_token');
+            localStorage.removeItem('clincoo_github_user');
             if (WORKER_URL) {
                 fetch(WORKER_URL + '/db/gh-token', { method: 'DELETE' }).catch(() => {});
             }
@@ -2062,8 +2066,24 @@
             return '';
         }
 
+        // [20 Okt 2026] Jembatan token GitHub dua arah (lihat proyek/code) —
+        // editor memakai 'clincoo_github_token', plugin/chat 'clincoo_gh_token'.
+        function ghKeyBridge() {
+            try {
+                var a = localStorage.getItem('clincoo_github_token');
+                var b = localStorage.getItem('clincoo_gh_token');
+                if (a && !b) localStorage.setItem('clincoo_gh_token', a);
+                if (b && !a) localStorage.setItem('clincoo_github_token', b);
+                var ua = localStorage.getItem('clincoo_github_user');
+                var ub = localStorage.getItem('clincoo_gh_user');
+                if (ua && !ub) localStorage.setItem('clincoo_gh_user', ua);
+                if (ub && !ua) localStorage.setItem('clincoo_github_user', ub);
+            } catch (e) {}
+        }
+
         window.addEventListener('load', () => {
             handleNotionCancel();
+            ghKeyBridge();
             rememberBackParam();
             handleOAuthCallback();
             syncGitHubFromDB();
