@@ -195,6 +195,17 @@ const MIN_PROJECT_BYTES = 100 * 1024; // web baru wajib > 100 KB
 const CONT_MAX_ROUNDS = 24;           // maks putaran lanjut per jawaban
 const CONT_MAX_EXPAND = 8;            // [21 Okt, arahan pemilik: web harus sampai selesai full] maks putaran "tambah file" bila proyek masih < 100 KB
 const MR_SOFT_BUDGET_MS = 190000;     // lewat batas ini tidak memulai putaran baru (MR_TIMEOUT_MS lebih besar)
+
+// [21 Okt, laporan owner: "AI sedang gangguan" di proyek besar] Cloudflare Workers
+// membatasi subrequest per invocation (free plan: 50). Auto-continue + perbaikan
+// tool-call + fallback provider bisa membakar puluhan subrequest sampai habis ->
+// SEMUA penyedia tiba-tiba gagal. Kini: tiap fetch AI dihitung pada satu anggaran;
+// saat habis, sistem BERHENTI ELEGAN (jawaban terpotong / pesan "lanjutkan"),
+// bukan mati dengan "AI sedang gangguan". Sisakan ~26 utk query D1-gateway.
+const SUB_MAX_AI = 24;
+function budgetNew() { return { used: 0, max: SUB_MAX_AI }; }
+function budgetTake(b) { if (!b) return true; if (b.used >= b.max) return false; b.used++; return true; }
+function budgetOut(b) { return !!(b && b.used >= b.max); }
 const cIsCut = (fin) => /^(length|max_tokens)$/i.test(String(fin || ''));
 
 // Semua blok berpagar (``` atau ````) di teks, termasuk yang belum ditutup
@@ -366,7 +377,7 @@ async function mrAutoContinue({ baseMsgs, first, callRound, deadline, onDelta })
 }
 // <<< AUTO-LANJUT
 
-async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usageAcc) {
+async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usageAcc, budget) {
   const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
   if (!keyList.length) return null;
   const modelList = (Array.isArray(models) && models.length) ? models : MODELROUTER_MODELS;
@@ -379,6 +390,7 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usage
     const p = { model, messages: msgs, max_tokens: (MR_MAX_TOKENS && MR_MAX_TOKENS[model]) || 128 };
     if (stream) p.stream = true;
     if (oaiTools) p.tools = oaiTools;
+    if (!budgetTake(budget)) throw new Error('__sublimit');
     return fetch(MR_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.buzz', 'X-Title': 'Clincoo' },
@@ -411,6 +423,7 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usage
   };
   for (const key of keyList) {
   for (const model of modelList) {
+    if (budgetOut(budget)) break;
     const baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
     let data = null;
 
@@ -611,7 +624,7 @@ async function fetchGemini(apiKey, model, systemInstruction, contents, tools) {
   return { data: await res.json() };
 }
 
-async function tryGeminiText(apiKeys, messages, gDecls, onDelta) {
+async function tryGeminiText(apiKeys, messages, gDecls, onDelta, budget) {
   const keys = Array.isArray(apiKeys) ? apiKeys.filter(Boolean) : [apiKeys].filter(Boolean);
   if (!keys.length) return null;
   const { systemInstruction, contents } = toGeminiPayload(messages);
@@ -619,7 +632,9 @@ async function tryGeminiText(apiKeys, messages, gDecls, onDelta) {
   let lastErr = null;
   for (const apiKey of keys) {
     for (const model of GEMINI_MODELS) {
+      if (budgetOut(budget)) return lastErr ? { error: lastErr, sublimit: true } : { error: 'Gemini: anggaran subrequest habis', sublimit: true };
       try {
+        if (!budgetTake(budget)) throw new Error('__sublimit');
         const r = onDelta
           ? await fetchGeminiStream(apiKey, model, systemInstruction, contents, tools, onDelta)
           : await fetchGemini(apiKey, model, systemInstruction, contents, tools);
@@ -636,6 +651,7 @@ async function tryGeminiText(apiKeys, messages, gDecls, onDelta) {
             baseMsgs: messages, first: { text, fin: gFin }, deadline: Date.now() + MR_SOFT_BUDGET_MS, onDelta,
             callRound: async (msgs) => {
               const pl = toGeminiPayload(msgs);
+              if (!budgetTake(budget)) return null;
               const rr = onDelta
                 ? await fetchGeminiStream(apiKey, model, pl.systemInstruction, pl.contents, null, onDelta)
                 : await fetchGemini(apiKey, model, pl.systemInstruction, pl.contents, null);
@@ -679,9 +695,10 @@ async function getOpenRouterKeys(env) {
 }
 
 // Satu putaran OpenRouter untuk penyambungan (teks saja)
-async function orRound(key, model, msgs, onDelta) {
+async function orRound(key, model, msgs, onDelta, budget) {
   const p = { model, messages: msgs, max_tokens: 4096 };
   if (onDelta) p.stream = true;
+  if (!budgetTake(budget)) return null;
   const res = await withTimeout(fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key, "HTTP-Referer": "https://clincoo.buzz", "X-Title": "Clincoo" },
@@ -694,7 +711,7 @@ async function orRound(key, model, msgs, onDelta) {
   return { text: (c && c.message && c.message.content) || "", fin: c && c.finish_reason };
 }
 
-async function tryOpenRouterText(keys, messages, gDecls, onDelta) {
+async function tryOpenRouterText(keys, messages, gDecls, onDelta, budget) {
   const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
   if (!keyList.length) return null;
   const { system, chatMsgs } = toOAIChat(messages);
@@ -773,13 +790,15 @@ const WORKERS_AI_MODELS = [
   "@cf/zai-org/glm-4.7-flash"
 ];
 
-async function tryWorkersAIText(env, messages, onDelta) {
+async function tryWorkersAIText(env, messages, onDelta, budget) {
   if (!env || !env.AI) return null;
   const sys = messages.filter(m => m.role === "system").map(textOf).join("\n\n");
   const chatMsgs = messages.filter(m => m.role !== "system").map(m => ({ role: m.role, content: textOf(m) }));
   let lastErr = null;
   for (const model of WORKERS_AI_MODELS) {
+    if (budgetOut(budget)) break;
     try {
+      if (!budgetTake(budget)) break;
       const payload = { messages: chatMsgs };
       if (sys) payload.system = sys;
       const res = await env.AI.run(model, payload);
@@ -797,7 +816,10 @@ async function tryWorkersAIText(env, messages, onDelta) {
 }
 
 // ===== Orkestrasi Unified Multi-Model Generation =====
-async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, toolDecls, onDelta, usageAcc }) {
+async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, toolDecls, onDelta, usageAcc, budget }) {
+  // [21 Okt] anggaran subrequest habis -> jangan mulai penyedia baru; semua fetch
+  // berikutnya pasti gagal dengan "Too many subrequests".
+  if (budgetOut(budget)) return { error: 'Anggaran subrequest habis (jawaban terlalu panjang untuk satu permintaan)', sublimit: true };
   let deltaSent = false, closed = false;
   const sink = { text: '', cur: '' };
   const wrappedDelta = onDelta ? (tx) => { if (closed) return; deltaSent = true; sink.cur += tx; onDelta(tx); } : null;
@@ -814,7 +836,7 @@ async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, 
   // 1. ModelRouter (Utama)
   if (mrKeys && mrKeys.length) {
     try {
-      const r = await withTimeout(tryModelRouterText(mrKeys, messages, toolDecls, MODELROUTER_MODELS, wrappedDelta, usageAcc), MR_TIMEOUT_MS, "ModelRouter");
+      const r = await withTimeout(tryModelRouterText(mrKeys, messages, toolDecls, MODELROUTER_MODELS, wrappedDelta, usageAcc, budget), MR_TIMEOUT_MS, "ModelRouter");
       if (r && !r.error) return r;
       if (r && r.error) lastError = r.error;
     } catch (e) { lastError = e.message; }
@@ -822,9 +844,10 @@ async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, 
   }
 
   // 2. Gemini (Fallback 1)
+  if (budgetOut(budget)) return { error: lastError || 'Anggaran subrequest habis', sublimit: true };
   if (geminiKeys && geminiKeys.length) {
     try {
-      const r = await tryGeminiText(geminiKeys, messages, toolDecls, wrappedDelta);
+      const r = await tryGeminiText(geminiKeys, messages, toolDecls, wrappedDelta, budget);
       if (r && !r.error) return r;
       if (r && r.error) lastError = r.error;
     } catch (e) { lastError = e.message; }
@@ -832,9 +855,10 @@ async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, 
   }
 
   // 3. OpenRouter (Fallback 2)
+  if (budgetOut(budget)) return { error: lastError || 'Anggaran subrequest habis', sublimit: true };
   if (orKeys && orKeys.length) {
     try {
-      const r = await tryOpenRouterText(orKeys, messages, toolDecls, wrappedDelta);
+      const r = await tryOpenRouterText(orKeys, messages, toolDecls, wrappedDelta, budget);
       if (r && !r.error) return r;
       if (r && r.error) lastError = r.error;
     } catch (e) { lastError = e.message; }
@@ -842,15 +866,16 @@ async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, 
   }
 
   // 4. Workers AI (Fallback 3)
+  if (budgetOut(budget)) return { error: lastError || 'Anggaran subrequest habis', sublimit: true };
   if (env && env.AI) {
     try {
-      const r = await tryWorkersAIText(env, messages, wrappedDelta);
+      const r = await tryWorkersAIText(env, messages, wrappedDelta, budget);
       if (r && !r.error) return r;
       if (r && r.error) lastError = r.error;
     } catch (e) { lastError = e.message; }
   }
 
-  return { error: lastError || "Semua penyedia AI sedang gangguan" };
+  return { error: lastError || "Semua penyedia AI sedang gangguan", sublimit: budgetOut(budget) || undefined };
 }
 
 const QUOTA_MSG_DAILY = 'Kuota AI Clincoo hari ini sudah habis. Batas harian paket Anda tercapai — silakan coba lagi besok.';
@@ -1774,6 +1799,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
 
     const workMessages = messages;
     const mrUsageAcc = {};
+    const subBudget = budgetNew(); // [21 Okt] batasi subrequest AI per invocation
     const toolDecls = (gTools && gTools[0] && gTools[0].functionDeclarations) || null;
     const modeLabel = asistenMode ? 'asisten' : 'build';
 
@@ -1782,6 +1808,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     let planGapNudgeCount = 0;
     let designFixDone = false;
     for (let sHop = 0; sHop <= (asistenMode ? 14 : 4); sHop++) {
+      if (budgetOut(subBudget) && sHop > 0) break; // [21 Okt] anggaran habis: berhenti elegan, klien tinggal "lanjutkan"
       r = await executeAiGeneration({
         env,
         mrKeys,
@@ -1790,7 +1817,8 @@ export async function onRequestPost({ request, env, waitUntil }) {
         messages: workMessages,
         toolDecls,
         onDelta: streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null,
-        usageAcc: mrUsageAcc
+        usageAcc: mrUsageAcc,
+        budget: subBudget
       });
       if (!r || r.error) break;
 
@@ -1844,7 +1872,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
           { role: 'assistant', content: String(r.text) },
           { role: 'user', content: 'PEMERIKSAAN OTOMATIS menemukan ketidakkonsistenan pada proyek yang baru kamu tulis:\n- ' + lintIssues.join('\n- ') + '\n\nPerbaiki SEMUA temuan itu. Balas HANYA satu blok patch (empat backtick berlabel patch, format EDIT/FILE sesuai aturan PATCH; salin SEARCH persis dari blok project di atas) tanpa teks lain.' }
         ]);
-        const fx = await executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages: fixMsgs, toolDecls: null, onDelta: null, usageAcc: mrUsageAcc }).catch(() => null);
+        const fx = await executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages: fixMsgs, toolDecls: null, onDelta: null, usageAcc: mrUsageAcc, budget: subBudget }).catch(() => null);
         if (fx && !fx.error && /````patch/.test(String(fx.text || ''))) {
           const addTxt = '\n\n' + String(fx.text).trim();
           if (streamSend) { try { streamSend({ t: 'delta', text: addTxt }); } catch (e) {} }
@@ -1869,7 +1897,8 @@ export async function onRequestPost({ request, env, waitUntil }) {
         messages: sumMsgs,
         toolDecls: null,
         onDelta: null,
-        usageAcc: mrUsageAcc
+        usageAcc: mrUsageAcc,
+        budget: subBudget
       }).catch(() => null);
       if (sm && !sm.error && String(sm.text || '').trim()) r = { text: sm.text, model: sm.model };
     }
@@ -1877,7 +1906,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     };
     let r = await attemptCascade();
 
-    if ((!r || r.error) && !(r && (r.contextOverflow || r.quotaExhausted))) {
+    if ((!r || r.error) && !(r && (r.contextOverflow || r.quotaExhausted)) && !budgetOut(subBudget)) {
       try { streamSend && streamSend({ t: 'progress', text: 'Retrying…' }); } catch (e) {}
       await new Promise(res => setTimeout(res, 2500));
       r = await attemptCascade();
@@ -1892,11 +1921,14 @@ export async function onRequestPost({ request, env, waitUntil }) {
 
         const rawErr1 = r.error || '';
         try { await logAiFailure(env, body.project_id, rawErr1, modeLabel + (busy ? ' [429-modelrouter]' : '') + (r.contextOverflow ? ' [konteks-penuh]' : '')); } catch (eLog) {}
+        const subHit = !!r.sublimit;
         const errText = busy
           ? 'Server AI sedang sibuk (limit provider). Coba lagi sebentar lagi.'
+          : subHit
+          ? 'Jawaban AI mencapai batas server dalam satu permintaan. Ketik "lanjutkan" — sistem akan meneruskan dari titik terakhir secara otomatis.'
           : (rawErr1 === 'Tidak ada provider AI tersedia' ? rawErr1
              : 'Maaf, AI sedang gangguan sebentar sehingga belum bisa menjawab. Coba kirim ulang pesanmu ya.');
-        streamSend({ t: 'error', error: errText, detail: (!busy && rawErr1 && rawErr1 !== errText) ? String(rawErr1).slice(0, 300) : undefined, provider_busy: busy ? true : undefined, quota_exhausted: busy ? undefined : !!r.quotaExhausted, context_overflow: !!r.contextOverflow });
+        streamSend({ t: 'error', error: errText, detail: (!busy && !subHit && rawErr1 && rawErr1 !== errText) ? String(rawErr1).slice(0, 300) : undefined, provider_busy: busy ? true : undefined, quota_exhausted: busy ? undefined : !!r.quotaExhausted, context_overflow: !!r.contextOverflow });
       } else {
         const outS = {
           text: r.text || '',
@@ -1936,6 +1968,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
       try { await logAiFailure(env, body.project_id, r.error, modeLabel); } catch (eLog) {}
 
       const friendly = r.error === 'Tidak ada provider AI tersedia' ? r.error
+        : r.sublimit ? 'Jawaban AI mencapai batas server dalam satu permintaan. Ketik "lanjutkan" untuk meneruskan dari titik terakhir.'
         : 'Maaf, AI sedang gangguan sebentar sehingga belum bisa menjawab. Coba kirim ulang pesanmu ya.';
       return new Response(JSON.stringify({ error: friendly, detail: (r.error !== friendly) ? String(r.error).slice(0, 300) : undefined }), {
         status: 502, headers: { 'Content-Type': 'application/json', ...CORS }
