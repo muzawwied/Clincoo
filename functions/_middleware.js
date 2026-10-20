@@ -6,7 +6,7 @@ export async function onRequest(context) {
   return new HTMLRewriter()
     .on("body", {
       element(element) {
-        element.append('<script src="/assets/ls-quota-guard.js" defer></script><script src="/assets/clincoo-bug.js" defer></script>', { html: true });
+        element.append('<script src="/assets/ls-quota-guard.js" defer></script><script src="/assets/clincoo-bug.js?v=2" defer></script>', { html: true });
       }
     })
     .transform(response);

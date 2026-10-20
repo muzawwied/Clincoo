@@ -266,7 +266,7 @@ try {
     window.__clincooBugBeetleLoader = true;
     var script = document.createElement('script');
     var base = location.hostname.indexOf('github.io') !== -1 ? '/Clincoo.' : '';
-    script.src = base + '/js/bug-beetle.js?v=2';
+    script.src = base + '/js/bug-beetle.js?v=3';
     script.async = true;
     (document.head || document.documentElement).appendChild(script);
   }

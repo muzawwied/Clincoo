@@ -127,8 +127,39 @@ function timeAgo(dateStr) {
 
 // Judul & deskripsi kartu proyek: dari Pengaturan Umum (app_name/app_desc), BUKAN dari chat AI —
 // samakan dengan renderProjects() di halaman utama (index.html).
+// [20 Okt, fix logo kartu hilang di Semua Proyek] Map memori di-merge DI ATAS
+// localStorage: saat kuota localStorage penuh (logo dataURL bisa ratusan KB; guard
+// kuota bahkan ikut memurnikan cache clincoo_umum_*), kartu tetap render dari memori.
+var _umumMem = {};
 function umumCacheRead(pid) {
-    try { return JSON.parse(localStorage.getItem('clincoo_umum_' + (pid || 'default')) || '{}'); } catch (e) { return {}; }
+    var k = 'clincoo_umum_' + (pid || 'default');
+    var st = {};
+    try { st = JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch (e) { st = {}; }
+    var m = _umumMem[k];
+    if (m) { try { var o = {}; for (var kk in st) o[kk] = st[kk]; for (var mk in m) o[mk] = m[mk]; st = o; } catch (e) {} }
+    return st;
+}
+// Thumbnail logo ~96px (JPEG kecil, beberapa KB) untuk cache kartu — dataURL penuh
+// (ratusan KB) hanya disimpan kalau kuota mengizinkan.
+function _makeLogoThumb(dataUrl, cb) {
+    try {
+        if (!dataUrl || typeof dataUrl !== 'string' || dataUrl.indexOf('data:image') !== 0) { cb(''); return; }
+        var img = new Image();
+        img.onload = function () {
+            try {
+                var S = 96, c = document.createElement('canvas');
+                c.width = S; c.height = S;
+                var ctx = c.getContext('2d');
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, S, S);
+                var w = img.width || S, h = img.height || S, r = Math.min(S / w, S / h);
+                var dw = Math.max(1, Math.round(w * r)), dh = Math.max(1, Math.round(h * r));
+                ctx.drawImage(img, Math.round((S - dw) / 2), Math.round((S - dh) / 2), dw, dh);
+                cb(c.toDataURL('image/jpeg', 0.72));
+            } catch (e) { cb(''); }
+        };
+        img.onerror = function () { cb(''); };
+        img.src = dataUrl;
+    } catch (e) { cb(''); }
 }
 function projCardTitle(proj) {
     const st = umumCacheRead(proj && proj.id);
@@ -145,7 +176,7 @@ function projCardLogo(proj) {
     // preview dataURL-nya ada di app_logo_data. Kartu proyek selama ini hanya membaca
     // app_logo lalu _safeLogoUrl menolak path -> logo tak pernah tampil.
     // Prioritas: dataURL (app_logo_data / app_logo dari form proyek baru) -> path ditolak oleh _safeLogoUrl.
-    return (st && (st.app_logo_data || st.app_logo)) || '';
+    return (st && (st.app_logo_thumb || st.app_logo_data || st.app_logo)) || '';
 }
 function _safeLogoUrl(v) {
     return (typeof v === 'string' && /^(data:image\/|https?:\/\/|\/)/.test(v)) ? v : '';
@@ -668,17 +699,39 @@ function loadProjectLogos() {
                     if (!d) return;
                     // [19 Okt] sertakan app_logo_data (preview dataURL logo Umum) di cache kartu
                     if (d.app_name || d.app_desc || d.app_logo || d.app_logo_data) {
-                        try {
-                            const key = 'clincoo_umum_' + (proj.id || 'default');
-                            let st = {}; try { st = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) {}
-                            st.app_name = d.app_name || st.app_name || '';
-                            st.app_desc = d.app_desc || st.app_desc || '';
-                            st.app_logo = d.app_logo || st.app_logo || '';
-                            if (d.app_logo_data) st.app_logo_data = d.app_logo_data;
-                            else if (st.app_logo_data === undefined) st.app_logo_data = '';
-                            localStorage.setItem(key, JSON.stringify(st));
-                        } catch (e) {}
+                        const key = 'clincoo_umum_' + (proj.id || 'default');
+                        let st = umumCacheRead(proj.id);
+                        st.app_name = d.app_name || st.app_name || '';
+                        st.app_desc = d.app_desc || st.app_desc || '';
+                        st.app_logo = d.app_logo || st.app_logo || '';
+                        if (d.app_logo_data) st.app_logo_data = d.app_logo_data;
+                        else if (st.app_logo_data === undefined) st.app_logo_data = '';
+                        // simpan ke memori dulu — render tidak pernah tergantung kuota
+                        _umumMem[key] = st;
+                        try { localStorage.setItem(key, JSON.stringify(st)); } catch (e1) {
+                            // kuota penuh: simpan versi kecil tanpa dataURL besar
+                            try {
+                                const stSmall = {}; for (const k2 in st) stSmall[k2] = st[k2];
+                                delete stSmall.app_logo_data;
+                                localStorage.setItem(key, JSON.stringify(stSmall));
+                            } catch (e2) {}
+                        }
                         renderProjects();
+                        // buat thumbnail kecil di latar belakang agar reload berikutnya
+                        // tetap tampil logo walau kuota localStorage penuh
+                        if (d.app_logo_data && !st.app_logo_thumb) {
+                            _makeLogoThumb(d.app_logo_data, function (thumb) {
+                                if (!thumb) return;
+                                try {
+                                    st.app_logo_thumb = thumb;
+                                    _umumMem[key] = st;
+                                    const m2 = JSON.parse(localStorage.getItem(key) || 'null');
+                                    if (m2) { m2.app_logo_thumb = thumb; localStorage.setItem(key, JSON.stringify(m2)); }
+                                    else { const stSmall = {}; for (const k3 in st) stSmall[k3] = st[k3]; delete stSmall.app_logo_data; localStorage.setItem(key, JSON.stringify(stSmall)); }
+                                } catch (e3) {}
+                                renderProjects();
+                            });
+                        }
                     }
                 }).catch(function () {});
         });

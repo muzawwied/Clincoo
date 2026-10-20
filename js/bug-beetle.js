@@ -10,6 +10,7 @@
   if (window.__clincooBugBeetleLoaded || window.__clincooBugInstalled) return;
   if (document.getElementById('clincoo-bug-root') || document.getElementById('clincoo-bug-fab')) return;
   window.__clincooBugBeetleLoaded = true;
+  window.__clincooBugInstalled = true; // versi campur: versi lama clincoo-bug cek flag ini
 
   var MAX_LOGS = 100;
   var logs = [];
