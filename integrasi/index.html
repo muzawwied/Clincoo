@@ -805,7 +805,7 @@
                             <p class="text-gray-500 leading-relaxed">Daftar aplikasinya sekali di akun GitLab kamu: buka <span id="glc-app-url" class="font-mono text-[11px]"></span> lalu isi:</p>
                             <p class="leading-relaxed">1. Nama: bebas, misal <span class="font-mono text-[11px]">Clincoo</span><br>2. Redirect URI: <span id="glc-redirect" class="font-mono text-[11px]"></span><br>3. Hilangkan centang <span class="font-semibold">Confidential</span><br>4. Scope: centang <span class="font-semibold">api</span></p>
                             <div>
-                                <label class="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Application ID dari GitLab</label>
+                                <label class="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Application ID dari GitLab <span class="normal-case font-medium text-gray-400">(biarkan terisi untuk gitlab.com)</span></label>
                                 <div class="flex gap-2"><input id="glc-client-id" type="text" placeholder="Tempel Application ID di sini" class="flex-1 px-3.5 py-2.5 text-[13px] rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-gray-400 transition-colors"><button onclick="saveGlClientId()" class="px-4 py-2.5 bg-[#0f1115] text-white rounded-xl text-[12.5px] font-semibold hover:bg-[#1a1d24] transition-all active:scale-[0.97]">Simpan</button></div>
                                 <p class="text-[11px] text-gray-400 leading-relaxed mt-1.5">Application ID hanya disimpan di perangkat ini.</p>
                             </div>
@@ -2297,6 +2297,26 @@
   var busy = false;
   var BLOCKED = { 'muzawwied/wallet': 'Repo Wallet (situs ClincooPay) dikunci dan tidak boleh dipakai sebagai tujuan eksport.' };
   var GL = { tok: 'clincoo_gitlab_token', ref: 'clincoo_gitlab_refresh', exp: 'clincoo_gitlab_exp', cid: 'clincoo_gitlab_client_id', base: 'clincoo_gitlab_base', user: 'clincoo_gitlab_user', st: 'clincoo_gitlab_state', ver: 'clincoo_gitlab_verifier' };
+  // App OAuth resmi Clincoo di gitlab.com — tukar token lewat backend /api/gitlab-oauth
+  // (client secret tetap di server). App milik sendiri (self-hosted) tetap lewat PKCE langsung.
+  var GL_OFFICIAL_CID = 'eb1dcea7c6883439112beade64072111cb1860b9a72ad6c4908e9793334d8e7d';
+  function glIsOfficial() {
+    var base = ls(GL.base) || 'https://gitlab.com';
+    var cid = ls(GL.cid) || GL_OFFICIAL_CID;
+    return base === 'https://gitlab.com' && cid === GL_OFFICIAL_CID;
+  }
+  function glExchangeOfficial(params) {
+    return fetch('/api/gitlab-oauth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + clincooAuthToken() },
+      body: JSON.stringify(params)
+    }).then(function (r) {
+      return r.json().then(function (d) {
+        if (!r.ok || !d.access_token) throw new Error((d && d.error) || ('HTTP ' + r.status));
+        return d;
+      });
+    });
+  }
 
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v); } catch (e) { return ''; } }
   function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
@@ -2400,7 +2420,7 @@
 
   window.connectGitLab = function () {
     var base = ($('glc-base').value || 'https://gitlab.com').trim().replace(/\/+$/, '');
-    var cid = ($('glc-client-id').value || '').trim();
+    var cid = ($('glc-client-id').value || '').trim() || GL_OFFICIAL_CID;
     var msg = $('glc-msg');
     msg.classList.add('hidden');
     if (!cid) { glShowErr('Isi Application ID dulu (lihat cara setup di atas).'); return; }
@@ -2445,7 +2465,10 @@
     var tok = ls(GL.tok), exp = parseInt(ls(GL.exp) || '0', 10), ref = ls(GL.ref);
     if (tok && Date.now() < exp) return Promise.resolve(tok);
     if (!ref) return Promise.reject(new Error('Koneksi GitLab sudah kedaluwarsa. Hubungkan ulang.'));
-    return glTokenRequest(base, { client_id: ls(GL.cid), refresh_token: ref, grant_type: 'refresh_token', redirect_uri: glRedirectUri() })
+    var refreshFn = glIsOfficial()
+      ? glExchangeOfficial({ refresh_token: ref, redirect_uri: glRedirectUri() })
+      : glTokenRequest(base, { client_id: ls(GL.cid), refresh_token: ref, grant_type: 'refresh_token', redirect_uri: glRedirectUri() });
+    return refreshFn
       .then(function (d) {
         ls(GL.tok, d.access_token);
         if (d.refresh_token) ls(GL.ref, d.refresh_token);
@@ -2471,10 +2494,13 @@
     var state = ls(GL.st), base = ls(GL.base) || 'https://gitlab.com';
     if (q.state !== state) return Promise.resolve(false);
     history.replaceState(null, '', glRedirectUri());
-    return glTokenRequest(base, {
-      client_id: ls(GL.cid), code: q.code, grant_type: 'authorization_code',
-      redirect_uri: glRedirectUri(), code_verifier: ls(GL.ver)
-    }).then(function (d) {
+    var exchangeFn = glIsOfficial()
+      ? glExchangeOfficial({ code: q.code, code_verifier: ls(GL.ver), redirect_uri: glRedirectUri() })
+      : glTokenRequest(base, {
+          client_id: ls(GL.cid), code: q.code, grant_type: 'authorization_code',
+          redirect_uri: glRedirectUri(), code_verifier: ls(GL.ver)
+        });
+    return exchangeFn.then(function (d) {
       lsDel(GL.st); lsDel(GL.ver);
       ls(GL.tok, d.access_token);
       if (d.refresh_token) ls(GL.ref, d.refresh_token);
@@ -2537,6 +2563,10 @@
 
   window.openGitLabModal = function () {
     renderGlState();
+    var cidInput = $('glc-client-id');
+    if (cidInput && !cidInput.value.trim()) cidInput.value = ls(GL.cid) || GL_OFFICIAL_CID;
+    var baseInput = $('glc-base');
+    if (baseInput && ls(GL.base)) baseInput.value = ls(GL.base);
     $('gitlab-modal').classList.remove('hidden');
   };
   window.closeGitLabModal = function () {
