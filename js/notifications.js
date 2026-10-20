@@ -6,8 +6,7 @@ function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ 
  */
 const NOTIF_API = 'https://clincoo-be2.pages.dev/api/notifications';
 const NOTIF_KEY = 'clincoo_notifications';
-// [20 Okt 2026] 'Dompet' dikeluarkan — notifikasi uang masuk/top-up tidak ditampilkan lagi
-const NOTIF_ALLOWED = ['GitHub', 'Workspace', 'Deploy', 'Akun'];
+const NOTIF_ALLOWED = ['GitHub', 'Workspace', 'Deploy', 'Akun', 'Dompet'];
 function isAllowedNotif(n) { return NOTIF_ALLOWED.indexOf(String((n && n.source) || '')) > -1; }
 function getLocalNotifs() { try { return JSON.parse(localStorage.getItem(NOTIF_KEY) || '[]').filter(isAllowedNotif); } catch(e) { return []; } }
 // Waktu notif dalam ms — D1 menyimpan UTC ('YYYY-MM-DD HH:MM:SS'), lama pakai ISO (timestamp)

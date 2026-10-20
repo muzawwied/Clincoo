@@ -189,8 +189,13 @@ export async function onRequestPost({ request, env }) {
       // Notifikasi in-app + email konfirmasi (Resend) — hanya utk transaksi hasil top up Xendit
       if (/^top up xendit/i.test(String(title))) {
         const nres = { notif: false, email: null };
-        // [20 Okt 2026] Notifikasi in-app top-up dihapus atas permintaan pemilik
-        // (bukan info penting) — email konfirmasi tetap terkirim di bawah.
+        try {
+          nres.notif = await notifyEvent(db, user, {
+            source: 'Dompet', type: 'wallet',
+            message: 'Top up ' + formatIDR(parsedAmount) + ' via ' + (method || 'Xendit') + ' berhasil. Saldo sekarang ' + formatIDR(balance) + '.',
+            link: 'https://app.clincoo.buzz/akun/dompet/'
+          });
+        } catch (e) { nres.notifErr = String(e && e.message || e); }
         if (user && user.email) {
           try {
             nres.email = await sendEmail(env, {
@@ -293,8 +298,21 @@ export async function onRequestPost({ request, env }) {
           .bind(recvBalKey, String(recvBalance)).run();
       }
 
-      // [20 Okt 2026] Notifikasi in-app kirim/terima uang dihapus atas permintaan
-      // pemilik (bukan info penting) — email konfirmasi tetap terkirim di bawah.
+      // Notifikasi in-app kedua pihak
+      try {
+        await notifyEvent(db, user, {
+          source: 'Dompet', type: 'wallet',
+          message: 'Kirim ' + formatIDR(amount) + ' ke ' + targetLabel + ' berhasil. Saldo sekarang ' + formatIDR(newBalance) + '.',
+          link: 'https://app.clincoo.buzz/akun/dompet/'
+        });
+      } catch (e) {}
+      try {
+        await notifyEvent(db, target, {
+          source: 'Dompet', type: 'wallet',
+          message: 'Anda menerima ' + formatIDR(amount) + ' dari ' + senderLabel + '. Saldo sekarang ' + formatIDR(recvBalance) + '.',
+          link: 'https://app.clincoo.buzz/akun/dompet/'
+        });
+      } catch (e) {}
 
       // Email konfirmasi ke penerima
       if (target && target.email) {

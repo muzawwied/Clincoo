@@ -260,8 +260,11 @@ async function paymentReminderSweep(env) {
           'Ini pesan pengingat otomatis dari Clincoo.'
         )
       });
-      // [20 Okt 2026, arahan pemilik] Notifikasi dipakai hanya untuk hal penting;
-      // pengingat QRIS tidak dibuat lagi — email pengingat tetap terkirim.
+      await notifyEvent(db, user, {
+        source: 'Dompet', type: 'payment_reminder',
+        message: 'Pesanan QRIS ' + amt + ' belum selesai. Buka halaman pembayaran untuk melanjutkan atau membuat ulang.',
+        link: 'https://app.clincoo.buzz/akun/langganan/checkout/qris/' + encodeURIComponent(o.id) + '/'
+      });
       sent++;
     } catch (e) {}
   }

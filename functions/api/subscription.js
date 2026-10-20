@@ -207,7 +207,14 @@ export async function onRequestPost({ request, env }) {
               .bind(balKey, String(newBalance)).run();
           }
 
-          // [20 Okt 2026, arahan pemilik] Notifikasi hanya untuk hal penting; aktivasi langganan tidak dibuat lagi — email konfirmasi tetap terkirim.
+          // Notifikasi in-app + email konfirmasi aktivasi langganan
+          try {
+            await notifyEvent(db, user, {
+              source: 'Langganan', type: 'subscription',
+              message: 'Langganan ' + validPlan + ' (' + billing + ') berhasil diaktifkan. Total ' + formatIDR(totalPrice) + ' dipotong dari Saldo Dompet. Saldo sekarang ' + formatIDR(newBalance) + '.',
+              link: 'https://muzawwied.github.io/Clincoo./akun/langganan/'
+            });
+          } catch (e2) {}
           // Catat aktivitas langganan di halaman Aktivitas (per-akun)
           try {
             await db.prepare('INSERT INTO activity_log (action, details, user_id) VALUES (?, ?, ?)')
