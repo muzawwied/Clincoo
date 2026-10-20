@@ -1307,6 +1307,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       const keepPaths = files.map(function (f) { return String((f && f.path) || ''); }).filter(Boolean);
       const batches = wsPushBatches(files);
       const H = Object.assign({ 'Content-Type': 'application/json' }, wsAuthHeaders());
+      let terminal400 = false;
       // [15 Okt] fetch keepalive DITOLAK browser bila body > 64KB — payload >= 60KB:
       // kirim fetch biasa; dirty flag menjamin percobaan ulang saat halaman dibuka lagi.
       (async function () {
@@ -1316,6 +1317,9 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
           const opt = { method: 'POST', headers: H, body: bodyStr };
           if (keepalive && bodyStr.length < 60000) { opt.keepalive = true; }
           const res = await fetch(WS_CLOUD_API, opt);
+          // [21 Okt] 400 = payload DITOLAK permanen (bukan masalah jaringan): jangan
+          // diulang selamanya — beri satu notifikasi dan hentikan siklus retry.
+          if (res.status === 400) { terminal400 = true; throw new Error('HTTP 400'); }
           if (!res.ok) throw new Error('HTTP ' + res.status);
           const pushResp = await res.json().catch(function () { return {}; });
           // [12 Okt] file yang ternyata sudah dihapus di server: buang dari pohon lokal
@@ -1333,6 +1337,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         wsCloudFailNotified = false;
         try { Object.keys(wsRestorePaths).forEach(function (p) { if (!wsKnownDeleted[p]) delete wsRestorePaths[p]; }); } catch (e) {}
       })().catch(function () {
+        if (terminal400) { try { addNotification('Workspace', 'Perubahan tidak diterima server (format ditolak). Sinkron dihentikan — coba muat ulang halaman.'); } catch (e) {} return; }
         if (attempt < 2) { setTimeout(function() { wsCloudPushNow(attempt + 1, keepalive); }, 1500 * (attempt + 1)); return; }
         // Tetap dirty: pull berikutnya tidak akan menimpa data lokal yang lebih baru
         if (!wsCloudFailNotified) {

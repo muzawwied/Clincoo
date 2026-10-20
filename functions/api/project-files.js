@@ -374,7 +374,25 @@ export async function onRequestPost({ request, env }) {
 
     const filesToSave = body.files && Array.isArray(body.files) ? body.files
       : (body.path !== undefined ? [{ path: body.path, content: body.content, content_b64: body.content_b64 }] : []);
-    if (filesToSave.length === 0) return json({ error: 'path/content or files[] required' }, 400);
+    if (filesToSave.length === 0 && body.replace !== true) return json({ error: 'path/content or files[] required' }, 400);
+    // [21 Okt, laporan owner: Fetch 400 ×6 di console] pohon KOSONG + replace:true =
+    // klien menyinkronkan proyek yang semua filenya dihapus. Dulu ditolak 400 ->
+    // klien retry tanpa akhir dan server tidak pernah bersih. Sekarang: bersihkan
+    // baris + chunk, catat tombstone supaya pull tidak menghidupkan ulang.
+    if (filesToSave.length === 0) {
+      const all = await db.prepare(`SELECT path FROM ${T.files} WHERE project_id = ?`).bind(projectId).all().catch(() => null);
+      const paths = ((all && all.results) || []).map(r => String(r.path)).filter(Boolean);
+      const st0 = [];
+      for (const p of paths) st0.push(db.prepare(
+        "INSERT INTO ws_deleted_paths (project_id, path, deleted_at) VALUES (?, ?, datetime('now')) ON CONFLICT(project_id, path) DO UPDATE SET deleted_at = datetime('now')"
+      ).bind(projectId, p));
+      st0.push(db.prepare(`DELETE FROM ${T.files} WHERE project_id = ?`).bind(projectId));
+      try { st0.push(db.prepare(`DELETE FROM ${chunksTable}`)); } catch (e) {}
+      try { if (st0.length) await db.batch(st0); } catch (e) {}
+      try { await db.prepare('DELETE FROM project_files WHERE project_id = ?').bind(projectId).run(); } catch (e) {}
+      if (body.bump_rev !== false) await bumpWsRev(db, projectId);
+      return json({ success: true, saved: 0, deleted_paths: [] });
+    }
 
     // Kuota workspace per proyek sesuai paket (admin bypass)
     const user = await currentUser(env, request);
