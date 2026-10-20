@@ -4,7 +4,7 @@
 // berikutnya — sumber bug "klik tidak berfungsi" setelah deploy.
 // [7 Okt 2026] bump: logo tercache rusak/lama di browser user (SWR tampilkan-cache-dulu)
 // -> versi baru memaksa purge cache lama saat SW aktif, logo dimuat segar
-var CACHE = 'clincoo-v110';
+var CACHE = 'clincoo-v111';
 var PRECACHE = [
   './manifest.json',
   './assets/icons/icon-192.png',

@@ -167,14 +167,7 @@ export async function onRequestPost({ request, env }) {
       'INSERT INTO ai_packs (user_key, pack_id, name, price, credits_total, credits_left, purchased_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     ).bind(userKey, pack.id, pack.name, pack.price, pack.credits, pack.credits, now.toISOString(), expires.toISOString()).run();
 
-    // Notifikasi in-app + catat aktivitas + email konfirmasi (pola sama dengan langganan)
-    try {
-      await notifyEvent(db, user, {
-        source: 'Kredit AI', type: 'credits',
-        message: 'Paket Kredit AI ' + pack.name + ' aktif: ' + pack.credits + ' kredit selama ' + pack.days + ' hari. Total ' + formatIDR(pack.price) + ' dipotong dari Saldo Dompet.',
-        link: 'https://app.clincoo.buzz/akun/langganan/kredit/'
-      });
-    } catch (e2) {}
+    // [20 Okt 2026, arahan pemilik] Notifikasi hanya untuk hal penting; pembelian paket kredit tidak dibuat lagi — email konfirmasi tetap terkirim.
     try {
       const uid = await rowScope(db, 'activity_log', user);
       await db.prepare('INSERT INTO activity_log (action, details, user_id) VALUES (?, ?, ?)')

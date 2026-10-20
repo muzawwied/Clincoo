@@ -89,11 +89,7 @@ export async function applyPendingClaim(db, email) {
     if (res.applied && res.reason === 'granted') {
       try {
         const user = await db.prepare('SELECT * FROM auth_users WHERE lower(email) = ?').bind(String(row.email).trim().toLowerCase()).first();
-        if (user) await notifyEvent(db, user, {
-          source: 'Clincoo',
-          type: 'success',
-          message: 'Paket Pro beta 30 hari kamu sudah AKTIF. Selamat mencoba semua fitur Pro!'
-        });
+        // [20 Okt 2026, arahan pemilik] Notifikasi hanya untuk hal penting; pengumuman promo/fitur tidak dibuat lagi.
       } catch (eN) {}
     }
   } catch (e) {}

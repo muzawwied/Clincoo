@@ -208,11 +208,7 @@ export async function creditTopup(env, order) {
   if (owner) {
     const nres = { notif: false, email: null };
     try {
-      nres.notif = await notifyEvent(db, owner, {
-        source: 'Dompet', type: 'wallet',
-        message: 'Top up ' + formatIDR(order.amount) + ' via ' + (order.method || 'Xendit') + ' berhasil. Saldo sekarang ' + formatIDR(balance) + '.',
-        link: 'https://muzawwied.github.io/Clincoo./akun/dompet/'
-      });
+      // [20 Okt 2026] Notifikasi in-app top-up dihapus atas permintaan pemilik — email konfirmasi tetap terkirim.
     } catch (e) {}
     if (owner.email) {
       try {
