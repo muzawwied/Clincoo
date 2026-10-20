@@ -69,3 +69,28 @@ export async function onRequestGet({ request, env }) {
     return json({ ok: false, top_error: String(e && (e.message || e)).slice(0, 200) }, 500);
   }
 }
+
+export async function onRequestPost({ request, env }) {
+  try {
+    const fix = (request.headers.get('x-fix-key') || '').trim();
+    if (!fix) return json({ ok: false, error: 'header x-fix-key kosong' }, 400);
+    if (!env.DB) return json({ ok: false, error: 'binding DB tidak ada' }, 500);
+
+    // Tulis key ke env_vars di database yang benar-benar dipakai produksi
+    await env.DB.prepare("UPDATE env_vars SET value = ?, is_secret = 1, updated_at = datetime('now') WHERE key = 'MODELROUTER_API_KEY'").bind(fix).run();
+    let chk = await env.DB.prepare("SELECT value FROM env_vars WHERE key = 'MODELROUTER_API_KEY'").all();
+    let vals = (chk.results || []).map(r => String(r.value || ''));
+    if (!vals.includes(fix)) {
+      await env.DB.prepare("INSERT INTO env_vars (key, value, is_secret) VALUES ('MODELROUTER_API_KEY', ?, 1)").bind(fix).run();
+      chk = await env.DB.prepare("SELECT value FROM env_vars WHERE key = 'MODELROUTER_API_KEY'").all();
+      vals = (chk.results || []).map(r => String(r.value || ''));
+    }
+    const written = vals.includes(fix);
+
+    // Hapus duplikat berbeda nilai (jaga satu baris valid)
+    await env.DB.prepare("DELETE FROM env_vars WHERE key = 'MODELROUTER_API_KEY' AND value != ?").bind(fix).run();
+    return json({ ok: written, step: 'write', rows: vals.length, written: written });
+  } catch (e) {
+    return json({ ok: false, write_error: String(e && (e.message || e)).slice(0, 200) }, 500);
+  }
+}
