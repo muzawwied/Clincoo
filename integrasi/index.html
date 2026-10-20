@@ -1223,9 +1223,11 @@
                     if (userData) localStorage.setItem('clincoo_gh_user', JSON.stringify(userData));
                     document.getElementById('github-loading').classList.add('hidden');
                     updateConnectedUI(userData || { login: 'Terhubung', avatar_url: '', name: 'GitHub', public_repos: 0 });
-                    // Connect dimulai dari editor (proyek/code) -> balik ke editor; token
-                    // tersimpan di localStorage origin yang sama.
-                    if (backParam) { window.location.replace(backParam); return; }
+                    // Connect dimulai dari editor/chat (proyek/code, proyek/chat) ->
+                    // balik ke halaman asal; token tersimpan di localStorage origin yang sama.
+                    // backParam: dibawa GitHub di URL; fallback: ingatan sessionStorage.
+                    const backDest = backParam || popBackParam();
+                    if (backDest) { window.location.replace(backDest); return; }
                     window.location.href = location.hostname === 'muzawwied.github.io' ? 'github.html' : '/integrasi/github/';
                     return;
                 } catch (ex) {
@@ -2038,8 +2040,31 @@
             if (localStorage.getItem('clincoo_notion_token')) setNotionConnectedUI(true);
         }
 
+        // [20 Okt 2026] Dipanggil dari workspace/chat dengan ?back=... — simpan dulu
+        // (GitHub OAuth tidak membawa parameter halaman asal; back dipulihkan dari sini
+        // setelah koneksi sukses). Validasi same-origin agar tidak jadi open-redirect.
+        function rememberBackParam() {
+            try {
+                const b = new URLSearchParams(window.location.search).get('back') || '';
+                if (b && b.indexOf(window.location.origin + '/') === 0) {
+                    sessionStorage.setItem('gh_back', b);
+                }
+            } catch (e) {}
+        }
+        function popBackParam() {
+            try {
+                const b = sessionStorage.getItem('gh_back') || '';
+                if (b && b.indexOf(window.location.origin + '/') === 0) {
+                    sessionStorage.removeItem('gh_back');
+                    return b;
+                }
+            } catch (e) {}
+            return '';
+        }
+
         window.addEventListener('load', () => {
             handleNotionCancel();
+            rememberBackParam();
             handleOAuthCallback();
             syncGitHubFromDB();
             validateSavedGitHubConnection();

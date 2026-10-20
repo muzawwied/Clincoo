@@ -8868,13 +8868,14 @@ function crownAction(e){
   window.gitSyncConnect = function () {
     var back = window.location.origin + window.location.pathname + window.location.search;
     if (back.indexOf('gitsync=1') === -1) back += (back.indexOf('?') === -1 ? '?' : '&') + 'gitsync=1';
-    var redirectUri = window.location.origin + '/integrasi/?back=' + encodeURIComponent(back);
-    var authUrl = 'https://github.com/login/oauth/authorize?client_id=' + GH_CLIENT_ID +
-      '&scope=' + encodeURIComponent('repo user:email') + '&redirect_uri=' + encodeURIComponent(redirectUri);
+    // [20 Okt 2026] Belum terhubung -> halaman Plugin (Integrasi), bukan langsung ke
+    // GitHub: alur kanonik redirect_uri terdaftar, error ditangani UI Clincoo, dan
+    // setelah sukses balik otomatis ke sini (?back= + ?gitsync=1 membuka popup lagi).
+    var pluginUrl = window.location.origin + '/integrasi/?back=' + encodeURIComponent(back);
     try {
-      if (window.top && window.top !== window.self) { window.top.location.href = authUrl; return; }
+      if (window.top && window.top !== window.self) { window.top.location.href = pluginUrl; return; }
     } catch (e) {}
-    window.location.href = authUrl;
+    window.location.href = pluginUrl;
   };
   window.gitSyncSaveCfg = function () {
     var c = cfg();

@@ -1760,21 +1760,19 @@
       // Remember that the import modal was open so we can reopen it after the OAuth redirect
       localStorage.setItem('clincoo_github_modal_open', '1');
 
-      // Callback OAuth harus ke URL yang TERDAFTAR di GitHub App (halaman Integrasi) —
-      // URL editor (punya ?id=proyek, berubah-ubah) ditolak GitHub sebagai redirect_uri.
-      // Integrasi menyimpan token lalu memantulkan balik ke editor via ?back=...
+      // [20 Okt 2026] Belum terhubung -> jangan langsung ke GitHub (user bisa kena
+      // halaman error redirect_uri GitHub). Arahkan ke halaman Plugin (Integrasi):
+      // alur kanonik dengan redirect_uri yang terdaftar, error ditangani UI Clincoo,
+      // dan setelah sukses otomatis balik ke editor via ?back=...
       const editorUrl = window.location.origin + window.location.pathname + window.location.search;
-      const redirectUri = window.location.origin + '/integrasi/?back=' + encodeURIComponent(editorUrl);
-      const authUrl = 'https://github.com/login/oauth/authorize?client_id=' + GITHUB_CLIENT_ID +
-        '&scope=repo%20user:email&redirect_uri=' + encodeURIComponent(redirectUri);
+      const pluginUrl = window.location.origin + '/integrasi/?back=' + encodeURIComponent(editorUrl);
 
-      // Editor sering dibuka di dalam iframe (panel Workspace di chat). Halaman login
-      // GitHub menolak dimuat di iframe (X-Frame-Options) -> halaman putih/ikon rusak.
-      // Maka keluar ke window paling atas untuk alur OAuth.
+      // Editor sering dibuka di dalam iframe (panel Workspace di chat) — keluar ke
+      // window paling atas untuk navigasi.
       try {
-        if (window.top && window.top !== window.self) { window.top.location.href = authUrl; return; }
+        if (window.top && window.top !== window.self) { window.top.location.href = pluginUrl; return; }
       } catch (e) {}
-      window.location.href = authUrl;
+      window.location.href = pluginUrl;
     }
 
     async function handleGitHubOAuthCallback(code) {
