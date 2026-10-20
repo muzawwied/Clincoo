@@ -1886,6 +1886,10 @@
       isGithubConnected = false;
       localStorage.removeItem(GITHUB_TOKEN_KEY);
       localStorage.removeItem(GITHUB_USER_KEY);
+      // [20 Okt 2026] bersihkan juga kunci kembar plugin/chat agar putus
+      // koneksi berlaku di semua halaman (bukan cuma editor).
+      localStorage.removeItem('clincoo_gh_token');
+      localStorage.removeItem('clincoo_gh_user');
       addNotification('GitHub', 'Koneksi GitHub diputuskan.');
       updateGithubModalUI();
     }

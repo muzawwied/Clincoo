@@ -31,7 +31,13 @@ html,body{min-height:100%;margin:0}body{font-family:Inter,sans-serif;background:
 <script>
 const token=localStorage.getItem('clincoo_gh_token'), connected=document.getElementById('connected-view'), empty=document.getElementById('empty-view');
 if(!token){location.replace('/integrasi/')}else{connected.classList.remove('hidden');let u={};try{u=JSON.parse(localStorage.getItem('clincoo_gh_user')||'{}')}catch(e){};document.getElementById('avatar').src=u.avatar_url||'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';document.getElementById('name').textContent=u.name||u.login||'GitHub';document.getElementById('meta').textContent='@'+(u.login||'github')+' · '+(u.public_repos||0)+' repositori publik'}
-document.getElementById('disconnect').addEventListener('click',async()=>{if(!confirm('Putuskan koneksi GitHub?'))return;localStorage.removeItem('clincoo_gh_token');localStorage.removeItem('clincoo_gh_user');try{await fetch('https://clincoo-agent.vylonium.workers.dev/db/gh-token',{method:'DELETE'})}catch(e){};location.href='/integrasi/'});
+document.getElementById('disconnect').addEventListener('click',async()=>{if(!confirm('Putuskan koneksi GitHub?'))return;
+// [20 Okt 2026] putus koneksi harus bersih total: keempat kunci (plugin + editor),
+// kalau tidak, token kembar membuat halaman lain tetap menganggap terhubung.
+localStorage.removeItem('clincoo_gh_token');localStorage.removeItem('clincoo_gh_user');
+localStorage.removeItem('clincoo_github_token');localStorage.removeItem('clincoo_github_user');
+try{localStorage.removeItem('clincoo_github_consent')}catch(e){}
+location.href='/integrasi/'});
 </script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"cb77214bf0fd47f79f21070b533e9742","r":1,"spa":2}' crossorigin="anonymous"></script>
 <script>/* clincoo-premium-sheet: bottom sheet daftar paket untuk fitur premium (crown) */
 (function(){
