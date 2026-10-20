@@ -321,7 +321,7 @@ async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usage
 }
 
 // ===== Fallback Provider 1: Gemini (Google AI Studio) =====
-const GEMINI_MODELS = [gemini-2.5-flash, gemini-2.0-flash, gemini-1.5-flash, gemini-3.6-flash];
+const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-3.6-flash"];
 
 async function getGeminiKeys(env) {
   const keys = [];
