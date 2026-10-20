@@ -3,6 +3,10 @@
   'use strict';
   // Guard dua arah: bug-beetle vs clincoo-bug (injek middleware) —
   // mana pun yang jalan duluan, yang satunya tidak boleh memasang widget kedua.
+  // [20 Okt, laporan owner] Chat sering di-embed sebagai iframe di workspace; tiap frame
+  // punya window sendiri sehingga flag di atas tak melihat widget milik induk -> tombol dobel.
+  // Di dalam iframe: jangan pasang widget (halaman induk sudah punya).
+  try { if (window.top && window.top !== window.self) return; } catch (e) { return; }
   if (window.__clincooBugBeetleLoaded || window.__clincooBugInstalled) return;
   if (document.getElementById('clincoo-bug-root') || document.getElementById('clincoo-bug-fab')) return;
   window.__clincooBugBeetleLoaded = true;

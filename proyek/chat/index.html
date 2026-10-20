@@ -1841,7 +1841,11 @@ function projectTimeline(body) {
 }
 // Baris "=== SAY: ... ===" yang KEPENCET keluar dari blok project/patch
 // (model kadang menulisnya di teks biasa) tidak boleh tampil mentah ke user.
-const stripLooseSay = t => String(t == null ? '' : t).replace(/^[ \t]*===[ \t]*SAY[ \t]*:[^\n]*$/gim, '');
+// [20 Okt, laporan owner] Model kadang menulis TOOL CALL sebagai teks (mis. blok ```json
+// {"name":"create_automation","parameters":{...}}```). Itu bukan jawaban untuk user -> dibuang
+// dari tampilan. Hanya blok yang berbentuk persis tool-call (name + parameters/arguments).
+const TOOLCALL_FENCE = /(`{3,})[ \t]*(?:json)?[ \t]*\n\s*\{\s*"name"\s*:\s*"[a-z_]+"\s*,\s*"(?:parameters|arguments)"\s*:[\s\S]*?\n\1[ \t]*(?=\n|$)/gi;
+const stripLooseSay = t => String(t == null ? '' : t).replace(/^[ \t]*===[ \t]*SAY[ \t]*:[^\n]*$/gim, '').replace(TOOLCALL_FENCE, '');
 function ckParts(m) {
     const t = m.text || '', parts = []; let pos = 0;
     // Checkpoint pembuka: selalu di paling atas jawaban (membaca proyek + proses berpikir)

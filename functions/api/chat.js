@@ -2389,7 +2389,12 @@ export async function onRequestPost({ request, env, waitUntil }) {
     // file dikerjakan lewat blok project/patch di UI (state proyek dikirim tiap
     // giliran oleh klien). Yang tersedia hanya tool server ringan (KB, screenshot,
     // backend function, otomasi, storage) supaya tidak ada loop tool mahal.
-    if (asistenMode) decls = decls.filter(d => d && SERVER_TOOLS.has(d.name));
+    // [20 Okt, laporan owner] "Buat web landing page kedai kopi" malah memunculkan blok JSON
+    // mentah create_automation: model salah memilih tool otomasi lalu menulis tool call-nya
+    // sebagai TEKS. Mode asisten tidak butuh tool otomasi/backend/storage (membangun web =
+    // blok project/patch). Sisakan hanya tool baca-saja yang aman: KB & screenshot.
+    const ASISTEN_TOOLS = new Set(['search_clinco_kb', 'take_screenshot']);
+    if (asistenMode) decls = decls.filter(d => d && ASISTEN_TOOLS.has(d.name));
     const gTools = wantTools
       ? [{ functionDeclarations: decls }]
       : null;

@@ -2,6 +2,10 @@
 (() => {
   // Guard dua arah: cek juga flag bug-beetle — dua salinan widget tidak boleh
   // terpasang bersamaan (bug: tombol bug dobel di /proyek/chat/).
+  // [20 Okt, laporan owner] Chat sering di-embed sebagai iframe di workspace; tiap frame
+  // punya window sendiri sehingga flag di atas tak melihat widget milik induk -> tombol dobel.
+  // Di dalam iframe: jangan pasang widget (halaman induk sudah punya).
+  try { if (window.top && window.top !== window.self) return; } catch (e) { return; }
   if (window.__clincooBugInstalled || window.__clincooBugBeetleLoaded) return;
   if (document.getElementById('cc-bug-root') || document.getElementById('cc-bug-fab')) return;
   window.__clincooBugInstalled = true;
