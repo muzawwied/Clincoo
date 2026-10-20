@@ -736,10 +736,6 @@ html.embed-mode #chat-input-footer { padding-bottom: 12px; }
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3" /><path stroke-linecap="round" stroke-linejoin="round" d="M3.05 11a9 9 0 1 1 .5 4" /><path stroke-linecap="round" stroke-linejoin="round" d="M3 15v4h4" /></svg>
                 </button>
         </div>
-        <div id="clq-hdr-sys" class="flex items-center gap-1.5 flex-shrink-0 pointer-events-auto">
-                <button id="clq-theme" type="button" onclick="__toggleTheme()" class="chat-hdr-pill" style="width:40px;padding:0;justify-content:center" title="Tema terang/gelap" aria-label="Ganti tema"><i class="ph-bold ph-moon"></i></button>
-                <button id="clq-drawer-open" type="button" class="chat-hdr-pill" style="width:40px;padding:0;justify-content:center" title="Panel model" aria-label="Panel model"><i class="ph-bold ph-sliders-horizontal"></i></button>
-            </div>
         <div id="header-more-wrap" class="relative flex-shrink-0 pointer-events-auto">
                 <button id="header-more-btn" type="button" onclick="toggleHeaderMenu(event)" class="w-11 h-11 rounded-full flex items-center justify-center text-[#222222] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:bg-gray-100 hover:text-black transition-all" aria-label="Menu lainnya">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
@@ -842,27 +838,20 @@ const MAX_OUT = 8192; // batas output per putaran (naikkan bila model/plan mengi
 
 const $ = id => document.getElementById(id);
 
-// [22 Okt] ikuti tema SISTEM BROWSER; ?theme=dark|light paksa manual;
-// [Clincoo] tombol topbar memakai localStorage 'clq_theme'
+// Tema ikut sistem halaman lain: diatur di halaman profil (localStorage 'clincoo_theme': Terang / Gelap / Sistem (Default))
 (function () {
-    const q = new URLSearchParams(location.search).get('theme');
     const mq = matchMedia('(prefers-color-scheme: dark)');
-    const saved = () => { try { return localStorage.getItem('clq_theme'); } catch (e) { return null; } };
     const apply = () => {
-        const mode = saved() || q;
-        const dark = mode ? mode === 'dark' : mq.matches;
+        let t = 'Sistem (Default)';
+        try { t = localStorage.getItem('clincoo_theme') || 'Sistem (Default)'; } catch (e) {}
+        const dark = (t === 'Gelap') || ((t === 'Sistem (Default)' || !t) && mq.matches);
         document.documentElement.classList.toggle('dark-mode', dark);
         const mt = document.querySelector('meta[name=theme-color]');
-        if (mt) mt.content = dark ? '#0e0e10' : '#ffffff';
-        const tb = document.getElementById('clq-theme');
-        if (tb) { const ic = tb.querySelector('i'); if (ic) ic.className = (dark ? 'ph-bold ph-sun' : 'ph-bold ph-moon') + ' text-base'; }
+        if (mt) mt.content = dark ? '#0a0a0a' : '#ffffff';
     };
-    apply(); if (!q && !saved()) mq.addEventListener('change', apply);
-    window.__toggleTheme = () => {
-        const cur = document.documentElement.classList.contains('dark-mode');
-        try { localStorage.setItem('clq_theme', cur ? 'light' : 'dark'); } catch (e) {}
-        apply();
-    };
+    apply();
+    mq.addEventListener('change', apply);
+    window.addEventListener('storage', e => { if (e.key === 'clincoo_theme') apply(); });
 })();
 
 const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -2809,8 +2798,6 @@ renderMessages();
     const back = document.getElementById('clq-back');
     if (PROJECT_ID && back) back.href = '/proyek/code/?id=' + encodeURIComponent(PROJECT_ID);
     else if (back) back.href = '/akun/proyek/';
-    const dBtn = document.getElementById('clq-drawer-open');
-    if (dBtn) dBtn.addEventListener('click', () => drawerOpen(true));
     if (PROJECT_ID) {
         fetch(TOOL_API_BASE + '/api/projects').then(r => r.ok ? r.json() : null).then(d => {
             const p = d && Array.isArray(d.projects) ? d.projects.find(x => x && x.id === PROJECT_ID) : null;
