@@ -264,11 +264,9 @@
   try {
     const p = JSON.parse(localStorage.getItem(posKey) || 'null');
     if (p && Number.isFinite(p.x) && Number.isFinite(p.y)) {
-      fab.style.left = Math.max(4, Math.min(innerWidth - 60, p.x)) + 'px';
-      fab.style.top = Math.max(4, Math.min(innerHeight - 60, p.y)) + 'px';
-      fab.style.right = 'auto'; fab.style.bottom = 'auto';
+      root.style.left = Math.max(4, Math.min(innerWidth - 60, p.x)) + 'px';
+      root.style.top = Math.max(4, Math.min(innerHeight - 60, p.y)) + 'px';
       root.style.right = 'auto'; root.style.bottom = 'auto';
-      root.style.left = fab.style.left; root.style.top = fab.style.top;
     }
   } catch (_) {}
 
@@ -286,7 +284,6 @@
     if (!dragged) return;
     const x = Math.max(4, Math.min(innerWidth - fab.offsetWidth - 4, ox + dx));
     const y = Math.max(4, Math.min(innerHeight - fab.offsetHeight - 4, oy + dy));
-    fab.style.left = x + 'px'; fab.style.top = y + 'px'; fab.style.right = 'auto'; fab.style.bottom = 'auto';
     root.style.left = x + 'px'; root.style.top = y + 'px'; root.style.right = 'auto'; root.style.bottom = 'auto';
   });
   const endDrag = () => {
@@ -303,8 +300,9 @@
 
   window.addEventListener('resize', () => {
     const r = fab.getBoundingClientRect();
-    fab.style.left = Math.max(4, Math.min(innerWidth - fab.offsetWidth - 4, r.left)) + 'px';
-    fab.style.top = Math.max(4, Math.min(innerHeight - fab.offsetHeight - 4, r.top)) + 'px';
+    if (r.width < 10) return;
+    root.style.left = Math.max(4, Math.min(innerWidth - fab.offsetWidth - 4, r.left)) + 'px';
+    root.style.top = Math.max(4, Math.min(innerHeight - fab.offsetHeight - 4, r.top)) + 'px';
   });
 
   // [21 Okt] kegagalan fetch/API dicatat juga (401/500/network) — sumber masalah paling umum

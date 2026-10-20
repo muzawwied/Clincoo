@@ -16,7 +16,7 @@ export async function onRequest(context) {
     })
     .on("body", {
       element(element) {
-        element.append('<script src="/assets/ls-quota-guard.js" defer></script><script src="/assets/clincoo-bug.js?v=4" defer></script>', { html: true });
+        element.append('<script src="/assets/ls-quota-guard.js" defer></script><script src="/assets/clincoo-bug.js?v=5" defer></script>', { html: true });
       }
     })
     .transform(response);
