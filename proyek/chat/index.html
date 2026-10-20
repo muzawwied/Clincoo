@@ -2717,7 +2717,7 @@ async function sendMessage(opts) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    mode: 'build', workspace_tools: ((typeof window.selectedAiMode === 'function' && window.selectedAiMode()) === 'build'), /* CHAT_BUILD_MODE_FIX */ /* [21 Okt] guard selectedAiMode sudah tidak ada; tanpa ini SEMUA tool (run_command, deploy, backend, DNS, dll) tidak pernah dikirim ke model */ stream: true,
+                    mode: 'build', workspace_tools: true, /* [21 Okt FIX-2] JANGAN kembalikan guard selectedAiMode: fungsinya tidak ada di UI baru dan ini mematikan SEMUA tool AI */ stream: true,
                     messages: toGroqMessages(reqContents),
                     project_id: PROJECT_ID || undefined,
                     session_id: currentSessionId || undefined
