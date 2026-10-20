@@ -34,8 +34,10 @@ export async function onRequestGet({ request, env }) {
     if (env.MODELROUTER_API_KEY) keys.unshift(String(env.MODELROUTER_API_KEY).trim());
 
     if (!keys.length) return json({ ok: false, step: 'keys', error: 'tidak ada key MR di env_vars D1 maupun Pages env' });
+    const k0 = keys[0];
+    const fp = { len: k0.length, head: k0.slice(0, 7), tail: k0.slice(-4), codes: [k0.charCodeAt(0), k0.charCodeAt(1), k0.charCodeAt(k0.length - 2), k0.charCodeAt(k0.length - 1)] };
 
-    const out = { ok: false, keys: keys.length };
+    const out = { ok: false, keys: keys.length, fp: fp };
     const t0 = Date.now();
     try {
       const res = await fetch('https://modelrouter.id/v1/chat/completions', {
