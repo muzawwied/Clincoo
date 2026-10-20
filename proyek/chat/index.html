@@ -1074,24 +1074,42 @@ function findBlocks(txt) {
 function healFilePayload(txt) {
     txt = String(txt || '');
     if (!/===\s*FILE\s*:/i.test(txt)) return txt;
-    if (findBlocks(txt).some(b => b.lang === 'project' || b.lang === 'patch')) return txt;
-    const lineStart = txt.match(/^[ \t]*===\s*FILE\s*:\s*[^\n=]+?\s*===[ \t]*$/m);
-    const markers = (txt.match(/===\s*FILE\s*:\s*[^=\n]+?\s*===/gi) || []).length;
+    // [20 Okt, laporan owner: kode patch masih bocor] Jangan menyerah hanya karena ada blok project/patch
+    // sehat di awal jawaban: blok KEDUA yang pagarnya rusak tetap harus dipulihkan. Wilayah pemulihan =
+    // teks SETELAH akhir blok project/patch sehat yang terakhir.
+    let regionStart = 0;
+    for (const b of findBlocks(txt)) if (b.lang === 'project' || b.lang === 'patch') regionStart = Math.max(regionStart, b.end);
+    const head = txt.slice(0, regionStart), tail = txt.slice(regionStart);
+    if (!/===\s*FILE\s*:/i.test(tail)) return txt; // tidak ada penanda yatim di luar blok sehat
+    return head + healFileRegion(tail);
+}
+function healFileRegion(tail) {
+    tail = String(tail || '');
+    // pagar yatim: penutup blok yang pagarnya hilang menangkap teks sesudahnya jadi "kartu kode" palsu -> potong di situ
+    const stray = tail.match(/\n[ \t]*`{3,}[ \t]*(?=\n|$)/);
+    let t = tail, after = '';
+    if (stray) { const i = tail.indexOf(stray[0]); after = tail.slice(i + stray[0].length); t = tail.slice(0, i); }
+    if (!/===\s*FILE\s*:/i.test(t)) return tail; // penanda ternyata di teks setelah pagar yatim -> jangan sentuh
+    const lineStart = t.match(/^[ \t]*===\s*FILE\s*:\s*[^\n=]+?\s*===[ \t]*$/m);
+    const markers = (t.match(/===\s*FILE\s*:\s*[^=\n]+?\s*===/gi) || []).length;
+    // buang artefak pagar yang dimakan: "patchsummary:" (backtick & baris baru hilang), "projectname:", "17kb"
+    const stripJunk = s => s.replace(/[ \t]*`{0,4}[ \t]*(?:patch|project)[ \t]*(?=(?:summary|name)[ \t]*:)/i, '').replace(/`{0,4}\s*(?:patch|project)\s*(?:summary|name)\s*:[^\n]*$/i, '').replace(/\d+\s*kb\s*$/i, '').replace(/\s+$/, '');
+    const note = 'Maaf, jawaban AI terpotong dan formatnya rusak (' + markers + ' file tidak bisa dibaca). Kode tidak disimpan ke workspace supaya tidak merusak proyek. Coba kirim ulang permintaanmu.';
     if (!lineStart) {
-        // penanda ada tapi tidak ada satu pun di awal baris -> teks korup (butuh >=2 penanda; 1 penanda di tengah kalimat = penjelasan biasa)
-        if (markers < 2) return txt;
-        const head = txt.slice(0, txt.search(/===\s*FILE\s*:/i)).replace(/`{0,4}\s*project\s*name:[\s\S]*$/i, '').replace(/\d+\s*kb\s*$/i, '').trim();
-        return (head ? head + '\n\n' : '') + 'Maaf, jawaban AI terpotong dan formatnya rusak (' + markers + ' file tidak bisa dibaca). Kode tidak disimpan ke workspace supaya tidak merusak proyek. Coba kirim ulang permintaanmu.';
+        // penanda tidak ada satu pun di awal baris -> teks korup (butuh >=2 penanda; 1 penanda di tengah kalimat = penjelasan biasa)
+        if (markers < 2) return tail;
+        const h = stripJunk(t.slice(0, t.search(/===\s*FILE\s*:/i))).trim();
+        return (h ? h + '\n\n' : '') + note + (after.trim() ? '\n\n' + after.trim() : '');
     }
-    const at = txt.indexOf(lineStart[0]);
-    let before = txt.slice(0, at), body = txt.slice(at);
-    // meta name:/entry: tepat sebelum penanda pertama ikut masuk blok
-    const mm = before.match(/((?:^|\n)[ \t]*(?:name|entry|desc)\s*:[^\n]*\n?)+\s*$/i);
+    const at = t.indexOf(lineStart[0]);
+    let before = stripJunk(t.slice(0, at)), body = t.slice(at);
+    const mm = before.match(/((?:^|\n)[ \t]*(?:name|entry|desc|summary)\s*:[^\n]*\n?)+\s*$/i);
     let meta = '';
-    if (mm) { meta = mm[0].replace(/^\n/, ''); before = before.slice(0, before.length - mm[0].length); }
+    if (mm) { meta = mm[0].replace(/^\n/, '').replace(/\s*$/, '\n'); before = before.slice(0, before.length - mm[0].length); }
     if (!/^\s*name\s*:/im.test(meta)) meta = 'name: Proyek Web\n' + meta;
     if (!/^\s*entry\s*:/im.test(meta)) { const em = body.match(/===\s*FILE\s*:\s*([^=\n]+?\.html?)\s*===/i); meta += 'entry: ' + (em ? em[1].trim() : 'index.html') + '\n'; }
-    return before.replace(/\s+$/, '') + (before.trim() ? '\n\n' : '') + '````project\n' + meta.replace(/\n*$/, '\n') + body.replace(/\s+$/, '') + '\n````\n';
+    const afterTxt = after.trim() ? '\n\n' + after.trim() : '';
+    return before.replace(/\s+$/, '') + (before.trim() ? '\n\n' : '') + '````project\n' + meta.replace(/\n*$/, '\n') + body.replace(/\s+$/, '') + '\n````\n' + afterTxt;
 }
 function normalizeLooseWeb(txt) {
     txt = healFilePayload(String(txt || ''));
