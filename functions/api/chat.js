@@ -166,8 +166,7 @@ async function getModelRouterKeys(env) {
   const keys = [];
   const seen = new Set();
   const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
-  // [21 Okt, arahan pemilik] Kunci ModelRouter BAWAAN (env.MODELROUTER_API_KEY) tidak dipakai lagi:
-  // glm dari secret bawaan Clincoo DIHAPUS. ModelRouter hanya aktif bila user punya key sendiri.
+  add(env.MODELROUTER_API_KEY);
   if (!env.DB) return keys;
   try {
     const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key = 'MODELROUTER_API_KEY'").all();
@@ -792,9 +791,8 @@ async function tryOpenRouterText(keys, messages, gDecls, onDelta, budget) {
 
 // ===== Fallback Provider 3: Cloudflare Workers AI =====
 const WORKERS_AI_MODELS = [
-  "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
-  "@cf/zai-org/glm-4.7-flash"
-];
+  "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+]; // [21 Okt, arahan pemilik] glm bawaan (zai-org/glm-4.7-flash) dihapus
 
 async function tryWorkersAIText(env, messages, onDelta, budget) {
   if (!env || !env.AI) return null;
