@@ -306,6 +306,7 @@ export async function onRequestPost({ request, env }) {
     // [21 Okt debug upload] bersihkan tombstone NGANGGUR: path yang tidak punya baris
     // file di cloud tapi masih memblokir upload ulang (penyebab "upload hilang lagi").
     if (action === 'sweep_noop_tombstones') {
+      if (body.all) { try { await db.prepare('DELETE FROM ws_deleted_paths').run(); return j({ cleared_all: true }); } catch (e) { return j({ err: e.message }); } }
       const rv = await db.prepare('SELECT project_id FROM ws_rev').all();
       let cleared = [];
       for (const row of (rv.results || [])) {
