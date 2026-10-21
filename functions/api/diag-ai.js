@@ -43,5 +43,21 @@ export async function onRequestGet({ request, env }) {
     } catch (e) { out.gem.results.push({ key: k, error: String(e && e.message || e).slice(0, 150) }); }
   }
   try { const r = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', { messages: [{ role: 'user', content: 'Balas OK' }] }); out.wa = { ok: true, sample: String(r && (r.response || r) || '').slice(0, 80) }; } catch (e) { out.wa = { error: String(e && e.message || e).slice(0, 200) }; }
+  // [21 Okt] tiru parameter chat asli: max_tokens besar + tools
+  out.big = {};
+  const bigTest = async (name, ep, key, model, maxTok, withTools) => {
+    try {
+      const body = { model, messages: [{ role: 'user', content: 'Jawab satu kata: siap' }], max_tokens: maxTok };
+      if (withTools) body.tools = [{ type: 'function', function: { name: 'noop', description: 'test', parameters: { type: 'object', properties: {} } } }];
+      const res = await fetch(ep, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.buzz', 'X-Title': 'Clincoo' }, body: JSON.stringify(body) });
+      out.big[name + '_mt' + maxTok] = { status: res.status, body: (await res.text()).slice(0, 200) };
+    } catch (e) { out.big[name + '_mt' + maxTok] = { error: String(e && e.message || e).slice(0, 150) }; }
+  };
+  if (vals['MODELROUTER_API_KEY']) {
+    await bigTest('mr', 'https://modelrouter.id/v1/chat/completions', vals['MODELROUTER_API_KEY'], 'glm-5.3-flash:mr', 8192, false);
+    await bigTest('mr_tools', 'https://modelrouter.id/v1/chat/completions', vals['MODELROUTER_API_KEY'], 'glm-5.3-flash:mr', 8192, true);
+  }
+  if (vals['OPENROUTER_API_KEY']) await bigTest('or1', 'https://openrouter.ai/api/v1/chat/completions', vals['OPENROUTER_API_KEY'], 'anthropic/claude-haiku-4.5', 4096, false);
+  if (vals['OPENROUTER_API_KEY_2']) await bigTest('or2', 'https://openrouter.ai/api/v1/chat/completions', vals['OPENROUTER_API_KEY_2'], 'anthropic/claude-haiku-4.5', 4096, false);
   return json(out);
 }
