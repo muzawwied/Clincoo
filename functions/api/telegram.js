@@ -62,6 +62,7 @@ export async function onRequestGet({ env }) {
       { command: 'stats', description: 'Statistik dashboard' },
       { command: 'users', description: 'Daftar user' },
       { command: 'cari', description: 'Cari user (nama/email/id)' },
+      { command: 'notif', description: 'Kirim notifikasi ke user (semua/1 email)' },
       { command: 'suspend', description: 'Tangguhkan akun' },
       { command: 'unsuspend', description: 'Buka tangguhan akun' },
       { command: 'hapus', description: 'Hapus akun (konfirmasi 2x)' },
