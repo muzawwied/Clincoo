@@ -2808,10 +2808,19 @@ async function sendMessage(opts) {
             return { add, fin };
         };
 
+        let stallRetries = 0; // [22 Okt] koneksi mati saat tab di latar: coba ulang otomatis, jangan buang jawaban
         while (true) {
             let rr;
             try { rr = await runRound(answer); }
-            catch (err) { if (userStopped) rr = null; else if (err && err.name === 'AbortError') throw new Error('Koneksi ke server AI terputus saat tab ditinggalkan. Coba kirim ulang.'); else throw err; }
+            catch (err) {
+                if (userStopped) { rr = null; }
+                else if (err && (err.name === 'AbortError' || /terputus saat tab ditinggalkan/.test(String(err && err.message || '')))) {
+                    // [22 Okt, laporan owner 06:27] HP sering memutus stream saat pindah app; putaran ini diulang otomatis (maks 2x)
+                    if (stallRetries < 2) { stallRetries++; wdStop(); continue; }
+                    throw new Error('Koneksi ke server AI terputus saat tab ditinggalkan. Sudah dicoba ulang otomatis 2x — kirim ulang pesanmu ya.');
+                }
+                else throw err;
+            }
             finally { wdStop(); }
             if (!rr) { answer = pm.text || answer; break; }
             const { add, fin } = rr;
