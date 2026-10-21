@@ -245,14 +245,14 @@ export async function onRequestPost({ request, env }) {
 
     // [21 Okt] DIAGNOSTIK workspace: file + tombstone proyek owner (debug "upload hilang")
     if (action === 'ws_diag') {
-      const projs = await db.prepare('SELECT id, title, updated_at FROM user_projects WHERE user_id = ? ORDER BY updated_at DESC LIMIT 8').bind(ownerId).all();
+      const projs = await db.prepare('SELECT id, title, updated_at FROM user_projects WHERE user_id = ? ORDER BY updated_at DESC LIMIT 30').bind(ownerId).all();
       const out = { projects: [] };
       for (const p of (projs.results || [])) {
         const e = { id: p.id, title: p.title, updated_at: p.updated_at };
         try {
           const t = tableFor('project_files', p.id);
-          const r = await db.prepare('SELECT path, is_big, size FROM ' + t + ' WHERE project_id = ? ORDER BY updated_at DESC LIMIT 40').bind(p.id).all();
-          e.files = (r.results || []).map(f => ({ p: f.path, big: f.is_big, size: f.size }));
+          const r = await db.prepare('SELECT path, is_big, size, created_at, updated_at FROM ' + t + ' WHERE project_id = ? ORDER BY updated_at DESC LIMIT 40').bind(p.id).all();
+          e.files = (r.results || []).map(f => ({ p: f.path, big: f.is_big, size: f.size, cat: f.created_at, uat: f.updated_at }));
           e.file_count = (r.results || []).length;
         } catch (err) { e.files_err = err.message; }
         try {
