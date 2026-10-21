@@ -2715,10 +2715,11 @@ async function sendMessage(opts) {
             // [Clincoo] Semua pesan memakai mode Build: streaming ndjson per baris
             // ({t:'thinking'|'progress'|'delta'|'final'|'error', ...}).
             // [Clincoo] watchdog & AbortController versi transport baru ada di bawah
+            var __chatTk = ''; try { __chatTk = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
             const response = await fetch(API_URL, {
                 signal: ac.signal,
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: __chatTk ? { 'Content-Type': 'application/json', Authorization: 'Bearer ' + __chatTk } : { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     mode: 'build', workspace_tools: ((typeof window.selectedAiMode === 'function' && window.selectedAiMode()) === 'build'), /* CHAT_BUILD_MODE_FIX */ /* [21 Okt FIX-2] JANGAN kembalikan guard selectedAiMode: fungsinya tidak ada di UI baru dan ini mematikan SEMUA tool AI */ stream: true,
                     messages: toGroqMessages(reqContents),
