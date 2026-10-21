@@ -2066,7 +2066,7 @@ function renderMessages() {
             row.classList.add('justify-start');
             
             const _isLastA = (index === visible.length - 1);
-            const actionBtns = (!msg.isProcessing) ? `<button onclick="copyText('msg-text-${msg.id}', this)" class="relative text-gray-400 hover:text-black transition p-1" title="Salin"><i class="ph ph-copy text-lg"></i></button>
+            const actionBtns = (!msg.isProcessing && !(_isLastA && busy)) ? `<button onclick="copyText('msg-text-${msg.id}', this)" class="relative text-gray-400 hover:text-black transition p-1" title="Salin"><i class="ph ph-copy text-lg"></i></button>
                     <button onclick="shareText('msg-text-${msg.id}')" class="text-gray-400 hover:text-black transition p-1" title="Bagikan"><i class="ph ph-arrow-bend-up-right text-lg"></i></button>
                     <button onclick="handleThumbs(${msg.id}, 'up')" data-fb="up" class="${msg.fb === 'up' ? 'text-gray-900' : 'text-gray-400'} hover:text-black transition p-1" title="Suka"><i class="${msg.fb === 'up' ? 'ph-fill' : 'ph'} ph-thumbs-up text-lg"></i></button>
                     <button onclick="handleThumbs(${msg.id}, 'down')" data-fb="down" class="${msg.fb === 'down' ? 'text-gray-900' : 'text-gray-400'} hover:text-black transition p-1" title="Tidak Suka"><i class="${msg.fb === 'down' ? 'ph-fill' : 'ph'} ph-thumbs-down text-lg"></i></button>
