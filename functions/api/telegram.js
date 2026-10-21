@@ -352,11 +352,45 @@ async function handleUpdate({ request, env }) {
       '/abaikan <id> — abaikan laporan\n' +
       '/scan — pindai aktivitas mencurigakan\n' +
       '/keamanan — event keamanan terbaru\n' +
-      '/aktivitas [n] — log aktivitas terbaru\n\n' +
+      '/notif <pesan> — kirim notifikasi ke SEMUA user (tampil di app)\n/notif <email> <pesan> — kirim ke satu user\n/aktivitas [n] — log aktivitas terbaru\n\n' +
       'Atau tulis natural, aku yang menjalankan:\n' +
       '"berapa pengguna baru minggu ini?"\n' +
       '"suspend akun 42 karena spam"\n' +
       '"suspend akun 42 karena spam"');
+  }
+
+  if (cmd === '/notif' || cmd === '/notify' || cmd === '/notifikasi') {
+    let target = 'all';
+    let rest = aRest;
+    if (a1 && a1.indexOf('@') > 0) { target = a1.toLowerCase(); rest = parts.slice(2).join(' '); }
+    if (!rest) return sendText(env, chatId, 'Format: /notif <pesan> (semua user) atau /notif <email> <pesan> (satu user).\nAwali pesan dengan "warning:", "error:", "sukses:" untuk mengubah gaya ikon.');
+    let type = 'info';
+    const mType = rest.match(/^(info|warning|error|sukses|berhasil)\s*:\s*/i);
+    if (mType) {
+      const t = mType[1].toLowerCase();
+      type = (t === 'sukses' || t === 'berhasil') ? 'success' : t;
+      rest = rest.slice(mType[0].length);
+    }
+    try {
+      await db.prepare('CREATE TABLE IF NOT EXISTS notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, source TEXT NOT NULL, message TEXT NOT NULL, type TEXT DEFAULT \'info\', link TEXT, read INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime(\'now\')), user_id INTEGER)').run();
+      let ids = [];
+      if (target === 'all') {
+        const rows = await db.prepare('SELECT id FROM auth_users ORDER BY id ASC LIMIT 5000').all();
+        ids = (rows.results || []).map(r => r.id);
+      } else {
+        const u = await db.prepare('SELECT id FROM auth_users WHERE lower(email) = ?').bind(target).first();
+        if (!u) return sendText(env, chatId, '❌ User tidak ditemukan: ' + target);
+        ids = [u.id];
+      }
+      if (!ids.length) return sendText(env, chatId, '❌ Tidak ada user.');
+      const stmts = ids.map(id => db.prepare(
+        'INSERT INTO notifications (source, message, type, link, user_id) VALUES (?, ?, ?, ?, ?)'
+      ).bind('Bot Clincoo', rest.slice(0, 500), type, '', id));
+      for (let i = 0; i < stmts.length; i += 40) await db.batch(stmts.slice(i, i + 40));
+      return sendText(env, chatId, '✅ Notifikasi terkirim ke ' + ids.length + (ids.length === 1 ? ' user.' : ' user (semua).'));
+    } catch (e) {
+      return sendText(env, chatId, '❌ Gagal: ' + (e && e.message ? e.message : 'error DB'));
+    }
   }
 
   if (cmd === '/stats' || cmd === '/statistik') {
