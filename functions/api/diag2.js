@@ -1,7 +1,7 @@
 // Diagnostik sementara [21 Okt] — uji+pasang gateway AI baru; dihapus setelah dipakai
 const CORS = { 'Access-Control-Allow-Origin': '*' };
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', ...CORS } });
-const NEW_EP = 'https://app.clincoo.buzz/v1/chat/completions';
+const NEW_EP = 'https://clincoo-be2.pages.dev/v1/chat/completions';
 const NEW_MODEL = 'clincoo/glm-4.7-flash';
 
 export async function onRequestPost({ request, env }) {
