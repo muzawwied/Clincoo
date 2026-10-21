@@ -1940,7 +1940,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     }
 
     // Pemeriksaan konsistensi desain: satu putaran perbaikan otomatis via blok patch (opt-in)
-    if (env.DESIGN_LINT_FIX === '1' && !designFixDone && r && !r.error && !r.truncated && !(r.tool_calls && r.tool_calls.length)) {
+    if (env.DESIGN_LINT_FIX !== '0' && !designFixDone && r && !r.error && !r.truncated && !(r.tool_calls && r.tool_calls.length)) {
       const lintIssues = lintProjectText(String(r.text || ''));
       if (lintIssues.length) {
         designFixDone = true;
