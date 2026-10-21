@@ -677,12 +677,9 @@ async function tryGeminiText(apiKeys, messages, gDecls, onDelta, budget) {
 
 // ===== Fallback Provider 2: OpenRouter =====
 // [21 Okt, arahan pemilik] DILARANG model gratisan (north-mini, gemma, nemotron).
-// [21 Okt, arahan pemilik] GLM 5.3 Flash via OpenRouter jadi cadangan ke-2 utama (setelah Gemini);
-// glm dari secret bawaan Clincoo dihapus. Haiku & GPT tetap menyusul setelahnya.
+// [21 Okt, arahan pemilik] Cukup GLM 5.3 Flash saja via OpenRouter; haiku & luna-pro dihapus.
 const OPENROUTER_MODELS = [
-  "z-ai/glm-5.3-flash",
-  "anthropic/claude-haiku-5.5",
-  "openai/gpt-6-luna-pro"
+  "z-ai/glm-5.3-flash"
 ];
 
 async function getOpenRouterKeys(env) {
