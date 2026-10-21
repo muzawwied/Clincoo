@@ -243,6 +243,34 @@ export async function onRequestPost({ request, env }) {
       return j({ ok: true, deleted: (del && del.meta && del.meta.changes) || 0 });
     }
 
+    // [21 Okt] DIAGNOSTIK pemakaian kredit AI milik owner (debug "pemakaian 0 terus")
+    if (action === 'ai_usage') {
+      const uk = 'u' + ownerId;
+      const out = { owner_user_key: uk };
+      try {
+        const r = await db.prepare('SELECT ts, model, in_chars, out_chars, cost FROM ai_usage WHERE user_key = ? ORDER BY ts DESC LIMIT 15').bind(uk).all();
+        out.recent = r.results || [];
+      } catch (e) { out.recent_err = e.message; }
+      try {
+        const r = await db.prepare('SELECT COUNT(*) AS c, SUM(cost) AS t FROM ai_usage WHERE user_key = ?').bind(uk).first();
+        out.count = r && r.c; out.total_cost = r && r.t;
+      } catch (e) { out.sum_err = e.message; }
+      try {
+        const r = await db.prepare('SELECT credits_left, expires_at FROM ai_packs WHERE user_key = ?').bind(uk).all();
+        out.packs = r.results || [];
+      } catch (e) { out.packs_err = e.message; }
+      try {
+        const r = await db.prepare('SELECT day, count FROM ai_quota WHERE user_key = ? ORDER BY day DESC LIMIT 5').bind(uk).all();
+        out.quota = r.results || [];
+      } catch (e) { out.quota_err = e.message; }
+      // agregat global (tanpa data pribadi user lain)
+      try {
+        const r = await db.prepare('SELECT COUNT(*) AS c, SUM(cost) AS t, SUM(CASE WHEN cost = 0 THEN 1 ELSE 0 END) AS n_zero FROM ai_usage').first();
+        out.global = { rows: r && r.c, total_cost: r && r.t, rows_cost_zero: r && r.n_zero };
+      } catch (e) { out.global_err = e.message; }
+      return j(out);
+    }
+
     return j({ error: 'unknown_action' }, 400);
   } catch (e) {
     return j({ error: e.message }, 500);
