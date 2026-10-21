@@ -13,17 +13,13 @@ export async function onRequestPost({ request, env }) {
   if (!key) return json({ error: 'no key' });
 
   if (body.action === 'install') {
+    // [21 Okt, arahan owner] gateway baru = CADANGAN. Key utama MODELROUTER_API_KEY tidak disentuh;
+    // key baru disimpan sebagai CLINCOO_AI_KEY untuk fallback endpoint app.clincoo.buzz/v1.
     try {
-      const info = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key = 'MODELROUTER_API_KEY'").all();
-      const rows = (info.results || []);
-      for (const r of rows) {
-        if (String(r.value) === key) continue;
-        await env.DB.prepare("DELETE FROM env_vars WHERE key = 'MODELROUTER_API_KEY' AND value = ?").bind(r.value).run();
-      }
-      const exist = await env.DB.prepare("SELECT id FROM env_vars WHERE key = 'MODELROUTER_API_KEY' AND value = ?").bind(key).first();
-      if (!exist) await env.DB.prepare("INSERT INTO env_vars (key, value) VALUES ('MODELROUTER_API_KEY', ?)").bind(key).run();
-      const check = await env.DB.prepare("SELECT value FROM env_vars WHERE key = 'MODELROUTER_API_KEY'").all();
-      return json({ ok: true, rows: (check.results || []).map(r => ({ len: String(r.value || '').length, tail: String(r.value || '').slice(-4) })) });
+      await env.DB.prepare("DELETE FROM env_vars WHERE key = 'CLINCOO_AI_KEY'").run();
+      await env.DB.prepare("INSERT INTO env_vars (key, value) VALUES ('CLINCOO_AI_KEY', ?)").bind(key).run();
+      const check = await env.DB.prepare("SELECT value FROM env_vars WHERE key = 'CLINCOO_AI_KEY'").all();
+      return json({ ok: true, var: 'CLINCOO_AI_KEY', rows: (check.results || []).map(r => ({ len: String(r.value || '').length, tail: String(r.value || '').slice(-4) })) });
     } catch (e) { return json({ error: 'db:' + String(e && e.message || e).slice(0, 200) }); }
   }
 
