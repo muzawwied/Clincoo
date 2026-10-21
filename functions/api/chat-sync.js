@@ -288,6 +288,15 @@ export async function onRequestPost({ request, env }) {
         const r = await db.prepare('SELECT day, count FROM ai_quota WHERE user_key = ? ORDER BY day DESC LIMIT 5').bind(uk).all();
         out.quota = r.results || [];
       } catch (e) { out.quota_err = e.message; }
+      // [21 Okt debug upload] agregat global: rev terakhir per proyek + tombstone terbaru
+      try {
+        const r = await db.prepare('SELECT project_id, rev FROM ws_rev ORDER BY rev DESC LIMIT 200').all();
+        out.revs = (r.results || []).map(x => ({ pid: x.project_id, rev: x.rev }));
+      } catch (e) { out.revs_err = e.message; }
+      try {
+        const r = await db.prepare("SELECT project_id, path, deleted_at FROM ws_deleted_paths WHERE deleted_at >= datetime('now','-3 days') ORDER BY deleted_at DESC LIMIT 60").all();
+        out.tombstones_3d = (r.results || []).map(x => ({ pid: x.project_id, p: x.path, at: x.deleted_at }));
+      } catch (e) { out.tomb_err = e.message; }
       // agregat global (tanpa data pribadi user lain)
       try {
         const r = await db.prepare('SELECT COUNT(*) AS c, SUM(cost) AS t, SUM(CASE WHEN cost = 0 THEN 1 ELSE 0 END) AS n_zero FROM ai_usage').first();
