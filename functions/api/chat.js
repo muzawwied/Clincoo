@@ -1915,7 +1915,8 @@ export async function onRequestPost({ request, env, waitUntil }) {
       if (!stCalls.length && !asistenMode && toolDecls && _promisesMore && buildContNudgeCount < 2) {
         buildContNudgeCount++;
         workMessages.push({ role: 'assistant', content: r.text });
-        workMessages.push({ role: 'user', content: 'Pesan progresmu diterima. JIKA masih ada file/fitur yang belum selesai sesuai rencanamu, LANJUTKAN SEKARANG dengan memanggil tool (write_file dan lainnya) — jangan berhenti menunggu instruksi. JIKA semua fitur benar-benar sudah selesai dan tersimpan, jawab dengan ringkasan akhir singkat TANPA memanggil tool.' });
+        workMessages.push({ role: 'user', content: 'lanjutkan' });
+        workMessages.push({ role: 'user', content: 'LANJUTKAN PERSIS dari titik terakhir tanpa mengulang, tanpa salam, dan tanpa membuka pagar/mulai ulang. Jika masih ada file/fitur yang belum selesai, kerjakan SEKARANG dengan cara yang sedang kamu pakai (tool write_file atau blok patch) — jangan berhenti menunggu instruksi. Jika semua fitur benar-benar sudah selesai dan tersimpan, jawab ringkasan akhir singkat.' });
         if (streamSend) { try { streamSend({ t: 'delta', text: '\n\n' }); } catch (e) {} }
         continue;
       }
