@@ -166,7 +166,8 @@ async function getModelRouterKeys(env) {
   const keys = [];
   const seen = new Set();
   const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
-  add(env.MODELROUTER_API_KEY);
+  // [21 Okt, arahan pemilik] Kunci ModelRouter BAWAAN (env.MODELROUTER_API_KEY) tidak dipakai lagi:
+  // glm dari secret bawaan Clincoo DIHAPUS. ModelRouter hanya aktif bila user punya key sendiri.
   if (!env.DB) return keys;
   try {
     const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key = 'MODELROUTER_API_KEY'").all();
@@ -677,10 +678,11 @@ async function tryGeminiText(apiKeys, messages, gDecls, onDelta, budget) {
 
 // ===== Fallback Provider 2: OpenRouter =====
 // [21 Okt, arahan pemilik] DILARANG model gratisan (north-mini, gemma, nemotron).
-// Urutan sesuai arahan 9 Okt: haiku 5.5 prioritas, lalu GLM, cadangan GPT.
+// [21 Okt, arahan pemilik] GLM 5.3 Flash via OpenRouter jadi cadangan ke-2 utama (setelah Gemini);
+// glm dari secret bawaan Clincoo dihapus. Haiku & GPT tetap menyusul setelahnya.
 const OPENROUTER_MODELS = [
-  "anthropic/claude-haiku-5.5",
   "z-ai/glm-5.3-flash",
+  "anthropic/claude-haiku-5.5",
   "openai/gpt-6-luna-pro"
 ];
 
