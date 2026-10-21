@@ -265,6 +265,27 @@ export async function onRequestPost({ request, env }) {
         } catch (err) {}
         out.projects.push(e);
       }
+      // [21 Okt debug upload] dump proyek tertentu (dari tombstone global)
+      if (body.pid) {
+        const info = await db.prepare('SELECT id, title, user_id, updated_at FROM user_projects WHERE id = ?').bind(String(body.pid)).first();
+        const dg = { title: info && info.title, updated_at: info && info.updated_at };
+        if (info) {
+          try {
+            const u = await db.prepare('SELECT email, name FROM auth_users WHERE id = ?').bind(String(info.user_id)).first();
+            dg.owner_email = u && u.email; dg.owner_name = u && u.name;
+          } catch (e) { dg.owner_err = e.message; }
+          try {
+            const t = tableFor('project_files', info.id);
+            const r = await db.prepare('SELECT path, is_big, size, created_at, updated_at FROM ' + t + ' WHERE project_id = ? ORDER BY updated_at DESC LIMIT 60').bind(info.id).all();
+            dg.files = (r.results || []).map(f => ({ p: f.path, big: f.is_big, size: f.size, cat: f.created_at, uat: f.updated_at }));
+          } catch (e) { dg.files_err = e.message; }
+          try {
+            const r = await db.prepare('SELECT path, deleted_at FROM ws_deleted_paths WHERE project_id = ? ORDER BY deleted_at DESC LIMIT 40').bind(info.id).all();
+            dg.tombstones = (r.results || []).map(f => ({ p: f.path, at: f.deleted_at }));
+          } catch (e) { dg.tomb_err = e.message; }
+        }
+        return j(dg);
+      }
       return j(out);
     }
 
