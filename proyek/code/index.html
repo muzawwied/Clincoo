@@ -1443,7 +1443,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         Object.keys(projectFilesData || {}).forEach(function (fk) {
           (projectFilesData[fk] || []).forEach(function (it) { if (it && it.type === 'file' && it.path) nowPaths[String(it.path)] = true; });
         });
-        if (wsLastSavedPaths) Object.keys(nowPaths).forEach(function (p) { if (!wsLastSavedPaths[p] && wsKnownDeleted[p]) { wsRestorePaths[p] = true; delete wsKnownDeleted[p]; } });
+        if (wsLastSavedPaths) Object.keys(nowPaths).forEach(function (p) { if (!wsLastSavedPaths[p]) { wsRestorePaths[p] = true; delete wsKnownDeleted[p]; } });
         wsLastSavedPaths = nowPaths;
       } catch (e) {}
       wsCloudPushSchedule();
@@ -2207,6 +2207,8 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
 
             const filePath = currentFolderPath === 'root' ? finalName : currentFolderPath + '/' + finalName;
             projectFilesData[currentFolderPath].push({ type: 'file', name: finalName, size: sizeStr, path: filePath, content: content });
+            // [21 Okt fix: tombstone menyapu file manual baru] path baru = sengaja dibuat ulang bila path-nya pernah ter-tombstone
+            try { wsRestorePaths[String(filePath)] = true; } catch (e) {}
           }
       } else if (modalAction === 'rename') {
           if (name === itemBeingRenamed) {
