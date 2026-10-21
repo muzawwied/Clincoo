@@ -218,6 +218,31 @@ export async function onRequestPost({ request, env }) {
       return j({ ok: true });
     }
 
+    // [21 Okt] hapus SATU file (path) milik owner — untuk bersih-bersih sisa unggahan
+    if (action === 'delete_file') {
+      const projectId = String(body.project_id || '');
+      const path = String(body.path || '');
+      if (!projectId || !path) return j({ error: 'project_id & path wajib' }, 400);
+      const row = await db.prepare('SELECT user_id FROM user_projects WHERE id = ?').bind(projectId).first();
+      if (!row) return j({ error: 'not_found' }, 404);
+      if (Number(row.user_id) !== Number(ownerId)) return j({ error: 'bukan proyek owner' }, 403);
+      const t = await filesTableFor(db, projectId);
+      const del = await db.prepare('DELETE FROM ' + t + ' WHERE project_id = ? AND path = ?').bind(projectId, path).run();
+      try { await db.prepare('DELETE FROM ' + tableFor('file_chunks', projectId) + ' WHERE path = ?').bind(path).run(); } catch (e) {}
+      // tombstone supaya klien lain tidak men-download ulang file yang sudah dihapus
+      try {
+        await db.prepare(`CREATE TABLE IF NOT EXISTS ws_deleted_paths (
+          project_id TEXT NOT NULL, path TEXT NOT NULL,
+          deleted_at TEXT DEFAULT (datetime('now')),
+          PRIMARY KEY (project_id, path)
+        )`).run();
+        await db.prepare(`INSERT INTO ws_deleted_paths (project_id, path, deleted_at) VALUES (?, ?, datetime('now'))
+          ON CONFLICT(project_id, path) DO UPDATE SET deleted_at = datetime('now')`).bind(projectId, path).run();
+      } catch (e) {}
+      try { await db.prepare('UPDATE user_projects SET updated_at = datetime(\'now\') WHERE id = ?').bind(projectId).run(); } catch (e) {}
+      return j({ ok: true, deleted: (del && del.meta && del.meta.changes) || 0 });
+    }
+
     return j({ error: 'unknown_action' }, 400);
   } catch (e) {
     return j({ error: e.message }, 500);
