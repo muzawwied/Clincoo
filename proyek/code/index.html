@@ -1443,7 +1443,8 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         Object.keys(projectFilesData || {}).forEach(function (fk) {
           (projectFilesData[fk] || []).forEach(function (it) { if (it && it.type === 'file' && it.path) nowPaths[String(it.path)] = true; });
         });
-        if (wsLastSavedPaths) Object.keys(nowPaths).forEach(function (p) { if (!wsLastSavedPaths[p]) { wsRestorePaths[p] = true; delete wsKnownDeleted[p]; } });
+        const __prevSaved = wsLastSavedPaths || {};
+        Object.keys(nowPaths).forEach(function (p) { if (!__prevSaved[p]) { wsRestorePaths[p] = true; delete wsKnownDeleted[p]; } });
         wsLastSavedPaths = nowPaths;
       } catch (e) {}
       wsCloudPushSchedule();
@@ -2629,6 +2630,8 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         projectFilesData[targetPath].push(uploadingItem);
       }
       if (targetPath === currentFolderPath || targetPath.startsWith(currentFolderPath)) renderFileList();
+      // [21 Okt fix: upload dihapus tombstone] penanda file besar = recreate sengaja
+      try { wsRestorePaths[String(filePath)] = true; delete wsKnownDeleted[String(filePath)]; } catch (e) {}
       saveData(); // [16 Okt] penanda nama file langsung tersimpan (cache + cloud)
       return wsCloudUploadQueued(filePath, content).then(function (up) {
         if (!up || !up.ok) {
@@ -2685,6 +2688,8 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         } else {
           projectFilesData[targetPath].push({ type: 'file', name: file.name, size: sizeStr, path: filePath, content: content });
         }
+        // [21 Okt fix: upload dihapus tombstone] upload = sengaja membuat ulang path yang pernah ter-tombstone
+        try { wsRestorePaths[String(filePath)] = true; delete wsKnownDeleted[String(filePath)]; } catch (e) {}
         saveData();
         if (targetPath === currentFolderPath || targetPath.startsWith(currentFolderPath)) renderFileList();
       };
