@@ -21,10 +21,27 @@ export async function onRequestGet({ request, env }) {
     } catch (e) { out[name] = { error: String(e && e.message || e).slice(0, 200) }; }
   };
 
-  const mrK = pick('MODELROUTER_API_KEY');
-  if (mrK) await testOAI('mr', 'https://modelrouter.id/v1/chat/completions', mrK.key, 'glm-5.3-flash:mr'); else out.mr = { note: 'key tidak ada di env_vars' };
-  const orK = pick('OPENROUTER_API_KEY');
-  if (orK) await testOAI('or', 'https://openrouter.ai/api/v1/chat/completions', orK.key, 'anthropic/claude-haiku-4.5'); else out.or = { note: 'key tidak ada' };
+  // [fix diag] ambil NILAI key, uji tiap key Gemini (6), OR (2), MR (1)
+  const vals = {};
+  for (const r of (out.db.rows || [])) {
+    try { const row = await env.DB.prepare('SELECT value FROM env_vars WHERE key = ?').bind(r.key).first(); if (row) vals[r.key] = String(row.value || ''); } catch (e) { vals[r.key] = null; }
+  }
+  out.mr = {}; out.or = {}; out.gem = {};
+  if (vals['MODELROUTER_API_KEY']) await testOAI('mr', 'https://modelrouter.id/v1/chat/completions', vals['MODELROUTER_API_KEY'], 'glm-5.3-flash:mr'); else out.mr = { note: 'key tidak ada di env_vars' };
+  for (const k of ['OPENROUTER_API_KEY', 'OPENROUTER_API_KEY_2']) {
+    if (vals[k]) await testOAI('or_' + k.slice(-2), 'https://openrouter.ai/api/v1/chat/completions', vals[k], 'anthropic/claude-haiku-4.5');
+  }
+  const gkeys = ['GEMINI_API_KEY', 'GEMINI_API_KEY_2', 'GEMINI_API_KEY_3', 'GEMINI_API_KEY_4', 'GEMINI_API_KEY_5', 'GEMINI_API_KEY_6'];
+  out.gem.results = [];
+  for (const k of gkeys) {
+    if (!vals[k]) { out.gem.results.push({ key: k, note: 'tidak ada' }); continue; }
+    try {
+      const t0 = Date.now();
+      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(vals[k]), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: 'Balas satu kata: OK' }] }] }) });
+      const body = await res.text();
+      out.gem.results.push({ key: k, ms: Date.now() - t0, status: res.status, body: body.slice(0, 150) });
+    } catch (e) { out.gem.results.push({ key: k, error: String(e && e.message || e).slice(0, 150) }); }
+  }
   try { const r = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', { messages: [{ role: 'user', content: 'Balas OK' }] }); out.wa = { ok: true, sample: String(r && (r.response || r) || '').slice(0, 80) }; } catch (e) { out.wa = { error: String(e && e.message || e).slice(0, 200) }; }
   return json(out);
 }
