@@ -303,6 +303,27 @@ export async function onRequestPost({ request, env }) {
       return j(out);
     }
 
+    // [21 Okt debug upload] bersihkan tombstone NGANGGUR: path yang tidak punya baris
+    // file di cloud tapi masih memblokir upload ulang (penyebab "upload hilang lagi").
+    if (action === 'sweep_noop_tombstones') {
+      const rv = await db.prepare('SELECT project_id FROM ws_rev').all();
+      let cleared = [];
+      for (const row of (rv.results || [])) {
+        const pid = String(row.project_id);
+        try {
+          const t = tableFor('project_files', pid);
+          const r = await db.prepare(
+            'DELETE FROM ws_deleted_paths WHERE project_id = ? AND path NOT IN (SELECT path FROM ' + t + ' WHERE project_id = ?)'
+          ).bind(pid, pid).run();
+        } catch (e) {}
+        try {
+          const left = await db.prepare('SELECT path, deleted_at FROM ws_deleted_paths WHERE project_id = ? ORDER BY deleted_at DESC LIMIT 40').bind(pid).all();
+          for (const f of (left.results || [])) cleared.push({ pid, p: f.path, at: f.deleted_at });
+        } catch (e) {}
+      }
+      return j({ remaining_tombstones: cleared });
+    }
+
     // [21 Okt] DIAGNOSTIK pemakaian kredit AI milik owner (debug "pemakaian 0 terus")
     if (action === 'ai_usage') {
       const uk = 'u' + ownerId;
@@ -323,27 +344,6 @@ export async function onRequestPost({ request, env }) {
         const r = await db.prepare('SELECT day, count FROM ai_quota WHERE user_key = ? ORDER BY day DESC LIMIT 5').bind(uk).all();
         out.quota = r.results || [];
       } catch (e) { out.quota_err = e.message; }
-      // [21 Okt debug upload] uji langsung bump ws_rev + laporkan error aslinya
-      try {
-        const r = await db.prepare('SELECT project_id, rev FROM ws_rev ORDER BY rev DESC LIMIT 200').all();
-        out.revs = (r.results || []).map(x => ({ pid: x.project_id, rev: x.rev }));
-      } catch (e) { out.revs_err = e.message; }
-      try {
-        await db.prepare('CREATE TABLE IF NOT EXISTS ws_rev (project_id TEXT PRIMARY KEY, rev INTEGER NOT NULL DEFAULT 0)').run();
-        await db.prepare('INSERT INTO ws_rev (project_id, rev) VALUES (?, 1) ON CONFLICT(project_id) DO UPDATE SET rev = rev + 1').bind('__diag_probe__', 1).run();
-        const r2 = await db.prepare('SELECT COUNT(*) c FROM ws_rev').first();
-        out.diag_probe_count = r2 && r2.c;
-        await db.prepare('DELETE FROM ws_rev WHERE project_id = ?').bind('__diag_probe__').run();
-      } catch (e) { out.diag_probe_err = e.message; }
-      // [21 Okt debug upload] agregat global: rev terakhir per proyek + tombstone terbaru
-      try {
-        const r = await db.prepare('SELECT project_id, rev FROM ws_rev ORDER BY rev DESC LIMIT 200').all();
-        out.revs = (r.results || []).map(x => ({ pid: x.project_id, rev: x.rev }));
-      } catch (e) { out.revs_err = e.message; }
-      try {
-        const r = await db.prepare("SELECT project_id, path, deleted_at FROM ws_deleted_paths WHERE deleted_at >= datetime('now','-3 days') ORDER BY deleted_at DESC LIMIT 60").all();
-        out.tombstones_3d = (r.results || []).map(x => ({ pid: x.project_id, p: x.path, at: x.deleted_at }));
-      } catch (e) { out.tomb_err = e.message; }
       // agregat global (tanpa data pribadi user lain)
       try {
         const r = await db.prepare('SELECT COUNT(*) AS c, SUM(cost) AS t, SUM(CASE WHEN cost = 0 THEN 1 ELSE 0 END) AS n_zero FROM ai_usage').first();
