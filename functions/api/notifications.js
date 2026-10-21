@@ -68,9 +68,12 @@ export async function onRequestPost({ request, env }) {
       return j({ success: true });
     }
 
+    // [21 Okt] clear_read kini PRUNE: hanya notif SUDAH DIBACA dan >7 hari yang dihapus.
+    // Sebelumnya hapus SEMUA yang terbaca saat itu juga -> buka lonceng sekali, daftar
+    // notifikasi kosong semua di halaman /notifikasi (laporan owner 21 Okt).
     if (action === 'clear_read') {
-      if (uid) await db.prepare('DELETE FROM notifications WHERE read = 1 AND user_id = ?').bind(uid).run();
-      else await db.prepare('DELETE FROM notifications WHERE read = 1').run();
+      if (uid) await db.prepare("DELETE FROM notifications WHERE read = 1 AND user_id = ? AND created_at < datetime('now', '-7 days')").bind(uid).run();
+      else await db.prepare("DELETE FROM notifications WHERE read = 1 AND created_at < datetime('now', '-7 days')").run();
       return j({ success: true });
     }
 

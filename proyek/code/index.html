@@ -545,7 +545,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
     // Shared Notification System
     const NOTIF_KEY = 'clincoo_notifications';
     const NOTIF_API = 'https://clincoo-be2.pages.dev/api/notifications';
-    const NOTIF_ALLOWED = ['GitHub', 'Workspace', 'Deploy', 'Akun', 'Dompet'];
+    const NOTIF_ALLOWED = ['GitHub', 'Workspace', 'Deploy', 'Akun', 'Dompet', 'Clincoo'];
     function isAllowedNotif(n) { return NOTIF_ALLOWED.indexOf(String((n && n.source) || '')) > -1; }
     (function(){ try { var _pn = JSON.parse(localStorage.getItem(NOTIF_KEY) || '[]'); var _pk = _pn.filter(isAllowedNotif); if (_pk.length !== _pn.length) { localStorage.setItem(NOTIF_KEY, JSON.stringify(_pk)); } } catch(e) {} })();
     function getNotifications() { try { return JSON.parse(localStorage.getItem(NOTIF_KEY) || '[]').filter(isAllowedNotif); } catch(e) { return []; } }

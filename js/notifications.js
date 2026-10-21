@@ -6,7 +6,7 @@ function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ 
  */
 const NOTIF_API = 'https://clincoo-be2.pages.dev/api/notifications';
 const NOTIF_KEY = 'clincoo_notifications';
-const NOTIF_ALLOWED = ['GitHub', 'Workspace', 'Deploy', 'Akun', 'Dompet'];
+const NOTIF_ALLOWED = ['GitHub', 'Workspace', 'Deploy', 'Akun', 'Dompet', 'Clincoo'];
 function isAllowedNotif(n) { return NOTIF_ALLOWED.indexOf(String((n && n.source) || '')) > -1; }
 function getLocalNotifs() { try { return JSON.parse(localStorage.getItem(NOTIF_KEY) || '[]').filter(isAllowedNotif); } catch(e) { return []; } }
 // Waktu notif dalam ms — D1 menyimpan UTC ('YYYY-MM-DD HH:MM:SS'), lama pakai ISO (timestamp)
@@ -49,9 +49,14 @@ const notifColors = {
     info: '#6b7280'
 };
 
+// [21 Okt] bersih-bersih hanya SEKALI per muat halaman (server kini hanya memangkas
+// notif terbaca >7 hari — bukan menghapus semuanya saat dibaca)
+let notifPruneDone = false;
 async function fetchD1Notifications() {
     try {
-        await fetch(NOTIF_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear_read' }) });
+        if (!notifPruneDone) { notifPruneDone = true;
+            try { await fetch(NOTIF_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear_read' }) }); } catch(e) {}
+        }
         const res = await fetch(NOTIF_API);
         if (!res.ok) return;
         const data = await res.json();
@@ -162,7 +167,6 @@ function markLocalNotifsRead(onlyId) {
 async function markAllNotifsRead() {
     try {
         await fetch(NOTIF_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'mark_all_read' }) });
-        await fetch(NOTIF_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear_read' }) });
         markLocalNotifsRead();
         fetchD1Notifications();
     } catch(e) {}

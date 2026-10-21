@@ -386,7 +386,7 @@ async function handleUpdate({ request, env }) {
       if (!ids.length) return sendText(env, chatId, '❌ Tidak ada user.');
       const stmts = ids.map(id => db.prepare(
         'INSERT INTO notifications (source, message, type, link, user_id) VALUES (?, ?, ?, ?, ?)'
-      ).bind('Bot Clincoo', rest.slice(0, 500), type, '', id));
+      ).bind('Clincoo', rest.slice(0, 500), type, '', id));
       for (let i = 0; i < stmts.length; i += 40) await db.batch(stmts.slice(i, i + 40));
       return sendText(env, chatId, '✅ Notifikasi terkirim ke ' + ids.length + (ids.length === 1 ? ' user.' : ' user (semua).'));
     } catch (e) {
