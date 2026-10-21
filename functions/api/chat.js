@@ -862,7 +862,7 @@ async function tryClincooGatewayText(keys, messages, onDelta, budget) {
 }
 
 // ===== Orkestrasi Unified Multi-Model Generation =====
-async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, toolDecls, onDelta, usageAcc, budget }) {
+async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, toolDecls, onDelta, usageAcc, asistenMode, budget }) {
   // [21 Okt] anggaran subrequest habis -> jangan mulai penyedia baru; semua fetch
   // berikutnya pasti gagal dengan "Too many subrequests".
   if (budgetOut(budget)) return { error: 'Anggaran subrequest habis (jawaban terlalu panjang untuk satu permintaan)', sublimit: true };
@@ -892,7 +892,7 @@ async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, 
   // 1b. [21 Okt, arahan owner] Cadangan: gateway Open API Clincoo (glm-4.7-flash, teks-saja)
   if (budgetOut(budget)) return { error: lastError || 'Anggaran subrequest habis', sublimit: true };
   try {
-    const gwKeys = await getClincooGatewayKeys(env);
+    const gwKeys = (asistenMode || !toolDecls) ? await getClincooGatewayKeys(env) : [];
     if (gwKeys.length) {
       const r = await withTimeout(tryClincooGatewayText(gwKeys, messages, wrappedDelta, budget), 180000, 'gateway-cadangan');
       if (r && !r.error) return r;
@@ -1876,6 +1876,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
         geminiKeys,
         orKeys,
         messages: workMessages,
+        asistenMode,
         toolDecls,
         onDelta: streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null,
         usageAcc: mrUsageAcc,
