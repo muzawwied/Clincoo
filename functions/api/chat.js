@@ -1506,6 +1506,9 @@ export async function onRequestGet({ request, env }) {
 
 function serverProgressText(tc) {
   const a = tc.args || {};
+  if (tc.name === 'write_file') return 'Writing ' + String(a.path || '') + '…';
+  if (tc.name === 'read_file') return 'Reading ' + String(a.path || '') + '…';
+  if (tc.name === 'delete_file') return 'Deleting ' + String(a.path || '') + '…';
   if (tc.name === 'search_clincoo_kb') return 'Searching Clincoo knowledge base: ' + String(a.query || '').slice(0, 60) + '…';
   if (tc.name === 'install_automation') return 'Memasang otomatisasi: ' + String(a.name || '') + '…';
   if (tc.name === 'manage_domain') return 'Mengatur domain: ' + String(a.action || '') + (a.domain ? ' ' + a.domain : '') + '…';
@@ -1867,8 +1870,9 @@ export async function onRequestPost({ request, env, waitUntil }) {
     const attemptCascade = async () => {
     let r = null;
     let planGapNudgeCount = 0;
+    let buildContNudgeCount = 0;
     let designFixDone = false;
-    for (let sHop = 0; sHop <= (asistenMode ? 14 : 4); sHop++) {
+    for (let sHop = 0; sHop <= (asistenMode ? 14 : 10); sHop++) {
       if (budgetOut(subBudget) && sHop > 0) break; // [21 Okt] anggaran habis: berhenti elegan, klien tinggal "lanjutkan"
       r = await executeAiGeneration({
         env,
@@ -1905,6 +1909,16 @@ export async function onRequestPost({ request, env, waitUntil }) {
         continue;
       }
       const stCalls = (r.tool_calls || []).filter(tc => SERVER_TOOLS_ALL.has(tc.name));
+      // [21 Okt, arahan owner] AI kirim pesan progres lalu lanjut kerja lagi, sampai tuntas.
+      const _bm = String(r.text || '');
+      const _promisesMore = /\b(lanjut|berikutnya|selanjutnya|akan (?:saya )?(?:buat|membuat|tambah|menambahkan|lanjutkan|mengerjakan)|belum|masih ada)\b/i.test(_bm);
+      if (!stCalls.length && !asistenMode && toolDecls && _promisesMore && buildContNudgeCount < 2) {
+        buildContNudgeCount++;
+        workMessages.push({ role: 'assistant', content: r.text });
+        workMessages.push({ role: 'user', content: 'Pesan progresmu diterima. JIKA masih ada file/fitur yang belum selesai sesuai rencanamu, LANJUTKAN SEKARANG dengan memanggil tool (write_file dan lainnya) — jangan berhenti menunggu instruksi. JIKA semua fitur benar-benar sudah selesai dan tersimpan, jawab dengan ringkasan akhir singkat TANPA memanggil tool.' });
+        if (streamSend) { try { streamSend({ t: 'delta', text: '\n\n' }); } catch (e) {} }
+        continue;
+      }
       if (!stCalls.length) break;
       const clientCalls = (r.tool_calls || []).filter(tc => !SERVER_TOOLS_ALL.has(tc.name));
       const results = [];
