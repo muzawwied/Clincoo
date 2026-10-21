@@ -912,7 +912,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       const nChunks = Math.max(1, Math.ceil(b64.length / CH));
       for (let idx = 0; idx < nChunks; idx++) {
         try {
-          await wsChunkPost({ project_id: pid, bump_rev: idx === nChunks - 1, files: [{ path: path, chunk_b64: b64.slice(idx * CH, (idx + 1) * CH), chunk_idx: String(idx), total_bytes: totalBytes }] }, idx, nChunks, path);
+          await wsChunkPost({ project_id: pid, bump_rev: idx === nChunks - 1, restore_paths: [path], files: [{ path: path, chunk_b64: b64.slice(idx * CH, (idx + 1) * CH), chunk_idx: String(idx), total_bytes: totalBytes }] }, idx, nChunks, path);
         } catch (err) {
           return { ok: false, error: (err && err.message ? err.message : String(err)) };
         }
