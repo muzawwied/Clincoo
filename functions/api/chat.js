@@ -819,6 +819,51 @@ async function tryWorkersAIText(env, messages, onDelta, budget) {
   return lastErr ? { error: lastErr } : null;
 }
 
+// ===== [21 Okt, arahan owner] CADANGAN: gateway Open API Clincoo sendiri =====
+// app.clincoo.buzz menantang panggilan non-browser (Cloudflare), jadi Worker memanggil
+// lewat hostname pages.dev milik deployment ini sendiri. Model glm-4.7-flash di gateway
+// adalah teks-saja (tanpa tools); dipakai hanya bila ModelRouter utama gagal.
+const CLINCOO_GW_ENDPOINT = 'https://clincoo-be2.pages.dev/v1/chat/completions';
+const CLINCOO_GW_MODEL = 'clincoo/glm-4.7-flash';
+
+async function getClincooGatewayKeys(env) {
+  const keys = [];
+  const seen = new Set();
+  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
+  add(env.CLINCOO_AI_KEY);
+  if (!env.DB) return keys;
+  try {
+    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key = 'CLINCOO_AI_KEY'").all();
+    for (const r of rows.results || []) add(r.value);
+  } catch {}
+  return keys;
+}
+
+async function tryClincooGatewayText(keys, messages, onDelta, budget) {
+  const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
+  if (!keyList.length) return null;
+  const { system, chatMsgs } = toOAIChat(messages);
+  const msgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
+  let lastErr = null;
+  for (const key of keyList) {
+    if (budgetOut(budget)) return { error: lastErr || 'Anggaran subrequest habis', sublimit: true };
+    try {
+      if (!budgetTake(budget)) return { error: lastErr || 'Anggaran subrequest habis', sublimit: true };
+      const res = await fetch(CLINCOO_GW_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify({ model: CLINCOO_GW_MODEL, messages: msgs, stream: true })
+      });
+      if (!res.ok) { lastErr = 'Gateway cadangan: HTTP ' + res.status; continue; }
+      if (!res.body) { lastErr = 'Gateway cadangan: body kosong'; continue; }
+      const st = await readOAICompatStream(res, onDelta);
+      if (st && st.text && st.text.trim()) return { text: st.text, model: 'clincoo-openapi' };
+      lastErr = 'Gateway cadangan: stream kosong';
+    } catch (e) { lastErr = 'Gateway cadangan: ' + (e && e.message || e); }
+  }
+  return lastErr ? { error: lastErr } : null;
+}
+
 // ===== Orkestrasi Unified Multi-Model Generation =====
 async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, toolDecls, onDelta, usageAcc, budget }) {
   // [21 Okt] anggaran subrequest habis -> jangan mulai penyedia baru; semua fetch
@@ -846,6 +891,18 @@ async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, 
     } catch (e) { lastError = e.message; }
     if (deltaSent) return partialOr(mrLabel(), lastError || "ModelRouter terputus saat streaming");
   }
+
+  // 1b. [21 Okt, arahan owner] Cadangan: gateway Open API Clincoo (glm-4.7-flash, teks-saja)
+  if (budgetOut(budget)) return { error: lastError || 'Anggaran subrequest habis', sublimit: true };
+  try {
+    const gwKeys = await getClincooGatewayKeys(env);
+    if (gwKeys.length) {
+      const r = await withTimeout(tryClincooGatewayText(gwKeys, messages, wrappedDelta, budget), 180000, 'gateway-cadangan');
+      if (r && !r.error) return r;
+      if (r && r.error) lastError = r.error;
+    }
+  } catch (e) { lastError = e.message; }
+  if (deltaSent) return partialOr(mrLabel(), lastError || "Gateway cadangan terputus saat streaming");
 
   // 2. Gemini (Fallback 1)
   if (budgetOut(budget)) return { error: lastError || 'Anggaran subrequest habis', sublimit: true };
