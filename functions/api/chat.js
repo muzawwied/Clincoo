@@ -862,7 +862,7 @@ async function tryClincooGatewayText(keys, messages, onDelta, budget) {
 }
 
 // ===== Orkestrasi Unified Multi-Model Generation =====
-async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, toolDecls, onDelta, usageAcc, asistenMode, budget }) {
+async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, toolDecls, onDelta, usageAcc, budget }) {
   // [21 Okt] anggaran subrequest habis -> jangan mulai penyedia baru; semua fetch
   // berikutnya pasti gagal dengan "Too many subrequests".
   if (budgetOut(budget)) return { error: 'Anggaran subrequest habis (jawaban terlalu panjang untuk satu permintaan)', sublimit: true };
@@ -892,7 +892,7 @@ async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, 
   // 1b. [21 Okt, arahan owner] Cadangan: gateway Open API Clincoo (glm-4.7-flash, teks-saja)
   if (budgetOut(budget)) return { error: lastError || 'Anggaran subrequest habis', sublimit: true };
   try {
-    const gwKeys = (asistenMode || !toolDecls) ? await getClincooGatewayKeys(env) : [];
+    const gwKeys = (!toolDecls) ? await getClincooGatewayKeys(env) : [];
     if (gwKeys.length) {
       const r = await withTimeout(tryClincooGatewayText(gwKeys, messages, wrappedDelta, budget), 180000, 'gateway-cadangan');
       if (r && !r.error) return r;
@@ -1729,14 +1729,8 @@ export async function onRequestPost({ request, env, waitUntil }) {
 
     let messages = Array.isArray(body.messages) ? body.messages : [];
 
-    const asistenMode = String(body.mode || '').trim() === 'asisten';
-
     if (!messages.some(m => m && m.role === 'system')) {
       messages = [{ role: 'system', content: ASISTEN_SYSTEM_PROMPT }, ...messages];
-    }
-
-    if (asistenMode) {
-      messages = messages.filter((m, ix) => !(m && m.role === 'system' && ix > 0));
     }
 
     if (!messages.some(m => m && m.role === 'user')) {
@@ -1841,16 +1835,10 @@ export async function onRequestPost({ request, env, waitUntil }) {
     }
 
     let decls = workspaceDecls(body);
-    // [21 Okt FIX PERMANEN] Keputusan tools kini di SERVER: mode 'build' SELALU membawa semua tool,
-    // 'asisten' hanya tool ringan. Flag workspace_tools dari klien TIDAK dipakai lagi — flag ini sudah
-    // 3x dipakai bot untuk mematikan semua tool AI di klien (guard selectedAiMode yang tidak ada fungsinya).
-    const wantTools = asistenMode || String(body.mode || '').trim() === 'build';
-
-    const ASISTEN_TOOLS = new Set(['search_clincoo_kb', 'take_screenshot']);
-    if (asistenMode) decls = decls.filter(d => d && ASISTEN_TOOLS.has(d.name));
-    const gTools = wantTools
-      ? [{ functionDeclarations: decls }]
-      : null;
+    // [21 Okt, arahan owner] SATU MODE TERPADU: tidak ada lagi build vs asisten —
+    // semua chat TERHUBUNG penuh dengan seluruh tool Clincoo (workspace, terminal, dsb.).
+    // Flag mode/workspace_tools dari klien diabaikan.
+    const gTools = [{ functionDeclarations: decls }];
 
     const hasImages = messages.some(m => Array.isArray(m?.content) && m.content.some(b => b && b.type === 'image_url' && b.image_url?.url));
 
@@ -1865,14 +1853,14 @@ export async function onRequestPost({ request, env, waitUntil }) {
     const mrUsageAcc = {};
     const subBudget = budgetNew(); // [21 Okt] batasi subrequest AI per invocation
     const toolDecls = (gTools && gTools[0] && gTools[0].functionDeclarations) || null;
-    const modeLabel = asistenMode ? 'asisten' : 'build';
+    const modeLabel = 'chat';
 
     const attemptCascade = async () => {
     let r = null;
     let planGapNudgeCount = 0;
     let buildContNudgeCount = 0;
     let designFixDone = false;
-    for (let sHop = 0; sHop <= (asistenMode ? 14 : 10); sHop++) {
+    for (let sHop = 0; sHop <= 14; sHop++) {
       if (budgetOut(subBudget) && sHop > 0) break; // [21 Okt] anggaran habis: berhenti elegan, klien tinggal "lanjutkan"
       r = await executeAiGeneration({
         env,
@@ -1880,7 +1868,6 @@ export async function onRequestPost({ request, env, waitUntil }) {
         geminiKeys,
         orKeys,
         messages: workMessages,
-        asistenMode,
         toolDecls,
         onDelta: streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null,
         usageAcc: mrUsageAcc,
@@ -1897,7 +1884,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
       const buildIntent = /\b(buat|buatkan|bikin|bikinkan|bangun|dibuatkan|dibangun|tolong buat|minta buat|landing ?page|situs|website|web ?page|aplikasi|webnya|situnya|lanjut)\b/i.test(String((lastUser && lastUser.content) || ''));
 
       const promiseLanguage = /tunggu (sebentar|sejenak)|mohon tunggu|harap tunggu|akan (saya )?(buat|membuat|bikin|lanjutkan|menyelesaikan|mulai)|sedang (membuat|menyiapkan|mengerjakan|memproses)|segera (saya )?(buat|lanjutkan)|silakan tunggu/i.test(String(r.text || ''));
-      const isPlanGap = !asistenMode && toolDecls && !hasImages && noToolsAtAll && String(r.text || '').trim()
+      const isPlanGap = toolDecls && !hasImages && noToolsAtAll && String(r.text || '').trim()
         && !hasWriteCall && (buildIntent || identityDone || promiseLanguage)
         && !/\[\[POLL\]\]|\[\[FORM\]\]|\[\[PLUGIN:/i.test(r.text);
       if (isPlanGap && planGapNudgeCount < 2) {
@@ -1912,7 +1899,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
       // [21 Okt, arahan owner] AI kirim pesan progres lalu lanjut kerja lagi, sampai tuntas.
       const _bm = String(r.text || '');
       const _promisesMore = /\b(lanjut|berikutnya|selanjutnya|akan (?:saya )?(?:buat|membuat|tambah|menambahkan|lanjutkan|mengerjakan)|belum|masih ada)\b/i.test(_bm);
-      if (!stCalls.length && !asistenMode && toolDecls && _promisesMore && buildContNudgeCount < 2) {
+      if (!stCalls.length && toolDecls && _promisesMore && buildContNudgeCount < 2) {
         buildContNudgeCount++;
         workMessages.push({ role: 'assistant', content: r.text });
         workMessages.push({ role: 'user', content: 'lanjutkan' });

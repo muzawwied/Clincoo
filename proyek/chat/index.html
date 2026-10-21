@@ -2721,7 +2721,7 @@ async function sendMessage(opts) {
                 method: 'POST',
                 headers: __chatTk ? { 'Content-Type': 'application/json', Authorization: 'Bearer ' + __chatTk } : { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    mode: 'build', workspace_tools: ((typeof window.selectedAiMode === 'function' && window.selectedAiMode()) === 'build'), /* CHAT_BUILD_MODE_FIX */ /* [21 Okt FIX-2] JANGAN kembalikan guard selectedAiMode: fungsinya tidak ada di UI baru dan ini mematikan SEMUA tool AI */ stream: true,
+                    stream: true,
                     messages: toGroqMessages(reqContents),
                     project_id: PROJECT_ID || undefined,
                     session_id: currentSessionId || undefined
