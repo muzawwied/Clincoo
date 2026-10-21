@@ -243,6 +243,31 @@ export async function onRequestPost({ request, env }) {
       return j({ ok: true, deleted: (del && del.meta && del.meta.changes) || 0 });
     }
 
+    // [21 Okt] DIAGNOSTIK workspace: file + tombstone proyek owner (debug "upload hilang")
+    if (action === 'ws_diag') {
+      const projs = await db.prepare('SELECT id, title, updated_at FROM user_projects WHERE user_id = ? ORDER BY updated_at DESC LIMIT 8').bind(ownerId).all();
+      const out = { projects: [] };
+      for (const p of (projs.results || [])) {
+        const e = { id: p.id, title: p.title, updated_at: p.updated_at };
+        try {
+          const t = tableFor('project_files', p.id);
+          const r = await db.prepare('SELECT path, is_big, size FROM ' + t + ' WHERE project_id = ? ORDER BY updated_at DESC LIMIT 40').bind(p.id).all();
+          e.files = (r.results || []).map(f => ({ p: f.path, big: f.is_big, size: f.size }));
+          e.file_count = (r.results || []).length;
+        } catch (err) { e.files_err = err.message; }
+        try {
+          const r = await db.prepare('SELECT path, deleted_at FROM ws_deleted_paths WHERE project_id = ? ORDER BY deleted_at DESC LIMIT 40').bind(p.id).all();
+          e.tombstones = (r.results || []).map(f => ({ p: f.path, at: f.deleted_at }));
+        } catch (err) { e.tomb_err = err.message; }
+        try {
+          const r = await db.prepare('SELECT rev FROM user_projects WHERE id = ?').bind(p.id).first();
+          e.rev = r && r.rev;
+        } catch (err) {}
+        out.projects.push(e);
+      }
+      return j(out);
+    }
+
     // [21 Okt] DIAGNOSTIK pemakaian kredit AI milik owner (debug "pemakaian 0 terus")
     if (action === 'ai_usage') {
       const uk = 'u' + ownerId;
