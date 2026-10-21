@@ -904,18 +904,7 @@ async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, 
   } catch (e) { lastError = e.message; }
   if (deltaSent) return partialOr(mrLabel(), lastError || "Gateway cadangan terputus saat streaming");
 
-  // 2. Gemini (Fallback 1)
-  if (budgetOut(budget)) return { error: lastError || 'Anggaran subrequest habis', sublimit: true };
-  if (geminiKeys && geminiKeys.length) {
-    try {
-      const r = await tryGeminiText(geminiKeys, messages, toolDecls, wrappedDelta, budget);
-      if (r && !r.error) return r;
-      if (r && r.error) lastError = r.error;
-    } catch (e) { lastError = e.message; }
-    if (deltaSent) return partialOr("Gemini", lastError || "Gemini terputus saat streaming");
-  }
-
-  // 3. OpenRouter (Fallback 2)
+  // 2. OpenRouter (Fallback 1) — [21 Okt, arahan pemilik] glm-5.3-flash duluan, Gemini turun ke no 3
   if (budgetOut(budget)) return { error: lastError || 'Anggaran subrequest habis', sublimit: true };
   if (orKeys && orKeys.length) {
     try {
@@ -924,6 +913,17 @@ async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, 
       if (r && r.error) lastError = r.error;
     } catch (e) { lastError = e.message; }
     if (deltaSent) return partialOr("OpenRouter", lastError || "OpenRouter terputus saat streaming");
+  }
+
+  // 3. Gemini (Fallback 2)
+  if (budgetOut(budget)) return { error: lastError || 'Anggaran subrequest habis', sublimit: true };
+  if (geminiKeys && geminiKeys.length) {
+    try {
+      const r = await tryGeminiText(geminiKeys, messages, toolDecls, wrappedDelta, budget);
+      if (r && !r.error) return r;
+      if (r && r.error) lastError = r.error;
+    } catch (e) { lastError = e.message; }
+    if (deltaSent) return partialOr("Gemini", lastError || "Gemini terputus saat streaming");
   }
 
   // 4. Workers AI (Fallback 3)
