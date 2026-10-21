@@ -286,6 +286,20 @@ export async function onRequestPost({ request, env }) {
         }
         return j(dg);
       }
+      // [21 Okt debug upload] scan global: file yang dibuat HARI INI di semua proyek aktif
+      try {
+        const rv = await db.prepare('SELECT project_id FROM ws_rev').all();
+        const today = new Date().toISOString().slice(0, 10);
+        out.created_today = [];
+        for (const row of (rv.results || [])) {
+          const pid = String(row.project_id);
+          try {
+            const t = tableFor('project_files', pid);
+            const r = await db.prepare('SELECT path, is_big, size, created_at FROM ' + t + ' WHERE project_id = ? AND created_at >= ? ORDER BY created_at DESC LIMIT 50').bind(pid, today).all();
+            for (const f of (r.results || [])) out.created_today.push({ pid, p: f.path, big: f.is_big, size: f.size, cat: f.created_at });
+          } catch (e) {}
+        }
+      } catch (e) { out.today_err = e.message; }
       return j(out);
     }
 
