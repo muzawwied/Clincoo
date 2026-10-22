@@ -13,12 +13,16 @@ export function maybeWrapDB(env) {
     'Authorization': 'Bearer ' + String(key)
   };
 
+  const gq = globalThis;
+  gq.__d1qTrace = [];
   async function call(path, payload) {
     let r;
+    gq.__d1qTrace.push(String((payload && payload.sql) || (payload && payload.statements && 'BATCH(' + payload.statements.length + ')') || path).slice(0, 90));
     try {
       r = await fetch(base + path, { method: 'POST', headers, body: JSON.stringify(payload) });
     } catch (e) {
-      throw new Error('d1remote: fetch gagal (' + (e && e.message) + ')');
+      const tr = gq.__d1qTrace;
+      throw new Error('d1remote: fetch gagal (' + (e && e.message) + ') [q#' + tr.length + ' | ' + tr.slice(-14).join(' ; ') + ']');
     }
     let j = null;
     try { j = await r.json(); } catch {}
