@@ -1229,6 +1229,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
               try { localStorage.setItem(wsFilesKey(), mergedStr); } catch (e) {}
               renderFileList();
             }
+            wsDiag('pull_ganti', 'cloud n=' + files.length + ' | folder aktif: ' + currentFolderPath);
           } else {
             // [22 Okt FIX "upload masih hilang"] D1 kosong TIDAK selalu berarti
             // semua file sengaja dihapus: file lokal yang push-nya belum berhasil
@@ -1748,6 +1749,11 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       try { addNotification('Workspace', bad.length + ' berkas sisa unggahan terputus (' + bad.slice(0, 5).join(', ') + ') otomatis dihapus dari cloud. Upload ulang bila masih diperlukan.'); } catch (e) {}
     }
     function renderFileList() {
+      try { renderFileListInner(); } catch (e) {
+        try { console.error('[Workspace render] gagal render daftar: ' + (e && e.message)); wsDiag('render_error', (e && e.message) || String(e)); wsToast('⚠ Daftar file gagal ditampilkan — ' + (e && e.message)); } catch (e2) {}
+      }
+    }
+    function renderFileListInner() {
       try { wsWarnEmptyBigOnce(); } catch (e) {}
       const container = document.getElementById('file-list-container');
       const breadcrumb = document.getElementById('file-breadcrumb');
@@ -1775,6 +1781,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
 
       let items = projectFilesData[currentFolderPath] || [];
       if (searchTerm) items = items.filter(item => item.name.toLowerCase().includes(searchTerm));
+      try { wsDiag('render', 'folder=' + currentFolderPath + ' | item=' + items.length + (searchTerm ? ' | cari="' + searchTerm + '"' : '') + ' | pohon=' + filesLenNow()); } catch (eD) {}
 
       items = items.slice().sort((a, b) => {
         if (a.type === 'folder' && b.type !== 'folder') return -1;
