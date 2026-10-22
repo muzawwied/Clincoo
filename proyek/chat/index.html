@@ -2228,8 +2228,21 @@ function __wsHeaders(json) { const tk = __wsTk(); const h = json ? { 'Content-Ty
 // isi proyek (STATE PROYEK otomatis tiap giliran) & viewer menampilkan pohon/preview/konsol.
 async function wsLoadReal() {
     if (!PROJECT_ID) return;
-    if (computeProjState()) return; // percakapan sudah punya proyek -> jangan dobel
-    if (messages.some(m => m.wsSeed)) return;
+    // [22 Okt FIX "AI bilang isinya cuma aktivitas.html"] seed STATE PROYEK dulu
+    // disuntik SEKALI per percakapan -> AI memegang potret basi waktu workspace
+    // masih nyaris kosong. Kini: nomor revisi cloud dicompat murah; bila workspace
+    // berubah sejak seed terakhir, SEED LAMA DIGANTI dengan potret terbaru.
+    let __rev = '';
+    try {
+        const rr = await fetch(TOOL_API_BASE + '/api/project-files?project_id=' + encodeURIComponent(PROJECT_ID) + '&rev=1', { headers: __wsHeaders(false) });
+        if (rr.ok) { const rd = await rr.json().catch(function () { return {}; }); __rev = String((rd && rd.rev) || ''); }
+    } catch (e) {}
+    const __seedKey = 'clq_ws_seed_rev_' + PROJECT_ID;
+    let __lastRev = '';
+    try { __lastRev = localStorage.getItem(__seedKey) || ''; } catch (e) {}
+    const __seedIdx = messages.findIndex(m => m.wsSeed);
+    if (__seedIdx !== -1 && __rev && __rev === __lastRev) return; // seed masih segar
+    if (__seedIdx === -1 && computeProjState()) return; // percakapan sudah punya proyek AI -> jangan dobel
     try {
         const res = await fetch(TOOL_API_BASE + '/api/project-files?project_id=' + encodeURIComponent(PROJECT_ID), { headers: __wsHeaders(false) });
         if (!res.ok) return;
@@ -2247,9 +2260,15 @@ async function wsLoadReal() {
         if (!count) return;
         const entryF = small.find(f => f.path === 'index.html') || small.find(f => /\.html?$/i.test(f.path));
         const nm = (window.__clqProjName || 'Proyek Clincoo');
-        const seedText = '````project\nname: ' + nm + '\nentry: ' + (entryF ? entryF.path : '') + '\n-----\n' + parts.join('\n\n') + '\n````\n\n_Workspace proyek "' + nm + '" dimuat (' + count + ' dari ' + files.length + ' file server' + (files.length > count ? ', sisanya file besar yang tidak dimuat di percakapan' : '') + '). Klik kartu proyek untuk pohon file, preview, dan konsol. Minta perubahan apa pun, aku kerjakan lewat blok patch._';
-        pushMsg('ai', seedText, { wsSeed: true });
+        const seedText = '````project\nname: ' + nm + '\nentry: ' + (entryF ? entryF.path : '') + '\n-----\n' + parts.join('\n\n') + '\n````\n\n_Workspace proyek "' + nm + '" dimuat (' + count + ' dari ' + files.length + ' file server' + (files.length > count ? ', sisanya file besar yang tidak dimuat di percakapan' : '') + '). Klik kartu proyek untuk pohon file, preview, dan konsol. Minta perubahan apa pun, aku kerjakan lewat blok patch. Daftar file LENGKAP dan terbaru selalu lewat tool list_items._';
+        if (__seedIdx !== -1) {
+            messages[__seedIdx].text = seedText; // [22 Okt] ganti seed basi dgn potret terbaru
+        } else {
+            pushMsg('ai', seedText, { wsSeed: true });
+        }
+        try { localStorage.setItem(__seedKey, __rev || String(Date.now())); } catch (e) {}
         saveChat();
+        try { renderMessages(); } catch (e) {}
     } catch (e) { console.warn('seed workspace gagal:', e); }
 }
 // Sync: blok project/patch di pesan AI yang selesai diterapkan ke workspace D1.
