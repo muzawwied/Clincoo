@@ -308,20 +308,6 @@ export async function onRequestPost({ request, env }) {
       return j(out);
     }
 
-    // [22 Okt verifikasi ulang] token QA sementara + pembersihnya (dihapus lagi setelah uji)
-    if (action === 'make_token') {
-      const tk = 'qadb_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
-      const exp = new Date(Date.now() + 2 * 3600_000).toISOString();
-      await db.prepare('INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)').bind(tk, ownerId, exp).run();
-      return j({ token: tk });
-    }
-    if (action === 'qa_cleanup') {
-      try {
-        const r = await db.prepare("DELETE FROM auth_sessions WHERE token LIKE 'qadb\_%'").run();
-        return j({ deleted: (r && r.meta && r.meta.changes) || 0 });
-      } catch (e) { return j({ err: e.message }); }
-    }
-
     // [21 Okt debug upload] bersihkan tombstone NGANGGUR: path yang tidak punya baris
     // file di cloud tapi masih memblokir upload ulang (penyebab "upload hilang lagi").
     if (action === 'sweep_noop_tombstones') {
