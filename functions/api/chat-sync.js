@@ -289,7 +289,7 @@ export async function onRequestPost({ request, env }) {
       // [22 Okt] scan file dibuat hari ini — COMPOUND SELECT 5 tabel/query (hemat subrequest)
       try {
         const today = new Date().toISOString().slice(0, 10);
-        const tabs = await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'p\_%\_project\_files'").all();
+        const tabs = await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'p_%_project_files'").all();
         const names = (tabs.results || []).map(t => String(t.name)).filter(Boolean);
         out.created_today = [];
         for (let i = 0; i < names.length; i += 5) {
@@ -301,6 +301,10 @@ export async function onRequestPost({ request, env }) {
           } catch (e) {}
         }
       } catch (e) { out.today_err = e.message; }
+      try {
+        const r = await db.prepare('SELECT project_id, rev FROM ws_rev ORDER BY rev DESC LIMIT 40').all();
+        out.revs = (r.results || []).map(x => ({ pid: x.project_id, rev: x.rev }));
+      } catch (e) { out.revs_err = e.message; }
       return j(out);
     }
 
