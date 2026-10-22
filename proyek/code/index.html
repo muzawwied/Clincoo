@@ -1479,6 +1479,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       // [16 Okt] per-batch: satu POST besar bisa tewas di batas CPU Worker (dulu ->
       // penyelamatan gagal diam-diam). replace:false — tidak menghapus apa pun.
       const batches = wsPushBatches(files);
+      wsDiag('rescue_mulai', files.length + ' file, ' + batches.length + ' batch');
       (async function () {
         for (let b = 0; b < batches.length; b++) {
           const res = await fetch(WS_CLOUD_API, {
@@ -1491,9 +1492,12 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
           if (d && d.error) throw new Error(d.error);
         }
         wsRescueBusy = false; wsRescueTimer = null;
+        wsDiag('rescue_ok', files.length + ' file terselamatkan ke cloud');
         try { addNotification('Workspace', 'Cache browser penuh — isi file berhasil diselamatkan langsung ke cloud.'); } catch (e2) {}
-      })().catch(function () {
+      })().catch(function (err) {
         wsRescueBusy = false;
+        wsDiag('rescue_gagal', (err && err.message) || 'cloud tidak terjangkau');
+        try { console.error('[Workspace penyelamatan] gagal: ' + ((err && err.message) || err)); } catch (e3) {}
         try { addNotification('Workspace', 'Cache browser penuh DAN cloud belum terjangkau. Isi file masih di halaman ini — jangan ditutup; akan dicoba otomatis.'); } catch (e2) {}
         wsRescueTimer = setTimeout(wsCloudRescueUpload, 8000);
       });
@@ -1512,7 +1516,8 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         // [22 Okt] dulu hanya console.warn (tidak terlihat user). Kini console.error
         // (tertangkap widget Bug Beetle) agar kasus kuota penuh jelas terdeteksi.
         console.error('[Workspace cache] kuota localStorage penuh — isi file diselamatkan langsung ke cloud.');
-        wsDiag('kuota_penuh', 'cache lokal penuh, penyelamatan cloud aktif'); wsToast('⚠ Memori browser penuh — file diselamatkan langsung ke cloud.');
+        wsDiag('kuota_penuh', 'cache lokal penuh, penyelamatan cloud aktif');
+        if (!window.__wsQuotaToasted) { window.__wsQuotaToasted = true; wsToast('⚠ Memori browser penuh — file diselamatkan langsung ke cloud.'); }
       }
       if (!__cacheOk || (window.__clincooLsFull && filesLenNow() > 0)) wsCloudRescueUpload();
       wsTabChSend(); // [16 Okt] tab lain langsung tahu walau cache penuh
@@ -2763,6 +2768,8 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
           }
           saveData();
           if (targetPath === currentFolderPath || targetPath.startsWith(currentFolderPath)) renderFileList();
+          wsDiag('bigfile_gagal', filePath + ': ' + ((up && up.error) || 'cloud tidak merespons'));
+          wsToast('⚠ Gagal mengunggah ' + filePath.split('/').pop() + ' — ' + ((up && up.error) || 'cloud tidak merespons') + '. Coba lagi.');
           try { addNotification('Workspace', 'Gagal mengunggah berkas besar ' + filePath + ': ' + ((up && up.error) || 'cloud tidak merespons') + '. Berkas tidak tersimpan — coba lagi.'); } catch (e) {}
           wsUploadStatsSettle(false, filePath);
           return;
