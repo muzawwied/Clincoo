@@ -1335,6 +1335,18 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         return n;
       } catch (e) { return 0; }
     }
+    function wsTreeFingerprint() {
+      try {
+        let h = 0;
+        Object.keys(projectFilesData || {}).forEach(function (fk) {
+          (projectFilesData[fk] || []).forEach(function (it) {
+            if (!it || it.type !== 'file' || !it.path) return;
+            h = (h * 31 + it.path.length + String(it.content || '').length + (it.uploading ? 7 : 0)) % 2147483647;
+          });
+        });
+        return h;
+      } catch (e) { return 0; }
+    }
     function wsPushBatches(files) {
       const batches = []; let cur = [], curLen = 0;
       for (const f of (files || [])) {
@@ -1422,6 +1434,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         wsDirtySet(false);
         wsCloudFailNotified = false;
         wsDiag('push_ok', files.length + ' file tersinkron');
+        wsToast('✓ Tersimpan ke cloud (' + files.length + ' file) — aman menutup halaman.');
         try { Object.keys(wsRestorePaths).forEach(function (p) { if (!wsKnownDeleted[p]) delete wsRestorePaths[p]; }); } catch (e) {}
       })().catch(function (err) {
         // [22 Okt, laporan owner: "console ga nangkep masalahnya"] kegagalan push
@@ -1446,9 +1459,14 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
     // [16 Okt] unggahan besar masih berjalan saat tab ditutup -> fetch dibunuh browser,
     // antrean hilang (hanya di memori) dan file "hilang tanpa jejak". Minta konfirmasi dulu.
     window.addEventListener('beforeunload', function (e) {
+      // [22 Okt] cakupan diperluas: perubahan belum tersinkron (wsDirtyIs) juga
+      // berbahaya ditinggalkan — push yang berjalan ikut mati bersama tab.
       if (wsUploadRunning > 0 || wsUploadQ.length > 0) {
         e.preventDefault();
         e.returnValue = 'Masih ada ' + (wsUploadRunning + wsUploadQ.length) + ' berkas yang sedang diunggah. Yakin keluar?';
+      } else if (wsDirtyIs()) {
+        e.preventDefault();
+        e.returnValue = 'Masih menyimpan perubahan ke cloud. Tunggu toast "✓ Tersimpan" dulu. Yakin keluar?';
       }
     });
     document.addEventListener('visibilitychange', function() {
@@ -1479,6 +1497,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       // [16 Okt] per-batch: satu POST besar bisa tewas di batas CPU Worker (dulu ->
       // penyelamatan gagal diam-diam). replace:false — tidak menghapus apa pun.
       const batches = wsPushBatches(files);
+      const __fpStart = wsTreeFingerprint();
       wsDiag('rescue_mulai', files.length + ' file, ' + batches.length + ' batch');
       (async function () {
         for (let b = 0; b < batches.length; b++) {
@@ -1493,6 +1512,12 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         }
         wsRescueBusy = false; wsRescueTimer = null;
         wsDiag('rescue_ok', files.length + ' file terselamatkan ke cloud');
+        // [22 Okt FIX "5 file kurang"] file yang masuk SAAT rescue berjalan tidak
+        // pernah ikut (rescue sibuk -> panggilan berikutnya diabaikan, tak diulang).
+        // Kini: bandingkan sidik jari pohon — bila berubah, selamatkan sisaannya.
+        if (wsTreeFingerprint() !== __fpStart) {
+          wsRescueTimer = setTimeout(function () { try { wsCloudRescueUpload(); } catch (e4) {} }, 800);
+        }
         try { addNotification('Workspace', 'Cache browser penuh — isi file berhasil diselamatkan langsung ke cloud.'); } catch (e2) {}
       })().catch(function (err) {
         wsRescueBusy = false;
