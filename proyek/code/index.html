@@ -1458,7 +1458,9 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         localStorage.setItem(wsFilesKey(), JSON.stringify(projectFilesData));
         __cacheOk = true;
       } catch (e) {
-        console.warn('Cache lokal penuh: isi file diselamatkan langsung ke cloud.');
+        // [22 Okt] dulu hanya console.warn (tidak terlihat user). Kini console.error
+        // (tertangkap widget Bug Beetle) agar kasus kuota penuh jelas terdeteksi.
+        console.error('[Workspace cache] kuota localStorage penuh — isi file diselamatkan langsung ke cloud.');
       }
       if (!__cacheOk) wsCloudRescueUpload();
       wsTabChSend(); // [16 Okt] tab lain langsung tahu walau cache penuh
@@ -2637,8 +2639,41 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
     function handleImportFiles(e) {
       const files = e.target.files;
       if (!files || files.length === 0) return;
-      Array.from(files).forEach(file => importSingleFile(file, currentFolderPath));
+      const list = Array.from(files);
       e.target.value = '';
+      // [22 Okt FIX "upload banyak file masuk 2 doang"] dulu SEMUA file dibaca serentak
+      // dan tiap file memanggil saveData() sendiri (JSON.stringify seluruh pohon + isi
+      // ke localStorage) -> kuota ~5MB HP penuh di file ke-2/3, push/penyelamat saling
+      // tabrak, sisanya hilang tanpa jejak. Kini: dibaca BERURUTAN, ringkasan hasil di
+      // akhir, dan kegagalan per file SELALU dilaporkan (tidak diam).
+      (async function () {
+        let ok = 0; const failed = [];
+        try { addNotification('Workspace', 'Mengimpor ' + list.length + ' berkas…'); } catch (e2) {}
+        for (let i = 0; i < list.length; i++) {
+          const file = list[i];
+          try {
+            await importSingleFilePromise(file, currentFolderPath);
+            ok++;
+          } catch (err) {
+            failed.push(file.name + ' (' + ((err && err.message) || 'gagal') + ')');
+            try { console.error('[Workspace impor] gagal: ' + file.name + ' — ' + ((err && err.message) || err)); } catch (e3) {}
+          }
+          // beri napas ke UI + biarkan push yang berjalan selesai sebelum file berikutnya
+          await new Promise(function (r) { setTimeout(r, 60); });
+        }
+        try {
+          addNotification('Workspace', ok + '/' + list.length + ' berkas diimpor' + (failed.length ? '. Gagal: ' + failed.slice(0, 5).join(', ') + (failed.length > 5 ? ' dan ' + (failed.length - 5) + ' lainnya' : '') : '.'));
+        } catch (e4) {}
+      })();
+    }
+    // Pembungkus Promise: selesai saat file terbaca & tercatat di pohon (reader.onload
+    // sudah menjalankan saveData sendiri) — menolak bila pembacaan gagal.
+    function importSingleFilePromise(file, targetPath) {
+      return new Promise(function (resolve, reject) {
+        try {
+          importSingleFile(file, targetPath, resolve, reject);
+        } catch (err) { reject(err); }
+      });
     }
 
     // [16 Okt] alur file besar dipakai bersama oleh "impor file" dan "impor ZIP":
@@ -2685,12 +2720,13 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       });
     }
 
-    function importSingleFile(file, targetPath) {
+    function importSingleFile(file, targetPath, onDone, onFail) {
       if (!projectFilesData[targetPath]) projectFilesData[targetPath] = [];
       const reader = new FileReader();
       // [16 Okt] berkas tak terbaca (rusak/diubah di disk) dulu lenyap TANPA kabar.
       reader.onerror = function () {
         try { addNotification('Workspace', 'Gagal membaca berkas ' + file.name + ' — tidak diimpor.'); } catch (e) {}
+        if (onFail) onFail(new Error('tidak terbaca'));
       };
       reader.onload = function(event) {
         const content = event.target.result;
@@ -2701,8 +2737,9 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         // FILE BESAR (>600 ribu karakter / ~10MB+ di data-URL): isi TIDAK masuk
         // localStorage (kuota browser ~5MB) — unggah ke cloud per-chunk, simpan penanda saja.
         if (content.length > WS_BIG_LIMIT) {
-          wsImportBigFile(filePath, targetPath, content, sizeStr, file.size, existingIndex,
+          const __bp = wsImportBigFile(filePath, targetPath, content, sizeStr, file.size, existingIndex,
             existingIndex !== -1 ? Object.assign({}, projectFilesData[targetPath][existingIndex]) : null);
+          if (onDone) { try { Promise.resolve(__bp).then(function () { onDone(); }, function (er) { if (onFail) onFail(er); }); } catch (e5) { onDone(); } }
           return;
         }
 
@@ -2717,6 +2754,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         try { wsRestorePaths[String(filePath)] = true; delete wsKnownDeleted[String(filePath)]; } catch (e) {}
         saveData();
         if (targetPath === currentFolderPath || targetPath.startsWith(currentFolderPath)) renderFileList();
+        if (onDone) onDone();
       };
       const type = getFileType(file.name);
       if (type === 'code') reader.readAsText(file);
