@@ -800,14 +800,20 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       if (changed) { try { localStorage.setItem(wsFilesKey(), JSON.stringify(projectFilesData)); } catch (e) {} renderFileList(); }
       return changed;
     }
+    var __wsDirtyMem = null; // [22 Okt] cermin di memori: penyelamat utama
     function wsDirtySet(on) {
       // [16 Okt] kuota localStorage penuh -> flag tak tertulis diam-diam -> saat tab
       // ditutup, push "dirty" tak pernah jalan dan hasil kerja hilang. Fallback:
       // tulis juga ke sessionStorage (kuota terpisah).
+      // [22 Okt FIX "file baru lenyap saat impor"] localStorage penuh + purge kuota
+      // bisa menelan KEDUA tulisan -> pull mengira "tak ada perubahan lokal" dan
+      // MENIMPA pohon dengan versi cloud lama. Kini memori selalu dicerminkan.
+      __wsDirtyMem = !!on;
       try { if (on) localStorage.setItem(wsDirtyKey(), '1'); else localStorage.removeItem(wsDirtyKey()); return; } catch (e) {}
       try { if (on) sessionStorage.setItem(wsDirtyKey(), '1'); else sessionStorage.removeItem(wsDirtyKey()); } catch (e2) {}
     }
     function wsDirtyIs() {
+      if (__wsDirtyMem === true) return true;
       try { if (localStorage.getItem(wsDirtyKey())) return true; } catch (e) {}
       try { if (sessionStorage.getItem(wsDirtyKey())) return true; } catch (e2) {}
       return false;
@@ -1223,13 +1229,39 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
           const files = (d && d.files) || [];
           if (files.length) {
             const merged = wsUnflatten(files);
+            // [22 Okt FIX PENTING "file baru lenyap saat impor"] dulu pohon lokal
+            // DIGANTI total oleh versi cloud — file yang baru diimpor (belum sempat
+            // terkirim) ikut terbuang. Kini: file lokal yang SAH (bukan ter-tombstone)
+            // dan belum ada di cloud DIPERTAHANKAN, lalu didorong ke cloud.
+            const cloudPaths = {};
+            (files || []).forEach(function (f) { if (f && f.path) cloudPaths[String(f.path).toLowerCase()] = true; });
+            let localOnly = 0;
+            try {
+              Object.keys(projectFilesData || {}).forEach(function (fk) {
+                (projectFilesData[fk] || []).forEach(function (it) {
+                  if (!it || it.type !== 'file' || !it.path) return;
+                  const lp = String(it.path);
+                  if (cloudPaths[lp.toLowerCase()]) return;
+                  if (wsKnownDeleted[lp] && !wsRestorePaths[lp]) return;
+                  if (!merged[fk]) merged[fk] = [];
+                  if (!merged[fk].some(function (m) { return m && m.path && m.path.toLowerCase() === lp.toLowerCase(); })) {
+                    merged[fk].push(it); localOnly++;
+                  }
+                });
+              });
+            } catch (e) {}
             const mergedStr = JSON.stringify(merged);
             if (mergedStr !== JSON.stringify(projectFilesData)) {
               projectFilesData = merged;
               try { localStorage.setItem(wsFilesKey(), mergedStr); } catch (e) {}
               renderFileList();
             }
-            wsDiag('pull_ganti', 'cloud n=' + files.length + ' | folder aktif: ' + currentFolderPath);
+            if (localOnly > 0) {
+              wsDiag('pull_selamat', localOnly + ' file lokal tidak ada di cloud — didorong ke cloud');
+              try { wsDirtySet(true); } catch (e3) {}
+              wsCloudPushSchedule();
+            }
+            wsDiag('pull_ganti', 'cloud n=' + files.length + ' | lokal-only=' + localOnly + ' | folder aktif: ' + currentFolderPath);
           } else {
             // [22 Okt FIX "upload masih hilang"] D1 kosong TIDAK selalu berarti
             // semua file sengaja dihapus: file lokal yang push-nya belum berhasil
