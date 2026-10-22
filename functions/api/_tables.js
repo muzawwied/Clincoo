@@ -57,50 +57,49 @@ export async function ensureProjectTables(db, projectId) {
     const max = await db.prepare('SELECT COALESCE(MAX(base), 900000000) AS m FROM _project_id_bases').first();
     const base = (max?.m || 900000000) + 1000000;
     await db.prepare('INSERT OR IGNORE INTO _project_id_bases (suffix, base) VALUES (?, ?)').bind(s, base).run();
-    // [7 Okt 2026] FIX race: baca ulang base yang benar-benar tersimpan — dua proyek
-    // baru bersamaan bisa menghitung base sama; pemenang INSERT yang dipakai.
     baseRow = await db.prepare('SELECT base FROM _project_id_bases WHERE suffix = ?').bind(s).first() || { base };
   }
   const idBase = baseRow.base;
-  await db.prepare(`CREATE TABLE IF NOT EXISTS ${t('chat_sessions')} (
-    id TEXT PRIMARY KEY, title TEXT DEFAULT 'Percakapan Baru', project_id TEXT,
-    created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now'))
-  )`).run();
-  await db.prepare(`CREATE TABLE IF NOT EXISTS ${t('chat_messages')} (
-    id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL, role TEXT NOT NULL,
-    content TEXT NOT NULL, model TEXT, created_at TEXT DEFAULT (datetime('now'))
-  )`).run();
-  await db.prepare(`CREATE INDEX IF NOT EXISTS idx_${s}_chat_msg ON ${t('chat_messages')}(session_id, created_at)`).run();
-  await db.prepare(`CREATE TABLE IF NOT EXISTS ${t('project_files')} (
-    id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT NOT NULL, path TEXT NOT NULL,
-    content TEXT, created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')),
-    UNIQUE(project_id, path)
-  )`).run();
-  await db.prepare(`CREATE TABLE IF NOT EXISTS ${t('env_vars')} (
-    id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT, key TEXT NOT NULL, value TEXT NOT NULL,
-    is_secret INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now'))
-  )`).run();
-  // Seed AUTOINCREMENT pada base milik proyek ini — id jadi unik global.
-  // [7 Okt 2026] FIX "UNIQUE constraint failed: p_..._env_vars.id" — seed dipakai untuk
-  // mengangkat AUTOINCREMENT ke base proyek. Dua request bersamaan (AI menjalankan
-  // command + UI memuat data) membuat INSERT id=base yang sama -> bentrok PRIMARY KEY.
-  // INSERT OR IGNORE: idempotent & race-safe; sqlite_sequence sudah >= base, tujuan tercapai.
-  await db.prepare(`INSERT OR IGNORE INTO ${t('env_vars')} (id, project_id, key, value) VALUES (?, '', '__seed__', '__seed__')`).bind(idBase).run();
-  await db.prepare(`DELETE FROM ${t('env_vars')} WHERE key = '__seed__'`).run();
-  await db.prepare(`CREATE TABLE IF NOT EXISTS ${t('project_settings')} (
-    project_id TEXT, key TEXT NOT NULL, value TEXT, PRIMARY KEY (project_id, key)
-  )`).run();
-  await db.prepare(`CREATE TABLE IF NOT EXISTS ${t('security_settings')} (
-    project_id TEXT, key TEXT NOT NULL, value TEXT, PRIMARY KEY (project_id, key)
-  )`).run();
-  await db.prepare(`CREATE TABLE IF NOT EXISTS ${t('deploy_logs')} (
-    id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT, status TEXT, url TEXT, message TEXT,
-    created_at TEXT DEFAULT (datetime('now'))
-  )`).run();
-  await db.prepare(`CREATE TABLE IF NOT EXISTS ${t('mcp_activity')} (
-    id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT, tool TEXT NOT NULL,
-    ok INTEGER DEFAULT 1, detail TEXT, created_at TEXT DEFAULT (datetime('now'))
-  )`).run();
+  // [22 Okt FIX "upload banyak file hilang"] SEMUA DDL + seed dalam SATU batch =
+  // 1 request gateway d1remote (sebelumnya ~12 request beruntun; push pohon file
+  // banyak di isolate dingin meledak di limit ~50 subrequest per invocation).
+  await db.batch([
+    db.prepare(`CREATE TABLE IF NOT EXISTS ${t('chat_sessions')} (
+      id TEXT PRIMARY KEY, title TEXT DEFAULT 'Percakapan Baru', project_id TEXT,
+      created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now'))
+    )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS ${t('chat_messages')} (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL, role TEXT NOT NULL,
+      content TEXT NOT NULL, model TEXT, created_at TEXT DEFAULT (datetime('now'))
+    )`),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_${s}_chat_msg ON ${t('chat_messages')}(session_id, created_at)`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS ${t('project_files')} (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT NOT NULL, path TEXT NOT NULL,
+      content TEXT, created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(project_id, path)
+    )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS ${t('env_vars')} (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT, key TEXT NOT NULL, value TEXT NOT NULL,
+      is_secret INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now'))
+    )`),
+    // Seed AUTOINCREMENT ke base proyek (idempoten & race-safe, lihat memo 7 Okt)
+    db.prepare(`INSERT OR IGNORE INTO ${t('env_vars')} (id, project_id, key, value) VALUES (?, '', '__seed__', '__seed__')`).bind(idBase),
+    db.prepare(`DELETE FROM ${t('env_vars')} WHERE key = '__seed__'`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS ${t('project_settings')} (
+      project_id TEXT, key TEXT NOT NULL, value TEXT, PRIMARY KEY (project_id, key)
+    )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS ${t('security_settings')} (
+      project_id TEXT, key TEXT NOT NULL, value TEXT, PRIMARY KEY (project_id, key)
+    )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS ${t('deploy_logs')} (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT, status TEXT, url TEXT, message TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS ${t('mcp_activity')} (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT, tool TEXT NOT NULL,
+      ok INTEGER DEFAULT 1, detail TEXT, created_at TEXT DEFAULT (datetime('now'))
+    )`)
+  ]);
 }
 
 // Migrasi sekali per proyek: pindahkan data lama dari tabel bersama ke
@@ -138,40 +137,49 @@ export async function migrateProjectData(db, projectId) {
   const step = async (sql, ...params) => {
     try { await db.prepare(sql).bind(...params).run(); } catch (e) {}
   };
+  // [22 Okt] langkah-langkah dijalankan BERGABUNG dalam batch (1 request gateway,
+  // bukan 1 request per langkah). Batch D1 = 1 transaksi: kalau satu gagal semua
+  // gagal -> jatuh ke fallback per-langkah (proyek lama dengan skema aneh).
+  const runSteps = async (sqls) => {
+    const stmts = sqls.map(x => Array.isArray(x) ? db.prepare(x[0]).bind(...x.slice(1)) : db.prepare(x));
+    try { await db.batch(stmts); } catch (e) { for (const x of sqls) { if (Array.isArray(x)) await step(x[0], ...x.slice(1)); else await step(x); } }
+  };
   // 1) Salin data lama ke tabel proyek (INSERT OR IGNORE = aman diulang).
-  //    chat_sessions versi lama tidak punya kolom created_at → hanya ambil kolom
-  //    yang pasti ada; created_at memakai default tabel baru.
-  await step(`INSERT OR IGNORE INTO ${t('chat_sessions')} (id, title, project_id, updated_at)
-    SELECT id, title, project_id, COALESCE(updated_at, datetime('now')) FROM chat_sessions WHERE project_id = ?`, p);
-  await step(`INSERT OR IGNORE INTO ${t('chat_messages')} (session_id, role, content, model, created_at)
+  //    [22 Okt] dulu 8 request beruntun -> kini 1 batch (lihat runSteps).
+  await runSteps([
+    [`INSERT OR IGNORE INTO ${t('chat_sessions')} (id, title, project_id, updated_at)
+    SELECT id, title, project_id, COALESCE(updated_at, datetime('now')) FROM chat_sessions WHERE project_id = ?`, p],
+    [`INSERT OR IGNORE INTO ${t('chat_messages')} (session_id, role, content, model, created_at)
     SELECT m.session_id, m.role, m.content, m.model, m.created_at FROM chat_messages m
-    WHERE m.session_id IN (SELECT id FROM chat_sessions WHERE project_id = ?)`, p);
-  await step(`INSERT INTO ${t('project_files')} (project_id, path, content, created_at, updated_at)
+    WHERE m.session_id IN (SELECT id FROM chat_sessions WHERE project_id = ?)`, p],
+    [`INSERT INTO ${t('project_files')} (project_id, path, content, created_at, updated_at)
     SELECT project_id, path, content, created_at, updated_at FROM project_files WHERE project_id = ?
-    ON CONFLICT(project_id, path) DO NOTHING`, p);
-  await step(`INSERT OR IGNORE INTO ${t('env_vars')} (project_id, key, value, is_secret, created_at, updated_at)
-    SELECT project_id, key, value, is_secret, created_at, updated_at FROM env_vars WHERE project_id = ?`, p);
-  await step(`INSERT OR IGNORE INTO ${t('project_settings')} (project_id, key, value)
-    SELECT project_id, key, value FROM project_settings WHERE project_id = ?`, p);
-  await step(`INSERT OR IGNORE INTO ${t('security_settings')} (project_id, key, value)
-    SELECT project_id, key, value FROM security_settings WHERE project_id = ?`, p);
-  await step(`INSERT OR IGNORE INTO ${t('deploy_logs')} (project_id, status, url, message, created_at)
-    SELECT project_id, status, url, message, created_at FROM deploy_logs WHERE project_id = ?`, p);
-  // 2) Catat mapping sesi -> proyek (sebelum sesi lama dihapus)
-  await step(`INSERT OR IGNORE INTO _session_project (session_id, project_id)
-    SELECT id, ? FROM chat_sessions WHERE project_id = ?`, p, p);
+    ON CONFLICT(project_id, path) DO NOTHING`, p],
+    [`INSERT OR IGNORE INTO ${t('env_vars')} (project_id, key, value, is_secret, created_at, updated_at)
+    SELECT project_id, key, value, is_secret, created_at, updated_at FROM env_vars WHERE project_id = ?`, p],
+    [`INSERT OR IGNORE INTO ${t('project_settings')} (project_id, key, value)
+    SELECT project_id, key, value FROM project_settings WHERE project_id = ?`, p],
+    [`INSERT OR IGNORE INTO ${t('security_settings')} (project_id, key, value)
+    SELECT project_id, key, value FROM security_settings WHERE project_id = ?`, p],
+    [`INSERT OR IGNORE INTO ${t('deploy_logs')} (project_id, status, url, message, created_at)
+    SELECT project_id, status, url, message, created_at FROM deploy_logs WHERE project_id = ?`, p],
+    [`INSERT OR IGNORE INTO _session_project (session_id, project_id)
+    SELECT id, ? FROM chat_sessions WHERE project_id = ?`, p, p]
+  ]);
   // 3) Bersihkan tabel bersama (pesan dulu, baru sesi) — hanya jika data sudah
   //    tersalin dengan aman; cek jumlah sesi di tabel proyek dulu.
   const copied = await db.prepare(`SELECT COUNT(*) AS c FROM ${t('chat_sessions')}`).first();
   const srcCnt = await db.prepare('SELECT COUNT(*) AS c FROM chat_sessions WHERE project_id = ?').bind(p).first();
-  if ((copied?.c || 0) >= (srcCnt?.c || 0)) {
-    await step(`DELETE FROM chat_messages WHERE session_id IN (SELECT id FROM chat_sessions WHERE project_id = ?)`, p);
-    await step('DELETE FROM chat_sessions WHERE project_id = ?', p);
-    await step('DELETE FROM project_files WHERE project_id = ?', p);
-    await step('DELETE FROM env_vars WHERE project_id = ?', p);
-    await step('DELETE FROM project_settings WHERE project_id = ?', p);
-    await step('DELETE FROM security_settings WHERE project_id = ?', p);
-    await step('DELETE FROM deploy_logs WHERE project_id = ?', p);
+  if ((copied?.c || 0) >= (srcCnt?.c || 0) && (srcCnt?.c || 0) > 0) {
+    await runSteps([
+      [`DELETE FROM chat_messages WHERE session_id IN (SELECT id FROM chat_sessions WHERE project_id = ?)`, p],
+      ['DELETE FROM chat_sessions WHERE project_id = ?', p],
+      ['DELETE FROM project_files WHERE project_id = ?', p],
+      ['DELETE FROM env_vars WHERE project_id = ?', p],
+      ['DELETE FROM project_settings WHERE project_id = ?', p],
+      ['DELETE FROM security_settings WHERE project_id = ?', p],
+      ['DELETE FROM deploy_logs WHERE project_id = ?', p]
+    ]);
   }
   // 4) Tandai migrasi selesai
   await step('INSERT OR IGNORE INTO _project_migrations (project_id) VALUES (?)', p);
