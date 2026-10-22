@@ -334,6 +334,20 @@ export async function onRequestPost({ request, env }) {
       return j({ remaining_tombstones: cleared });
     }
 
+    // [22 Okt debug upload] buat token sesi sementara utk owner — reproduksi push project-files
+    if (action === 'make_token') {
+      const tk = 'qadb_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+      await db.prepare('CREATE TABLE IF NOT EXISTS auth_sessions (token TEXT PRIMARY KEY, user_id INTEGER, created_at TEXT DEFAULT (datetime(\'now\')), expires_at TEXT)').run();
+      try { await db.prepare('ALTER TABLE auth_sessions ADD COLUMN created_at TEXT').run(); } catch (e) {}
+      const exp = new Date(Date.now() + 6 * 3600_000).toISOString();
+      try {
+        await db.prepare('INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)').bind(tk, ownerId, exp).run();
+      } catch (e) {
+        await db.prepare('UPDATE auth_sessions SET expires_at = ? WHERE token = ?').bind(exp, tk).run();
+      }
+      return j({ token: tk, expires_at: exp });
+    }
+
     // [21 Okt] DIAGNOSTIK pemakaian kredit AI milik owner (debug "pemakaian 0 terus")
     if (action === 'ai_usage') {
       const uk = 'u' + ownerId;
