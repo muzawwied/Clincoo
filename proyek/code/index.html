@@ -1230,15 +1230,33 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
               renderFileList();
             }
           } else {
-            // [12 Okt, laporan pemilik: "yang dihapus muncul lagi"] D1 kosong =
-            // SEMUA file proyek ini memang sudah dihapus. Dulu cache lokal
-            // didorong balik ke cloud (file mati hidup lagi). Sekarang:
-            // cache lokal dibersihkan supaya tampilan = kenyataan.
+            // [22 Okt FIX "upload masih hilang"] D1 kosong TIDAK selalu berarti
+            // semua file sengaja dihapus: file lokal yang push-nya belum berhasil
+            // (HP terkunci di tengah proses, jaringan putus) juga berada di sini.
+            // Dulu cache langsung dihapus -> upload user lenyap saat dibuka lagi.
+            // Kini: file lokal yang BUKAN ter-tombstone = layak diselamatkan ->
+            // dorong ke cloud. Baris ter-tombstone saja yang dibersihkan.
             const localRaw = localStorage.getItem(wsFilesKey());
             if (localRaw && localRaw !== JSON.stringify({ 'root': [] })) {
-              projectFilesData = { 'root': [] };
-              try { localStorage.setItem(wsFilesKey(), JSON.stringify({ 'root': [] })); } catch (e) {}
-              renderFileList();
+              let liveCount = 0, deadOnly = true;
+              try {
+                Object.keys(projectFilesData || {}).forEach(function (fk) {
+                  (projectFilesData[fk] || []).forEach(function (it) {
+                    if (!it || it.type !== 'file' || !it.path) return;
+                    if (wsKnownDeleted[String(it.path)] && !wsRestorePaths[String(it.path)]) return;
+                    liveCount++; deadOnly = false;
+                  });
+                });
+              } catch (e) {}
+              if (liveCount > 0) {
+                // ada file lokal sah yang belum ada di cloud: SELAMATKAN (push),
+                // jangan pernah hapus data yang hanya hidup di perangkat ini.
+                wsCloudPushSchedule();
+              } else {
+                projectFilesData = { 'root': [] };
+                try { localStorage.setItem(wsFilesKey(), JSON.stringify({ 'root': [] })); } catch (e) {}
+                renderFileList();
+              }
             }
           }
         })

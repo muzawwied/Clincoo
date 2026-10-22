@@ -2217,6 +2217,12 @@ function loadChat() {
     } catch (e) { messages = []; }
 }
 
+// [22 Okt FIX KRITIS] semua panggilan workspace dari chat WAJIB bawa token login —
+// tanpa ini middleware menolak 401 "Login diperlukan" dan sync gagal senyap
+// (file dari AI tidak pernah tersimpan / pohon tidak termuat).
+function __wsTk() { try { return localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) { return ''; } }
+function __wsHeaders(json) { const tk = __wsTk(); const h = json ? { 'Content-Type': 'application/json' } : {}; if (tk) h.Authorization = 'Bearer ' + tk; return h; }
+
 // ===== [Clincoo] KONEKSI WORKSPACE NYATA (D1 /api/project-files) — dua arah =====
 // Seed: file proyek nyata di D1 dimuat jadi pesan blok-project sehingga AI tahu
 // isi proyek (STATE PROYEK otomatis tiap giliran) & viewer menampilkan pohon/preview/konsol.
@@ -2225,7 +2231,7 @@ async function wsLoadReal() {
     if (computeProjState()) return; // percakapan sudah punya proyek -> jangan dobel
     if (messages.some(m => m.wsSeed)) return;
     try {
-        const res = await fetch(TOOL_API_BASE + '/api/project-files?project_id=' + encodeURIComponent(PROJECT_ID));
+        const res = await fetch(TOOL_API_BASE + '/api/project-files?project_id=' + encodeURIComponent(PROJECT_ID), { headers: __wsHeaders(false) });
         if (!res.ok) return;
         const d = await res.json();
         const files = (d && Array.isArray(d.files)) ? d.files : [];
@@ -2281,7 +2287,7 @@ async function wsIncPump() {
             let ok = false;
             for (let a = 0; a < 3 && !ok; a++) {
                 try {
-                    const r = await fetch(TOOL_API_BASE + '/api/project-files', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project_id: PROJECT_ID, files: [...batch.values()] }) });
+                    const r = await fetch(TOOL_API_BASE + '/api/project-files', { method: 'POST', headers: __wsHeaders(true), body: JSON.stringify({ project_id: PROJECT_ID, files: [...batch.values()] }) });
                     ok = r.ok;
                 } catch (e) {}
                 if (!ok) await new Promise(r => setTimeout(r, 600 * (a + 1)));
@@ -2320,14 +2326,14 @@ async function wsSyncFromMessage(m) {
         let saved = 0;
         if (payload.length) {
             const r = await fetch(TOOL_API_BASE + '/api/project-files', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: __wsHeaders(true),
                 body: JSON.stringify({ project_id: PROJECT_ID, files: payload })
             });
             if (r.ok) saved = payload.length; else console.warn('sync workspace gagal:', await r.text().catch(() => ''));
         }
         let removed = 0;
         for (const p of dels) {
-            const r = await fetch(TOOL_API_BASE + '/api/project-files?project_id=' + encodeURIComponent(PROJECT_ID) + '&path=' + encodeURIComponent(p), { method: 'DELETE' });
+            const r = await fetch(TOOL_API_BASE + '/api/project-files?project_id=' + encodeURIComponent(PROJECT_ID) + '&path=' + encodeURIComponent(p), { method: 'DELETE', headers: __wsHeaders(false) });
             if (r.ok) removed++;
         }
         saved += (wsInc.msgId === m.id) ? 0 : 0;
