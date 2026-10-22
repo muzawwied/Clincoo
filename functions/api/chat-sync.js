@@ -300,6 +300,15 @@ export async function onRequestPost({ request, env }) {
           } catch (e) {}
         }
       } catch (e) { out.today_err = e.message; }
+      // [22 Okt debug upload banyak] security_events 2 hari terakhir + revs
+      try {
+        const r = await db.prepare("SELECT type, ip, detail, created_at FROM security_events WHERE created_at >= datetime('now','-2 days') ORDER BY id DESC LIMIT 50").all();
+        out.security_events = (r.results || []);
+      } catch (e) { out.sec_err = e.message; }
+      try {
+        const r = await db.prepare('SELECT project_id, rev FROM ws_rev ORDER BY rev DESC LIMIT 40').all();
+        out.revs = (r.results || []).map(x => ({ pid: x.project_id, rev: x.rev }));
+      } catch (e) { out.revs_err = e.message; }
       return j(out);
     }
 
