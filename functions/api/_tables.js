@@ -117,14 +117,19 @@ export async function migrateProjectData(db, projectId) {
   if (!projectId) return;
   const s0 = tableSuffix(projectId);
   if (_migratedSuffixes.has(s0)) return;
-  await ensureProjectTables(db, projectId);
-  await ensureMapTable(db);
+  // [22 Okt FIX "upload banyak file hilang"] limit ~50 subrequest/invocation:
+  // tiap isolate dingin dulu menjalankan puluhan DDL CREATE di sini -> push
+  // pohon banyak file gagal total "Too many subrequests". Proyek yang SUDAH
+  // tercatat migrasi cukup dicek lewat 1 query penanda; DDL penuh hanya
+  // dijalankan untuk proyek yang benar-benar belum dimigrasi.
   await db.prepare(`CREATE TABLE IF NOT EXISTS _project_migrations (
     project_id TEXT PRIMARY KEY, migrated_at TEXT DEFAULT (datetime('now'))
   )`).run();
   const done = await db.prepare('SELECT project_id FROM _project_migrations WHERE project_id = ?')
     .bind(String(projectId)).first();
   if (done) { _migratedSuffixes.add(s0); return; }
+  await ensureProjectTables(db, projectId);
+  await ensureMapTable(db);
   const s = tableSuffix(projectId);
   const t = (b) => `p_${s}_${b}`;
   const p = String(projectId);

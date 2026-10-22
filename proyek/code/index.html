@@ -1337,7 +1337,10 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
           // [21 Okt] 400 = payload DITOLAK permanen (bukan masalah jaringan): jangan
           // diulang selamanya — beri satu notifikasi dan hentikan siklus retry.
           if (res.status === 400) { terminal400 = true; throw new Error('HTTP 400'); }
-          if (!res.ok) throw new Error('HTTP ' + res.status);
+          if (!res.ok) {
+            const errBody = await res.json().catch(function () { return {}; });
+            throw new Error('HTTP ' + res.status + (errBody && errBody.error ? ' — ' + errBody.error : ''));
+          }
           const pushResp = await res.json().catch(function () { return {}; });
           // [12 Okt] file yang ternyata sudah dihapus di server: buang dari pohon lokal
           try { wsTrackKnownDeleted(pushResp && pushResp.deleted_paths); } catch (e) {}
@@ -1353,13 +1356,17 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         wsDirtySet(false);
         wsCloudFailNotified = false;
         try { Object.keys(wsRestorePaths).forEach(function (p) { if (!wsKnownDeleted[p]) delete wsRestorePaths[p]; }); } catch (e) {}
-      })().catch(function () {
+      })().catch(function (err) {
+        // [22 Okt, laporan owner: "console ga nangkep masalahnya"] kegagalan push
+        // WAJIB terlihat: log lengkap ke console (tertangkap widget) + notifikasi.
+        const errMsg = (err && err.message) ? String(err.message) : 'tidak diketahui';
+        try { console.error('[Workspace sinkron] gagal simpan ke cloud (percobaan ' + (attempt + 1) + '/3): ' + errMsg); } catch (e) {}
         if (terminal400) { try { addNotification('Workspace', 'Perubahan tidak diterima server (format ditolak). Sinkron dihentikan — coba muat ulang halaman.'); } catch (e) {} return; }
         if (attempt < 2) { setTimeout(function() { wsCloudPushNow(attempt + 1, keepalive); }, 1500 * (attempt + 1)); return; }
         // Tetap dirty: pull berikutnya tidak akan menimpa data lokal yang lebih baru
         if (!wsCloudFailNotified) {
           wsCloudFailNotified = true;
-          try { addNotification('Workspace', 'Perubahan belum tersinkron ke cloud — akan dicoba otomatis. Jangan bersihkan data situs.'); } catch (e) {}
+          try { addNotification('Workspace', 'Perubahan belum tersinkron ke cloud (' + errMsg.slice(0, 120) + '). Akan dicoba otomatis. Jangan bersihkan data situs.'); } catch (e) {}
         }
         wsCloudPushSchedule(); // coba lagi di siklus berikutnya
       });

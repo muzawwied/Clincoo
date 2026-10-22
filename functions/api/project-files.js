@@ -561,6 +561,11 @@ export async function onRequestPost({ request, env }) {
     if (body.bump_rev !== false) await bumpWsRev(db, projectId);
     return json({ success: true, saved: keepPaths.length, deleted_paths: [...reportedDeletedPaths], warnings: errors.length ? errors : undefined });
   } catch (err) {
+    // [22 Okt] kena limit subrequest = transient (isolate dingin): beri tahu klien
+    // supaya dicoba ulang, bukan dianggap gagal permanen.
+    if (/too many subrequests/i.test(String(err && err.message))) {
+      return json({ error: 'Server sedang sibuk sesaat (limit query). Coba lagi — data aman.', retry: true }, 503);
+    }
     return json({ error: err.message }, 500);
   }
 }
