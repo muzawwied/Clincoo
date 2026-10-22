@@ -60,10 +60,18 @@
           try {
             return orig(key, value);
           } catch (e2) {
+            // [22 Okt FIX "upload hilang tanpa jejak"] dulu error kuota DITELAN di sini:
+            // saveData() di workspace mengira cache sukses tertulis (__cacheOk=true)
+            // -> penyelamatan isi-ke-cloud (wsCloudRescueUpload) TIDAK PERNAH aktif
+            // -> file hanya hidup di memori; tab ditutup = lenyap. Lemparkan ulang
+            // error aslinya supaya penanganan resmi (rescue) jalan. Caller Clincoo
+            // memakai try/catch di semua setItem sehingga tidak ada yang crash.
+            window.__clincooLsFull = true;
             if (!window.__clincooCacheFullWarned) {
               window.__clincooCacheFullWarned = true;
               try { console.warn(MSG); } catch (_) {}
             }
+            throw e2;
           }
         }
       }

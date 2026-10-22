@@ -1329,6 +1329,12 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       } catch (e) {}
     }
 
+    function filesLenNow() {
+      try {
+        let n = 0; Object.keys(projectFilesData || {}).forEach(function (fk) { (projectFilesData[fk] || []).forEach(function (it) { if (it && it.type === 'file') n++; }); });
+        return n;
+      } catch (e) { return 0; }
+    }
     function wsPushBatches(files) {
       const batches = []; let cur = [], curLen = 0;
       for (const f of (files || [])) {
@@ -1347,7 +1353,12 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       try {
         const pid = wsProjectId();
         if (!pid) return;
-        const rr = await fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&rev=1', { headers: wsAuthHeaders() });
+        // [22 Okt] timeout: fetch yang menggantung (jaringan HP berpindah) tadinya
+        // membekukan seluruh push tanpa kabar — kini dilanjutkan setelah 12 dtk.
+        const __ac = new AbortController();
+        const __t = setTimeout(function () { __ac.abort(); }, 12000);
+        const rr = await fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&rev=1', { headers: wsAuthHeaders(), signal: __ac.signal }).catch(function () { clearTimeout(__t); return { ok: false }; });
+        clearTimeout(__t);
         if (!rr.ok) return;
         const rd = await rr.json();
         const rev = (rd && rd.rev) || '';
@@ -1503,7 +1514,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         console.error('[Workspace cache] kuota localStorage penuh — isi file diselamatkan langsung ke cloud.');
         wsDiag('kuota_penuh', 'cache lokal penuh, penyelamatan cloud aktif'); wsToast('⚠ Memori browser penuh — file diselamatkan langsung ke cloud.');
       }
-      if (!__cacheOk) wsCloudRescueUpload();
+      if (!__cacheOk || (window.__clincooLsFull && filesLenNow() > 0)) wsCloudRescueUpload();
       wsTabChSend(); // [16 Okt] tab lain langsung tahu walau cache penuh
       // [12 Okt] file BARU di path yang server tandai dihapus = sengaja membuat ulang
       try {
@@ -2705,8 +2716,12 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         }
         const ringkas = ok + '/' + list.length + ' berkas diimpor' + (failed.length ? '. Gagal: ' + failed.slice(0, 5).join(', ') + (failed.length > 5 ? ' dan ' + (failed.length - 5) + ' lainnya' : '') : '.');
         wsDiag('impor_selesai', ringkas);
-        wsToast(ringkas);
+        wsToast(ringkas + ' Menyimpan ke cloud…');
         try { addNotification('Workspace', ringkas); } catch (e4) {}
+        // [22 Okt] PUSH SEKARANG juga (bukan hanya debounce): pengguna HP sering
+        // menutup tab beberapa detik setelah impor — debounce 1.2s bisa terbunuh
+        // bersama tab-nya. Push langsung = data lebih cepat sampai cloud.
+        try { wsDirtySet(true); wsCloudPushNow(0, false); } catch (e6) {}
       })();
     }
     // Pembungkus Promise: selesai saat file terbaca & tercatat di pohon (reader.onload
