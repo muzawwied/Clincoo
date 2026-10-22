@@ -284,6 +284,10 @@ export async function onRequestPost({ request, env }) {
             dg.tombstones = (r.results || []).map(f => ({ p: f.path, at: f.deleted_at }));
           } catch (e) { dg.tomb_err = e.message; }
         }
+        try {
+          const dr = await db.prepare('SELECT ua, events, created_at FROM ws_client_diag WHERE project_id = ? ORDER BY id DESC LIMIT 3').bind(String(body.pid)).all();
+          dg.diag_client = (dr.results || []).map(r => ({ at: r.created_at, ua: String(r.ua || '').slice(0, 60), ev: JSON.parse(r.events) }));
+        } catch (e) { dg.diag_client_err = e.message; }
         return j(dg);
       }
       try {

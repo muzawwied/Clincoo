@@ -1292,6 +1292,43 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
     // sampai cloud dan (bila kuota cache lokal habis) hilang saat reload. Sekarang
     // pohon dipecah ~1.2MB per POST; keep_paths = daftar path LENGKAP semua batch,
     // jadi replace:true tiap batch tidak menghapus file milik batch lain.
+    // [22 Okt] JEJAK UPLOAD: setiap kejadian penting dicatat + dikirim ke server
+    // supaya kegagalan di perangkat user TIDAK PERNAH lagi "hilang tanpa jejak".
+    var wsDiagLog = [];
+    function wsDiag(kind, detail) {
+      try {
+        wsDiagLog.push({ t: new Date().toISOString().slice(11, 19), k: kind, d: String(detail || '').slice(0, 180) });
+        if (wsDiagLog.length > 30) wsDiagLog.shift();
+        wsDiagSend();
+      } catch (e) {}
+    }
+    var wsDiagTimer = null;
+    function wsDiagSend() {
+      clearTimeout(wsDiagTimer);
+      wsDiagTimer = setTimeout(function () {
+        const pid = wsProjectId();
+        if (!pid || !wsDiagLog.length) return;
+        const payload = JSON.stringify({ project_id: pid, ua: navigator.userAgent.slice(0, 120), events: wsDiagLog.slice(-12) });
+        fetch('/api/ws-diag-report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload }).catch(function () {});
+      }, 3000);
+    }
+    // [22 Okt] TOAST di layar: kegagalan WAJIB kelihatan tanpa buka lonceng notifikasi
+    function wsToast(msg) {
+      try {
+        let t = document.getElementById('ws-diag-toast');
+        if (!t) {
+          t = document.createElement('div');
+          t.id = 'ws-diag-toast';
+          t.style.cssText = 'position:fixed;left:12px;right:12px;bottom:16px;z-index:99999;background:#111;color:#fff;padding:12px 14px;border-radius:10px;font-size:13px;line-height:1.45;box-shadow:0 6px 20px rgba(0,0,0,.25);display:none';
+          document.body.appendChild(t);
+        }
+        t.textContent = msg;
+        t.style.display = 'block';
+        clearTimeout(t.__hide);
+        t.__hide = setTimeout(function () { t.style.display = 'none'; }, 7000);
+      } catch (e) {}
+    }
+
     function wsPushBatches(files) {
       const batches = []; let cur = [], curLen = 0;
       for (const f of (files || [])) {
@@ -1373,17 +1410,20 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         if (there !== files.length) throw new Error('verifikasi gagal');
         wsDirtySet(false);
         wsCloudFailNotified = false;
+        wsDiag('push_ok', files.length + ' file tersinkron');
         try { Object.keys(wsRestorePaths).forEach(function (p) { if (!wsKnownDeleted[p]) delete wsRestorePaths[p]; }); } catch (e) {}
       })().catch(function (err) {
         // [22 Okt, laporan owner: "console ga nangkep masalahnya"] kegagalan push
         // WAJIB terlihat: log lengkap ke console (tertangkap widget) + notifikasi.
         const errMsg = (err && err.message) ? String(err.message) : 'tidak diketahui';
         try { console.error('[Workspace sinkron] gagal simpan ke cloud (percobaan ' + (attempt + 1) + '/3): ' + errMsg); } catch (e) {}
+        wsDiag('push_gagal', 'p' + (attempt + 1) + ': ' + errMsg);
         if (terminal400) { try { addNotification('Workspace', 'Perubahan tidak diterima server (format ditolak). Sinkron dihentikan — coba muat ulang halaman.'); } catch (e) {} return; }
         if (attempt < 2) { setTimeout(function() { wsCloudPushNow(attempt + 1, keepalive); }, 1500 * (attempt + 1)); return; }
         // Tetap dirty: pull berikutnya tidak akan menimpa data lokal yang lebih baru
         if (!wsCloudFailNotified) {
           wsCloudFailNotified = true;
+          wsToast('⚠ Perubahan belum tersimpan ke cloud: ' + errMsg.slice(0, 100) + '. Akan dicoba otomatis.');
           try { addNotification('Workspace', 'Perubahan belum tersinkron ke cloud (' + errMsg.slice(0, 120) + '). Akan dicoba otomatis. Jangan bersihkan data situs.'); } catch (e) {}
         }
         wsCloudPushSchedule(); // coba lagi di siklus berikutnya
@@ -1461,6 +1501,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         // [22 Okt] dulu hanya console.warn (tidak terlihat user). Kini console.error
         // (tertangkap widget Bug Beetle) agar kasus kuota penuh jelas terdeteksi.
         console.error('[Workspace cache] kuota localStorage penuh — isi file diselamatkan langsung ke cloud.');
+        wsDiag('kuota_penuh', 'cache lokal penuh, penyelamatan cloud aktif'); wsToast('⚠ Memori browser penuh — file diselamatkan langsung ke cloud.');
       }
       if (!__cacheOk) wsCloudRescueUpload();
       wsTabChSend(); // [16 Okt] tab lain langsung tahu walau cache penuh
@@ -2648,6 +2689,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       // akhir, dan kegagalan per file SELALU dilaporkan (tidak diam).
       (async function () {
         let ok = 0; const failed = [];
+        wsDiag('impor_mulai', list.length + ' berkas dipilih');
         try { addNotification('Workspace', 'Mengimpor ' + list.length + ' berkas…'); } catch (e2) {}
         for (let i = 0; i < list.length; i++) {
           const file = list[i];
@@ -2661,9 +2703,10 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
           // beri napas ke UI + biarkan push yang berjalan selesai sebelum file berikutnya
           await new Promise(function (r) { setTimeout(r, 60); });
         }
-        try {
-          addNotification('Workspace', ok + '/' + list.length + ' berkas diimpor' + (failed.length ? '. Gagal: ' + failed.slice(0, 5).join(', ') + (failed.length > 5 ? ' dan ' + (failed.length - 5) + ' lainnya' : '') : '.'));
-        } catch (e4) {}
+        const ringkas = ok + '/' + list.length + ' berkas diimpor' + (failed.length ? '. Gagal: ' + failed.slice(0, 5).join(', ') + (failed.length > 5 ? ' dan ' + (failed.length - 5) + ' lainnya' : '') : '.');
+        wsDiag('impor_selesai', ringkas);
+        wsToast(ringkas);
+        try { addNotification('Workspace', ringkas); } catch (e4) {}
       })();
     }
     // Pembungkus Promise: selesai saat file terbaca & tercatat di pohon (reader.onload
