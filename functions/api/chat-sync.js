@@ -286,29 +286,21 @@ export async function onRequestPost({ request, env }) {
         }
         return j(dg);
       }
-      // [21 Okt debug upload] scan global: file yang dibuat HARI INI di semua proyek aktif
+      // [22 Okt] scan file dibuat hari ini — COMPOUND SELECT 5 tabel/query (hemat subrequest)
       try {
-        const rv = await db.prepare('SELECT project_id FROM ws_rev').all();
         const today = new Date().toISOString().slice(0, 10);
+        const tabs = await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'p\_%\_project\_files'").all();
+        const names = (tabs.results || []).map(t => String(t.name)).filter(Boolean);
         out.created_today = [];
-        for (const row of (rv.results || [])) {
-          const pid = String(row.project_id);
+        for (let i = 0; i < names.length; i += 5) {
+          const grp = names.slice(i, i + 5);
           try {
-            const t = tableFor('project_files', pid);
-            const r = await db.prepare('SELECT path, is_big, size, created_at FROM ' + t + ' WHERE project_id = ? AND created_at >= ? ORDER BY created_at DESC LIMIT 50').bind(pid, today).all();
-            for (const f of (r.results || [])) out.created_today.push({ pid, p: f.path, big: f.is_big, size: f.size, cat: f.created_at });
+            const sel = grp.map(tn => "SELECT '" + tn + "' AS tbl, path, is_big, size, created_at FROM " + tn + " WHERE created_at >= ?").join(' UNION ALL ');
+            const r = await db.prepare(sel).bind(today).all();
+            for (const f of (r.results || [])) out.created_today.push({ pid: f.tbl, p: f.path, big: f.is_big, size: f.size, cat: f.created_at });
           } catch (e) {}
         }
       } catch (e) { out.today_err = e.message; }
-      // [22 Okt debug upload banyak] security_events 2 hari terakhir + revs
-      try {
-        const r = await db.prepare("SELECT type, ip, detail, created_at FROM security_events WHERE created_at >= datetime('now','-2 days') ORDER BY id DESC LIMIT 50").all();
-        out.security_events = (r.results || []);
-      } catch (e) { out.sec_err = e.message; }
-      try {
-        const r = await db.prepare('SELECT project_id, rev FROM ws_rev ORDER BY rev DESC LIMIT 40').all();
-        out.revs = (r.results || []).map(x => ({ pid: x.project_id, rev: x.rev }));
-      } catch (e) { out.revs_err = e.message; }
       return j(out);
     }
 
