@@ -1395,32 +1395,35 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
     // boleh ikut terhapus oleh replace:true. Sebelum push, tarik cloud dan gabungkan
     // path yang hilang dari pohon lokal. Murah: lewati bila sidik jari rev tidak berubah.
     async function wsReconcileBeforePush() {
+      // [22 Okt] return true = pohon lokal sudah kenal SEMUA file cloud -> replace
+      // aman. return false = cloud tidak terbaca -> pengirim TIDAK BOLEH replace.
       try {
         const pid = wsProjectId();
-        if (!pid) return;
+        if (!pid) return true;
         // [22 Okt] timeout: fetch yang menggantung (jaringan HP berpindah) tadinya
         // membekukan seluruh push tanpa kabar — kini dilanjutkan setelah 12 dtk.
         const __ac = new AbortController();
         const __t = setTimeout(function () { __ac.abort(); }, 12000);
         const rr = await fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&rev=1', { headers: wsAuthHeaders(), signal: __ac.signal }).catch(function () { clearTimeout(__t); return { ok: false }; });
         clearTimeout(__t);
-        if (!rr.ok) return;
-        const rd = await rr.json();
+        if (!rr.ok) return false; // [22 Okt] cloud tak terbaca: JANGAN izinkan replace
+        const rd = await rr.json().catch(function () { return {}; });
         const rev = (rd && rd.rev) || '';
-        if (wsLastRev !== null && rev === wsLastRev) return; // cloud tidak berubah sejak terakhir kita lihat
+        if (wsLastRev !== null && rev === wsLastRev) return true; // cloud tidak berubah sejak terakhir kita lihat
         const r = await fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid), { headers: wsAuthHeaders() });
-        if (!r.ok) return;
+        if (!r.ok) return false; // [22 Okt] idem: tanpa potret cloud, replace dilarang
         const d = await r.json();
         wsLastRev = rev;
         const files = (d && d.files) || [];
-        if (!files.length) return; // cloud memang kosong — biarkan replace berjalan
+        if (!files.length) return true; // cloud memang kosong — biarkan replace berjalan
         try { wsTrackKnownDeleted(d && d.deleted_paths); } catch (e) {}
         const merged = wsMergeCloudIntoLocal(files);
         try { wsDropKnownDeletedFromTree(); } catch (e) {}
         projectFilesData = merged;
         try { localStorage.setItem(wsFilesKey(), JSON.stringify(projectFilesData)); } catch (e2) {}
         renderFileList();
-      } catch (e) { /* gagal rekonsiliasi: tetap push (dirty menjamin ulang) */ }
+        return true;
+      } catch (e) { return false; }
     }
     async function wsCloudPushNow(attempt, keepalive) {
       const pid = wsProjectId();
@@ -1428,7 +1431,9 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       // [16 Okt] bila bukan flush mati-tab: pastikan push tidak menghapus file
       // cloud yang belum dikenal tab ini. Flush mati-tab (keepalive) dilewati demi
       // kecepatan; dirty flag memastikan push ulang + rekonsiliasi saat dibuka lagi.
-      if (!keepalive) { try { await wsReconcileBeforePush(); } catch (e) {} }
+      let __recOk = false;
+      if (!keepalive) { try { __recOk = await wsReconcileBeforePush(); } catch (e) {} }
+      if (!keepalive && !__recOk) wsDiag('rec_skip', 'cloud tak terbaca — push non-hapus');
       // [12 Okt] restore_paths: file yang sengaja dibuat ulang di path ter-tombstone
       const files = wsFlatten(projectFilesData);
       const __restore = files.filter(function (f) { return f && f.path && wsRestorePaths[String(f.path)]; }).map(function (f) { return String(f.path); });
@@ -1440,7 +1445,10 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       // kirim fetch biasa; dirty flag menjamin percobaan ulang saat halaman dibuka lagi.
       (async function () {
         for (let b = 0; b < batches.length; b++) {
-          const payload = { project_id: pid, files: batches[b], replace: true, keep_paths: keepPaths, restore_paths: __restore, bump_rev: b === batches.length - 1 };
+          // [22 Okt FIX "file terhapus dari cloud"] replace:true menghapus baris cloud
+          // yang tidak dikenal pohon lokal — BAHAYA bila potret lokal basi (cache lama)
+          // atau rekonsiliasi gagal. Hanya replace bila potret cloud sudah digabung.
+          const payload = { project_id: pid, files: batches[b], replace: __recOk && !keepalive, keep_paths: keepPaths, restore_paths: __restore, bump_rev: b === batches.length - 1 };
           const bodyStr = JSON.stringify(payload);
           const opt = { method: 'POST', headers: H, body: bodyStr };
           if (keepalive && bodyStr.length < 60000) { opt.keepalive = true; }
@@ -1463,7 +1471,10 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         if (!r.ok) throw new Error('verifikasi gagal');
         const d = await r.json();
         const there = ((d && d.files) || []).length;
-        if (there !== files.length) throw new Error('verifikasi gagal');
+        // [22 Okt] saat non-replace, cloud boleh punya file lebih (yang tak dikenal lokal);
+        // cukup pastikan SEMUA file kiriman kita benar-benar ada.
+        if (__recOk && !keepalive) { if (there !== files.length) throw new Error('verifikasi gagal'); }
+        else if (there < files.length) throw new Error('verifikasi gagal');
         wsDirtySet(false);
         wsCloudFailNotified = false;
         wsDiag('push_ok', files.length + ' file tersinkron');
