@@ -326,14 +326,6 @@ export async function onRequestPost({ request, env }) {
       return j({ remaining_tombstones: cleared });
     }
 
-    // [22 Okt] bersihkan token QA sementara (pengujian selesai)
-    if (action === 'qa_cleanup') {
-      try {
-        const r = await db.prepare("DELETE FROM auth_sessions WHERE token LIKE 'qadb\_%'").run();
-        return j({ deleted: (r && r.meta && r.meta.changes) || 0 });
-      } catch (e) { return j({ err: e.message }); }
-    }
-
     // [21 Okt] DIAGNOSTIK pemakaian kredit AI milik owner (debug "pemakaian 0 terus")
     if (action === 'ai_usage') {
       const uk = 'u' + ownerId;
