@@ -199,12 +199,16 @@
     </div>
 
     <div class="px-7">
-        <div class="flex items-center justify-between gap-4 mt-6">
-            <p id="dns-count" class="text-[13px] text-gray-500 font-medium"></p>
-            <button onclick="openAddRecord()" class="shrink-0 whitespace-nowrap bg-accent text-white text-[13px] font-semibold rounded-full px-4 py-2 cursor-pointer active:scale-95 transition-all">Tambah</button>
+        <div class="flex items-center gap-3 mt-6">
+            <div id="dns-search-wrap" class="relative flex-1 min-w-0">
+                <i data-lucide="search" class="w-[18px] h-[18px] text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                <input id="dns-search" type="text" placeholder="Cari record…" oninput="renderDns(true)" class="w-full h-10 bg-gray-50 border border-gray-200 rounded-full pl-11 pr-4 text-[14px] font-medium text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors">
+            </div>
+            <button onclick="openAddRecord()" class="shrink-0 whitespace-nowrap ml-auto h-10 bg-accent text-white text-[13px] font-semibold rounded-full px-5 cursor-pointer active:scale-95 transition-all">Tambah</button>
         </div>
 
         <div id="zone-banner" class="hidden"></div>
+
         <div class="overflow-x-auto mt-3 -mx-7 px-7">
             <table class="w-full min-w-[520px] border-collapse">
                 <thead>
@@ -313,15 +317,16 @@ function banner(html, kind) {
     el.innerHTML = html;
 }
 
-async function renderDns() {
-    const res = await store.listDns(domain);
+let lastDnsRes = null;
+async function renderDns(useCache) {
+    const res = (useCache && lastDnsRes) ? lastDnsRes : await store.listDns(domain);
+    lastDnsRes = res;
     const listEl = document.getElementById('dns-list');
     if (!res || !res.ok) {
         simMode = false;
         const msg = (res && res.message) || 'Record DNS tidak dapat dimuat.';
         listEl.innerHTML = '';
         banner(esc(msg), 'error');
-        document.getElementById('dns-count').textContent = '';
         lucide.createIcons();
         return;
     }
@@ -357,8 +362,9 @@ async function renderDns() {
           })
         : [];
 
-    document.getElementById('dns-count').textContent = records.length + ' dari ' + DNS_LIMIT + ' record DNS telah digunakan di domain ini.';
-    listEl.innerHTML = sorted.length ? sorted.map(r => `
+    const q = (document.getElementById('dns-search').value || '').toLowerCase().trim();
+    const shown = q ? sorted.filter(r => [r.type, r.name, shortName(r.name), r.content].some(v => String(v == null ? '' : v).toLowerCase().includes(q))) : sorted;
+    listEl.innerHTML = shown.length ? shown.map(r => `
         <tr class="group hover:bg-gray-50/60 transition-colors">
             <td class="py-3.5 pr-4 align-top">
                 <span class="mono inline-block min-w-[44px] text-center text-[10.5px] font-bold uppercase tracking-wide bg-gray-100 text-gray-600 rounded-full px-2 py-1">${esc(r.type)}</span>
@@ -378,7 +384,7 @@ async function renderDns() {
                     </button>
                 </div>
             </td>
-        </tr>`).join('') : '<tr><td colspan="4" class="text-[13px] text-gray-500 py-3">Belum ada record DNS.</td></tr>';
+        </tr>`).join('') : '<tr><td colspan="4" class="text-[13px] text-gray-500 py-3">' + (records.length ? 'Tidak ada record yang cocok dengan pencarian.' : 'Belum ada record DNS.') + '</td></tr>';
     lucide.createIcons();
 }
 
