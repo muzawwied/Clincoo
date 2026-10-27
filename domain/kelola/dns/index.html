@@ -54,6 +54,26 @@
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
     input:focus, select:focus, textarea:focus { outline: none!important; box-shadow: none!important; }
 
+    /* Pop-up, popover & pesan: sama dengan halaman Domain */
+    @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes menuPop { from { opacity: 0; transform: translateY(-6px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .popup-overlay { animation: overlayIn .18s ease-out; }
+    .popup-card { animation: menuPop .2s cubic-bezier(.2,.8,.2,1); transform-origin: center; }
+    .popup-menu { animation: menuPop .16s cubic-bezier(.2,.8,.2,1); transform-origin: top right; }
+    body.dark-mode .popup-card, body.dark-mode .popup-menu { box-shadow: 0 20px 50px rgba(0,0,0,.6) !important; }
+    body.dark-mode .btn-cancel { background-color: #141414 !important; }
+    body.dark-mode .btn-cancel:hover { background-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-50:hover { background-color: #141414 !important; }
+    body.dark-mode .hover\:bg-gray-50\/60:hover { background-color: #101010 !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
+    body.dark-mode .hover\:bg-red-50:hover { background-color: rgba(220,38,38,.14) !important; }
+    body.dark-mode .text-red-600 { color: #f87171 !important; }
+    body.dark-mode .btn-danger { background-color: #dc2626 !important; color: #ffffff !important; }
+    body.dark-mode .btn-danger:hover { background-color: #b91c1c !important; }
+    body.dark-mode .text-gray-300 { color: #666666 !important; }
+    body.dark-mode #zone-banner.text-amber-600 { color: #fbbf24 !important; }
+    @media (prefers-reduced-motion: reduce) { .popup-overlay, .popup-card, .popup-menu { animation: none; } }
+
 /* Shimmer skeleton */
 .shim{position:relative;overflow:hidden;background:#ececef;border-radius:999px;display:inline-block;vertical-align:middle;opacity:.78}
 .shim::after{content:"";position:absolute;inset:0;transform:translateX(-110%);background:linear-gradient(90deg,transparent 25%,rgba(255,255,255,.72) 50%,transparent 75%);animation:shim 1.55s ease-in-out infinite}
@@ -81,25 +101,26 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
     <button onclick="goBack()" class="fixed top-3 left-3 w-10 h-10 flex items-center justify-center rounded-full bg-white backdrop-blur border border-gray-100 shadow-sm hover:bg-gray-50 transition-all cursor-pointer text-gray-700 hover:text-black z-50" aria-label="Kembali">
         <i data-lucide="arrow-left" class="w-5 h-5"></i>
     </button>
-    <div class="flex flex-col px-5 pb-2 relative">
+    <div class="flex flex-col px-7 pb-2 relative">
         <h2 class="text-[24px] font-extrabold text-gray-900 tracking-tight">Kelola DNS</h2>
         <p id="v-domain" class="text-[14px] text-gray-500 font-medium mt-0.5">memuat…</p>
+        <p class="text-[13px] text-gray-500 leading-relaxed mt-2">Atur record yang menghubungkan domain-mu ke layanan lain.</p>
     </div>
 
-    <div class="px-5">
+    <div class="px-7">
         <div class="flex items-center justify-between mt-6">
             <h3 class="text-[12px] font-bold text-gray-400 uppercase tracking-wider">Record DNS <span id="dns-count" class="text-gray-300 font-semibold"></span></h3>
             <button onclick="openAddRecord()" class="bg-accent text-white text-[13px] font-semibold rounded-full px-3.5 py-1.5 cursor-pointer active:scale-95 transition-all">Tambah Record</button>
         </div>
 
         <div id="zone-banner" class="hidden"></div>
-        <div class="overflow-x-auto mt-3 -mx-5 px-5">
+        <div class="overflow-x-auto mt-3 -mx-7 px-7">
             <table class="w-full min-w-[520px] border-collapse">
                 <thead>
                     <tr>
-                        <th class="text-[10px] font-bold text-gray-300 uppercase tracking-widest text-left py-2 pr-4 w-[76px]">Tipe</th>
-                        <th class="text-[10px] font-bold text-gray-300 uppercase tracking-widest text-left py-2 pr-4 w-[170px]">Nama</th>
-                        <th class="text-[10px] font-bold text-gray-300 uppercase tracking-widest text-left py-2 pr-4">Nilai</th>
+                        <th class="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-left py-2 pr-4 w-[76px]">Tipe</th>
+                        <th class="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-left py-2 pr-4 w-[170px]">Nama</th>
+                        <th class="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-left py-2 pr-4">Nilai</th>
                         <th class="w-[52px]"></th>
                     </tr>
                 </thead>
@@ -117,53 +138,55 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
 </main>
 
 <!-- Modal tambah record -->
-<div id="add-record-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-5" onclick="if(event.target===this)closeAddRecord()">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-5">
-        <h3 class="text-[15px] font-bold text-gray-900">Tambah Record DNS</h3>
+<div id="add-record-modal" class="popup-overlay hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-5" onclick="if(event.target===this)closeAddRecord()">
+    <div class="popup-card bg-white rounded-2xl border border-gray-100 shadow-[0_20px_50px_rgba(0,0,0,0.18)] w-full max-w-sm p-6">
+        <h3 class="text-[16px] font-bold text-gray-900 tracking-tight">Tambah Record DNS</h3>
 
         <div class="mt-4">
             <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Tipe Record</label>
             <div class="relative">
-                <button id="dns-type-trigger" type="button" onclick="toggleTypePopover()" class="w-full flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-[13px] font-semibold text-gray-900 cursor-pointer">
+                <button id="dns-type-trigger" type="button" onclick="toggleTypePopover()" class="w-full flex items-center justify-between bg-gray-50 border border-gray-200 rounded-full px-4 py-2.5 text-[13px] font-semibold text-gray-900 cursor-pointer transition-colors hover:bg-gray-100">
                     <span id="dns-type-label">A</span>
                     <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
                 </button>
-                <div id="dns-type-popover" class="hidden absolute left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-lg shadow-lg z-[80] py-1 max-h-44 overflow-auto"></div>
+                <div id="dns-type-popover" class="popup-menu hidden absolute left-0 right-0 mt-1.5 bg-white border border-gray-100 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.12)] z-[80] p-1.5 max-h-44 overflow-auto"></div>
             </div>
         </div>
 
         <div class="mt-4">
             <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Nama</label>
-            <input id="dns-name" type="text" placeholder="@" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-[13px] font-medium text-gray-900 placeholder-gray-400">
+            <input id="dns-name" type="text" placeholder="@" class="w-full bg-gray-50 border border-gray-200 rounded-full px-4 py-2.5 text-[13px] font-medium text-gray-900 placeholder-gray-400 focus:border-gray-400 transition-colors">
         </div>
 
         <div class="mt-4">
             <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Nilai</label>
-            <input id="dns-content" type="text" placeholder="192.0.2.1" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-[13px] font-medium text-gray-900 placeholder-gray-400">
+            <input id="dns-content" type="text" placeholder="192.0.2.1" class="w-full bg-gray-50 border border-gray-200 rounded-full px-4 py-2.5 text-[13px] font-medium text-gray-900 placeholder-gray-400 focus:border-gray-400 transition-colors">
         </div>
 
-        <div class="flex justify-end gap-1 mt-5">
-            <button onclick="closeAddRecord()" class="rounded-md px-3 py-1.5 text-[13px] font-semibold text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors cursor-pointer">Batal</button>
-            <button onclick="addRecord()" class="rounded-md px-3 py-1.5 text-[13px] font-semibold text-accent hover:bg-gray-50 transition-colors cursor-pointer">Simpan</button>
+        <p id="dns-add-error" class="hidden text-[12px] text-red-600 font-medium mt-3"></p>
+
+        <div class="flex justify-end gap-2 mt-6">
+            <button onclick="closeAddRecord()" class="btn-cancel rounded-full px-4 py-2 text-[13px] font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 hover:text-gray-800 transition-colors active:scale-95 cursor-pointer">Batal</button>
+            <button onclick="addRecord()" class="flex items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold bg-accent text-white hover:bg-accent-hover transition-all active:scale-95 cursor-pointer">Simpan</button>
         </div>
     </div>
 </div>
 
 <!-- Modal konfirmasi hapus record -->
-<div id="confirm-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[70] flex items-center justify-center p-5" onclick="if(event.target===this)closeConfirm()">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-[320px] px-5 pt-4 pb-3.5 text-center">
-        <h3 class="text-[14px] font-bold text-gray-900">Hapus record DNS ini?</h3>
+<div id="confirm-modal" class="popup-overlay hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[70] flex items-center justify-center p-5" onclick="if(event.target===this)closeConfirm()">
+    <div class="popup-card bg-white rounded-2xl border border-gray-100 shadow-[0_20px_50px_rgba(0,0,0,0.18)] w-full max-w-sm p-6">
+        <h3 class="text-[16px] font-bold text-gray-900 tracking-tight">Hapus record DNS ini?</h3>
         <p id="confirm-detail" class="mono mt-1.5 text-[12px] text-gray-500 leading-relaxed break-all"></p>
-        <div class="flex justify-center gap-1 mt-4">
-            <button onclick="closeConfirm()" class="rounded-md px-4 py-1.5 text-[13px] font-semibold text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors cursor-pointer">Batal</button>
-            <button onclick="doDeleteRecord()" class="rounded-md px-4 py-1.5 text-[13px] font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer">Hapus</button>
+        <div class="flex justify-end gap-2 mt-6">
+            <button onclick="closeConfirm()" class="btn-cancel rounded-full px-4 py-2 text-[13px] font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 hover:text-gray-800 transition-colors active:scale-95 cursor-pointer">Batal</button>
+            <button onclick="doDeleteRecord()" class="btn-danger flex items-center justify-center rounded-full px-4 py-2 text-[13px] font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors active:scale-95 cursor-pointer">Hapus</button>
         </div>
     </div>
 </div>
 
 <!-- Popover aksi record (titik tiga tiduran) -->
 <div id="row-backdrop" class="hidden fixed inset-0 z-[55]" onclick="closeRowMenu()"></div>
-<div id="row-menu" class="hidden fixed z-[60] bg-white rounded-xl shadow-xl py-1 w-40" style="top:0; left:0;">
+<div id="row-menu" class="popup-menu hidden fixed z-[60] bg-white rounded-xl border border-gray-100 shadow-[0_12px_32px_rgba(0,0,0,0.12)] p-1.5 w-44" style="top:0; left:0;">
     <div id="row-menu-list" class="flex flex-col"></div>
 </div>
 
@@ -186,9 +209,10 @@ function togglePin(id) {
 function goBack() { location.href = '../../detail/?domain=' + encodeURIComponent(domain); }
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-function banner(text) {
-    document.getElementById('zone-banner').innerHTML = text;
-    document.getElementById('zone-banner').classList.remove('hidden');
+function banner(html, kind) {
+    const el = document.getElementById('zone-banner');
+    el.className = 'mt-4 text-[13px] font-medium leading-relaxed ' + (kind === 'error' ? 'text-red-600' : 'text-amber-600');
+    el.innerHTML = html;
 }
 
 async function renderDns() {
@@ -198,8 +222,7 @@ async function renderDns() {
         simMode = false;
         const msg = (res && res.message) || 'Record DNS tidak dapat dimuat.';
         listEl.innerHTML = '';
-        banner('<div class="flex items-start gap-3 mt-4 rounded-xl border border-amber-100 bg-amber-50 p-4"><i data-lucide="info" class="w-5 h-5 text-amber-500 shrink-0 mt-0.5"></i><p class="text-[13px] text-amber-700 font-medium leading-relaxed"></p></div>');
-        document.querySelector('#zone-banner p').textContent = msg;
+        banner(esc(msg), 'error');
         document.getElementById('dns-count').textContent = '';
         lucide.createIcons();
         return;
@@ -211,9 +234,9 @@ async function renderDns() {
     // Zona ada tapi masih pending -> record belum aktif sampai nameserver diarahkan.
     const verifHref = (location.pathname.includes('/kelola/dns/')) ? '../../verifikasi/?domain=' + encodeURIComponent(domain) : 'verifikasi/?domain=' + encodeURIComponent(domain);
     if (res.managed === false) {
-        banner('<div class="flex items-start gap-3 mt-4 rounded-xl border border-amber-100 bg-amber-50 p-4"><i data-lucide="info" class="w-5 h-5 text-amber-500 shrink-0 mt-0.5"></i><p class="text-[13px] text-amber-700 font-medium leading-relaxed">' + esc(res.message || 'Domain ini tidak dikelola lewat jaringan Clincoo. Record tetap tersimpan di Clincoo — salin juga ke penyedia DNS domain-mu agar aktif.') + '</p></div>');
+        banner(esc(res.message || 'Domain ini tidak dikelola lewat Clincoo. Salin record ke penyedia DNS-mu agar aktif.'));
     } else if (res.zone_status === 'pending') {
-        banner('<div class="flex items-start gap-3 mt-4 rounded-xl border border-amber-100 bg-amber-50 p-4"><i data-lucide="info" class="w-5 h-5 text-amber-500 shrink-0 mt-0.5"></i><p class="text-[13px] text-amber-700 font-medium leading-relaxed">Record tersimpan di Clincoo, tapi belum aktif — arahkan nameserver domain-mu ke nameserver Clincoo, atau salin record berikut ke penyedia DNS domain-mu. <a href="' + verifHref + '" class="underline font-semibold">Lihat nameserver</a></p></div>');
+        banner('Record belum aktif. Arahkan nameserver domain-mu ke Clincoo, atau salin record ini ke penyedia DNS-mu. <a href="' + verifHref + '" class="underline font-semibold">Lihat nameserver</a>');
     } else {
         document.getElementById('zone-banner').classList.add('hidden');
     }
@@ -247,7 +270,7 @@ async function renderDns() {
             </td>
             <td class="py-3.5 pr-4 align-top">
                 <p class="mono text-[12px] text-gray-700 truncate max-w-[300px]">${esc(r.content)}</p>
-                <p class="text-[10px] text-gray-300 font-medium mt-0.5">${esc(meta(r))}</p>
+                <p class="text-[10px] text-gray-400 font-medium mt-0.5">${esc(meta(r))}</p>
             </td>
             <td class="py-3.5 text-right align-top">
                 <button onclick="openRowMenu(event, '${r.id}')" class="w-8 h-8 inline-flex items-center justify-center cursor-pointer bg-transparent transition-colors hover:bg-gray-100 rounded-full" title="Aksi lainnya">
@@ -262,7 +285,7 @@ const DNS_TYPES = ['A', 'AAAA', 'CNAME', 'TXT', 'MX'];
 function renderTypePopover() {
     const current = document.getElementById('dns-type-label').textContent;
     document.getElementById('dns-type-popover').innerHTML = DNS_TYPES.map(t => `
-        <button type="button" onclick="selectDnsType('${t}')" class="w-full text-left px-3 py-2 text-[13px] font-semibold cursor-pointer transition-colors hover:bg-gray-50 ${t === current ? 'text-accent' : 'text-gray-800'}">${t}</button>`).join('');
+        <button type="button" onclick="selectDnsType('${t}')" class="w-full text-left px-3 py-2 rounded-lg text-[13.5px] font-semibold cursor-pointer transition-colors hover:bg-gray-50 ${t === current ? 'text-accent' : 'text-gray-800'}">${t}</button>`).join('');
 }
 function toggleTypePopover() {
     renderTypePopover();
@@ -283,6 +306,7 @@ function openAddRecord() {
     document.getElementById('dns-type-popover').classList.add('hidden');
     document.getElementById('dns-name').value = '';
     document.getElementById('dns-content').value = '';
+    showAddError('');
     const m = document.getElementById('add-record-modal');
     m.classList.remove('hidden'); m.classList.add('flex');
     lucide.createIcons();
@@ -293,6 +317,7 @@ function setCtaLoading(btn) {
     if (!btn) return;
     btn.dataset.ctaLabel = btn.textContent;
     btn.style.minWidth = Math.max(btn.offsetWidth, 64) + 'px';
+    btn.style.minHeight = btn.offsetHeight + 'px';
     btn.innerHTML = '<svg class="btn-spin" width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" opacity=".18"/><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>';
     btn.disabled = true;
 }
@@ -300,6 +325,7 @@ function setCtaIdle(btn) {
     if (!btn) return;
     btn.disabled = false;
     btn.style.minWidth = '';
+    btn.style.minHeight = '';
     if (btn.dataset.ctaLabel) btn.textContent = btn.dataset.ctaLabel;
 }
 function closeAddRecord() {
@@ -307,13 +333,19 @@ function closeAddRecord() {
     const m = document.getElementById('add-record-modal');
     m.classList.add('hidden'); m.classList.remove('flex');
 }
+function showAddError(text) {
+    const el = document.getElementById('dns-add-error');
+    el.textContent = text || '';
+    el.classList.toggle('hidden', !text);
+}
 let adding = false;
 async function addRecord() {
     if (adding) return;
     const type = document.getElementById('dns-type-label').textContent;
     const name = document.getElementById('dns-name').value.trim();
     const content = document.getElementById('dns-content').value.trim();
-    if (!name || !content) return;
+    if (!name || !content) { showAddError('Isi nama dan nilai record.'); return; }
+    showAddError('');
     adding = true;
     setCtaLoading([...document.querySelectorAll('button')].find(b => b.getAttribute('onclick') === 'addRecord()')); // [19 Okt] teks -> ikon loading
     const res = await store.addDns(domain, { type, name, content });
@@ -321,7 +353,7 @@ async function addRecord() {
     if (!res || !res.ok) {
         const msg = (res && res.message) || 'Record gagal ditambahkan.';
         setCtaIdle([...document.querySelectorAll('button')].find(b => b.getAttribute('onclick') === 'addRecord()'));
-        alert(msg);
+        showAddError(msg);
         return;
     }
     closeAddRecord(); renderDns();
@@ -329,9 +361,9 @@ async function addRecord() {
 function openRowMenu(evt, id) {
     const r = records.find(x => x.id === id); if (!r) return;
     document.getElementById('row-menu-list').innerHTML = `
-        <button onclick="closeRowMenu(); togglePin('${r.id}')" class="w-full text-left px-4 py-2.5 text-[13px] font-medium text-gray-800 cursor-pointer transition-colors hover:bg-gray-50">${isPinned(r.id) ? 'Lepas Sematan' : 'Sematkan'}</button>
-        <button onclick="closeRowMenu(); copyRecordValue('${r.id}')" class="w-full text-left px-4 py-2.5 text-[13px] font-medium text-gray-800 cursor-pointer transition-colors hover:bg-gray-50">Salin Nilai</button>
-        <button onclick="closeRowMenu(); askDeleteRecord('${r.id}')" class="w-full text-left px-4 py-2.5 text-[13px] font-semibold text-red-600 cursor-pointer transition-colors hover:bg-gray-50">Hapus</button>`;
+        <button onclick="closeRowMenu(); togglePin('${r.id}')" class="w-full text-left px-3 py-2 rounded-lg text-[13.5px] font-medium text-gray-800 cursor-pointer transition-colors hover:bg-gray-50">${isPinned(r.id) ? 'Lepas Sematan' : 'Sematkan'}</button>
+        <button onclick="closeRowMenu(); copyRecordValue('${r.id}')" class="w-full text-left px-3 py-2 rounded-lg text-[13.5px] font-medium text-gray-800 cursor-pointer transition-colors hover:bg-gray-50">Salin Nilai</button>
+        <button onclick="closeRowMenu(); askDeleteRecord('${r.id}')" class="w-full text-left px-3 py-2 rounded-lg text-[13.5px] font-medium text-red-600 cursor-pointer transition-colors hover:bg-red-50">Hapus</button>`;
     const menu = document.getElementById('row-menu');
     const backdrop = document.getElementById('row-backdrop');
     menu.classList.remove('hidden'); backdrop.classList.remove('hidden');
@@ -378,7 +410,12 @@ async function doDeleteRecord() {
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeConfirm(); });
 if (!domain) { location.replace('../../'); }
 else {
-    document.getElementById('v-domain').textContent = domain;
+    const vd = document.getElementById('v-domain');
+    vd.textContent = 'untuk ';
+    const vdName = document.createElement('span');
+    vdName.className = 'text-gray-900 font-semibold';
+    vdName.textContent = domain;
+    vd.appendChild(vdName);
     store.ready.then(renderDns);
     lucide.createIcons();
 }
