@@ -162,30 +162,6 @@ function normStreamToolCalls(tcs) {
   return norm;
 }
 
-async function getModelRouterKeys(env) {
-  const keys = [];
-  const seen = new Set();
-  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
-  add(env.MODELROUTER_API_KEY);
-  if (!env.DB) return keys;
-  try {
-    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key = 'MODELROUTER_API_KEY'").all();
-    for (const r of rows.results || []) add(r.value);
-  } catch {}
-  return keys;
-}
-
-const MR_MODEL = 'glm-5.3-flash:mr';
-const MR_OUT_TOKENS = 8192;
-const MR_TIMEOUT_MS = 240000;
-
-const MODELROUTER_MODELS = [MR_MODEL];
-
-const MR_MAX_TOKENS = { [MR_MODEL]: MR_OUT_TOKENS };
-const MR_ENDPOINT = 'https://modelrouter.id/v1/chat/completions';
-
-const mrLabel = () => 'glm-5.3-flash'; // [21 Okt] label 'orkestra-1-pro' dihapus atas permintaan owner
-
 // >>> AUTO-LANJUT
 // Port dari klien (clincoo_ai_assistant.html): bila jawaban terpotong batas token, sistem otomatis
 // mengirim "lanjutkan" + STATE TERAKHIR (di dalam blok apa, file yang sedang ditulis, daftar file
@@ -194,7 +170,7 @@ const mrLabel = () => 'glm-5.3-flash'; // [21 Okt] label 'orkestra-1-pro' dihapu
 const MIN_PROJECT_BYTES = 100 * 1024; // web baru wajib > 100 KB
 const CONT_MAX_ROUNDS = 24;           // maks putaran lanjut per jawaban
 const CONT_MAX_EXPAND = 8;            // [21 Okt, arahan pemilik: web harus sampai selesai full] maks putaran "tambah file" bila proyek masih < 100 KB
-const MR_SOFT_BUDGET_MS = 190000;     // lewat batas ini tidak memulai putaran baru (MR_TIMEOUT_MS lebih besar)
+const AUTO_CONTINUE_SOFT_BUDGET_MS = 190000;
 
 // [21 Okt, laporan owner: "AI sedang gangguan" di proyek besar] Cloudflare Workers
 // membatasi subrequest per invocation (free plan: 50). Auto-continue + perbaikan
@@ -207,7 +183,7 @@ function budgetNew() { return { used: 0, max: SUB_MAX_AI }; }
 function budgetTake(b) { if (!b) return true; if (b.used >= b.max) return false; b.used++; return true; }
 function budgetOut(b) { return !!(b && b.used >= b.max); }
 // [21 Okt] Semua identitas provider/model disembunyikan dari klien (jangan bocor di dev tools)
-const SCRUB_INT = /\b(modelrouter\.id|glm[\w.:\-]*|gemini[\w.:\-]*|openrouter(?:\.com)?|claude[\w.:\-]*|gpt[\w.:\-]*|groq[\w.:\-]*|llama[\w.:\-]*|nemotron[\w.:\-]*|orkestra[\w.:\-]*|deepseek[\w.:\-]*|mistral[\w.:\-]*|@cf\/[\w.\/-]+|workers\s+ai)\b/gi;
+const SCRUB_INT = /\b(glm[\w.:\-]*|gemini[\w.:\-]*|openrouter(?:\.com)?|claude[\w.:\-]*|gpt[\w.:\-]*|groq[\w.:\-]*|llama[\w.:\-]*|nemotron[\w.:\-]*|orkestra[\w.:\-]*|deepseek[\w.:\-]*|mistral[\w.:\-]*|@cf\/[\w.\/-]+|workers\s+ai)\b/gi;
 const scrubInt = (s) => String(s || '').replace(SCRUB_INT, 'AI').replace(/\bAI\s+AI\b/gi, 'AI').replace(/\s{2,}/g, ' ').slice(0, 300);
 
 const cIsCut = (fin) => /^(length|max_tokens)$/i.test(String(fin || ''));
@@ -313,7 +289,7 @@ function cBuildContinue(txt, expand) {
 
 // Sambung potongan. DI DALAM blok kode sambungan ditempel apa adanya (tanpa menambah spasi/titik
 // atau memotong kata, karena itu merusak kode); heuristik teks biasa hanya di luar blok kode.
-function mrJoinContinuation(prev, cont) {
+function joinContinuation(prev, cont) {
   const p = String(prev || '');
   let c = String(cont || '');
   if (!c) return p;
@@ -347,8 +323,8 @@ function cFinalize(full, truncated, onDelta) {
   return (truncated ? full : String(full).replace(/\s+$/, '')) + add;
 }
 
-// Loop inti. callRound(msgs) -> { text, fin } | null. Dipakai semua provider (ModelRouter, Gemini, OpenRouter).
-async function mrAutoContinue({ baseMsgs, first, callRound, deadline, onDelta }) {
+// Loop inti untuk menyambung respons yang terpotong.
+async function autoContinue({ baseMsgs, first, callRound, deadline, onDelta }) {
   const sink = onDelta && onDelta.sink;
   let full = String(first.text || ''), fin = first.fin, round = 0, expandRounds = 0, truncated = false;
   if (sink) { sink.text = full; sink.cur = ''; }
@@ -372,7 +348,7 @@ async function mrAutoContinue({ baseMsgs, first, callRound, deadline, onDelta })
       ]));
     } catch (e) { r = null; }
     if (!r || !String(r.text || '').trim()) { truncated = cut; break; }
-    full = expand ? full.replace(/\s+$/, '') + '\n\n' + String(r.text).replace(/^\s+/, '') : mrJoinContinuation(full, r.text);
+    full = expand ? full.replace(/\s+$/, '') + '\n\n' + String(r.text).replace(/^\s+/, '') : joinContinuation(full, r.text);
     fin = r.fin;
     if (sink) { sink.text = full; sink.cur = ''; }
   }
@@ -380,142 +356,6 @@ async function mrAutoContinue({ baseMsgs, first, callRound, deadline, onDelta })
   return { text: full, truncated, rounds: round };
 }
 // <<< AUTO-LANJUT
-
-async function tryModelRouterText(keys, messages, gDecls, models, onDelta, usageAcc, budget) {
-  const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
-  if (!keyList.length) return null;
-  const modelList = (Array.isArray(models) && models.length) ? models : MODELROUTER_MODELS;
-  const deadline = Date.now() + MR_SOFT_BUDGET_MS;
-  const { system, chatMsgs } = toOAIChat(messages);
-  const oaiTools = oaiToolsOf(gDecls);
-  const callMr = (key, model, msgs, stream) => {
-
-    if (usageAcc) usageAcc[model] = (usageAcc[model] || 0) + tokensOfChars(JSON.stringify(msgs));
-    const p = { model, messages: msgs, max_tokens: (MR_MAX_TOKENS && MR_MAX_TOKENS[model]) || 128 };
-    if (stream) p.stream = true;
-    if (oaiTools) p.tools = oaiTools;
-    if (!budgetTake(budget)) throw new Error('__sublimit');
-    return fetch(MR_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'https://clincoo.buzz', 'X-Title': 'Clincoo' },
-      body: JSON.stringify(p)
-    });
-  };
-  let lastErr = null;
-  let sawRateLimit = false;
-
-  const mrContinueToolArgs = async (key, model, baseMsgs, tc) => {
-    let acc = tc.args || '';
-
-    for (let hop = 0; hop < 48; hop++) {
-      const tryMsgs = baseMsgs.slice();
-      tryMsgs.push({ role: 'assistant', content: null, tool_calls: [{ id: 'cut' + hop, type: 'function', function: { name: tc.name, arguments: acc } }] });
-      tryMsgs.push({ role: 'user', content: 'Tool call terakhirmu TERPOTONG karena batas token. Lanjutkan PERSIS dari karakter terakhir argumen JSON itu — keluarkan HANYA sambungan string JSON-nya tanpa penjelasan, tanpa blok kode, lalu berhenti segera setelah JSON-nya lengkap dan valid.' });
-      try {
-        const cr = await callMr(key, model, tryMsgs, true);
-        if (!cr.ok || !cr.body) return null;
-        const st2 = await readOAICompatStream(cr, null);
-        let cont = (st2 && st2.text ? st2.text : '').trim();
-        if (!cont) return null;
-        cont = cont.replace(/^```[a-z]*\s*/i, '').replace(/```\s*$/, '').trim();
-        acc += cont;
-        try { return JSON.parse(acc); } catch (e) {}
-        if (st2.fin !== 'length') return null;
-      } catch (e) { return null; }
-    }
-    return null;
-  };
-  for (const key of keyList) {
-  for (const model of modelList) {
-    if (budgetOut(budget)) break;
-    const baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
-    let data = null;
-
-    if (onDelta) {
-      try {
-        const sr = await callMr(key, model, baseMsgs, true);
-        if (sr.ok && sr.body) {
-          const st = await readOAICompatStream(sr, onDelta);
-          if (st.text || st.tcs.length) {
-            if (st.tcs.length) {
-
-              const nt = normStreamToolCalls(st.tcs);
-              if (nt.length && st.fin !== 'length') return { tool_calls: nt, text: st.text, model: mrLabel(model) };
-              if (st.fin === 'length') {
-                const fixed = [];
-                for (const c of st.tcs) {
-                  let a = null; try { a = c.args ? JSON.parse(c.args) : null; } catch (e) { a = null; }
-                  if (!a) a = await mrContinueToolArgs(key, model, baseMsgs, c);
-                  if (a) fixed.push({ name: c.name, args: a });
-                }
-                if (fixed.length) { if (usageAcc) usageAcc[model] = (usageAcc[model] || 0) + tokensOfChars((st.text || '') + JSON.stringify(fixed)); return { tool_calls: fixed, text: st.text, model: mrLabel(model) }; }
-                lastErr = 'ModelRouter ' + model + ': tool call terpotong, penyambungan gagal';
-                continue;
-              }
-              lastErr = 'ModelRouter ' + model + ': tool call rusak (args gak valid)';
-              continue;
-            }
-
-            const mrRes = await mrAutoContinue({
-              baseMsgs, first: { text: st.text, fin: st.fin }, deadline, onDelta,
-              callRound: async (msgs) => {
-                const cr = await callMr(key, model, msgs, true);
-                if (!cr.ok || !cr.body) return null;
-                const s2 = await readOAICompatStream(cr, onDelta);
-                return { text: s2.text, fin: s2.fin };
-              }
-            });
-            { if (usageAcc) usageAcc[model] = (usageAcc[model] || 0) + tokensOfChars(mrRes.text); return { text: mrRes.text, model: mrLabel(model), truncated: mrRes.truncated || undefined }; }
-          }
-          lastErr = 'ModelRouter ' + model + ': stream kosong';
-        }
-        if (!sr.ok) { lastErr = 'ModelRouter ' + model + ': HTTP ' + sr.status; if (sr.status === 429) sawRateLimit = true; }
-      } catch (e) { lastErr = 'ModelRouter ' + model + ': ' + (e && e.message); }
-    }
-    try {
-      const res = await callMr(key, model, baseMsgs, false);
-      data = await res.json().catch(() => ({}));
-      if (!res.ok) { lastErr = 'ModelRouter ' + model + ': HTTP ' + res.status; if (res.status === 429) sawRateLimit = true; continue; }
-    } catch (e) { lastErr = 'ModelRouter ' + model + ': ' + (e && e.message); continue; }
-    const msg = data && data.choices && data.choices[0] && data.choices[0].message;
-    const text = (msg && msg.content) || '';
-    const finish = data && data.choices && data.choices[0] && data.choices[0].finish_reason;
-    const tcs = msg && Array.isArray(msg.tool_calls) ? msg.tool_calls : null;
-    if (tcs && tcs.length) {
-      const norm = [];
-      for (const c of tcs) {
-        let a = null;
-        const rawArgs = (c && c.function && typeof c.function.arguments === 'string') ? c.function.arguments : null;
-        if (rawArgs) { try { a = JSON.parse(rawArgs); } catch (e) { a = null; } }
-
-        if (!a && c && c.function && c.function.name) {
-          a = await mrContinueToolArgs(key, model, baseMsgs, { name: c.function.name, args: rawArgs || '' });
-        }
-        if (c && c.function && c.function.name && a) norm.push({ name: c.function.name, args: a });
-      }
-      if (norm.length) { if (usageAcc) usageAcc[model] = (usageAcc[model] || 0) + tokensOfChars(text + JSON.stringify(norm)); return { tool_calls: norm, text, model: mrLabel(model) }; }
-
-      lastErr = 'ModelRouter ' + model + ': tool call terpotong, penyambungan gagal';
-      continue;
-    }
-    if (text) {
-
-      const mrRes2 = await mrAutoContinue({
-        baseMsgs, first: { text, fin: finish }, deadline, onDelta: null,
-        callRound: async (msgs) => {
-          const rc = await callMr(key, model, msgs, false);
-          const dc = await rc.json().catch(() => ({}));
-          const ch0 = dc && dc.choices && dc.choices[0];
-          return { text: (ch0 && ch0.message && ch0.message.content) || '', fin: ch0 && ch0.finish_reason };
-        }
-      });
-      { if (usageAcc) usageAcc[model] = (usageAcc[model] || 0) + tokensOfChars(mrRes2.text); return { text: mrRes2.text, model: mrLabel(model), truncated: mrRes2.truncated || undefined }; }
-    }
-    lastErr = 'ModelRouter ' + model + ': respons kosong';
-  }
-  }
-  return lastErr ? (sawRateLimit ? { error: lastErr, quotaExhausted: true } : { error: lastErr }) : null;
-}
 
 // ===== Fallback Provider 1: Gemini (Google AI Studio) =====
 const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-3.6-flash"];
@@ -651,8 +491,8 @@ async function tryGeminiText(apiKeys, messages, gDecls, onDelta, budget) {
         if (toolCalls.length > 0 || text) {
           if (toolCalls.length > 0) return { tool_calls: toolCalls, text, model: `Gemini (${model})` };
           const gFin = r.data && r.data.candidates && r.data.candidates[0] && r.data.candidates[0].finishReason;
-          const gRes = await mrAutoContinue({
-            baseMsgs: messages, first: { text, fin: gFin }, deadline: Date.now() + MR_SOFT_BUDGET_MS, onDelta,
+          const gRes = await autoContinue({
+            baseMsgs: messages, first: { text, fin: gFin }, deadline: Date.now() + AUTO_CONTINUE_SOFT_BUDGET_MS, onDelta,
             callRound: async (msgs) => {
               const pl = toGeminiPayload(msgs);
               if (!budgetTake(budget)) return null;
@@ -747,8 +587,8 @@ async function tryOpenRouterText(keys, messages, gDecls, onDelta, budget) {
               const nt = normStreamToolCalls(st.tcs);
               if (nt.length) return { tool_calls: nt, text: st.text, model: model.split("/").pop() + " (OpenRouter)" };
             }
-            const oRes = await mrAutoContinue({
-              baseMsgs, first: { text: st.text, fin: st.fin }, deadline: Date.now() + MR_SOFT_BUDGET_MS, onDelta,
+            const oRes = await autoContinue({
+              baseMsgs, first: { text: st.text, fin: st.fin }, deadline: Date.now() + AUTO_CONTINUE_SOFT_BUDGET_MS, onDelta,
               callRound: (msgs) => orRound(key, model, msgs, onDelta)
             });
             return { text: oRes.text, model: model.split("/").pop() + " (OpenRouter)", truncated: oRes.truncated || undefined };
@@ -771,8 +611,8 @@ async function tryOpenRouterText(keys, messages, gDecls, onDelta, budget) {
           }
           if (text) {
             const oFin = data && data.choices && data.choices[0] && data.choices[0].finish_reason;
-            const oRes2 = await mrAutoContinue({
-              baseMsgs, first: { text, fin: oFin }, deadline: Date.now() + MR_SOFT_BUDGET_MS, onDelta: null,
+            const oRes2 = await autoContinue({
+              baseMsgs, first: { text, fin: oFin }, deadline: Date.now() + AUTO_CONTINUE_SOFT_BUDGET_MS, onDelta: null,
               callRound: (msgs) => orRound(key, model, msgs, null)
             });
             return { text: oRes2.text, model: model.split("/").pop() + " (OpenRouter)", truncated: oRes2.truncated || undefined };
@@ -819,7 +659,7 @@ async function tryWorkersAIText(env, messages, onDelta, budget) {
 // ===== [21 Okt, arahan owner] CADANGAN: gateway Open API Clincoo sendiri =====
 // app.clincoo.buzz menantang panggilan non-browser (Cloudflare), jadi Worker memanggil
 // lewat hostname pages.dev milik deployment ini sendiri. Model glm-4.7-flash di gateway
-// adalah teks-saja (tanpa tools); dipakai hanya bila ModelRouter utama gagal.
+// adalah teks-saja (tanpa tools).
 const CLINCOO_GW_ENDPOINT = 'https://clincoo-be2.pages.dev/v1/chat/completions';
 const CLINCOO_GW_MODEL = 'clincoo/glm-4.7-flash';
 
@@ -929,8 +769,8 @@ async function tryGroqText(keys, messages, gDecls, onDelta, budget) {
           if (nt.length) return { tool_calls: nt, text: st.text, model: GROQ_MODEL + ' (Groq)' };
         }
         if (st.text) {
-          const cont = await mrAutoContinue({
-            baseMsgs, first: { text: st.text, fin: st.fin }, deadline: Date.now() + MR_SOFT_BUDGET_MS, onDelta,
+          const cont = await autoContinue({
+            baseMsgs, first: { text: st.text, fin: st.fin }, deadline: Date.now() + AUTO_CONTINUE_SOFT_BUDGET_MS, onDelta,
             callRound: (msgs) => groqRound(key, msgs, onDelta, budget)
           });
           return { text: cont.text, model: GROQ_MODEL + ' (Groq)', truncated: cont.truncated || undefined };
@@ -951,8 +791,8 @@ async function tryGroqText(keys, messages, gDecls, onDelta, budget) {
         }
         const text = (msg && msg.content) || '';
         if (text) {
-          const cont = await mrAutoContinue({
-            baseMsgs, first: { text, fin: choice && choice.finish_reason }, deadline: Date.now() + MR_SOFT_BUDGET_MS, onDelta: null,
+          const cont = await autoContinue({
+            baseMsgs, first: { text, fin: choice && choice.finish_reason }, deadline: Date.now() + AUTO_CONTINUE_SOFT_BUDGET_MS, onDelta: null,
             callRound: (msgs) => groqRound(key, msgs, null, budget)
           });
           return { text: cont.text, model: GROQ_MODEL + ' (Groq)', truncated: cont.truncated || undefined };
@@ -966,7 +806,7 @@ async function tryGroqText(keys, messages, gDecls, onDelta, budget) {
   return lastErr ? { error: lastErr } : null;
 }
 
-async function executeAiGeneration({ env, groqKeys, mrKeys, geminiKeys, orKeys, messages, toolDecls, onDelta, usageAcc, budget }) {
+async function executeAiGeneration({ env, groqKeys, geminiKeys, orKeys, messages, toolDecls, onDelta, budget }) {
   // [21 Okt] anggaran subrequest habis -> jangan mulai penyedia baru; semua fetch
   // berikutnya pasti gagal dengan "Too many subrequests".
   if (budgetOut(budget)) return { error: 'Anggaran subrequest habis (jawaban terlalu panjang untuk satu permintaan)', sublimit: true };
@@ -977,7 +817,7 @@ async function executeAiGeneration({ env, groqKeys, mrKeys, geminiKeys, orKeys, 
   // Stream sudah sempat mengalir lalu putus/timeout: kembalikan teks yang sudah ada (ditandai terpotong),
   // jangan dibuang jadi pesan "AI gangguan"; pengguna tinggal membalas "lanjutkan".
   const partialOr = (label, err) => {
-    const t = sink.cur ? mrJoinContinuation(sink.text, sink.cur) : sink.text;
+    const t = sink.cur ? joinContinuation(sink.text, sink.cur) : sink.text;
     if (String(t || '').trim()) { closed = true; return { text: cFinalize(t, true, onDelta), model: label, truncated: true }; }
     return { error: err };
   };
@@ -993,17 +833,7 @@ async function executeAiGeneration({ env, groqKeys, mrKeys, geminiKeys, orKeys, 
     if (deltaSent) return partialOr('Groq', lastError || 'Groq terputus saat streaming');
   }
 
-  // 2. ModelRouter (Fallback; GLM-5.3-Flash tetap hanya di jalur fallback)
-  if (mrKeys && mrKeys.length) {
-    try {
-      const r = await withTimeout(tryModelRouterText(mrKeys, messages, toolDecls, MODELROUTER_MODELS, wrappedDelta, usageAcc, budget), MR_TIMEOUT_MS, "ModelRouter");
-      if (r && !r.error) return r;
-      if (r && r.error) lastError = r.error;
-    } catch (e) { lastError = e.message; }
-    if (deltaSent) return partialOr(mrLabel(), lastError || "ModelRouter terputus saat streaming");
-  }
-
-  // 2b. Cadangan: gateway Open API Clincoo (glm-4.7-flash, teks-saja)
+  // 2. Cadangan: gateway Open API Clincoo (teks-saja)
   if (budgetOut(budget)) return { error: lastError || 'Anggaran subrequest habis', sublimit: true };
   try {
     const gwKeys = (!toolDecls) ? await getClincooGatewayKeys(env) : [];
@@ -1013,7 +843,7 @@ async function executeAiGeneration({ env, groqKeys, mrKeys, geminiKeys, orKeys, 
       if (r && r.error) lastError = r.error;
     }
   } catch (e) { lastError = e.message; }
-  if (deltaSent) return partialOr(mrLabel(), lastError || "Gateway cadangan terputus saat streaming");
+  if (deltaSent) return partialOr('Gateway cadangan', lastError || 'Gateway cadangan terputus saat streaming');
 
   // 3. OpenRouter (Fallback 1) — [21 Okt, arahan pemilik] glm-5.3-flash duluan, Gemini turun ke no 3
   if (budgetOut(budget)) return { error: lastError || 'Anggaran subrequest habis', sublimit: true };
@@ -1134,26 +964,14 @@ async function quotaCheck(env, user, cost = 1) {
 }
 
 function tokensOfChars(chars) { return Math.ceil((chars || 0) / 4); }
-const KRED_PER_30K_GLM = 1.5;
+const KRED_PER_30K_AI = 1.5;
 function aiCostOf(model, outputChars, inputChars) {
-  const per30k = KRED_PER_30K_GLM;
+  const per30k = KRED_PER_30K_AI;
   const tokens = tokensOfChars(inputChars) + tokensOfChars(outputChars);
   const cost = (tokens / 30000) * per30k;
   return Math.max(0.01, Math.round(cost * 100) / 100);
 }
 
-function mrTokenCost(acc) {
-  if (!acc) return null;
-  const W = { 'glm-5.3-flash:mr': 1.5 };
-  let used = false, total = 0;
-  for (const k of Object.keys(acc)) {
-    used = true;
-    total += (W[k] != null ? W[k] : 1) * (acc[k] || 0);
-  }
-  if (!used) return null;
-  if (total <= 0) return 0;
-  return Math.max(0.01, Math.round(total / 30000 * 100) / 100);
-}
 async function chargeAiUsage(env, user, model, outputChars, inputChars, charge = true, costOverride = null) {
   if (!user || !user.key) return;
   try {
@@ -1920,13 +1738,12 @@ export async function onRequestPost({ request, env, waitUntil }) {
       } catch (e) {}
     }
 
-    const [groqKeys, mrKeys, geminiKeys, orKeys] = await Promise.all([
+    const [groqKeys, geminiKeys, orKeys] = await Promise.all([
       getGroqKeys(env),
-      getModelRouterKeys(env),
       getGeminiKeys(env),
       getOpenRouterKeys(env)
     ]);
-    const hasAnyProvider = groqKeys.length > 0 || mrKeys.length > 0 || geminiKeys.length > 0 || orKeys.length > 0 || !!(env && env.AI);
+    const hasAnyProvider = groqKeys.length > 0 || geminiKeys.length > 0 || orKeys.length > 0 || !!(env && env.AI);
     if (!hasAnyProvider) {
       return new Response(JSON.stringify({ error: 'AI belum dikonfigurasi. Tambahkan API key AI di Pengaturan → Environment.' }), {
         status: 500, headers: { 'Content-Type': 'application/json', ...CORS }
@@ -1965,7 +1782,6 @@ export async function onRequestPost({ request, env, waitUntil }) {
     }
 
     const workMessages = messages;
-    const mrUsageAcc = {};
     const subBudget = budgetNew(); // [21 Okt] batasi subrequest AI per invocation
     const toolDecls = (gTools && gTools[0] && gTools[0].functionDeclarations) || null;
     const modeLabel = 'chat';
@@ -1980,13 +1796,11 @@ export async function onRequestPost({ request, env, waitUntil }) {
       r = await executeAiGeneration({
         env,
         groqKeys,
-        mrKeys,
         geminiKeys,
         orKeys,
         messages: workMessages,
         toolDecls,
         onDelta: streamSend ? ((tx) => streamSend({ t: 'delta', text: tx })) : null,
-        usageAcc: mrUsageAcc,
         budget: subBudget
       });
       if (!r || r.error) break;
@@ -2052,7 +1866,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
           { role: 'assistant', content: String(r.text) },
           { role: 'user', content: 'PEMERIKSAAN OTOMATIS menemukan ketidakkonsistenan pada proyek yang baru kamu tulis:\n- ' + lintIssues.join('\n- ') + '\n\nPerbaiki SEMUA temuan itu. Balas HANYA satu blok patch (empat backtick berlabel patch, format EDIT/FILE sesuai aturan PATCH; salin SEARCH persis dari blok project di atas) tanpa teks lain.' }
         ]);
-        const fx = await executeAiGeneration({ env, groqKeys, mrKeys, geminiKeys, orKeys, messages: fixMsgs, toolDecls: null, onDelta: null, usageAcc: mrUsageAcc, budget: subBudget }).catch(() => null);
+        const fx = await executeAiGeneration({ env, groqKeys, geminiKeys, orKeys, messages: fixMsgs, toolDecls: null, onDelta: null, budget: subBudget }).catch(() => null);
         if (fx && !fx.error && /````patch/.test(String(fx.text || ''))) {
           const addTxt = '\n\n' + String(fx.text).trim();
           if (streamSend) { try { streamSend({ t: 'delta', text: addTxt }); } catch (e) {} }
@@ -2071,13 +1885,11 @@ export async function onRequestPost({ request, env, waitUntil }) {
       const sumMsgs = workMessages.concat([{ role: 'user', content: sumPrompt }]);
       const sm = await executeAiGeneration({
         env,
-        mrKeys,
         geminiKeys,
         orKeys,
         messages: sumMsgs,
         toolDecls: null,
         onDelta: null,
-        usageAcc: mrUsageAcc,
         budget: subBudget
       }).catch(() => null);
       if (sm && !sm.error && String(sm.text || '').trim()) r = { text: sm.text, model: sm.model };
@@ -2100,7 +1912,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
         const busy = !!r.quotaExhausted;
 
         const rawErr1 = r.error || '';
-        try { await logAiFailure(env, body.project_id, rawErr1, modeLabel + (busy ? ' [429-modelrouter]' : '') + (r.contextOverflow ? ' [konteks-penuh]' : '')); } catch (eLog) {}
+        try { await logAiFailure(env, body.project_id, rawErr1, modeLabel + (busy ? ' [429-provider]' : '') + (r.contextOverflow ? ' [konteks-penuh]' : '')); } catch (eLog) {}
         const subHit = !!r.sublimit;
         const errText = busy
           ? 'Server AI sedang sibuk (limit provider). Coba lagi sebentar lagi.'
@@ -2122,8 +1934,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
 
         const outCharsS = (r.text || '').length + (r.tool_calls ? JSON.stringify(r.tool_calls).length : 0);
 
-        const _mrCostS = mrTokenCost(mrUsageAcc);
-        if (!isGuest && (_mrCostS !== null || isFirstHop)) await chargeAiUsage(env, user, r.model, outCharsS, inputChars, true, _mrCostS);
+        if (!isGuest && isFirstHop) await chargeAiUsage(env, user, r.model, outCharsS, inputChars, true);
         streamSend({ t: 'final', ...outS });
       }
       streamWriter.close().catch(() => {});
@@ -2131,7 +1942,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     }
 
     if (r.error && r.quotaExhausted) {
-      try { await logAiFailure(env, body.project_id, r.error, modeLabel + ' [429-modelrouter]'); } catch (eLog) {}
+      try { await logAiFailure(env, body.project_id, r.error, modeLabel + ' [429-provider]'); } catch (eLog) {}
 
       return new Response(JSON.stringify({ provider_busy: true, error: 'Server AI sedang sibuk (limit provider). Coba lagi sebentar lagi.' }), {
         status: 429, headers: { 'Content-Type': 'application/json', ...CORS }
@@ -2156,8 +1967,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
 
     const outChars = (r.text || '').length + (r.tool_calls ? JSON.stringify(r.tool_calls).length : 0);
 
-    const _mrCost = mrTokenCost(mrUsageAcc);
-    if (!isGuest && (_mrCost !== null || isFirstHop)) await chargeAiUsage(env, user, r.model, outChars, inputChars, true, _mrCost);
+    if (!isGuest && isFirstHop) await chargeAiUsage(env, user, r.model, outChars, inputChars, true);
     const out = {
       text: r.text || '',
       session_id: body.session_id || ('ls_' + Date.now()) /* [21 Okt] tanpa field model */
