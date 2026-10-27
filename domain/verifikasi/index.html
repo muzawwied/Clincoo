@@ -121,7 +121,7 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
                     <button onclick="copyText('ns2')" class="w-8 h-8 rounded-full hover:bg-gray-100 transition-colors flex items-center justify-center cursor-pointer shrink-0" title="Salin"><i data-lucide="copy" class="w-4 h-4 text-gray-400"></i></button>
                 </div>
             </div>
-            <p class="text-[12px] text-gray-500 leading-relaxed mt-3">Perubahan nameserver butuh waktu propagasi — biasanya beberapa menit, maksimal 24 jam. Halaman ini memeriksa otomatis setiap 30 detik selama terbuka, atau ketuk Periksa Verifikasi kapan saja.</p>
+            <p class="text-[12px] text-gray-500 leading-relaxed mt-3">Perubahan nameserver membutuhkan waktu propagasi, biasanya beberapa menit hingga 24 jam.</p>
         </div>
 
         <!-- Hasil periksa -->
@@ -135,7 +135,7 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
                 Verifikasi Kode
             </button>
             <button id="cta-check" onclick="checkVerification()" class="w-full bg-accent text-white rounded-full py-3 text-[15px] font-bold hover:bg-accent-hover transition-all active:scale-[0.98] cursor-pointer shadow-md hover:shadow-lg flex items-center justify-center gap-2">
-                <span id="cta-label">Periksa Verifikasi</span>
+                <span id="cta-label">Verifikasi</span>
             </button>
             <button id="cta-skip" onclick="skipVerification()" class="w-full mt-2 text-[13px] font-semibold text-gray-500 hover:text-gray-700 transition-colors cursor-pointer pb-1">Verifikasi nanti saja</button>
         </div>
@@ -165,12 +165,15 @@ function checkVerification() {
     checking = true;
     const cta = document.getElementById('cta-check');
     const label = document.getElementById('cta-label');
-    label.textContent = 'Memeriksa…';
-    cta.insertAdjacentHTML('afterbegin', '<i data-lucide="loader-2" class="w-4 h-4 spin cta-spinner"></i>');
+    cta.style.height = cta.offsetHeight + 'px';
+    label.classList.add('hidden');
+    cta.insertAdjacentHTML('afterbegin', '<i data-lucide="loader-2" class="w-5 h-5 spin cta-spinner"></i>');
     lucide.createIcons();
     cta.style.pointerEvents = 'none';
     store.verify(domain).then(res => {
         cta.style.pointerEvents = '';
+        cta.style.height = '';
+        label.classList.remove('hidden');
         const spin = cta.querySelector('.cta-spinner');
         if (spin) spin.remove();
         if (res && res.ok) {
@@ -183,17 +186,19 @@ function checkVerification() {
             const raw = res && res.message;
             const msg = (!raw || /nameserver/i.test(raw)) ? 'Nameserver belum terdeteksi. Pastikan sudah diganti di registrar, lalu periksa lagi.' : raw;
             setResult('fail', msg);
-            label.textContent = 'Periksa Lagi';
+            label.textContent = 'Coba Lagi';
         }
         checking = false;
         lucide.createIcons();
     }).catch(() => {
         // Audit #2: koneksi gagal/timeout — pulihkan tombol agar tidak nyangkut permanen.
         cta.style.pointerEvents = '';
+        cta.style.height = '';
+        label.classList.remove('hidden');
         const spin = cta.querySelector('.cta-spinner');
         if (spin) spin.remove();
         setResult('fail', 'Gagal memeriksa — koneksi terputus. Coba lagi.');
-        label.textContent = 'Periksa Lagi';
+        label.textContent = 'Coba Lagi';
         checking = false;
         lucide.createIcons();
     });
@@ -257,11 +262,12 @@ function submitOtp() {
     otpVerifying = true;
     const btn = document.getElementById('cta-otp');
     const old = btn.innerHTML;
-    btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 spin"></i> Memeriksa kode…';
+    btn.style.height = btn.offsetHeight + 'px';
+    btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 spin"></i>';
     btn.style.pointerEvents = 'none';
     lucide.createIcons();
     store.createWithOtp(domain, code).then(res => {
-        otpVerifying = false; btn.innerHTML = old; btn.style.pointerEvents = '';
+        otpVerifying = false; btn.innerHTML = old; btn.style.pointerEvents = ''; btn.style.height = '';
         lucide.createIcons();
         if (res && res.ok && res.domain) {
             otpPending = false;
@@ -277,7 +283,7 @@ function submitOtp() {
             e.classList.remove('hidden');
         }
     }).catch(() => {
-        otpVerifying = false; btn.innerHTML = old; btn.style.pointerEvents = '';
+        otpVerifying = false; btn.innerHTML = old; btn.style.pointerEvents = ''; btn.style.height = '';
         e.textContent = 'Gagal memeriksa kode — koneksi terputus. Coba lagi.';
         e.classList.remove('hidden');
     });
@@ -300,11 +306,11 @@ function domainReady() {
             document.getElementById('ns2').textContent = ns[1];
         } else {
             document.getElementById('ns1').textContent = 'Gagal memuat nameserver';
-            document.getElementById('ns2').textContent = 'Ketuk Periksa Verifikasi utk mencoba ulang';
+            document.getElementById('ns2').textContent = 'Ketuk Verifikasi untuk mencoba lagi';
         }
     }).catch(() => {
         document.getElementById('ns1').textContent = 'Gagal memuat nameserver';
-        document.getElementById('ns2').textContent = 'Buka ulang halaman ini utk mencoba lagi';
+        document.getElementById('ns2').textContent = 'Buka ulang halaman ini untuk mencoba lagi';
     });
     // Auto-check tiap 30 detik selama halaman terbuka & terlihat — berhenti saat terverifikasi
     setInterval(() => { if (!verified && !checking && document.visibilityState === 'visible') checkVerification(); }, 30000);
