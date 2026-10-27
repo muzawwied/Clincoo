@@ -31,6 +31,7 @@
         html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
 
     @keyframes spinSlow { to { transform: rotate(360deg); } }
+    @keyframes menuPop { from { opacity: 0; transform: translateY(-6px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
     body { font-family: 'Inter', sans-serif; background-color: #ffffff; transition: background-color 0.3s ease, color 0.3s ease; }
     :root { --accent-color: #000000; --accent-hover: #1f2937; --accent-text: #ffffff; }
     .bg-accent { background-color: var(--accent-color) !important; }
@@ -56,6 +57,19 @@
     body.dark-mode #cta-bar-bg { background-image: linear-gradient(to top, #000000 0%, rgba(0,0,0,0.9) 60%, transparent 100%); }
     textarea:focus { outline: none!important; box-shadow: none!important; }
     .spin { animation: spinSlow 1s linear infinite; }
+
+    /* Pop-up: animasi masuk & tampilan dark mode (sama dengan halaman Domain) */
+    @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+    .popup-overlay { animation: overlayIn .18s ease-out; }
+    .popup-card { animation: menuPop .2s cubic-bezier(.2,.8,.2,1); transform-origin: center; }
+    body.dark-mode .popup-card { box-shadow: 0 20px 50px rgba(0,0,0,.6) !important; }
+    body.dark-mode .btn-cancel { background-color: #141414 !important; }
+    body.dark-mode .btn-cancel:hover { background-color: #222222 !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
+    body.dark-mode .hover\:bg-red-50:hover { background-color: rgba(220,38,38,.14) !important; }
+    body.dark-mode .btn-danger { background-color: #dc2626 !important; color: #ffffff !important; }
+    body.dark-mode .btn-danger:hover { background-color: #b91c1c !important; }
+    @media (prefers-reduced-motion: reduce) { .popup-overlay, .popup-card { animation: none; } }
     .tab-btn.active { color: var(--accent-color); border-color: var(--accent-color); }
     body.dark-mode .tab-btn.active { color: #ffffff; border-color: #ffffff; }
 
@@ -103,28 +117,28 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
                 <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider shrink-0">Terakhir Diubah</p>
                 <p id="d-updated" class="text-[13px] text-gray-700 text-right"><span class="shim h-2 w-24"></span></p>
             </div>
-            <div class="flex items-center justify-between gap-3 py-3.5">
+            <div class="flex items-start justify-between gap-3 py-3.5">
                 <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider shrink-0">Catatan</p>
-                <p id="d-note" class="text-[13px] text-gray-700 text-right truncate">—</p>
+                <p id="d-note" class="text-[13px] text-gray-700 text-right min-w-0 break-words leading-relaxed">—</p>
             </div>
         </div>
 
         <!-- Kelola -->
         <h3 class="text-[12px] font-bold text-gray-400 uppercase tracking-wider mt-7">Kelola</h3>
         <div class="mt-2 border-t border-gray-100 divide-y divide-gray-100">
-            <a href="#" id="lk-dns" class="flex items-center justify-between py-3.5 group">
+            <a href="#" id="lk-dns" class="flex items-center justify-between py-3.5 group transition-opacity active:opacity-60">
                 <span class="text-[14px] font-medium text-gray-900">Kelola DNS</span>
                 <i data-lucide="chevron-right" class="w-4 h-4 text-gray-300 group-hover:text-gray-900 transition-colors"></i>
             </a>
-            <a href="#" id="lk-ssl" class="flex items-center justify-between py-3.5 group">
+            <a href="#" id="lk-ssl" class="flex items-center justify-between py-3.5 group transition-opacity active:opacity-60">
                 <span class="text-[14px] font-medium text-gray-900">SSL/TLS</span>
                 <i data-lucide="chevron-right" class="w-4 h-4 text-gray-300 group-hover:text-gray-900 transition-colors"></i>
             </a>
-            <a href="#" id="lk-cache" class="flex items-center justify-between py-3.5 group">
+            <a href="#" id="lk-cache" class="flex items-center justify-between py-3.5 group transition-opacity active:opacity-60">
                 <span class="text-[14px] font-medium text-gray-900">Cache</span>
                 <i data-lucide="chevron-right" class="w-4 h-4 text-gray-300 group-hover:text-gray-900 transition-colors"></i>
             </a>
-            <a href="#" id="lk-zone" class="flex items-center justify-between py-3.5 group">
+            <a href="#" id="lk-zone" class="flex items-center justify-between py-3.5 group transition-opacity active:opacity-60">
                 <span class="text-[14px] font-medium text-gray-900">Pengaturan Zone</span>
                 <i data-lucide="chevron-right" class="w-4 h-4 text-gray-300 group-hover:text-gray-900 transition-colors"></i>
             </a>
@@ -140,13 +154,13 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
 </main>
 
 <!-- Modal hapus -->
-<div id="delete-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-5" onclick="if(event.target===this)closeModal('delete-modal')">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-5">
-        <h3 class="text-[15px] font-bold text-gray-900">Hapus Domain?</h3>
-        <p id="delete-domain-name" class="text-[13px] text-gray-500 mt-1"></p>
-        <div class="flex justify-end gap-1 mt-5">
-            <button onclick="closeModal('delete-modal')" class="rounded-md px-3 py-1.5 text-[13px] font-semibold text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors cursor-pointer">Batal</button>
-            <button onclick="confirmDelete()" class="rounded-md px-3 py-1.5 text-[13px] font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer">Hapus</button>
+<div id="delete-modal" class="popup-overlay hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-5" onclick="if(event.target===this)closeModal('delete-modal')">
+    <div class="popup-card bg-white rounded-2xl border border-gray-100 shadow-[0_20px_50px_rgba(0,0,0,0.18)] w-full max-w-sm p-6">
+        <h3 class="text-[16px] font-bold text-gray-900 tracking-tight">Hapus Domain?</h3>
+        <p id="delete-domain-name" class="text-[13px] text-gray-500 mt-1.5 leading-relaxed"></p>
+        <div class="flex justify-end gap-2 mt-6">
+            <button onclick="closeModal('delete-modal')" class="btn-cancel rounded-full px-4 py-2 text-[13px] font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 hover:text-gray-800 transition-colors active:scale-95 cursor-pointer">Batal</button>
+            <button onclick="confirmDelete()" class="btn-danger rounded-full px-4 py-2 text-[13px] font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors active:scale-95 cursor-pointer">Hapus</button>
         </div>
     </div>
 </div>
