@@ -56,6 +56,8 @@
     body.dark-mode #cta-bar-bg { background-image: linear-gradient(to top, #000000 0%, rgba(0,0,0,0.9) 60%, transparent 100%); }
     textarea:focus { outline: none!important; box-shadow: none!important; }
     .spin { animation: spinSlow 1s linear infinite; }
+    body.dark-mode #check-result.text-red-600 { color: #f87171 !important; }
+    body.dark-mode #check-result.text-emerald-600 { color: #34d399 !important; }
     .tab-btn.active { color: var(--accent-color); border-color: var(--accent-color); }
     body.dark-mode .tab-btn.active { color: #ffffff; border-color: #ffffff; }
 
@@ -123,7 +125,7 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
         </div>
 
         <!-- Hasil periksa -->
-        <div id="check-result" class="hidden mt-5 rounded-xl border p-4 flex items-start gap-3"></div>
+        <div id="check-result" class="hidden mt-4" aria-live="polite"></div>
     </div>
 
     <!-- CTA -->
@@ -151,13 +153,10 @@ function copyValue(txt) { navigator.clipboard.writeText(txt).then(() => {}).catc
 function copyText(id) { copyValue(document.getElementById(id).textContent.trim()); }
 
 
-function setResult(kind, html) {
+function setResult(kind, text) {
     const el = document.getElementById('check-result');
-    el.className = 'mt-5 rounded-xl border p-4 flex items-start gap-3 ' +
-        (kind === 'fail' ? 'border-red-100 bg-red-50' : 'border-emerald-100 bg-emerald-50');
-    el.innerHTML = html;
-    el.classList.remove('hidden');
-    lucide.createIcons();
+    el.className = 'mt-4 text-[13px] font-medium leading-relaxed ' + (kind === 'fail' ? 'text-red-600' : 'text-emerald-600');
+    el.textContent = text;
 }
 
 function checkVerification() {
@@ -176,13 +175,14 @@ function checkVerification() {
         if (spin) spin.remove();
         if (res && res.ok) {
             verified = true;
-            setResult('ok', '<i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 shrink-0 mt-0.5"></i><p class="text-[13px] text-emerald-700 font-medium leading-relaxed">Kepemilikan domain terverifikasi. Domain-mu sekarang aktif.</p>');
+            setResult('ok', 'Kepemilikan domain terverifikasi. Domain-mu sekarang aktif.');
             label.textContent = 'Selesai';
             document.getElementById('cta-skip').classList.add('hidden');
         } else {
-            const msg = (res && res.message) || 'Nameserver domain-mu belum terdeteksi mengarah ke nameserver yang ditugaskan. Pastikan nameserver di registrar sudah diganti sesuai daftar di atas, tunggu propagasi, lalu periksa lagi.';
-            setResult('fail', '<i data-lucide="alert-circle" class="w-5 h-5 text-red-500 shrink-0 mt-0.5"></i><p class="text-[13px] text-red-700 font-medium leading-relaxed"></p>');
-            document.querySelector('#check-result p').textContent = msg;
+            // Pesan nameserver dari backend panjang — diganti versi singkat; pesan lain (mis. batas percobaan) tetap tampil apa adanya.
+            const raw = res && res.message;
+            const msg = (!raw || /nameserver/i.test(raw)) ? 'Nameserver belum terdeteksi. Pastikan sudah diganti di registrar, lalu periksa lagi.' : raw;
+            setResult('fail', msg);
             label.textContent = 'Periksa Lagi';
         }
         checking = false;
@@ -192,7 +192,7 @@ function checkVerification() {
         cta.style.pointerEvents = '';
         const spin = cta.querySelector('.cta-spinner');
         if (spin) spin.remove();
-        setResult('fail', '<i data-lucide="alert-circle" class="w-5 h-5 text-red-500 shrink-0 mt-0.5"></i><p class="text-[13px] text-red-700 font-medium leading-relaxed">Gagal memeriksa verifikasi — koneksi terputus. Periksa koneksi internet-mu, lalu coba lagi.</p>');
+        setResult('fail', 'Gagal memeriksa — koneksi terputus. Coba lagi.');
         label.textContent = 'Periksa Lagi';
         checking = false;
         lucide.createIcons();
