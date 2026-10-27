@@ -54,6 +54,21 @@
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
     input:focus, select:focus, textarea:focus { outline: none!important; box-shadow: none!important; }
 
+    /* Pop-up & popover: sama dengan halaman Domain dan Kelola DNS */
+    @keyframes menuPop { from { opacity: 0; transform: translateY(-6px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .popup-menu { animation: menuPop .16s cubic-bezier(.2,.8,.2,1); transform-origin: top right; }
+    body.dark-mode .popup-menu { box-shadow: 0 20px 50px rgba(0,0,0,.6) !important; }
+    body.dark-mode .hover\:bg-gray-50:hover { background-color: #141414 !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
+    body.dark-mode .text-gray-300 { color: #666666 !important; }
+    body.dark-mode .bg-gray-200 { background-color: #2a2a2a !important; }
+    @media (prefers-reduced-motion: reduce) { .popup-menu { animation: none; } }
+
+/* Pembatas antar baris: tipis dan halus, tanpa garis atas (sama dengan Kelola DNS) */
+.row-divide > * + *{border-top:1px solid #f3f4f6}
+.row-divide-all > *{border-top:1px solid #f3f4f6}
+body.dark-mode .row-divide > * + *, body.dark-mode .row-divide-all > *{border-top-color:#1a1a1a}
+
 /* Shimmer skeleton */
 .shim{position:relative;overflow:hidden;background:#ececef;border-radius:999px;display:inline-block;vertical-align:middle;opacity:.78}
 .shim::after{content:"";position:absolute;inset:0;transform:translateX(-110%);background:linear-gradient(90deg,transparent 25%,rgba(255,255,255,.72) 50%,transparent 75%);animation:shim 1.55s ease-in-out infinite}
@@ -73,38 +88,41 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
 <body class="min-h-screen flex flex-col text-gray-900 pt-20">
 <script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.body.classList.add('dark-mode');var a=localStorage.getItem('clincoo_accent')||'Hitam (Default)';var am={'Hitam (Default)':{m:'#000000',h:'#1f2937'},'Biru':{m:'#2563eb',h:'#1d4ed8'},'Hijau':{m:'#059669',h:'#047857'},'Ungu':{m:'#9333ea',h:'#7e22ce'},'Merah':{m:'#dc2626',h:'#b91c1c'}};var c=am[a]||am['Hitam (Default)'];document.documentElement.style.setProperty('--accent-color',c.m);document.documentElement.style.setProperty('--accent-hover',c.h);}catch(e){}})();</script>
 
-<main class="flex-1 w-full max-w-2xl mx-auto pb-16 flex-col justify-start relative">
+<main class="flex-1 w-full max-w-3xl mx-auto pb-16 flex-col justify-start relative">
     <button onclick="goBack()" class="fixed top-3 left-3 w-10 h-10 flex items-center justify-center rounded-full bg-white backdrop-blur border border-gray-100 shadow-sm hover:bg-gray-50 transition-all cursor-pointer text-gray-700 hover:text-black z-50" aria-label="Kembali">
         <i data-lucide="arrow-left" class="w-5 h-5"></i>
     </button>
     <div class="flex flex-col px-7 pb-2 relative">
         <h2 class="text-[24px] font-extrabold text-gray-900 tracking-tight">SSL/TLS</h2>
         <p id="v-domain" class="text-[14px] text-gray-500 font-medium mt-0.5">memuat…</p>
+        <p class="text-[13px] text-gray-500 leading-relaxed mt-2">Atur cara pengunjung terhubung ke situs-mu secara aman.</p>
     </div>
 
     <div class="px-7">
         <h3 class="text-[12px] font-bold text-gray-400 uppercase tracking-wider mt-6">Mode Enkripsi SSL/TLS</h3>
-        <div id="ssl-modes" class="mt-2 border-t border-gray-100 divide-y divide-gray-100"><div class="flex items-center justify-between py-4"><span class="shim h-2.5 w-28"></span><span class="shim h-2 w-3.5"></span></div><div class="flex items-center justify-between py-4"><span class="shim h-2.5 w-28"></span><span class="shim h-2 w-3.5"></span></div><div class="flex items-center justify-between py-4"><span class="shim h-2.5 w-28"></span><span class="shim h-2 w-3.5"></span></div></div>
+        <div id="ssl-modes" class="mt-2 row-divide"><div class="flex items-center justify-between py-4"><span class="shim h-2.5 w-28"></span><span class="shim h-2 w-3.5"></span></div><div class="flex items-center justify-between py-4"><span class="shim h-2.5 w-28"></span><span class="shim h-2 w-3.5"></span></div><div class="flex items-center justify-between py-4"><span class="shim h-2.5 w-28"></span><span class="shim h-2 w-3.5"></span></div></div>
 
-        <div class="mt-7 pt-5 border-t border-gray-100 flex items-center justify-between">
+        <div class="mt-6 row-divide-all">
+        <div class="py-5 flex items-center justify-between">
             <div>
                 <p class="text-[14px] font-semibold text-gray-900">Selalu Gunakan HTTPS</p>
                 <p class="text-[12px] text-gray-500 mt-0.5">Redirect semua permintaan HTTP ke HTTPS</p>
             </div>
             <button onclick="toggleSetting('https', this)" class="setting-toggle relative w-11 h-6 rounded-full bg-gray-200 transition-colors cursor-pointer shrink-0"></button>
         </div>
-        <div class="mt-4 pt-5 border-t border-gray-100 flex items-center justify-between">
+        <div class="py-5 flex items-center justify-between">
             <div>
                 <p class="text-[14px] font-semibold text-gray-900">Minimum TLS Version</p>
                 <p class="text-[12px] text-gray-500 mt-0.5">Versi TLS terendah yang diterima</p>
             </div>
             <div class="relative shrink-0">
-                <button id="tls-trigger" type="button" onclick="toggleTlsPopover()" class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-gray-900 cursor-pointer">
+                <button id="tls-trigger" type="button" onclick="toggleTlsPopover()" class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-full px-3.5 py-2 text-[13px] font-semibold text-gray-900 cursor-pointer transition-colors hover:bg-gray-100">
                     <span id="tls-label"><span class="shim h-2 w-12"></span></span>
                     <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-400"></i>
                 </button>
-                <div id="tls-popover" class="hidden absolute right-0 mt-1.5 bg-white border border-gray-200 rounded-lg shadow-lg z-[70] py-1 w-28"></div>
+                <div id="tls-popover" class="popup-menu hidden absolute right-0 mt-1.5 bg-white border border-gray-100 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.12)] z-[70] p-1.5 w-32"></div>
             </div>
+        </div>
         </div>
     </div>
 </main>
@@ -115,7 +133,7 @@ const TLS_OPTIONS = [{v:'1.0',l:'TLS 1.0'},{v:'1.1',l:'TLS 1.1'},{v:'1.2',l:'TLS
 function renderTlsPopover() {
     const current = getSetting('min_tls', '1.2');
     document.getElementById('tls-popover').innerHTML = TLS_OPTIONS.map(o => `
-        <button type="button" onclick="selectTls('${o.v}')" class="w-full text-left px-3 py-2 text-[13px] font-medium cursor-pointer transition-colors hover:bg-gray-50 ${o.v === current ? 'text-accent' : 'text-gray-800'}">${o.l}</button>`).join('');
+        <button type="button" onclick="selectTls('${o.v}')" class="w-full text-left px-3 py-2 rounded-lg text-[13.5px] font-semibold cursor-pointer transition-colors hover:bg-gray-50 ${o.v === current ? 'text-accent' : 'text-gray-800'}">${o.l}</button>`).join('');
 }
 function toggleTlsPopover() {
     renderTlsPopover();
@@ -132,6 +150,10 @@ document.addEventListener('click', (e) => {
     const t = document.getElementById('tls-trigger');
     if (!p || p.classList.contains('hidden')) return;
     if (!p.contains(e.target) && !t.contains(e.target)) p.classList.add('hidden');
+});
+// Esc menutup pilihan versi TLS
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') document.getElementById('tls-popover').classList.add('hidden');
 });
 const SSL_MODES = [
     { id: 'off', label: 'Off', desc: 'Tidak ada enkripsi — pengunjung melihat HTTP biasa.' },
@@ -177,7 +199,12 @@ function renderSsl() {
 function setSslMode(id) { saveSetting('ssl_mode', id); renderSsl(); }
 if (!domain) { location.replace('../../'); }
 else {
-    document.getElementById('v-domain').textContent = domain;
+    const vd = document.getElementById('v-domain');
+    vd.textContent = 'untuk ';
+    const vdName = document.createElement('span');
+    vdName.className = 'text-gray-900 font-semibold';
+    vdName.textContent = domain;
+    vd.appendChild(vdName);
     store.getSettings(domain, { ssl_mode: 'strict', min_tls: '1.2', https: 'off' }).then(s => {
         settings = s;
         renderSsl();
