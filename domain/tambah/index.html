@@ -47,13 +47,23 @@
     body.dark-mode .bg-accent { background-color: #ffffff !important; color: #000000 !important; }
     body.dark-mode .bg-accent.text-white { color: #000000 !important; }
     body.dark-mode .bg-accent.text-white svg { color: #000000 !important; stroke: #000000 !important; }
-    body.dark-mode button[onclick="history.back()"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
-    body.dark-mode button[onclick="history.back()"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
-    body.dark-mode button[onclick="history.back()"] svg { color: #ffffff !important; stroke: #ffffff !important; }
+    body.dark-mode button[aria-label="Kembali"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
+    body.dark-mode button[aria-label="Kembali"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
+    body.dark-mode button[aria-label="Kembali"] svg { color: #ffffff !important; stroke: #ffffff !important; }
     #cta-next { transition: transform .3s cubic-bezier(.2,.7,.3,1), opacity .3s ease; }
     #cta-next.hidden-cta { transform: translateY(120%); opacity: 0; pointer-events: none; }
     body.dark-mode #cta-bar-bg { background-image: linear-gradient(to top, #000000 0%, rgba(0,0,0,0.9) 60%, transparent 100%); }
     textarea:focus { outline: none!important; box-shadow: none!important; }
+
+    /* Pesan validasi: muncul halus, warna terbaca di dark mode */
+    @keyframes msgIn { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
+    #domain-error, #domain-exists { animation: msgIn .18s ease-out; }
+    body.dark-mode #domain-error { color: #f87171 !important; }
+    body.dark-mode #domain-exists { color: #fbbf24 !important; }
+    /* State input: border berubah sesuai hasil validasi */
+    #domain-input.is-invalid { border-color: #f87171 !important; }
+    #domain-input.is-exists { border-color: #fbbf24 !important; }
+    @media (prefers-reduced-motion: reduce) { #domain-error, #domain-exists { animation: none; } }
 </style>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
 <script>
@@ -129,6 +139,8 @@ function check() {
     errEl.classList.toggle('hidden', !v || valid);
     existsEl.classList.toggle('hidden', !exists);
     cta.classList.toggle('hidden-cta', !valid || exists);
+    input.classList.toggle('is-invalid', !!v && !valid);
+    input.classList.toggle('is-exists', exists);
 }
 function goNext() {
     const v = input.value.trim().toLowerCase();
