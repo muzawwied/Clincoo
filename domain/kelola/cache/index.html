@@ -51,8 +51,9 @@
     body.dark-mode button[onclick="goBack()"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
     body.dark-mode button[onclick="goBack()"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
     body.dark-mode button[onclick="goBack()"] svg { color: #ffffff !important; stroke: #ffffff !important; }
-    @keyframes spinSlow { to { transform: rotate(360deg); } }
-    .spin { animation: spinSlow 1s linear infinite; }
+    /* Ikon loading tombol: sama dengan CTA di Kelola DNS */
+    .btn-spin { animation: btnSpin .8s linear infinite; display: inline-block; }
+    @keyframes btnSpin { to { transform: rotate(360deg); } }
     .setting-toggle.shim { pointer-events: none; }
     /* Dropdown saat memuat: seluruh pil jadi shimmer (isi disembunyikan, ukuran tetap) */
     #cache-trigger.shim { display: flex; pointer-events: none; background: #ececef !important; border-color: transparent !important; }
@@ -71,6 +72,10 @@
     body.dark-mode .setting-toggle.bg-gray-200 { background-color: #2a2a2a !important; }
     body.dark-mode .setting-toggle.bg-gray-200 span { background-color: #9ca3af !important; }
     @media (prefers-reduced-motion: reduce) { .popup-menu { animation: none; } }
+
+/* Pembatas antar baris: tipis dan halus, tanpa garis atas (sama dengan Kelola DNS) */
+.row-divide > * + *{border-top:1px solid #f3f4f6}
+body.dark-mode .row-divide > * + *{border-top-color:#1a1a1a}
 
 /* Shimmer skeleton */
 .shim{position:relative;overflow:hidden;background:#ececef;border-radius:999px;display:inline-block;vertical-align:middle;opacity:.78}
@@ -91,7 +96,7 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
 <body class="min-h-screen flex flex-col text-gray-900 pt-20">
 <script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.body.classList.add('dark-mode');var a=localStorage.getItem('clincoo_accent')||'Hitam (Default)';var am={'Hitam (Default)':{m:'#000000',h:'#1f2937'},'Biru':{m:'#2563eb',h:'#1d4ed8'},'Hijau':{m:'#059669',h:'#047857'},'Ungu':{m:'#9333ea',h:'#7e22ce'},'Merah':{m:'#dc2626',h:'#b91c1c'}};var c=am[a]||am['Hitam (Default)'];document.documentElement.style.setProperty('--accent-color',c.m);document.documentElement.style.setProperty('--accent-hover',c.h);}catch(e){}})();</script>
 
-<main class="flex-1 w-full max-w-2xl mx-auto pb-16 flex-col justify-start relative">
+<main class="flex-1 w-full max-w-3xl mx-auto pb-16 flex-col justify-start relative">
     <button onclick="goBack()" class="fixed top-3 left-3 w-10 h-10 flex items-center justify-center rounded-full bg-white backdrop-blur border border-gray-100 shadow-sm hover:bg-gray-50 transition-all cursor-pointer text-gray-700 hover:text-black z-50" aria-label="Kembali">
         <i data-lucide="arrow-left" class="w-5 h-5"></i>
     </button>
@@ -102,14 +107,14 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
     </div>
 
     <div class="px-7">
-        <div class="mt-5 border-t border-gray-100 divide-y divide-gray-100">
+        <div class="mt-6 row-divide">
             <div class="flex items-center justify-between gap-4 py-4">
                 <div class="min-w-0">
                     <p class="text-[14px] font-semibold text-gray-900">Bersihkan Cache</p>
                     <p class="text-[12px] text-gray-500 mt-0.5">Hapus semua file domain yang tersimpan di server cache</p>
                     <p id="purged-at" class="text-[11px] text-gray-400 mt-1 hidden"></p>
                 </div>
-                <button id="purge-btn" onclick="purgeCache()" class="shrink-0 flex items-center justify-center rounded-full border border-gray-200 px-3.5 py-1.5 text-[13px] font-semibold text-gray-900 cursor-pointer transition-colors hover:bg-gray-100 active:scale-95">Hapus Cache</button>
+                <button id="purge-btn" onclick="purgeCache()" class="shrink-0 flex items-center justify-center rounded-full bg-gray-50 px-3.5 py-1.5 text-[13px] font-semibold text-gray-900 cursor-pointer transition-colors hover:bg-gray-100 active:scale-95">Hapus Cache</button>
             </div>
             <div class="flex items-center justify-between gap-4 py-4">
                 <div class="min-w-0">
@@ -124,7 +129,7 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
                     <p class="text-[12px] text-gray-500 mt-0.5">Seberapa agresif konten di-cache server</p>
                 </div>
                 <div class="relative shrink-0">
-                    <button id="cache-trigger" type="button" onclick="toggleCachePopover()" class="shim flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-full pl-3.5 pr-3 py-1.5 text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:bg-gray-100 active:scale-95">
+                    <button id="cache-trigger" type="button" onclick="toggleCachePopover()" class="shim flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-full px-3.5 py-2 text-[13px] font-semibold text-gray-900 cursor-pointer transition-colors hover:bg-gray-100 active:scale-95">
                         <span id="cache-label"><span class="shim h-2 w-14"></span></span>
                         <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-400"></i>
                     </button>
@@ -141,7 +146,7 @@ const CACHE_OPTIONS = [{v:'basic',l:'Standar'},{v:'simplified',l:'Sederhana'},{v
 function renderCachePopover() {
     const current = getSetting('cache_level', 'basic');
     document.getElementById('cache-popover').innerHTML = CACHE_OPTIONS.map(o => `
-        <button type="button" onclick="selectCacheLevel('${o.v}')" class="w-full text-left px-3 py-2 rounded-lg text-[13.5px] font-medium cursor-pointer transition-colors hover:bg-gray-50 ${o.v === current ? 'text-accent font-semibold' : 'text-gray-800'}">${o.l}</button>`).join('');
+        <button type="button" onclick="selectCacheLevel('${o.v}')" class="w-full text-left px-3 py-2 rounded-lg text-[13.5px] font-semibold cursor-pointer transition-colors hover:bg-gray-50 ${o.v === current ? 'text-accent' : 'text-gray-800'}">${o.l}</button>`).join('');
 }
 function toggleCachePopover() {
     renderCachePopover();
@@ -158,6 +163,11 @@ document.addEventListener('click', (e) => {
     const t = document.getElementById('cache-trigger');
     if (!p || p.classList.contains('hidden')) return;
     if (!p.contains(e.target) && !t.contains(e.target)) p.classList.add('hidden');
+});
+
+// Esc menutup pilihan tingkat cache
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') document.getElementById('cache-popover').classList.add('hidden');
 });
 
 function goBack() { location.href = '../../detail/?domain=' + encodeURIComponent(domain); }
@@ -197,8 +207,7 @@ function purgeCache() {
     const prev = btn.textContent;
     btn.style.width = btn.offsetWidth + 'px';
     btn.style.height = btn.offsetHeight + 'px';
-    btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 spin"></i>';
-    lucide.createIcons();
+    btn.innerHTML = '<svg class="btn-spin" width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" opacity=".18"/><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>';
     btn.style.pointerEvents = 'none';
     setTimeout(() => {
         saveSetting('purged_at', new Date().toISOString());
