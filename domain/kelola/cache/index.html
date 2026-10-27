@@ -51,8 +51,26 @@
     body.dark-mode button[onclick="goBack()"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
     body.dark-mode button[onclick="goBack()"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
     body.dark-mode button[onclick="goBack()"] svg { color: #ffffff !important; stroke: #ffffff !important; }
+    @keyframes spinSlow { to { transform: rotate(360deg); } }
+    .spin { animation: spinSlow 1s linear infinite; }
+    .setting-toggle.shim { pointer-events: none; }
+    /* Dropdown saat memuat: seluruh pil jadi shimmer (isi disembunyikan, ukuran tetap) */
+    #cache-trigger.shim { display: flex; pointer-events: none; background: #ececef !important; border-color: transparent !important; }
+    #cache-trigger.shim > * { visibility: hidden; }
+    body.dark-mode #cache-trigger.shim { background: #202020 !important; }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
     input:focus, select:focus, textarea:focus { outline: none!important; box-shadow: none!important; }
+
+    /* Popover & dropdown: sama dengan pop-up halaman Domain */
+    @keyframes menuPop { from { opacity: 0; transform: translateY(-6px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .popup-menu { animation: menuPop .16s cubic-bezier(.2,.8,.2,1); transform-origin: top right; }
+    body.dark-mode .popup-menu { box-shadow: 0 20px 50px rgba(0,0,0,.6) !important; }
+    body.dark-mode .hover\:bg-gray-50:hover { background-color: #141414 !important; }
+    body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
+    /* Toggle: track & knob terbaca di dark mode */
+    body.dark-mode .setting-toggle.bg-gray-200 { background-color: #2a2a2a !important; }
+    body.dark-mode .setting-toggle.bg-gray-200 span { background-color: #9ca3af !important; }
+    @media (prefers-reduced-motion: reduce) { .popup-menu { animation: none; } }
 
 /* Shimmer skeleton */
 .shim{position:relative;overflow:hidden;background:#ececef;border-radius:999px;display:inline-block;vertical-align:middle;opacity:.78}
@@ -80,37 +98,37 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
     <div class="flex flex-col px-7 pb-2 relative">
         <h2 class="text-[24px] font-extrabold text-gray-900 tracking-tight">Cache</h2>
         <p id="v-domain" class="text-[14px] text-gray-500 font-medium mt-0.5">memuat…</p>
+        <p class="text-[13px] text-gray-500 leading-relaxed mt-2">Atur cara konten domain-mu disimpan dan diperbarui.</p>
     </div>
 
     <div class="px-7">
-        <h3 class="text-[12px] font-bold text-gray-400 uppercase tracking-wider mt-6">Cache</h3>
-        <div class="mt-2 border-t border-gray-100 divide-y divide-gray-100">
-            <div class="flex items-center justify-between py-4">
-                <div>
-                    <p class="text-[14px] font-semibold text-gray-900">Purge Cache</p>
+        <div class="mt-5 border-t border-gray-100 divide-y divide-gray-100">
+            <div class="flex items-center justify-between gap-4 py-4">
+                <div class="min-w-0">
+                    <p class="text-[14px] font-semibold text-gray-900">Bersihkan Cache</p>
                     <p class="text-[12px] text-gray-500 mt-0.5">Hapus semua file domain yang tersimpan di server cache</p>
                     <p id="purged-at" class="text-[11px] text-gray-400 mt-1 hidden"></p>
                 </div>
-                <button id="purge-btn" onclick="purgeCache()" class="shrink-0 text-[13px] font-semibold text-accent cursor-pointer hover:underline decoration-2 underline-offset-4">Hapus Cache</button>
+                <button id="purge-btn" onclick="purgeCache()" class="shrink-0 flex items-center justify-center rounded-full border border-gray-200 px-3.5 py-1.5 text-[13px] font-semibold text-gray-900 cursor-pointer transition-colors hover:bg-gray-100 active:scale-95">Hapus Cache</button>
             </div>
-            <div class="flex items-center justify-between py-4">
-                <div>
-                    <p class="text-[14px] font-semibold text-gray-900">Development Mode</p>
+            <div class="flex items-center justify-between gap-4 py-4">
+                <div class="min-w-0">
+                    <p class="text-[14px] font-semibold text-gray-900">Mode Pengembangan</p>
                     <p class="text-[12px] text-gray-500 mt-0.5">Lewati cache selama 3 jam untuk pengembangan</p>
                 </div>
-                <button onclick="toggleSetting('devmode', this)" class="setting-toggle relative w-11 h-6 rounded-full bg-gray-200 transition-colors cursor-pointer shrink-0"></button>
+                <button onclick="toggleSetting('devmode', this)" class="setting-toggle shim relative w-11 h-6 rounded-full transition-colors cursor-pointer shrink-0"></button>
             </div>
-            <div class="flex items-center justify-between py-4">
-                <div>
+            <div class="flex items-center justify-between gap-4 py-4">
+                <div class="min-w-0">
                     <p class="text-[14px] font-semibold text-gray-900">Tingkat Cache</p>
                     <p class="text-[12px] text-gray-500 mt-0.5">Seberapa agresif konten di-cache server</p>
                 </div>
                 <div class="relative shrink-0">
-                    <button id="cache-trigger" type="button" onclick="toggleCachePopover()" class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-gray-900 cursor-pointer">
+                    <button id="cache-trigger" type="button" onclick="toggleCachePopover()" class="shim flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-full pl-3.5 pr-3 py-1.5 text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:bg-gray-100 active:scale-95">
                         <span id="cache-label"><span class="shim h-2 w-14"></span></span>
                         <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-400"></i>
                     </button>
-                    <div id="cache-popover" class="hidden absolute right-0 mt-1.5 bg-white border border-gray-200 rounded-lg shadow-lg z-[70] py-1 w-32"></div>
+                    <div id="cache-popover" class="popup-menu hidden absolute right-0 mt-1.5 bg-white border border-gray-100 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.12)] z-[70] p-1.5 w-40"></div>
                 </div>
             </div>
         </div>
@@ -119,11 +137,11 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
 
 <script>
 const domain = (new URLSearchParams(location.search).get('domain') || '').toLowerCase();
-const CACHE_OPTIONS = [{v:'basic',l:'Standard'},{v:'simplified',l:'Sederhana'},{v:'aggressive',l:'Agresif'}];
+const CACHE_OPTIONS = [{v:'basic',l:'Standar'},{v:'simplified',l:'Sederhana'},{v:'aggressive',l:'Agresif'}];
 function renderCachePopover() {
     const current = getSetting('cache_level', 'basic');
     document.getElementById('cache-popover').innerHTML = CACHE_OPTIONS.map(o => `
-        <button type="button" onclick="selectCacheLevel('${o.v}')" class="w-full text-left px-3 py-2 text-[13px] font-medium cursor-pointer transition-colors hover:bg-gray-50 ${o.v === current ? 'text-accent' : 'text-gray-800'}">${o.l}</button>`).join('');
+        <button type="button" onclick="selectCacheLevel('${o.v}')" class="w-full text-left px-3 py-2 rounded-lg text-[13.5px] font-medium cursor-pointer transition-colors hover:bg-gray-50 ${o.v === current ? 'text-accent font-semibold' : 'text-gray-800'}">${o.l}</button>`).join('');
 }
 function toggleCachePopover() {
     renderCachePopover();
@@ -148,6 +166,7 @@ let settings = {};
 function getSetting(k, def) { return (k in settings) ? settings[k] : def; }
 function saveSetting(k, v) { settings[k] = String(v); store.setSetting(domain, k, v); }
 function paintToggle(btn, on) {
+    btn.classList.remove('shim');
     btn.classList.toggle('bg-gray-200', !on);
     btn.classList.toggle('bg-accent', on);
     btn.innerHTML = '<span class="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ' + (on ? 'left-[22px]' : 'left-0.5') + '"></span>';
@@ -176,21 +195,30 @@ function showPurgedAt() {
 function purgeCache() {
     const btn = document.getElementById('purge-btn');
     const prev = btn.textContent;
-    btn.textContent = 'Membersihkan…';
+    btn.style.width = btn.offsetWidth + 'px';
+    btn.style.height = btn.offsetHeight + 'px';
+    btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 spin"></i>';
+    lucide.createIcons();
     btn.style.pointerEvents = 'none';
     setTimeout(() => {
         saveSetting('purged_at', new Date().toISOString());
-        btn.textContent = 'Cache dibersihkan';
+        btn.textContent = 'Selesai';
         showPurgedAt();
-        setTimeout(() => { btn.textContent = prev; btn.style.pointerEvents = ''; }, 2000);
+        setTimeout(() => { btn.textContent = prev; btn.style.pointerEvents = ''; btn.style.width = ''; btn.style.height = ''; }, 2000);
     }, 1000);
 }
 if (!domain) { location.replace('../../'); }
 else {
-    document.getElementById('v-domain').textContent = domain;
+    const vd = document.getElementById('v-domain');
+    vd.textContent = 'untuk ';
+    const vdName = document.createElement('span');
+    vdName.className = 'text-gray-900 font-semibold';
+    vdName.textContent = domain;
+    vd.appendChild(vdName);
     store.getSettings(domain, { cache_level: 'basic', devmode: 'off', purged_at: '' }).then(s => {
         settings = s;
         initToggles();
+        document.getElementById('cache-trigger').classList.remove('shim');
         document.getElementById('cache-label').textContent = CACHE_OPTIONS.find(o => o.v === getSetting('cache_level', 'basic')).l;
         showPurgedAt();
         lucide.createIcons();
