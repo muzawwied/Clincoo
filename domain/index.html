@@ -139,7 +139,7 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
             <div class="flex items-center gap-3.5 py-3.5"><i data-lucide="globe" class="w-[18px] h-[18px] text-gray-300 shrink-0"></i><span class="shim h-2.5 w-44"></span><span class="shim h-2 w-14"></span><i data-lucide="more-horizontal" class="w-[18px] h-[18px] text-gray-300 ml-auto shrink-0"></i></div>
         </div>
         <div id="table-card" class="hidden">
-            <div class="overflow-x-auto mt-3 -mx-7 px-7">
+            <div class="relative overflow-x-auto mt-3 -mx-7 px-7">
                 <table class="w-full min-w-[620px] border-collapse">
                     <thead>
                         <tr>
@@ -147,7 +147,7 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
                             <th class="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-left py-2 pr-4">Status</th>
                             <th class="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-left py-2 pr-4 whitespace-nowrap cursor-pointer select-none hover:text-gray-600 transition-colors" onclick="sortBy('created')" title="Urutkan">Ditambahkan</th>
                             <th class="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-left py-2 pr-4 whitespace-nowrap cursor-pointer select-none hover:text-gray-600 transition-colors" onclick="sortBy('updated')" title="Urutkan">Terakhir Diubah <span id="sort-updated" class="text-gray-300"></span></th>
-                            <th class="w-[76px]"><span class="sr-only">Aksi</span></th>
+                            <th class="w-[76px]" aria-label="Aksi"></th>
                         </tr>
                     </thead>
                     <tbody id="domain-tbody" class="dns-rows"></tbody>
