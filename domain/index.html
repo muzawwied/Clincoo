@@ -3,6 +3,7 @@
 <head>
 
   <script src="../js/auth-client.js?v=6"></script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Domain — Clincoo</title>
@@ -53,6 +54,19 @@
     body.dark-mode .text-accent { color: #ffffff !important; }
     body.dark-mode button[onclick="goBack()"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
     body.dark-mode button[onclick="goBack()"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
+    /* Pop-up: animasi masuk & tampilan dark mode yang konsisten */
+    @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+    .popup-overlay { animation: overlayIn .18s ease-out; }
+    .popup-card { animation: menuPop .2s cubic-bezier(.2,.8,.2,1); transform-origin: center; }
+    .popup-menu { animation: menuPop .16s cubic-bezier(.2,.8,.2,1); transform-origin: top right; }
+    body.dark-mode .popup-card, body.dark-mode .popup-menu { box-shadow: 0 20px 50px rgba(0,0,0,.6) !important; }
+    body.dark-mode .btn-cancel { background-color: #141414 !important; }
+    body.dark-mode .btn-cancel:hover { background-color: #222222 !important; }
+    body.dark-mode .hover\:bg-red-50:hover { background-color: rgba(220,38,38,.14) !important; }
+    body.dark-mode .text-red-600 { color: #f87171 !important; }
+    body.dark-mode .btn-danger { background-color: #dc2626 !important; color: #ffffff !important; }
+    body.dark-mode .btn-danger:hover { background-color: #b91c1c !important; }
+    @media (prefers-reduced-motion: reduce) { .popup-overlay, .popup-card, .popup-menu { animation: none; } }
     textarea:focus { outline: none!important; box-shadow: none!important; }
     * { -webkit-tap-highlight-color: transparent; tap-highlight-color: transparent; }
     body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
@@ -141,18 +155,18 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
 
 <!-- Popover aksi (titik tiga) — menu kecil menempel dekat tombol, tanpa ikon -->
 <div id="actions-backdrop" class="hidden fixed inset-0 z-[55]" onclick="closeActions()"></div>
-<div id="actions-menu" class="hidden fixed z-[60] bg-white rounded-xl shadow-xl py-1 w-44" style="top:0; left:0;">
+<div id="actions-menu" class="popup-menu hidden fixed z-[60] bg-white rounded-xl border border-gray-100 shadow-[0_12px_32px_rgba(0,0,0,0.12)] p-1.5 w-48" style="top:0; left:0;">
     <div id="actions-list" class="flex flex-col"></div>
 </div>
 
 <!-- Modal hapus -->
-<div id="delete-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-5" onclick="if(event.target===this)closeModal('delete-modal')">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-5">
-        <h3 class="text-[15px] font-bold text-gray-900">Hapus Domain?</h3>
-        <p id="delete-domain-name" class="text-[13px] text-gray-500 mt-1"></p>
-        <div class="flex justify-end gap-1 mt-5">
-            <button onclick="closeModal('delete-modal')" class="rounded-md px-3 py-1.5 text-[13px] font-semibold text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors cursor-pointer">Batal</button>
-            <button onclick="confirmDelete()" class="rounded-md px-3 py-1.5 text-[13px] font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer">Hapus</button>
+<div id="delete-modal" class="popup-overlay hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-5" onclick="if(event.target===this)closeModal('delete-modal')">
+    <div class="popup-card bg-white rounded-2xl border border-gray-100 shadow-[0_20px_50px_rgba(0,0,0,0.18)] w-full max-w-sm p-6">
+        <h3 class="text-[16px] font-bold text-gray-900 tracking-tight">Hapus Domain?</h3>
+        <p id="delete-domain-name" class="text-[13px] text-gray-500 mt-1.5 leading-relaxed"></p>
+        <div class="flex justify-end gap-2 mt-6">
+            <button onclick="closeModal('delete-modal')" class="btn-cancel rounded-full px-4 py-2 text-[13px] font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 hover:text-gray-800 transition-colors active:scale-95 cursor-pointer">Batal</button>
+            <button onclick="confirmDelete()" class="btn-danger rounded-full px-4 py-2 text-[13px] font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors active:scale-95 cursor-pointer">Hapus</button>
         </div>
     </div>
 </div>
@@ -279,7 +293,7 @@ function openActions(evt, id) {
     rows.push({ label: 'Pengaturan Zone', action: `location.href='kelola/zone/?domain=' + encodeURIComponent('${esc(d.name)}')` });
     rows.push({ label: 'Hapus Domain', action: `openDelete('${d.id}')`, danger: true });
     document.getElementById('actions-list').innerHTML = rows.map((r, i) => `
-        <button onclick="closeActions(); ${r.action}" class="w-full text-left px-4 py-2.5 text-[14px] font-medium cursor-pointer transition-colors hover:bg-gray-50 ${r.danger ? 'text-red-600' : 'text-gray-800'}">${r.label}</button>`).join('');
+        <button onclick="closeActions(); ${r.action}" class="w-full text-left px-3 py-2 rounded-lg text-[13.5px] font-medium cursor-pointer transition-colors ${r.danger ? 'text-red-600 hover:bg-red-50' : 'text-gray-800 hover:bg-gray-50'}">${r.label}</button>`).join('');
 
     const menu = document.getElementById('actions-menu');
     const backdrop = document.getElementById('actions-backdrop');
