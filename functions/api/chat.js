@@ -862,7 +862,111 @@ async function tryClincooGatewayText(keys, messages, onDelta, budget) {
 }
 
 // ===== Orkestrasi Unified Multi-Model Generation =====
-async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, toolDecls, onDelta, usageAcc, budget }) {
+// ===== Primary Provider: Groq =====
+const GROQ_MODEL = 'openai/gpt-oss-120b';
+const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
+
+async function getGroqKeys(env) {
+  const keys = [];
+  const seen = new Set();
+  const add = v => { v = String(v || '').trim(); if (v && !seen.has(v)) { seen.add(v); keys.push(v); } };
+  add(env.GROQ_API_KEY);
+  if (!env.DB) return keys;
+  try {
+    const rows = await env.DB.prepare("SELECT key, value FROM env_vars WHERE key = 'GROQ_API_KEY'").all();
+    for (const r of rows.results || []) add(r.value);
+  } catch {}
+  return keys;
+}
+
+async function groqRound(key, msgs, onDelta, budget) {
+  if (!budgetTake(budget)) return null;
+  const payload = { model: GROQ_MODEL, messages: msgs, max_completion_tokens: 8192 };
+  if (onDelta) payload.stream = true;
+  const res = await withTimeout(fetch(GROQ_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+    body: JSON.stringify(payload)
+  }), 60000, 'Groq');
+  if (!res.ok) return null;
+  if (onDelta && res.body) {
+    const st = await readOAICompatStream(res, onDelta);
+    return { text: st.text, fin: st.fin };
+  }
+  const data = await res.json().catch(() => ({}));
+  const c = data && data.choices && data.choices[0];
+  return c ? { text: (c.message && c.message.content) || '', fin: c.finish_reason } : null;
+}
+
+async function tryGroqText(keys, messages, gDecls, onDelta, budget) {
+  const keyList = Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
+  if (!keyList.length) return null;
+  const { system, chatMsgs } = toOAIChat(messages);
+  const baseMsgs = system ? [{ role: 'system', content: system }, ...chatMsgs] : chatMsgs;
+  const oaiTools = oaiToolsOf(gDecls);
+  let lastErr = null;
+  for (const key of keyList) {
+    try {
+      if (budgetOut(budget)) return { error: lastErr || 'Anggaran subrequest habis', sublimit: true };
+      if (!budgetTake(budget)) return { error: lastErr || 'Anggaran subrequest habis', sublimit: true };
+      const payload = { model: GROQ_MODEL, messages: baseMsgs, max_completion_tokens: 8192 };
+      if (onDelta) payload.stream = true;
+      if (oaiTools) payload.tools = oaiTools;
+      const res = await withTimeout(fetch(GROQ_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify(payload)
+      }), 60000, 'Groq');
+      if (!res.ok) {
+        const detail = await res.text().catch(() => '');
+        lastErr = 'Groq: HTTP ' + res.status + (detail ? ' ' + detail.slice(0, 180) : '');
+        continue;
+      }
+      if (onDelta && res.body) {
+        const st = await readOAICompatStream(res, onDelta);
+        if (st.tcs.length) {
+          const nt = normStreamToolCalls(st.tcs);
+          if (nt.length) return { tool_calls: nt, text: st.text, model: GROQ_MODEL + ' (Groq)' };
+        }
+        if (st.text) {
+          const cont = await mrAutoContinue({
+            baseMsgs, first: { text: st.text, fin: st.fin }, deadline: Date.now() + MR_SOFT_BUDGET_MS, onDelta,
+            callRound: (msgs) => groqRound(key, msgs, onDelta, budget)
+          });
+          return { text: cont.text, model: GROQ_MODEL + ' (Groq)', truncated: cont.truncated || undefined };
+        }
+      } else {
+        const data = await res.json().catch(() => ({}));
+        const choice = data && data.choices && data.choices[0];
+        const msg = choice && choice.message;
+        const tcs = msg && Array.isArray(msg.tool_calls) ? msg.tool_calls : [];
+        if (tcs.length) {
+          const norm = [];
+          for (const c of tcs) {
+            let args = {};
+            try { args = typeof c.function?.arguments === 'string' ? JSON.parse(c.function.arguments) : (c.function?.arguments || {}); } catch {}
+            if (c.function?.name) norm.push({ name: c.function.name, args });
+          }
+          if (norm.length) return { tool_calls: norm, text: (msg.content || ''), model: GROQ_MODEL + ' (Groq)' };
+        }
+        const text = (msg && msg.content) || '';
+        if (text) {
+          const cont = await mrAutoContinue({
+            baseMsgs, first: { text, fin: choice && choice.finish_reason }, deadline: Date.now() + MR_SOFT_BUDGET_MS, onDelta: null,
+            callRound: (msgs) => groqRound(key, msgs, null, budget)
+          });
+          return { text: cont.text, model: GROQ_MODEL + ' (Groq)', truncated: cont.truncated || undefined };
+        }
+      }
+      lastErr = 'Groq mengembalikan respons kosong';
+    } catch (e) {
+      lastErr = 'Groq: ' + (e && e.message || e);
+    }
+  }
+  return lastErr ? { error: lastErr } : null;
+}
+
+async function executeAiGeneration({ env, groqKeys, mrKeys, geminiKeys, orKeys, messages, toolDecls, onDelta, usageAcc, budget }) {
   // [21 Okt] anggaran subrequest habis -> jangan mulai penyedia baru; semua fetch
   // berikutnya pasti gagal dengan "Too many subrequests".
   if (budgetOut(budget)) return { error: 'Anggaran subrequest habis (jawaban terlalu panjang untuk satu permintaan)', sublimit: true };
@@ -879,7 +983,17 @@ async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, 
   };
   let lastError = null;
 
-  // 1. ModelRouter (Utama)
+  // 1. Groq (Model utama)
+  if (groqKeys && groqKeys.length) {
+    try {
+      const r = await tryGroqText(groqKeys, messages, toolDecls, wrappedDelta, budget);
+      if (r && !r.error) return r;
+      if (r && r.error) lastError = r.error;
+    } catch (e) { lastError = e.message; }
+    if (deltaSent) return partialOr('Groq', lastError || 'Groq terputus saat streaming');
+  }
+
+  // 2. ModelRouter (Fallback; GLM-5.3-Flash tetap hanya di jalur fallback)
   if (mrKeys && mrKeys.length) {
     try {
       const r = await withTimeout(tryModelRouterText(mrKeys, messages, toolDecls, MODELROUTER_MODELS, wrappedDelta, usageAcc, budget), MR_TIMEOUT_MS, "ModelRouter");
@@ -889,7 +1003,7 @@ async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, 
     if (deltaSent) return partialOr(mrLabel(), lastError || "ModelRouter terputus saat streaming");
   }
 
-  // 1b. [21 Okt, arahan owner] Cadangan: gateway Open API Clincoo (glm-4.7-flash, teks-saja)
+  // 2b. Cadangan: gateway Open API Clincoo (glm-4.7-flash, teks-saja)
   if (budgetOut(budget)) return { error: lastError || 'Anggaran subrequest habis', sublimit: true };
   try {
     const gwKeys = (!toolDecls) ? await getClincooGatewayKeys(env) : [];
@@ -901,7 +1015,7 @@ async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, 
   } catch (e) { lastError = e.message; }
   if (deltaSent) return partialOr(mrLabel(), lastError || "Gateway cadangan terputus saat streaming");
 
-  // 2. OpenRouter (Fallback 1) — [21 Okt, arahan pemilik] glm-5.3-flash duluan, Gemini turun ke no 3
+  // 3. OpenRouter (Fallback 1) — [21 Okt, arahan pemilik] glm-5.3-flash duluan, Gemini turun ke no 3
   if (budgetOut(budget)) return { error: lastError || 'Anggaran subrequest habis', sublimit: true };
   if (orKeys && orKeys.length) {
     try {
@@ -912,7 +1026,7 @@ async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, 
     if (deltaSent) return partialOr("OpenRouter", lastError || "OpenRouter terputus saat streaming");
   }
 
-  // 3. Gemini (Fallback 2)
+  // 4. Gemini (Fallback 2)
   if (budgetOut(budget)) return { error: lastError || 'Anggaran subrequest habis', sublimit: true };
   if (geminiKeys && geminiKeys.length) {
     try {
@@ -923,7 +1037,7 @@ async function executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages, 
     if (deltaSent) return partialOr("Gemini", lastError || "Gemini terputus saat streaming");
   }
 
-  // 4. Workers AI (Fallback 3)
+  // 5. Workers AI (Fallback 3)
   if (budgetOut(budget)) return { error: lastError || 'Anggaran subrequest habis', sublimit: true };
   if (env && env.AI) {
     try {
@@ -1806,12 +1920,13 @@ export async function onRequestPost({ request, env, waitUntil }) {
       } catch (e) {}
     }
 
-    const [mrKeys, geminiKeys, orKeys] = await Promise.all([
+    const [groqKeys, mrKeys, geminiKeys, orKeys] = await Promise.all([
+      getGroqKeys(env),
       getModelRouterKeys(env),
       getGeminiKeys(env),
       getOpenRouterKeys(env)
     ]);
-    const hasAnyProvider = mrKeys.length > 0 || geminiKeys.length > 0 || orKeys.length > 0 || !!(env && env.AI);
+    const hasAnyProvider = groqKeys.length > 0 || mrKeys.length > 0 || geminiKeys.length > 0 || orKeys.length > 0 || !!(env && env.AI);
     if (!hasAnyProvider) {
       return new Response(JSON.stringify({ error: 'AI belum dikonfigurasi. Tambahkan API key AI di Pengaturan → Environment.' }), {
         status: 500, headers: { 'Content-Type': 'application/json', ...CORS }
@@ -1864,6 +1979,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
       if (budgetOut(subBudget) && sHop > 0) break; // [21 Okt] anggaran habis: berhenti elegan, klien tinggal "lanjutkan"
       r = await executeAiGeneration({
         env,
+        groqKeys,
         mrKeys,
         geminiKeys,
         orKeys,
@@ -1936,7 +2052,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
           { role: 'assistant', content: String(r.text) },
           { role: 'user', content: 'PEMERIKSAAN OTOMATIS menemukan ketidakkonsistenan pada proyek yang baru kamu tulis:\n- ' + lintIssues.join('\n- ') + '\n\nPerbaiki SEMUA temuan itu. Balas HANYA satu blok patch (empat backtick berlabel patch, format EDIT/FILE sesuai aturan PATCH; salin SEARCH persis dari blok project di atas) tanpa teks lain.' }
         ]);
-        const fx = await executeAiGeneration({ env, mrKeys, geminiKeys, orKeys, messages: fixMsgs, toolDecls: null, onDelta: null, usageAcc: mrUsageAcc, budget: subBudget }).catch(() => null);
+        const fx = await executeAiGeneration({ env, groqKeys, mrKeys, geminiKeys, orKeys, messages: fixMsgs, toolDecls: null, onDelta: null, usageAcc: mrUsageAcc, budget: subBudget }).catch(() => null);
         if (fx && !fx.error && /````patch/.test(String(fx.text || ''))) {
           const addTxt = '\n\n' + String(fx.text).trim();
           if (streamSend) { try { streamSend({ t: 'delta', text: addTxt }); } catch (e) {} }
