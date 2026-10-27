@@ -18,66 +18,155 @@
 <meta name="theme-color" content="#ffffff">
   <script src="../../../js/auth-client.js?v=6"></script>
 <link rel="icon" type="image/png" href="https://app.clincoo.buzz/assets/favicon.png">
+<script>
+/* Tema dipasang sebelum halaman digambar, jadi tidak kedip terang -> gelap */
+(function () {
+  try {
+    var t = localStorage.getItem('clincoo_theme') || 'Sistem (Default)';
+    var d = (t === 'Gelap') || (t === 'Sistem (Default)' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+    if (d) document.documentElement.classList.add('dark-mode');
+    document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  function ready() { requestAnimationFrame(function () { requestAnimationFrame(function () { document.documentElement.classList.add('clq-ready'); }); }); }
+  if (document.readyState === 'complete') ready(); else addEventListener('load', ready, { once: true });
+})();
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config = { darkMode: ["class", ".dark-mode"] };</script>
 <script src="https://unpkg.com/lucide@1.41.0"></script>
 <script src="../../js/store.js"></script>
 <style>
-        /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
-        html, body { scrollbar-width: none; -ms-overflow-style: none; }
-        html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+    /* Matikan semua transisi sampai halaman selesai dimuat, supaya perubahan warna awal tidak terlihat animasi */
+    html:not(.clq-ready) *, html:not(.clq-ready) *::before, html:not(.clq-ready) *::after { transition: none !important; }
 
-    body { font-family: 'Inter', sans-serif; background-color: #ffffff; transition: background-color 0.3s ease, color 0.3s ease; }
+    /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
+    html, body { scrollbar-width: none; -ms-overflow-style: none; }
+    html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+    /* ===== Dasar ===== */
+    body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #000000; -webkit-tap-highlight-color: transparent; transition: background-color .3s ease, color .3s ease; }
+    * { -webkit-tap-highlight-color: transparent; tap-highlight-color: transparent; }
+    textarea:focus { outline: none!important; box-shadow: none!important; }
     :root { --accent-color: #000000; --accent-hover: #1f2937; --accent-text: #ffffff; }
     .bg-accent { background-color: var(--accent-color) !important; }
     .text-accent { color: var(--accent-color) !important; }
     .border-accent { border-color: var(--accent-color) !important; }
     .hover\:bg-accent-hover:hover { background-color: var(--accent-hover) !important; }
-    body.dark-mode { background-color: #000000; color: #ffffff; }
-    body.dark-mode .bg-white { background-color: #0a0a0a !important; }
-    body.dark-mode .bg-gray-50 { background-color: #141414 !important; }
-    body.dark-mode .bg-gray-100 { background-color: #222222 !important; }
-    body.dark-mode .border-gray-100, body.dark-mode .border-gray-200, body.dark-mode .border-gray-300 { border-color: #222222 !important; }
-    body.dark-mode .text-accent { color: #ffffff !important; }
-    body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-black { color: #ffffff !important; }
-    body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 { color: #888888 !important; }
-    body.dark-mode .text-gray-400 { color: #666666 !important; }
-    body.dark-mode .bg-accent { background-color: #ffffff !important; color: #000000 !important; }
-    body.dark-mode .bg-accent.text-white { color: #000000 !important; }
-    body.dark-mode .bg-accent.text-white svg { color: #000000 !important; stroke: #000000 !important; }
-    body.dark-mode button[onclick="goBack()"] { background-color: #000000 !important; border: 1.5px solid rgba(255,255,255,0.4) !important; color: #ffffff !important; }
-    body.dark-mode button[onclick="goBack()"]:hover { background-color: #1a1a1a !important; border-color: rgba(255,255,255,0.7) !important; }
-    body.dark-mode button[onclick="goBack()"] svg { color: #ffffff !important; stroke: #ffffff !important; }
+    #bg-glow { position: fixed; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(620px 400px at 10% -8%, rgba(99,102,241,0.10), transparent 62%), radial-gradient(700px 430px at 94% -12%, rgba(236,72,153,0.08), transparent 62%), radial-gradient(820px 520px at 50% 112%, rgba(14,165,233,0.07), transparent 62%); }
+    @keyframes clq-page-in { from { opacity: 0 } to { opacity: 1 } }
+    @media (prefers-reduced-motion: no-preference) { body { animation: clq-page-in .18s cubic-bezier(.2,.7,.3,1) both; } }
+    a:focus-visible, button:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
+
+    /* ===== Mode gelap (palet sama dengan Clincoo AI) ===== */
+    .dark-mode body { background-color: #0e0e10; color: #e8e8ea; }
+    .dark-mode #bg-glow { background: radial-gradient(620px 400px at 10% -8%, rgba(99,102,241,0.16), transparent 62%), radial-gradient(700px 430px at 94% -12%, rgba(236,72,153,0.10), transparent 62%), radial-gradient(820px 520px at 50% 112%, rgba(14,165,233,0.09), transparent 62%); }
+    .dark-mode .bg-white { background-color: #16161a !important; }
+    .dark-mode .bg-gray-50 { background-color: #1b1b1f !important; }
+    .dark-mode .hover\:bg-gray-50:hover { background-color: #1b1b1f !important; }
+    .dark-mode .bg-gray-100 { background-color: #26262c !important; }
+    .dark-mode .hover\:bg-gray-100:hover { background-color: #26262c !important; }
+    .dark-mode .hover\:bg-gray-50\/60:hover { background-color: #16161a !important; }
+    .dark-mode .border-gray-100, .dark-mode .border-gray-200, .dark-mode .border-gray-300 { border-color: #2e2e34 !important; }
+    .dark-mode .text-gray-900, .dark-mode .text-gray-800, .dark-mode .text-black { color: #f2f2f4 !important; }
+    .dark-mode .text-gray-700, .dark-mode .text-gray-600 { color: #a8a8b0 !important; }
+    .dark-mode .text-gray-500 { color: #94949c !important; }
+    .dark-mode .text-gray-400, .dark-mode .text-gray-300 { color: #77777f !important; }
+    .dark-mode input::placeholder { color: #71717a !important; }
+    .dark-mode .bg-accent { background-color: #f2f2f4 !important; color: #111111 !important; }
+    .dark-mode .bg-accent.text-white { color: #111111 !important; }
+    .dark-mode .bg-accent.text-white svg { color: #111111 !important; stroke: #111111 !important; }
+    .dark-mode .text-accent { color: #f2f2f4 !important; }
+
+    /* ===== Header: judul + tombol kembali ===== */
+    .hdr-back { position: fixed; top: 12px; left: 12px; z-index: 50; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: #ffffff; border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.08); color: #222222; cursor: pointer; transition: background-color .15s, transform .1s; }
+    .hdr-back:hover { background: #f5f5f5; }
+    .hdr-back:active { transform: scale(.94); }
+    .dark-mode .hdr-back { background: #1b1b1f; border-color: #2e2e34; color: #f2f2f4; box-shadow: 0 2px 8px rgba(0,0,0,.45); }
+    .dark-mode .hdr-back:hover { background: #26262c; }
+    .pg-title { font-family: 'Montserrat', sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.15; color: #111111; }
+    .dark-mode .pg-title { color: #f2f2f4; }
+
+    /* ===== Baris tabel & pembatas ===== */
+    .dns-rows tr + tr td { border-top: 1px solid #f3f4f6; }
+    .row-divide > * + * { border-top: 1px solid #f3f4f6; }
+    .dark-mode .dns-rows tr + tr td { border-top-color: #222227; }
+    .dark-mode .row-divide > * + * { border-top-color: #222227; }
+
+    /* ===== Status berbentuk pil ===== */
+    .pill { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 9999px; font-size: 11.5px; font-weight: 600; line-height: 1.4; white-space: nowrap; }
+    .pill-ok { background: #dcfce7; color: #15803d; }
+    .pill-bad { background: #fee2e2; color: #b91c1c; }
+    .dark-mode .pill-ok { background: rgba(34,197,94,.16); color: #4ade80; }
+    .dark-mode .pill-bad { background: rgba(239,68,68,.16); color: #f87171; }
+
+    /* ===== Shimmer skeleton ===== */
+    .shim { position: relative; overflow: hidden; background: #ececef; border-radius: 999px; display: inline-block; vertical-align: middle; opacity: .78; }
+    .shim::after { content: ""; position: absolute; inset: 0; transform: translateX(-110%); background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,.72) 50%, transparent 75%); animation: shim 1.55s ease-in-out infinite; }
+    @keyframes shim { to { transform: translateX(110%); } }
+    .dark-mode .shim { background: #202026; opacity: .9; }
+    .dark-mode .shim::after { background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,.075) 50%, transparent 75%); }
+
+    /* ===== Menu aksi (titik tiga) ===== */
+    @keyframes menuPop { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
+    .act-menu { min-width: 224px; padding: 6px; border-radius: 16px; background: #ffffff; border: 1px solid #e5e7eb; box-shadow: 0 12px 32px rgba(0,0,0,.16); animation: menuPop .16s cubic-bezier(.2,.8,.2,1); transform-origin: top right; }
+    .dark-mode .act-menu { background: #1b1b1f; border-color: #2e2e34; box-shadow: 0 12px 36px rgba(0,0,0,.55); }
+    .act-it { display: flex; align-items: center; width: 100%; min-height: 42px; padding: 0 12px; border: 0; border-radius: 10px; background: none; font: inherit; font-size: 14.5px; font-weight: 500; line-height: 1.2; color: #1f2937; text-align: left; white-space: nowrap; cursor: pointer; transition: background-color .15s; }
+    .act-it:hover, .act-it:focus-visible { background: #f3f4f6; outline: none; }
+    .act-it:active { background: #ececf0; }
+    .act-it.danger { color: #dc2626; }
+    .act-it.danger:hover, .act-it.danger:focus-visible { background: rgba(220,38,38,.08); }
+    .dark-mode .act-it { color: #e6e6e9; }
+    .dark-mode .act-it:hover, .dark-mode .act-it:focus-visible { background: #26262c; }
+    .dark-mode .act-it:active { background: #2e2e34; }
+    .dark-mode .act-it.danger { color: #f87171; }
+    .dark-mode .act-it.danger:hover, .dark-mode .act-it.danger:focus-visible { background: rgba(239,68,68,.14); }
+
+    /* ===== Dialog konfirmasi ===== */
+    @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes cfIn { from { opacity: 0; transform: translateY(10px) scale(.96); } to { opacity: 1; transform: none; } }
+    .cf-ov { background: rgba(0,0,0,.38); animation: overlayIn .2s ease-out; }
+    .cf-box { width: 100%; max-width: 340px; padding: 22px 20px 16px; border-radius: 22px; background: #ffffff; border: 1px solid #e5e7eb; box-shadow: 0 20px 50px rgba(0,0,0,.22); animation: cfIn .22s cubic-bezier(.3,1.2,.5,1); }
+    .cf-title { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; color: #111827; }
+    .cf-text { margin-top: 6px; font-size: 14px; line-height: 1.5; color: #6b7280; overflow-wrap: anywhere; }
+    .cf-bar { display: flex; gap: 8px; margin-top: 18px; }
+    .cf-btn { flex: 1; height: 44px; border-radius: 9999px; font-size: 14.5px; font-weight: 600; cursor: pointer; transition: background-color .15s, transform .1s; }
+    .cf-btn:active { transform: scale(.97); }
+    .cf-cancel { background: #f3f4f6; color: #1f2937; }
+    .cf-cancel:hover { background: #e5e7eb; }
+    .cf-ok { background: #111111; color: #ffffff; }
+    .cf-ok:hover { background: #2a2a2e; }
+    .cf-ok.danger { background: #dc2626; }
+    .cf-ok.danger:hover { background: #b91c1c; }
+    .dark-mode .cf-ov { background: rgba(0,0,0,.6); }
+    .dark-mode .cf-box { background: #0e0e10; border-color: #2e2e34; box-shadow: 0 20px 50px rgba(0,0,0,.6); }
+    .dark-mode .cf-title { color: #f2f2f4; }
+    .dark-mode .cf-text { color: #94949c; }
+    .dark-mode .cf-cancel { background: #26262c; color: #e6e6e9; }
+    .dark-mode .cf-cancel:hover { background: #2f2f36; }
+    .dark-mode .cf-ok.danger { background: #ef4444; }
+    .dark-mode .cf-ok.danger:hover { background: #dc2626; }
+
+    @media (prefers-reduced-motion: reduce) { .act-menu, .cf-ov, .cf-box, .shim::after { animation: none; } }
+
+    /* ===== Tambahan khusus SSL/TLS ===== */
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
     input:focus, select:focus, textarea:focus { outline: none!important; box-shadow: none!important; }
-
-    /* Pop-up & popover: sama dengan halaman Domain dan Kelola DNS */
-    @keyframes menuPop { from { opacity: 0; transform: translateY(-6px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
-    .popup-menu { animation: menuPop .16s cubic-bezier(.2,.8,.2,1); transform-origin: top right; }
-    body.dark-mode .popup-menu { box-shadow: 0 20px 50px rgba(0,0,0,.6) !important; }
-    body.dark-mode .hover\:bg-gray-50:hover { background-color: #141414 !important; }
-    body.dark-mode .hover\:bg-gray-100:hover { background-color: #222222 !important; }
-    body.dark-mode .text-gray-300 { color: #666666 !important; }
-    /* Toggle: track & knob terbaca di dark mode (sama dengan halaman Cache) */
-    body.dark-mode .setting-toggle.bg-gray-200 { background-color: #2a2a2a !important; }
-    body.dark-mode .setting-toggle.bg-gray-200 span { background-color: #9ca3af !important; }
-    @media (prefers-reduced-motion: reduce) { .popup-menu { animation: none; } }
-
-/* Pembatas antar baris: tipis dan halus, tanpa garis atas (sama dengan Kelola DNS) */
-.row-divide > * + *{border-top:1px solid #f3f4f6}
-.row-divide-all > *{border-top:1px solid #f3f4f6}
-body.dark-mode .row-divide > * + *, body.dark-mode .row-divide-all > *{border-top-color:#1a1a1a}
-
-/* Shimmer skeleton */
-.shim{position:relative;overflow:hidden;background:#ececef;border-radius:999px;display:inline-block;vertical-align:middle;opacity:.78}
-.shim::after{content:"";position:absolute;inset:0;transform:translateX(-110%);background:linear-gradient(90deg,transparent 25%,rgba(255,255,255,.72) 50%,transparent 75%);animation:shim 1.55s ease-in-out infinite}
-@keyframes shim{to{transform:translateX(110%)}}
-body.dark-mode .shim{background:#202020;opacity:.9}
-body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgba(255,255,255,.075) 50%,transparent 75%)}
-@media (prefers-reduced-motion:reduce){.shim::after{animation:none}}
+    .row-divide-all > * { border-top: 1px solid #f3f4f6; }
+    .dark-mode .row-divide-all > * { border-top-color: #222227; }
+    .act-menu.sm { min-width: 0; width: 144px; transform-origin: top right; }
+    .act-it.sel { font-weight: 700; color: var(--accent-color); }
+    .dark-mode .act-it.sel { color: #f2f2f4; }
+    /* Toggle: track & knob terbaca di mode gelap */
+    .dark-mode .setting-toggle.bg-gray-200 { background-color: #2e2e34 !important; }
+    .dark-mode .setting-toggle.bg-gray-200 span { background-color: #9ca3af !important; }
 </style>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
 <script>
@@ -90,18 +179,20 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
 <body class="min-h-screen flex flex-col text-gray-900 pt-20">
 <script>(function(){try{var t=localStorage.getItem('clincoo_theme')||'Sistem (Default)';var d=(t==='Gelap')||(t==='Sistem (Default)'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.body.classList.add('dark-mode');var a=localStorage.getItem('clincoo_accent')||'Hitam (Default)';var am={'Hitam (Default)':{m:'#000000',h:'#1f2937'},'Biru':{m:'#2563eb',h:'#1d4ed8'},'Hijau':{m:'#059669',h:'#047857'},'Ungu':{m:'#9333ea',h:'#7e22ce'},'Merah':{m:'#dc2626',h:'#b91c1c'}};var c=am[a]||am['Hitam (Default)'];document.documentElement.style.setProperty('--accent-color',c.m);document.documentElement.style.setProperty('--accent-hover',c.h);}catch(e){}})();</script>
 
-<main class="flex-1 w-full max-w-3xl mx-auto pb-16 flex-col justify-start relative">
-    <button onclick="goBack()" class="fixed top-3 left-3 w-10 h-10 flex items-center justify-center rounded-full bg-white backdrop-blur border border-gray-100 shadow-sm hover:bg-gray-50 transition-all cursor-pointer text-gray-700 hover:text-black z-50" aria-label="Kembali">
+<div id="bg-glow"></div>
+
+<main class="flex-1 w-full max-w-3xl mx-auto pb-16 flex-col justify-start relative z-10">
+    <button onclick="goBack()" class="hdr-back" aria-label="Kembali">
         <i data-lucide="arrow-left" class="w-5 h-5"></i>
     </button>
     <div class="flex flex-col px-7 pb-2 relative">
-        <h2 class="text-[24px] font-extrabold text-gray-900 tracking-tight">SSL/TLS</h2>
-        <p id="v-domain" class="text-[14px] text-gray-500 font-medium mt-0.5">memuat…</p>
-        <p class="text-[13px] text-gray-500 leading-relaxed mt-2">Atur cara pengunjung terhubung ke situs-mu secara aman.</p>
+        <h2 class="pg-title">SSL/TLS</h2>
+        <p id="v-domain" class="text-[14px] text-gray-500 font-medium mt-1.5">memuat…</p>
+        <p class="text-[13px] text-gray-500 leading-relaxed mt-1.5">Atur cara pengunjung terhubung ke situs-mu secara aman.</p>
     </div>
 
     <div class="px-7">
-        <h3 class="text-[12px] font-bold text-gray-400 uppercase tracking-wider mt-6">Mode Enkripsi SSL/TLS</h3>
+        <h3 class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mt-6">Mode Enkripsi SSL/TLS</h3>
         <div id="ssl-modes" class="mt-2 row-divide"><div class="flex items-center justify-between py-4"><span class="shim h-2.5 w-28"></span><span class="shim h-2 w-3.5"></span></div><div class="flex items-center justify-between py-4"><span class="shim h-2.5 w-28"></span><span class="shim h-2 w-3.5"></span></div><div class="flex items-center justify-between py-4"><span class="shim h-2.5 w-28"></span><span class="shim h-2 w-3.5"></span></div></div>
 
         <div class="mt-6 row-divide-all">
@@ -122,7 +213,7 @@ body.dark-mode .shim::after{background:linear-gradient(90deg,transparent 25%,rgb
                     <span id="tls-label"><span class="shim h-2 w-12"></span></span>
                     <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-400"></i>
                 </button>
-                <div id="tls-popover" class="popup-menu hidden absolute right-0 mt-1.5 bg-white border border-gray-100 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.12)] z-[70] p-1.5 w-32"></div>
+                <div id="tls-popover" class="act-menu sm hidden absolute right-0 mt-1.5 z-[70]"></div>
             </div>
         </div>
         </div>
@@ -135,7 +226,7 @@ const TLS_OPTIONS = [{v:'1.0',l:'TLS 1.0'},{v:'1.1',l:'TLS 1.1'},{v:'1.2',l:'TLS
 function renderTlsPopover() {
     const current = getSetting('min_tls', '1.2');
     document.getElementById('tls-popover').innerHTML = TLS_OPTIONS.map(o => `
-        <button type="button" onclick="selectTls('${o.v}')" class="w-full text-left px-3 py-2 rounded-lg text-[13.5px] font-semibold cursor-pointer transition-colors hover:bg-gray-50 ${o.v === current ? 'text-accent' : 'text-gray-800'}">${o.l}</button>`).join('');
+        <button type="button" onclick="selectTls('${o.v}')" class="act-it${o.v === current ? ' sel' : ''}">${o.l}</button>`).join('');
 }
 function toggleTlsPopover() {
     renderTlsPopover();
