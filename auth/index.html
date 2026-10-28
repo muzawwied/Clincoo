@@ -11,7 +11,8 @@
     <title>Masuk ke Clincoo</title>
     <meta name="description" content="Masuk ke Clincoo — Bangun situs profesional dengan bantuan AI dan Monaco Editor, lalu publikasikan ke internet hanya dengan satu klik. Tanpa setup, tanpa ribet.">
     <meta name="robots" content="noindex">
-    <meta name="theme-color" content="#ffffff">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Clincoo">
@@ -34,24 +35,29 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
         /* Scrollbar halaman disembunyikan — bar vertikal abu-abu di tepi kanan mengganggu tampilan */
         html, body { scrollbar-width: none; -ms-overflow-style: none; }
         html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
 
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #ffffff; 
-            transition: background-color 0.3s ease, color 0.3s ease; 
-        }
-        
+        :root{--bg:#fff;--fg:#0a0a0a;--mut:#5f6673;--line:#e8eaee;--card:#f6f7f9;--inv:#0a0a0a;--invfg:#fff;--glass:rgba(255,255,255,.82);--glow:rgba(99,102,241,.14)}
         /* Tema Gelap Dasar */
-        body.dark-mode { 
-            background-color: #050505; 
-            color: #e0e0e0; 
-        }
+        body.dark-mode{--bg:#0a0a0a;--fg:#fff;--mut:#9aa1ad;--line:#232323;--card:#121212;--inv:#fff;--invfg:#0a0a0a;--glass:rgba(10,10,10,.82);--glow:rgba(129,140,248,.16)}
+        body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--fg);line-height:1.6;-webkit-font-smoothing:antialiased;transition:background-color .3s ease,color .3s ease}
+        .logo{display:flex;align-items:center;gap:.55rem;font-weight:700;font-size:1.25rem;letter-spacing:-.02em}
+        .grad{font-style:normal;background:linear-gradient(90deg,#6366f1,#ec4899);-webkit-background-clip:text;background-clip:text;color:transparent}
+        .btn{display:inline-flex;align-items:center;justify-content:center;gap:.55rem;min-height:3.1rem;padding:0 1.5rem;border-radius:9999px;font-weight:600;font-size:.95rem;border:1px solid var(--line);background:transparent;color:var(--fg);cursor:pointer;transition:transform .2s,opacity .2s,background .2s}
+        .btn:hover{transform:translateY(-1px)}
+        .btn:active{transform:scale(.98)}
+        .btn.g:hover{background:var(--card)}
+        .btn.p{background:var(--inv);color:var(--invfg);border-color:var(--inv)}
+        .btn.p:hover{opacity:.85}
+        .btn:disabled:hover{transform:none}
+        .note{font-size:.78rem;line-height:1.6;color:var(--mut);margin:1.4rem auto 0;max-width:19rem;text-align:center;text-wrap:balance}
+        #hero-panel::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--glass) 0%,var(--bg) 92%),url('https://app.clincoo.buzz/assets/backgrounds/bg-light-morning.webp') 70% 30%/cover}
+        body.dark-mode #hero-panel::before{background:linear-gradient(180deg,var(--glass) 0%,var(--bg) 92%),url('https://app.clincoo.buzz/assets/backgrounds/bg-dark-night2.webp') 70% 30%/cover}
         
         /* Menghilangkan panah pada input number & auto-fill styling */
         input:-webkit-autofill,
@@ -103,7 +109,7 @@
 
         /* ==== Panel Hero 3D (split-screen login ala Cloudflare) ==== */
         .hero-grid {
-            background-image: linear-gradient(to right, rgba(0,0,0,0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.045) 1px, transparent 1px);
+            background-image: linear-gradient(to right, var(--line) 1px, transparent 1px), linear-gradient(to bottom, var(--line) 1px, transparent 1px);
             background-size: 48px 48px;
             -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
             mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
@@ -111,88 +117,108 @@
         body.dark-mode .hero-grid {
             background-image: linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
         }
-        .hero-glow { background: radial-gradient(circle, rgba(120,120,120,0.14), transparent 65%); }
-        .hero-glow2 { background: radial-gradient(circle, rgba(120,120,120,0.10), transparent 65%); }
-        body.dark-mode .hero-glow { background: radial-gradient(circle, rgba(255,255,255,0.07), transparent 65%); }
-        body.dark-mode .hero-glow2 { background: radial-gradient(circle, rgba(255,255,255,0.05), transparent 65%); }
+        .hero-glow { background: radial-gradient(circle, rgba(99,102,241,.22), transparent 65%); }
+        .hero-glow2 { background: radial-gradient(circle, rgba(236,72,153,.16), transparent 65%); }
+        body.dark-mode .hero-glow { background: radial-gradient(circle, rgba(129,140,248,.26), transparent 65%); }
+        body.dark-mode .hero-glow2 { background: radial-gradient(circle, rgba(236,72,153,.20), transparent 65%); }
         .scene { perspective: 900px; }
-        .cube { width: 130px; height: 130px; position: relative; transform-style: preserve-3d;  }
+        .cube { width: 130px; height: 130px; position: relative; transform-style: preserve-3d; animation: cubeSpin 18s linear infinite; }
         /* Muka kubus HARUS opaque supaya cincin sisi belakang beneran ketutup (ilusi Saturnus) */
-        .cube .face { position: absolute; inset: 0; border: 1.5px solid rgba(0,0,0,0.30); border-radius: 18px; background: #f2f2f2; }
-        .cube .f-top { background: #ffffff; }
-        .cube .f-front { background: #f7f7f7; }
-        .cube .f-back { background: #e8e8e8; }
-        .cube .f-left, .cube .f-right { background: #ededed; }
-        .cube .f-bottom { background: #e0e0e0; }
-        body.dark-mode .cube .face { border-color: rgba(255,255,255,0.22); background: #151515; }
-        body.dark-mode .cube .f-top { background: #1d1d1d; }
-        body.dark-mode .cube .f-front { background: #171717; }
-        body.dark-mode .cube .f-back { background: #101010; }
-        body.dark-mode .cube .f-left, body.dark-mode .cube .f-right { background: #121212; }
-        body.dark-mode .cube .f-bottom { background: #0c0c0c; }
+        .cube .face { position: absolute; inset: 0; border: 1.5px solid rgba(99,102,241,.35); border-radius: 18px; background: #e0e7ff; }
+        .cube .f-top { background: #eef1ff; }
+        .cube .f-front { background: #e0e7ff; }
+        .cube .f-back { background: #d2dafb; }
+        .cube .f-left, .cube .f-right { background: #dae1fd; }
+        .cube .f-bottom { background: #ccd5f6; }
+        body.dark-mode .cube .face { border-color: rgba(165,180,252,.35); background: #1d1f30; }
+        body.dark-mode .cube .f-top { background: #24273d; }
+        body.dark-mode .cube .f-front { background: #1d1f30; }
+        body.dark-mode .cube .f-back { background: #14151f; }
+        body.dark-mode .cube .f-left, body.dark-mode .cube .f-right { background: #191b29; }
+        body.dark-mode .cube .f-bottom { background: #101119; }
         .cube .f-front  { transform: rotateY(0deg) translateZ(65px); }
         .cube .f-back   { transform: rotateY(180deg) translateZ(65px); }
         .cube .f-left   { transform: rotateY(-90deg) translateZ(65px); }
         .cube .f-right  { transform: rotateY(90deg) translateZ(65px); }
         .cube .f-top    { transform: rotateX(90deg) translateZ(65px); }
         .cube .f-bottom { transform: rotateX(-90deg) translateZ(65px); }
-        @media (prefers-reduced-motion: reduce) { .cube, .cube-sm, .ring, .hero-dot { animation: none; } }
+        @media (prefers-reduced-motion: reduce) { .cube, .cube-wrap, .cube-sm, .cube-xs, .cube-shadow, .float-card, .hero-dot { animation: none !important; } }
 
         /* Kubus utama: bungkus agar bisa mengambang naik-turun */
-        .cube-wrap { position: relative; transform-style: preserve-3d;  }
+        .cube-wrap { position: relative; transform-style: preserve-3d; animation: floatY 6s ease-in-out infinite; }
         /* Putaran kubus lebih hidup: kemiringan berganti-ganti halus */
         /* Bayangan elips di bawah kubus yang "bernapas" mengikuti float */
-        .cube-shadow { position: absolute; bottom: -52px; left: 50%; width: 130px; height: 28px; margin-left: -65px; border-radius: 9999px; background: radial-gradient(ellipse, rgba(0,0,0,0.22), transparent 70%); filter: blur(3px);  }
+        .cube-shadow { position: absolute; bottom: -52px; left: 50%; width: 130px; height: 28px; margin-left: -65px; border-radius: 9999px; background: radial-gradient(ellipse, rgba(0,0,0,0.22), transparent 70%); filter: blur(3px); animation: shadowBreath 6s ease-in-out infinite; }
         body.dark-mode .cube-shadow { background: radial-gradient(ellipse, rgba(0,0,0,0.9), transparent 70%); }
         /* Kubus kecil pendamping: 2 buah, melayang + berputar berlawanan */
         .cube-sm { width: 56px; height: 56px; position: absolute; transform-style: preserve-3d; }
-        .cube-sm .face { border-width: 1px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.30); background: #f2f2f2; }
-        body.dark-mode .cube-sm .face { border-color: rgba(255,255,255,0.22); background: #151515; }
+        .cube-sm .face { border-width: 1px; border-radius: 10px; border: 1px solid rgba(139,92,246,.40); background: #ede9fe; }
+        body.dark-mode .cube-sm .face { border-color: rgba(167,139,250,.40); background: #211b3a; }
         .cube-sm .f-front  { transform: rotateY(0deg) translateZ(28px); }
         .cube-sm .f-back   { transform: rotateY(180deg) translateZ(28px); }
         .cube-sm .f-left   { transform: rotateY(-90deg) translateZ(28px); }
         .cube-sm .f-right  { transform: rotateY(90deg) translateZ(28px); }
         .cube-sm .f-top    { transform: rotateX(90deg) translateZ(28px); }
         .cube-sm .f-bottom { transform: rotateX(-90deg) translateZ(28px); }
-        .cs-a { right: -108px; bottom: -70px;  }
+        .cs-a { right: -108px; bottom: -70px; animation: spinRev 14s linear infinite; }
         .cube-xs { width: 40px; height: 40px; position: absolute; transform-style: preserve-3d; }
-        .cube-xs .face { border-width: 1px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.30); background: #f2f2f2; }
-        body.dark-mode .cube-xs .face { border-color: rgba(255,255,255,0.22); background: #151515; }
+        .cube-xs .face { border-width: 1px; border-radius: 8px; border: 1px solid rgba(236,72,153,.38); background: #fce7f3; }
+        body.dark-mode .cube-xs .face { border-color: rgba(244,114,182,.40); background: #2d1526; }
         .cube-xs .f-front  { transform: rotateY(0deg) translateZ(20px); }
         .cube-xs .f-back   { transform: rotateY(180deg) translateZ(20px); }
         .cube-xs .f-left   { transform: rotateY(-90deg) translateZ(20px); }
         .cube-xs .f-right  { transform: rotateY(90deg) translateZ(20px); }
         .cube-xs .f-top    { transform: rotateX(90deg) translateZ(20px); }
         .cube-xs .f-bottom { transform: rotateX(-90deg) translateZ(20px); }
-        .cs-b { left: -96px; top: -34px;  }
+        .cs-b { left: -96px; top: -34px; animation: spinFwd 11s linear infinite; }
         /* Cincin orbit ala Saturnus: dibagi 2 setengah supaya keliatan MENGELILINGI kubus,
            bukan menembusnya. Setengah "back" (sisi jauh) digambar sebelum kubus,
            setengah "front" (sisi dekat) digambar setelah kubus. */
         .orbit-ring { position: absolute; top: 50%; left: 50%; border-radius: 9999px; }
         .orbit-ring.back  { clip-path: inset(0 0 50% 0); }
         .orbit-ring.front { clip-path: inset(50% 0 0 0); }
-        .ring-a { width: 230px; height: 230px; margin: -115px 0 0 -115px; border: 1.5px dashed rgba(0,0,0,0.30);  }
-        body.dark-mode .ring-a { border-color: rgba(255,255,255,0.30); }
-        .ring-b { width: 172px; height: 172px; margin: -86px 0 0 -86px; border: 1px solid rgba(0,0,0,0.14);  }
-        body.dark-mode .ring-b { border-color: rgba(255,255,255,0.14); }
+        .ring-a { width: 230px; height: 230px; margin: -115px 0 0 -115px; border: 1.5px dashed rgba(99,102,241,.45);  }
+        body.dark-mode .ring-a { border-color: rgba(165,180,252,.40); }
+        .ring-b { width: 172px; height: 172px; margin: -86px 0 0 -86px; border: 1px solid rgba(99,102,241,.22);  }
+        body.dark-mode .ring-b { border-color: rgba(165,180,252,.20); }
         /* Kartu mini melayang (ala Vercel marketing) */
-        .float-card { position: absolute; display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 10px; background: rgba(255,255,255,0.78); border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 10px 28px rgba(0,0,0,0.10); font-size: 11px; font-weight: 600; color: rgba(0,0,0,0.70); backdrop-filter: blur(4px); white-space: nowrap; }
-        body.dark-mode .float-card { background: rgba(22,22,22,0.78); border-color: rgba(255,255,255,0.10); color: rgba(255,255,255,0.72); box-shadow: 0 10px 28px rgba(0,0,0,0.55); }
-        .float-card svg { width: 13px; height: 13px; }
-        .fc-1 { top: -38px; left: -128px;  }
-        .fc-2 { top: 34px; right: -142px;  }
-        .fc-3 { bottom: -44px; left: -72px;  }
+        .float-card { position: absolute; display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 9999px; background: var(--bg); border: 1px solid var(--line); box-shadow: 0 10px 28px var(--glow); font-size: 12px; font-weight: 500; color: var(--fg); white-space: nowrap; }
+        body.dark-mode .float-card { box-shadow: 0 10px 28px rgba(0,0,0,0.55); }
+        .float-card svg { width: 14px; height: 14px; color: #6366f1; }
+        body.dark-mode .float-card svg { color: #818cf8; }
+        .fc-1 { top: -38px; left: -128px; animation: floatY 5s ease-in-out infinite; }
+        .fc-2 { top: 34px; right: -142px; animation: floatY 6.5s ease-in-out -2s infinite; }
+        .fc-3 { bottom: -44px; left: -72px; animation: floatY 7s ease-in-out -4s infinite; }
         /* Titik-titik mengambang */
-        .hero-dot { position: absolute; border-radius: 9999px; background: rgba(0,0,0,0.30); }
-        body.dark-mode .hero-dot { background: rgba(255,255,255,0.32); }
-        .dot-1 { width: 8px; height: 8px; top: 18%; left: 16%;  }
-        .dot-2 { width: 5px; height: 5px; top: 30%; right: 20%;  }
-        .dot-3 { width: 6px; height: 6px; bottom: 24%; left: 24%;  }
-        .dot-4 { width: 4px; height: 4px; bottom: 32%; right: 26%;  }
-        .dot-5 { width: 5px; height: 5px; top: 55%; left: 10%;  }
+        .hero-dot { position: absolute; border-radius: 9999px; background: rgba(99,102,241,.45); }
+        body.dark-mode .hero-dot { background: rgba(165,180,252,.50); }
+        .dot-1 { width: 8px; height: 8px; top: 18%; left: 16%; animation: dotDrift 7s ease-in-out infinite; }
+        .dot-2 { width: 5px; height: 5px; top: 30%; right: 20%; animation: dotDrift 9s ease-in-out -3s infinite; }
+        .dot-3 { width: 6px; height: 6px; bottom: 24%; left: 24%; animation: dotDrift 8s ease-in-out -5s infinite; }
+        .dot-4 { width: 4px; height: 4px; bottom: 32%; right: 26%; animation: dotDrift 10s ease-in-out -2s infinite; }
+        .dot-5 { width: 5px; height: 5px; top: 55%; left: 10%; animation: dotDrift 9s ease-in-out -6s infinite; }
         /* Chip fitur */
-        .chip { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; padding: 6px 14px; border-radius: 9999px; border: 1px solid rgba(0,0,0,0.14); color: rgba(0,0,0,0.65); background: rgba(255,255,255,0.45); }
-        body.dark-mode .chip { border-color: rgba(255,255,255,0.14); color: rgba(255,255,255,0.60); background: rgba(255,255,255,0.03); }
+        .chip { font-size: 12px; font-weight: 500; padding: 7px 16px; border-radius: 9999px; border: 1px solid var(--line); color: var(--fg); background: var(--bg); }
+        body.dark-mode .chip { background: var(--bg); }
+
+        /* Keyframes animasi hero */
+        @keyframes cubeSpin { 0% { transform: rotateX(-22deg) rotateY(0deg); } 50% { transform: rotateX(-14deg) rotateY(180deg); } 100% { transform: rotateX(-22deg) rotateY(360deg); } }
+        @keyframes spinFwd { from { transform: rotateX(24deg) rotateY(0deg); } to { transform: rotateX(24deg) rotateY(360deg); } }
+        @keyframes spinRev { from { transform: rotateX(-18deg) rotateY(360deg); } to { transform: rotateX(-18deg) rotateY(0deg); } }
+        @keyframes floatY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+        @keyframes shadowBreath { 0%, 100% { transform: scaleX(1); opacity: 1; } 50% { transform: scaleX(0.8); opacity: 0.6; } }
+        @keyframes dotDrift { 0%, 100% { transform: translate(0, 0); opacity: 0.5; } 50% { transform: translate(6px, -10px); opacity: 1; } }
+
+        /* Fokus keyboard terlihat */
+        :focus-visible { outline: 2px solid #111; outline-offset: 3px; }
+        body.dark-mode :focus-visible { outline-color: #fff; }
+
+        /* Tombol login: state nonaktif + spinner kecil yang ikut warna teks */
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .loader-btn { width: 20px; height: 20px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; flex-shrink: 0; }
+
+        /* Tinggi layar dinamis di HP (address bar naik-turun) */
+        @supports (height: 100dvh) { html .min-h-screen { min-height: 100dvh; } }
     </style>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-KMQ8WBZF6E"></script>
 <script>
@@ -204,10 +230,10 @@
 </head>
 <body class="min-h-screen flex flex-col md:flex-row selection:bg-gray-900 selection:text-white dark:selection:bg-white dark:selection:text-black">
     <!-- Script Deteksi Tema (Langsung dieksekusi agar tidak flash) -->
-    <script>(function(){var t=localStorage.getItem("clincoo_theme");var isDark=(t==="Gelap")||((t==="Sistem (Default)"||!t)&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}})();</script>
+    <script>(function(){var t=localStorage.getItem("clincoo_theme");var isDark=(t==="Gelap")||((t==="Sistem (Default)"||!t)&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(isDark){document.body.classList.add("dark-mode");}if(t&&t!=="Sistem (Default)"){document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute("content",t==="Gelap"?"#0a0a0a":"#ffffff");m.removeAttribute("media");});}})();</script>
 
     <!-- Layar loading proses OAuth: halaman polos + icon loading, agar tidak flash ke form login -->
-    <div id="oauth-loading" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-white dark:bg-black">
+    <div id="oauth-loading" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-[var(--bg)]">
         <span class="loader-lg"></span>
     </div>
 
@@ -224,25 +250,25 @@
     </div>
 
     <!-- Logo pojok kiri atas -->
-    <a href="../" class="absolute top-5 left-5 sm:top-7 sm:left-7 z-20 group" aria-label="Beranda Clincoo">
-        <img src="../assets/logo-clincoo.png?v=20261007" alt="Clincoo" class="w-9 h-9 rounded-full group-hover:scale-105 transition-transform">
+    <a href="../" class="logo absolute top-5 left-5 sm:top-7 sm:left-7 z-20 group" aria-label="Beranda Clincoo">
+        <img src="../assets/logo-clincoo.png?v=20261007" alt="" class="w-[1.85rem] h-[1.85rem] rounded-full group-hover:scale-105 transition-transform">Clincoo
     </a>
 
     <div class="w-full md:w-1/2 flex flex-col justify-center min-h-screen relative z-10 animate-fade-in px-2 sm:px-8 xl:px-16">
         <div class="w-full max-w-[480px] mx-auto">
 
         <!-- Header Section -->
-        <div class="px-2 sm:px-8 pt-10 pb-6 text-center">
-            <h1 id="page-title" class="font-extrabold text-3xl text-gray-900 dark:text-white tracking-tight font-['Space_Grotesk']">Masuk ke Clincoo</h1>
-            <p id="page-desc" class="text-sm text-gray-500 dark:text-gray-400 mt-2.5">Masuk untuk mengakses akun Anda</p>
+        <div class="px-2 sm:px-8 pt-16 sm:pt-10 pb-6 text-center">
+            <h1 id="page-title" class="font-semibold text-3xl text-[var(--fg)] tracking-tight">Masuk ke <em class="grad">Clincoo</em></h1>
+            <p id="page-desc" class="text-[.95rem] text-[var(--mut)] mt-3 leading-relaxed">Masuk untuk mengakses akun Anda</p>
         </div>
 
         <div class="px-2 sm:px-8 pb-10 relative">
 
             <div id="view-login" class="w-full animate-fade-in block">
                 <div class="grid gap-3.5">
-                    <button type="button" class="flex items-center justify-center gap-2.5 py-4 px-5 bg-gray-50/80 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-full font-semibold text-sm shadow-sm shadow-black/[0.02] dark:shadow-none transition-all active:scale-[0.98] dark:bg-white/[0.02] dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/[0.06]" onclick="startOAuth('google')">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24">
+                    <button type="button" class="btn g" onclick="startOAuth('google')">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24">
                             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
                             <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
@@ -250,8 +276,8 @@
                         </svg>
                         Lanjutkan dengan Google
                     </button>
-                    <button type="button" class="flex items-center justify-center gap-2.5 py-4 px-5 bg-gray-50/80 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-full font-semibold text-sm shadow-sm shadow-black/[0.02] dark:shadow-none transition-all active:scale-[0.98] dark:bg-white/[0.02] dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/[0.06]" onclick="startOAuth('github')">
-                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                    <button type="button" class="btn g" onclick="startOAuth('github')">
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
                             <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
                         </svg>
                         Lanjutkan dengan GitHub
@@ -259,7 +285,7 @@
                 </div>
 
                                 <!-- Info persetujuan -->
-                <p class="text-center text-xs text-gray-400 dark:text-gray-500 mt-4 leading-relaxed">Dengan melanjutkan, kamu menyetujui <a href="https://blog.clincoo.buzz/legal/syarat-ketentuan/" target="_blank" rel="noopener" class="underline hover:text-gray-600 dark:hover:text-gray-400">Syarat &amp; Ketentuan</a> dan <a href="https://blog.clincoo.buzz/legal/kebijakan-privasi/" target="_blank" rel="noopener" class="underline hover:text-gray-600 dark:hover:text-gray-400">Kebijakan Privasi</a> Clincoo.</p>
+                <p class="note">Dengan melanjutkan, kamu menyetujui <a href="https://blog.clincoo.buzz/legal/syarat-ketentuan/" target="_blank" rel="noopener" class="underline underline-offset-[3px] hover:text-[var(--fg)]">Syarat &amp; Ketentuan</a> dan <a href="https://blog.clincoo.buzz/legal/kebijakan-privasi/" target="_blank" rel="noopener" class="underline underline-offset-[3px] hover:text-[var(--fg)]">Kebijakan Privasi</a> Clincoo.</p>
 
 </div>
         </div>
@@ -268,7 +294,7 @@
     </div>
 
     <!-- Panel Kanan: Visual 3D ala Cloudflare (hanya tampil di layar lebar) -->
-    <div id="hero-panel" class="hidden md:flex w-1/2 relative items-center justify-center overflow-hidden bg-gray-50/60 dark:bg-[#0a0a0a] border-l border-gray-200/80 dark:border-white/10">
+    <div id="hero-panel" class="hidden md:flex w-1/2 relative items-center justify-center overflow-hidden bg-[var(--card)] border-l border-[var(--line)]">
         <div class="hero-grid absolute inset-0 opacity-70"></div>
         <div class="hero-glow absolute -top-32 -right-32 w-[480px] h-[480px] rounded-full blur-3xl"></div>
         <div class="hero-glow2 absolute -bottom-40 -left-24 w-[420px] h-[420px] rounded-full blur-3xl"></div>
@@ -314,8 +340,8 @@
                 <div class="float-card fc-2"><i data-lucide="git-branch"></i><span>main</span></div>
                 <div class="float-card fc-3"><i data-lucide="zap"></i><span>Build 2s</span></div>
             </div>
-            <h2 class="font-['Space_Grotesk'] font-extrabold text-4xl text-gray-900 dark:text-white tracking-tight">Clincoo</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-3 max-w-xs leading-relaxed">Ruang kerja untuk membangun, mendeploy, dan berkolaborasi — semuanya dalam satu tempat.</p>
+            <h2 class="font-bold text-4xl text-[var(--fg)] tracking-tight">Clincoo</h2>
+            <p class="text-[.95rem] text-[var(--mut)] mt-3 max-w-xs leading-relaxed">Ruang kerja untuk membangun, mendeploy, dan berkolaborasi — semuanya dalam satu tempat.</p>
             <div class="flex items-center justify-center gap-2 mt-6">
                 <span class="chip">Build</span>
                 <span class="chip">Deploy</span>
@@ -327,13 +353,13 @@
             <!-- Sistem Modal -->
     <div id="system-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
         <div class="absolute inset-0 bg-black/40 dark:bg-black/70 backdrop-blur-sm" onclick="closeModal()"></div>
-        <div class="bg-white dark:bg-[#111111] rounded-2xl p-6 w-full max-w-sm relative z-10 shadow-2xl border border-gray-100 dark:border-white/10 animate-fade-in text-center">
+        <div class="bg-[var(--bg)] rounded-3xl p-6 w-full max-w-sm relative z-10 shadow-2xl border border-[var(--line)] animate-fade-in text-center">
             <div id="modal-icon-wrap" class="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4 mx-auto">
                 <i data-lucide="check-circle" class="w-6 h-6"></i>
             </div>
-            <h3 id="modal-title" class="text-lg font-bold text-gray-900 dark:text-white mb-2"></h3>
-            <p id="modal-message" class="text-sm text-gray-500 dark:text-gray-400 mb-7 leading-relaxed"></p>
-            <button onclick="closeModal()" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl font-bold text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-all shadow-sm active:scale-[0.98]">Tutup</button>
+            <h3 id="modal-title" class="text-lg font-bold text-[var(--fg)] mb-2"></h3>
+            <p id="modal-message" class="text-sm text-[var(--mut)] mb-7 leading-relaxed"></p>
+            <button onclick="closeModal()" class="btn p w-full">Tutup</button>
         </div>
     </div>
 
@@ -439,7 +465,30 @@
             });
         }
 
+        // State loading tombol login: cegah klik ganda + beri umpan balik
+        function setOAuthBusy(provider) {
+            document.querySelectorAll('[onclick^="startOAuth"]').forEach(function (b) {
+                b.disabled = true;
+                if (b.getAttribute('onclick').indexOf("'" + provider + "'") !== -1) {
+                    b.setAttribute('aria-busy', 'true');
+                    b.dataset.html = b.innerHTML;
+                    var svg = b.querySelector('svg');
+                    if (svg) svg.outerHTML = '<span class="loader-btn" aria-hidden="true"></span>';
+                }
+            });
+        }
+        function resetOAuthButtons() {
+            document.querySelectorAll('[onclick^="startOAuth"]').forEach(function (b) {
+                b.disabled = false;
+                b.removeAttribute('aria-busy');
+                if (b.dataset.html) { b.innerHTML = b.dataset.html; delete b.dataset.html; }
+            });
+        }
+        // Tombol "Kembali" browser (bfcache) -> pulihkan tombol
+        window.addEventListener('pageshow', function (e) { if (e.persisted) resetOAuthButtons(); });
+
         function startOAuth(provider) {
+            setOAuthBusy(provider);
             const redirectUri = oauthRedirectUri();
             // State acak per sesi — cegah serangan login-CSRF (callback jahat memaksa
             // korban login ke akun penyerang). Callback harus mengembalikan state ini.
@@ -465,6 +514,7 @@
                             '&response_type=code&scope=openid%20email%20profile&state=' + st + '&prompt=select_account';
                     })
                     .catch(err => {
+                        resetOAuthButtons();
                         // [11 Okt] server deployment sedang ditingkatkan (config OAuth tidak terbaca):
                         // arahkan SEKALI ke halaman tunggu + game offline; halaman itu otomatis kembali
                         // ke Clincoo begitu sistem normal. Jangan loop: pakai penanda sesi.
