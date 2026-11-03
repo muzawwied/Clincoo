@@ -1,5 +1,22 @@
 # Clincoo — robots.txt
 User-agent: *
 Allow: /
+Allow: /templates
+Allow: /legal
+Allow: /demo
+
+# Area aplikasi (wajib login) & endpoint API tidak untuk diindeks mesin pencari
+Disallow: /akun
+Disallow: /proyek
+Disallow: /auth
+Disallow: /domain
+Disallow: /integrasi
+Disallow: /pay
+Disallow: /db-gateway
+Disallow: /mcp-server
+Disallow: /tools
+Disallow: /api/
+# URL dengan parameter (mis. ?next=) tidak perlu diindeks
+Disallow: /*?*
 
 Sitemap: https://app.clincoo.buzz/sitemap.xml
