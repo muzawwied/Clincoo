@@ -1065,10 +1065,50 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         wsUploadPump();
       });
     }
+    /* [3 Nov] UNDUH BERTAHAP untuk berkas besar. Dulu seluruh isi diminta dalam
+       SATU respons (content=1) — untuk berkas puluhan MB JSON-nya melewati batas
+       memori/CPU Worker sehingga berkas gagal tampil di browser dan terlihat
+       "hilang" padahal tersimpan. Sekarang potongan diambil 10 per permintaan
+       (maks 15MB) lalu digabung di klien. */
+    async function wsFetchBigChunks(pid, path) {
+      var from = 0, total = null, parts = [], guard = 0;
+      while ((total === null || from < total) && guard++ < 2000) {
+        var r = await fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&path=' + encodeURIComponent(path) + '&chunks=1&from=' + from + '&count=10', { headers: wsAuthHeaders() });
+        if (!r.ok) return null;
+        var d = await r.json();
+        var got = (d && d.chunks) || [];
+        total = Number((d && d.total_chunks) || 0);
+        if (!got.length) break;
+        for (var i = 0; i < got.length; i++) parts.push(got[i]);
+        from += got.length;
+      }
+      if (!parts.length) return null;
+      return parts.join('');
+    }
     async function wsCloudFetchBig(path) {
       const pid = wsProjectId();
       if (!pid) return null;
       try {
+        // berkas besar -> gabungkan potongan (hindari satu respons raksasa)
+        try {
+          const mr = await fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&meta=1', { headers: wsAuthHeaders() });
+          if (mr.ok) {
+            const md = await mr.json();
+            const list = (md && (md.files || md.rows)) || [];
+            const row = Array.isArray(list) ? list.find(function (x) { return x && x.path === path; }) : null;
+            if (row && Number(row.is_big)) {
+              const b64 = await wsFetchBigChunks(pid, path);
+              if (b64) {
+                const isi = wsB64Decode(b64);
+                const got = new Blob([isi || '']).size;
+                if (Number(row.size) > 0 && got < Number(row.size) * 0.98) {
+                  try { addNotification('Workspace', '⚠ Isi berkas ' + path + ' di cloud tidak lengkap (' + wsBytesLabel(got) + ' dari ' + wsBytesLabel(Number(row.size)) + ') — silakan unggah ulang berkas ini.'); } catch (e) {}
+                }
+                return { content: isi, size: Number(row.size) || 0 };
+              }
+            }
+          }
+        } catch (e) {}
         const res = await fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&path=' + encodeURIComponent(path) + '&content=1', { headers: wsAuthHeaders() });
         if (!res.ok) return null;
         const d = await res.json();

@@ -1109,10 +1109,26 @@ async function editorCloudSaveBig(path,content){
   }
   return {ok:true};
 }
+/* [3 Nov] unduh bertahap: potongan 10x per permintaan, gabung di klien —
+   supaya berkas besar tidak gagal tampil karena satu respons raksasa. */
+async function editorFetchChunks(path){
+  let from=0,total=null,parts=[],guard=0;
+  while((total===null||from<total)&&guard++<2000){
+    const r=await fetch(WS_API+'?project_id='+encodeURIComponent(LINK_PID)+'&path='+encodeURIComponent(path)+'&chunks=1&from='+from+'&count=10',{headers:ccAuthHeaders()});
+    if(!r.ok)return null;
+    const d=await r.json();const got=(d&&d.chunks)||[];total=Number((d&&d.total_chunks)||0);
+    if(!got.length)break;for(const c of got)parts.push(c);from+=got.length;
+  }
+  return parts.length?parts.join(''):null;
+}
 async function editorCloudFetchBig(path){
   if(!LINK_PID)return null;
   if(bigFileCache[path]!==undefined)return {content:bigFileCache[path]};
   try{
+    try{
+      const b64=await editorFetchChunks(path);
+      if(b64){const isi=wsB64DecodeEditor(b64);bigFileCache[path]=isi;return {content:isi};}
+    }catch(e){}
     const res=await fetch(WS_API+'?project_id='+encodeURIComponent(LINK_PID)+'&path='+encodeURIComponent(path)+'&content=1',{headers:ccAuthHeaders()});
     if(!res.ok)return null;
     const d=await res.json();
