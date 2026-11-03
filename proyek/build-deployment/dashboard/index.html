@@ -749,6 +749,21 @@
             const prep = await apiFetchT('/deploy', { method: 'POST', body: JSON.stringify(_b) }, 90000);
             const jwt = prep.jwt, patch = prep.patch || {}, files = prep.files || [];
             if (!files.length) throw new Error('Workspace proyek masih kosong — tidak ada file untuk dideploy.');
+            // [3 Nov] Cloudflare Pages menolak aset > 25MB per berkas. Tanpa pemeriksaan
+            // ini, deploy gagal dengan pesan samar padahal workspace sendiri kini
+            // menerima berkas sampai 100MB. Gagal cepat + sebut berkasnya.
+            try {
+                const BATAS_ASET = 25 * 1024 * 1024;
+                const kebesaran = files.filter(function (f) { return Number(f && f.size) > BATAS_ASET; });
+                if (kebesaran.length) {
+                    const nama = kebesaran.slice(0, 3).map(function (f) {
+                        return f.path + ' (' + (Number(f.size) / 1048576).toFixed(1) + 'MB)';
+                    }).join(', ');
+                    throw new Error('Tidak bisa dipublikasikan: ' + kebesaran.length + ' berkas melebihi 25MB per aset — ' + nama +
+                        (kebesaran.length > 3 ? ', dll' : '') + '. Batas ini dari Cloudflare Pages, bukan dari workspace. ' +
+                        'Pindahkan berkas besar itu ke hosting file (Drive/YouTube/atau tautan luar) dan pakai tautannya di halaman.');
+                }
+            } catch (eGuard) { if (eGuard && /Tidak bisa dipublikasikan/.test(eGuard.message || '')) throw eGuard; }
             const setPhaseSrv = function (t) { return apiFetchT('/deploy', { method: 'POST', body: JSON.stringify({ project_id: pid(), action: 'phase', text: t }) }, 30000).catch(function () {}); };
             // 1) konten file kecil diambil per-halaman (~2.5MB/request) supaya server tetap ringan
             const smalls = new Map();
