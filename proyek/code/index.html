@@ -1565,7 +1565,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         wsDirtySet(false);
         wsCloudFailNotified = false;
         wsDiag('push_ok', files.length + ' file tersinkron');
-        wsToast('✓ Tersimpan ke cloud (' + files.length + ' file) — aman menutup halaman.');
+        /* [3 Nov] toast sukses 'tersimpan ke cloud' dihapus sesuai permintaan — cukup diindikasikan status simpan, tanpa notifikasi menempel */
         try { Object.keys(wsRestorePaths).forEach(function (p) { if (!wsKnownDeleted[p]) delete wsRestorePaths[p]; }); } catch (e) {}
         wsPushDone();
       })().catch(function (err) {
@@ -1599,7 +1599,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         e.returnValue = 'Masih ada ' + (wsUploadRunning + wsUploadQ.length) + ' berkas yang sedang diunggah. Yakin keluar?';
       } else if (wsDirtyIs()) {
         e.preventDefault();
-        e.returnValue = 'Masih menyimpan perubahan ke cloud. Tunggu toast "✓ Tersimpan" dulu. Yakin keluar?';
+        e.returnValue = 'Masih menyimpan perubahan ke cloud. Tunggu indikator simpan selesai dulu. Yakin keluar?';
       }
     });
     document.addEventListener('visibilitychange', function() {
