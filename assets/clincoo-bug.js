@@ -56,6 +56,7 @@
   // ---- MODE UTAMA (halaman induk) ----
   const add = (level, msgRaw) => {
     let msg = String(msgRaw == null ? '' : msgRaw);
+    if (derau(msg)) return; // derau CDN/pelacak tidak dicatat
     if (msg.length > 1500) msg = msg.slice(0, 1497) + '...';
     const last = logs[logs.length - 1];
     if (last && last.level === level && last.msg === msg) { last.n = (last.n || 1) + 1; last.t = new Date().toLocaleTimeString('id-ID', { hour12: false }); persistSoon(); if (uiReady) render(); return; }
@@ -79,12 +80,18 @@
   // [21 Okt] muat log tersimpan (bertahan lintas reload)
   try {
     const saved = JSON.parse(localStorage.getItem(storeKey) || '[]');
-    if (Array.isArray(saved)) saved.slice(-40).forEach((l) => logs.push({ t: l.time || '', level: l.level || 'error', msg: l.message || '' }));
+    if (Array.isArray(saved)) saved.slice(-40).forEach((l) => { if (!derau(l.message)) logs.push({ t: l.time || '', level: l.level || 'error', msg: l.message || '' }); });
   } catch (_) {}
   // [21 Okt] serap log yang tertangkap SEBELUM widget jalan (snippet head via middleware)
   try {
-    (window.__ccBugEarlyLogs || []).forEach((l) => logs.push({ t: l.time || '', level: l.level || 'error', msg: (l.early ? '[awal] ' : '') + (l.message || '') }));
+    (window.__ccBugEarlyLogs || []).forEach((l) => { if (!derau(l.message)) logs.push({ t: l.time || '', level: l.level || 'error', msg: (l.early ? '[awal] ' : '') + (l.message || '') }); });
   } catch (_) {}
+
+  /* [3 Nov] Derau pihak ketiga disembunyikan dari laporan: peringatan CDN (Tailwind)
+     dan kegagalan muat pelacak (googletagmanager/gtag) bukan bug aplikasi, tapi
+     selalu ikut terkirim dan menutupi error yang sebenarnya. */
+  const ABAIKAN = /cdn\.tailwindcss\.com|tailwindcss\.com|googletagmanager\.com|google-analytics\.com|gtag\/js|googleadservices|doubleclick\.net|clarity\.ms|hotjar/i;
+  const derau = (m) => { try { return !!m && ABAIKAN.test(String(m)); } catch (e) { return false; } };
 
   const oldErr = console.error.bind(console);
   console.error = (...a) => { try { add('error', a.map(toText).join(' ')); } catch (_) {} return oldErr(...a); };
