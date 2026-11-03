@@ -82,8 +82,8 @@ export async function wsGuard(db, user, projectId) {
 async function saveFile(db, table, chunksTable, projectId, path, contentStr) {
   const raw = String(contentStr || '');
   const sizeBytes = new TextEncoder().encode(raw).length;
-  if (raw.length > SMALL_MAX_CHARS || sizeBytes > 25 * 1024 * 1024) {
-    if (sizeBytes > 25 * 1024 * 1024) return { error: 'File terlalu besar (maks 25MB): ' + path };
+  if (raw.length > SMALL_MAX_CHARS || sizeBytes > 100 * 1024 * 1024) {
+    if (sizeBytes > 100 * 1024 * 1024) return { error: 'File terlalu besar (maks 100MB): ' + path };
     const s = b64(raw);
     await db.prepare(`INSERT INTO ${table} (project_id, path, content, is_big, size, updated_at) VALUES (?, ?, '', 1, ?, datetime('now'))
       ON CONFLICT(project_id, path) DO UPDATE SET content = '', is_big = 1, size = excluded.size, updated_at = datetime('now')`)

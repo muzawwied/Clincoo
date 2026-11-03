@@ -902,6 +902,10 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       if (b > 1024) return (b / 1024).toFixed(1) + ' KB';
       return b + ' B';
     }
+    /* [3 Nov] batas per berkas dinaikkan 25MB -> 100MB: unggahan dipecah per 400KB
+       sehingga tetap ringan bagi Worker; batas lama membuat berkas besar ditolak
+       diam-diam dan pengguna mengira berkasnya "hilang". */
+    var WS_FILE_MAX = 100 * 1024 * 1024;
     async function wsCloudSaveBig(path, content) {
       const pid = wsProjectId();
       if (!pid) return { ok: false, error: 'File besar memerlukan proyek aktif.' };
@@ -917,7 +921,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       // di antrean tidak pernah diunggah. Sekarang dibungkus dan dilaporkan rapi.
       let totalBytes = 0;
       try { totalBytes = new Blob([content]).size; } catch (e) { totalBytes = String(content || '').length; }
-      if (totalBytes > 25 * 1024 * 1024) return { ok: false, error: 'File melebihi 25MB (batas server) — pecah jadi beberapa berkas kecil.' };
+      if (totalBytes > WS_FILE_MAX) return { ok: false, error: 'Berkas ' + path.split('/').pop() + ' berukuran ' + (totalBytes/1048576).toFixed(1) + 'MB — melewati batas ' + (WS_FILE_MAX/1048576) + 'MB per berkas. Pecah dulu atau simpan di hosting luar.' };
       let b64 = '';
       try { b64 = wsB64Encode(content); } catch (e) {
         return { ok: false, error: 'Gagal menyiapkan isi berkas (' + ((e && e.message) || 'encode error') + '). Coba unggah ulang berkas ini.' };

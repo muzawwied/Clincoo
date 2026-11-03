@@ -31,7 +31,7 @@ const CORS = {
 // ==== Batas penyimpanan ====
 const SMALL_MAX_CHARS = 700_000;        // <= ini: content TEXT biasa satu baris
 const CHUNK_CHARS = 1_500_000;          // ukuran potongan base64 per baris D1 (1,5MB — aman di bawah batas baris 2MB; file 25MB hanya ~23 insert, jauh di bawah limit 50 query/request plan gratis)
-const BIG_MAX_BYTES = 25 * 1024 * 1024; // batas atas file besar (25MB, sama dgn batas aset Cloudflare Pages)
+const BIG_MAX_BYTES = 100 * 1024 * 1024; // batas atas file besar (100MB; unggahan dipecah per 1,5MB per baris D1)
 
 function likeEsc(s) { return String(s).replace(/[\\%_]/g, function (m) { return '\\' + m; }); }
 
@@ -136,7 +136,7 @@ async function saveFile(db, table, chunksTable, projectId, path, contentStr, con
     sizeBytes = new TextEncoder().encode(String(contentStr || '')).length;
   }
   if (isBig && sizeBytes > BIG_MAX_BYTES) {
-    return { error: 'File terlalu besar (maksimal 25MB): ' + path };
+    return { error: 'File terlalu besar (maksimal 100MB): ' + path };
   }
 
   if (!isBig) {
@@ -476,7 +476,7 @@ export async function onRequestPost({ request, env }) {
       } else {
         sizeBytes = new TextEncoder().encode(String(content || '')).length;
       }
-      if (isBig && sizeBytes > BIG_MAX_BYTES) { errors.push('File terlalu besar (maksimal 25MB): ' + path); continue; }
+      if (isBig && sizeBytes > BIG_MAX_BYTES) { errors.push('File terlalu besar (maksimal 100MB): ' + path); continue; }
       if (!contentB64 && !content && String(path).slice(-1) !== '/') {
         // konten kosong tanpa base64 pada file biasa: JANGAN menimpa isi bila baris sudah ada
         // (INSERT OR IGNORE mempertahankan isi lama; kalau belum ada, buat baris penanda)
