@@ -90,7 +90,7 @@
   /* [3 Nov] Derau pihak ketiga disembunyikan dari laporan: peringatan CDN (Tailwind)
      dan kegagalan muat pelacak (googletagmanager/gtag) bukan bug aplikasi, tapi
      selalu ikut terkirim dan menutupi error yang sebenarnya. */
-  const ABAIKAN = /cdn\.tailwindcss\.com|tailwindcss\.com|googletagmanager\.com|google-analytics\.com|gtag\/js|googleadservices|doubleclick\.net|clarity\.ms|hotjar/i;
+  const ABAIKAN = /cdn\.tailwindcss\.com|tailwindcss\.com|googletagmanager\.com|google-analytics\.com|gtag\/js|googleadservices|doubleclick\.net|clarity\.ms|hotjar|googlesyndication\.com|pagead2|adsbygoogle|adservice\.google|amazon-adsystem|taboola|outbrain|criteo|pubmatic|rubiconproject|adnxs|moatads|quantserve|scorecardresearch|facebook\.net\/.*tr|ERR_BLOCKED_BY_CLIENT|net::ERR_BLOCKED|diblokir oleh pemblokir iklan|pemblokir iklan/i;
   const derau = (m) => { try { return !!m && ABAIKAN.test(String(m)); } catch (e) { return false; } };
 
   const oldErr = console.error.bind(console);
