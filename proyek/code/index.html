@@ -1553,15 +1553,21 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
           if (pushResp && pushResp.error) throw new Error(pushResp.error);
         }
         try { wsDropKnownDeletedFromTree(); } catch (e) {}
-        // Verifikasi: jumlah file di cloud == yang dikirim (semua batch benar-benar masuk)
+        // Verifikasi: SEMUA path yang dikirim benar-benar ada di cloud.
+        // [3 Nov FIX laporan "gagal simpan ke cloud: verifikasi gagal"] dulu yang
+        // dibandingkan hanya JUMLAH baris. Itu salah begitu ada path ganda, penanda
+        // folder (path berakhiran "/"), atau cloud menyimpan berkas lain dari sesi
+        // sebelumnya -> jumlah tak pernah sama walau semua berkas sudah masuk, lalu
+        // push diulang terus dan memicu lonjakan penyimpanan. Sekarang dicocokkan
+        // per path.
         const r = await fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&meta=1', { headers: wsAuthHeaders() });
-        if (!r.ok) throw new Error('verifikasi gagal');
+        if (!r.ok) throw new Error('verifikasi gagal (metadata cloud tak terbaca)');
         const d = await r.json();
-        const there = ((d && d.files) || []).length;
-        // [22 Okt] saat non-replace, cloud boleh punya file lebih (yang tak dikenal lokal);
-        // cukup pastikan SEMUA file kiriman kita benar-benar ada.
-        if (__recOk && !keepalive) { if (there !== files.length) throw new Error('verifikasi gagal'); }
-        else if (there < files.length) throw new Error('verifikasi gagal');
+        const adaDiCloud = new Set(((d && d.files) || []).map(function (f) { return String((f && f.path) || ''); }));
+        const belumMasuk = files
+          .map(function (f) { return String((f && f.path) || ''); })
+          .filter(function (pp) { return pp && pp.slice(-1) !== '/' && !adaDiCloud.has(pp); });
+        if (belumMasuk.length) throw new Error('verifikasi gagal (' + belumMasuk.length + ' berkas belum masuk, mis. ' + belumMasuk[0] + ')');
         wsDirtySet(false);
         wsCloudFailNotified = false;
         wsDiag('push_ok', files.length + ' file tersinkron');
@@ -1671,10 +1677,31 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         localStorage.setItem(wsFilesKey(), JSON.stringify(projectFilesData));
         __cacheOk = true;
       } catch (e) {
-        // [22 Okt] dulu hanya console.warn (tidak terlihat user). Kini console.error
-        // (tertangkap widget Bug Beetle) agar kasus kuota penuh jelas terdeteksi.
-        console.error('[Workspace cache] kuota localStorage penuh — isi file diselamatkan langsung ke cloud.');
-        wsDiag('kuota_penuh', 'cache lokal penuh, penyelamatan cloud aktif');
+        // [3 Nov FIX laporan "kuota localStorage penuh" berulang tiap detik] log &
+        // diagnosa hanya sekali per sesi; lalu simpan cache RAMPING (isi berkas besar
+        // tidak ikut ditulis, penanda cloud yang dipakai) supaya cache tidak terus
+        // penuh dan penyelamatan cloud tidak dipanggil berulang-ulang.
+        window.__clincooLsFull = true;
+        if (!window.__wsQuotaLogged) {
+          window.__wsQuotaLogged = true;
+          console.error('[Workspace cache] kuota localStorage penuh — isi file diselamatkan langsung ke cloud.');
+          wsDiag('kuota_penuh', 'cache lokal penuh, penyelamatan cloud aktif');
+        }
+        try {
+          var __ramping = {};
+          Object.keys(projectFilesData || {}).forEach(function (fk) {
+            var arr = projectFilesData[fk];
+            if (!Array.isArray(arr)) { __ramping[fk] = arr; return; }
+            __ramping[fk] = arr.map(function (it) {
+              if (it && it.type === 'file' && typeof it.content === 'string' && it.content.length > 150000) {
+                return Object.assign({}, it, { cloud: true, cloudSize: it.cloudSize || it.content.length, content: '' });
+              }
+              return it;
+            });
+          });
+          localStorage.setItem(wsFilesKey(), JSON.stringify(__ramping));
+          __cacheOk = true; // cache ramping berhasil: tidak perlu penyelamatan tiap simpan
+        } catch (e2) { __cacheOk = false; }
         if (!window.__wsQuotaToasted) { window.__wsQuotaToasted = true; wsToast('⚠ Memori browser penuh — file diselamatkan langsung ke cloud.'); }
       }
       if (!__cacheOk || (window.__clincooLsFull && filesLenNow() > 0)) wsCloudRescueUpload();
