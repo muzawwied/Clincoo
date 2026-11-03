@@ -784,6 +784,9 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
     var wsKnownDeleted = {};
     var wsRestorePaths = {};
     var wsLastSavedPaths = null;
+    // [3 Nov] path yang dibuat/diunggah user pada sesi ini (satu-satunya yang boleh
+    // menghapus tombstone server). Mencegah file hasil sinkron/merge ikut "restore".
+    var wsMadeByUser = {};
     function wsTrackKnownDeleted(list) {
       (Array.isArray(list) ? list : []).forEach(function (p) { wsKnownDeleted[String(p)] = true; delete wsRestorePaths[String(p)]; });
     }
@@ -908,8 +911,17 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       // (backend 8 Okt sudah mendukung chunk_b64/chunk_idx/total_bytes; chunk
       // pertama otomatis mereset baris + potongan lama di server, jadi ulang dari
       // nol aman). rev cloud hanya dinaikkan di chunk terakhir (tidak ribut).
-      const b64 = wsB64Encode(content);
-      const totalBytes = new Blob([content]).size;
+      // [FIX "upload kebanyakan lalu hilang"] btoa bisa MELEMPAR RangeError untuk
+      // string sangat besar / karakter tak terduga. Dulu lemparan ini membatalkan
+      // promise job, dan wsUploadPump (tanpa catch) berhenti permanen: sisa berkas
+      // di antrean tidak pernah diunggah. Sekarang dibungkus dan dilaporkan rapi.
+      let totalBytes = 0;
+      try { totalBytes = new Blob([content]).size; } catch (e) { totalBytes = String(content || '').length; }
+      if (totalBytes > 25 * 1024 * 1024) return { ok: false, error: 'File melebihi 25MB (batas server) — pecah jadi beberapa berkas kecil.' };
+      let b64 = '';
+      try { b64 = wsB64Encode(content); } catch (e) {
+        return { ok: false, error: 'Gagal menyiapkan isi berkas (' + ((e && e.message) || 'encode error') + '). Coba unggah ulang berkas ini.' };
+      }
       // [19 Okt, arahan pemilik] potongan DIPERKECIL 700KB -> 400KB: CPU per
       // request Worker free plan turun hampir setengah — potongan besar adalah
       // penyebab utama upload "kadang gagal kadang berhasil" (JSON.parse besar
@@ -975,10 +987,23 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       while (wsUploadRunning < wsUploadMax && wsUploadQ.length > 0) {
         (function (job) {
           wsUploadRunning++;
-          job.run().then(function (res) {
+          // [3 Nov FIX "upload banyak file sisanya hilang"] job.run() bisa REJECT
+          // (btoa/RangeError pada file raksasa, error jaringan, dsb). Dulu tanpa
+          // .catch: wsUploadRunning tak pernah turun -> pompa antrean MACET
+          // SELAMANYA, berkas-berkas berikutnya tidak pernah diunggah dan tampak
+          // "hilang" tanpa pesan. Sekarang kegagalan selalu menutup job + lapor.
+          var finish = function (res) {
             wsUploadRunning--;
-            job.done(res);
-            wsUploadPump();
+            try { job.done(res); } catch (e) {}
+            try { wsUploadPump(); } catch (e2) {}
+          };
+          var runP;
+          try { runP = job.run(); } catch (err) { runP = Promise.reject(err); }
+          Promise.resolve(runP).then(finish, function (err) {
+            var msg = (err && err.message) ? err.message : String(err || 'gagal');
+            try { console.error('[Workspace upload] job gagal: ' + msg); } catch (e) {}
+            try { wsDiag('upload_job_gagal', msg.slice(0, 160)); } catch (e) {}
+            finish({ ok: false, error: msg });
           });
         })(wsUploadQ.shift());
       }
@@ -1305,6 +1330,10 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
     // tidak pernah menghilangkan data karena push ke cloud tetap jalan + retry + verifikasi.
     let wsCloudTimer = null;
     let wsCloudFailNotified = false;
+    // [FIX "file baru hilang saat upload banyak"] push tidak boleh tumpang tindih:
+    // push A (potret lama) yang selesai terakhir dengan replace:true bisa menghapus
+    // berkas yang baru dibuat setelah potret A diambil.
+    let wsPushBusy = false, wsPushQueued = false, wsPushWatchdog = null;
     function wsCloudPushSchedule() {
       const pid = wsProjectId();
       if (!pid) return;
@@ -1428,6 +1457,20 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
     async function wsCloudPushNow(attempt, keepalive) {
       const pid = wsProjectId();
       if (!pid) return;
+      if (wsPushBusy && !keepalive) { wsPushQueued = true; return; }
+      wsPushBusy = true;
+      // pengaman: kalau push menggantung tanpa batas, kunci dilepas agar antrean
+      // berikutnya tidak ikut macet.
+      try { clearTimeout(wsPushWatchdog); } catch (e) {}
+      wsPushWatchdog = setTimeout(function () {
+        wsPushBusy = false;
+        if (wsPushQueued) { wsPushQueued = false; try { wsCloudPushNow(0); } catch (e) {} }
+      }, 60000);
+      var wsPushDone = function () {
+        try { clearTimeout(wsPushWatchdog); } catch (e) {}
+        wsPushBusy = false;
+        if (wsPushQueued) { wsPushQueued = false; setTimeout(function () { wsCloudPushNow(0); }, 300); }
+      };
       // [16 Okt] bila bukan flush mati-tab: pastikan push tidak menghapus file
       // cloud yang belum dikenal tab ini. Flush mati-tab (keepalive) dilewati demi
       // kecepatan; dirty flag memastikan push ulang + rekonsiliasi saat dibuka lagi.
@@ -1480,9 +1523,11 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         wsDiag('push_ok', files.length + ' file tersinkron');
         wsToast('✓ Tersimpan ke cloud (' + files.length + ' file) — aman menutup halaman.');
         try { Object.keys(wsRestorePaths).forEach(function (p) { if (!wsKnownDeleted[p]) delete wsRestorePaths[p]; }); } catch (e) {}
+        wsPushDone();
       })().catch(function (err) {
         // [22 Okt, laporan owner: "console ga nangkep masalahnya"] kegagalan push
         // WAJIB terlihat: log lengkap ke console (tertangkap widget) + notifikasi.
+        try { wsPushDone(); } catch (e0) {}
         const errMsg = (err && err.message) ? String(err.message) : 'tidak diketahui';
         try { console.error('[Workspace sinkron] gagal simpan ke cloud (percobaan ' + (attempt + 1) + '/3): ' + errMsg); } catch (e) {}
         wsDiag('push_gagal', 'p' + (attempt + 1) + ': ' + errMsg);
@@ -1596,8 +1641,20 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         Object.keys(projectFilesData || {}).forEach(function (fk) {
           (projectFilesData[fk] || []).forEach(function (it) { if (it && it.type === 'file' && it.path) nowPaths[String(it.path)] = true; });
         });
+        // [3 Nov FIX "file yang dihapus muncul lagi" akar kedua] Dulu saat halaman
+        // baru dibuka wsLastSavedPaths masih null -> SEMUA path dianggap "baru" ->
+        // ditandai restore_paths -> push mengirim restore_paths berisi semua file,
+        // server menghapus SEMUA tombstone-nya. Akibatnya file yang baru dihapus di
+        // perangkat lain (cache lokal masih basi) hidup lagi permanen. Sekarang:
+        // simpanan pertama hanya mencatat baseline, TIDAK menandai apa pun restore.
+        const __hadBaseline = wsLastSavedPaths !== null;
         const __prevSaved = wsLastSavedPaths || {};
-        Object.keys(nowPaths).forEach(function (p) { if (!__prevSaved[p]) { wsRestorePaths[p] = true; delete wsKnownDeleted[p]; } });
+        if (__hadBaseline) {
+          Object.keys(nowPaths).forEach(function (p) {
+            if (!__prevSaved[p] && (wsMadeByUser[p] || wsKnownDeleted[p])) { wsRestorePaths[p] = true; delete wsKnownDeleted[p]; }
+          });
+        }
+        Object.keys(__prevSaved).forEach(function (p) { delete wsMadeByUser[p]; });
         wsLastSavedPaths = nowPaths;
       } catch (e) {}
       wsCloudPushSchedule();
@@ -2367,6 +2424,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
 
             const filePath = currentFolderPath === 'root' ? finalName : currentFolderPath + '/' + finalName;
             projectFilesData[currentFolderPath].push({ type: 'file', name: finalName, size: sizeStr, path: filePath, content: content });
+            try { wsMadeByUser[String(filePath)] = true; } catch (eMu) {}
             // [21 Okt fix: tombstone menyapu file manual baru] path baru = sengaja dibuat ulang bila path-nya pernah ter-tombstone
             try { wsRestorePaths[String(filePath)] = true; } catch (e) {}
           }
@@ -2450,8 +2508,25 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       closeConfirmDelete();
       if(!activeItemName) return;
 
-      const items = projectFilesData[currentFolderPath] || [];
-      const itemIndex = items.findIndex(i => i.name === activeItemName);
+      let items = projectFilesData[currentFolderPath] || [];
+      let itemIndex = items.findIndex(i => i.name === activeItemName);
+      // [FIX "hapus tidak menghapus"] item bisa tidak ada di folder aktif
+      // (path folder sudah berubah / daftar dari cache lama). Dulu itemIndex=-1
+      // membuat fungsi ini berhenti DIAM: tidak dihapus lokal, tidak dikirim
+      // ke server. Sekarang cari di SEMUA folder berdasarkan nama, dan hanya
+      // pakai folder itu bila ketemu tepat satu kandidat.
+      if (itemIndex === -1) {
+        const found = [];
+        Object.keys(projectFilesData || {}).forEach(function (fk) {
+          const arr = projectFilesData[fk];
+          if (!Array.isArray(arr)) return;
+          arr.forEach(function (it, idx) { if (it && it.name === activeItemName) found.push({ fk: fk, idx: idx, it: it }); });
+        });
+        if (found.length === 1) {
+          items = projectFilesData[found[0].fk];
+          itemIndex = found[0].idx;
+        }
+      }
       let item = null, delPaths = [];
       if(itemIndex !== -1) {
         item = items[itemIndex];
@@ -2826,6 +2901,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       } else {
         uploadingItem = { type: 'file', name: filePath.split('/').pop(), size: sizeStr, path: filePath, content: '', cloud: true, cloudSize: cloudSize, uploading: true };
         projectFilesData[targetPath].push(uploadingItem);
+        try { wsMadeByUser[String(filePath)] = true; } catch (eMu) {}
       }
       if (targetPath === currentFolderPath || targetPath.startsWith(currentFolderPath)) renderFileList();
       // [21 Okt fix: upload dihapus tombstone] penanda file besar = recreate sengaja
@@ -2889,6 +2965,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
           projectFilesData[targetPath][existingIndex].size = sizeStr;
         } else {
           projectFilesData[targetPath].push({ type: 'file', name: file.name, size: sizeStr, path: filePath, content: content });
+          try { wsMadeByUser[String(filePath)] = true; } catch (eMu) {}
         }
         // [21 Okt fix: upload dihapus tombstone] upload = sengaja membuat ulang path yang pernah ter-tombstone
         try { wsRestorePaths[String(filePath)] = true; delete wsKnownDeleted[String(filePath)]; } catch (e) {}

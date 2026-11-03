@@ -584,6 +584,7 @@ export async function onRequestDelete({ request, env }) {
     const T = await getProjectTables(db, projectId);
     const chunksTable = await ensureChunksTable(db, projectId);
     await ensureWsDeletedTable(db);
+    let deletedPaths = [];
     if (path && url.searchParams.get('prefix') === '1') {
       // Record every known descendant and the folder itself before deleting rows.
       const rows = await db.prepare(
@@ -591,6 +592,7 @@ export async function onRequestDelete({ request, env }) {
       ).bind(projectId, path, likeEsc(path) + '/%').all().catch(() => null);
       const affected = rows && Array.isArray(rows.results) ? rows.results.map(r => String(r.path)) : [];
       if (!affected.includes(path)) affected.push(path);
+      deletedPaths = affected;
       await db.batch(affected.map(p => db.prepare(
         "INSERT INTO ws_deleted_paths (project_id, path, deleted_at) VALUES (?, ?, datetime('now')) ON CONFLICT(project_id, path) DO UPDATE SET deleted_at = datetime('now')"
       ).bind(projectId, p)));
@@ -600,11 +602,13 @@ export async function onRequestDelete({ request, env }) {
       if (rows && Array.isArray(rows.results)) await deleteChunks(db, chunksTable, rows.results.map(r => r.path));
     } else if (path) {
       await addDeletedPath(db, projectId, path);
+      deletedPaths = [path];
       await db.prepare(`DELETE FROM ${T.files} WHERE project_id = ? AND path = ?`).bind(projectId, path).run();
       await deleteChunks(db, chunksTable, [path]);
     } else {
       const rows = await db.prepare(`SELECT path FROM ${T.files} WHERE project_id = ?`).bind(projectId).all().catch(() => null);
       const paths = rows && Array.isArray(rows.results) ? rows.results.map(r => String(r.path)) : [];
+      deletedPaths = paths;
       if (paths.length) await db.batch(paths.map(p => db.prepare(
         "INSERT INTO ws_deleted_paths (project_id, path, deleted_at) VALUES (?, ?, datetime('now')) ON CONFLICT(project_id, path) DO UPDATE SET deleted_at = datetime('now')"
       ).bind(projectId, p)));
@@ -613,7 +617,11 @@ export async function onRequestDelete({ request, env }) {
     }
     try { await db.prepare('DELETE FROM project_files WHERE project_id = ?').bind(projectId).run(); } catch(e) {}
     await bumpWsRev(db, projectId);
-    return json({ success: true });
+    // [FIX "hapus tidak menghapus"] kirim balik path yang benar-benar dihapus
+    // supaya klien bisa menandai tombstone untuk path yang tidak diketahuinya
+    // (mis. isi folder yang dihapus dari perangkat lain). Dulu respons hanya
+    // {success:true} sehingga klien menganggap tidak ada yang terhapus.
+    return json({ success: true, deleted_paths: deletedPaths });
   } catch (err) {
     return json({ error: err.message }, 500);
   }
