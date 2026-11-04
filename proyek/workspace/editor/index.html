@@ -1204,7 +1204,7 @@ function loadProject(){
       // ada bikin tiap proyek baru mewarisi file proyek lain (biang preview antar tab ngecache).
       if(!raw){raw=localStorage.getItem('clincoo_workspace_files');if(raw){try{localStorage.removeItem('clincoo_workspace_files');}catch(e0){}}}
       if(raw){const d=JSON.parse(raw);const r=wsToFlat(d);linkedEmptyFolders=r.emptyFolders;
-        try{localStorage.setItem(wsFilesKey(),raw);}catch(e){}
+        try{localStorage.removeItem(wsFilesKey());}catch(e){}
         return r.files;}
     }catch(e){}
     linkedEmptyFolders=[];
@@ -1256,9 +1256,9 @@ function srvRenamePath(from,to){
   }catch(e){}
 }
 function persist(){
-  try{localStorage.setItem('clincoo_editor_project_'+(LINK_PID||'global'),JSON.stringify(project));}catch(e){} // cache lokal best-effort; cloud = sumber utama
+  try{localStorage.removeItem('clincoo_editor_project_'+(LINK_PID||'global'));localStorage.removeItem('clincoo_editor_project');}catch(e){} // [4 Nov, minta owner] isi berkas hanya di cloud, tidak disimpan di perangkat
   if(LINK_PID){
-    try{localStorage.setItem(wsFilesKey(),JSON.stringify(flatToWs()));}catch(e){} // kuota penuh tidak apa-apa: data aman di cloud
+    try{localStorage.removeItem(wsFilesKey());}catch(e){} // isi berkas hanya di cloud
     wsDirtySet(true);
     linkedCloudPushSchedule();
   }
@@ -1336,8 +1336,8 @@ function linkedCloudPushNow(attempt,keepalive){
           });
           if(changed){
             try{
-              localStorage.setItem('clincoo_editor_project_'+(LINK_PID||'global'),JSON.stringify(project));
-              localStorage.setItem(wsFilesKey(),JSON.stringify(flatToWs()));
+              try{localStorage.removeItem('clincoo_editor_project_'+(LINK_PID||'global'));}catch(e){}
+              localStorage.removeItem(wsFilesKey());
             }catch(e){}
             renderTree();
           }
@@ -1397,7 +1397,7 @@ function linkedCloudPull(){
         }
         project[f.path]=f.content||'';
       });
-      try{localStorage.setItem(wsFilesKey(),JSON.stringify(flatToWs()));}catch(e){}
+      try{localStorage.removeItem(wsFilesKey());}catch(e){}
       renderAll();openDefaultTabs();
       toast('Berkas proyek ditarik dari cloud ✦ '+files.length+' berkas');
     }).catch(()=>{});
@@ -1413,7 +1413,7 @@ window.addEventListener('message',function(e){
       const r=wsToFlat(d.files);
       linkedEmptyFolders=r.emptyFolders;
       project=r.files;
-      try{localStorage.setItem(wsFilesKey(),JSON.stringify(d.files));}catch(err){}
+      try{localStorage.removeItem(wsFilesKey());}catch(err){}
       persist();renderAll();openDefaultTabs();
       toast('Berkas proyek diterima: '+Object.keys(project).length+' berkas');
     }
@@ -1462,7 +1462,7 @@ function cloudFirstSync(fromFocus){
       Object.keys(project).forEach(p=>{if(models[p]){models[p].dispose();delete models[p];}if(tabs.includes(p))closeTab(p);delete project[p];});
       linkedEmptyFolders=r.emptyFolders;
       Object.keys(r.files).forEach(p=>{project[p]=r.files[p];});
-      try{localStorage.setItem(wsFilesKey(),JSON.stringify(flatToWs()));}catch(e){}
+      try{localStorage.removeItem(wsFilesKey());}catch(e){}
       renderAll();openDefaultTabs();setCloudDot(true);
     }).catch(()=>{});
 }
@@ -3011,7 +3011,8 @@ function toggleTheme(){
   toast('Tema: '+(light?'Terang ☀':'Gelap 🌙'));
 }
 /* Status inline: pengganti toast — pesan tampil di status bar, tanpa popup */
-function toast(msg){
+function toast(msg){ /* [4 Nov, minta owner] toast dimatikan di Workspace */ try{if(msg)console.info('[Workspace] '+String(msg));}catch(e){} return; }
+function toastMati(msg){
   const s=$('#sb-status');
   if(!s)return;
   s.textContent=msg;

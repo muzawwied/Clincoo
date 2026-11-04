@@ -770,6 +770,9 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       try { pid = (sessionStorage.getItem('clincoo_tab_project_id')||localStorage.getItem('clincoo_current_project_id')); } catch (e) {}
       return 'clincoo_workspace_files_' + (pid ? String(pid) : 'global');
     }
+    /* [4 Nov, minta owner] Tidak ada lagi penyimpanan kode di perangkat: cache lama
+       dibersihkan sekali saat halaman dibuka, sumber tunggal adalah cloud (D1). */
+    try { localStorage.removeItem(wsFilesKey()); localStorage.removeItem('clincoo_editor_project'); } catch (e) {}
 
     // Flag "lokal lebih baru dari cloud": mencegah pull D1 menimpa edit yang belum sempat terkirim.
     // Kunci sama dipakai halaman editor (workspace/editor) supaya guard lintas halaman konsisten.
@@ -800,7 +803,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
           if (it && it.type === 'file' && it.path && wsKnownDeleted[String(it.path)] && !wsRestorePaths[String(it.path)]) { arr.splice(i, 1); changed = true; }
         }
       });
-      if (changed) { try { localStorage.setItem(wsFilesKey(), JSON.stringify(projectFilesData)); } catch (e) {} renderFileList(); }
+      if (changed) { try { localStorage.removeItem(wsFilesKey()); } catch (e) {} renderFileList(); }
       return changed;
     }
     var __wsDirtyMem = null; // [22 Okt] cermin di memori: penyelamat utama
@@ -1281,7 +1284,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
               const mergedStr = JSON.stringify(merged);
               if (mergedStr !== JSON.stringify(projectFilesData)) {
                 projectFilesData = merged;
-                try { localStorage.setItem(wsFilesKey(), mergedStr); } catch (e) {}
+                try { localStorage.removeItem(wsFilesKey()); } catch (e) {}
                 renderFileList();
               }
             }
@@ -1322,7 +1325,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
             const mergedStr = JSON.stringify(merged);
             if (mergedStr !== JSON.stringify(projectFilesData)) {
               projectFilesData = merged;
-              try { localStorage.setItem(wsFilesKey(), mergedStr); } catch (e) {}
+              try { localStorage.removeItem(wsFilesKey()); } catch (e) {}
               renderFileList();
             }
             if (localOnly > 0) {
@@ -1356,7 +1359,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
                 wsCloudPushSchedule();
               } else {
                 projectFilesData = { 'root': [] };
-                try { localStorage.setItem(wsFilesKey(), JSON.stringify({ 'root': [] })); } catch (e) {}
+                try { localStorage.removeItem(wsFilesKey()); } catch (e) {}
                 renderFileList();
               }
             }
@@ -1420,6 +1423,12 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
     }
     // [22 Okt] TOAST di layar: kegagalan WAJIB kelihatan tanpa buka lonceng notifikasi
     function wsToast(msg) {
+      /* [4 Nov, minta owner] Semua toast Workspace dimatikan. Pesan tetap dicatat
+         ke console agar diagnosis tidak hilang. */
+      try { if (msg) console.info('[Workspace] ' + String(msg)); } catch (e) {}
+      return;
+    }
+    function wsToastMati(msg) {
       try {
         let t = document.getElementById('ws-diag-toast');
         if (!t) {
@@ -1493,7 +1502,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         const merged = wsMergeCloudIntoLocal(files);
         try { wsDropKnownDeletedFromTree(); } catch (e) {}
         projectFilesData = merged;
-        try { localStorage.setItem(wsFilesKey(), JSON.stringify(projectFilesData)); } catch (e2) {}
+        try { localStorage.removeItem(wsFilesKey()); } catch (e2) {}
         renderFileList();
         return true;
       } catch (e) { return false; }
@@ -1672,11 +1681,11 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       // sumber utama ada di cloud (D1) via wsCloudPushSchedule + [15 Okt] penyelamatan
       // isi langsung ke cloud (wsCloudRescueUpload) supaya file tidak pernah
       // hanya hidup di memori.
-      var __cacheOk = false;
-      try {
-        localStorage.setItem(wsFilesKey(), JSON.stringify(projectFilesData));
-        __cacheOk = true;
-      } catch (e) {
+      /* [4 Nov, minta owner] Isi berkas TIDAK disimpan di perangkat lagi — semua
+         ke cloud (D1). Cache lokal dibersihkan supaya kode tidak tertinggal. */
+      var __cacheOk = true;
+      try { localStorage.removeItem(wsFilesKey()); } catch (e) {}
+      if (false) {
         // [3 Nov FIX laporan "kuota localStorage penuh" berulang tiap detik] log &
         // diagnosa hanya sekali per sesi; lalu simpan cache RAMPING (isi berkas besar
         // tidak ikut ditulis, penanda cloud yang dipakai) supaya cache tidak terus
@@ -1699,7 +1708,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
               return it;
             });
           });
-          localStorage.setItem(wsFilesKey(), JSON.stringify(__ramping));
+          localStorage.removeItem(wsFilesKey());
           __cacheOk = true; // cache ramping berhasil: tidak perlu penyelamatan tiap simpan
         } catch (e2) { __cacheOk = false; }
         if (!window.__wsQuotaToasted) { window.__wsQuotaToasted = true; wsToast('⚠ Memori browser penuh — file diselamatkan langsung ke cloud.'); }
@@ -1915,7 +1924,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         const arr = projectFilesData[fk] || [];
         for (let i = arr.length - 1; i >= 0; i--) { const it = arr[i]; if (it && it.type === 'file' && it.emptyBig) arr.splice(i, 1); }
       });
-      try { localStorage.setItem(wsFilesKey(), JSON.stringify(projectFilesData)); } catch (e) {}
+      try { localStorage.removeItem(wsFilesKey()); } catch (e) {}
       setTimeout(function () { try { renderFileList(); } catch (e) {} }, 0);
       try { addNotification('Workspace', bad.length + ' berkas sisa unggahan terputus (' + bad.slice(0, 5).join(', ') + ') otomatis dihapus dari cloud. Upload ulang bila masih diperlukan.'); } catch (e) {}
     }

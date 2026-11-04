@@ -306,7 +306,8 @@ html.embed-mode body{padding-top:76px}
     if (b > 1024) return (b / 1024).toFixed(1) + ' KB';
     return b + ' B';
   }
-  function toast(msg) {
+  function toast(msg) { /* [4 Nov, minta owner] toast dimatikan */ try{if(msg)console.info('[Workspace] '+String(msg));}catch(e){} return; }
+  function toastMati(msg) {
     elToast.textContent = msg;
     elToast.classList.add('show');
     setTimeout(function () { elToast.classList.remove('show'); }, 2000);
@@ -588,11 +589,11 @@ html.embed-mode body{padding-top:76px}
         if (!data[fk].some(function (x) { return x && x.name === item.name; })) data[fk].push(item);
         item._cloudOnly = false;
       }
-      try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) { toast('Gagal: penyimpanan penuh'); return; }
+      /* [4 Nov, minta owner] tidak ada penyimpanan lokal & tanpa toast: langsung cloud */
+      try { localStorage.removeItem(key); } catch (e) {}
       elCode.textContent = item.content || '';
       subLabel();
       cloudPush();
-      toast('Tersimpan');
     });
   }
 
