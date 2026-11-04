@@ -772,7 +772,17 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
     }
     /* [4 Nov, minta owner] Tidak ada lagi penyimpanan kode di perangkat: cache lama
        dibersihkan sekali saat halaman dibuka, sumber tunggal adalah cloud (D1). */
-    try { localStorage.removeItem(wsFilesKey()); localStorage.removeItem('clincoo_editor_project'); } catch (e) {}
+    try {
+      localStorage.removeItem(wsFilesKey());
+      localStorage.removeItem('clincoo_editor_project');
+      // sapu semua cache isi berkas proyek lain (sisa versi lama) supaya ruang
+      // localStorage tidak penuh dan tidak ada kode yang tertinggal di perangkat
+      Object.keys(localStorage).forEach(function (k) {
+        if (k.indexOf('clincoo_workspace_files_') === 0 || k.indexOf('clincoo_editor_project') === 0) {
+          try { localStorage.removeItem(k); } catch (e) {}
+        }
+      });
+    } catch (e) {}
 
     // Flag "lokal lebih baru dari cloud": mencegah pull D1 menimpa edit yang belum sempat terkirim.
     // Kunci sama dipakai halaman editor (workspace/editor) supaya guard lintas halaman konsisten.
@@ -1507,6 +1517,7 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         return true;
       } catch (e) { return false; }
     }
+    var wsTolakServer = {}; // path -> alasan penolakan dari server pada push berjalan
     async function wsCloudPushNow(attempt, keepalive) {
       const pid = wsProjectId();
       if (!pid) return;
@@ -1560,6 +1571,19 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
           // [12 Okt] file yang ternyata sudah dihapus di server: buang dari pohon lokal
           try { wsTrackKnownDeleted(pushResp && pushResp.deleted_paths); } catch (e) {}
           if (pushResp && pushResp.error) throw new Error(pushResp.error);
+          // [4 Nov FIX "verifikasi gagal (3 berkas belum masuk, mis. logo.ico)"] Server
+          // SUDAH menjelaskan berkas mana yang ditolak & kenapa (errors[]), tapi klien
+          // membuangnya lalu mengulang 3x dan melaporkan "belum masuk". Sekarang alasan
+          // dicatat per berkas dan berkas yang ditolak tidak dihitung gagal verifikasi.
+          try {
+            (pushResp && pushResp.errors ? pushResp.errors : []).forEach(function (er) {
+              var t = String(er || '');
+              try { console.error('[Workspace sinkron] berkas ditolak server: ' + t); } catch (e) {}
+              try { wsDiag('push_tolak', t.slice(0, 160)); } catch (e) {}
+              var mid = t.lastIndexOf(': ');
+              if (mid > 0) wsTolakServer[String(t.slice(mid + 2)).trim()] = t.slice(0, mid);
+            });
+          } catch (e) {}
         }
         try { wsDropKnownDeletedFromTree(); } catch (e) {}
         // Verifikasi: SEMUA path yang dikirim benar-benar ada di cloud.
@@ -1575,8 +1599,13 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         const adaDiCloud = new Set(((d && d.files) || []).map(function (f) { return String((f && f.path) || ''); }));
         const belumMasuk = files
           .map(function (f) { return String((f && f.path) || ''); })
-          .filter(function (pp) { return pp && pp.slice(-1) !== '/' && !adaDiCloud.has(pp); });
+          .filter(function (pp) { return pp && pp.slice(-1) !== '/' && !adaDiCloud.has(pp) && !wsTolakServer[pp]; });
         if (belumMasuk.length) throw new Error('verifikasi gagal (' + belumMasuk.length + ' berkas belum masuk, mis. ' + belumMasuk[0] + ')');
+        const __tolak = Object.keys(wsTolakServer);
+        if (__tolak.length) {
+          try { console.warn('[Workspace sinkron] ' + __tolak.length + ' berkas tidak bisa disimpan cloud: ' + __tolak.slice(0, 5).join(', ') + (__tolak.length > 5 ? ', dll' : '')); } catch (e) {}
+          wsTolakServer = {};
+        }
         wsDirtySet(false);
         wsCloudFailNotified = false;
         wsDiag('push_ok', files.length + ' file tersinkron');
