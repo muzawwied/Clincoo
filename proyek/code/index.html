@@ -1597,9 +1597,42 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         if (!r.ok) throw new Error('verifikasi gagal (metadata cloud tak terbaca)');
         const d = await r.json();
         const adaDiCloud = new Set(((d && d.files) || []).map(function (f) { return String((f && f.path) || ''); }));
-        const belumMasuk = files
+        let belumMasuk = files
           .map(function (f) { return String((f && f.path) || ''); })
           .filter(function (pp) { return pp && pp.slice(-1) !== '/' && !adaDiCloud.has(pp) && !wsTolakServer[pp]; });
+        // [6 Nov FIX "1 berkas belum masuk, mis. stasiun-radio-menara-7.html" berulang]
+        // Berkas yang gagal biasanya berkas besar yang dikirim bersama banyak berkas
+        // lain dalam satu paket (kena batas query/CPU). Sekarang dikirim ULANG satu
+        // per satu dalam paket kecil — cara yang sama dipakai unggahan per-potongan
+        // yang terbukti berhasil — lalu diverifikasi lagi.
+        if (belumMasuk.length) {
+          try { console.warn('[Workspace sinkron] mengirim ulang ' + belumMasuk.length + ' berkas satu per satu: ' + belumMasuk.slice(0, 5).join(', ')); } catch (e) {}
+          for (let qi = 0; qi < belumMasuk.length && qi < 20; qi++) {
+            const qPath = belumMasuk[qi];
+            const qFile = files.find(function (f) { return String((f && f.path) || '') === qPath; });
+            if (!qFile) continue;
+            try {
+              const qRes = await fetch(WS_CLOUD_API, {
+                method: 'POST',
+                headers: H,
+                body: JSON.stringify({ project_id: pid, files: [qFile], replace: false, keep_paths: [qPath], bump_rev: false })
+              });
+              const qData = await qRes.json().catch(function () { return {}; });
+              if (!qRes.ok || (qData && qData.error)) {
+                try { console.error('[Workspace sinkron] kirim ulang ditolak server (' + qPath + '): ' + ((qData && qData.error) || ('HTTP ' + qRes.status))); } catch (e) {}
+              }
+            } catch (eQ) {
+              try { console.error('[Workspace sinkron] kirim ulang gagal (' + qPath + '): ' + ((eQ && eQ.message) || eQ)); } catch (e) {}
+            }
+          }
+          // verifikasi ulang setelah kirim ulang
+          const r2 = await fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&meta=1', { headers: wsAuthHeaders() });
+          if (r2.ok) {
+            const d2 = await r2.json().catch(function () { return {}; });
+            const ada2 = new Set(((d2 && d2.files) || []).map(function (f) { return String((f && f.path) || ''); }));
+            belumMasuk = belumMasuk.filter(function (pp) { return !ada2.has(pp); });
+          }
+        }
         if (belumMasuk.length) throw new Error('verifikasi gagal (' + belumMasuk.length + ' berkas belum masuk, mis. ' + belumMasuk[0] + ')');
         const __tolak = Object.keys(wsTolakServer);
         if (__tolak.length) {
