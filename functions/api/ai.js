@@ -9,6 +9,8 @@
 //   - POST /api/ai  -> { messages:[{role,content}], system?, stream? }
 // Tidak memakai function calling di sini — tools workspace tetap di /api/chat.
 
+import { jinaRead, jinaSearch, e2bRunCode, extractUrls } from './_ai-connectors.js';
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -51,6 +53,12 @@ Gaya kamu (WAJIB DIPATUHI):
 - Hindari pengulangan, kalimat berputar, dan teks yang tidak perlu. Jangan memaksakan jawaban panjang hanya demi panjang.
 - Jelaskan istilah teknis (DNS, deploy, SSL, CNAME, dll.) dengan cara yang mudah dipahami, lengkap dengan analogi bila perlu, terutama saat user baru belajar.
 - Kalau tidak tahu sesuatu di luar platform Clincoo, katakan jujur — jangan mengarang fitur yang tidak ada.
+
+Alat yang kamu punya (pakai hanya bila benar-benar perlu):
+- Membaca isi halaman web: tulis penanda [[WEB:https://alamat-halaman]] di akhir jawabanmu.
+- Mencari informasi terbaru di web: tulis [[SEARCH:kata kunci]].
+- Menjalankan kode Python untuk hitungan atau olah data: tulis [[PY]]kode python di sini[[/PY]].
+Setelah menulis penanda, berhenti dan tunggu hasilnya — sistem akan mengirim hasil alat kepadamu, lalu kamu jawab user memakai hasil itu. Jangan pernah menampilkan penanda alat kepada user, dan jangan mengarang isi halaman atau hasil hitungan tanpa membaca hasil alat.
 - Untuk pertanyaan yang butuh aksi di proyek user (buat file, deploy, dsb.), arahkan ke Chat AI di dalam proyek tersebut sambil tetap memberikan penjelasan ringkas tentang apa yang akan dilakukan dan kenapa.
 
 Filter khusus permintaan BUILD APLIKASI (WAJIB):
@@ -302,6 +310,30 @@ export async function onRequestGet({ request, env }) {
   });
 }
 
+
+// ===== Penanda alat (WEB / SEARCH / PY) =====
+function parseToolCalls(text) {
+  const out = [];
+  const src = String(text || '');
+  let m;
+  const reSearch = /\[\[SEARCH:([^\]\n]+)\]\]/g;
+  while ((m = reSearch.exec(src))) out.push({ type: 'SEARCH', value: m[1].trim() });
+  const reWeb = /\[\[WEB:([^\]\s]+)\]\]/g;
+  while ((m = reWeb.exec(src))) out.push({ type: 'WEB', value: m[1].trim() });
+  const rePy = /\[\[PY\]\]([\s\S]*?)\[\[\/PY\]\]/g;
+  while ((m = rePy.exec(src))) out.push({ type: 'PY', value: m[1].trim() });
+  return out;
+}
+
+function stripToolCalls(text) {
+  return String(text || '')
+    .replace(/\[\[SEARCH:[^\]\n]+\]\]/g, '')
+    .replace(/\[\[WEB:[^\]\s]+\]\]/g, '')
+    .replace(/\[\[PY\]\][\s\S]*?\[\[\/PY\]\]/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 // ===== POST /api/ai — chat persona Clincoo AI =====
 export async function onRequestPost({ request, env }) {
   // [9 Okt 2026, arahan pemilik: "pasang ai lagi"] Persona Clincoo AI DINYALAKAN
@@ -344,10 +376,64 @@ export async function onRequestPost({ request, env }) {
   const orKey = await getOpenRouterKeys(env);
 
   // Urutan provider: OpenRouter (GLM 5.3 — utama) -> Workers AI -> Gemini
-  let r = null;
-  if (orKey.length) r = await tryOpenRouter(orKey, finalMessages, stream);
-  if ((!r || r.error) && env.AI) r = await tryWorkersAI(env, finalMessages, stream);
-  if ((!r || r.error) && gemKey.length) r = await tryGemini(gemKey, finalMessages);
+  const runChain = async (msgs, wantStream) => {
+    let out = null;
+    if (orKey.length) out = await tryOpenRouter(orKey, msgs, wantStream);
+    if ((!out || out.error) && env.AI) out = await tryWorkersAI(env, msgs, wantStream);
+    if ((!out || out.error) && gemKey.length) out = await tryGemini(gemKey, msgs);
+    return out;
+  };
+
+  // Jina: baca halaman yang ditautkan user supaya jawaban berbasis isi nyata
+  const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+  const linked = extractUrls((lastUser && lastUser.content) || '', 2);
+  if (linked.length) {
+    const chunks = [];
+    for (const u of linked) {
+      const j = await jinaRead(env, u, { max: 6000 });
+      if (j.ok) chunks.push('URL: ' + j.url + '\n' + j.content);
+    }
+    if (chunks.length) {
+      finalMessages.splice(1, 0, {
+        role: 'system',
+        content: 'ISI HALAMAN YANG DITAUTKAN USER (dibaca lewat Jina Reader, pakai sebagai sumber utama):\n\n' + chunks.join('\n\n---\n\n')
+      });
+    }
+  }
+
+  let r = await runChain(finalMessages, stream);
+
+  // Putaran alat: WEB / SEARCH (Jina) dan PY (sandbox E2B). Hanya untuk non-stream.
+  if (!stream && r && !r.error && r.text) {
+    for (let round = 0; round < 2; round++) {
+      const calls = parseToolCalls(r.text);
+      if (!calls.length) break;
+      const results = [];
+      for (const c of calls.slice(0, 3)) {
+        if (c.type === 'WEB') {
+          const j = await jinaRead(env, c.value, { max: 6000 });
+          results.push(j.ok ? 'HASIL [[WEB]] ' + j.url + '\n' + j.content : 'HASIL [[WEB]] ' + c.value + ' gagal: ' + j.error);
+        } else if (c.type === 'SEARCH') {
+          const j = await jinaSearch(env, c.value, { max: 5000 });
+          results.push(j.ok ? 'HASIL [[SEARCH]] ' + c.value + '\n' + j.content : 'HASIL [[SEARCH]] gagal: ' + j.error);
+        } else if (c.type === 'PY') {
+          const x = await e2bRunCode(env, c.value, { max: 4000 });
+          results.push(x.ok
+            ? 'HASIL [[PY]] exit=' + (x.exit || '-') + ' ' + x.ms + 'ms\nstdout:\n' + (x.stdout || '(kosong)') + '\nstderr:\n' + (x.stderr || '(kosong)')
+            : 'HASIL [[PY]] gagal: ' + x.error);
+        }
+      }
+      finalMessages.push({ role: 'assistant', content: stripToolCalls(r.text) || '...' });
+      finalMessages.push({
+        role: 'system',
+        content: 'Hasil alat di bawah ini. Pakai untuk menjawab user, jangan menyalin mentah dan jangan menampilkan penanda alat.\n\n' + results.join('\n\n')
+      });
+      const next = await runChain(finalMessages, false);
+      if (!next || next.error) break;
+      r = next;
+    }
+    if (r && r.text) r.text = stripToolCalls(r.text);
+  }
 
   if (!r || r.error) {
     return json({ error: 'Tidak ada provider AI tersedia. Set kunci OpenRouter (utama), aktifkan binding Workers AI, atau set kunci Gemini di Pengaturan → Environment.' }, 502);
