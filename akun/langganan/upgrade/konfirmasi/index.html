@@ -324,7 +324,7 @@
       totalPrice = BILLING === 'Tahunan' ? PRICES[PLAN] * 10 : PRICES[PLAN];
       if (BETA && betaInfo && betaInfo.eligible) totalPrice = 0;
       setVal('order-billing', BILLING);
-      setVal('order-total', (BETA && betaInfo && betaInfo.eligible) ? 'Rp 0 — Program Beta 30 Hari' : (totalPrice === 0 ? 'Gratis' : fmtID(totalPrice) + (pp !== null ? ' (PROMO 100 User Pertama, reguler ' + fmtID(PROMO.original) + ')' : '')));
+      setVal('order-total', (BETA && betaInfo && betaInfo.eligible) ? 'Rp 0 — Program Beta 30 Hari' : (totalPrice === 0 ? 'Gratis' : fmtID(totalPrice)));
       const bal = (typeof lastBalance === 'number') ? lastBalance : null;
       if (bal !== null) {
         setVal('wallet-after', totalPrice === 0 ? fmtID(bal) : fmtID(bal - totalPrice));

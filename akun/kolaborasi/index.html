@@ -847,12 +847,12 @@ document.head.appendChild(crownCss);
     }).join('');
     var btn;
     if(p.name.toLowerCase()===String(current).toLowerCase()){ btn='<div class="w-full py-3 bg-gray-50 text-gray-500 border border-gray-200 rounded-xl font-semibold text-sm text-center cursor-not-allowed">Paket Saat Ini</div>'; }
-    else if(p.hot){ btn='<a href="'+checkoutUrl(p.name)+'" class="block w-full py-3 bg-accent rounded-xl font-semibold text-sm text-center transition-all shadow-md active:scale-95">'+(p.name==='Pro'&&promoProActive?'Ambil Promo Pro Rp5.000':'Upgrade ke '+p.name)+'</a>'; }
+    else if(p.hot){ btn='<a href="'+checkoutUrl(p.name)+'" class="block w-full py-3 bg-accent rounded-xl font-semibold text-sm text-center transition-all shadow-md active:scale-95">'+('Upgrade ke '+p.name)+'</a>'; }
     else { btn='<a href="'+checkoutUrl(p.name)+'" class="block w-full py-3 bg-white text-gray-900 border-2 border-gray-200 hover:border-gray-900 hover:bg-gray-50 rounded-xl font-semibold text-sm text-center transition-all">Mulai '+p.name+'</a>'; }
     return '<div class="w-full shrink-0 px-0.5"><div class="pps-plan-card bg-white border '+(p.hot?'border-2 border-accent shadow-xl':'border-gray-200')+' rounded-3xl p-4 sm:p-5 flex flex-col relative text-left">'+
       (p.hot?'<div class="absolute top-0 right-0 bg-accent text-[10px] font-bold px-3.5 py-1 rounded-bl-xl rounded-tr-2xl uppercase tracking-wider">Discount</div>':'')+
       '<div class="mb-4 '+(p.hot?'mt-2':'')+'"><h3 class="text-lg font-bold text-gray-900 '+(p.hot?'text-accent':'')+'">'+p.name+'</h3><p class="text-xs text-gray-500 mt-0.5">'+p.tagline+'</p></div>'+
-      '<div class="mb-4 flex items-baseline gap-2 flex-wrap"><span class="text-2xl font-extrabold tracking-tight text-gray-900">'+(p.name==='Pro'&&promoProActive?'Rp5.000':p.price)+'</span><span class="text-xs font-medium text-gray-500">'+p.per+'</span>'+(p.name==='Pro'&&promoProActive?'<span class="text-sm text-gray-400 line-through">Rp49.000</span>':'')+'</div>'+
+      '<div class="mb-4 flex items-baseline gap-2 flex-wrap"><span class="text-2xl font-extrabold tracking-tight text-gray-900">'+p.price+'</span><span class="text-xs font-medium text-gray-500">'+p.per+'</span></div>'+
       '<ul class="flex flex-col gap-2.5 mb-4 flex-1">'+list+'</ul>'+btn+'</div></div>';
   }
   function buildSheet(){
