@@ -39,22 +39,9 @@ export async function onRequestGet({ request, env }) {
   // [8 Okt 2026, arahan pemilik] Promo 100 User Pertama (Pro Rp5.000) DIHENTIKAN.
   // Harga paket Pro kembali harga asli (Rp49.000) di semua halaman. Endpoint tetap
   // ada supaya halaman lama tidak error, tapi selalu melaporkan promo tidak aktif.
-  return json({
-    success: true,
-    active: false,
-    name: 'Promo 100 User Pertama',
-    plan: PROMO_EARLY.plan,
-    billing: PROMO_EARLY.billing,
-    price: PROMO_EARLY.price,
-    original: PROMO_EARLY.original,
-    total: PROMO_EARLY.maxUsers,
-    claimed: PROMO_EARLY.maxUsers,
-    remaining: 0,
-    loggedIn: false,
-    hasClaimed: false,
-    newUser: false,
-    eligible: false
-  });
+  // [9 Nov, minta pemilik] Promo Rp5.000 dihapus total: endpoint hanya melaporkan
+  // "tidak ada promo" agar halaman lama tidak menampilkan harga promo atau error.
+  return json({ success: true, active: false, eligible: false, remaining: 0, total: 0, claimed: 0 });
 }
 
 export async function onRequestOptions() {

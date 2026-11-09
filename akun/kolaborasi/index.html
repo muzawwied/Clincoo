@@ -1018,12 +1018,7 @@ function crownAction(e){
   window.clincooOpenPlansPopup=function(){clincooCrownGate(null);};
   window.clincooFeatureGate=function(min){clincooCrownGate({id:'cc-gate-'+(min||'Pro'),getAttribute:function(k){return k==='data-min'?(min||'Pro'):null;}});};
   clincooUniformCrowns();
-  // Syarat promo dan harga mengikuti halaman Upgrade, bukan harga promo tanpa eligibility.
-  fetch(apiBase()+'/api/promo',{cache:'no-store'}).then(function(r){return r.json();}).then(function(p){
-    if(!p||p.active!==true||p.remaining<=0||!p.eligible)return;
-    promoProActive=true;
-    if(sheetEl){sheetEl.querySelector('#pps-track').innerHTML=plans.map(function(p){return cardHtml(p,currentPlan()||'Starter');}).join('');sheetEl.__render();}
-  }).catch(function(){});
+  // [9 Nov, minta pemilik] Promo Pro Rp5.000 dihapus — harga Pro Rp49.000, tanpa cek promo.
 })();
 </script>
 </body>

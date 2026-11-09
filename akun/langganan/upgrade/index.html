@@ -370,29 +370,8 @@
         // fields=plan: mode ringan — cukup paket aktif + siklus tagihan (cepat)
         const SUB_API = 'https://clincoo-be2.pages.dev/api/subscription';
         const SUB_API_LIGHT = SUB_API + '?fields=plan';
-        const PROMO_API = 'https://clincoo-be2.pages.dev/api/promo';
-        // PROMO 100 User Pertama: utk user yang eligible, kartu Pro tampil Rp5.000 (coret 49.000)
+        /* [9 Nov, minta pemilik] Promo Pro Rp5.000 dihapus. Harga Pro kembali Rp49.000. */
         let promoProActive = false;
-        (function(){
-          fetch(PROMO_API, { cache: 'no-store' }).then(function(r){ return r.json(); }).then(function(p){
-            if (!p || p.active !== true || p.remaining <= 0) return;
-            var card = document.getElementById('btn-pro');
-            if (!card) return;
-            if (p.eligible) {
-              promoProActive = true;
-              var priceBlock = document.getElementById('pro-price-block');
-              if (priceBlock) {
-                priceBlock.outerHTML =
-                  '<div class="mb-6 flex items-baseline gap-2 flex-wrap" id="pro-price-block">' +
-                    '<span class="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white" style="font-family:\'Space Grotesk\',sans-serif">Rp5.000</span>' +
-                    '<span class="text-sm font-medium text-gray-500">/bln</span>' +
-                    '<span class="text-sm text-gray-400 line-through">Rp49.000</span>' +
-                  '</div>';
-              }
-              card.textContent = 'Ambil Promo Pro Rp5.000';
-            }
-          }).catch(function(){});
-        })();
         let currentActivePlan = 'Starter';
         let selectedPlan = '';
         let subData = null;
@@ -459,7 +438,6 @@
         function openModal(plan) {
             const billing = (subData && subData.billingCycle) ? subData.billingCycle : 'Bulanan';
             let amount = PLAN_PRICES[plan] || 0;
-            if (plan === 'Pro' && promoProActive) amount = 5000; // promo 100 user pertama
             selectedPlan = plan;
             if (amount === 0) {
                 // Starter / program gratis: halaman konfirmasi yang mengaktivasi (Rp0).
