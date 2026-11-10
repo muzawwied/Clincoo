@@ -1527,6 +1527,22 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         return true;
       } catch (e) { return false; }
     }
+    /* [10 Nov FIX "nama berkas kembali seperti sebelumnya setelah ganti nama"]
+       Ganti nama = path lama berhenti dipakai. Dulu path lama hanya terhapus kalau
+       push memakai replace:true; kalau rekonsiliasi gagal, cloud tetap menyimpan
+       path lama, lalu saat workspace dibuka lagi berkas lama muncul kembali dan
+       menutupi hasil ganti nama. Sekarang path lama dihapus eksplisit ke server. */
+    function wsHapusPathDiCloud(paths) {
+      const pid = wsProjectId();
+      if (!pid || !paths || !paths.length) return;
+      paths.slice(0, 80).forEach(function (p) {
+        try {
+          fetch(WS_CLOUD_API + '?project_id=' + encodeURIComponent(pid) + '&path=' + encodeURIComponent(p),
+            { method: 'DELETE', headers: wsAuthHeaders(), keepalive: true }).catch(function () {});
+        } catch (e) {}
+      });
+    }
+
     var wsTolakServer = {}; // path -> alasan penolakan dari server pada push berjalan
     async function wsCloudPushNow(attempt, keepalive) {
       const pid = wsProjectId();
@@ -2592,10 +2608,20 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
           }
           
           const itemIndex = items.findIndex(i => i.name === itemBeingRenamed);
+          const wsRenameOldPaths = [];
           if(itemIndex !== -1) {
             const item = items[itemIndex];
             if(item.type === 'folder') {
               const oldPath = item.path;
+              try {
+                Object.keys(projectFilesData).forEach(function (k) {
+                  if (k === oldPath || k.indexOf(oldPath + '/') === 0) {
+                    (projectFilesData[k] || []).forEach(function (it) {
+                      if (it && it.type === 'file' && it.path) wsRenameOldPaths.push(String(it.path));
+                    });
+                  }
+                });
+              } catch (e) {}
               const newPath = currentFolderPath === 'root' ? name : currentFolderPath + '/' + name;
               item.name = name;
               item.path = newPath;
@@ -2612,13 +2638,24 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
                 });
               });
             } else {
+              if (item.path) wsRenameOldPaths.push(String(item.path));
               item.name = name;
               item.path = currentFolderPath === 'root' ? name : currentFolderPath + '/' + name;
             }
           }
+          // [10 Nov] kirim segera + hapus path lama supaya nama tidak kembali sendiri
+          try {
+            const _baru = itemIndex !== -1 ? (items[itemIndex] && items[itemIndex].path) : null;
+            const _lama = wsRenameOldPaths.filter(function (p) { return p && p !== _baru; });
+            if (_lama.length) {
+              wsHapusPathDiCloud(_lama);
+              _lama.forEach(function (pp) { delete wsRestorePaths[String(pp)]; wsKnownDeleted[String(pp)] = true; });
+            }
+          } catch (e) {}
       }
       
       saveData();
+      try { wsCloudPushNow(0); } catch (e) {}
       if (fileSearchInput) fileSearchInput.value = '';
       renderFileList();
       closeInputModal();
