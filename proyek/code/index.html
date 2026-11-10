@@ -591,6 +591,16 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       saveNotifications(n); renderNotifications();
       fetch(NOTIF_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source: source, message: message, link: link || '' }) }).catch(function() {});
     }
+    /* [10 Nov, minta pemilik] Buang notifikasi impor lama yang sudah terlanjur
+       tersimpan di perangkat ("Mengimpor N berkas…" / "N/M berkas diimpor"). */
+    try {
+      var _nBersih = getNotifications().filter(function (x) {
+        var m = String((x && x.message) || '');
+        return !/^Mengimpor \d+ berkas/.test(m) && !/^\d+\/\d+ berkas diimpor/.test(m);
+      });
+      if (_nBersih.length !== getNotifications().length) { saveNotifications(_nBersih); renderNotifications(); }
+    } catch (e) {}
+
     function notifTime(ts) {
       if (!ts) return '';
       const s = String(ts);
@@ -2998,7 +3008,9 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
       (async function () {
         let ok = 0; const failed = [];
         wsDiag('impor_mulai', list.length + ' berkas dipilih');
-        try { addNotification('Workspace', 'Mengimpor ' + list.length + ' berkas…'); } catch (e2) {}
+        // [10 Nov, minta pemilik] Impor berkas bukan peristiwa yang perlu masuk
+        // pusat notifikasi. Progresnya cukup di console (wsDiag sudah mencatat).
+        try { console.info('[Workspace impor] mulai: ' + list.length + ' berkas'); } catch (e2) {}
         for (let i = 0; i < list.length; i++) {
           const file = list[i];
           try {
@@ -3014,7 +3026,9 @@ body.dark-mode #chat-fab:focus-visible { outline-color: #71717a !important; }
         const ringkas = ok + '/' + list.length + ' berkas diimpor' + (failed.length ? '. Gagal: ' + failed.slice(0, 5).join(', ') + (failed.length > 5 ? ' dan ' + (failed.length - 5) + ' lainnya' : '') : '.');
         wsDiag('impor_selesai', ringkas);
         wsToast(ringkas + ' Menyimpan ke cloud…');
-        try { addNotification('Workspace', ringkas); } catch (e4) {}
+        // [10 Nov, minta pemilik] Ringkasan impor sukses tidak lagi jadi notifikasi;
+        // hanya kegagalan yang tetap dilaporkan ke pengguna.
+        try { console.info('[Workspace impor] ' + ringkas); } catch (e4) {}
         // [22 Okt] PUSH SEKARANG juga (bukan hanya debounce): pengguna HP sering
         // menutup tab beberapa detik setelah impor — debounce 1.2s bisa terbunuh
         // bersama tab-nya. Push langsung = data lebih cepat sampai cloud.
