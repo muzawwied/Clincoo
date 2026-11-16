@@ -790,7 +790,7 @@ var ClincooTemplates = (function () {
     } catch (e) {}
   }
 
-  // Sinkron status pembelian dari server (D1) — sekali per halaman, tanpa memblokir UI
+ // Sinkron status pembelian dari server (basis data) — sekali per halaman, tanpa memblokir UI
   function refreshPurchases() {
     try {
       fetch(API_BASE + '/template-purchase', { headers: { 'Content-Type': 'application/json' } })
@@ -933,7 +933,7 @@ var ClincooTemplates = (function () {
     var pid = 'proj_' + Date.now();
     var newProject = { id: pid, title: t.name, prompt: t.desc, template: key, updatedAt: new Date().toISOString() };
 
-    // 1) Daftar proyek (lokal + D1)
+ // 1) Daftar proyek (lokal + basis data)
     var projects = [];
     try {
       var stored = localStorage.getItem('clincoo_projects');
@@ -960,7 +960,7 @@ var ClincooTemplates = (function () {
       localStorage.setItem('clincoo_workspace_files_' + pid, JSON.stringify(unflatten(flat)));
     } catch (e) {}
 
-    // 3+5) Sinkron file ke D1 (per-akun) BERTAHAP lalu masuk Workspace.
+ // 3+5) Sinkron file ke basis data (per-akun) BERTAHAP lalu masuk Workspace.
     // [8 Okt 2026, laporan pemilik: "file template AI Router kadang sebagian hilang"]
     // Sebelumnya: satu POST 245 file (fire & forget) -> Worker free plan tewas di
     // tengah CPU limit -> cloud hanya punya SEBAGIAN file -> saat editor dibuka,

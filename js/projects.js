@@ -25,7 +25,7 @@ var _pjKnown = ['akun','proyek','auth','templates','integrasi','assets','js','de
 var _isGHPages = window.location.hostname.indexOf('github.io') !== -1;
 var _PJBASE = _isGHPages && _pjSeg && _pjKnown.indexOf(_pjSeg) === -1 ? '/' + _pjSeg : '';
 
-// === Sinkronisasi D1 per akun (Cloudflare) ===
+// === Sinkronisasi basis data per akun (server) ===
 // Token Bearer diinjeksi otomatis oleh js/auth-client.js pada semua call /api/.
 const PROJECTS_API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/projects';
 let _pushTimer = null;
@@ -66,7 +66,7 @@ function pushProjectsToServer(projects) {
     }, 700);
 }
 
-// Tarik daftar proyek milik akun dari D1; migrasi otomatis data lokal lama.
+// Tarik daftar proyek milik akun dari basis data; migrasi otomatis data lokal lama.
 async function syncProjectsFromServer() {
     const v = _dataVersion; // jika data lokal berubah saat menunggu respons (mis. proyek barusan dihapus), respons ini basi
     try {
@@ -481,7 +481,7 @@ function _ensureDeleteModal() {
         }
         // tanpa OTP: lanjut alur lama (optimistic + hapus di latar belakang)
         // Optimistic: proyek langsung lenyap dari daftar & modal langsung tertutup —
-        // penghapusan sungguhan di server (D1 + unpublish) jalan sendiri di latar belakang
+ // penghapusan sungguhan di server (basis data + unpublish) jalan sendiri di latar belakang
         // (fire-and-forget + retry diam-diam), jadi hapus TERASA instan tanpa menunggu jaringan.
         _closeDeleteModal();
         _removeProjectLocally(id);
@@ -566,7 +566,7 @@ async function _deleteProjectInBackground(id, attempt) {
     const hdrs = { 'Content-Type': 'application/json' };
     if (tok) hdrs['Authorization'] = 'Bearer ' + tok;
     const apiRoot = PROJECTS_API.replace(/\/projects$/, '');
-    // unpublish situs + link publik Cloudflare Pages (non-fatal, fire-and-forget)
+ // unpublish situs + link publik server Pages (non-fatal, fire-and-forget)
     try { fetch(apiRoot + '/deploy', { method: 'POST', headers: hdrs, body: JSON.stringify({ project_id: id, action: 'unpublish' }) }).catch(function () {}); } catch (e) {}
     let ok = false;
     try {

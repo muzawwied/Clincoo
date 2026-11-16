@@ -10,10 +10,10 @@ window.ClincooBack = window.ClincooBack || function (fallbackUrl) {
 /**
  * Clincoo URL Path Router
  * Parses nested URLs like /workspace/{projectId}/pengaturan/{submenu}
- * Supports both Cloudflare Pages (root) and GitHub Pages (subpath /Clincoo/)
+ * Supports both server Pages (root) and GitHub Pages (subpath /Clincoo/)
  */
 
-// Detect if we're on GitHub Pages (subpath) vs Cloudflare Pages (root)
+// Detect if we're on GitHub Pages (subpath) vs server Pages (root)
 var _seg = window.location.pathname.split('/')[1] || '';
 var _known = ['akun','proyek','auth','templates','integrasi','assets','js','demo','sw.js','manifest.json','robots.txt','_redirects','index.html','404.html'];
 var _isGitHubPages = window.location.hostname.indexOf('github.io') !== -1;
@@ -72,7 +72,7 @@ const PathRouter = {
             }
             return _BASE + '/proyek/workspace/?id=' + encodeURIComponent(projectId);
         }
-        // Cloudflare Pages: clean URLs
+ // server Pages: clean URLs
         return _BASE + '/workspace/' + projectId + (subpath ? '/' + subpath : '');
     },
 

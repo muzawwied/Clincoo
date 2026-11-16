@@ -968,7 +968,7 @@
     <script>
     
     // ============================================
-    // NOTIFICATION SYSTEM - D1-backed with page links
+ // NOTIFICATION SYSTEM - basis data-backed with page links
     // ============================================
     const NOTIF_API = 'https://clincoo-be2.pages.dev/api/notifications';
     let d1Notifs = [];
@@ -1168,7 +1168,7 @@
             }
         } catch(e) {}
 
-        // Muat profil dari database per akun (D1) — sinkron lintas perangkat
+ // Muat profil dari database per akun (basis data) — sinkron lintas perangkat
         try {
             const PROFILE_API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/account-profile';
             fetch(PROFILE_API).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
@@ -1864,7 +1864,7 @@
             try { const stored = localStorage.getItem('clincoo_projects'); if (stored) projects = JSON.parse(stored); } catch(e) {}
             const proj = projects.find(p => p.id === id);
             if (proj) {
-                // Riwayat dimuat dari D1 di halaman chat, prompt lama tidak di-replay
+ // Riwayat dimuat dari basis data di halaman chat, prompt lama tidak di-replay
                 localStorage.setItem('clincoo_current_project_id', id);
                 // Klik proyek dari halaman utama: SELALU langsung ke workspace
                 window.location.href = 'proyek/workspace/?id=' + id;
@@ -2165,7 +2165,7 @@
                 navigator.share({ title: proj.title, text: proj.prompt }).catch(() => {});
             }
         }
-        // === Sinkronisasi daftar proyek per akun ke D1 (Cloudflare) ===
+ // === Sinkronisasi daftar proyek per akun ke basis data (server) ===
         const PROJECTS_API = (['clincoo-be2.pages.dev','localhost','127.0.0.1'].indexOf(location.hostname) === -1 ? 'https://clincoo-be2.pages.dev/api' : '/api') + '/projects';
         let _pushTimer = null;
         function showPlanLimitModal(d) {

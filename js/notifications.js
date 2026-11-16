@@ -2,14 +2,14 @@
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 /**
  * Clincoo Notifications System
- * Real-time D1-backed notifications with page links
+ * Real-time basis data-backed notifications with page links
  */
 const NOTIF_API = 'https://clincoo-be2.pages.dev/api/notifications';
 const NOTIF_KEY = 'clincoo_notifications';
 const NOTIF_ALLOWED = ['GitHub', 'Workspace', 'Deploy', 'Akun', 'Dompet', 'Clincoo'];
 function isAllowedNotif(n) { return NOTIF_ALLOWED.indexOf(String((n && n.source) || '')) > -1; }
 function getLocalNotifs() { try { return JSON.parse(localStorage.getItem(NOTIF_KEY) || '[]').filter(isAllowedNotif); } catch(e) { return []; } }
-// Waktu notif dalam ms — D1 menyimpan UTC ('YYYY-MM-DD HH:MM:SS'), lama pakai ISO (timestamp)
+// Waktu notif dalam ms — basis data menyimpan UTC ('YYYY-MM-DD HH:MM:SS'), lama pakai ISO (timestamp)
 function notifTime(n) { var t = String((n && (n.created_at || n.timestamp)) || ''); if (!t) return 0; if (t.indexOf('T') === -1) t = t.replace(' ', 'T') + 'Z'; var d = new Date(t); return isNaN(d.getTime()) ? 0 : d.getTime(); }
 // Notifikasi lokal lebih tua dari 24 jam dianggap basi — tidak ditampilkan dan dibersihkan
 const LOCAL_NOTIF_TTL_MS = 24 * 60 * 60 * 1000;
@@ -148,7 +148,7 @@ async function markNotifRead(id) {
         fetchD1Notifications();
     } catch(e) {}
 }
-// Tandai salinan lokal (localStorage) sebagai dibaca — status D1 tidak tersinkron otomatis ke salinan lama
+// Tandai salinan lokal (localStorage) sebagai dibaca — status basis data tidak tersinkron otomatis ke salinan lama
 function markLocalNotifsRead(onlyId) {
     try {
         const ref = onlyId ? d1Notifs.find(function(x) { return String(x.id) === onlyId; }) : null;
