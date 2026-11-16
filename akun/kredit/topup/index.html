@@ -170,6 +170,8 @@ location.replace('/akun/kredit/?topup=segera');
 
 <script>
 var API = '/api/kredit-topup';
+var _tk=''; try { _tk=localStorage.getItem('clincoo_auth_token')||localStorage.getItem('clincoo_token')||''; } catch(e) {}
+function _authHdr(){ return _tk ? { Authorization: 'Bearer ' + _tk } : {}; }
 var RC_MIN = 1000, RC_MAX = 100000000;
 var _rp = function (n) { return Number(n || 0).toLocaleString('id-ID'); };
 var _amount = '';
@@ -277,7 +279,7 @@ function renderQris(d) {
 async function pollOnce() {
     if (!cur.orderId) return;
     try {
-        var res = await fetch(API + '?action=status&order_id=' + encodeURIComponent(cur.orderId));
+        var res = await fetch(API + '?action=status&order_id=' + encodeURIComponent(cur.orderId), { headers: _authHdr() });
         var d = await res.json();
         if (d && d.status === 'paid') showPaid(d);
         else if (d && d.status === 'expired') showExpired();
@@ -296,7 +298,7 @@ async function rcNext() {
     try {
         var res = await fetch(API, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: Object.assign({ 'Content-Type': 'application/json' }, _authHdr()),
             body: JSON.stringify({ action: 'create', amount: amount })
         });
         var d = await res.json();
@@ -370,7 +372,7 @@ lucide.createIcons();
     try { d = JSON.parse(sessionStorage.getItem(QR_SNAP_KEY) || 'null'); } catch (e) {}
     if (!d || !d.order_id) {
         try {
-            var res = await fetch(API + '?action=pending');
+            var res = await fetch(API + '?action=pending', { headers: _authHdr() });
             var p = await res.json();
             if (p && p.success && p.order_id && p.qr_image) d = p;
         } catch (e) {}

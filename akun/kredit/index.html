@@ -257,7 +257,10 @@ async function load(isRefresh) {
     if (loading) return;
     loading = true;
     try {
-        var res = await fetch('/api/kredit', { headers: { 'Content-Type': 'application/json' } });
+        // [16 Nov] FIX: /api/kredit wajib Bearer — sebelumnya tanpa header auth,
+        // jadi selalu 401 dan halaman memantul ke /auth/ tanpa pernah memuat data.
+        var _tk = ''; try { _tk = localStorage.getItem('clincoo_auth_token') || localStorage.getItem('clincoo_token') || ''; } catch (e) {}
+        var res = await fetch('/api/kredit', { headers: Object.assign({ 'Content-Type': 'application/json' }, _tk ? { Authorization: 'Bearer ' + _tk } : {}) });
         if (res.status === 401) { location.href = '/auth/?next=' + encodeURIComponent(location.pathname); return; }
         var data = await res.json();
         var oldSaldo = state.saldo;
