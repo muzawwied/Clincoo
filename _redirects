@@ -40,8 +40,10 @@
 /akun/profile/dompet/topup/nominal/   /akun/profile/dompet/topup/    301
 /akun/profile/dompet/topup/konfirmasi    /akun/profile/dompet/topup/    301
 /akun/profile/dompet/topup/konfirmasi/   /akun/profile/dompet/topup/    301
-/akun/profile/dompet/topup/qris      /akun/profile/dompet/topup/    301
-/akun/profile/dompet/topup/qris/     /akun/profile/dompet/topup/    301
+# Langkah QRIS top-up: rewrite 200 (bukan redirect) supaya id transaksi di URL tidak hilang saat refresh
+/akun/profile/dompet/topup/qris      /akun/profile/dompet/topup/    200
+/akun/profile/dompet/topup/qris/     /akun/profile/dompet/topup/    200
+/akun/profile/dompet/topup/qris/*    /akun/profile/dompet/topup/    200
 
 # Editor — sidebar link /editor/ langsung ke halaman editor asli (query ?pid= otomatis terjaga)
 /editor    /proyek/workspace/editor/    301

@@ -309,7 +309,14 @@ export async function onRequestPost({ request, env }) {
   }
   const method = (await getSecret(env, 'BUATQRIS_METHOD')) || 'qris_two';
 
-  const orderId = BQ_ORDER_PREFIX + Date.now() + '-' + Math.floor(Math.random() * 1000);
+  /* Id transaksi: huruf kecil semua dan lebih panjang supaya tidak mudah ditebak
+     dan tidak tertukar dengan id milik gateway. Contoh: clincoo-pay-m3k9x2a1-4f7c9b2e5d10 */
+  const orderId = BQ_ORDER_PREFIX
+    + Date.now().toString(36)
+    + '-'
+    + Array.from(crypto.getRandomValues(new Uint8Array(6)))
+        .map(function (b) { return b.toString(16).padStart(2, '0'); })
+        .join('');
 
   const pay = await bqPost({
     action: 'api_create_qris',

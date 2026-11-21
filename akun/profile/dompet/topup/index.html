@@ -553,12 +553,39 @@
         var TOPUP_API = API_BASE + '/api/topup';
         let selectedNominalAmount = 0;
 
+        /* URL bertingkat untuk langkah QRIS: /akun/profile/dompet/topup/qris/<order_id>/
+           Tujuannya supaya refresh tidak kehilangan QR: id transaksi ada di URL,
+           dan QR dipulihkan dari server, bukan hanya dari localStorage. */
+        var TOPUP_BASE = (function () {
+            var p = location.pathname.replace(/[^/]+\.html$/, '');
+            var m = p.match(/\/(metode|nominal|konfirmasi|qris)(\/[^/]+)?\/?$/);
+            if (m) p = p.slice(0, m.index);
+            if (!/\/$/.test(p)) p += '/';
+            return p;
+        })();
+        function setStepPath(seg, orderId) {
+            try {
+                var url = TOPUP_BASE + (seg ? seg + '/' : '');
+                if (seg === 'qris' && orderId) url = TOPUP_BASE + 'qris/' + encodeURIComponent(orderId) + '/';
+                if (location.pathname + location.search !== url) history.replaceState(null, '', url);
+            } catch (e) {}
+        }
+        function orderIdDariUrl() {
+            try {
+                var m = location.pathname.match(/\/qris\/([^/?#]+)\/?$/);
+                if (m) return decodeURIComponent(m[1]).trim();
+                var q = location.search.match(/[?&]order_id=([^&]+)/);
+                if (q) return decodeURIComponent(q[1]).trim();
+            } catch (e) {}
+            return '';
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             try { lucide.createIcons(); } catch (e) {}
             resetKeypad();
             goToStep1();
-            // Order QRIS aktif? Langsung kembali ke step QR (tahan saat refresh)
-            qrisRestore();
+            // Order QRIS aktif? Pulihkan dari URL (id di path) atau dari sesi lokal.
+            qrisRestoreFromUrl();
         });
 
         
@@ -747,7 +774,12 @@
 
         async function processQRIS() {
             var btn = document.getElementById('qris-continue-btn');
-            if (btn) { btn.disabled = true; btn.textContent = 'Memproses…'; }
+            if (btn) {
+                btn.disabled = true;
+                btn.setAttribute('aria-label', 'Menyiapkan kode QRIS');
+                btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
+                try { lucide.createIcons(); } catch (e) {}
+            }
             var token = '';
             try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
             var res;
@@ -759,13 +791,13 @@
                 }).then(function (r) { return r.json(); });
             } catch (e) { showModal('Gagal', 'Tidak dapat terhubung ke server pembayaran.'); return; }
             if (!res.success) {
-                if (btn) { btn.disabled = false; btn.textContent = 'Konfirmasi'; }
+                if (btn) { btn.disabled = false; btn.innerHTML = 'Konfirmasi'; }
                 if (res.need_login) { showModal('Sesi Berakhir', 'Silakan masuk ulang, lalu coba isi saldo kembali.'); return; }
                 if (res.error === 'payment_not_configured') { showModal('Top Up Gagal', res.message || 'BuatQris belum dikonfigurasi (BUATQRIS_ACCOUNT_ID / BUATQRIS_SECRET_TOKEN).'); return; }
                 showModal('Top Up Gagal', res.message || res.error || 'Gagal membuat transaksi QRIS.');
                 return;
             }
-            if (btn) { btn.disabled = false; btn.textContent = 'Konfirmasi'; }
+            if (btn) { btn.disabled = false; btn.innerHTML = 'Konfirmasi'; }
             qrisOrder = res;
             showQrisStep(res);
         }
@@ -779,6 +811,7 @@
             if (stepAmount) { stepAmount.classList.add('hidden'); stepAmount.classList.remove('flex'); }
             if (stepConfirm) { stepConfirm.classList.add('hidden'); stepConfirm.classList.remove('flex'); }
             st.classList.remove('hidden'); st.classList.add('flex');
+            setStepPath('qris', res.order_id);
             document.getElementById('qris-order-id').textContent = res.order_id || '';
             document.getElementById('qris-total').textContent = 'Rp ' + Number(res.total_payment || 0).toLocaleString('id-ID');
             var box = document.getElementById('qris-qr-box');
@@ -808,15 +841,59 @@
                 var raw = localStorage.getItem('clincoo_qris_active_order');
                 if (!raw) return;
                 var o = JSON.parse(raw);
-                if (!o || !o.order_id || !o.qr_string) { qrisForgetSession(); return; }
+                if (!o || !o.order_id || (!o.qr_string && !o.qr_image)) { qrisForgetSession(); return; }
                 if (o.expired_at && !isNaN(new Date(o.expired_at).getTime()) && new Date(o.expired_at).getTime() < Date.now()) { qrisForgetSession(); return; }
                 qrisOrder = o;
                 showQrisStep(o);
             } catch (e) {}
         }
 
+        async function qrisRestoreFromUrl() {
+            var id = orderIdDariUrl();
+            if (!id) { qrisRestore(); return; }
+            var token = '';
+            try { token = localStorage.getItem('clincoo_auth_token') || ''; } catch (e) {}
+            var res = null;
+            try {
+                res = await fetch(API_BASE + '/api/topup-qris?action=get&order_id=' + encodeURIComponent(id), {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                }).then(function (r) { return r.json(); });
+            } catch (e) {}
+            if (res && res.need_login) {
+                location.replace('/auth/?next=' + encodeURIComponent(location.origin + TOPUP_BASE + 'qris/' + encodeURIComponent(id) + '/'));
+                return;
+            }
+            var o = res && res.order;
+            if (o && o.order_id) {
+                if (o.status === 'paid') {
+                    qrisForgetSession(); setStepPath('');
+                    showModal('Pembayaran Diterima', 'Order ' + o.order_id + ' sudah dibayar. Saldo sudah masuk.', false);
+                    return;
+                }
+                if (o.status && o.status !== 'pending') {
+                    qrisForgetSession(); setStepPath('');
+                    showModal('Transaksi Berakhir', 'Transaksi ini sudah ' + o.status + '. Silakan buat transaksi baru.');
+                    return;
+                }
+                var exp = o.expired_at ? new Date(o.expired_at).getTime() : 0;
+                if (exp && exp < Date.now()) {
+                    qrisForgetSession(); setStepPath('');
+                    showModal('QRIS Kedaluwarsa', 'Batas waktu pembayaran sudah lewat. Silakan buat transaksi baru.');
+                    return;
+                }
+                qrisOrder = o;
+                showQrisStep(o);
+                return;
+            }
+            /* Order tidak ada di server: bersihkan URL, coba sesi lokal, kalau tidak ada mulai dari awal. */
+            qrisForgetSession();
+            setStepPath('');
+            qrisRestore();
+        }
+
         function qrisBackToAmount() {
             qrisForgetSession();
+            setStepPath('');
             stopQrisTimers();
             var st = document.getElementById('step-qris');
             st.classList.add('hidden'); st.classList.remove('flex');
@@ -893,6 +970,7 @@
                 });
             } catch (e) {}
             qrisForgetSession();
+            setStepPath('');
             goToStep1();
             showModal('Top Up Dibatalkan', 'Transaksi QRIS dibatalkan. Saldo kamu tetap aman.');
         }
